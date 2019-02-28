@@ -1,5 +1,5 @@
 export PROJECT_NAMESPACE="l4ygcl"
-export PROJECT_OS_DIR=${PROJECT_OS_DIR:-../../openshifta}
+export PROJECT_OS_DIR=${PROJECT_OS_DIR:-../../openshift}
 
 export GIT_URI="https://github.com/pwei1018/sbc-pay.git"
 export GIT_REF="master"
