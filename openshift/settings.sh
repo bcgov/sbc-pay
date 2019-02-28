@@ -1,7 +1,7 @@
 export PROJECT_NAMESPACE="l4ygcl"
 export PROJECT_OS_DIR=${PROJECT_OS_DIR:-../../openshifta}
 
-export GIT_URI="https://github.com/bcgov/sbc-pay.git"
+export GIT_URI="https://github.com/pwei1018/sbc-pay.git"
 export GIT_REF="master"
 
 # The templates that should not have their GIT referances(uri and ref) over-ridden

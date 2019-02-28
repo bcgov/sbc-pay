@@ -9,11 +9,11 @@
             "metadata": {
                 "creationTimestamp": null,
                 "labels": {
-                    "app": "pay-api-pipeline",
-                    "name": "pay-api-pipeline",
-                    "template": "pay-api-pipeline"
+                    "app": "pay-web-pipeline",
+                    "name": "pay-web-pipeline",
+                    "template": "pay-web-pipeline"
                 },
-                "name": "pay-api-pipeline"
+                "name": "pay-web-pipeline"
             },
             "spec": {
                 "output": {},
@@ -21,10 +21,10 @@
                 "resources": {},
                 "runPolicy": "Parallel",
                 "source": {
-                    "contextDir": "jenkins/pay-api",
+                    "contextDir": "jenkins/pay-web",
                     "git": {
                         "ref": "master",
-                        "uri": "https://github.com/bcgov/sbc-pay.git"
+                        "uri": "https://github.com/pwei1018/sbc-pay.git"
                     },
                     "type": "Git"
                 },
@@ -37,7 +37,7 @@
                 "triggers": [
                     {
                         "github": {
-                            "secret": "FawjEE0MA3uPxyuJ2awDEQwlmdfC3j1NKDCHk7ej"
+                            "secret": "AKMQmADJhVDxV7UGqo20Sb62FAR4q0Ye80sTYKIE"
                         },
                         "type": "GitHub"
                     }
