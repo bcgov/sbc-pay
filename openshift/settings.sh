@@ -1,4 +1,4 @@
-export PROJECT_NAMESPACE="sbc-pay"
+export PROJECT_NAMESPACE="l4ygcl"
 export PROJECT_OS_DIR=${PROJECT_OS_DIR:-../../openshifta}
 
 export GIT_URI="https://github.com/bcgov/sbc-pay.git"

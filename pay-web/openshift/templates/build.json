@@ -1,0 +1,51 @@
+{
+    "kind": "List",
+    "apiVersion": "v1",
+    "metadata": {},
+    "items": [
+        {
+            "apiVersion": "build.openshift.io/v1",
+            "kind": "BuildConfig",
+            "metadata": {
+                "creationTimestamp": null,
+                "labels": {
+                    "app": "pay-web-pipeline",
+                    "name": "pay-web-pipeline",
+                    "template": "pay-web-pipeline"
+                },
+                "name": "pay-web-pipeline"
+            },
+            "spec": {
+                "output": {},
+                "postCommit": {},
+                "resources": {},
+                "runPolicy": "Parallel",
+                "source": {
+                    "contextDir": "jenkins/pay-web",
+                    "git": {
+                        "ref": "master",
+                        "uri": "https://github.com/bcgov/sbc-pay.git"
+                    },
+                    "type": "Git"
+                },
+                "strategy": {
+                    "jenkinsPipelineStrategy": {
+                        "jenkinsfilePath": "Jenkinsfile"
+                    },
+                    "type": "JenkinsPipeline"
+                },
+                "triggers": [
+                    {
+                        "github": {
+                            "secret": "AKMQmADJhVDxV7UGqo20Sb62FAR4q0Ye80sTYKIE"
+                        },
+                        "type": "GitHub"
+                    }
+                ]
+            },
+            "status": {
+                "lastVersion": 0
+            }
+        }
+    ]
+}

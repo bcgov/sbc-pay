@@ -9,4 +9,3 @@ SOURCE_REPOSITORY_URL=https://github.com/bcgov/sbc-pay.git
 SOURCE_REPOSITORY_REF=master
 CONTEXT_DIR=jenkins/pay-api
 JENKINSFILE_PATH=Jenkinsfile
-SOURCE_REPOSITORY_REF
