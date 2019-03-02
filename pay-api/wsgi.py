@@ -1,6 +1,6 @@
-from flask import Flask
+from setup import create_app
 
-application = Flask(__name__)
+application = create_app()
 
 if __name__ == "__main__":
     application.run()

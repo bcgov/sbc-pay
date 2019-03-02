@@ -3,7 +3,7 @@ from flask_restplus import Resource, Namespace
 api = Namespace('pay', description='Payment System - Pay')
 
 
-@api.route("/pay")
+@api.route("")
 class Pay(Resource):
 
     @staticmethod

@@ -1,6 +1,6 @@
 from flask_restplus import Resource, Namespace
 
-api = Namespace('payOPS', description='Payment System - OPS checks')
+api = Namespace('ops', description='Payment System - OPS checks')
 
 
 @api.route("/healthz")

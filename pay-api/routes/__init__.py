@@ -32,9 +32,14 @@ def init_tracer(service):
 tracer = init_tracer('pay_api')
 FlaskTracing(tracer)
 
-from .pay import api as pay_api
 from .ops import api as ops_api
+from .pay import api as pay_api
+from .refund import api as refund_api
+from .status import api as status_api
 
-api.add_namespace(pay_api, path='/pay')
 api.add_namespace(ops_api, path='/ops')
+api.add_namespace(pay_api, path='/pay')
+api.add_namespace(refund_api, path='/refund')
+api.add_namespace(status_api, path='/status')
+
 
