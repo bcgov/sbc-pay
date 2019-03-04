@@ -1,10 +1,10 @@
 {
-    "kind": "List",
+    "kind": "Template",
     "apiVersion": "v1",
     "metadata": {},
     "items": [
         {
-            "apiVersion": "build.openshift.io/v1",
+            "apiVersion": "v1",
             "kind": "BuildConfig",
             "metadata": {
                 "creationTimestamp": null,
