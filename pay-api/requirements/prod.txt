@@ -1,11 +1,6 @@
 gunicorn
 Flask
-Flask-Migrate
-Flask-Script
-Flask-Moment
-Flask-SQLAlchemy
 Flask-RESTplus
-Flask-Marshmallow
 flask-jwt-oidc>=0.1.5
 
 
