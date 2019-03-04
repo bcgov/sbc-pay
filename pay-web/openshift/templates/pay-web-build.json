@@ -3,8 +3,8 @@
   "apiVersion": "v1",
   "metadata": {
     "annotations": {
-      "description": "Build template for a pay-api server.",
-      "tags": "flask",
+      "description": "Build template for a pay-web server.",
+      "tags": "Vue.js",
       "iconClass": "icon-python"
     },
     "name": "${NAME}-build-template"
@@ -40,14 +40,10 @@
           "sourceStrategy": {
             "from": {
               "kind": "${SOURCE_IMAGE_KIND}",
-              "name": "${SOURCE_IMAGE_NAME}:${SOURCE_IMAGE_TAG}"
+              "name": "${SOURCE_IMAGE_NAME}:${SOURCE_IMAGE_TAG}",
+              "namespace": "${SOURCE_IMAGE_NAME_SPACE}"
             },
-            "env": [
-              {
-                "name": "PIP_INDEX_URL",
-                "value": "${PIP_INDEX_URL}"
-              }
-            ]
+            "env": []
           }
         },
         "output": {
@@ -98,21 +94,28 @@
       "displayName": "Source Image Kind",
       "required": true,
       "description": "The 'kind' (type) of the  source image; typically ImageStreamTag, or DockerImage.",
-      "value": "DockerImage"
+      "value": "ImageStreamTag"
+    },
+    {
+      "name": "SOURCE_IMAGE_NAME_SPACE",
+      "displayName": "Source Image Name Space",
+      "required": true,
+      "description": "The name space of the  source image.",
+      "value": "openshift"
     },
     {
       "name": "SOURCE_IMAGE_NAME",
       "displayName": "Source Image Name",
       "required": true,
       "description": "The name of the source image.",
-      "value": "bcgovimages/pay-web-image"
+      "value": "nodejs"
     },
     {
       "name": "SOURCE_IMAGE_TAG",
       "displayName": "Source Image Tag",
       "required": true,
       "description": "The tag of the source image.",
-      "value": "py36-1.7-ew-0-s2i"
+      "value": "8"
     },
     {
       "name": "PIP_INDEX_URL",
