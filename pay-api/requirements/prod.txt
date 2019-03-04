@@ -9,10 +9,6 @@ Flask-Marshmallow
 flask-jwt-oidc>=0.1.5
 python-dotenv==0.8.2
 psycopg2-binary
-marshmallow
-marshmallow-sqlalchemy
-cx_Oracle
-pronouncing
 
 opentracing>=2,<3
 # We want something like: jaeger-client>=3.8,<4
