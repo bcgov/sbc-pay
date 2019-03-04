@@ -1,0 +1,5 @@
+#=========================================================
+# OpenShift template parameters for:
+# Component: pay-api
+# Template File: templates/pay-api-build.json
+#=========================================================
