@@ -1,4 +1,4 @@
-from setup import create_app
+from pay_setup import create_app
 
 application = create_app()
 
