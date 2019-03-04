@@ -1,23 +1,27 @@
 {
-    "kind": "Template",
+    "kind": "List",
     "apiVersion": "v1",
+    "metadata": {},
     "items": [
         {
-            "apiVersion": "v1",
+            "apiVersion": "build.openshift.io/v1",
             "kind": "BuildConfig",
             "metadata": {
                 "creationTimestamp": null,
                 "labels": {
-                    "app": "pay-api-pipeline",
-                    "name": "pay-api-pipeline",
-                    "template": "pay-api-pipeline"
+                    "app": "deploy-to-test-pipeline",
+                    "name": "deploy-to-test-pipeline",
+                    "template": "deploy-to-test-pipeline"
                 },
-                "name": "pay-api-pipeline"
+                "name": "deploy-to-test-pipeline"
             },
             "spec": {
+                "output": {},
+                "postCommit": {},
+                "resources": {},
                 "runPolicy": "Parallel",
                 "source": {
-                    "contextDir": "pay-api",
+                    "contextDir": "jenkins",
                     "git": {
                         "ref": "master",
                         "uri": "https://github.com/pwei1018/sbc-pay.git"
@@ -26,14 +30,14 @@
                 },
                 "strategy": {
                     "jenkinsPipelineStrategy": {
-                        "jenkinsfilePath": "Jenkinsfile"
+                        "jenkinsfilePath": "deploy-to-test-Jenkinsfile"
                     },
                     "type": "JenkinsPipeline"
                 },
                 "triggers": [
                     {
                         "github": {
-                            "secret": "jRhguYNkdgTuLjcKICiKw6MCtEqMHXKwDuLoAwbJ"
+                            "secret": "p2Nqg02gTw8rOMTkJpdeKeX0oPARWIjwW0E3BDAc"
                         },
                         "type": "GitHub"
                     }

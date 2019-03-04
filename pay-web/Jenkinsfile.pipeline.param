@@ -7,5 +7,5 @@ NAME=pay-web
 # GITHUB_WEBHOOK_SECRET=[a-zA-Z0-9]{40}
 SOURCE_REPOSITORY_URL=https://github.com/pwei1018/sbc-pay.git
 SOURCE_REPOSITORY_REF=master
-CONTEXT_DIR=jenkins/pay-web
+CONTEXT_DIR=pay-web
 JENKINSFILE_PATH=Jenkinsfile
