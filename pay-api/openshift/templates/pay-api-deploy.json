@@ -73,7 +73,7 @@
                         "containers": [
                             {
                                 "name": "pay-api",
-                                "image": "docker-registry.default.svc:5000/l4ygcl-tools/pay-api@sha256:72742e79e330b5cf7d1920b47213501067dc748f5878a29b9f18edc21d85ee22",
+                                "image": "",
                                 "ports": [
                                     {
                                         "containerPort": 8080,
