@@ -1,17 +1,13 @@
 <template>
   <div id="app">
-    <HelloWorld msg="Welcome to payment page"/>
+    <img src="./assets/logo.png">
+    <router-view/>
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
-
 export default {
-  name: 'app',
-  components: {
-    HelloWorld
-  }
+  name: 'App'
 }
 </script>
 
