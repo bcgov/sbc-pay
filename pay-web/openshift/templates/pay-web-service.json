@@ -1,0 +1,40 @@
+{
+    "kind": "Template",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "pay-web",
+        "creationTimestamp": null
+    },
+    "objects": [
+        {
+            "kind": "Service",
+            "apiVersion": "v1",
+            "metadata": {
+                "name": "pay-web",
+                "creationTimestamp": null,
+                "labels": {
+                    "app": "pay-web",
+                    "template": "caddy-dc"
+                }
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "name": "2019-tcp",
+                        "protocol": "TCP",
+                        "port": 2019,
+                        "targetPort": 2019
+                    }
+                ],
+                "selector": {
+                    "deploymentconfig": "pay-web"
+                },
+                "type": "ClusterIP",
+                "sessionAffinity": "None"
+            },
+            "status": {
+                "loadBalancer": {}
+            }
+        }
+    ]
+}

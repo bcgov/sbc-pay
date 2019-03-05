@@ -1,6 +1,6 @@
-from setup import create_app
+from pay_setup import create_app
 
 application = create_app()
 
 if __name__ == "__main__":
-    application.run(port=5001)
+    application.run()
