@@ -16,13 +16,13 @@ def CONTEXT_DIRECTORY = APP_NAME
 // EDIT LINE BELOW
 // Add a reference to the RUNTIME_BUILD_CONFIG, if you are using a runtime that needs to be built.
 // Otherwise comment out the line and the associated build script.
-def RUNTIME_BUILD_CONFIG = "${APP_NAME}-runtime'
+def RUNTIME_BUILD_CONFIG = "${APP_NAME}-runtime"
 
 // EDIT LINE BELOW (Add a reference to the CHAINED_BUILD_CONFIG)
-def CHAINED_BUILD_CONFIG = "${APP_NAME}-runtime-build'
+def CHAINED_BUILD_CONFIG = "${APP_NAME}-runtime-build"
 
 // The name of your deployment configuration; used to verify the deployment
-def DEPLOYMENT_CONFIG_NAME= "${APP_NAME}-runtime'
+def DEPLOYMENT_CONFIG_NAME= "${APP_NAME}-runtime"
 
 @NonCPS
 boolean triggerBuild(String contextDirectory) {
