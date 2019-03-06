@@ -118,12 +118,6 @@
       "value": "8"
     },
     {
-      "name": "PIP_INDEX_URL",
-      "displayName": "Custom PyPi Index URL",
-      "description": "The custom PyPi index URL",
-      "value": ""
-    },
-    {
       "name": "OUTPUT_IMAGE_TAG",
       "displayName": "Output Image Tag",
       "description": "The tag given to the built image.",

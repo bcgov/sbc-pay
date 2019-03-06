@@ -2,7 +2,7 @@
     "kind": "Template",
     "apiVersion": "v1",
     "metadata": {
-        "name": "pay-web-caddy",
+        "name": "pay-web-runtime",
         "creationTimestamp": null
     },
     "objects": [
@@ -10,10 +10,10 @@
             "kind": "BuildConfig",
             "apiVersion": "v1",
             "metadata": {
-                "name": "pay-web-caddy",
+                "name": "pay-web-runtime",
                 "creationTimestamp": null,
                 "labels": {
-                    "app": "pay-web-caddy"
+                    "app": "pay-web-runtime"
                 }
             },
             "spec": {
@@ -58,7 +58,7 @@
                 "output": {
                     "to": {
                         "kind": "ImageStreamTag",
-                        "name": "pay-web-caddy:latest"
+                        "name": "pay-web-runtime:latest"
                     }
                 },
                 "resources": {},
