@@ -2,7 +2,7 @@
     "kind": "Template",
     "apiVersion": "v1",
     "metadata": {
-        "name": "pay-web-test",
+        "name": "pay-web",
         "creationTimestamp": null
     },
     "objects": [
@@ -10,11 +10,11 @@
             "kind": "DeploymentConfig",
             "apiVersion": "v1",
             "metadata": {
-                "name": "pay-web-test",
+                "name": "pay-web",
                 "generation": 1,
                 "creationTimestamp": null,
                 "labels": {
-                    "app": "pay-web-test"
+                    "app": "pay-web"
                 },
                 "annotations": {
                     "openshift.io/generated-by": "OpenShiftWebConsole"
