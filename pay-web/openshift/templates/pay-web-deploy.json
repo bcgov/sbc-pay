@@ -2,7 +2,7 @@
     "kind": "Template",
     "apiVersion": "v1",
     "metadata": {
-        "name": "pay-web",
+        "name": "pay-web-test",
         "creationTimestamp": null
     },
     "objects": [
@@ -10,11 +10,11 @@
             "kind": "DeploymentConfig",
             "apiVersion": "v1",
             "metadata": {
-                "name": "pay-web",
+                "name": "pay-web-test",
                 "generation": 1,
                 "creationTimestamp": null,
                 "labels": {
-                    "app": "pay-web"
+                    "app": "pay-web-test"
                 },
                 "annotations": {
                     "openshift.io/generated-by": "OpenShiftWebConsole"
@@ -44,7 +44,7 @@
                             "from": {
                                 "kind": "ImageStreamTag",
                                 "namespace": "l4ygcl-tools",
-                                "name": "pay-web:latest"
+                                "name": "pay-web-runtime:latest"
                             }
                         }
                     },
@@ -73,27 +73,18 @@
                         "containers": [
                             {
                                 "name": "pay-web",
-                                "image": "",
                                 "args": [
                                     "/tmp/scripts/run"
                                 ],
                                 "ports": [
                                     {
-                                        "containerPort": 2019,
+                                        "containerPort": 2015,
                                         "protocol": "TCP"
                                     }
                                 ],
                                 "envFrom": [],
                                 "env": [],
                                 "resources": {},
-                                "volumeMounts": [
-                                    {
-                                        "name": "web-caddy-config",
-                                        "readOnly": true,
-                                        "mountPath": "/etc/Caddyfile",
-                                        "subPath": "Caddyfile"
-                                    }
-                                ],
                                 "terminationMessagePath": "/dev/termination-log",
                                 "terminationMessagePolicy": "File",
                                 "imagePullPolicy": "Always"
