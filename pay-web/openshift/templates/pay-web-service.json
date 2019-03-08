@@ -20,10 +20,10 @@
             "spec": {
                 "ports": [
                     {
-                        "name": "2019-tcp",
+                        "name": "2015-tcp",
                         "protocol": "TCP",
-                        "port": 2019,
-                        "targetPort": 2019
+                        "port": 2015,
+                        "targetPort": 2015
                     }
                 ],
                 "selector": {
