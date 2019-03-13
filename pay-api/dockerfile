@@ -1,0 +1,25 @@
+# base image
+FROM python:3.6.8-slim
+
+# install git
+RUN apt-get update && \
+    apt-get clean && \
+    apt-get install -y git
+
+# add app
+COPY . /usr/src/app
+
+# install requirements
+RUN pip install -r /usr/src/app/requirements.txt
+
+# set working directory
+WORKDIR /usr/src/app
+
+# add entrypoint.sh
+COPY ./entrypoint.sh /usr/src/app/entrypoint.sh
+RUN chmod +x /usr/src/app/entrypoint.sh
+
+EXPOSE 5000
+
+# run server
+CMD ["/usr/src/app/entrypoint.sh"]

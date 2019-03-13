@@ -1,0 +1,12 @@
+version: '1.0'
+
+services:
+
+  server:
+    build:
+      context: ./pay-api
+      dockerfile: Dockerfile
+    ports:
+      - 5001:5000
+    environment:
+      - FLASK_ENV=development
