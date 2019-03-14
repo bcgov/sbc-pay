@@ -116,7 +116,7 @@ node {
       }
     }
 
-    stage("Tagging Image ${BUILD_CONFIG}:${TAG_NAMES[0]}") {
+    stage("Tagging ${BUILD_CONFIG}:${TAG_NAMES[0]}") {
       script {
         try{
           openshift.withCluster() {
