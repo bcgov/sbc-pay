@@ -97,7 +97,7 @@ node {
             openshift.tag("${IMAGESTREAM_NAME}@${IMAGE_HASH}", "${IMAGESTREAM_NAME}:${TAG_NAMES[0]}")
 
             echo "Deploy ${IMAGESTREAM_NAME} for deployment to ${TAG_NAMES[0]} ..."
-            def dc = openshift.selector('dc', "${IMAGESTREAM_NAME}-${TAG_NAMES[0]}")
+            def dc = openshift.selector('dc', "${IMAGESTREAM_NAME}")
             dc.rollout().status()
           }
         }
