@@ -5,7 +5,14 @@
 #=========================================================
 NAME=sonarqube
 # GITHUB_WEBHOOK_SECRET=[a-zA-Z0-9]{40}
-SOURCE_REPOSITORY_URL=https://github.com/pwei1018/sbc-pay.git
+SOURCE_REPOSITORY_URL=https://github.com/bcgov/sbc-pay.git
 SOURCE_REPOSITORY_REF=master
 CONTEXT_DIR=jenkins
 JENKINSFILE_PATH=sonarqube-Jenkinsfile
+
+SONAR_ROUTE_NAMESPACE='l4ygcl-tools'
+SONAR_ROUTE_NAME=sonarqube
+SONAR_PROJECT_NAME='BC Registries Payment'
+SONAR_PROJECT_KEY=BCRegistriesPayment
+
+NODEJS_IMAGE_URL='172.50.0.2:5000/openshift/jenkins-slave-python3nodejs'

@@ -3,17 +3,17 @@
 // ------------------------------------------------------------------------------------------------
 
 // The name of the SonarQube route.  Used to dynamically get the URL for SonarQube.
-def SONAR_ROUTE_NAME = 'sonarqube'
+def SONAR_ROUTE_NAME = '${SONAR_ROUTE_NAME}'
 
 // The namespace in which the SonarQube route resides.  Used to dynamically get the URL for SonarQube.
 // Leave blank if the pipeline is running in same namespace as the route.
-def SONAR_ROUTE_NAMESPACE = 'l4ygcl-tools'
+def SONAR_ROUTE_NAMESPACE = '${SONAR_ROUTE_NAMESPACE}'
 
 // The name of your SonarQube project
-def SONAR_PROJECT_NAME = 'BC Registries Payment'
+def SONAR_PROJECT_NAME = '${SONAR_PROJECT_NAME}'
 
 // The project key of your SonarQube project
-def SONAR_PROJECT_KEY = 'BCRegistriesPayment'
+def SONAR_PROJECT_KEY = '${SONAR_PROJECT_KEY}'
 
 // The base directory of your project.
 // This is relative to the location of the `sonar-runner` directory within your project.
@@ -64,7 +64,7 @@ podTemplate(
   containers: [
     containerTemplate(
       name: 'jnlp',
-      image: '172.50.0.2:5000/openshift/jenkins-slave-python3nodejs',
+      image: ${NODEJS_IMAGE_URL},
       resourceRequestCpu: '1000m',
       resourceLimitCpu: '2000m',
       resourceRequestMemory: '2Gi',
