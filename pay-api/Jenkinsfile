@@ -77,11 +77,7 @@ node {
           stage("Create Build ${BUILD_CONFIG}") {
             script {
               try{
-                openshift.withCluster() {
-                  openshift.withProject(TOOLS_NAMESPACE) {
-                    openshift.newBuild("--name=${BUILD_CONFIG}")
-                  }
-                }
+                openshift.selector("bc", "${BUILD_CONFIG}").startBuild()
               } catch (e) {
                 echo("CREATE IMAGE ${BUILD_CONFIG} ABORTED")
                 error('Stopping early…')
