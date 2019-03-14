@@ -70,22 +70,25 @@ node {
     //This stage of pipeline will only execute once when the pipeline is executed for first time.
     stage('Create Image Builder ${BUILD_CONFIG}') {
       when {
-          expression {
-              openshift.withCluster() {
-                openshift.withProject(TOOLS_NAMESPACE) {
-                  return !openshift.selector("bc", "${BUILD_CONFIG}").exists();
-                }
+        expression {
+          openshift.withCluster() {
+            openshift.withProject(TOOLS_NAMESPACE) {
+              echo "Using project: ${openshift.project()}"
+              return !openshift.selector("bc", "${BUILD_CONFIG}").exists();
             }
+          }
         }
+      }
     }
     steps {
         script {
-            openshift.withCluster() {
-                openshift.withProject(TOOLS_NAMESPACE) {
-                    openshift.newBuild("--name=${BUILD_CONFIG}", "--docker-image=docker.io/python:3.6", "--binary=true")
-                  }
-              }
+          openshift.withCluster() {
+            openshift.withProject(TOOLS_NAMESPACE) {
+              echo "Using project: ${openshift.project()}"
+              openshift.newBuild("--name=${BUILD_CONFIG}", "--docker-image=docker.io/python:3.6", "--binary=true")
+            }
           }
+        }
       }
     }
 
@@ -94,6 +97,8 @@ node {
         try {
           openshift.withCluster() {
             openshift.withProject(TOOLS_NAMESPACE) {
+              echo "Using project: ${openshift.project()}"
+
               echo "Building ${BUILD_CONFIG} ..."
               def build = openshift.selector("bc", "${BUILD_CONFIG}").startBuild()
               build.untilEach {
@@ -123,6 +128,7 @@ node {
         try{
           openshift.withCluster() {
             openshift.withProject(TOOLS_NAMESPACE) {
+              echo "Using project: ${openshift.project()}"
 
               echo "Tagging ${IMAGESTREAM_NAME} for deployment to ${TAG_NAMES[0]} ..."
 
