@@ -79,13 +79,13 @@ node {
           }
         }
       }
-    }
-    steps {
-      script {
-        openshift.withCluster() {
-          openshift.withProject(TOOLS_NAMESPACE) {
-            echo "Using project: ${openshift.project()}"
-            openshift.newBuild("--name=${BUILD_CONFIG}", "--docker-image=docker.io/python:3.6", "--binary=true")
+      steps {
+        script {
+          openshift.withCluster() {
+            openshift.withProject(TOOLS_NAMESPACE) {
+              echo "Using project: ${openshift.project()}"
+              openshift.newBuild("--name=${BUILD_CONFIG}", "--docker-image=docker.io/python:3.6", "--binary=true")
+            }
           }
         }
       }
