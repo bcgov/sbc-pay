@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------------------------------------
 
 // The name of the SonarQube route.  Used to dynamically get the URL for SonarQube.
-def SONAR_ROUTE_NAME = sonarqube
+def SONAR_ROUTE_NAME = 'sonarqube'
 
 // The namespace in which the SonarQube route resides.  Used to dynamically get the URL for SonarQube.
 // Leave blank if the pipeline is running in same namespace as the route.
