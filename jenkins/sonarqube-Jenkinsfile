@@ -55,6 +55,10 @@ String getSonarQubePwd() {
   return sonarQubePwd
 }
 
+// define job properties - keep 10 builds only
+properties([[$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '10']]])
+
+
 // The jenkins-python3nodejs template has been purpose built for supporting SonarQube scanning.
 podTemplate(
   label: 'jenkins-python3nodejs',

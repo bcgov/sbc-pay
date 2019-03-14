@@ -66,6 +66,9 @@ String getImageTagHash(String imageName, String tag = "") {
   return istag.out.tokenize('@')[1].trim()
 }
 
+// define job properties - keep 10 builds only
+properties([[$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '10']]])
+
 node {
   if( triggerBuild(CONTEXT_DIRECTORY) ) {
 
