@@ -1,3 +1,21 @@
+// Edit your app's name below 
+def APP_NAME = 'pay-api'
+
+// Edit your environment TAG names below
+def TAG_NAMES = ['dev', 'test', 'prod']
+
+// You shouldn't have to edit these if you're following the conventions
+def BUILD_CONFIG = APP_NAME
+
+//EDIT LINE BELOW (Change `IMAGESTREAM_NAME` so it matches the name of your *output*/deployable image stream.) 
+def IMAGESTREAM_NAME = APP_NAME
+
+// You'll need to change this to point to your application component's folder within your repository
+def CONTEXT_DIRECTORY = APP_NAME
+
+DEV_NAMESPACE = "l4ygcl-dev"
+TOOLS_NAMESPACE = "l4ygcl-tools"
+
 @NonCPS
 boolean triggerBuild(String contextDirectory) {
   // Determine if code has changed within the source context directory.
@@ -43,104 +61,89 @@ String getImageTagHash(String imageName, String tag = "") {
   return istag.out.tokenize('@')[1].trim()
 }
 
-pipeline {
-  agent {
-      node {label 'python'}
-  }
-  environment {
-      APP_NAME = 'pay-api'
-      TAG_NAMES = ['dev', 'test', 'prod']
-      DEV_NAMESPACE = "l4ygcl-dev"
-      TOOLS_NAMESPACE = "l4ygcl-tools"
-      BUILD_CONFIG = APP_NAME
-      IMAGESTREAM_NAME = APP_NAME
-      CONTEXT_DIRECTORY = APP_NAME
-  }
+// define job properties - keep 10 builds only
+properties([[$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '10']]])
 
-  // define job properties - keep 10 builds only
-  properties([[$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '10']]])
+node {
+  if( triggerBuild(CONTEXT_DIRECTORY) ) {
 
-  node {
-    if( triggerBuild(CONTEXT_DIRECTORY) ) {
-
-      //This stage of pipeline will only execute once when the pipeline is executed for first time.
-      stage('Create Image Builder ${BUILD_CONFIG}') {
-        when {
-            expression {
-                openshift.withCluster() {
-                  openshift.withProject(TOOLS_NAMESPACE) {
-                    return !openshift.selector("bc", "${BUILD_CONFIG}").exists();
+    //This stage of pipeline will only execute once when the pipeline is executed for first time.
+    stage('Create Image Builder ${BUILD_CONFIG}') {
+      when {
+          expression {
+              openshift.withCluster() {
+                openshift.withProject(TOOLS_NAMESPACE) {
+                  return !openshift.selector("bc", "${BUILD_CONFIG}").exists();
+                }
+            }
+        }
+    }
+    steps {
+        script {
+            openshift.withCluster() {
+                openshift.withProject(TOOLS_NAMESPACE) {
+                    openshift.newBuild("--name=${BUILD_CONFIG}", "--docker-image=docker.io/python:3.6", "--binary=true")
                   }
               }
           }
       }
-      steps {
-          script {
-              openshift.withCluster() {
-                  openshift.withProject(TOOLS_NAMESPACE) {
-                      openshift.newBuild("--name=${BUILD_CONFIG}", "--docker-image=openshift/python:3.6", "--binary=true")
-                    }
-                }
-            }
-        }
-      }
+    }
 
-      stage("Build Image ${BUILD_CONFIG}") {
-        script {
-          try {
-            openshift.withCluster() {
-              openshift.withProject(TOOLS_NAMESPACE) {
-                echo "Building ${BUILD_CONFIG} ..."
-                def build = openshift.selector("bc", "${BUILD_CONFIG}").startBuild()
-                build.untilEach {
-                  return it.object().status.phase == "Running"
-                }
-                build.logs('-f')         
-              }
-            }
-          } catch (e) {
-            echo("BUILD ${BUILD_CONFIG} ABORTED")
-            error('Stopping early…')
-          }
-        }
-      }
-
-      stage("Testing ${BUILD_CONFIG}") {
+    stage("Build Image ${BUILD_CONFIG}") {
+      script {
         try {
-          echo "Testing ${BUILD_CONFIG} ..."
-        } catch (e) {
-            echo("TESTING ${BUILD_CONFIG} ABORTED")
-            error('Stopping early…')
-        }
-      }
-
-      stage("Tagging Image ${BUILD_CONFIG}:${TAG_NAMES[0]}") {
-        script {
-          try{
-            openshift.withCluster() {
-              openshift.withProject(TOOLS_NAMESPACE) {
-
-                echo "Tagging ${IMAGESTREAM_NAME} for deployment to ${TAG_NAMES[0]} ..."
-
-                // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
-                // Tag the images for deployment based on the image's hash
-                def IMAGE_HASH = getImageTagHash("${IMAGESTREAM_NAME}")
-                echo "IMAGE_HASH: ${IMAGE_HASH}"
-                openshift.tag("${IMAGESTREAM_NAME}@${IMAGE_HASH}", "${IMAGESTREAM_NAME}:${TAG_NAMES[0]}")
+          openshift.withCluster() {
+            openshift.withProject(TOOLS_NAMESPACE) {
+              echo "Building ${BUILD_CONFIG} ..."
+              def build = openshift.selector("bc", "${BUILD_CONFIG}").startBuild()
+              build.untilEach {
+                return it.object().status.phase == "Running"
               }
+              build.logs('-f')         
             }
-          } catch (e) {
-            echo("TAGGIN ${BUILD_CONFIG}:${TAG_NAMES[0]} ABORTED")
-            error('Stopping early…')
           }
+        } catch (e) {
+          echo("BUILD ${BUILD_CONFIG} ABORTED")
+          error('Stopping early…')
         }
       }
     }
-    else {
-      stage('No Changes') {
-        echo "No changes ..."
-        currentBuild.result = 'SUCCESS'
+
+    stage("Testing ${BUILD_CONFIG}") {
+      try {
+        echo "Testing ${BUILD_CONFIG} ..."
+      } catch (e) {
+          echo("TESTING ${BUILD_CONFIG} ABORTED")
+          error('Stopping early…')
       }
+    }
+
+    stage("Tagging Image ${BUILD_CONFIG}:${TAG_NAMES[0]}") {
+      script {
+        try{
+          openshift.withCluster() {
+            openshift.withProject(TOOLS_NAMESPACE) {
+
+              echo "Tagging ${IMAGESTREAM_NAME} for deployment to ${TAG_NAMES[0]} ..."
+
+              // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
+              // Tag the images for deployment based on the image's hash
+              def IMAGE_HASH = getImageTagHash("${IMAGESTREAM_NAME}")
+              echo "IMAGE_HASH: ${IMAGE_HASH}"
+              openshift.tag("${IMAGESTREAM_NAME}@${IMAGE_HASH}", "${IMAGESTREAM_NAME}:${TAG_NAMES[0]}")
+            }
+          }
+        } catch (e) {
+          echo("TAGGIN ${BUILD_CONFIG}:${TAG_NAMES[0]} ABORTED")
+          error('Stopping early…')
+        }
+      }
+    }
+  }
+  else {
+    stage('No Changes') {
+      echo "No changes ..."
+      currentBuild.result = 'SUCCESS'
     }
   }
 }
