@@ -74,8 +74,8 @@ node {
           openshift.withCluster() {
             openshift.withProject(TOOLS_NAMESPACE) {
               echo "Using project: ${openshift.project()}"
-              
-              if !openshift.selector('bc', "${BUILD_CONFIG}").exists() {
+
+              if (!openshift.selector('bc', "${BUILD_CONFIG}").exists()) {
                 openshift.newBuild("--name=${BUILD_CONFIG}", "--docker-image=openshift/python:3.6", "--binary=true")
               }
             }
