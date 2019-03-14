@@ -68,13 +68,19 @@ node {
       script {
         openshift.withCluster() {
           openshift.withProject() {
-
             echo "Building ${BUILD_CONFIG} ..."
-            def build = openshift.selector("bc", "${BUILD_CONFIG}")
-            build.startBuild().logs("-f")
+            def build = openshift.selector("bc", "${BUILD_CONFIG}").startBuild()
+            build.untilEach {
+              return it.object().status.phase == "Running"
+            }
+            build.logs('-f')         
           }
         }
       }
+    }
+
+    stage("Testing ${BUILD_CONFIG}") {
+      echo "Smoke testing ${BUILD_CONFIG} ..."
     }
 
     stage("Deploy ${TAG_NAMES[0]}") {
@@ -89,6 +95,10 @@ node {
             def IMAGE_HASH = getImageTagHash("${IMAGESTREAM_NAME}")
             echo "IMAGE_HASH: ${IMAGE_HASH}"
             openshift.tag("${IMAGESTREAM_NAME}@${IMAGE_HASH}", "${IMAGESTREAM_NAME}:${TAG_NAMES[0]}")
+
+            echo "Deploy ${IMAGESTREAM_NAME} for deployment to ${TAG_NAMES[0]} ..."
+            def dc = openshift.selector('dc', "${IMAGESTREAM_NAME}-${TAG_NAMES[0]}")
+            dc.rollout().status()
           }
         }
       }
