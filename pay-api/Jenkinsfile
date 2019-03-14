@@ -74,10 +74,14 @@ node {
         echo "Using project ${openshift.project()} in cluster with url ${openshift.cluster()}"
 
         if (!openshift.selector('bc', "${BUILD_CONFIG}").exists()) {
-          stage("Create Build {BUILD_CONFIG}") {
+          stage("Create Build ${BUILD_CONFIG}") {
             script {
               try{
-                openshift.newBuild("--name=${BUILD_CONFIG}")
+                openshift.withCluster() {
+                  openshift.withProject(TOOLS_NAMESPACE) {
+                    openshift.newBuild("--name=${BUILD_CONFIG}")
+                  }
+                }
               } catch (e) {
                 echo("CREATE IMAGE ${BUILD_CONFIG} ABORTED")
                 error('Stopping early…')
