@@ -1,9 +1,3 @@
-pipeline {
-    agent {
-      node {label 'python'}
-    }
-}
-
 environment {
     APP_NAME = 'pay-api'
     TAG_NAMES = ['dev', 'test', 'prod']
