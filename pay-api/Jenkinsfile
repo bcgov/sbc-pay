@@ -66,40 +66,51 @@ node {
 
     stage("Build ${BUILD_CONFIG}") {
       script {
-        openshift.withCluster() {
-          openshift.withProject() {
-            echo "Building ${BUILD_CONFIG} ..."
-            def build = openshift.selector("bc", "${BUILD_CONFIG}").startBuild()
-            build.untilEach {
-              return it.object().status.phase == "Running"
+        try {
+          openshift.withCluster() {
+            openshift.withProject() {
+              echo "Building ${BUILD_CONFIG} ..."
+              def build = openshift.selector("bc", "${BUILD_CONFIG}").startBuild()
+              build.untilEach {
+                return it.object().status.phase == "Running"
+              }
+              build.logs('-f')         
             }
-            build.logs('-f')         
           }
+        } catch (e) {
+          echo("BUILD ${BUILD_CONFIG} ABORTED")
+          error('Stopping early…')
         }
       }
     }
 
     stage("Testing ${BUILD_CONFIG}") {
-      echo "Smoke testing ${BUILD_CONFIG} ..."
+      try {
+        echo "Testing ${BUILD_CONFIG} ..."
+      } catch (e) {
+          echo("TESTING ${BUILD_CONFIG} ABORTED")
+          error('Stopping early…')
+      }
     }
 
-    stage("Deploy ${TAG_NAMES[0]}") {
+    stage("Tagging ${BUILD_CONFIG}:${TAG_NAMES[0]}") {
       script {
-        openshift.withCluster() {
-          openshift.withProject() {
+        try{
+          openshift.withCluster() {
+            openshift.withProject() {
 
-            echo "Tagging ${IMAGESTREAM_NAME} for deployment to ${TAG_NAMES[0]} ..."
+              echo "Tagging ${IMAGESTREAM_NAME} for deployment to ${TAG_NAMES[0]} ..."
 
-            // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
-            // Tag the images for deployment based on the image's hash
-            def IMAGE_HASH = getImageTagHash("${IMAGESTREAM_NAME}")
-            echo "IMAGE_HASH: ${IMAGE_HASH}"
-            openshift.tag("${IMAGESTREAM_NAME}@${IMAGE_HASH}", "${IMAGESTREAM_NAME}:${TAG_NAMES[0]}")
-
-            echo "Deploy ${IMAGESTREAM_NAME} for deployment to ${TAG_NAMES[0]} ..."
-            def dc = openshift.selector('dc', "${IMAGESTREAM_NAME}")
-            dc.rollout().status()
+              // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
+              // Tag the images for deployment based on the image's hash
+              def IMAGE_HASH = getImageTagHash("${IMAGESTREAM_NAME}")
+              echo "IMAGE_HASH: ${IMAGE_HASH}"
+              openshift.tag("${IMAGESTREAM_NAME}@${IMAGE_HASH}", "${IMAGESTREAM_NAME}:${TAG_NAMES[0]}")
+            }
           }
+        } catch (e) {
+          echo("TAGGIN ${BUILD_CONFIG}:${TAG_NAMES[0]} ABORTED")
+          error('Stopping early…')
         }
       }
     }
