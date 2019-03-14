@@ -109,7 +109,7 @@ node {
       }
     }
 
-    stage("Tagging ${TAG_NAMES[0]}") {
+    stage("Tagging Image ${TAG_NAMES[0]}") {
       script {
         try{
           openshift.withCluster() {
