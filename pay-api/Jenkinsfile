@@ -79,6 +79,7 @@ node {
                 openshift.newBuild("--name=${BUILD_CONFIG}", "--docker-image=openshift/python:3.6", "--binary=true")
               }
             }
+          }
         } catch (e) {
           echo("CREATE IMAGE ${BUILD_CONFIG} ABORTED")
           error('Stopping early…')
