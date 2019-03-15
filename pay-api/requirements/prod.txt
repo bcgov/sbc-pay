@@ -1,6 +1,6 @@
 gunicorn
 Flask
-flask_apispec 
+flask-apispec
 Flask-Migrate
 Flask-Script
 Flask-Moment
