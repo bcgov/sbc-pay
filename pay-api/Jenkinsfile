@@ -98,6 +98,15 @@ node {
       }
     }
 
+    stage("Testing in Postman ${BUILD_CONFIG}") {
+      try {
+        echo "Testing in Postman ${BUILD_CONFIG} ..."
+      } catch (e) {
+          echo("TESTING  in Postman ${BUILD_CONFIG} ABORTED")
+          error('Stopping early…')
+      }
+    }
+
     stage("Tagging ${BUILD_CONFIG}:${TAG_NAMES[0]}") {
       script {
         try{
