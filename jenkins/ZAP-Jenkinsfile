@@ -5,6 +5,10 @@
 // The name of the SonarQube route.  Used to dynamically get the URL for SonarQube.
 def SONAR_ROUTE_NAME = 'sonarqube'
 
+// The namespace in which the SonarQube route resides.  Used to dynamically get the URL for SonarQube.
+// Leave blank if the pipeline is running in same namespace as the route.
+def SONAR_ROUTE_NAMESPACE = 'l4ygcl-tools'
+
 // The name of your SonarQube project
 def SONAR_PROJECT_NAME = 'BC Registries Payment Zap'
 
@@ -180,7 +184,7 @@ podTemplate(
       echo "Preparing the report for the publishing ..."
       unstash name: "${ZAP_REPORT_STASH}"
 
-      SONARQUBE_URL = getUrlForRoute(SONAR_ROUTE_NAME).trim()
+      SONARQUBE_URL = getUrlForRoute(SONAR_ROUTE_NAME, SONAR_ROUTE_NAMESPACE).trim()).trim()
       SONARQUBE_PWD = getSonarQubePwd().trim()
       echo "URL: ${SONARQUBE_URL}"
       echo "PWD: ${SONARQUBE_PWD}"
