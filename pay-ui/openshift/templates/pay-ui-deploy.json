@@ -1,0 +1,111 @@
+{
+    "kind": "Template",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "pay-ui",
+        "creationTimestamp": null
+    },
+    "objects": [
+        {
+            "kind": "DeploymentConfig",
+            "apiVersion": "v1",
+            "metadata": {
+                "name": "pay-ui",
+                "generation": 1,
+                "creationTimestamp": null,
+                "labels": {
+                    "app": "pay-ui"
+                },
+                "annotations": {
+                    "openshift.io/generated-by": "OpenShiftWebConsole"
+                }
+            },
+            "spec": {
+                "strategy": {
+                    "type": "Rolling",
+                    "rollingParams": {
+                        "updatePeriodSeconds": 1,
+                        "intervalSeconds": 1,
+                        "timeoutSeconds": 600,
+                        "maxUnavailable": "25%",
+                        "maxSurge": "25%"
+                    },
+                    "resources": {},
+                    "activeDeadlineSeconds": 21600
+                },
+                "triggers": [
+                    {
+                        "type": "ImageChange",
+                        "imageChangeParams": {
+                            "automatic": true,
+                            "containerNames": [
+                                "pay-ui"
+                            ],
+                            "from": {
+                                "kind": "ImageStreamTag",
+                                "namespace": "l4ygcl-tools",
+                                "name": "pay-ui-runtime:latest"
+                            }
+                        }
+                    },
+                    {
+                        "type": "ConfigChange"
+                    }
+                ],
+                "replicas": 1,
+                "test": false,
+                "selector": {
+                    "app": "pay-ui",
+                    "deploymentconfig": "pay-ui"
+                },
+                "template": {
+                    "metadata": {
+                        "creationTimestamp": null,
+                        "labels": {
+                            "app": "pay-ui",
+                            "deploymentconfig": "pay-ui"
+                        },
+                        "annotations": {
+                            "openshift.io/generated-by": "OpenShiftWebConsole"
+                        }
+                    },
+                    "spec": {
+                        "containers": [
+                            {
+                                "name": "pay-ui",
+                                "args": [
+                                    "/tmp/scripts/run"
+                                ],
+                                "ports": [
+                                    {
+                                        "containerPort": 2015,
+                                        "protocol": "TCP"
+                                    }
+                                ],
+                                "envFrom": [],
+                                "env": [],
+                                "resources": {},
+                                "terminationMessagePath": "/dev/termination-log",
+                                "terminationMessagePolicy": "File",
+                                "imagePullPolicy": "Always"
+                            }
+                        ],
+                        "restartPolicy": "Always",
+                        "terminationGracePeriodSeconds": 30,
+                        "dnsPolicy": "ClusterFirst",
+                        "securityContext": {},
+                        "schedulerName": "default-scheduler"
+                    }
+                }
+            },
+            "status": {
+                "latestVersion": 0,
+                "observedGeneration": 0,
+                "replicas": 0,
+                "updatedReplicas": 0,
+                "availableReplicas": 0,
+                "unavailableReplicas": 0
+            }
+        }
+    ]
+}

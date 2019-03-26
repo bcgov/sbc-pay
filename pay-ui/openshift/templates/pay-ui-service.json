@@ -1,0 +1,40 @@
+{
+    "kind": "Template",
+    "apiVersion": "v1",
+    "metadata": {
+        "name": "pay-ui",
+        "creationTimestamp": null
+    },
+    "objects": [
+        {
+            "kind": "Service",
+            "apiVersion": "v1",
+            "metadata": {
+                "name": "pay-ui",
+                "creationTimestamp": null,
+                "labels": {
+                    "app": "pay-ui",
+                    "template": "caddy-dc"
+                }
+            },
+            "spec": {
+                "ports": [
+                    {
+                        "name": "2015-tcp",
+                        "protocol": "TCP",
+                        "port": 2015,
+                        "targetPort": 2015
+                    }
+                ],
+                "selector": {
+                    "deploymentconfig": "pay-ui"
+                },
+                "type": "ClusterIP",
+                "sessionAffinity": "None"
+            },
+            "status": {
+                "loadBalancer": {}
+            }
+        }
+    ]
+}

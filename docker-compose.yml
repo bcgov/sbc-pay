@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  api:
+    build:
+      context: ./pay-api
+      dockerfile: dockerfile
+    ports:
+      - 5005:5000
+
+  ui:
+    build:
+      context: ./pay-ui
+      dockerfile: dockerfile
+    ports:
+      - 8080:8080
+
