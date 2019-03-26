@@ -1,4 +1,4 @@
-# coops-ui
+# pay-ui
 
 ## Project setup
 ```

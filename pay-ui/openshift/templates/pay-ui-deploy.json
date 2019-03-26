@@ -2,7 +2,7 @@
     "kind": "Template",
     "apiVersion": "v1",
     "metadata": {
-        "name": "pay-web",
+        "name": "pay-ui",
         "creationTimestamp": null
     },
     "objects": [
@@ -10,11 +10,11 @@
             "kind": "DeploymentConfig",
             "apiVersion": "v1",
             "metadata": {
-                "name": "pay-web",
+                "name": "pay-ui",
                 "generation": 1,
                 "creationTimestamp": null,
                 "labels": {
-                    "app": "pay-web"
+                    "app": "pay-ui"
                 },
                 "annotations": {
                     "openshift.io/generated-by": "OpenShiftWebConsole"
@@ -39,12 +39,12 @@
                         "imageChangeParams": {
                             "automatic": true,
                             "containerNames": [
-                                "pay-web"
+                                "pay-ui"
                             ],
                             "from": {
                                 "kind": "ImageStreamTag",
                                 "namespace": "l4ygcl-tools",
-                                "name": "pay-web-runtime:latest"
+                                "name": "pay-ui-runtime:latest"
                             }
                         }
                     },
@@ -55,15 +55,15 @@
                 "replicas": 1,
                 "test": false,
                 "selector": {
-                    "app": "pay-web",
-                    "deploymentconfig": "pay-web"
+                    "app": "pay-ui",
+                    "deploymentconfig": "pay-ui"
                 },
                 "template": {
                     "metadata": {
                         "creationTimestamp": null,
                         "labels": {
-                            "app": "pay-web",
-                            "deploymentconfig": "pay-web"
+                            "app": "pay-ui",
+                            "deploymentconfig": "pay-ui"
                         },
                         "annotations": {
                             "openshift.io/generated-by": "OpenShiftWebConsole"
@@ -72,7 +72,7 @@
                     "spec": {
                         "containers": [
                             {
-                                "name": "pay-web",
+                                "name": "pay-ui",
                                 "args": [
                                     "/tmp/scripts/run"
                                 ],

@@ -7,7 +7,7 @@ def DESTINATION_TAG = 'prod'
 // Define these in the order they should be deployed.
 def APP_NAMES = [
   'pay-api', 
-  'pay-web']
+  'pay-ui']
 
 node {
   properties([[$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '10']]])
