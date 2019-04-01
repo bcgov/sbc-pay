@@ -45,6 +45,8 @@ boolean triggerBuild(String contextDirectory) {
     }
   }
   
+  return true
+
   if ( filesChangeCnt < 1 ) {
     echo('The changes do not require a build.')
     return false
@@ -84,7 +86,7 @@ node {
             }
           }
         } catch (e) {
-          echo("BUILD ${BUILD_CONFIG} ABORTED")
+          echo("BUILD ${BUILD_CONFIG} ABORTED " +  e.toString())
           error('Stopping early…')
         }
       }
@@ -103,7 +105,7 @@ node {
             }
           }
         } catch (e) {
-          echo("BUILD ${RUNTIME_BUILD_CONFIG} ABORTED")
+          echo("BUILD ${RUNTIME_BUILD_CONFIG} ABORTED " +  e.toString())
           error('Stopping early…')
         }
       }
@@ -125,7 +127,7 @@ node {
             }
           }
         } catch (e) {
-          echo("TAGGING ${RUNTIME_BUILD_CONFIG} ABORTED")
+          echo("TAGGING ${RUNTIME_BUILD_CONFIG} ABORTED " +  e.toString())
           error('Stopping early…')
         }        
       }
