@@ -44,8 +44,6 @@ boolean triggerBuild(String contextDirectory) {
       }
     }
   }
-  
-  return true
 
   if ( filesChangeCnt < 1 ) {
     echo('The changes do not require a build.')
