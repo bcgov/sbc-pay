@@ -21,6 +21,9 @@ def IMAGESTREAM_NAME = "${APP_NAME}-runtime"
 // The name of your deployment configuration; used to verify the deployment
 def DEPLOYMENT_CONFIG_NAME= "${APP_NAME}-runtime"
 
+DEV_NAMESPACE = "l4ygcl-dev"
+TOOLS_NAMESPACE = "l4ygcl-tools"
+
 @NonCPS
 boolean triggerBuild(String contextDirectory) {
   // Determine if code has changed within the source context directory.
@@ -79,11 +82,14 @@ node {
       script {
         try{
           openshift.withCluster() {
-            openshift.withProject() {
+            openshift.withProject(TOOLS_NAMESPACE) {
 
               echo "Building the application artifacts ..."
-              def build = openshift.selector("bc", "${BUILD_CONFIG}")
-              build.startBuild().logs("-f")
+              def build = openshift.selector("bc", "${BUILD_CONFIG}").startBuild()
+              build.untilEach {
+                return it.object().status.phase == "Running"
+              }
+              build.logs('-f')   
             }
           }
         } catch (e) {
@@ -98,11 +104,14 @@ node {
       script {
         try{
           openshift.withCluster() {
-            openshift.withProject() {
+            openshift.withProject(TOOLS_NAMESPACE) {
 
               echo "Building the ${RUNTIME_BUILD_CONFIG} image ..."
-              def build = openshift.selector("bc", "${RUNTIME_BUILD_CONFIG}")
-              build.startBuild().logs("-f")
+              def build = openshift.selector("bc", "${RUNTIME_BUILD_CONFIG}").startBuild()
+              build.untilEach {
+                return it.object().status.phase == "Running"
+              }
+              build.logs('-f') 
             }
           }
         } catch (e) {
@@ -116,7 +125,7 @@ node {
       script {
         try{
           openshift.withCluster() {
-            openshift.withProject() {
+            openshift.withProject(TOOLS_NAMESPACE) {
 
               echo "Tagging ${IMAGESTREAM_NAME} for deployment to ${TAG_NAMES[0]} ..."
 
