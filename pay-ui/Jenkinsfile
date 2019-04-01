@@ -44,15 +44,18 @@ boolean triggerBuild(String contextDirectory) {
       }
     }
   }
+  
+  //for testing 
+  return true
 
-  if ( filesChangeCnt < 1 ) {
+  /*if ( filesChangeCnt < 1 ) {
     echo('The changes do not require a build.')
     return false
   }
   else {
     echo('The changes require a build.')
     return true
-  } 
+  } */
 }
 
 // Get an image's hash tag
@@ -74,22 +77,18 @@ node {
 
     stage("Build ${BUILD_CONFIG}") {
       script {
-        waitUntil {
-          try{
-            openshift.withCluster() {
-              openshift.withProject() {
+        try{
+          openshift.withCluster() {
+            openshift.withProject() {
 
-                echo "Building the application artifacts ..."
-                def build = openshift.selector("bc", "${BUILD_CONFIG}")
-                build.startBuild().logs("-f")
-              }
+              echo "Building the application artifacts ..."
+              def build = openshift.selector("bc", "${BUILD_CONFIG}")
+              build.startBuild().logs("-f")
             }
-          } catch (e) {
-            echo("BUILD ${BUILD_CONFIG} ABORTED " +  e.toString())
-            error('Stopping early…')
-            input "Retry the job ?"
-            false
           }
+        } catch (e) {
+          echo("BUILD ${BUILD_CONFIG} ABORTED " +  e.toString())
+          error('Stopping early…')
         }
       }
     }
@@ -97,49 +96,41 @@ node {
     // Build the runtime image, if you are not using an off the shelf one.
     stage("Build ${RUNTIME_BUILD_CONFIG}") {
       script {
-        waitUntil {
-          try{
-            openshift.withCluster() {
-              openshift.withProject() {
+        try{
+          openshift.withCluster() {
+            openshift.withProject() {
 
-                echo "Building the ${RUNTIME_BUILD_CONFIG} image ..."
-                def build = openshift.selector("bc", "${RUNTIME_BUILD_CONFIG}")
-                build.startBuild().logs("-f")
-              }
+              echo "Building the ${RUNTIME_BUILD_CONFIG} image ..."
+              def build = openshift.selector("bc", "${RUNTIME_BUILD_CONFIG}")
+              build.startBuild().logs("-f")
             }
-          } catch (e) {
-            echo("BUILD ${RUNTIME_BUILD_CONFIG} ABORTED " +  e.toString())
-            error('Stopping early…')
-            input "Retry the job ?"
-            false
           }
+        } catch (e) {
+          echo("BUILD ${RUNTIME_BUILD_CONFIG} ABORTED " +  e.toString())
+          error('Stopping early…')
         }
       }
     }
 
     stage("Tagging Image ${TAG_NAMES[0]}") {
       script {
-        waitUntil {
-          try{
-            openshift.withCluster() {
-              openshift.withProject() {
+        try{
+          openshift.withCluster() {
+            openshift.withProject() {
 
-                echo "Tagging ${IMAGESTREAM_NAME} for deployment to ${TAG_NAMES[0]} ..."
+              echo "Tagging ${IMAGESTREAM_NAME} for deployment to ${TAG_NAMES[0]} ..."
 
-                // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
-                // Tag the images for deployment based on the image's hash
-                def IMAGE_HASH = getImageTagHash("${IMAGESTREAM_NAME}")
-                echo "IMAGE_HASH: ${IMAGE_HASH}"
-                openshift.tag("${IMAGESTREAM_NAME}@${IMAGE_HASH}", "${IMAGESTREAM_NAME}:${TAG_NAMES[0]}")
-              }
+              // Don't tag with BUILD_ID so the pruner can do it's job; it won't delete tagged images.
+              // Tag the images for deployment based on the image's hash
+              def IMAGE_HASH = getImageTagHash("${IMAGESTREAM_NAME}")
+              echo "IMAGE_HASH: ${IMAGE_HASH}"
+              openshift.tag("${IMAGESTREAM_NAME}@${IMAGE_HASH}", "${IMAGESTREAM_NAME}:${TAG_NAMES[0]}")
             }
-          } catch (e) {
-            echo("TAGGING ${RUNTIME_BUILD_CONFIG} ABORTED " +  e.toString())
-            error('Stopping early…')
-            input "Retry the job ?"
-            false
-          }    
-        }    
+          }
+        } catch (e) {
+          echo("TAGGING ${RUNTIME_BUILD_CONFIG} ABORTED " +  e.toString())
+          error('Stopping early…')
+        }        
       }
     }
   }
