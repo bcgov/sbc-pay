@@ -48,17 +48,15 @@ boolean triggerBuild(String contextDirectory) {
     }
   }
   
-  //for testing 
-  return true
 
-  /*if ( filesChangeCnt < 1 ) {
+  if ( filesChangeCnt < 1 ) {
     echo('The changes do not require a build.')
     return false
   }
   else {
     echo('The changes require a build.')
     return true
-  } */
+  } 
 }
 
 // Get an image's hash tag
