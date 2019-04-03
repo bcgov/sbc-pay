@@ -108,7 +108,7 @@ node {
       try {
         dir('tests/postman') {
 
-          sh 'npm install newman'
+          /*sh 'npm install newman'
 
           AUTH_URL = sh (
               script: 'oc describe configmap postman-testing-config | awk  -F  "=" \'/auth_url/{print $2}\'',
@@ -156,7 +156,7 @@ node {
               reportFiles: 'newman*.html',
               reportName: "API Test Report"
           ])
-          stash includes: 'newman/*.xml', name: 'pay-api-postman-tests'
+          stash includes: 'newman/*.xml', name: 'pay-api-postman-tests'*/
       } // end dir
       } catch (e) {
           echo("TESTING  in Postman ${BUILD_CONFIG} ABORTED " +  e.toString())

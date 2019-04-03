@@ -80,7 +80,7 @@ node {
   if( !triggerBuild(CONTEXT_DIRECTORY) ) {
     try {
         timeout(time: 1, unit: 'DAYS') {
-            input message: "Run pipeline?", id: "1234"//, submitter: 'admin,ljtrent-admin,thorwolpert-admin,rarmitag-admin,kialj876-edit,katiemcgoff-edit,waltermoar-admin'
+            input message: "Run pipeline?", id: "admin,pwei1018-admin,saravankumarpa-admin"
         }
     } catch (Exception e) {
         run_pipeline = false;
@@ -90,21 +90,13 @@ node {
   if( run_pipeline ) {
     stage("Build ${BUILD_CONFIG}") {
       script {
-        try{
-          openshift.withCluster() {
-            openshift.withProject(TOOLS_NAMESPACE) {
+        openshift.withCluster() {
+          openshift.withProject() {
 
-              echo "Building the application artifacts ..."
-              def build = openshift.selector("bc", "${BUILD_CONFIG}").startBuild()
-              build.untilEach {
-                return it.object().status.phase == "Running"
-              }
-              build.logs('-f')   
-            }
+            echo "Building the application artifacts ..."
+            def build = openshift.selector("bc", "${BUILD_CONFIG}")
+            build.startBuild().logs("-f")
           }
-        } catch (e) {
-          echo("BUILD ${BUILD_CONFIG} ABORTED " +  e.toString())
-          error('Stopping early…')
         }
       }
     }
