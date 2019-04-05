@@ -24,7 +24,7 @@ def init_tracer(service):
         service_name=service,
     )
 
-    # this call also sets opentracing.tracer 
+    # this call also sets opentracing.tracer
     return config.initialize_tracer()
 
 
