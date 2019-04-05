@@ -105,13 +105,12 @@ class PayBcService:
         print('Auth Header : {}'.format(basic_auth_encoded))
         logging.info('Auth Header : {}'.format(basic_auth_encoded))
         headers = {
-            "Authorization": "Basic {}".format(basic_auth_encoded),
+            "Authorization": "Basic {}".format('bjRWb3p0alNCTmZOV0lpMEtoeHUxZy4uOjJiei1TYzJxNXhtVU85blVPUkZvNmcuLg=='),
             "Content-Type": "application/x-www-form-urlencoded"
         }
 
         data = "grant_type=client_credentials"
         token_response = requests.post(token_url, data=data, headers=headers)
-        print('token_response : {}'.format(token_response.content))
         print('token_response : {}'.format(token_response.content))
 
         logging.info('token_response - logger- : {}'.format(token_response.content))
