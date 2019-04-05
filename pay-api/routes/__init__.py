@@ -8,7 +8,7 @@ api = Api(
     title='Payment API',
     version='1.0',
     description='The Core API for the Payment System',
-    prefix='/api/v1')
+    prefix='/pay-api/v1')
 
 
 def init_tracer(service):
@@ -39,7 +39,7 @@ from .status import api as status_api
 from .batch import api as batch_api
 
 api.add_namespace(ops_api, path='/ops')
-api.add_namespace(pay_api, path='/pay')
+api.add_namespace(pay_api, path='/payments')
 api.add_namespace(refund_api, path='/refund')
 api.add_namespace(status_api, path='/status')
 api.add_namespace(batch_api, path='/batch')

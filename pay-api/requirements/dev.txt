@@ -15,4 +15,4 @@ flake8-docstrings
 flake8-isort
 flake8-quotes
 pep8-naming
-requests
+

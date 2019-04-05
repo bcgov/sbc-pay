@@ -14,6 +14,7 @@ marshmallow
 marshmallow-sqlalchemy
 cx_Oracle
 pronouncing
+requests
 
 opentracing>=2,<3
 # We want something like: jaeger-client>=3.8,<4

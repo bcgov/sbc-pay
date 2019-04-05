@@ -109,3 +109,4 @@ venv.bak/
 *.ntvs*
 *.njsproj
 *.sln
+pay-web/node_modules
