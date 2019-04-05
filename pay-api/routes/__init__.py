@@ -37,11 +37,13 @@ from .pay import api as pay_api
 from .refund import api as refund_api
 from .status import api as status_api
 from .batch import api as batch_api
+from .invoice import api as invoice_api
 
 api.add_namespace(ops_api, path='/ops')
 api.add_namespace(pay_api, path='/payments')
 api.add_namespace(refund_api, path='/refund')
 api.add_namespace(status_api, path='/status')
 api.add_namespace(batch_api, path='/batch')
+api.add_namespace(invoice_api, path='/invoices')
 
 
