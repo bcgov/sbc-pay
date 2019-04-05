@@ -10,7 +10,7 @@ services:
 
   ui:
     build:
-      context: ./pay-web
+      context: ./pay-ui
       dockerfile: dockerfile
     ports:
       - 8080:8080

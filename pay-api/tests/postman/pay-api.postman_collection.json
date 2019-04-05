@@ -1,0 +1,114 @@
+{
+	"info": {
+		"_postman_id": "27f16a20-d259-4e84-927f-b8bf274c8adf",
+		"name": "pay",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "authenticate",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "a27660f6-b1e5-473c-8149-e5309b672fa7",
+						"exec": [
+							"var jsonData = pm.response.json();",
+							"pm.environment.set(\"token\", jsonData.access_token);",
+							"pm.environment.set(\"refresh_token\", jsonData.refresh_token);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"pay": {
+					"type": "basic",
+					"basic": [
+						{
+							"key": "username",
+							"value": "passcode",
+							"type": "string"
+						},
+						{
+							"key": "password",
+							"value": "ac8d3c7f-9469-431d-9c34-c5ec9ed04259",
+							"type": "string"
+						}
+					]
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "grant_type=client_credentials"
+				},
+				"url": {
+					"raw": "{{authurl}}/auth/realms/{{realm}}/protocol/openid-connect/token",
+					"host": [
+						"{{authurl}}"
+					],
+					"path": [
+						"auth",
+						"realms",
+						"{{realm}}",
+						"protocol",
+						"openid-connect",
+						"token"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "authentication-refresh",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "3ef30827-b3d6-4518-8dc5-afdc26a7681e",
+						"exec": [
+							"var jsonData = pm.response.json();",
+							"pm.environment.set(\"token\", jsonData.access_token);",
+							"pm.environment.set(\"refresh_token\", jsonData.refresh_token);"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "grant_type=refresh_token&client_id={{clientid}}&refresh_token={{refresh_token}}&client_secret={{client_secret}}"
+				},
+				"url": {
+					"raw": "{{authurl}}/auth/realms/{{realm}}/protocol/openid-connect/token",
+					"host": [
+						"{{authurl}}"
+					],
+					"path": [
+						"auth",
+						"realms",
+						"{{realm}}",
+						"protocol",
+						"openid-connect",
+						"token"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

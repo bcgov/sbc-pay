@@ -2,7 +2,7 @@
     "kind": "Template",
     "apiVersion": "v1",
     "metadata": {
-        "name": "pay-web-runtime",
+        "name": "pay-ui-runtime",
         "creationTimestamp": null
     },
     "objects": [
@@ -10,10 +10,10 @@
             "kind": "BuildConfig",
             "apiVersion": "v1",
             "metadata": {
-                "name": "pay-web-runtime",
+                "name": "pay-ui-runtime",
                 "creationTimestamp": null,
                 "labels": {
-                    "app": "pay-web-runtime"
+                    "app": "pay-ui-runtime"
                 }
             },
             "spec": {
@@ -34,7 +34,7 @@
                         {
                             "from": {
                                 "kind": "ImageStreamTag",
-                                "name": "pay-web:latest"
+                                "name": "pay-ui:latest"
                             },
                             "paths": [
                                 {
@@ -58,7 +58,7 @@
                 "output": {
                     "to": {
                         "kind": "ImageStreamTag",
-                        "name": "pay-web-runtime:latest"
+                        "name": "pay-ui-runtime:latest"
                     }
                 },
                 "resources": {},

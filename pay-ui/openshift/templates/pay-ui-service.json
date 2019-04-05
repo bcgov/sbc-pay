@@ -2,7 +2,7 @@
     "kind": "Template",
     "apiVersion": "v1",
     "metadata": {
-        "name": "pay-web",
+        "name": "pay-ui",
         "creationTimestamp": null
     },
     "objects": [
@@ -10,10 +10,10 @@
             "kind": "Service",
             "apiVersion": "v1",
             "metadata": {
-                "name": "pay-web",
+                "name": "pay-ui",
                 "creationTimestamp": null,
                 "labels": {
-                    "app": "pay-web",
+                    "app": "pay-ui",
                     "template": "caddy-dc"
                 }
             },
@@ -27,7 +27,7 @@
                     }
                 ],
                 "selector": {
-                    "deploymentconfig": "pay-web"
+                    "deploymentconfig": "pay-ui"
                 },
                 "type": "ClusterIP",
                 "sessionAffinity": "None"

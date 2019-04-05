@@ -1,5 +1,5 @@
 // Edit your app's name below 
-def APP_NAME = 'pay-web'
+def APP_NAME = 'pay-ui'
 
 // Edit your environment TAG names below
 def TAG_NAMES = ['dev', 'test', 'prod']
@@ -20,6 +20,9 @@ def IMAGESTREAM_NAME = "${APP_NAME}-runtime"
 
 // The name of your deployment configuration; used to verify the deployment
 def DEPLOYMENT_CONFIG_NAME= "${APP_NAME}-runtime"
+
+DEV_NAMESPACE = "l4ygcl-dev"
+TOOLS_NAMESPACE = "l4ygcl-tools"
 
 @NonCPS
 boolean triggerBuild(String contextDirectory) {
@@ -45,6 +48,7 @@ boolean triggerBuild(String contextDirectory) {
     }
   }
   
+
   if ( filesChangeCnt < 1 ) {
     echo('The changes do not require a build.')
     return false
@@ -70,21 +74,36 @@ String getImageTagHash(String imageName, String tag = "") {
 properties([[$class: 'BuildDiscarderProperty', strategy: [$class: 'LogRotator', artifactDaysToKeepStr: '', artifactNumToKeepStr: '', daysToKeepStr: '', numToKeepStr: '10']]])
 
 node {
-  if( triggerBuild(CONTEXT_DIRECTORY) ) {
+  def run_pipeline = true
 
+  // build wasn't triggered by changes so check with user
+  if( !triggerBuild(CONTEXT_DIRECTORY) ) {
+    try {
+        timeout(time: 1, unit: 'DAYS') {
+            input message: "Run pipeline?", id: "admin,pwei1018-admin,saravankumarpa-admin"//, submitter: 'admin,pwei1018-admin,saravankumarpa-admin'
+        }
+    } catch (Exception e) {
+        run_pipeline = false;
+    }
+  }
+
+  if( run_pipeline ) {
     stage("Build ${BUILD_CONFIG}") {
       script {
         try{
           openshift.withCluster() {
-            openshift.withProject() {
+            openshift.withProject(TOOLS_NAMESPACE) {
 
               echo "Building the application artifacts ..."
-              def build = openshift.selector("bc", "${BUILD_CONFIG}")
-              build.startBuild().logs("-f")
+              def build = openshift.selector("bc", "${BUILD_CONFIG}").startBuild()
+              build.untilEach {
+                return it.object().status.phase == "Running"
+              }
+              build.logs('-f')   
             }
           }
         } catch (e) {
-          echo("BUILD ${BUILD_CONFIG} ABORTED")
+          echo("BUILD ${BUILD_CONFIG} ABORTED " +  e.toString())
           error('Stopping early…')
         }
       }
@@ -95,15 +114,18 @@ node {
       script {
         try{
           openshift.withCluster() {
-            openshift.withProject() {
+            openshift.withProject(TOOLS_NAMESPACE) {
 
               echo "Building the ${RUNTIME_BUILD_CONFIG} image ..."
-              def build = openshift.selector("bc", "${RUNTIME_BUILD_CONFIG}")
-              build.startBuild().logs("-f")
+              def build = openshift.selector("bc", "${RUNTIME_BUILD_CONFIG}").startBuild()
+              build.untilEach {
+                return it.object().status.phase == "Running"
+              }
+              build.logs('-f') 
             }
           }
         } catch (e) {
-          echo("BUILD ${RUNTIME_BUILD_CONFIG} ABORTED")
+          echo("BUILD ${RUNTIME_BUILD_CONFIG} ABORTED " +  e.toString())
           error('Stopping early…')
         }
       }
@@ -113,7 +135,7 @@ node {
       script {
         try{
           openshift.withCluster() {
-            openshift.withProject() {
+            openshift.withProject(TOOLS_NAMESPACE) {
 
               echo "Tagging ${IMAGESTREAM_NAME} for deployment to ${TAG_NAMES[0]} ..."
 
@@ -125,7 +147,7 @@ node {
             }
           }
         } catch (e) {
-          echo("TAGGING ${RUNTIME_BUILD_CONFIG} ABORTED")
+          echo("TAGGING ${RUNTIME_BUILD_CONFIG} ABORTED " +  e.toString())
           error('Stopping early…')
         }        
       }

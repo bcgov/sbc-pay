@@ -83,7 +83,7 @@ node {
             }
           }
         } catch (e) {
-          echo("BUILD ${BUILD_CONFIG} ABORTED")
+          echo("BUILD ${BUILD_CONFIG} ABORTED " +  e.toString())
           error('Stopping early…')
         }
       }
@@ -91,9 +91,75 @@ node {
 
     stage("Testing ${BUILD_CONFIG}") {
       try {
-        echo "Testing ${BUILD_CONFIG} ..."
+        /*sh '''
+          pip install pip --upgrade
+          rm -r .eggs
+          pip install setuptools==28.8.0
+          pip install -r requirements/dev.txt
+          python setup.py test
+        '''*/
       } catch (e) {
-          echo("TESTING ${BUILD_CONFIG} ABORTED")
+          echo("TESTING ${BUILD_CONFIG} ABORTED " +  e.toString())
+          error('Stopping early…')
+      }
+    }
+
+    stage("Testing in Postman ${BUILD_CONFIG}") {
+      try {
+        dir('tests/postman') {
+
+          /*sh 'npm install newman'
+
+          AUTH_URL = sh (
+              script: 'oc describe configmap postman-testing-config | awk  -F  "=" \'/auth_url/{print $2}\'',
+              returnStdout: true
+          ).trim()
+
+          API_URL = sh (
+              script: 'oc describe configmap postman-testing-config | awk  -F  "=" \'/api_url/{print $2}\'',
+              returnStdout: true
+          ).trim()
+
+          REALM = sh (
+                script: 'oc describe configmap postman-testing-config | awk  -F  "=" \'/^realm/{print $2}\'',
+                returnStdout: true
+          ).trim()
+
+          CLIENT_SECRET    = sh (
+              script: 'oc describe configmap postman-testing-config  | awk  -F  "=" \'/^client_secret/{print $2}\'',
+              returnStdout: true
+          ).trim()
+
+          CLIENT_ID = sh (
+              script: 'oc describe configmap postman-testing-config  | awk  -F  "=" \'/^client_id/{print $2}\'',
+              returnStdout: true
+          ).trim()
+
+          USERNAME = sh (
+              script: 'oc describe configmap postman-testing-config  | awk  -F  "=" \'/^username/{print $2}\'',
+              returnStdout: true
+          ).trim()
+
+          PASSWORD = sh (
+              script: 'oc describe configmap postman-testing-config  | awk  -F  "=" \'/^password/{print $2}\'',
+              returnStdout: true
+          ).trim()
+
+          sh "./node_modules/newman/bin/newman.js run ./pay-api.postman_collection.json -r cli,junit,html -e postman_env.json --global-var 'password=${PASSWORD}'  --global-var 'client_secret=${CLIENT_SECRET}' --global-var 'url=${API_URL}' --global-var 'auth_url=${AUTH_URL}' --global-var 'client_id=${CLIENT_ID}' --global-var 'realm=${REALM}'"
+
+          junit 'newman/*.xml'
+          publishHTML (target: [
+              allowMissing: false,
+              alwaysLinkToLastBuild: false,
+              keepAll: true,
+              reportDir: 'newman',
+              reportFiles: 'newman*.html',
+              reportName: "API Test Report"
+          ])
+          stash includes: 'newman/*.xml', name: 'pay-api-postman-tests'*/
+      } // end dir
+      } catch (e) {
+          echo("TESTING  in Postman ${BUILD_CONFIG} ABORTED " +  e.toString())
           error('Stopping early…')
       }
     }
@@ -115,7 +181,7 @@ node {
             }
           }
         } catch (e) {
-          echo("TAGGIN ${BUILD_CONFIG}:${TAG_NAMES[0]} ABORTED")
+          echo("TAGGIN ${BUILD_CONFIG}:${TAG_NAMES[0]} ABORTED " +  e.toString())
           error('Stopping early…')
         }
       }
