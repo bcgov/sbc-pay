@@ -20,9 +20,9 @@ class PayBcService(OAuthService):
         token_response = token_response.json()
         access_token = token_response.get('access_token')
         party = self.create_party(access_token, invoice_request)
-        account = self.create_account(token_response, party)
-        site = self.create_site(token_response, account, invoice_request)
-        invoice = self.create_invoice(token_response, site, invoice_request)
+        account = self.create_account(access_token, party)
+        site = self.create_site(access_token, account, invoice_request)
+        invoice = self.create_invoice(access_token, site, invoice_request)
         print('>Inside create invoice')
         return invoice
 

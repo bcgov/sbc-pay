@@ -16,7 +16,8 @@ class OAuthService:
         print('data : {}'.format(data))
 
         response = requests.post(endpoint, data=data, headers=headers)
-        print('response : {}'.format(response))
+        print('response : {}'.format(response.text))
+        response.raise_for_status()
         print('>post')
         return response
 
