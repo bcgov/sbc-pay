@@ -1,4 +1,5 @@
 from util.enums import AuthHeaderType, ContentType
+import json
 
 import requests
 
@@ -11,6 +12,9 @@ class OAuthService:
             "Authorization": auth_header_type.value.format(token),
             "Content-Type": content_type.value
         }
+        if content_type == ContentType.JSON:
+            data = json.dumps(data)
+
         print('Endpoint : {}'.format(endpoint))
         print('headers : {}'.format(headers))
         print('data : {}'.format(data))
