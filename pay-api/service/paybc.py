@@ -39,33 +39,37 @@ class PayBcService(OAuthService):
     def create_party(self, access_token, invoice_request):
         print('<Creating party Record')
         party_url = self.paybc_base_url + '/cfs/parties/'
-        party = {
-            "customer_name": invoice_request.get('entity_name')
-        }
+        party = {}
+        party.customer_name = invoice_request.get('entity_name')
 
         party_response = self.post(party_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, party)
         print('>Creating party Record')
         return party_response.json()
 
     def create_account(self, access_token, party):
-        print('<Creating account Record')
+        print('<Creating account')
         account_url = self.paybc_base_url + '/cfs/parties/{}/accs/'.format(party.get('party_number'))
-        account = {
-            "party_number": party.get('party_number'),
-            "account_description": party.get('customer_name')
-        }
+        account = {}
+        account.party_number = party.get('party_number')
+        account.account_description = party.get('customer_name')
+
         account_response = self.post(account_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, account)
-        print('>Creating party Record')
+        print('>Creating account')
         return account_response.json()
 
     def create_site(self, access_token, account, invoice_request):
         print('<Creating site ')
         site_url = self.paybc_base_url + '/cfs/parties/{}/accs/sites/'.format(account.get('party_number'))
-        site = {
-            "party_number": account.get('party_number'),
-            "account_number": account.get('account_number'),
-            "site_name": invoice_request.get('entity_name'),
-        }
+        site = {}
+        site.party_number = account.get('party_number')
+        site.account_number = account.get('account_number')
+        site.site_name = invoice_request.get('entity_name')
+        site.city = invoice_request.get('city')
+        site.country = invoice_request.get('country')
+        site.customer_site_id = invoice_request.get('customer_site_id')
+        site.address_line_1 = invoice_request.get('address_line_1')
+        site.postal_code = invoice_request.get('postal_code')
+        site.province = invoice_request.get('province')
 
         site_response = self.post(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, site)
 
