@@ -61,7 +61,8 @@ class PayBcService(OAuthService):
 
     def create_site(self, access_token, account, invoice_request):
         print('<Creating site ')
-        site_url = self.paybc_base_url + '/cfs/parties/{}/accs/sites/'.format(account.get('party_number'))
+        site_url = self.paybc_base_url + '/cfs/parties/{}/accs/{}/sites/'.format(account.get('party_number'),
+                                                                                 account.get('account_number'))
         site = {
             "party_number" : account.get('party_number'),
             "account_number" : account.get('account_number'),
