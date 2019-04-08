@@ -3,7 +3,7 @@ from util.enums import AuthHeaderType, ContentType
 import requests
 
 
-class OAuthService():
+class OAuthService:
 
     def post(self, endpoint, token, auth_header_type: AuthHeaderType, content_type: ContentType, data):
         print('<post')

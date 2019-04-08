@@ -7,5 +7,5 @@ class AuthHeaderType(Enum):
 
 
 class ContentType(Enum):
-    JSON = 'application/json',
+    JSON = 'application/json'
     FORM_URL_ENCODED = 'application/x-www-form-urlencoded'

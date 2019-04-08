@@ -39,7 +39,6 @@ class PayBcService(OAuthService):
     def create_party(self, access_token, invoice_request):
         print('<Creating party Record')
         party_url = self.paybc_base_url + '/cfs/parties/'
-        print('party_url : {}'.format(party_url))
         party = {
             "customer_name": invoice_request.get('entity_name')
         }
@@ -109,11 +108,11 @@ class PayBcService(OAuthService):
         for index, li in enumerate(invoice_request.get('lineItems')):
             invoice.lines.append(
                 {
-                    'line_number': index,
-                    'memo_line_name': li.get('name'),
-                    'description': li.get('description'),
-                    'unit_price': li.get('amount'),
-                    'quantity': '1'
+                    "line_number": index,
+                    "memo_line_name": li.get('name'),
+                    "description": li.get('description'),
+                    "unit_price": li.get('amount'),
+                    "quantity": "1"
                 }
             )
 
