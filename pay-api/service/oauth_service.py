@@ -21,7 +21,7 @@ class OAuthService():
         return response
 
     def get(self):
-        
+
         pass
 
     def put(self):

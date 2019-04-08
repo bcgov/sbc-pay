@@ -38,7 +38,7 @@ class PayBcService(OAuthService):
 
     def create_party(self, access_token, invoice_request):
         print('<Creating party Record')
-        party_url = self.paybc_base_url + '/cfs/parties'
+        party_url = self.paybc_base_url + '/cfs/parties/'
         print('party_url : {}'.format(party_url))
         party = {
             "customer_name": invoice_request.get('entity_name')
