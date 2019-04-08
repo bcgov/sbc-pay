@@ -49,7 +49,7 @@ class PayBcService(OAuthService):
 
     def create_account(self, access_token, party):
         print('<Creating account Record')
-        account_url = self.paybc_base_url + '/cfs/parties/{}/accs'.format(party.get('party_number'))
+        account_url = self.paybc_base_url + '/cfs/parties/{}/accs/'.format(party.get('party_number'))
         account = {
             "party_number": party.get('party_number'),
             "account_description": party.get('customer_name')
@@ -60,7 +60,7 @@ class PayBcService(OAuthService):
 
     def create_site(self, access_token, account, invoice_request):
         print('<Creating site ')
-        site_url = self.paybc_base_url + '/cfs/parties/{}/accs/sites'.format(account.get('party_number'))
+        site_url = self.paybc_base_url + '/cfs/parties/{}/accs/sites/'.format(account.get('party_number'))
         site = {
             "party_number": account.get('party_number'),
             "account_number": account.get('account_number'),
@@ -74,7 +74,7 @@ class PayBcService(OAuthService):
 
     def create_contact(self, access_token, site, invoice_request):
         print('<Creating site contact')
-        contact_url = self.paybc_base_url + '/cfs/parties/{}/accs/sites/conts'.format(site.get('party_number'))
+        contact_url = self.paybc_base_url + '/cfs/parties/{}/accs/sites/conts/'.format(site.get('party_number'))
         contact = {
             "party_number": site.get('party_number'),
             "account_number": site.get('account_number'),
@@ -90,7 +90,7 @@ class PayBcService(OAuthService):
 
     def create_invoice(self, access_token, party, account, site, invoice_request):
         print('<Creating PayBC Invoice Record')
-        invoice_url = self.paybc_base_url + '/cfs/parties/{}/accs/{}/{}/invs'\
+        invoice_url = self.paybc_base_url + '/cfs/parties/{}/accs/{}/{}/invs/'\
             .format(site.get('party_number'), site.get('account_number'), site.get('site_number'))
         invoice = {
             "party_number": party.get('party_number'),
