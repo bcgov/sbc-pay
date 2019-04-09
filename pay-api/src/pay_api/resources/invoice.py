@@ -15,27 +15,41 @@
 
 Currently this only provides API versioning information
 """
-from flask import jsonify
 from flask_restplus import Namespace, Resource, cors
 
 from pay_api.utils.util import cors_preflight
+from pay_api.utils.dto import InvoiceDto
+
+import opentracing
+from flask_opentracing import FlaskTracing
+from flask import request
+
+from pay_api.services.paybc import PayBcService
+
+API = InvoiceDto.api
+invoice_request = InvoiceDto.invoice_request
+
+tracer = opentracing.tracer
+tracing = FlaskTracing(tracer)
+
+pay_bc = PayBcService()
 
 
-API = Namespace('invoices', description='Legal API Services - Invoices')
-
-
-@cors_preflight('GET')
-@API.route('/<string:identifier>')
-class Info(Resource):
+@cors_preflight('POST')
+@API.route("")
+class Invoice(Resource):
     """Meta information about the overall service."""
 
     @staticmethod
+    @API.doc('Creates invoice in payment system')
+    @API.expect(invoice_request, validate=True)
+    @API.response(201, 'Invoice created successfully')
+    @tracing.trace()
     @cors.crossdomain(origin='*')
-    def get(identifier):
-        """Return a JSON object with meta information about the Service."""
-        business = None  # Business.find_by_identifier(identifier)
-
-        if not business:
-            return jsonify({'message': f'{identifier} not found'}), 404
-
-        return jsonify(business=business.asdict())
+    def post():
+        request_json = request.get_json()
+        user_type = 'basic'  # TODO We will get this from token, hard-coding for now
+        if user_type == 'basic' and request_json.get('method_of_payment') == 'CC':
+            print('Paying with credit card')
+            pay_bc.create_payment_records(request_json)
+        return {"message": "Invoice created succesfully"}, 201

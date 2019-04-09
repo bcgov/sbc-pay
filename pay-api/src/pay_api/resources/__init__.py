@@ -21,9 +21,15 @@ All services have 2 defaults sets of endpoints:
 That are used to expose operational health information about the service, and meta information.
 """
 from flask_restplus import Api
+from jaeger_client import Config
+from flask_opentracing import FlaskTracing
 
 from .meta import API as META_API
 from .ops import API as OPS_API
+from .invoice import API as INVOICE_API
+from .batch import API as BATCH_API
+from .pay import API as PAY_API
+from .refund import API as REFUND_API
 
 
 # This will add the Authorize button to the swagger docs
@@ -44,7 +50,31 @@ API = Api(
     security=['apikey'],
     authorizations=AUTHORIZATIONS)
 
+
+def init_tracer(service):
+    config = Config(
+        config={  # usually read from some yaml config
+            'sampler': {
+                'type': 'const',
+                'param': 1,
+            },
+            'logging': True,
+            'reporter_batch_size': 1,
+        },
+        service_name=service,
+    )
+
+    # this call also sets opentracing.tracer
+    return config.initialize_tracer()
+
+
+# this call also sets opentracing.tracer
+tracer = init_tracer('pay_api')
+FlaskTracing(tracer)
+
 API.add_namespace(OPS_API, path='/ops')
 API.add_namespace(META_API, path='/meta')
-# API.add_namespace(BUSINESS_API, path='/businesses')
-# api.add_namespace(users_api, path='/users')
+API.add_namespace(BATCH_API, path='/batch')
+API.add_namespace(INVOICE_API, path='/invoices')
+API.add_namespace(PAY_API, path='/payments')
+API.add_namespace(REFUND_API, path='/refunds')
