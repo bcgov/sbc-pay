@@ -37,4 +37,4 @@ def test_meta_with_commit_hash(monkeypatch, client):
 
     rv = client.get('/api/v1/meta/info')
     assert rv.status_code == 200
-    assert rv.json == {'API': f'legal_api/{__version__}-{commit_hash}'}
+    assert rv.json == {'API': f'pay_api/{__version__}-{commit_hash}'}
