@@ -11,11 +11,5 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Provides the WSGI entry point for running the application
-"""
-from pay_api import create_app
 
-APPLICATION = create_app()
-
-if __name__ == "__main__":
-    APPLICATION.run()
+"""The Test-Suite used to ensure that the Model objects are working correctly."""

@@ -11,11 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Provides the WSGI entry point for running the application
+
+"""Tests to assure the version utilities.
+
+Test-Suite to ensure that the version utilities are working as expected.
 """
-from pay_api import create_app
+from pay_api import utils
+from pay_api.version import __version__
 
-APPLICATION = create_app()
 
-if __name__ == "__main__":
-    APPLICATION.run()
+def test_get_version():
+    """Assert thatThe version is returned correctly."""
+    rv = utils.run_version.get_run_version()
+    assert rv == __version__

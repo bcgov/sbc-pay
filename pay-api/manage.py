@@ -11,11 +11,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Provides the WSGI entry point for running the application
+
+"""Manage the database and some other items required to run the API
 """
+import logging
+
+from flask_script import Manager  # class for handling a set of commands
+from flask_migrate import Migrate, MigrateCommand
+
 from pay_api import create_app
+from pay_api.models import db
+# models included so that migrate can build the database migrations
+from pay_api import models  # pylint: disable=unused-import
 
-APPLICATION = create_app()
+APP = create_app()
+MIGRATE = Migrate(APP, db)
+MANAGER = Manager(APP)
 
-if __name__ == "__main__":
-    APPLICATION.run()
+MANAGER.add_command('db', MigrateCommand)
+
+if __name__ == '__main__':
+    logging.log(logging.INFO, 'Running the Manager')
+    MANAGER.run()
