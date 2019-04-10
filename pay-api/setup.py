@@ -16,7 +16,7 @@
 from glob import glob
 from os.path import basename, splitext
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 
 def read_requirements(filename):
@@ -44,7 +44,7 @@ def read(filepath):
     return content
 
 
-REQUIREMENTS = read_requirements('requirements.txt')
+REQUIREMENTS = read_requirements('requirements/prod.txt')
 
 setup(
     name="pay_api",

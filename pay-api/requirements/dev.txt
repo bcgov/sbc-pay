@@ -4,7 +4,6 @@
 # Testing
 pytest<4.1
 pytest-mock
-requests
 pyhamcrest
 
 # Lint and code style

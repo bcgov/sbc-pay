@@ -16,13 +16,14 @@
 """
 import logging
 
-from flask_script import Manager  # class for handling a set of commands
 from flask_migrate import Migrate, MigrateCommand
+from flask_script import Manager  # class for handling a set of commands
 
-from pay_api import create_app
-from pay_api.models import db
 # models included so that migrate can build the database migrations
 from pay_api import models  # pylint: disable=unused-import
+from pay_api import create_app
+from pay_api.models import db
+
 
 APP = create_app()
 MIGRATE = Migrate(APP, db)

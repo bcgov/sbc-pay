@@ -20,16 +20,18 @@ All services have 2 defaults sets of endpoints:
  - meta
 That are used to expose operational health information about the service, and meta information.
 """
-from flask_restplus import Api
-from jaeger_client import Config
 from flask_opentracing import FlaskTracing
+from flask_restplus import Api
 
+from .batch import API as BATCH_API
+from .invoice import API as INVOICE_API
 from .meta import API as META_API
 from .ops import API as OPS_API
-from .invoice import API as INVOICE_API
-from .batch import API as BATCH_API
 from .pay import API as PAY_API
 from .refund import API as REFUND_API
+
+
+# from jaeger_client import Config
 
 
 # This will add the Authorize button to the swagger docs
@@ -52,25 +54,26 @@ API = Api(
 
 
 def init_tracer(service):
-    config = Config(
-        config={  # usually read from some yaml config
-            'sampler': {
-                'type': 'const',
-                'param': 1,
-            },
-            'logging': True,
-            'reporter_batch_size': 1,
-        },
-        service_name=service,
-    )
+    """Initialize jaeger tracing."""
+#    config = Config(
+#        config={  # usually read from some yaml config
+#            'sampler': {
+#                'type': 'const',
+#               'param': 1,
+#            },
+#            'logging': True,
+#            'reporter_batch_size': 1,
+#        },
+#        service_name=service,
+#    )
 
     # this call also sets opentracing.tracer
-    return config.initialize_tracer()
+#   return config.initialize_tracer()
 
 
 # this call also sets opentracing.tracer
-tracer = init_tracer('pay_api')
-FlaskTracing(tracer)
+TRACER = init_tracer('pay_api')
+FlaskTracing(TRACER)
 
 API.add_namespace(OPS_API, path='/ops')
 API.add_namespace(META_API, path='/meta')

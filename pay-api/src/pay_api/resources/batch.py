@@ -1,3 +1,10 @@
+# Copyright © 2019 Province of British Columbia
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -8,18 +15,17 @@
 
 Currently this only provides API versioning information
 """
+from flask_restplus import Namespace, Resource
 
-from flask_restplus import Resource, Namespace
 
 API = Namespace('batch', description='Service - Batch Pay')
 
 
-@API.route("")
+@API.route('')
 class Batch(Resource):
+    """Information about the endpoint."""
 
     @staticmethod
     def get():
-        return {"message": "batch pay"}, 200
-
-
-
+        """Information about the endpoint."""
+        return {'message': 'batch pay'}, 200

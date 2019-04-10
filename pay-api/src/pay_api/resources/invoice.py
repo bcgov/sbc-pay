@@ -15,41 +15,41 @@
 
 Currently this only provides API versioning information
 """
-from flask_restplus import Namespace, Resource, cors
-
-from pay_api.utils.util import cors_preflight
-from pay_api.utils.dto import InvoiceDto
-
 import opentracing
-from flask_opentracing import FlaskTracing
 from flask import request
+from flask_opentracing import FlaskTracing
+from flask_restplus import Resource, cors
 
 from pay_api.services.paybc import PayBcService
+from pay_api.utils.dto import InvoiceDto
+from pay_api.utils.util import cors_preflight
+
 
 API = InvoiceDto.api
-invoice_request = InvoiceDto.invoice_request
+INVOICE_REQUEST = InvoiceDto.invoice_request
 
-tracer = opentracing.tracer
-tracing = FlaskTracing(tracer)
+TRACER = opentracing.tracer
+TRACING = FlaskTracing(TRACER)
 
-pay_bc = PayBcService()
+PAY_BC = PayBcService()
 
 
 @cors_preflight('POST')
-@API.route("")
+@API.route('')
 class Invoice(Resource):
-    """Meta information about the overall service."""
+    """Endpoint resource to manage invoices."""
 
     @staticmethod
     @API.doc('Creates invoice in payment system')
-    @API.expect(invoice_request, validate=True)
+    @API.expect(INVOICE_REQUEST, validate=True)
     @API.response(201, 'Invoice created successfully')
-    @tracing.trace()
+    @TRACING.trace()
     @cors.crossdomain(origin='*')
     def post():
+        """Return a new invoice in the payment system."""
         request_json = request.get_json()
         user_type = 'basic'  # TODO We will get this from token, hard-coding for now
-        if user_type == 'basic' and request_json.get('method_of_payment') == 'CC':
+        if user_type == 'basic' and request_json.get('method_of_payment', None) == 'CC':
             print('Paying with credit card')
-            pay_bc.create_payment_records(request_json)
-        return {"message": "Invoice created succesfully"}, 201
+            PAY_BC.create_payment_records(request_json)
+        return {'message': 'Invoice created successfully'}, 201

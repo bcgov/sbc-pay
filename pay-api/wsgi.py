@@ -15,6 +15,7 @@
 """
 from pay_api import create_app
 
+
 APPLICATION = create_app()
 
 if __name__ == "__main__":
