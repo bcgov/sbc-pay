@@ -11,12 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Provides the WSGI entry point for running the application
+
+"""Tests to assure the refund end-point.
+
+Test-Suite to ensure that the /refunds endpoint is working as expected.
 """
-from pay_api import create_app
 
 
-APPLICATION = create_app()
+def test_payments_get(client):
+    """Assert that the endpoint returns 200."""
+    rv = client.get('/api/v1/refunds')
 
-if __name__ == "__main__":
-    APPLICATION.run()
+    assert rv.status_code == 200

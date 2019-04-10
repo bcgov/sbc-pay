@@ -11,12 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Provides the WSGI entry point for running the application
+"""Meta information about the service.
+
+Currently this only provides API versioning information
 """
-from pay_api import create_app
+from flask_restplus import Namespace, Resource
 
 
-APPLICATION = create_app()
+API = Namespace('batch', description='Service - Batch Pay')
 
-if __name__ == "__main__":
-    APPLICATION.run()
+
+@API.route('')
+class Batch(Resource):
+    """Information about the endpoint."""
+
+    @staticmethod
+    def get():
+        """Information about the endpoint."""
+        return {'message': 'batch pay'}, 200
