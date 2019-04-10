@@ -39,9 +39,10 @@ class PayBcService(OAuthService):
         token_response = token_response.json()
         access_token = token_response.get('access_token')
         party = self.create_party(access_token, invoice_request)
-        account = self.create_account(access_token, party)
+        account = self.create_account(access_token, party, invoice_request)
         site = self.create_site(access_token, account, invoice_request)
-        invoice = self.create_invoice(access_token, party, account, site, invoice_request)
+        contact = self.create_contact(access_token, site, invoice_request)
+        invoice = self.create_invoice(access_token, site, contact, invoice_request)
         print('>Inside create invoice')
         return invoice
 
@@ -68,13 +69,13 @@ class PayBcService(OAuthService):
         print('>Creating party Record')
         return party_response.json()
 
-    def create_account(self, access_token, party):
+    def create_account(self, access_token, party, invoice_request):
         """Create account record in PayBC."""
         print('<Creating account')
         account_url = self.paybc_base_url + '/cfs/parties/{}/accs/'.format(party.get('party_number'))
         account: Dict[str, Any] = {
             'party_number': party.get('party_number'),
-            'account_description': party.get('customer_name')
+            'account_description': invoice_request.get('entity_legal_name')
         }
 
         account_response = self.post(account_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, account)
@@ -89,10 +90,9 @@ class PayBcService(OAuthService):
         site: Dict[str, Any] = {
             'party_number': account.get('party_number'),
             'account_number': account.get('account_number'),
-            'site_name': invoice_request.get('entity_name'),
+            'site_name': invoice_request.get('site_name'),
             'city': invoice_request.get('city'),
-            'country': invoice_request.get('country'),
-            'customer_site_id': invoice_request.get('customer_site_id'),
+            # 'country': invoice_request.get('country'),
             'address_line_1': invoice_request.get('address_line_1'),
             'postal_code': invoice_request.get('postal_code'),
             'province': invoice_request.get('province')
@@ -120,25 +120,28 @@ class PayBcService(OAuthService):
         print('>Creating site contact')
         return contact_response.json()
 
-    def create_invoice(self, access_token, party, account, site, invoice_request):
+    def create_invoice(self, access_token, site, contact, invoice_request):
         """Create invoice in PayBC."""
         print('<Creating PayBC Invoice Record')
         invoice_url = self.paybc_base_url + '/cfs/parties/{}/accs/{}/{}/invs/'\
             .format(site.get('party_number'), site.get('account_number'), site.get('site_number'))
-        invoice = dict(party_number=party.get('party_number'), party_name=party.get('party_name'),
-                       account_number=account.get('account_number'), account_name=account.get('account_name'),
-                       customer_site_id=site.get('customer_site_id'), site_number=site.get('site_number'),
-                       invoice_number='TEST123', total=invoice_request.get('total'),
-                       amount_due=invoice_request.get('total'), lines=[])
 
-        for index, line_item in enumerate(invoice_request.get('lineItems')):
+        invoice = dict(
+            batch_source=invoice_request.get('batch_source', None),
+            cust_trx_type=invoice_request.get('customer_transaction_type', None),
+            bill_to_customer_number=contact.get('contact_number', None),
+            site_number=site.get('site_number', None),
+            lines=[]
+        )
+
+        for line_item in invoice_request.get('lineItems'):
             invoice['lines'].append(
                 {
-                    'line_number': index,
-                    'memo_line_name': line_item.get('name'),
+                    'line_number': line_item.get('line_number'),
+                    'line_type': line_item.get('line_type'),
                     'description': line_item.get('description'),
-                    'unit_price': line_item.get('amount'),
-                    'quantity': '1'
+                    'unit_price': line_item.get('unit_price'),
+                    'quantity': line_item.get('quantity')
                 }
             )
 

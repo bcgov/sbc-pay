@@ -22,21 +22,25 @@ from unittest.mock import Mock, patch
 
 INVOICE_REQUEST_CC = {
     'entity_name': 'TEST',
+    'entity_legal_name': 'TEST',
+    'site_name': 'TEST',
     'contact_first_name': 'TEST',
     'contact_last_name': 'TEST',
     'address_line_1': 'TEST',
-    'city': 'Victoria',
+    'city': 'TEST',
     'province': 'BC',
-    'country': 'CA',
     'postal_code': 'A1A1A1',
-    'customer_site_id': '1',
-    'total': '10',
+    'batch_source': 'TEST',
+    'customer_transaction_type': 'TEST',
+    'total': '1000',
     'method_of_payment': 'CC',
     'lineItems': [
         {
-            'name': 'TEST',
+            'line_number': '1',
+            'line_type': 'LINE',
             'description': 'TEST',
-            'amount': '10'
+            'unit_price': '1000',
+            'quantity': '1'
         }
     ]
 }
@@ -44,21 +48,25 @@ INVOICE_REQUEST_CC = {
 
 INVOICE_REQUEST_NON_CC = {
     'entity_name': 'TEST',
+    'entity_legal_name': 'TEST',
+    'site_name': 'TEST',
     'contact_first_name': 'TEST',
     'contact_last_name': 'TEST',
     'address_line_1': 'TEST',
-    'city': 'Victoria',
+    'city': 'TEST',
     'province': 'BC',
-    'country': 'CA',
     'postal_code': 'A1A1A1',
-    'customer_site_id': '1',
-    'total': '10',
+    'batch_source': 'TEST',
+    'customer_transaction_type': 'TEST',
+    'total': '1000',
     'method_of_payment': 'BCOL',
     'lineItems': [
         {
-            'name': 'TEST',
+            'line_number': '1',
+            'line_type': 'LINE',
             'description': 'TEST',
-            'amount': '10'
+            'unit_price': '1000',
+            'quantity': '1'
         }
     ]
 }

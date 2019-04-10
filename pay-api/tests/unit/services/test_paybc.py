@@ -46,6 +46,7 @@ PARTY_NUMBER = '98523'
 ACCOUNT_NUMBER = '4099'
 SITE_NUMBER = '1234'
 INVOICE_NUMBER = '567890'
+CONTACT_NUMBER = '123456'
 
 PARTY = {
     'party_number': PARTY_NUMBER,
@@ -94,6 +95,15 @@ SITE = {
     'party_number': PARTY_NUMBER,
     'account_number': ACCOUNT_NUMBER,
     'site_number': SITE_NUMBER
+}
+
+CONTACT = {
+    'party_number': PARTY_NUMBER,
+    'account_number': ACCOUNT_NUMBER,
+    'site_number': SITE_NUMBER,
+    'contact_number': CONTACT_NUMBER,
+    'first_name': 'TEST',
+    'last_name': 'TEST'
 }
 
 INVOICE = {
@@ -162,7 +172,7 @@ def test_create_account():
     mock_post.return_value = Mock(status_code=201)
     mock_post.return_value.json.return_value = ACCOUNT
 
-    create_account_response = PayBcService().create_account(ACCESS_TOKEN, PARTY)
+    create_account_response = PayBcService().create_account(ACCESS_TOKEN, PARTY, INVOICE_REQUEST)
 
     mock_create_account.stop()
 
@@ -184,6 +194,21 @@ def test_create_site():
     assert create_site_response.get('site_number') == SITE_NUMBER
 
 
+def test_create_contact():
+    """Test create contact."""
+    mock_create_contact = patch('pay_api.services.oauth_service.requests.post')
+
+    mock_post = mock_create_contact.start()
+    mock_post.return_value = Mock(status_code=201)
+    mock_post.return_value.json.return_value = CONTACT
+
+    create_contact_response = PayBcService().create_contact(ACCESS_TOKEN, SITE, INVOICE_REQUEST)
+
+    mock_create_contact.stop()
+
+    assert create_contact_response.get('contact_number') == CONTACT_NUMBER
+
+
 def test_create_invoice():
     """Test create invoice."""
     mock_create_invoice = patch('pay_api.services.oauth_service.requests.post')
@@ -192,7 +217,7 @@ def test_create_invoice():
     mock_post.return_value = Mock(status_code=201)
     mock_post.return_value.json.return_value = INVOICE
 
-    create_invoice_response = PayBcService().create_invoice(ACCESS_TOKEN, PARTY, ACCOUNT, SITE, INVOICE_REQUEST)
+    create_invoice_response = PayBcService().create_invoice(ACCESS_TOKEN, SITE, CONTACT, INVOICE_REQUEST)
 
     mock_create_invoice.stop()
 
