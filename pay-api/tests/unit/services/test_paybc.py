@@ -115,18 +115,20 @@ INVOICE = {
     ]
 }
 
-
 ACCESS_TOKEN = 'C284Qa0McwFqPvfKa7pYGw..'
+
+
+ACCESS_TOKEN_RESPONSE = {
+    'access_token': ACCESS_TOKEN,
+    'token_type': 'bearer',
+    'expires_in': 3600
+}
 
 
 def test_get_token():
     """Test generate token for valid credentials."""
     mock_get_token = patch('pay_api.services.oauth_service.requests.post')
-    token = {
-        'access_token': ACCESS_TOKEN,
-        'token_type': 'bearer',
-        'expires_in': 3600
-    }
+    token = ACCESS_TOKEN_RESPONSE
     mock_get = mock_get_token.start()
     mock_get.return_value = Mock(status_code=201)
     mock_get.return_value.json.return_value = token

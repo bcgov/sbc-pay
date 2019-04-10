@@ -18,7 +18,7 @@ Currently this only provides API versioning information
 import opentracing
 from flask import request
 from flask_opentracing import FlaskTracing
-from flask_restplus import Resource, cors
+from flask_restplus import Resource
 
 from pay_api.services.paybc import PayBcService
 from pay_api.utils.dto import InvoiceDto
@@ -44,7 +44,6 @@ class Invoice(Resource):
     @API.expect(INVOICE_REQUEST, validate=True)
     @API.response(201, 'Invoice created successfully')
     @TRACING.trace()
-    @cors.crossdomain(origin='*')
     def post():
         """Return a new invoice in the payment system."""
         request_json = request.get_json()
@@ -52,4 +51,5 @@ class Invoice(Resource):
         if user_type == 'basic' and request_json.get('method_of_payment', None) == 'CC':
             print('Paying with credit card')
             PAY_BC.create_payment_records(request_json)
+
         return {'message': 'Invoice created successfully'}, 201

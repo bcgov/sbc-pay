@@ -34,7 +34,7 @@ python-dateutil==2.8.0
 python-dotenv==0.10.1
 python-editor==1.0.4
 python-jose==3.0.1
-pytz==2018.9
+pytz==2019.1
 requests==2.21.0
 rsa==4.0
 six==1.12.0

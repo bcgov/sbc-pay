@@ -26,6 +26,7 @@ class OAuthService:
     def post(endpoint, token, auth_header_type: AuthHeaderType, content_type: ContentType, data):
         """POST service."""
         print('<post')
+
         headers = {
             'Authorization': auth_header_type.value.format(token),
             'Content-Type': content_type.value

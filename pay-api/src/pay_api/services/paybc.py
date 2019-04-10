@@ -41,7 +41,7 @@ class PayBcService(OAuthService):
         party = self.create_party(access_token, invoice_request)
         account = self.create_account(access_token, party)
         site = self.create_site(access_token, account, invoice_request)
-        invoice = self.create_invoice(access_token, site, invoice_request)
+        invoice = self.create_invoice(access_token, party, account, site, invoice_request)
         print('>Inside create invoice')
         return invoice
 
