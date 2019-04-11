@@ -108,7 +108,7 @@ class PayBcService(OAuthService):
         """Create contact in PayBC."""
         print('<Creating site contact')
         contact_url = self.paybc_base_url + '/cfs/parties/{}/accs/{}/sites/{}/conts/'\
-            .format(site.get('party_number'), site.get('account_number', site.get('site_number')))
+            .format(site.get('party_number'), site.get('account_number'), site.get('site_number'))
         contact: Dict[str, Any] = {
             'party_number': site.get('party_number'),
             'account_number': site.get('account_number'),
