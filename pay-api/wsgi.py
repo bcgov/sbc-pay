@@ -16,7 +16,7 @@
 from pay_api import create_app
 
 
-APPLICATION = create_app()
+application = create_app()
 
 if __name__ == "__main__":
-    APPLICATION.run()
+    application.run()
