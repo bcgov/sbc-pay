@@ -92,10 +92,11 @@ class PayBcService(OAuthService):
             'account_number': account.get('account_number'),
             'site_name': invoice_request.get('site_name'),
             'city': invoice_request.get('city'),
-            # 'country': invoice_request.get('country'),
             'address_line_1': invoice_request.get('address_line_1'),
             'postal_code': invoice_request.get('postal_code'),
-            'province': invoice_request.get('province')
+            'province': invoice_request.get('province'),
+            'country': 'CA',
+            'customer_site_id': '1'
         }
 
         site_response = self.post(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, site)
