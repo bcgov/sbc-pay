@@ -127,7 +127,7 @@ class PayBcService(OAuthService):
     def create_invoice(self, access_token, site, contact, invoice_request):
         """Create invoice in PayBC."""
         print('<Creating PayBC Invoice Record')
-        invoice_url = self.paybc_base_url + '/cfs/parties/{}/accs/{}/{}/invs/'\
+        invoice_url = self.paybc_base_url + '/cfs/parties/{}/accs/{}/sites/{}/invs/'\
             .format(site.get('party_number'), site.get('account_number'), site.get('site_number'))
 
         invoice = dict(
