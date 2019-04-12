@@ -23,6 +23,7 @@ class InvoiceDto:
     invoice_line_item = api.model('InvoiceLineItem', {
         'line_number': fields.String(required=True, description='Line number'),
         'line_type': fields.String(required=True, description='Line type, LINE/TAX'),
+        'line_name': fields.String(required=True, description='Line name'),
         'description': fields.String(description='Line item description'),
         'unit_price': fields.String(required=True, description='Line item amount'),
         'quantity': fields.String(required=True, description='Line item quantity')
@@ -36,15 +37,18 @@ class InvoiceDto:
 
         'contact_first_name': fields.String(required=True, description='First Name of the contact person'),
         'contact_last_name': fields.String(required=True, description='Last Name of the contact person'),
+        'phone_number': fields.String(required=True, description='Phone number of the contact person'),
+        'email': fields.String(required=True, description='Email of the contact person'),
 
         'address_line_1': fields.String(required=True, description='Address Line of entity'),
         'city': fields.String(required=True, description='City of entity'),
         'province': fields.String(required=True, description='Province'),
-        # 'country': fields.String(required=True, description='Country'),
+        'country': fields.String(required=True, description='Country'),
         'postal_code': fields.String(required=True, description='Postal Code'),
+        'customer_site_id': fields.String(required=True, description='Customer Site ID ??'),
 
-        'batch_source': fields.String(required=True, description='Batch Source ??'),
-        'customer_transaction_type': fields.String(required=True, description='Customer Transaction Type ??'),
+        'batch_source': fields.String(required=True, description='Batch Source ?? MANUAL-OTHER'),
+        'customer_transaction_type': fields.String(required=True, description='Customer Transaction Type ?? WTS-INVOICE-STANDARD/WTS_CREDIT_MEMO/WTS_DEBIT_MEMO'),
 
         'total': fields.Integer(required=True, description='Total amount for invoice'),
         'method_of_payment': fields.String(description='Method of Payment. CC/BCOL..', default='CC'),

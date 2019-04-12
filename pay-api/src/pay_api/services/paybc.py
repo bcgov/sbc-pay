@@ -135,6 +135,8 @@ class PayBcService(OAuthService):
             cust_trx_type=invoice_request.get('customer_transaction_type', None),
             bill_to_customer_number=contact.get('contact_number', None),
             site_number=site.get('site_number', None), total=invoice_request.get('total'),
+            transaction_date='2019-04-12T07:00:00Z', gl_date='2019-04-12T07:00:00Z',
+            term_name='IMMEDIATE',
             lines=[]
         )
 
@@ -143,6 +145,7 @@ class PayBcService(OAuthService):
                 {
                     'line_number': line_item.get('line_number'),
                     'line_type': line_item.get('line_type'),
+                    'memo_line_name': line_item.get('line_name'),
                     'description': line_item.get('description'),
                     'unit_price': line_item.get('unit_price'),
                     'quantity': line_item.get('quantity')
