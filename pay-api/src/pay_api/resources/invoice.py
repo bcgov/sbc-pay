@@ -50,6 +50,11 @@ class Invoice(Resource):
         user_type = 'basic'  # TODO We will get this from token, hard-coding for now
         if user_type == 'basic' and request_json.get('method_of_payment', None) == 'CC':
             print('Paying with credit card')
-            PAY_BC.create_payment_records(request_json)
-
-        return {'message': 'Invoice created successfully'}, 201
+            invoice_response = PAY_BC.create_payment_records(request_json)
+            response_json = {
+                'paybc_reference_number' : invoice_response.get('pbc_ref_number'),
+                'invoice_number' : invoice_response.get('invoice_number')
+            }
+        else:
+            response_json = {'message': 'Invoice created successfully'}
+        return response_json, 201
