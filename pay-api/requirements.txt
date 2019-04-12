@@ -24,7 +24,7 @@ gunicorn==19.9.0
 idna==2.8
 itsdangerous==1.1.0
 jsonschema==3.0.1
-marshmallow-sqlalchemy==0.16.1
+marshmallow-sqlalchemy==0.16.2
 marshmallow==2.19.2
 opentracing==2.0.0
 psycopg2-binary==2.8.1

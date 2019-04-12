@@ -46,7 +46,7 @@ class InvoiceDto:
         'batch_source': fields.String(required=True, description='Batch Source ??'),
         'customer_transaction_type': fields.String(required=True, description='Customer Transaction Type ??'),
 
-        'total': fields.String(required=True, description='Total amount for invoice'),
+        'total': fields.Integer(required=True, description='Total amount for invoice'),
         'method_of_payment': fields.String(description='Method of Payment. CC/BCOL..', default='CC'),
         'lineItems': fields.List(fields.Nested(invoice_line_item))
 

@@ -134,7 +134,7 @@ class PayBcService(OAuthService):
             batch_source=invoice_request.get('batch_source', None),
             cust_trx_type=invoice_request.get('customer_transaction_type', None),
             bill_to_customer_number=contact.get('contact_number', None),
-            site_number=site.get('site_number', None),
+            site_number=site.get('site_number', None), total=invoice_request.get('total'),
             lines=[]
         )
 
