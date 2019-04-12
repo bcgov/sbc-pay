@@ -133,10 +133,11 @@ class PayBcService(OAuthService):
         invoice = dict(
             batch_source=invoice_request.get('batch_source', None),
             cust_trx_type=invoice_request.get('customer_transaction_type', None),
-            bill_to_customer_number=contact.get('contact_number', None),
-            site_number=site.get('site_number', None), total=invoice_request.get('total'),
+            # bill_to_customer_number=contact.get('contact_number', None),
+            # site_number=site.get('site_number', None), total=invoice_request.get('total'),
             transaction_date='2019-04-12T07:00:00Z', gl_date='2019-04-12T07:00:00Z',
             term_name='IMMEDIATE',
+            comments=invoice_request.get('comments', None),
             lines=[]
         )
 
