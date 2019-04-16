@@ -13,6 +13,7 @@
 # limitations under the License.
 """Service to manage PayBC communication."""
 import base64
+import datetime
 from typing import Any, Dict
 
 from pay_api.utils.enums import AuthHeaderType, ContentType
@@ -127,6 +128,8 @@ class PayBcService(OAuthService):
     def create_invoice(self, access_token, site, contact, invoice_request):
         """Create invoice in PayBC."""
         print('<Creating PayBC Invoice Record')
+        now = datetime.datetime.now()
+        curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
         invoice_url = self.paybc_base_url + '/cfs/parties/{}/accs/{}/sites/{}/invs/'\
             .format(site.get('party_number'), site.get('account_number'), site.get('site_number'))
 
@@ -135,7 +138,8 @@ class PayBcService(OAuthService):
             cust_trx_type=invoice_request.get('customer_transaction_type', None),
             # bill_to_customer_number=contact.get('contact_number', None),
             # site_number=site.get('site_number', None), total=invoice_request.get('total'),
-            transaction_date='2019-04-12T07:00:00Z', gl_date='2019-04-12T07:00:00Z',
+            transaction_date=curr_time,
+            gl_date=curr_time,
             term_name='IMMEDIATE',
             comments=invoice_request.get('comments', None),
             lines=[]
