@@ -115,9 +115,7 @@ class PayBcService(OAuthService):
             'account_number': site.get('account_number'),
             'site_number': site.get('site_number'),
             'first_name': invoice_request.get('contact_first_name'),
-            'last_name': invoice_request.get('contact_last_name'),
-            'phone_number': '1111111111',
-            'email': 'test@test.com'
+            'last_name': invoice_request.get('contact_last_name')
         }
 
         contact_response = self.post(contact_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, contact)

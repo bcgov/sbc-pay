@@ -34,7 +34,7 @@ TRACING = FlaskTracing(TRACER)
 PAY_BC = PayBcService()
 
 
-@cors_preflight('POST')
+@cors_preflight(['POST', 'OPTIONS'])
 @API.route('')
 class Invoice(Resource):
     """Endpoint resource to manage invoices."""
