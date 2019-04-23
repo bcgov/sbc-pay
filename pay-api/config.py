@@ -127,16 +127,14 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
         name=DB_NAME,
     )
 
-    # JWT OIDC settings
-    # JWT_OIDC_TEST_MODE will set jwt_manager to use
     JWT_OIDC_TEST_MODE = True
     JWT_OIDC_TEST_AUDIENCE = os.getenv('JWT_OIDC_AUDIENCE')
     JWT_OIDC_TEST_CLIENT_SECRET = os.getenv('JWT_OIDC_CLIENT_SECRET')
-    JWT_OIDC_TEST_ISSUER = 'https://sso-dev.pathfinder.gov.bc.ca/auth/realms/sbc'
+    JWT_OIDC_TEST_ISSUER = os.getenv('JWT_OIDC_ISSUER')
     JWT_OIDC_TEST_KEYS = {
         "keys": [
             {
-                "kid": "flask-jwt-oidc-test-client",
+                "kid": "sbc-auth-cron-job",
                 "kty": "RSA",
                 "alg": "RS256",
                 "use": "sig",
@@ -149,7 +147,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     JWT_OIDC_TEST_PRIVATE_KEY_JWKS = {
         "keys": [
             {
-                "kid": "flask-jwt-oidc-test-client",
+                "kid": "sbc-auth-cron-job",
                 "kty": "RSA",
                 "alg": "RS256",
                 "use": "sig",
@@ -181,6 +179,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     NrQw+2OdQACBJiEHsdZzAkBcsTk7frTH4yGx0VfHxXDPjfTj4wmD6gZIlcIr9lZg
     4H8UZcVFN95vEKxJiLRjAmj6g273pu9kK4ymXNEjWWJn
     -----END RSA PRIVATE KEY-----"""
+
 
     PAYBC_BASE_URL = os.getenv('PAYBC_BASE_URL', '')
     PAYBC_CLIENT_ID = os.getenv('PAYBC_CLIENT_ID', '')
