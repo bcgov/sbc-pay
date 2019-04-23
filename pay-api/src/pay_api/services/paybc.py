@@ -43,7 +43,7 @@ class PayBcService(OAuthService):
         account = self.create_account(access_token, party, invoice_request)
         site = self.create_site(access_token, account, invoice_request)
         contact = self.create_contact(access_token, site, invoice_request)
-        invoice = self.create_invoice(access_token, site, contact, invoice_request)
+        invoice = self.create_invoice(access_token, site, invoice_request)
         print('>Inside create invoice')
         return invoice
 
@@ -123,7 +123,7 @@ class PayBcService(OAuthService):
         print('>Creating site contact')
         return contact_response.json()
 
-    def create_invoice(self, access_token, site, contact, invoice_request):
+    def create_invoice(self, access_token, site, invoice_request):
         """Create invoice in PayBC."""
         print('<Creating PayBC Invoice Record')
         now = datetime.datetime.now()
