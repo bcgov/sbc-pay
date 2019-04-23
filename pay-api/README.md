@@ -2,9 +2,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
 
-# Application Name
-
-BC Registries Payment System
+# BC Registries Payment System
 
 ## Technology Stack Used
 * Python, Flask
@@ -48,6 +46,11 @@ See (openshift/Readme.md)
 ## Getting Help or Reporting an Issue
 
 To report bugs/issues/feature requests, please file an [issue](../../issues).
+
+
+## Code standards 
+
+Refer [checklist](https://github.com/bcgov/sbc-auth/wiki/API-code-review-checklist)
 
 ## How to Contribute
 
