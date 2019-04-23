@@ -20,6 +20,8 @@ from unittest.mock import Mock, patch
 
 from pay_api.services.paybc import PayBcService
 
+import unittest.mock
+
 
 INVOICE_REQUEST = {
     'entity_name': 'TEST',
@@ -217,7 +219,7 @@ def test_create_invoice():
     mock_post.return_value = Mock(status_code=201)
     mock_post.return_value.json.return_value = INVOICE
 
-    create_invoice_response = PayBcService().create_invoice(ACCESS_TOKEN, SITE, CONTACT, INVOICE_REQUEST)
+    create_invoice_response = PayBcService().create_invoice(ACCESS_TOKEN, SITE, INVOICE_REQUEST)
 
     mock_create_invoice.stop()
 

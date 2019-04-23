@@ -22,18 +22,11 @@ import os
 
 from .oauth_service import OAuthService
 
+from flask import current_app
+
 
 class PayBcService(OAuthService):
     """Service to manage PayBC communication."""
-
-    # TODO get all these values from config map
-    # client_id = current_app.config.get('PAYBC_CLIENT_ID') # 'n4VoztjSBNfNWIi0Khxu1g..'
-    # client_secret = current_app.config.get('PAYBC_CLIENT_SECRET') # '2bz-Sc2q5xmUO9nUORFo6g..'
-    # paybc_base_url = current_app.config.get('PAYBC_BASE_URL') # 'https://heineken.cas.gov.bc.ca:7019/ords/cas'
-
-    paybc_base_url = os.getenv('PAYBC_BASE_URL')
-    client_id = os.getenv('PAYBC_CLIENT_ID')
-    client_secret = os.getenv('PAYBC_CLIENT_SECRET')
 
     def __init__(self):
         """Init."""
@@ -48,7 +41,7 @@ class PayBcService(OAuthService):
         party = self.create_party(access_token, invoice_request)
         account = self.create_account(access_token, party, invoice_request)
         site = self.create_site(access_token, account, invoice_request)
-        contact = self.create_contact(access_token, site, invoice_request)
+        self.create_contact(access_token, site, invoice_request)
         invoice = self.create_invoice(access_token, site, invoice_request)
         print('>Inside create invoice')
         return invoice
@@ -56,8 +49,10 @@ class PayBcService(OAuthService):
     def get_token(self):
         """Generate oauth token from payBC which will be used for all communication."""
         print('<Getting token')
-        token_url = self.paybc_base_url + '/oauth/token'
-        basic_auth_encoded = base64.b64encode(bytes(self.client_id + ':' + self.client_secret, 'utf-8')).decode('utf-8')
+        token_url = current_app.config.get('PAYBC_BASE_URL') + '/oauth/token'
+        basic_auth_encoded = base64.b64encode(bytes(
+            current_app.config.get('PAYBC_CLIENT_ID') + ':' + current_app.config.get('PAYBC_CLIENT_SECRET'), 'utf-8')
+        ).decode('utf-8')
         data = 'grant_type=client_credentials'
         token_response = self.post(token_url, basic_auth_encoded, AuthHeaderType.BASIC, ContentType.FORM_URL_ENCODED,
                                    data)
@@ -67,7 +62,7 @@ class PayBcService(OAuthService):
     def create_party(self, access_token, invoice_request):
         """Create a party record in PayBC."""
         print('<Creating party Record')
-        party_url = self.paybc_base_url + '/cfs/parties/'
+        party_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/'
         party: Dict[str, Any] = {
             'customer_name': invoice_request.get('entity_name', None)
         }
@@ -79,7 +74,7 @@ class PayBcService(OAuthService):
     def create_account(self, access_token, party, invoice_request):
         """Create account record in PayBC."""
         print('<Creating account')
-        account_url = self.paybc_base_url + '/cfs/parties/{}/accs/'.format(party.get('party_number'), None)
+        account_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/'.format(party.get('party_number'), None)
         account: Dict[str, Any] = {
             'party_number': party.get('party_number'),
             'account_description': invoice_request.get('entity_legal_name', None)
@@ -92,7 +87,7 @@ class PayBcService(OAuthService):
     def create_site(self, access_token, account, invoice_request):
         """Create site in PayBC."""
         print('<Creating site ')
-        site_url = self.paybc_base_url + '/cfs/parties/{}/accs/{}/sites/'.format(account.get('party_number', None),
+        site_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/'.format(account.get('party_number', None),
                                                                                  account.get('account_number', None))
         site: Dict[str, Any] = {
             'party_number': account.get('party_number', None),
@@ -114,7 +109,7 @@ class PayBcService(OAuthService):
     def create_contact(self, access_token, site, invoice_request):
         """Create contact in PayBC."""
         print('<Creating site contact')
-        contact_url = self.paybc_base_url + '/cfs/parties/{}/accs/{}/sites/{}/conts/'\
+        contact_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/conts/'\
             .format(site.get('party_number', None), site.get('account_number', None), site.get('site_number', None))
         contact: Dict[str, Any] = {
             'party_number': site.get('party_number', None),
@@ -135,7 +130,7 @@ class PayBcService(OAuthService):
         print('<Creating PayBC Invoice Record')
         now = datetime.datetime.now()
         curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
-        invoice_url = self.paybc_base_url + '/cfs/parties/{}/accs/{}/sites/{}/invs/'\
+        invoice_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/'\
             .format(site.get('party_number', None), site.get('account_number', None), site.get('site_number', None))
 
         invoice = dict(

@@ -93,6 +93,11 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     JWT_OIDC_CLIENT_SECRET = os.getenv('JWT_OIDC_CLIENT_SECRET')
     JWT_OIDC_CACHING_ENABLED = os.getenv('JWT_OIDC_CACHING_ENABLED')
 
+    # PAYBC API Settings
+    PAYBC_BASE_URL = os.getenv('PAYBC_BASE_URL')
+    PAYBC_CLIENT_ID = os.getenv('PAYBC_CLIENT_ID')
+    PAYBC_CLIENT_SECRET = os.getenv('PAYBC_CLIENT_SECRET')
+
     TESTING = False
     DEBUG = False
 

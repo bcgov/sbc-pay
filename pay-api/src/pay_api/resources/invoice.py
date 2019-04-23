@@ -22,7 +22,6 @@ from pay_api.services.paybc import PayBcService
 from pay_api.utils.dto import InvoiceDto
 from pay_api.utils.util import cors_preflight
 
-
 API = InvoiceDto.api
 INVOICE_REQUEST = InvoiceDto.invoice_request
 
