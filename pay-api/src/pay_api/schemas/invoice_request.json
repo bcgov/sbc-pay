@@ -41,9 +41,9 @@
           "type": "string",
           "description": "Site name"
         },
-        "contact_email": {
+        "contact_number": {
           "type": "string",
-          "description": "Contact Email"
+          "description": "Contact Number"
         },
         "address_line_1": {
           "type": "string",

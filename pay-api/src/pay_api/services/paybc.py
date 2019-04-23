@@ -63,7 +63,7 @@ class PayBcService(OAuthService):
         print('<Creating party Record')
         party_url = self.paybc_base_url + '/cfs/parties/'
         party: Dict[str, Any] = {
-            'customer_name': invoice_request.get('entity_name')
+            'customer_name': invoice_request.get('entity_name', None)
         }
 
         party_response = self.post(party_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, party)
@@ -73,10 +73,10 @@ class PayBcService(OAuthService):
     def create_account(self, access_token, party, invoice_request):
         """Create account record in PayBC."""
         print('<Creating account')
-        account_url = self.paybc_base_url + '/cfs/parties/{}/accs/'.format(party.get('party_number'))
+        account_url = self.paybc_base_url + '/cfs/parties/{}/accs/'.format(party.get('party_number'), None)
         account: Dict[str, Any] = {
             'party_number': party.get('party_number'),
-            'account_description': invoice_request.get('entity_legal_name')
+            'account_description': invoice_request.get('entity_legal_name', None)
         }
 
         account_response = self.post(account_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, account)
@@ -86,18 +86,18 @@ class PayBcService(OAuthService):
     def create_site(self, access_token, account, invoice_request):
         """Create site in PayBC."""
         print('<Creating site ')
-        site_url = self.paybc_base_url + '/cfs/parties/{}/accs/{}/sites/'.format(account.get('party_number'),
-                                                                                 account.get('account_number'))
+        site_url = self.paybc_base_url + '/cfs/parties/{}/accs/{}/sites/'.format(account.get('party_number', None),
+                                                                                 account.get('account_number', None))
         site: Dict[str, Any] = {
-            'party_number': account.get('party_number'),
-            'account_number': account.get('account_number'),
-            'site_name': invoice_request.get('site_name'),
-            'city': invoice_request.get('city'),
-            'address_line_1': invoice_request.get('address_line_1'),
-            'postal_code': invoice_request.get('postal_code'),
-            'province': invoice_request.get('province'),
-            'country': 'CA',
-            'customer_site_id': '1'
+            'party_number': account.get('party_number', None),
+            'account_number': account.get('account_number', None),
+            'site_name': invoice_request.get('site_name', None),
+            'city': invoice_request.get('city', None),
+            'address_line_1': invoice_request.get('address_line_1', None),
+            'postal_code': invoice_request.get('postal_code', None),
+            'province': invoice_request.get('province', None),
+            'country': invoice_request.get('country', None),
+            'customer_site_id': invoice_request.get('customer_site_id', None)
         }
 
         site_response = self.post(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, site)
@@ -109,14 +109,14 @@ class PayBcService(OAuthService):
         """Create contact in PayBC."""
         print('<Creating site contact')
         contact_url = self.paybc_base_url + '/cfs/parties/{}/accs/{}/sites/{}/conts/'\
-            .format(site.get('party_number'), site.get('account_number'), site.get('site_number'))
+            .format(site.get('party_number', None), site.get('account_number', None), site.get('site_number', None))
         contact: Dict[str, Any] = {
-            'party_number': site.get('party_number'),
-            'account_number': site.get('account_number'),
-            'site_number': site.get('site_number'),
-            'first_name': invoice_request.get('contact_first_name'),
-            'last_name': invoice_request.get('contact_last_name'),
-            'email': invoice_request.get('contact_email')
+            'party_number': site.get('party_number', None),
+            'account_number': site.get('account_number', None),
+            'site_number': site.get('site_number', None),
+            'first_name': invoice_request.get('contact_first_name', None),
+            'last_name': invoice_request.get('contact_last_name', None),
+            'phone_number': invoice_request.get('contact_number', None)
         }
 
         contact_response = self.post(contact_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, contact)
@@ -130,7 +130,7 @@ class PayBcService(OAuthService):
         now = datetime.datetime.now()
         curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
         invoice_url = self.paybc_base_url + '/cfs/parties/{}/accs/{}/sites/{}/invs/'\
-            .format(site.get('party_number'), site.get('account_number'), site.get('site_number'))
+            .format(site.get('party_number', None), site.get('account_number', None), site.get('site_number', None))
 
         invoice = dict(
             batch_source=invoice_request.get('batch_source', None),
@@ -147,12 +147,12 @@ class PayBcService(OAuthService):
         for line_item in invoice_request.get('lineItems'):
             invoice['lines'].append(
                 {
-                    'line_number': line_item.get('line_number'),
-                    'line_type': line_item.get('line_type'),
-                    'memo_line_name': line_item.get('line_name'),
-                    'description': line_item.get('description'),
-                    'unit_price': line_item.get('unit_price'),
-                    'quantity': line_item.get('quantity')
+                    'line_number': line_item.get('line_number', None),
+                    'line_type': line_item.get('line_type', None),
+                    'memo_line_name': line_item.get('line_name', None),
+                    'description': line_item.get('description', None),
+                    'unit_price': line_item.get('unit_price', None),
+                    'quantity': line_item.get('quantity', None)
                 }
             )
 
