@@ -83,13 +83,6 @@ class _Config(object):  # pylint: disable=too-few-public-methods
         port=int(DB_PORT),
         name=DB_NAME,
     )
-    # ORACLE - LEGACY NRO NAMESDB
-    NRO_USER = os.getenv('NRO_USER', '')
-    NRO_SCHEMA = os.getenv('NRO_SCHEMA', None)
-    NRO_PASSWORD = os.getenv('NRO_PASSWORD', '')
-    NRO_DB_NAME = os.getenv('NRO_DB_NAME', '')
-    NRO_HOST = os.getenv('NRO_HOST', '')
-    NRO_PORT = int(os.getenv('NRO_PORT', '1521'))
 
     # JWT_OIDC Settings
     JWT_OIDC_WELL_KNOWN_CONFIG = os.getenv('JWT_OIDC_WELL_KNOWN_CONFIG')
@@ -99,6 +92,11 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     JWT_OIDC_AUDIENCE = os.getenv('JWT_OIDC_AUDIENCE')
     JWT_OIDC_CLIENT_SECRET = os.getenv('JWT_OIDC_CLIENT_SECRET')
     JWT_OIDC_CACHING_ENABLED = os.getenv('JWT_OIDC_CACHING_ENABLED')
+
+    # PAYBC API Settings
+    PAYBC_BASE_URL = os.getenv('PAYBC_BASE_URL')
+    PAYBC_CLIENT_ID = os.getenv('PAYBC_CLIENT_ID')
+    PAYBC_CLIENT_SECRET = os.getenv('PAYBC_CLIENT_SECRET')
 
     TESTING = False
     DEBUG = False

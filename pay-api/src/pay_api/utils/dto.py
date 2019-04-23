@@ -37,7 +37,7 @@ class InvoiceDto:
 
         'contact_first_name': fields.String(required=True, description='First Name of the contact person'),
         'contact_last_name': fields.String(required=True, description='Last Name of the contact person'),
-        'contact_email': fields.String(required=True, description='Email of the contact person'),
+        'contact_number': fields.String(required=True, description='Contact Number of the contact person'),
 
         'address_line_1': fields.String(required=True, description='Address Line of entity'),
         'city': fields.String(required=True, description='City of entity'),

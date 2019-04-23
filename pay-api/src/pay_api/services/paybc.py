@@ -18,6 +18,8 @@ from typing import Any, Dict
 
 from pay_api.utils.enums import AuthHeaderType, ContentType
 
+from flask import current_app
+
 from .oauth_service import OAuthService
 
 
@@ -25,9 +27,9 @@ class PayBcService(OAuthService):
     """Service to manage PayBC communication."""
 
     # TODO get all these values from config map
-    client_id = 'n4VoztjSBNfNWIi0Khxu1g..'
-    client_secret = '2bz-Sc2q5xmUO9nUORFo6g..'
-    paybc_base_url = 'https://heineken.cas.gov.bc.ca:7019/ords/cas'
+    client_id = current_app.config.get('PAYBC_CLIENT_ID') # 'n4VoztjSBNfNWIi0Khxu1g..'
+    client_secret = current_app.config.get('PAYBC_CLIENT_SECRET') # '2bz-Sc2q5xmUO9nUORFo6g..'
+    paybc_base_url = current_app.config.get('PAYBC_BASE_URL') # 'https://heineken.cas.gov.bc.ca:7019/ords/cas'
 
     def __init__(self):
         """Init."""

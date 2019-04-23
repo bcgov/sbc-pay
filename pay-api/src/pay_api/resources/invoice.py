@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Meta information about the service.
-
-Currently this only provides API versioning information
+"""Resource for Invoice related endpoints
 """
 import opentracing
 from flask import request
