@@ -47,7 +47,8 @@ class InvoiceDto:
         'customer_site_id': fields.String(required=True, description='Customer Site ID ??'),
 
         'batch_source': fields.String(required=True, description='Batch Source ?? MANUAL-OTHER'),
-        'customer_transaction_type': fields.String(required=True, description='Customer Transaction Type ?? WTS-INVOICE-STANDARD/WTS_CREDIT_MEMO/WTS_DEBIT_MEMO'),
+        'customer_transaction_type': fields.String(required=True,
+                                                   description='Customer Transaction Type '),
 
         # 'total': fields.Integer(required=True, description='Total amount for invoice'),
         'comments': fields.String(required=True, description='Invoice Comments'),

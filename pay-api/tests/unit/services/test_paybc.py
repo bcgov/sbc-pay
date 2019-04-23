@@ -20,8 +20,6 @@ from unittest.mock import Mock, patch
 
 from pay_api.services.paybc import PayBcService
 
-import unittest.mock
-
 
 INVOICE_REQUEST = {
     'entity_name': 'TEST',

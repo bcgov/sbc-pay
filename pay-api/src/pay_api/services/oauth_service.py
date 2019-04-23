@@ -16,6 +16,8 @@ import json
 
 import requests
 
+from flask import current_app
+
 from pay_api.utils.enums import AuthHeaderType, ContentType
 
 
@@ -25,7 +27,7 @@ class OAuthService:
     @staticmethod
     def post(endpoint, token, auth_header_type: AuthHeaderType, content_type: ContentType, data):
         """POST service."""
-        print('<post')
+        current_app.logger.debug('<post')
 
         headers = {
             'Authorization': auth_header_type.value.format(token),
@@ -34,12 +36,12 @@ class OAuthService:
         if content_type == ContentType.JSON:
             data = json.dumps(data)
 
-        print('Endpoint : {}'.format(endpoint))
-        print('headers : {}'.format(headers))
-        print('data : {}'.format(data))
+        current_app.logger.debug('Endpoint : {}'.format(endpoint))
+        current_app.logger.debug('headers : {}'.format(headers))
+        current_app.logger.debug('data : {}'.format(data))
 
         response = requests.post(endpoint, data=data, headers=headers)
-        print('response : {}'.format(response.text))
+        current_app.logger.info('response : {}'.format(response.text))
         response.raise_for_status()
-        print('>post')
+        current_app.logger.debug('>post')
         return response

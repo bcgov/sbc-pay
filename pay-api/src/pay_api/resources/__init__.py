@@ -31,9 +31,6 @@ from .pay import API as PAY_API
 from .refund import API as REFUND_API
 
 
-# from jaeger_client import Config
-
-
 # This will add the Authorize button to the swagger docs
 # TODO oauth2 & openid may not yet be supported by restplus <- check on this
 AUTHORIZATIONS = {
@@ -52,28 +49,6 @@ API = Api(
     security=['apikey'],
     authorizations=AUTHORIZATIONS)
 
-
-def init_tracer(service):
-    """Initialize jaeger tracing."""
-#    config = Config(
-#        config={  # usually read from some yaml config
-#            'sampler': {
-#                'type': 'const',
-#               'param': 1,
-#            },
-#            'logging': True,
-#            'reporter_batch_size': 1,
-#        },
-#        service_name=service,
-#    )
-
-    # this call also sets opentracing.tracer
-#   return config.initialize_tracer()
-
-
-# this call also sets opentracing.tracer
-TRACER = init_tracer('pay_api')
-FlaskTracing(TRACER)
 
 API.add_namespace(OPS_API, path='/ops')
 API.add_namespace(META_API, path='/meta')

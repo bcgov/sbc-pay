@@ -182,6 +182,9 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     4H8UZcVFN95vEKxJiLRjAmj6g273pu9kK4ymXNEjWWJn
     -----END RSA PRIVATE KEY-----"""
 
+    PAYBC_BASE_URL = os.getenv('PAYBC_BASE_URL', '')
+    PAYBC_CLIENT_ID = os.getenv('PAYBC_CLIENT_ID', '')
+    PAYBC_CLIENT_SECRET = os.getenv('PAYBC_CLIENT_SECRET', '')
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
     """Production environment configuration."""

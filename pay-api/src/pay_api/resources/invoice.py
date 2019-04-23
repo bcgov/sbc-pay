@@ -11,16 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Resource for Invoice related endpoints
-"""
+"""Resource for Invoice related endpoints."""
 import opentracing
-from flask import request
+from flask import request, current_app
 from flask_opentracing import FlaskTracing
 from flask_restplus import Resource
 
 from pay_api.services.paybc import PayBcService
 from pay_api.utils.dto import InvoiceDto
 from pay_api.utils.util import cors_preflight
+
 
 API = InvoiceDto.api
 INVOICE_REQUEST = InvoiceDto.invoice_request
@@ -46,7 +46,7 @@ class Invoice(Resource):
         request_json = request.get_json()
         user_type = 'basic'  # TODO We will get this from token, hard-coding for now
         if user_type == 'basic' and request_json.get('method_of_payment', None) == 'CC':
-            print('Paying with credit card')
+            current_app.logger.debug('Paying with credit card')
             invoice_response = PAY_BC.create_payment_records(request_json)
             response_json = {
                 'paybc_reference_number': invoice_response.get('pbc_ref_number', None),
