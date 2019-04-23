@@ -135,90 +135,97 @@ ACCESS_TOKEN_RESPONSE = {
 }
 
 
-def test_get_token():
+def test_get_token(app):
     """Test generate token for valid credentials."""
-    mock_get_token = patch('pay_api.services.oauth_service.requests.post')
-    token = ACCESS_TOKEN_RESPONSE
-    mock_get = mock_get_token.start()
-    mock_get.return_value = Mock(status_code=201)
-    mock_get.return_value.json.return_value = token
+    with app.app_context():
 
-    get_token_response = PayBcService().get_token()
+        mock_get_token = patch('pay_api.services.oauth_service.requests.post')
+        token = ACCESS_TOKEN_RESPONSE
+        mock_get = mock_get_token.start()
+        mock_get.return_value = Mock(status_code=201)
+        mock_get.return_value.json.return_value = token
 
-    mock_get_token.stop()
+        get_token_response = PayBcService().get_token()
 
-    assert get_token_response.json().get('access_token') == ACCESS_TOKEN
+        mock_get_token.stop()
+
+        assert get_token_response.json().get('access_token') == ACCESS_TOKEN
 
 
-def test_create_party():
+def test_create_party(app):
     """Test Create party."""
-    mock_create_party = patch('pay_api.services.oauth_service.requests.post')
-    mock_post = mock_create_party.start()
-    mock_post.return_value = Mock(status_code=201)
-    mock_post.return_value.json.return_value = PARTY
+    with app.app_context():
+        mock_create_party = patch('pay_api.services.oauth_service.requests.post')
+        mock_post = mock_create_party.start()
+        mock_post.return_value = Mock(status_code=201)
+        mock_post.return_value.json.return_value = PARTY
 
-    create_party_response = PayBcService().create_party(ACCESS_TOKEN, INVOICE_REQUEST)
+        create_party_response = PayBcService().create_party(ACCESS_TOKEN, INVOICE_REQUEST)
 
-    mock_create_party.stop()
+        mock_create_party.stop()
 
-    assert create_party_response.get('party_number') == PARTY_NUMBER
+        assert create_party_response.get('party_number') == PARTY_NUMBER
 
 
-def test_create_account():
+def test_create_account(app):
     """Test create account."""
-    mock_create_account = patch('pay_api.services.oauth_service.requests.post')
+    with app.app_context():
+        mock_create_account = patch('pay_api.services.oauth_service.requests.post')
 
-    mock_post = mock_create_account.start()
-    mock_post.return_value = Mock(status_code=201)
-    mock_post.return_value.json.return_value = ACCOUNT
+        mock_post = mock_create_account.start()
+        mock_post.return_value = Mock(status_code=201)
+        mock_post.return_value.json.return_value = ACCOUNT
 
-    create_account_response = PayBcService().create_account(ACCESS_TOKEN, PARTY, INVOICE_REQUEST)
+        create_account_response = PayBcService().create_account(ACCESS_TOKEN, PARTY, INVOICE_REQUEST)
 
-    mock_create_account.stop()
+        mock_create_account.stop()
 
-    assert create_account_response.get('account_number') == ACCOUNT_NUMBER
+        assert create_account_response.get('account_number') == ACCOUNT_NUMBER
 
 
-def test_create_site():
+def test_create_site(app):
     """Test create site."""
-    mock_create_site = patch('pay_api.services.oauth_service.requests.post')
+    with app.app_context():
+        mock_create_site = patch('pay_api.services.oauth_service.requests.post')
 
-    mock_post = mock_create_site.start()
-    mock_post.return_value = Mock(status_code=201)
-    mock_post.return_value.json.return_value = SITE
+        mock_post = mock_create_site.start()
+        mock_post.return_value = Mock(status_code=201)
+        mock_post.return_value.json.return_value = SITE
 
-    create_site_response = PayBcService().create_site(ACCESS_TOKEN, ACCOUNT, INVOICE_REQUEST)
+        create_site_response = PayBcService().create_site(ACCESS_TOKEN, ACCOUNT, INVOICE_REQUEST)
 
-    mock_create_site.stop()
+        mock_create_site.stop()
 
-    assert create_site_response.get('site_number') == SITE_NUMBER
+        assert create_site_response.get('site_number') == SITE_NUMBER
 
 
-def test_create_contact():
+def test_create_contact(app):
     """Test create contact."""
-    mock_create_contact = patch('pay_api.services.oauth_service.requests.post')
+    with app.app_context():
+        mock_create_contact = patch('pay_api.services.oauth_service.requests.post')
 
-    mock_post = mock_create_contact.start()
-    mock_post.return_value = Mock(status_code=201)
-    mock_post.return_value.json.return_value = CONTACT
+        mock_post = mock_create_contact.start()
+        mock_post.return_value = Mock(status_code=201)
+        mock_post.return_value.json.return_value = CONTACT
 
-    create_contact_response = PayBcService().create_contact(ACCESS_TOKEN, SITE, INVOICE_REQUEST)
+        create_contact_response = PayBcService().create_contact(ACCESS_TOKEN, SITE, INVOICE_REQUEST)
 
-    mock_create_contact.stop()
+        mock_create_contact.stop()
 
-    assert create_contact_response.get('contact_number') == CONTACT_NUMBER
+        assert create_contact_response.get('contact_number') == CONTACT_NUMBER
 
 
-def test_create_invoice():
+def test_create_invoice(app):
     """Test create invoice."""
-    mock_create_invoice = patch('pay_api.services.oauth_service.requests.post')
+    with app.app_context():
+        mock_create_invoice = patch('pay_api.services.oauth_service.requests.post')
 
-    mock_post = mock_create_invoice.start()
-    mock_post.return_value = Mock(status_code=201)
-    mock_post.return_value.json.return_value = INVOICE
+        mock_post = mock_create_invoice.start()
+        mock_post.return_value = Mock(status_code=201)
+        mock_post.return_value.json.return_value = INVOICE
 
-    create_invoice_response = PayBcService().create_invoice(ACCESS_TOKEN, SITE, INVOICE_REQUEST)
+        create_invoice_response = PayBcService().create_invoice(ACCESS_TOKEN, SITE, INVOICE_REQUEST)
 
-    mock_create_invoice.stop()
+        mock_create_invoice.stop()
 
-    assert create_invoice_response.get('invoice_number') == INVOICE_NUMBER
+        assert create_invoice_response.get('invoice_number') == INVOICE_NUMBER

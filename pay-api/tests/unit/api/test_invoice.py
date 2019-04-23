@@ -72,7 +72,7 @@ INVOICE_REQUEST_NON_CC = {
 }
 
 
-def test_paybc_invoice_for_credit_card(client):
+def test_paybc_invoice_for_credit_card(client, app):
     """Assert that the endpoint returns 201."""
     mock_responses = patch('pay_api.services.oauth_service.requests.post')
     mock_get = mock_responses.start()
@@ -81,11 +81,10 @@ def test_paybc_invoice_for_credit_card(client):
 
     rv = client.post('/api/v1/invoices', data=json.dumps(INVOICE_REQUEST_CC), content_type='application/json')
     mock_responses.stop()
-
     assert rv.status_code == 201
 
 
-def test_paybc_invoice_for_non_credit_card(client):
+def test_paybc_invoice_for_non_credit_card(client, app):
     """Assert that the endpoint returns 201."""
     mock_responses = patch('pay_api.services.oauth_service.requests.post')
     mock_get = mock_responses.start()

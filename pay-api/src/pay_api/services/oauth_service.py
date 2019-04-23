@@ -15,7 +15,6 @@
 import json
 
 import requests
-
 from flask import current_app
 
 from pay_api.utils.enums import AuthHeaderType, ContentType

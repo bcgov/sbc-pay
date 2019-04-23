@@ -12,23 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Resource for Invoice related endpoints."""
-import opentracing
-from flask import request, current_app
-from flask_opentracing import FlaskTracing
-from flask_restplus import Resource
+from flask import current_app, request
+from flask_restplus import Namespace, Resource
 
 from pay_api.services.paybc import PayBcService
-from pay_api.utils.dto import InvoiceDto
 from pay_api.utils.util import cors_preflight
 
 
-API = InvoiceDto.api
-INVOICE_REQUEST = InvoiceDto.invoice_request
+API = Namespace('invoices', description='Payment System - Invoices')
 
-TRACER = opentracing.tracer
-TRACING = FlaskTracing(TRACER)
-
-PAY_BC = PayBcService()
+PAY_BC_SERVICE = PayBcService()
 
 
 @cors_preflight(['POST', 'OPTIONS'])
@@ -38,16 +31,14 @@ class Invoice(Resource):
 
     @staticmethod
     @API.doc('Creates invoice in payment system')
-    @API.expect(INVOICE_REQUEST, validate=True)
     @API.response(201, 'Invoice created successfully')
-    @TRACING.trace()
     def post():
         """Return a new invoice in the payment system."""
         request_json = request.get_json()
         user_type = 'basic'  # TODO We will get this from token, hard-coding for now
         if user_type == 'basic' and request_json.get('method_of_payment', None) == 'CC':
             current_app.logger.debug('Paying with credit card')
-            invoice_response = PAY_BC.create_payment_records(request_json)
+            invoice_response = PAY_BC_SERVICE.create_payment_records(request_json)
             response_json = {
                 'paybc_reference_number': invoice_response.get('pbc_ref_number', None),
                 'invoice_number': invoice_response.get('invoice_number', None)
