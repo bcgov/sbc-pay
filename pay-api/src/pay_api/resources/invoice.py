@@ -41,7 +41,7 @@ class Invoice(Resource):
 
     @staticmethod
     @API.doc('Creates invoice in payment system')
-    @API.expect(INVOICE_REQUEST, validate=True)
+    # @API.expect(INVOICE_REQUEST, validate=True)
     @API.response(201, 'Invoice created successfully')
     @TRACING.trace()
     def post():
