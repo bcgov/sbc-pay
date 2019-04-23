@@ -26,7 +26,7 @@
         "postal_code",
         "province",
         "site_name",
-        ""
+        "contact_email"
       ],
       "properties": {
         "entity_name": {
@@ -41,13 +41,9 @@
           "type": "string",
           "description": "Site name"
         },
-        "phone_number": {
+        "contact_email": {
           "type": "string",
-          "description": "Phone number of the contact person"
-        },
-        "email": {
-          "type": "string",
-          "description": "Email of the contact person"
+          "description": "Contact Email"
         },
         "address_line_1": {
           "type": "string",
