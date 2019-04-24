@@ -1,0 +1,985 @@
+---
+openapi: 3.0.0
+info:
+  title: PayBC API Reference
+  description: PayBC API reference documentation
+  version: 1.0.0
+paths:
+  /cfs/parties:
+    post:
+      tags:
+      - Parties
+      summary: Create Party
+      description: >-
+        Creates a party record.
+      operationId: Parties_POST
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Party'
+        required: true
+      responses:
+        '200':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Party'
+              examples:
+                party_info:
+                  value: '{"party_number": "11111", "business_number": "000000000", "customer_name": "Steven-party-post","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/"},{"rel":"accounts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/ "}]}'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /cfs/parties/{party_number}:
+    put:
+      tags:
+      - Parties
+      summary: Update Parties
+      description: >-
+        Updates a party record.
+      operationId: Parties_PUT
+      parameters:
+      - name: party_number
+        in: path
+        description: Party Number.
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Party'
+        required: true
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Party'
+              examples:
+                party_info:
+                  value: '{"party_number": "11111", "business_number": "000000000", "customer_name": "Steven-party-put","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/"},{"rel":"accounts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/ "}]}'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+        - Parties
+      summary: Get Party
+      description: Retrieve party record.
+      operationId: Parties_GET
+      parameters:
+      - name: party_number
+        in: path
+        description: Party Number.
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Party'
+              examples:
+                party_info:
+                  value: '{"party_number": "11111", "business_number": "000000000", "customer_name": "Steven-party-get","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/"},{"rel":"accounts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/ "}]}'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+    - name: info
+      in: path
+      description: detail information
+      required: true
+      schema:
+        format: string
+        type: string
+      examples:
+        party_info:
+          value: party information
+  /cfs/parties/{party_number}/accs:
+    post:
+      tags:
+      - Accs
+      summary: Create Acc
+      description: Creates an account record.
+      operationId: Accs_POST
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Acc'
+        required: true
+      responses:
+        '200':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Acc'
+              examples:
+                acc_info:
+                  value: '{"account_number":"4101","party_number":"22222","account_description":"Steven-acc-post","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/"},{"rel":"sites","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/ "}]}'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+    - name: party_number
+      in: path
+      description: Party Number
+      required: true
+      schema:
+        type: string
+      examples:
+        acc_info:
+          value: account information
+  /cfs/parties/{party_number}/accs/{account_number}:
+    put:
+      tags:
+      - Accs
+      summary: Update Accs
+      description: >-
+        Updates an account record.
+      operationId: Accs_PUT
+      parameters:
+      - name: party_number
+        in: path
+        description: Party Number.
+        required: true
+        schema:
+          type: string
+      - name: account_number
+        in: path
+        description: Acctount Number.
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Acc'
+        required: true
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Acc'
+              examples:
+                acc_info:
+                  value: '{"account_number":"4101","party_number":"22222","account_description":"Steven-acc-put","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/"},{"rel":"sites","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/ "}]}'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+      - Accs
+      summary: Get Account
+      description: Retrieve account record.
+      operationId: Accs_GET
+      parameters:
+      - name: party_number
+        in: path
+        description: Party Number.
+        required: true
+        schema:
+          type: string
+      - name: account_number
+        in: path
+        description: Account Number.
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Acc'
+              examples:
+                acc_info:
+                  value: '{"account_number":"4101","party_number":"22222","account_description":"Steven-acc-get","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/"},{"rel":"sites","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/ "}]}'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+    - name: info
+      in: path
+      description: detail information
+      required: true
+      schema:
+        format: string
+        type: string
+      examples:
+        acc_info:
+          value: account information
+  /cfs/parties/{party_number}/accs/{account_number}/sites:
+    post:
+      tags:
+      - Sites
+      summary: Create Site
+      description: >-
+        Creates a site record.
+      operationId: Sites_POST
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Site'
+        required: true
+      responses:
+        '200':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Site'
+              examples:
+                site_info:
+                  value: '{"site_number":"29920","party_number":"33333","account_number":"4101","customer_site_id":"1","site_name":"Steven-site-post","primary_bill_to":"Y","address_line_1":"TEST","address_line_2":null,"address_line_3":null,"city":"Victoria","postal_code":"A1A1A1","province":"BC","state":null,"country":"CA","customer_profile_class":"CAS_CORP_DEFAULT","provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/"},{"rel":"contacts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/conts/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/cms/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/deps/"},{"rel":"invoices","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/invs/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/rcpts/ "}]}'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+    - name: party_number
+      in: path
+      description: Party Number
+      required: true
+      schema:
+        type: string
+    - name: account_number
+      in: path
+      description: Account Number
+      required: true
+      schema:
+        type: string
+      examples:
+        site_info:
+          value: site information
+  /cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}:
+    put:
+      tags:
+      - Sites
+      summary: Update Sites
+      description: >-
+        Updates a site record.
+      operationId: Sites_PUT
+      parameters:
+      - name: party_number
+        in: path
+        description: Party Number.
+        required: true
+        schema:
+          type: string
+      - name: account_number
+        in: path
+        description: Account Number.
+        required: true
+        schema:
+          type: string
+      - name: site_number
+        in: path
+        description: Site Number.
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Site'
+        required: true
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Site'
+              examples:
+                site_info:
+                  value: '{"site_number":"29920","party_number":"33333","account_number":"4101","customer_site_id":"1","site_name":"Steven-site-put","primary_bill_to":"Y","address_line_1":"TEST","address_line_2":null,"address_line_3":null,"city":"Victoria","postal_code":"A1A1A1","province":"BC","state":null,"country":"CA","customer_profile_class":"CAS_CORP_DEFAULT","provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/"},{"rel":"contacts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/conts/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/cms/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/deps/"},{"rel":"invoices","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/invs/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/rcpts/ "}]}'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+      - Sites
+      summary: Get Sites
+      description: Retrieve site record.
+      operationId: Site_GET
+      parameters:
+      - name: party_number
+        in: path
+        description: Party Number.
+        required: true
+        schema:
+          type: string
+      - name: account_number
+        in: path
+        description: Account Number.
+        required: true
+        schema:
+          type: string
+      - name: site_number
+        in: path
+        description: Site Number.
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Site'
+              examples:
+                site_info:
+                  value: '{"site_number":"29920","party_number":"33333","account_number":"4101","customer_site_id":"1","site_name":"Steven-site-get","primary_bill_to":"Y","address_line_1":"TEST","address_line_2":null,"address_line_3":null,"city":"Victoria","postal_code":"A1A1A1","province":"BC","state":null,"country":"CA","customer_profile_class":"CAS_CORP_DEFAULT","provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/"},{"rel":"contacts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/conts/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/cms/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/deps/"},{"rel":"invoices","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/invs/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/rcpts/ "}]}'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+    - name: info
+      in: path
+      description: detail information
+      required: true
+      schema:
+        format: string
+        type: string
+      examples:
+        site_info:
+          value: site information
+  /cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/conts:
+    post:
+      tags:
+      - Conts
+      summary: Create Cont
+      description: >-
+        Creates a contact record.
+      operationId: Conts_POST
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Cont'
+        required: true
+      responses:
+        '200':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cont'
+              examples:
+                cont_info:
+                  value: '{"contact_number":"3397","party_number":"44444","account_number":"4101","site_number":"29920","full_name":"Steven-contact-post","first_name":"TEST","middle_name":null,"last_name":"TEST","phone_number":"1111111111","email_address":null,"provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/conts/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/conts/3397/ "}]}'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+    - name: party_number
+      in: path
+      description: Party Number
+      required: true
+      schema:
+        type: string
+    - name: account_number
+      in: path
+      description: Account Number
+      required: true
+      schema:
+        type: string
+    - name: site_number
+      in: path
+      description: Site Number
+      required: true
+      schema:
+        type: string
+      examples:
+        cont_info:
+          value: contact information
+  /cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/conts/{contact_number}:
+    put:
+      tags:
+      - Conts
+      summary: Update Conts
+      description: >-
+        Updates a contact record.
+      operationId: Conts_PUT
+      parameters:
+      - name: party_number
+        in: path
+        description: Party Number.
+        required: true
+        schema:
+          type: string
+      - name: account_number
+        in: path
+        description: Account Number.
+        required: true
+        schema:
+          type: string
+      - name: site_number
+        in: path
+        description: Site Number.
+        required: true
+        schema:
+          type: string
+      - name: contact_number
+        in: path
+        description: Contact Number.
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Cont'
+        required: true
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cont'
+              examples:
+                cont_info:
+                  value: '{"contact_number":"3397","party_number":"44444","account_number":"4101","site_number":"29920","full_name":"Steven-contact-put","first_name":"TEST","middle_name":null,"last_name":"TEST","phone_number":"1111111111","email_address":null,"provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/conts/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/conts/3397/ "}]}'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+      - Conts
+      summary: Get Cont
+      description: Retrieve contact record.
+      operationId: Cont_GET
+      parameters:
+      - name: party_number
+        in: path
+        description: Party Number.
+        required: true
+        schema:
+          type: string
+      - name: account_number
+        in: path
+        description: Account Number.
+        required: true
+        schema:
+          type: string
+      - name: site_number
+        in: path
+        description: Site Number.
+        required: true
+        schema:
+          type: string
+      - name: contact_number
+        in: path
+        description: Contact Number.
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cont'
+              examples:
+                cont_info:
+                  value: '{"contact_number":"3397","party_number":"44444","account_number":"4101","site_number":"29920","full_name":"Steven-contact-get","first_name":"TEST","middle_name":null,"last_name":"TEST","phone_number":"1111111111","email_address":null,"provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/conts/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/4101/sites/29920/conts/3397/ "}]}'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+    - name: info
+      in: path
+      description: detail information
+      required: true
+      schema:
+        format: string
+        type: string
+      examples:
+        cont_info:
+          value: contact information
+  /cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/invs:
+    post:
+      tags:
+      - Invs
+      summary: Create Inv
+      description: >-
+        Creates a invoice record.
+      operationId: Invs_POST
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Inv'
+        required: true
+      responses:
+        '200':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inv'
+              examples:
+                inv_info:
+                  value: '{"invoice_number":"10021","pbc_ref_number":"10005","party_number":"55555","party_name":"Steven-invoice-post","account_name":"ABC Co-Ops","account_number":"4102","customer_site_id":"1","site_number":"29921","cust_trx_type":"WTS-INVOICE-STANDARD","transaction_date":"2019-04-12T07:00:00Z","batch_source":"MANUAL-OTHER","term_name":"IMMEDIATE","term_due_date":"2019-04-12T07:00:00Z","comments":"Invoice for ABC Co-Ops","late_charges_flag":null,"total":100,"amount_due":100,"amount_adjusted":null,"amount_adjusted_pending":null,"status":"OP","attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"provider":"Finance and Citizens Services","lines":[{"line_number":1,"line_type":"LINE","memo_line_name":"Test Memo Line","description":"Test Memo Line","unit_price":100,"quantity":1,"attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"adjustments":[]}],"adjustments":[],"credit_memos":[],"receipts":[],"links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/invs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/invs/10021/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/deps/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/cms/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/rcpts/"},{"rel":"adjustments","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/invs/10021/adjs/ "}]}'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+    - name: party_number
+      in: path
+      description: Party Number
+      required: true
+      schema:
+        type: string
+    - name: account_number
+      in: path
+      description: Account Number
+      required: true
+      schema:
+        type: string
+    - name: site_number
+      in: path
+      description: Site Number
+      required: true
+      schema:
+        type: string
+      examples:
+        inv_info:
+          value: invoice information
+  /cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/invs/{invoice_number}:
+    put:
+      tags:
+      - Invs
+      summary: Update Inv
+      description: >-
+        Updates an invoice record.
+      operationId: Invs_PUT
+      parameters:
+      - name: party_number
+        in: path
+        description: Party Number.
+        required: true
+        schema:
+          type: string
+      - name: account_number
+        in: path
+        description: Account Number.
+        required: true
+        schema:
+          type: string
+      - name: site_number
+        in: path
+        description: Site Number.
+        required: true
+        schema:
+          type: string
+      - name: invoice_number
+        in: path
+        description: Invoice Number.
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Inv'
+        required: true
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inv'
+              examples:
+                inv_info:
+                  value: '{"invoice_number":"10021","pbc_ref_number":"10005","party_number":"55555","party_name":"Steven-invoice-put","account_name":"ABC Co-Ops","account_number":"4102","customer_site_id":"1","site_number":"29921","cust_trx_type":"WTS-INVOICE-STANDARD","transaction_date":"2019-04-12T07:00:00Z","batch_source":"MANUAL-OTHER","term_name":"IMMEDIATE","term_due_date":"2019-04-12T07:00:00Z","comments":"Invoice for ABC Co-Ops","late_charges_flag":null,"total":100,"amount_due":100,"amount_adjusted":null,"amount_adjusted_pending":null,"status":"OP","attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"provider":"Finance and Citizens Services","lines":[{"line_number":1,"line_type":"LINE","memo_line_name":"Test Memo Line","description":"Test Memo Line","unit_price":100,"quantity":1,"attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"adjustments":[]}],"adjustments":[],"credit_memos":[],"receipts":[],"links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/invs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/invs/10021/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/deps/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/cms/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/rcpts/"},{"rel":"adjustments","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/invs/10021/adjs/ "}]}'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+      - Invs
+      summary: Get Inv
+      description: Retrieve invoice record.
+      operationId: Inv_GET
+      parameters:
+      - name: party_number
+        in: path
+        description: Party Number.
+        required: true
+        schema:
+          type: string
+      - name: account_number
+        in: path
+        description: Account Number.
+        required: true
+        schema:
+          type: string
+      - name: site_number
+        in: path
+        description: Site Number.
+        required: true
+        schema:
+          type: string
+      - name: invoice_number
+        in: path
+        description: Invoice Number.
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inv'
+              examples:
+                inv_info:
+                  value: '{"invoice_number":"10021","pbc_ref_number":"10005","party_number":"55555","party_name":"Steven-invoice-get","account_name":"ABC Co-Ops","account_number":"4102","customer_site_id":"1","site_number":"29921","cust_trx_type":"WTS-INVOICE-STANDARD","transaction_date":"2019-04-12T07:00:00Z","batch_source":"MANUAL-OTHER","term_name":"IMMEDIATE","term_due_date":"2019-04-12T07:00:00Z","comments":"Invoice for ABC Co-Ops","late_charges_flag":null,"total":100,"amount_due":100,"amount_adjusted":null,"amount_adjusted_pending":null,"status":"OP","attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"provider":"Finance and Citizens Services","lines":[{"line_number":1,"line_type":"LINE","memo_line_name":"Test Memo Line","description":"Test Memo Line","unit_price":100,"quantity":1,"attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"adjustments":[]}],"adjustments":[],"credit_memos":[],"receipts":[],"links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/invs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/invs/10021/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/deps/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/cms/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/rcpts/"},{"rel":"adjustments","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/invs/10021/adjs/ "}]}'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+    - name: info
+      in: path
+      description: detail information
+      required: true
+      schema:
+        format: string
+        type: string
+      examples:
+        inv_info:
+          value: contact information
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Identifier representing the type of error that occurred.
+        message:
+          type: string
+          description: Description of the error.
+      description: Contains details of an error that was encountered.
+    Party:
+      type: object
+      properties:
+        party_number:
+          type: string
+          description: Party Number.
+        business_number:
+          type: string
+          description: Business Number.
+        customer_name:
+          type: string
+          description: Customer Name.
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/Link"
+    Acc:
+      type: object
+      properties:
+        party_number:
+          type: string
+          description: Party Number.
+        account_number:
+          type: string
+          description: Account Number.
+        account_description:
+          type: string
+          description: Account Description.
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/Link"
+    Site:
+      type: object
+      properties:
+        party_number:
+          type: string
+          description: Party Number.
+        account_number:
+          type: string
+          description: Account Number.
+        site_number:
+          type: string
+          description: Site Number.
+        customer_site_id:
+          type: string
+          description: Customer Site Id.
+        site_name:
+          type: string
+          description: Site Name.
+        primary_bill_to:
+          type: string
+          description: Primary Bill To.
+        address_line_1:
+          type: string
+          description: Address Line 1.
+        address_line_2:
+          type: string
+          description: Address Line 2.
+        address_line_3:
+          type: string
+          description: Address Line 3.
+        city:
+          type: string
+          description: City.
+        postal_code:
+          type: string
+          description: Post Code.
+        province:
+          type: string
+          description: Province.
+        state:
+          type: string
+          description: State.
+        country:
+          type: string
+          description: Country.
+        customer_profile_class:
+          type: string
+          description: Customer Profile Class.
+        provider:
+          type: string
+          description: Provider.
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/Link"
+    Cont:
+      type: object
+      properties:
+        party_number:
+          type: string
+          description: Party Number.
+        account_number:
+          type: string
+          description: Account Number.
+        site_number:
+          type: string
+          description: Site Number.
+        contact_number:
+          type: string
+          description: Contact Number.
+        full_name:
+          type: string
+          description: Full Name.
+        first_name:
+          type: string
+          description: First Name.
+        middle_name:
+          type: string
+          description: Middle Name.
+        last_name:
+          type: string
+          description: Last Name.
+        phone_number:
+          type: string
+          description: Phone Number.
+        email_address:
+          type: string
+          description: Email Address.
+        provider:
+          type: string
+          description: Provider.
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/Link"
+    Inv:
+      type: object
+      properties:
+        party_number:
+          type: string
+          description: Party Number.
+        account_number:
+          type: string
+          description: Account Number.
+        site_number:
+          type: string
+          description: Site Number.
+        invoice_number:
+          type: string
+          description: Invoice Number.
+        pbc_ref_number:
+          type: string
+          description: PayBC Reference Number.
+        party_name:
+          type: string
+          description: Party Name.
+        account_name:
+          type: string
+          description: Account Name.
+        customer_site_id:
+          type: string
+          description: Customer Site ID.
+        cust_trx_type:
+          type: string
+          description: Customer Transaction Type.
+        transaction_date:
+          type: string
+          description: Transaction Date.
+        batch_source:
+          type: string
+          description: Batch Source.
+        term_name:
+          type: string
+          description: Term Name.
+        term_due_date:
+          type: string
+          description: Term Due Date.
+        comments:
+          type: string
+          description: Comments.
+        late_charges_flag:
+          type: string
+          description: Late Charges Flag.
+        total:
+          type: integer
+          description: Total.
+        amount_due:
+          type: integer
+          description: Amount Due.
+        amount_adjusted:
+          type: integer
+          description: Amount Adjusted.
+        amount_adjusted_pending:
+          type: integer
+          description: Amount Adjusted Pending.
+        status:
+          type: string
+          description: Status.
+        attribute_category:
+          type: string
+          description: Attribute Category.
+        attribute1:
+          type: string
+          description: Attribute 1.
+        attribute2:
+          type: string
+          description: Attribute 2.
+        attribute3:
+          type: string
+          description: Attribute 3.
+        attribute4:
+          type: string
+          description: Attribute 4.
+        attribute5:
+          type: string
+          description: Attribute 5.
+        attribute6:
+          type: string
+          description: Attribute 6.
+        attribute7:
+          type: string
+          description: Attribute 7.
+        attribute8:
+          type: string
+          description: Attribute 8.
+        attribute9:
+          type: string
+          description: Attribute 9.
+        attribute10:
+          type: string
+          description: Attribute 10.
+        attribute11:
+          type: string
+          description: Attribute 11.
+        attribute12:
+          type: string
+          description: Attribute 12.
+        attribute13:
+          type: string
+          description: Attribute 13.
+        attribute14:
+          type: string
+          description: Attribute 14.
+        attribute15:
+          type: string
+          description: Attribute 15.
+        provider:
+          type: string
+          description: Provider.
+        links:
+          type: array
+          items:
+            $ref: "#/components/schemas/Link"
+    Link:
+      type: object
+      properties:
+        rel:
+          type: string
+          description: Rel Type
+        href:
+          type: string
+          description: HATEOAS hyper link.
