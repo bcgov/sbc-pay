@@ -52,8 +52,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Fee'
               examples:
-                party_info:
-                  value: '{"party_number": "11111", "business_number": "000000000", "customer_name": "Steven-party-get","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/"},{"rel":"accounts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/ "}]}'
+                fee_1:
+                  value: '{"filing_type":"annual-report", "filing_fees":40, "service_fees":0, "processing_fees":0, "tax":{"gst":0, "pst":0}}'
         '400':
           description: BadRequest
           content:
@@ -127,9 +127,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Payment'
-              examples:
-                party_info:
-                  value: '{"party_number": "11111", "business_number": "000000000", "customer_name": "Steven-party-get","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/"},{"rel":"accounts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98525/accs/ "}]}'
         '400':
           description: BadRequest
           content:
