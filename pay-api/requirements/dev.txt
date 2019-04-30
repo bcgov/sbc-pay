@@ -2,9 +2,8 @@
 -r prod.txt
 
 # Testing
-pytest
+pytest<4.1
 pytest-mock
-requests
 pyhamcrest
 
 # Lint and code style
@@ -15,4 +14,7 @@ flake8-docstrings
 flake8-isort
 flake8-quotes
 pep8-naming
-requests
+autopep8
+coverage
+pylint
+pylint-flask

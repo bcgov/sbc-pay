@@ -1,3 +1,5 @@
+#!/usr/bin/env bash
+
 # Copyright © 2019 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -11,13 +13,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Provides the WSGI entry point for running the application
-"""
-from pay_api import create_app
 
 
-application = create_app()
+COPYRIGHT="Copyright © 2019 Province of British Columbia"
+RET=0
 
-if __name__ == "__main__":
-    application.run()
-
+for file in $(find $@ -not \( -path */venv -prune \) -not \( -path */migrations -prune \) -not \( -path */tests -prune \) -not \( -path */.egg* -prune \) -name \*.py)
+do
+  grep "${COPYRIGHT}" ${file} >/dev/null
+  if [[ $? != 0 ]]
+  then
+    echo "${file} missing copyright header"
+    RET=1
+  fi
+done
+exit ${RET}

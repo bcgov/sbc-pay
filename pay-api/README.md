@@ -1,10 +1,9 @@
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 
+[![Bugs](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/api/badges/measure?key=BCRegistriesPayment&metric=bugs&template=FLAT)](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/dashboard?id=BCRegistriesPayment) [![Vulnerabilities](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/api/badges/measure?key=BCRegistriesPayment&metric=vulnerabilities&template=FLAT)](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/dashboard?id=BCRegistriesPayment) [![Code smells](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/api/badges/measure?key=BCRegistriesPayment&metric=code_smells&template=FLAT)](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/dashboard?id=BCRegistriesPayment) [![Coverage](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/api/badges/measure?key=BCRegistriesPayment&metric=coverage&template=FLAT)](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/dashboard?id=BCRegistriesPayment) [![Duplication](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/api/badges/measure?key=BCRegistriesPayment&metric=duplicated_lines_density&template=FLAT)](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/dashboard?id=BCRegistriesPayment) [![Lines of code](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/api/badges/measure?key=BCRegistriesPayment&metric=lines&template=FLAT)](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/dashboard?id=BCRegistriesPayment)
 
-# Application Name
-
-BC Registries Names Examination, research and approval system API
+# BC Registries Payment System
 
 ## Technology Stack Used
 * Python, Flask
@@ -13,9 +12,8 @@ BC Registries Names Examination, research and approval system API
 ## Third-Party Products/Libraries used and the the License they are covert by
 
 ## Project Status
-As of 2018-02-22 in **ALPHA**
 
-## Documnentation
+## Documentation
 
 GitHub Pages (https://guides.github.com/features/pages/) are a neat way to document you application/project.
 
@@ -49,6 +47,7 @@ See (openshift/Readme.md)
 ## Getting Help or Reporting an Issue
 
 To report bugs/issues/feature requests, please file an [issue](../../issues).
+
 
 ## Code standards 
 

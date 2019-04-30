@@ -11,13 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Provides the WSGI entry point for running the application
+
+"""Tests to assure the payments end-point.
+
+Test-Suite to ensure that the /payments endpoint is working as expected.
 """
-from pay_api import create_app
 
 
-application = create_app()
+def test_payments_get(client):
+    """Assert that the endpoint returns 200."""
+    rv = client.get('/api/v1/payments')
 
-if __name__ == "__main__":
-    application.run()
-
+    assert rv.status_code == 200
