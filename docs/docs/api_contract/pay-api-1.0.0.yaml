@@ -5,7 +5,7 @@ info:
   description: BC Registries Pay API reference documentation
   version: 1.0.0
 paths:
-  /api/v1/fees/:corp_type/:filing_type_code/:jurisdiction:
+  /api/v1/fees/:jurisdiction/:corp_type/:filing_type_code:
     get:
       tags:
         - Fees
@@ -31,7 +31,6 @@ paths:
           required: true
           schema:
             type: string
-
         - name: date
           in: query
           description: Date on which the filing rates are applicable
@@ -53,13 +52,58 @@ paths:
                 $ref: '#/components/schemas/Fee'
               examples:
                 fee_1:
-                  value: '{"filing_type":"annual-report", "filing_fees":40, "service_fees":0, "processing_fees":0, "tax":{"gst":0, "pst":0}}'
+                  value: '{
+                    "filing_type":"annual-report",
+                    "filing_fees":40,
+                    "service_fees":0,
+                    "processing_fees":0,
+                    "tax": {
+                      "gst":0,
+                      "pst":0
+                    }
+                  }'
         '400':
           description: BadRequest
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+    - name: corp_type
+      in: path
+      schema:
+        type: string
+      examples:
+        fee_1:
+          value: COOPS
+    - name: filing_type_code
+      in: path
+      schema:
+        type: string
+      examples:
+        fee_1:
+          value: AR
+    - name: jurisdiction
+      in: path
+      schema:
+        type: string
+      examples:
+        fee_1:
+          value: BC
+    - name: date
+      in: query
+      schema:
+        type: string
+      examples:
+        fee_1:
+          value: 2018-12-31
+    - name: priority
+      in: query
+      schema:
+        type: boolean
+      examples:
+        fee_1:
+          value: false
   /api/v1/payments:
     post:
       tags:
@@ -162,7 +206,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
 components:
   schemas:
     ErrorResponse:
@@ -300,8 +343,11 @@ components:
           description: Filing Identifier
         payment_status:
           type: string
-          description: Status of payment. Pending/Complete
+          description: Status of payment.
+          enum: [pending, complete]
         fees:
           type: array
           items:
               $ref: "#/components/schemas/Fee"
+
+
