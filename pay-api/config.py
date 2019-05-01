@@ -11,12 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""All of the configuration for the service is captured here
-   All items are loaded, or have Constants defined here that
-   are loaded into the Flask configuration.
-   All modules and lookups get their configuration from the
-   Flask config, rather than reading environment variables directly
-   or by accessing this configuration directly.
+"""All of the configuration for the service is captured here. All items are loaded, or have Constants defined here that are loaded into the Flask configuration. All modules and lookups get their configuration from the Flask config, rather than reading environment variables directly or by accessing this configuration directly.
 """
 
 import os
@@ -29,10 +24,10 @@ from dotenv import find_dotenv, load_dotenv
 load_dotenv(find_dotenv())
 
 CONFIGURATION = {
-    "development": "config.DevConfig",
-    "testing": "config.TestConfig",
-    "production": "config.ProdConfig",
-    "default": "config.ProdConfig"
+    'development': 'config.DevConfig',
+    'testing': 'config.TestConfig',
+    'production': 'config.ProdConfig',
+    'default': 'config.ProdConfig'
 }
 
 
@@ -53,20 +48,12 @@ def get_named_config(config_name: str = 'production'):
 
 
 class _Config(object):  # pylint: disable=too-few-public-methods
-    """Base class configuration that should set reasonable defaults
-       for all the other configurations
-    """
+    """Base class configuration that should set reasonable defaults for all the other configurations. """
     PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
     SECRET_KEY = 'a secret'
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
-
-    NRO_SERVICE_ACCOUNT = os.getenv('NRO_SERVICE_ACCOUNT', 'nro_service_account')
-
-    SOLR_BASE_URL = os.getenv('SOLR_BASE_URL', None)
-    SOLR_SYNONYMS_API_URL = os.getenv('SOLR_SYNONYMS_API_URL', None)
-    NRO_EXTRACTOR_URI = os.getenv('NRO_EXTRACTOR_URI', None)
 
     ALEMBIC_INI = 'migrations/alembic.ini'
 
@@ -92,6 +79,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     JWT_OIDC_AUDIENCE = os.getenv('JWT_OIDC_AUDIENCE')
     JWT_OIDC_CLIENT_SECRET = os.getenv('JWT_OIDC_CLIENT_SECRET')
     JWT_OIDC_CACHING_ENABLED = os.getenv('JWT_OIDC_CACHING_ENABLED')
+    JWT_OIDC_JWKS_CACHE_TIMEOUT = int(os.getenv('JWT_OIDC_JWKS_CACHE_TIMEOUT'))
 
     # PAYBC API Settings
     PAYBC_BASE_URL = os.getenv('PAYBC_BASE_URL')
@@ -108,9 +96,7 @@ class DevConfig(_Config):  # pylint: disable=too-few-public-methods
 
 
 class TestConfig(_Config):  # pylint: disable=too-few-public-methods
-    """In support of testing only
-       used by the py.test suite
-    """
+    """In support of testing only used by the py.test suite."""
     DEBUG = True
     TESTING = True
     # POSTGRESQL
@@ -119,46 +105,46 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     DB_NAME = os.getenv('DATABASE_TEST_NAME', '')
     DB_HOST = os.getenv('DATABASE_TEST_HOST', '')
     DB_PORT = os.getenv('DATABASE_TEST_PORT', '5432')
-    SQLALCHEMY_DATABASE_URI = 'postgresql://{user}:{password}@{host}:{port}/{name}'.format(
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_TEST_URL', 'postgresql://{user}:{password}@{host}:{port}/{name}'.format(
         user=DB_USER,
         password=DB_PASSWORD,
         host=DB_HOST,
         port=int(DB_PORT),
         name=DB_NAME,
-    )
+    ))
 
     JWT_OIDC_TEST_MODE = True
     JWT_OIDC_TEST_AUDIENCE = os.getenv('JWT_OIDC_AUDIENCE')
     JWT_OIDC_TEST_CLIENT_SECRET = os.getenv('JWT_OIDC_CLIENT_SECRET')
     JWT_OIDC_TEST_ISSUER = os.getenv('JWT_OIDC_ISSUER')
     JWT_OIDC_TEST_KEYS = {
-        "keys": [
+        'keys': [
             {
-                "kid": "sbc-auth-cron-job",
-                "kty": "RSA",
-                "alg": "RS256",
-                "use": "sig",
-                "n": "AN-fWcpCyE5KPzHDjigLaSUVZI0uYrcGcc40InVtl-rQRDmAh-C2W8H4_Hxhr5VLc6crsJ2LiJTV_E72S03pzpOOaaYV6-TzAjCou2GYJIXev7f6Hh512PuG5wyxda_TlBSsI-gvphRTPsKCnPutrbiukCYrnPuWxX5_cES9eStR",
-                "e": "AQAB"
+                'kid': 'sbc-auth-cron-job',
+                'kty': 'RSA',
+                'alg': 'RS256',
+                'use': 'sig',
+                'n': 'AN-fWcpCyE5KPzHDjigLaSUVZI0uYrcGcc40InVtl-rQRDmAh-C2W8H4_Hxhr5VLc6crsJ2LiJTV_E72S03pzpOOaaYV6-TzAjCou2GYJIXev7f6Hh512PuG5wyxda_TlBSsI-gvphRTPsKCnPutrbiukCYrnPuWxX5_cES9eStR',
+                'e': 'AQAB'
             }
         ]
     }
 
     JWT_OIDC_TEST_PRIVATE_KEY_JWKS = {
-        "keys": [
+        'keys': [
             {
-                "kid": "sbc-auth-cron-job",
-                "kty": "RSA",
-                "alg": "RS256",
-                "use": "sig",
-                "n": "AN-fWcpCyE5KPzHDjigLaSUVZI0uYrcGcc40InVtl-rQRDmAh-C2W8H4_Hxhr5VLc6crsJ2LiJTV_E72S03pzpOOaaYV6-TzAjCou2GYJIXev7f6Hh512PuG5wyxda_TlBSsI-gvphRTPsKCnPutrbiukCYrnPuWxX5_cES9eStR",
-                "e": "AQAB",
-                "d": "C0G3QGI6OQ6tvbCNYGCqq043YI_8MiBl7C5dqbGZmx1ewdJBhMNJPStuckhskURaDwk4-8VBW9SlvcfSJJrnZhgFMjOYSSsBtPGBIMIdM5eSKbenCCjO8Tg0BUh_xa3CHST1W4RQ5rFXadZ9AeNtaGcWj2acmXNO3DVETXAX3x0",
-                "p": "APXcusFMQNHjh6KVD_hOUIw87lvK13WkDEeeuqAydai9Ig9JKEAAfV94W6Aftka7tGgE7ulg1vo3eJoLWJ1zvKM",
-                "q": "AOjX3OnPJnk0ZFUQBwhduCweRi37I6DAdLTnhDvcPTrrNWuKPg9uGwHjzFCJgKd8KBaDQ0X1rZTZLTqi3peT43s",
-                "dp": "AN9kBoA5o6_Rl9zeqdsIdWFmv4DB5lEqlEnC7HlAP-3oo3jWFO9KQqArQL1V8w2D4aCd0uJULiC9pCP7aTHvBhc",
-                "dq": "ANtbSY6njfpPploQsF9sU26U0s7MsuLljM1E8uml8bVJE1mNsiu9MgpUvg39jEu9BtM2tDD7Y51AAIEmIQex1nM",
-                "qi": "XLE5O360x-MhsdFXx8Vwz4304-MJg-oGSJXCK_ZWYOB_FGXFRTfebxCsSYi0YwJo-oNu96bvZCuMplzRI1liZw"
+                'kid': 'sbc-auth-cron-job',
+                'kty': 'RSA',
+                'alg': 'RS256',
+                'use': 'sig',
+                'n': 'AN-fWcpCyE5KPzHDjigLaSUVZI0uYrcGcc40InVtl-rQRDmAh-C2W8H4_Hxhr5VLc6crsJ2LiJTV_E72S03pzpOOaaYV6-TzAjCou2GYJIXev7f6Hh512PuG5wyxda_TlBSsI-gvphRTPsKCnPutrbiukCYrnPuWxX5_cES9eStR',
+                'e': 'AQAB',
+                'd': 'C0G3QGI6OQ6tvbCNYGCqq043YI_8MiBl7C5dqbGZmx1ewdJBhMNJPStuckhskURaDwk4-8VBW9SlvcfSJJrnZhgFMjOYSSsBtPGBIMIdM5eSKbenCCjO8Tg0BUh_xa3CHST1W4RQ5rFXadZ9AeNtaGcWj2acmXNO3DVETXAX3x0',
+                'p': 'APXcusFMQNHjh6KVD_hOUIw87lvK13WkDEeeuqAydai9Ig9JKEAAfV94W6Aftka7tGgE7ulg1vo3eJoLWJ1zvKM',
+                'q': 'AOjX3OnPJnk0ZFUQBwhduCweRi37I6DAdLTnhDvcPTrrNWuKPg9uGwHjzFCJgKd8KBaDQ0X1rZTZLTqi3peT43s',
+                'dp': 'AN9kBoA5o6_Rl9zeqdsIdWFmv4DB5lEqlEnC7HlAP-3oo3jWFO9KQqArQL1V8w2D4aCd0uJULiC9pCP7aTHvBhc',
+                'dq': 'ANtbSY6njfpPploQsF9sU26U0s7MsuLljM1E8uml8bVJE1mNsiu9MgpUvg39jEu9BtM2tDD7Y51AAIEmIQex1nM',
+                'qi': 'XLE5O360x-MhsdFXx8Vwz4304-MJg-oGSJXCK_ZWYOB_FGXFRTfebxCsSYi0YwJo-oNu96bvZCuMplzRI1liZw'
             }
         ]
     }
@@ -180,10 +166,10 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     4H8UZcVFN95vEKxJiLRjAmj6g273pu9kK4ymXNEjWWJn
     -----END RSA PRIVATE KEY-----"""
 
-
     PAYBC_BASE_URL = os.getenv('PAYBC_BASE_URL', '')
     PAYBC_CLIENT_ID = os.getenv('PAYBC_CLIENT_ID', '')
     PAYBC_CLIENT_SECRET = os.getenv('PAYBC_CLIENT_SECRET', '')
+
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
     """Production environment configuration."""
@@ -192,7 +178,7 @@ class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
 
     if not SECRET_KEY:
         SECRET_KEY = os.urandom(24)
-        print("WARNING: SECRET_KEY being set as a one-shot", file=sys.stderr)
+        print('WARNING: SECRET_KEY being set as a one-shot', file=sys.stderr)
 
     TESTING = False
     DEBUG = False
