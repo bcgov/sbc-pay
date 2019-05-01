@@ -5,7 +5,7 @@ info:
   description: BC Registries Pay API reference documentation
   version: 1.0.0
 paths:
-  /api/v1/fees/:jurisdiction/:corp_type/:filing_type_code:
+  /api/v1/fees/:corp_type/:filing_type_code:
     get:
       tags:
         - Fees
@@ -26,9 +26,9 @@ paths:
           schema:
             type: string
         - name: jurisdiction
-          in: path
+          in: query
           description: Jurisdiction or Province code
-          required: true
+          required: false
           schema:
             type: string
         - name: date
@@ -69,41 +69,44 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
-    - name: corp_type
-      in: path
-      schema:
-        type: string
-      examples:
-        fee_1:
-          value: COOPS
-    - name: filing_type_code
-      in: path
-      schema:
-        type: string
-      examples:
-        fee_1:
-          value: AR
-    - name: jurisdiction
-      in: path
-      schema:
-        type: string
-      examples:
-        fee_1:
-          value: BC
-    - name: date
-      in: query
-      schema:
-        type: string
-      examples:
-        fee_1:
-          value: 2018-12-31
-    - name: priority
-      in: query
-      schema:
-        type: boolean
-      examples:
-        fee_1:
-          value: false
+      - name: jurisdiction
+        in: query
+        required: true
+        schema:
+          type: string
+        examples:
+          fee_1:
+            value: BC
+      - name: corp_type
+        in: path
+        required: true
+        schema:
+          type: string
+        examples:
+          fee_1:
+            value: COOPS
+      - name: filing_type_code
+        in: path
+        required: true
+        schema:
+          type: string
+        examples:
+          fee_1:
+            value: AR
+      - name: date
+        in: query
+        schema:
+          type: string
+        examples:
+          fee_1:
+            value: 2018-12-31
+      - name: priority
+        in: query
+        schema:
+          type: boolean
+        examples:
+          fee_1:
+            value: false
   /api/v1/payments:
     post:
       tags:
