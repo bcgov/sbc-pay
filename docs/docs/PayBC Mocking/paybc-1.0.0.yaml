@@ -49,7 +49,7 @@ paths:
         description: Party Number.
         required: true
         schema:
-          type: string
+          type: string        
       requestBody:
         content:
           application/json:
@@ -84,7 +84,7 @@ paths:
         description: Party Number.
         required: true
         schema:
-          type: string
+          type: string        
       responses:
         '200':
           description: Success
@@ -102,16 +102,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
-    - name: info
-      in: path
-      description: detail information
-      required: true
+    - name: party_number
+      in: path      
       schema:
         format: string
         type: string
       examples:
         party_info:
-          value: party information
+          value: 11111
   /cfs/parties/{party_number}/accs:
     post:
       tags:
@@ -143,14 +141,13 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
     - name: party_number
-      in: path
-      description: Party Number
-      required: true
+      in: path      
       schema:
+        format: string
         type: string
       examples:
         acc_info:
-          value: account information
+          value: 22222
   /cfs/parties/{party_number}/accs/{account_number}:
     put:
       tags:
@@ -230,16 +227,22 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
-    - name: info
-      in: path
-      description: detail information
-      required: true
+    - name: party_number
+      in: path      
       schema:
         format: string
         type: string
       examples:
         acc_info:
-          value: account information
+          value: 22222
+    - name: account_number
+      in: path      
+      schema:
+        format: string
+        type: string
+      examples:
+        acc_info:
+          value: 4101      
   /cfs/parties/{party_number}/accs/{account_number}/sites:
     post:
       tags:
@@ -272,20 +275,21 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
     - name: party_number
-      in: path
-      description: Party Number
-      required: true
+      in: path      
       schema:
-        type: string
-    - name: account_number
-      in: path
-      description: Account Number
-      required: true
-      schema:
+        format: string
         type: string
       examples:
         site_info:
-          value: site information
+          value: 33333
+    - name: account_number
+      in: path      
+      schema:
+        format: string
+        type: string
+      examples:
+        site_info:
+          value: 4101
   /cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}:
     put:
       tags:
@@ -377,16 +381,30 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
-    - name: info
-      in: path
-      description: detail information
-      required: true
+    - name: party_number
+      in: path      
       schema:
         format: string
         type: string
       examples:
         site_info:
-          value: site information
+          value: 33333
+    - name: account_number
+      in: path      
+      schema:
+        format: string
+        type: string
+      examples:
+        site_info:
+          value: 4101
+    - name: site_number
+      in: path      
+      schema:
+        format: string
+        type: string
+      examples:
+        site_info:
+          value: 29920      
   /cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/conts:
     post:
       tags:
@@ -419,26 +437,29 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
     - name: party_number
-      in: path
-      description: Party Number
-      required: true
+      in: path      
       schema:
-        type: string
-    - name: account_number
-      in: path
-      description: Account Number
-      required: true
-      schema:
-        type: string
-    - name: site_number
-      in: path
-      description: Site Number
-      required: true
-      schema:
+        format: string
         type: string
       examples:
         cont_info:
-          value: contact information
+          value: 44444
+    - name: account_number
+      in: path      
+      schema:
+        format: string
+        type: string
+      examples:
+        cont_info:
+          value: 4101
+    - name: site_number
+      in: path      
+      schema:
+        format: string
+        type: string
+      examples:
+        cont_info:
+          value: 29920 
   /cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/conts/{contact_number}:
     put:
       tags:
@@ -542,16 +563,38 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
-    - name: info
-      in: path
-      description: detail information
-      required: true
+    - name: party_number
+      in: path      
       schema:
         format: string
         type: string
       examples:
         cont_info:
-          value: contact information
+          value: 44444
+    - name: account_number
+      in: path      
+      schema:
+        format: string
+        type: string
+      examples:
+        cont_info:
+          value: 4101
+    - name: site_number
+      in: path      
+      schema:
+        format: string
+        type: string
+      examples:
+        cont_info:
+          value: 29920
+    - name: contact_number
+      in: path      
+      schema:
+        format: string
+        type: string
+      examples:
+        cont_info:
+          value: 3397      
   /cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/invs:
     post:
       tags:
@@ -584,26 +627,29 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
     - name: party_number
-      in: path
-      description: Party Number
-      required: true
+      in: path      
       schema:
-        type: string
-    - name: account_number
-      in: path
-      description: Account Number
-      required: true
-      schema:
-        type: string
-    - name: site_number
-      in: path
-      description: Site Number
-      required: true
-      schema:
+        format: string
         type: string
       examples:
         inv_info:
-          value: invoice information
+          value: 55555
+    - name: account_number
+      in: path      
+      schema:
+        format: string
+        type: string
+      examples:
+        inv_info:
+          value: 4102
+    - name: site_number
+      in: path      
+      schema:
+        format: string
+        type: string
+      examples:
+        inv_info:
+          value: 29921  
   /cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/invs/{invoice_number}:
     put:
       tags:
@@ -707,16 +753,38 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
-    - name: info
-      in: path
-      description: detail information
-      required: true
+    - name: party_number
+      in: path      
       schema:
         format: string
         type: string
       examples:
         inv_info:
-          value: contact information
+          value: 55555
+    - name: account_number
+      in: path      
+      schema:
+        format: string
+        type: string
+      examples:
+        inv_info:
+          value: 4102
+    - name: site_number
+      in: path      
+      schema:
+        format: string
+        type: string
+      examples:
+        inv_info:
+          value: 29921  
+    - name: invoice_number
+      in: path      
+      schema:
+        format: string
+        type: string
+      examples:
+        inv_info:
+          value: 10021        
 components:
   schemas:
     ErrorResponse:
