@@ -109,4 +109,11 @@ venv.bak/
 *.ntvs*
 *.njsproj
 *.sln
-pay-web/node_modules
+node_modules
+*.code-workspace
+
+# pycharm
+.idea/
+
+# npm
+package-lock.json
