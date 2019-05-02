@@ -3,7 +3,7 @@ openapi: 3.0.0
 info:
   title: SBC Pay API Reference
   description: BC Registries Pay API reference documentation
-  version: 1.0.0
+  version: 1.0.1
 paths:
   /api/v1/fees/:corp_type/:filing_type_code:
     get:
@@ -46,6 +46,36 @@ paths:
       responses:
         '200':
           description: Success
+          headers:
+            X-Application-Context:
+              schema:
+                type: string
+              description: X-Application-Context	
+              examples: 
+                fee_1:
+                  value: 'application:prod'
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              description: Access-Control-Allow-Origin
+              examples: 
+                fee_1:
+                  value: '*'
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+              description: Access-Control-Allow-Methods
+              examples: 
+                fee_1:
+                  value: 'GET, POST, DELETE, PUT'
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              description: Access-Control-Allow-Headers
+              examples: 
+                fee_1:
+                  value: 'Content-Type, api_key, Authorization'
+
           content:
             application/json:
               schema:
@@ -62,6 +92,7 @@ paths:
                       "pst":0
                     }
                   }'
+
         '400':
           description: BadRequest
           content:
@@ -84,7 +115,7 @@ paths:
           type: string
         examples:
           fee_1:
-            value: COOPS
+            value: CP
       - name: filing_type_code
         in: path
         required: true
@@ -130,6 +161,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/payments/:payment_identifier:
     put:
       tags:
         - Payments
@@ -152,8 +185,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
-  /api/v1/payments/:filing_identifier:
     get:
       tags:
         - Payments
@@ -161,9 +192,9 @@ paths:
       description: Get Payment by filing identifier
       operationId: Get_Payment
       parameters:
-        - name: filing_identifier
+        - name: payment_identifier
           in: path
-          description: Filing Identifier
+          description: Unique Identifier for the payment
           required: true
           schema:
             type: string
@@ -181,7 +212,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/v1/payments/:filing_identifier/receipts:
+  /api/v1/payments/:payment_identifier/receipts:
     get:
       tags:
       - Receipts
@@ -189,9 +220,9 @@ paths:
       description: Returns payment receipt details
       operationId: Get_Receipt
       parameters:
-        - name: filing_identifier
+        - name: payment_identifier
           in: path
-          description: Filing Identifier
+          description: Unique Identifier for the payment
           required: true
           schema:
             type: string
@@ -224,6 +255,9 @@ components:
     Fee:
       type: object
       properties:
+        filing_type_code:
+          type: string
+          description: Filing Type Code
         filing_type:
           type: string
           description: Filing Type
@@ -273,9 +307,6 @@ components:
     FilingInfo:
       type: object
       properties:
-        filing_identifier:
-          type: string
-          description: Unique Identifier for the filing
         corp_type:
           type: string
           description: Corp Type
@@ -338,12 +369,9 @@ components:
     Payment:
       type: object
       properties:
-        payment_id:
+        payment_identifier:
           type: string
-          description: Unique identifier in payment system
-        filing_identifier:
-          type: string
-          description: Filing Identifier
+          description: Unique identifier for payment
         payment_status:
           type: string
           description: Status of payment.
