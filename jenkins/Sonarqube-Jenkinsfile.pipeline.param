@@ -6,6 +6,6 @@
 NAME=sonarqube
 # GITHUB_WEBHOOK_SECRET=[a-zA-Z0-9]{40}
 SOURCE_REPOSITORY_URL=https://github.com/bcgov/sbc-pay.git
-SOURCE_REPOSITORY_REF=master
+SOURCE_REPOSITORY_REF=development
 CONTEXT_DIR=jenkins
 JENKINSFILE_PATH=sonarqube-Jenkinsfile
