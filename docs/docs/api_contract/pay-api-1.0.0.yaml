@@ -1,0 +1,384 @@
+---
+openapi: 3.0.0
+info:
+  title: SBC Pay API Reference
+  description: BC Registries Pay API reference documentation
+  version: 1.0.1
+paths:
+  /api/v1/fees/:corp_type/:filing_type_code:
+    get:
+      tags:
+        - Fees
+      summary: Calculate Fees
+      description: Calculate Fees on the filing type for corp type
+      operationId: Calculate_Fees
+      parameters:
+        - name: corp_type
+          in: path
+          description: Corp Type
+          required: true
+          schema:
+            type: string
+        - name: filing_type_code
+          in: path
+          description: Filing type code
+          required: true
+          schema:
+            type: string
+        - name: jurisdiction
+          in: query
+          description: Jurisdiction or Province code
+          required: false
+          schema:
+            type: string
+        - name: date
+          in: query
+          description: Date on which the filing rates are applicable
+          required: false
+          schema:
+            type: string
+        - name: priority
+          in: query
+          description: Indicator if priority fees are applicable
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          headers:
+            X-Application-Context:
+              schema:
+                type: string
+              description: X-Application-Context	
+              examples: 
+                fee_1:
+                  value: 'application:prod'
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              description: Access-Control-Allow-Origin
+              examples: 
+                fee_1:
+                  value: '*'
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+              description: Access-Control-Allow-Methods
+              examples: 
+                fee_1:
+                  value: 'GET, POST, DELETE, PUT'
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              description: Access-Control-Allow-Headers
+              examples: 
+                fee_1:
+                  value: 'Content-Type, api_key, Authorization'
+
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fee'
+              examples:
+                fee_1:
+                  value: '{
+                    "filing_type":"annual-report",
+                    "filing_fees":40,
+                    "service_fees":0,
+                    "processing_fees":0,
+                    "tax": {
+                      "gst":0,
+                      "pst":0
+                    }
+                  }'
+
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+      - name: jurisdiction
+        in: query
+        required: true
+        schema:
+          type: string
+        examples:
+          fee_1:
+            value: BC
+      - name: corp_type
+        in: path
+        required: true
+        schema:
+          type: string
+        examples:
+          fee_1:
+            value: CP
+      - name: filing_type_code
+        in: path
+        required: true
+        schema:
+          type: string
+        examples:
+          fee_1:
+            value: AR
+      - name: date
+        in: query
+        schema:
+          type: string
+        examples:
+          fee_1:
+            value: 2018-12-31
+      - name: priority
+        in: query
+        schema:
+          type: boolean
+        examples:
+          fee_1:
+            value: false
+  /api/v1/payments:
+    post:
+      tags:
+      - Payments
+      summary: Create payment records
+      description: >-
+        Creates payment records.
+      operationId: Create_Payment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+        required: true
+      responses:
+        '201':
+          description: Created
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/payments/:payment_identifier:
+    put:
+      tags:
+        - Payments
+      summary: Update payment records
+      description: >-
+        Updates payment records.
+      operationId: Update_Payment
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+        required: true
+      responses:
+        '200':
+          description: Updated
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+        - Payments
+      summary: Get Payment
+      description: Get Payment by filing identifier
+      operationId: Get_Payment
+      parameters:
+        - name: payment_identifier
+          in: path
+          description: Unique Identifier for the payment
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/payments/:payment_identifier/receipts:
+    get:
+      tags:
+      - Receipts
+      summary: Get receipt for the payment
+      description: Returns payment receipt details
+      operationId: Get_Receipt
+      parameters:
+        - name: payment_identifier
+          in: path
+          description: Unique Identifier for the payment
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Receipt PDF file
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Identifier representing the type of error that occurred.
+        message:
+          type: string
+          description: Description of the error.
+      description: Contains details of an error that was encountered.
+    Fee:
+      type: object
+      properties:
+        filing_type_code:
+          type: string
+          description: Filing Type Code
+        filing_type:
+          type: string
+          description: Filing Type
+        filing_fees:
+          type: integer
+          description: Fees for filing
+        service_fees:
+          type: integer
+          description: Applicable service fees
+        processing_fees:
+          type: integer
+          description: Applicable processing fees
+        tax:
+          type: object
+          items:
+            $ref: "#/components/schemas/Tax"
+    Tax:
+      type: object
+      properties:
+        gst:
+          type: integer
+          description: Good Services Tax
+        pst:
+          type: integer
+          description: Provincial Sales Tax
+    PaymentRequest:
+      type: object
+      properties:
+        payment_info:
+          type: object
+          items:
+            $ref: "#/components/schemas/PaymentInfo"
+        filing_info:
+          type: object
+          items:
+            $ref: "#/components/schemas/FilingInfo"
+        business_info:
+          type: object
+          items:
+            $ref: "#/components/schemas/BusinessInfo"
+    PaymentInfo:
+      type: object
+      properties:
+        method_of_payment:
+          type: string
+          description: Method of payment
+    FilingInfo:
+      type: object
+      properties:
+        corp_type:
+          type: string
+          description: Corp Type
+        date:
+          type: string
+          description: Date on which the filing rates are applicable
+        filing_types:
+          type: array
+          items:
+            $ref: "#/components/schemas/FilingType"
+    FilingType:
+      type: object
+      properties:
+        filing_type_code:
+          type: string
+          description: Filing Type Code
+        priority:
+          type: boolean
+          description: Priority Indicator
+        filing_description:
+          type: string
+          description: Filing Type Description
+
+    BusinessInfo:
+      type: object
+      properties:
+        business_identifier:
+          type: string
+          description: Business identifier
+        business_name:
+          type: string
+          description: Legal entity name
+        contact_info:
+          type: object
+          items:
+            $ref: "#/components/schemas/ContactInfo"
+
+    ContactInfo:
+      type: object
+      properties:
+        first_name:
+          type: string
+          description: Contact first name
+        last_name:
+          type: string
+          description: Contact last name
+        address:
+          type: string
+          description: Addres line 1
+        city:
+          type: string
+          description: City
+        province:
+          type: string
+          description: Province
+        postal_code:
+          type: string
+          description: Postal Code
+
+    Payment:
+      type: object
+      properties:
+        payment_identifier:
+          type: string
+          description: Unique identifier for payment
+        payment_status:
+          type: string
+          description: Status of payment.
+          enum: [pending, complete]
+        fees:
+          type: array
+          items:
+              $ref: "#/components/schemas/Fee"
+
+
