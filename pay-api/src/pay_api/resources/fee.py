@@ -33,7 +33,7 @@ class Fee(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    # @_jwt.requires_roles(['basic', 'premium'])
+    @_jwt.has_one_of_roles(['basic', 'premium'])
     def get(corp_type, filing_type_code):
         """Calculate the fee for the filing using the corp type/filing type and return fee."""
         date = request.args.get('date', datetime.today().strftime('%Y-%m-%d'))
@@ -46,5 +46,5 @@ class Fee(Resource):
                                                          jurisdiction=jurisdiction,
                                                          priority=priority)
         except BusinessException as be:
-            response, status = jsonify(be), 400
+            response, status = {'code': be.code, 'message': be.message}, be.status
         return jsonify(response), status

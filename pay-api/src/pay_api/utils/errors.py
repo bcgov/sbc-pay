@@ -13,13 +13,18 @@
 # limitations under the License.
 """Error definitions."""
 from enum import Enum
+from http import HTTPStatus
 
 
 class Error(Enum):
     """Error Codes."""
 
-    PAY001 = Enum('Invalid Corp Type or Filing Type')
-    PAY002 = 'No matching record found for Corp Type and Filing Type'
+    PAY001 = 'Invalid Corp Type or Filing Type', HTTPStatus.BAD_REQUEST
+    PAY002 = 'No matching record found for Corp Type and Filing Type', HTTPStatus.BAD_REQUEST
 
-class HttpStatus(Enum):
-    
+    def __new__(cls, message, status):
+        obj = object.__new__(cls)
+        obj.message = message
+        obj.status = status
+        return obj
+
