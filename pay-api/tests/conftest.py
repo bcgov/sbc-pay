@@ -44,16 +44,14 @@ def client(app):  # pylint: disable=redefined-outer-name
     return app.test_client()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope='session')
 def jwt(app):
-    """
-    Returns session-wide jwt manager
-    """
+    """Returns session-wide jwt manager."""
     return _jwt
 
 
 @pytest.fixture(scope='session')
-def client_ctx(app):  # pylint: disable=redefined-outer-name
+def client_ctx(app):
     """Return session-wide Flask test client."""
     with app.test_client() as _client:
         yield _client

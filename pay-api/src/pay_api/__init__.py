@@ -42,7 +42,6 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     # tracer = init_tracer(__name__)
     # FlaskTracing(tracer)
 
-    from pay_api import models
     from pay_api.resources import API_BLUEPRINT, OPS_BLUEPRINT
 
     db.init_app(app)
