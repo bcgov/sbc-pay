@@ -70,6 +70,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
         port=int(DB_PORT),
         name=DB_NAME,
     )
+    SQLALCHEMY_ECHO = True
 
     # JWT_OIDC Settings
     JWT_OIDC_WELL_KNOWN_CONFIG = os.getenv('JWT_OIDC_WELL_KNOWN_CONFIG')
@@ -79,7 +80,11 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     JWT_OIDC_AUDIENCE = os.getenv('JWT_OIDC_AUDIENCE')
     JWT_OIDC_CLIENT_SECRET = os.getenv('JWT_OIDC_CLIENT_SECRET')
     JWT_OIDC_CACHING_ENABLED = os.getenv('JWT_OIDC_CACHING_ENABLED')
-    JWT_OIDC_JWKS_CACHE_TIMEOUT = int(os.getenv('JWT_OIDC_JWKS_CACHE_TIMEOUT'))
+    try:
+        JWT_OIDC_JWKS_CACHE_TIMEOUT = int(os.getenv('JWT_OIDC_JWKS_CACHE_TIMEOUT'))
+    except:
+        JWT_OIDC_JWKS_CACHE_TIMEOUT = 300
+
 
     # PAYBC API Settings
     PAYBC_BASE_URL = os.getenv('PAYBC_BASE_URL')
@@ -87,7 +92,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     PAYBC_CLIENT_SECRET = os.getenv('PAYBC_CLIENT_SECRET')
 
     TESTING = False
-    DEBUG = False
+    DEBUG = True
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
