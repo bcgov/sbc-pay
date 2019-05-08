@@ -28,8 +28,8 @@ from pay_api.utils.util import cors_preflight
 API = Namespace('fees', description='Payment System - Fees')
 
 
-@cors_preflight(['GET','OPTIONS'])
-@API.route('/<string:corp_type>/<string:filing_type_code>', methods=['GET','OPTIONS'])
+@cors_preflight('GET')
+@API.route('/<string:corp_type>/<string:filing_type_code>', methods=['GET', 'OPTIONS'])
 class Fee(Resource):
     """Endpoint resource to calculate fee."""
 

@@ -13,5 +13,5 @@
 # limitations under the License.
 """Exposes all of the Services used in the API."""
 
-from .paybc import PayBcService
 from .fee_schedule import FeeSchedule
+from .paybc import PayBcService

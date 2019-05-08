@@ -21,7 +21,6 @@ from flask import Flask
 from flask_jwt_oidc import JwtManager
 
 import config
-from pay_api import models
 from pay_api.models import db, ma
 from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
