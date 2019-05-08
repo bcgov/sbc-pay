@@ -19,7 +19,7 @@ from flask_restplus import Namespace, Resource, cors
 
 from pay_api import jwt as _jwt
 from pay_api.exceptions import BusinessException
-from pay_api.services.fee_schedule import FeeSchedule
+from pay_api.services import FeeSchedule
 from pay_api.utils.constants import DEFAULT_JURISDICTION
 from pay_api.utils.roles import Role
 from pay_api.utils.util import cors_preflight
@@ -28,8 +28,8 @@ from pay_api.utils.util import cors_preflight
 API = Namespace('fees', description='Payment System - Fees')
 
 
-@cors_preflight('GET')
-@API.route('/<string:corp_type>/<string:filing_type_code>')
+@cors_preflight(['GET','OPTIONS'])
+@API.route('/<string:corp_type>/<string:filing_type_code>', methods=['GET','OPTIONS'])
 class Fee(Resource):
     """Endpoint resource to calculate fee."""
 

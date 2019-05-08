@@ -142,7 +142,7 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         self._dao.save()
 
     @classmethod
-    def find_by_corp_type_and_filing_type(cls, corp_type: str,
+    def find_by_corp_type_and_filing_type(cls, corp_type: str, # pylint: disable=too-many-arguments
                                           filing_type_code: str,
                                           valid_date: date,
                                           jurisdiction: str,
@@ -151,13 +151,12 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('<get_fees_by_corp_type_and_filing_type')
         if not corp_type and not filing_type_code:
             raise BusinessException(Error.PAY001)
-
+        if jurisdiction or priority:
+            current_app.logger.warn('Not using Jurisdiction and priority now!!!')
         fee_schedule_dao = FeeScheduleModel.find_by_filing_type_and_corp_type(
             corp_type,
             filing_type_code,
-            valid_date,
-            jurisdiction,
-            priority
+            valid_date
         )
 
         if not fee_schedule_dao:

@@ -49,9 +49,7 @@ class FeeSchedule(db.Model):
     @classmethod
     def find_by_filing_type_and_corp_type(cls, corp_type_code: str,
                                           filing_type_code: str,
-                                          valid_date: datetime = None,
-                                          jurisdiction: str = None,
-                                          priority: bool = False
+                                          valid_date: datetime = None
                                           ):
         """Given a filing_type_code and corp_type, this will return fee schedule."""
         if not valid_date:
