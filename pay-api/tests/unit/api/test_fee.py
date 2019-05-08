@@ -16,12 +16,12 @@
 
 Test-Suite to ensure that the /fees endpoint is working as expected.
 """
-from datetime import datetime, date, timedelta
+from datetime import date, timedelta
 
 from pay_api.models import CorpType, FeeCode, FeeSchedule, FilingType
-from pay_api.utils.roles import Role
-from tests.utilities.schema_assertions import assert_valid_schema
 from pay_api.schemas import utils as schema_utils
+from pay_api.utils.roles import Role
+
 
 token_header = {
     'alg': 'RS256',
@@ -34,8 +34,8 @@ def get_claims(role: str = Role.BASIC.value):
     """Return the claim with the role param."""
     claim = {
         'jti': 'a50fafa4-c4d6-4a9b-9e51-1e5e0d102878',
-        "exp": 31531718745,
-        "iat": 1531718745,
+        'exp': 31531718745,
+        'iat': 1531718745,
         'iss': 'https://sso-dev.pathfinder.gov.bc.ca/auth/realms/fcf0kpqr',
         'aud': 'sbc-auth-web',
         'sub': '15099883-3c3f-4b4c-a124-a1824d6cba84',
@@ -83,6 +83,7 @@ def test_fees_with_corp_type_and_filing_type_with_valid_start_date(session, clie
     rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}', headers=headers)
     assert rv.status_code == 200
     assert schema_utils.validate_schema(rv.json, 'fees.json')
+    assert not schema_utils.validate_schema(rv.json, 'error.json')[0]
 
 
 def test_fees_with_corp_type_and_filing_type_with_invalid_start_date(session, client, jwt, app):
@@ -102,7 +103,7 @@ def test_fees_with_corp_type_and_filing_type_with_invalid_start_date(session, cl
     rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}', headers=headers)
     assert rv.status_code == 400
     assert schema_utils.validate_schema(rv.json, 'error.json')
-    assert schema_utils.validate_schema(rv.json, 'fees.json')
+    assert not schema_utils.validate_schema(rv.json, 'fees.json')[0]
 
 
 def test_fees_with_corp_type_and_filing_type_with_valid_end_date(session, client, jwt, app):
