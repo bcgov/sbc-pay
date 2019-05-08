@@ -13,22 +13,30 @@
 # limitations under the License.
 """Model to handle all operations related to Fee Code master data."""
 
-from datetime import datetime
-
-from sqlalchemy.exc import OperationalError, ResourceClosedError
-
 from .db import db, ma
 
 
 class FeeCode(db.Model):
     """This class manages all of the base data about a Fee Code.
-Fee Codes holds the fee amount
+
+    Fee Codes holds the fee amount
     """
 
     __tablename__ = 'fee_code'
 
     fee_code = db.Column(db.String(10), primary_key=True)
-    amount = db.Column('amount', db.Integer)
+    amount = db.Column('amount', db.Integer, nullable=False)
+
+    @classmethod
+    def find_by_fee_code(cls, code):
+        """Given a fee_code, this will return fee code details."""
+        fee_code = cls.query.filter_by(fee_code=code).one_or_none()
+        return fee_code
+
+    def save(self):
+        """Save fee code."""
+        db.session.add(self)
+        db.session.commit()
 
 
 class FeeCodeSchema(ma.ModelSchema):
@@ -36,4 +44,5 @@ class FeeCodeSchema(ma.ModelSchema):
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
+
         model = FeeCode

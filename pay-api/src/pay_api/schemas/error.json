@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Error Message",
+  "properties": {
+    "error": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/error"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "error": {
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "$id": "#/properties/code",
+          "type": "string",
+          "title": "Error Code",
+          "examples": [
+            "PAY002", "PAY001"
+          ],
+          "pattern": "^(.*)$"
+        },
+        "message": {
+          "$id": "#/properties/message",
+          "type": "string",
+          "title": "Error Message",
+          "examples": [
+            "No matching record found for Corp Type and Filing Type"
+          ],
+          "pattern": "^(.*)$"
+        }
+      }
+    }
+  }
+}

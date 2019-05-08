@@ -13,6 +13,8 @@
 # limitations under the License.
 
 """This exports all of the models and schemas used by the application."""
-# from .business import Business, BusinessSchema
+from .corp_type import CorpType, CorpTypeSchema
 from .db import db, ma
+from .fee_code import FeeCode, FeeCodeSchema
 from .fee_schedule import FeeSchedule, FeeScheduleSchema
+from .filing_type import FilingType, FilingTypeSchema

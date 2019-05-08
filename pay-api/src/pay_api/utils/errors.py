@@ -23,8 +23,8 @@ class Error(Enum):
     PAY002 = 'No matching record found for Corp Type and Filing Type', HTTPStatus.BAD_REQUEST
 
     def __new__(cls, message, status):
+        """Attributes for the enum."""
         obj = object.__new__(cls)
         obj.message = message
         obj.status = status
         return obj
-

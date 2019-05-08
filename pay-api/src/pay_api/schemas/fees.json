@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Fees Response",
+  "properties": {
+    "fee": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/fee"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "fee": {
+      "required": [
+        "filing_fees",
+        "filing_type",
+        "filing_type_code"
+      ],
+      "properties": {
+        "filing_fees": {
+          "$id": "#/properties/filing_fees",
+          "type": "integer",
+          "title": "Fees for filing",
+          "default": 0,
+          "examples": [
+            10
+          ]
+        },
+        "filing_type": {
+          "$id": "#/properties/filing_type",
+          "type": "string",
+          "title": "Filing Type Description",
+          "examples": [
+            "Change of Director",
+            "Change of registered address"
+          ],
+          "pattern": "^(.*)$"
+        },
+        "filing_type_code": {
+          "$id": "#/properties/filing_type_code",
+          "type": "string",
+          "title": "Filing Type Code",
+          "examples": [
+            "OTCDR",
+            "OTANN"
+          ],
+          "pattern": "^(.*)$"
+        },
+        "processing_fees": {
+          "$id": "#/properties/processing_fees",
+          "type": "integer",
+          "title": "Processing fees",
+          "examples": [
+            10
+          ]
+        },
+        "service_fees": {
+          "$id": "#/properties/service_fees",
+          "type": "integer",
+          "title": "Applicable service fees",
+          "examples": [
+            10
+          ]
+        },
+        "tax": {
+          "$id": "#/properties/tax",
+          "type": "object",
+          "title": "Tax Schema",
+          "required": [
+            "gst",
+            "pst"
+          ],
+          "properties": {
+            "gst": {
+              "$id": "#/properties/tax/properties/gst",
+              "type": "integer",
+              "title": "GST",
+              "examples": [
+                10
+              ]
+            },
+            "pst": {
+              "$id": "#/properties/tax/properties/pst",
+              "type": "integer",
+              "title": "PST",
+              "default": 0,
+              "examples": [
+                10
+              ]
+            }
+          }
+        }
+      }
+    }
+  }
+}

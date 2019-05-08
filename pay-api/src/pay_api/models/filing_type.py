@@ -13,22 +13,30 @@
 # limitations under the License.
 """Model to handle all operations related to filing type master data."""
 
-from datetime import datetime
-
-from sqlalchemy.exc import OperationalError, ResourceClosedError
-
 from .db import db, ma
 
 
 class FilingType(db.Model):
     """This class manages all of the base data about a filing type.
+
     Filing type indicates the filing operation on the entity
     """
 
     __tablename__ = 'filing_type'
 
     filing_type_code = db.Column(db.String(10), primary_key=True)
-    filing_description = db.Column('filing_description', db.String(200))
+    filing_description = db.Column('filing_description', db.String(200), nullable=False)
+
+    @classmethod
+    def find_by_filing_type_code(cls, code):
+        """Given a filing_type_code, this will return filing code details."""
+        filing_type = cls.query.filter_by(filing_type_code=code).one_or_none()
+        return filing_type
+
+    def save(self):
+        """Save fee code."""
+        db.session.add(self)
+        db.session.commit()
 
 
 class FilingTypeSchema(ma.ModelSchema):
@@ -36,4 +44,5 @@ class FilingTypeSchema(ma.ModelSchema):
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
+
         model = FilingType

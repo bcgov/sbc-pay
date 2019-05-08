@@ -15,8 +15,7 @@
 
 from datetime import date, datetime
 
-from sqlalchemy import ForeignKey, func
-from sqlalchemy.exc import OperationalError, ResourceClosedError
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
 from .corp_type import CorpType
@@ -27,7 +26,8 @@ from .filing_type import FilingType
 
 class FeeSchedule(db.Model):
     """This class manages all of the base data about a fee schedule.
-    fee schedule holds the data related to filing type and fee code which is used to calculate the fees for a filing
+
+    Fee schedule holds the data related to filing type and fee code which is used to calculate the fees for a filing
     """
 
     __tablename__ = 'fee_schedule'
@@ -35,20 +35,20 @@ class FeeSchedule(db.Model):
         db.UniqueConstraint('filing_type_code', 'corp_type_code', 'fee_code', name='unique_fee_sched_1'),
     )
 
-    filing_schedule_id = db.Column(db.Integer, primary_key=True)
-    filing_type_code = db.Column(db.String(10), ForeignKey("filing_type.filing_type_code"), nullable=False)
-    corp_type_code = db.Column(db.String(10), ForeignKey("corp_type.corp_type_code"), nullable=False)
-    fee_code = db.Column(db.String(10), ForeignKey("fee_code.fee_code"), nullable=False)
+    fee_schedule_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    filing_type_code = db.Column(db.String(10), ForeignKey('filing_type.filing_type_code'), nullable=False)
+    corp_type_code = db.Column(db.String(10), ForeignKey('corp_type.corp_type_code'), nullable=False)
+    fee_code = db.Column(db.String(10), ForeignKey('fee_code.fee_code'), nullable=False)
     fee_start_date = db.Column('fee_start_date', db.Date, default=date.today(), nullable=False)
-    fee_end_date = db.Column('fee_end_date', db.Date, default=None)
+    fee_end_date = db.Column('fee_end_date', db.Date, default=None, nullable=True)
 
-    filing_type = relationship(FilingType, foreign_keys=[filing_type_code], lazy="joined", innerjoin=True)
-    corp_type = relationship(CorpType, foreign_keys=[corp_type_code], lazy="joined", innerjoin=True)
-    fee = relationship(FeeCode, foreign_keys=[fee_code], lazy="joined", innerjoin=True)
+    filing_type = relationship(FilingType, foreign_keys=[filing_type_code], lazy='joined', innerjoin=True)
+    corp_type = relationship(CorpType, foreign_keys=[corp_type_code], lazy='joined', innerjoin=True)
+    fee = relationship(FeeCode, foreign_keys=[fee_code], lazy='joined', innerjoin=True)
 
     @classmethod
-    def find_by_filing_type_and_corp_type(cls, corp_type_code: str = None,
-                                          filing_type_code: str = None,
+    def find_by_filing_type_and_corp_type(cls, corp_type_code: str,
+                                          filing_type_code: str,
                                           valid_date: datetime = None,
                                           jurisdiction: str = None,
                                           priority: bool = False
@@ -67,10 +67,16 @@ class FeeSchedule(db.Model):
 
         return fee_schedule
 
+    def save(self):
+        """Save fee schedule."""
+        db.session.add(self)
+        db.session.commit()
+
 
 class FeeScheduleSchema(ma.ModelSchema):
     """Main schema used to serialize the Business."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
+
         model = FeeSchedule

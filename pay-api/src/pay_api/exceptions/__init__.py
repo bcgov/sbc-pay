@@ -32,4 +32,3 @@ class BusinessException(Exception):
         self.message = error.message
         self.code = error.name
         self.status = error.status
-
