@@ -44,3 +44,4 @@ def _load_json_schema(filename: str):
 
     with open(absolute_path) as schema_file:
         return json.loads(schema_file.read())
+
