@@ -12,24 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Payment Status master data."""
+from datetime import date, datetime
+
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import relationship
 
 from .db import db, ma
+from .auditable import Auditable
 
 
-class PaymentStatusCode(db.Model):
+class FeeItem(db.Model, Auditable):
     """This class manages all of the base data about a Payment Status Code.
     """
 
-    __tablename__ = 'payment_state_code'
+    __tablename__ = 'fee_item'
 
-    status_code = db.Column(db.String(10), primary_key=True)
-    description = db.Column('description', db.String(200), nullable=False)
-
-    @classmethod
-    def find_by_status_code(cls, code):
-        """Given a status code, this will return payment status code details."""
-        payment_status_code = cls.query.filter_by(status_code=code).one_or_none()
-        return payment_status_code
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    payment_id = db.Column(db.Integer, ForeignKey('payment.id'), nullable=False)
+    filing_fees = db.Column(db.Integer, nullable=False)
+    fee_schedule_id = db.Column(db.Integer, ForeignKey('fee_schedule.fee_schedule_id'), nullable=False)
+    processing_fees = db.Column(db.Integer, nullable=True)
+    service_fees = db.Column(db.Integer, nullable=True)
+    service_fees = db.Column(db.Integer, nullable=True)
+    description = db.Column(db.String(200), nullable=True)
+    gst = db.Column(db.Integer, nullable=True)
+    pst = db.Column(db.Integer, nullable=True)
+    total = db.Column(db.Integer, nullable=False)
 
     def save(self):
         """Save status."""
@@ -37,10 +45,10 @@ class PaymentStatusCode(db.Model):
         db.session.commit()
 
 
-class PaymentStatusCodeSchema(ma.ModelSchema):
+class FeeItemSchema(ma.ModelSchema):
     """Main schema used to serialize the Status Code."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
-        model = PaymentStatusCode
+        model = FeeItem

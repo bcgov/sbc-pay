@@ -14,9 +14,10 @@
 """Model to handle all operations related to Payment System master data."""
 
 from .db import db, ma
+from .code_table import CodeTable
 
 
-class PaymentMethod(db.Model):
+class PaymentMethod(db.Model, CodeTable):
     """This class manages all of the base data about a Payment System Code.
     """
 
@@ -25,22 +26,16 @@ class PaymentMethod(db.Model):
     code = db.Column(db.String(10), primary_key=True)
     description = db.Column('description', db.String(200), nullable=False)
 
-    @classmethod
-    def find_by_code(cls, code):
-        """Given a status code, this will return payment system code details."""
-        payment_system = cls.query.filter_by(system_code=code).one_or_none()
-        return payment_system
-
     def save(self):
         """Save status."""
         db.session.add(self)
         db.session.commit()
 
 
-class PaymentSystemSchema(ma.ModelSchema):
+class PaymentMethodSchema(ma.ModelSchema):
     """Main schema used to serialize the System Code."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
-        model = PaymentSystem
+        model = PaymentMethod

@@ -12,24 +12,34 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Payment Status master data."""
+from datetime import date, datetime
+
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import relationship
 
 from .db import db, ma
+from .auditable import Auditable
+from .payment_system import PaymentSystem
+from .payment_method import PaymentMethod
+from .status_code import StatusCode
 
-
-class PaymentStatusCode(db.Model):
+class Payment(db.Model, Auditable):
     """This class manages all of the base data about a Payment Status Code.
     """
 
-    __tablename__ = 'payment_state_code'
+    __tablename__ = 'payment'
 
-    status_code = db.Column(db.String(10), primary_key=True)
-    description = db.Column('description', db.String(200), nullable=False)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    transaction_id = db.Column(db.String(10))
+    payment_system_code = db.Column(db.String(10), ForeignKey('payment_system.code'), nullable=False)
+    payment_method_code = db.Column(db.String(10), ForeignKey('payment_method.code'), nullable=False)
+    payment_status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
+    total = db.Column(db.Integer, nullable=False)
+    paid = db.Column(db.Integer, nullable=True)
 
-    @classmethod
-    def find_by_status_code(cls, code):
-        """Given a status code, this will return payment status code details."""
-        payment_status_code = cls.query.filter_by(status_code=code).one_or_none()
-        return payment_status_code
+    payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code])
+    payment_method = relationship(PaymentMethod, foreign_keys=[payment_method_code])
+    payment_status = relationship(StatusCode, foreign_keys=[payment_status_code])
 
     def save(self):
         """Save status."""
@@ -37,10 +47,10 @@ class PaymentStatusCode(db.Model):
         db.session.commit()
 
 
-class PaymentStatusCodeSchema(ma.ModelSchema):
+class PaymentSchema(ma.ModelSchema):
     """Main schema used to serialize the Status Code."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
-        model = PaymentStatusCode
+        model = Payment
