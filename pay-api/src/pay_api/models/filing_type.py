@@ -29,7 +29,7 @@ class FilingType(db.Model, CodeTable):
     description = db.Column('description', db.String(200), nullable=False)
 
     def save(self):
-        """Save fee code."""
+        """Save filing type."""
         db.session.add(self)
         db.session.commit()
 
