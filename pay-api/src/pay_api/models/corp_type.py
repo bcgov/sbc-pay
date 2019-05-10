@@ -25,11 +25,11 @@ class CorpType(db.Model, CodeTable):
 
     __tablename__ = 'corp_type'
 
-    code = db.Column(db.String(10), primary_key=True)
+    code = db.Column('code', db.String(10), primary_key=True)
     description = db.Column('description', db.String(200), nullable=False)
 
     def save(self):
-        """Save fee code."""
+        """Save corp type."""
         db.session.add(self)
         db.session.commit()
 
