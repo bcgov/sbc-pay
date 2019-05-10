@@ -36,9 +36,9 @@ class FeeSchedule(db.Model):
     )
 
     fee_schedule_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    filing_type_code = db.Column(db.String(10), ForeignKey('filing_type.filing_type_code'), nullable=False)
-    corp_type_code = db.Column(db.String(10), ForeignKey('corp_type.corp_type_code'), nullable=False)
-    fee_code = db.Column(db.String(10), ForeignKey('fee_code.fee_code'), nullable=False)
+    filing_type_code = db.Column(db.String(10), ForeignKey('filing_type.code'), nullable=False)
+    corp_type_code = db.Column(db.String(10), ForeignKey('corp_type.code'), nullable=False)
+    fee_code = db.Column(db.String(10), ForeignKey('fee_code.code'), nullable=False)
     fee_start_date = db.Column('fee_start_date', db.Date, default=date.today(), nullable=False)
     fee_end_date = db.Column('fee_end_date', db.Date, default=None, nullable=True)
 

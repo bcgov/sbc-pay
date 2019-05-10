@@ -150,8 +150,8 @@ def factory_filing_type_model(
         filing_type_code: str,
         filing_description: str = 'TEST'):
     """Return the filing type model."""
-    filing_type = FilingType(filing_type_code=filing_type_code,
-                             filing_description=filing_description)
+    filing_type = FilingType(code=filing_type_code,
+                             description=filing_description)
     filing_type.save()
     return filing_type
 
@@ -160,7 +160,7 @@ def factory_fee_model(
         fee_code: str,
         amount: int):
     """Return the fee code model."""
-    fee_code_master = FeeCode(fee_code=fee_code,
+    fee_code_master = FeeCode(code=fee_code,
                               amount=amount)
     fee_code_master.save()
     return fee_code_master
@@ -170,8 +170,8 @@ def factory_corp_type_model(
         corp_type_code: str,
         corp_type_description: str):
     """Return the corp type model."""
-    corp_type = CorpType(corp_type_code=corp_type_code,
-                         corp_type_description=corp_type_description)
+    corp_type = CorpType(code=corp_type_code,
+                         description=corp_type_description)
     corp_type.save()
     return corp_type
 
@@ -183,9 +183,9 @@ def factory_fee_schedule_model(
         fee_start_date: date = date.today(),
         fee_end_date: date = None):
     """Return the fee schedule model."""
-    fee_schedule = FeeSchedule(filing_type_code=filing_type.filing_type_code,
-                               corp_type_code=corp_type.corp_type_code,
-                               fee_code=fee_code.fee_code,
+    fee_schedule = FeeSchedule(filing_type_code=filing_type.code,
+                               corp_type_code=corp_type.code,
+                               fee_code=fee_code.code,
                                fee_start_date=fee_start_date,
                                fee_end_date=fee_end_date)
     fee_schedule.save()

@@ -13,10 +13,11 @@
 # limitations under the License.
 """Model to handle all operations related to Corp type master data."""
 
+from .code_table import CodeTable
 from .db import db, ma
 
 
-class CorpType(db.Model):
+class CorpType(db.Model, CodeTable):
     """This class manages all of the base data about a Corp Type.
 
     Corp types are different types of corporation the payment system supports
@@ -24,14 +25,8 @@ class CorpType(db.Model):
 
     __tablename__ = 'corp_type'
 
-    corp_type_code = db.Column(db.String(10), primary_key=True)
-    corp_type_description = db.Column('corp_type_description', db.String(200), nullable=False)
-
-    @classmethod
-    def find_by_corp_type_code(cls, code):
-        """Given a corp_type_code, this will return corp type details."""
-        corp_type = cls.query.filter_by(corp_type_code=code).one_or_none()
-        return corp_type
+    code = db.Column(db.String(10), primary_key=True)
+    description = db.Column('description', db.String(200), nullable=False)
 
     def save(self):
         """Save fee code."""

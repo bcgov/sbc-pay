@@ -24,20 +24,20 @@ from pay_api.models import CorpType, FeeCode, FeeSchedule, FilingType
 
 def factory_corp_type(corp_type_code: str, corp_description: str):
     """Return a valid Corp Type object."""
-    return CorpType(corp_type_code=corp_type_code,
-                    corp_type_description=corp_description)
+    return CorpType(code=corp_type_code,
+                    description=corp_description)
 
 
 def factory_feecode(fee_code: str, amount: int):
     """Return a valid FeeCode object."""
-    return FeeCode(fee_code=fee_code,
+    return FeeCode(code=fee_code,
                    amount=amount)
 
 
 def factory_filing_type(code: str, description: str):
     """Return a valid FilingType object."""
-    return FilingType(filing_type_code=code,
-                      filing_description=description)
+    return FilingType(code=code,
+                      description=description)
 
 
 def factory_fee_schedule(filing_type_code: str,

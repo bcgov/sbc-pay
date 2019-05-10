@@ -143,14 +143,14 @@ def create_linked_data(
         corp_type_code: str,
         fee_code: str):
     """Return a valid fee schedule object, creates the related objects first."""
-    corp_type = CorpType(corp_type_code=corp_type_code,
-                         corp_type_description='TEST')
+    corp_type = CorpType(code=corp_type_code,
+                         description='TEST')
     corp_type.save()
 
-    fee_code_master = FeeCode(fee_code=fee_code,
+    fee_code_master = FeeCode(code=fee_code,
                               amount=100)
     fee_code_master.save()
 
-    filing_type = FilingType(filing_type_code=filing_type_code,
-                             filing_description='TEST')
+    filing_type = FilingType(code=filing_type_code,
+                             description='TEST')
     filing_type.save()

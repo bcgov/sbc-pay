@@ -53,7 +53,7 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         self.fee_start_date: date = self._dao.fee_start_date
         self.fee_end_date: date = self._dao.fee_end_date
         self._fee_amount: int = self._dao.fee.amount
-        self._filing_type: str = self._dao.filing_type.filing_description
+        self._filing_type: str = self._dao.filing_type.description
 
     @property
     def fee_schedule_id(self):

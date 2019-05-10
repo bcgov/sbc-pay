@@ -13,10 +13,11 @@
 # limitations under the License.
 """Model to handle all operations related to filing type master data."""
 
+from .code_table import CodeTable
 from .db import db, ma
 
 
-class FilingType(db.Model):
+class FilingType(db.Model, CodeTable):
     """This class manages all of the base data about a filing type.
 
     Filing type indicates the filing operation on the entity
@@ -24,14 +25,8 @@ class FilingType(db.Model):
 
     __tablename__ = 'filing_type'
 
-    filing_type_code = db.Column(db.String(10), primary_key=True)
-    filing_description = db.Column('filing_description', db.String(200), nullable=False)
-
-    @classmethod
-    def find_by_filing_type_code(cls, code):
-        """Given a filing_type_code, this will return filing code details."""
-        filing_type = cls.query.filter_by(filing_type_code=code).one_or_none()
-        return filing_type
+    code = db.Column(db.String(10), primary_key=True)
+    description = db.Column('description', db.String(200), nullable=False)
 
     def save(self):
         """Save fee code."""

@@ -22,8 +22,8 @@ from pay_api.models import CorpType
 
 def factory_corp_type(corp_type_code: str, corp_description: str):
     """Return a valid Corp Type object."""
-    return CorpType(corp_type_code=corp_type_code,
-                    corp_type_description=corp_description)
+    return CorpType(code=corp_type_code,
+                    description=corp_description)
 
 
 def test_corp_type(session):
@@ -34,7 +34,7 @@ def test_corp_type(session):
     corp_type = factory_corp_type('XX', 'Cooperative')
     corp_type.save()
 
-    assert corp_type.corp_type_code is not None
+    assert corp_type.code is not None
 
 
 def test_corp_type_by_code(session):
@@ -43,7 +43,7 @@ def test_corp_type_by_code(session):
     session.add(corp_type)
     session.commit()
 
-    b = CorpType.find_by_corp_type_code('XX')
+    b = CorpType.find_by_code('XX')
     assert b is not None
 
 
@@ -53,5 +53,5 @@ def test_corp_type_by_invalid_code(session):
     session.add(corp_type)
     session.commit()
 
-    b = CorpType.find_by_corp_type_code('AB')
+    b = CorpType.find_by_code('AB')
     assert b is None

@@ -13,10 +13,11 @@
 # limitations under the License.
 """Model to handle all operations related to Fee Code master data."""
 
+from .code_table import CodeTable
 from .db import db, ma
 
 
-class FeeCode(db.Model):
+class FeeCode(db.Model, CodeTable):
     """This class manages all of the base data about a Fee Code.
 
     Fee Codes holds the fee amount
@@ -24,14 +25,8 @@ class FeeCode(db.Model):
 
     __tablename__ = 'fee_code'
 
-    fee_code = db.Column(db.String(10), primary_key=True)
+    code = db.Column(db.String(10), primary_key=True)
     amount = db.Column('amount', db.Integer, nullable=False)
-
-    @classmethod
-    def find_by_fee_code(cls, code):
-        """Given a fee_code, this will return fee code details."""
-        fee_code = cls.query.filter_by(fee_code=code).one_or_none()
-        return fee_code
 
     def save(self):
         """Save fee code."""

@@ -21,7 +21,7 @@ from pay_api.models import FeeCode
 
 def factory_feecode(fee_code: str, amount: int):
     """Return a valid FeeCode object."""
-    return FeeCode(fee_code=fee_code,
+    return FeeCode(code=fee_code,
                    amount=amount)
 
 
@@ -33,7 +33,7 @@ def test_feecode(session):
     feecode = factory_feecode('EN000X', 100)
     feecode.save()
 
-    assert feecode.fee_code is not None
+    assert feecode.code is not None
 
 
 def test_feecode_find_by_fee_code(session):
@@ -42,8 +42,9 @@ def test_feecode_find_by_fee_code(session):
     session.add(feecode)
     session.commit()
 
-    b = FeeCode.find_by_fee_code('EN000X')
+    b = FeeCode.find_by_code('EN000X')
     assert b is not None
+    assert b.code == 'EN000X'
 
 
 def test_feecode_find_by_invalid_fee_code(session):
@@ -52,5 +53,5 @@ def test_feecode_find_by_invalid_fee_code(session):
     session.add(feecode)
     session.commit()
 
-    b = FeeCode.find_by_fee_code('EN000Y')
+    b = FeeCode.find_by_code('EN000Y')
     assert b is None
