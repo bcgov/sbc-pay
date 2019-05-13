@@ -25,3 +25,4 @@ from .payment_account import PaymentAccount, PaymentAccountSchema
 from .payment_method import PaymentMethod, PaymentMethodSchema
 from .status_code import StatusCode, StatusCodeSchema
 from .receipt import Receipt, ReceiptSchema
+from .transaction import Transaction, TransactionSchema

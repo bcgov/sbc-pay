@@ -23,7 +23,7 @@ from pay_api.services import FeeSchedule
 from pay_api.utils.constants import DEFAULT_JURISDICTION
 from pay_api.utils.roles import Role
 from pay_api.utils.util import cors_preflight
-
+from http import HTTPStatus
 
 API = Namespace('fees', description='Payment System - Fees')
 
@@ -47,7 +47,7 @@ class Fee(Resource):
                 filing_type_code=filing_type_code,
                 valid_date=date,
                 jurisdiction=jurisdiction,
-                priority=priority).asdict(), 200
+                priority=priority).asdict(), HTTPStatus.OK
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         return jsonify(response), status

@@ -21,14 +21,14 @@ from .db import db, ma
 from .auditable import Auditable
 
 
-class FeeItem(db.Model, Auditable):
+class FeeItem(db.Model):
     """This class manages all of the base data about a Payment Status Code.
     """
 
     __tablename__ = 'fee_item'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    payment_id = db.Column(db.Integer, ForeignKey('payment.id'), nullable=False)
+    invoice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
     filing_fees = db.Column(db.Integer, nullable=False)
     fee_schedule_id = db.Column(db.Integer, ForeignKey('fee_schedule.fee_schedule_id'), nullable=False)
     processing_fees = db.Column(db.Integer, nullable=True)

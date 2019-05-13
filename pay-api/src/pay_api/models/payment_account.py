@@ -21,7 +21,7 @@ from .db import db, ma
 from .auditable import Auditable
 
 
-class PaymentAccount(db.Model, Auditable):
+class PaymentAccount(db.Model):
     """This class manages all of the base data about a Payment Status Code.
     """
 
@@ -29,7 +29,6 @@ class PaymentAccount(db.Model, Auditable):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     corp_number = db.Column(db.String(20), nullable=False)
-    corp_name = db.Column(db.String(150), nullable=False)
     corp_type_code = db.Column(db.String(10), ForeignKey('corp_type.code'), nullable=False)
     payment_system_code = db.Column(db.String(10), ForeignKey('payment_system.code'), nullable=False)
     account_number = db.Column(db.String(50), nullable=True)

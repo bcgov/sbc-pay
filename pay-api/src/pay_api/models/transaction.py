@@ -24,19 +24,16 @@ from .payment_method import PaymentMethod
 from .status_code import StatusCode
 
 
-class Payment(db.Model, Auditable):
-    """This class manages all of the base data about a Payment Status Code.
+class Transaction(db.Model):
+    """This class manages all of the base data about a Payment Transaction.
     """
 
-    __tablename__ = 'payment'
+    __tablename__ = 'transaction'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    transaction_id = db.Column(db.String(10))
-    payment_system_code = db.Column(db.String(10), ForeignKey('payment_system.code'), nullable=False)
-    payment_method_code = db.Column(db.String(10), ForeignKey('payment_method.code'), nullable=False)
-    payment_status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
-    total = db.Column(db.Integer, nullable=False)
-    paid = db.Column(db.Integer, nullable=True)
+    status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
+    invoice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
+    date = db.Column(db.DateTime, default=datetime.today(), nullable=False)
 
     def save(self):
         """Save status."""
@@ -44,10 +41,10 @@ class Payment(db.Model, Auditable):
         db.session.commit()
 
 
-class PaymentSchema(ma.ModelSchema):
+class TransactionSchema(ma.ModelSchema):
     """Main schema used to serialize the Status Code."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
-        model = Payment
+        model = Transaction

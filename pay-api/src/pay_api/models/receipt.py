@@ -21,7 +21,7 @@ from .db import db, ma
 from .auditable import Auditable
 
 
-class Receipt(db.Model, Auditable):
+class Receipt(db.Model):
     """This class manages all of the base data about a Payment Status Code.
     """
 
