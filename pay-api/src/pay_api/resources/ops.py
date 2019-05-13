@@ -25,8 +25,9 @@ SQL = text('select 1')
 
 @API.route('healthz')
 class Healthz(Resource):
-    """Determines if the service and required dependnecies are still working.
-    This could be thought of as a heartbeat for the service
+    """Determines if the service and required dependencies are still working.
+
+    This could be thought of as a heartbeat for the service.
     """
 
     @staticmethod

@@ -11,15 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Create SQLAlchenmy and Schema managers.
-
-These will get initialized by the application using the models
-"""
-from flask_marshmallow import Marshmallow
-from flask_sqlalchemy import SQLAlchemy
+"""Base class for code model."""
 
 
-# by convention in the Flask community these are lower case,
-# whereas pylint wants them upper case
-ma = Marshmallow()  # pylint: disable=invalid-name
-db = SQLAlchemy()  # pylint: disable=invalid-name
+class CodeTable:
+    """This class provides base methods for Code Table."""
+
+    @classmethod
+    def find_by_code(cls, code):
+        """Given a fee_code, this will return fee code details."""
+        code_table = cls.query.filter_by(code=code).one_or_none()  # pylint: disable=no-member
+        return code_table

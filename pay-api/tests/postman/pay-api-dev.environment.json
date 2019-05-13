@@ -1,0 +1,68 @@
+{
+	"id": "b3555e23-c2e8-4f8f-aba5-3f97a6b0e8da",
+	"name": "PAY-API-DEV",
+	"values": [
+		{
+			"key": "pay-api-base-url",
+			"value": "https://pay-api-dev.pathfinder.gov.bc.ca",
+			"description": {
+				"content": "",
+				"type": "text/plain"
+			},
+			"enabled": true
+		},
+		{
+			"key": "tokenUrl",
+			"value": "https://auth-api-dev.pathfinder.gov.bc.ca/api/v1/token",
+			"description": {
+				"content": "",
+				"type": "text/plain"
+			},
+			"enabled": true
+		},
+		{
+			"key": "userName",
+			"value": "CP0001219",
+			"description": {
+				"content": "",
+				"type": "text/plain"
+			},
+			"enabled": true
+		},
+		{
+			"key": "passCode",
+			"value": "219168648",
+			"description": {
+				"content": "",
+				"type": "text/plain"
+			},
+			"enabled": true
+		},
+		{
+			"key": "accessToken",
+			"value": "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJUbWdtZUk0MnVsdUZ0N3FQbmUtcTEzdDUwa0JDbjF3bHF6dHN0UGdUM1dFIn0.eyJqdGkiOiIyYTBlMDI4Ny1kMTEyLTQ3ZmYtOTg1MS00MWNiY2I4MzY2NjAiLCJleHAiOjE1NTczNTUyNjIsIm5iZiI6MCwiaWF0IjoxNTU3MzUxNjYyLCJpc3MiOiJodHRwczovL3Nzby1kZXYucGF0aGZpbmRlci5nb3YuYmMuY2EvYXV0aC9yZWFsbXMvZmNmMGtwcXIiLCJhdWQiOiJzYmMtYXV0aC13ZWIiLCJzdWIiOiIxNTA5OTg4My0zYzNmLTRiNGMtYTEyNC1hMTgyNGQ2Y2JhODQiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJzYmMtYXV0aC13ZWIiLCJhdXRoX3RpbWUiOjAsInNlc3Npb25fc3RhdGUiOiJkYzMwYWVmMi0yMjg0LTQzMDctYWVhZi01YWNlZDJiNDFhMzAiLCJhY3IiOiIxIiwiYWxsb3dlZC1vcmlnaW5zIjpbImh0dHA6Ly8xOTIuMTY4LjAuMTM6ODA4MC8iLCIxOTIuMTY4LjAuMTMiLCIqIiwiaHR0cDovLzE5Mi4xNjguMC4xMzo4MDgwIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJlZGl0IiwidW1hX2F1dGhvcml6YXRpb24iLCJiYXNpYyJdfSwicmVzb3VyY2VfYWNjZXNzIjp7ImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInByZWZlcnJlZF91c2VybmFtZSI6ImNwMDAwMTIxOSJ9.B8fVubAttWKLgxtvmk7qCPjaQSAhuooQhIAJ6H7rZ_D4XYl-_76JuWfB1YEQxaS7URi4422r2NABHkkaUnqBdwAMHO51Y32p6gkqEdK6utyuXwRfpJHzhsV-zCqbeYzMvw2wmCLSwzTYehXobIpw5GYejvkNud7aggsZhTxKBZlzLBFwfmKTvETk2t7TdKJd7bF2esYLoBTdmcw4T1mHDQy0Gg_stiXFdm2mrysfB4_DCbiRQ1nKvQrqhtehUAVRXYiVaUcSHz_fXb79JqwnTqWpSwalv9VXwEtI_r_DDH4534bO5ibTf3j54J29JHcZgiY4bXoo6WlXa3yKq_ZVUA",
+			"enabled": true
+		},
+		{
+			"key": "corp-type",
+			"value": "CP",
+			"description": {
+				"content": "",
+				"type": "text/plain"
+			},
+			"enabled": true
+		},
+		{
+			"key": "filing-type-code",
+			"value": "OTCDR",
+			"description": {
+				"content": "",
+				"type": "text/plain"
+			},
+			"enabled": true
+		}
+	],
+	"_postman_variable_scope": "environment",
+	"_postman_exported_at": "2019-05-09T23:02:00.346Z",
+	"_postman_exported_using": "Postman/6.7.4"
+}

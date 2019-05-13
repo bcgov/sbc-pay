@@ -11,18 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Endpoints to check and manage refunds."""
-from flask_restplus import Namespace, Resource
+"""Role definitions."""
+from enum import Enum
 
 
-API = Namespace('refunds', description='Service - Refunds')
+class Role(Enum):
+    """User Role."""
 
-
-@API.route('')
-class Refund(Resource):
-    """Refund resource."""
-
-    @staticmethod
-    def get():
-        """Get refund."""
-        return {'message': 'refund'}, 200
+    BASIC = 'basic'
+    PREMIUM = 'premium'
+    STAFF = 'staff'
+    VIEWER = 'viewer'
+    EDITOR = 'editor'
