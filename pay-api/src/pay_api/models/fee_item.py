@@ -33,7 +33,6 @@ class FeeItem(db.Model, Auditable):
     fee_schedule_id = db.Column(db.Integer, ForeignKey('fee_schedule.fee_schedule_id'), nullable=False)
     processing_fees = db.Column(db.Integer, nullable=True)
     service_fees = db.Column(db.Integer, nullable=True)
-    service_fees = db.Column(db.Integer, nullable=True)
     description = db.Column(db.String(200), nullable=True)
     gst = db.Column(db.Integer, nullable=True)
     pst = db.Column(db.Integer, nullable=True)
