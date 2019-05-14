@@ -11,19 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Model to handle all operations related to Payment Status master data."""
-from datetime import date, datetime
-
+"""Model to handle all operations related to Payment Account data."""
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship
 
 from .db import db, ma
-from .auditable import Auditable
 
 
 class PaymentAccount(db.Model):
-    """This class manages all of the base data about a Payment Status Code.
-    """
+    """This class manages all of the base data about Payment Account."""
 
     __tablename__ = 'payment_account'
 
@@ -42,7 +37,7 @@ class PaymentAccount(db.Model):
 
 
 class PaymentAccountSchema(ma.ModelSchema):
-    """Main schema used to serialize the Status Code."""
+    """Main schema used to serialize the Payment Account."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""

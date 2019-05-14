@@ -11,13 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Base class for code model."""
-from datetime import date, datetime
-
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship
-
-from .db import db, ma
+"""Base class for auditable model."""
+from .db import db
 
 
 class Auditable(object):

@@ -11,19 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Model to handle all operations related to Payment Status master data."""
-from datetime import date, datetime
+"""Model to handle all operations related to Receipt."""
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship
 
 from .db import db, ma
-from .auditable import Auditable
 
 
 class Receipt(db.Model):
-    """This class manages all of the base data about a Payment Status Code.
-    """
+    """This class manages all of the base data about Receipt."""
 
     __tablename__ = 'receipt'
 
@@ -40,7 +36,7 @@ class Receipt(db.Model):
 
 
 class ReceiptSchema(ma.ModelSchema):
-    """Main schema used to serialize the Status Code."""
+    """Main schema used to serialize the Receipt."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""

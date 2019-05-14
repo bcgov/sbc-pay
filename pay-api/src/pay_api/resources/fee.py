@@ -13,6 +13,7 @@
 # limitations under the License.
 """Resource for Fee Calculation endpoints."""
 from datetime import datetime
+from http import HTTPStatus
 
 from flask import jsonify, request
 from flask_restplus import Namespace, Resource, cors
@@ -23,7 +24,7 @@ from pay_api.services import FeeSchedule
 from pay_api.utils.constants import DEFAULT_JURISDICTION
 from pay_api.utils.roles import Role
 from pay_api.utils.util import cors_preflight
-from http import HTTPStatus
+
 
 API = Namespace('fees', description='Payment System - Fees')
 

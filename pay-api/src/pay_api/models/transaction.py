@@ -12,21 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Payment Status master data."""
-from datetime import date, datetime
+from datetime import datetime
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship
 
 from .db import db, ma
-from .auditable import Auditable
-from .payment_system import PaymentSystem
-from .payment_method import PaymentMethod
-from .status_code import StatusCode
 
 
-class Transaction(db.Model):
-    """This class manages all of the base data about a Payment Transaction.
-    """
+class Transaction(db.Model):  # pylint: disable=too-few-public-methods
+    """This class manages all of the base data about Payment Transaction."""
 
     __tablename__ = 'transaction'
 
@@ -42,7 +36,7 @@ class Transaction(db.Model):
 
 
 class TransactionSchema(ma.ModelSchema):
-    """Main schema used to serialize the Status Code."""
+    """Main schema used to serialize the Transaction."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""

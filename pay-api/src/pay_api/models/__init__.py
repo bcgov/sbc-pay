@@ -16,13 +16,13 @@
 from .corp_type import CorpType, CorpTypeSchema
 from .db import db, ma
 from .fee_code import FeeCode, FeeCodeSchema
+from .fee_item import FeeItem, FeeItemSchema
 from .fee_schedule import FeeSchedule, FeeScheduleSchema
 from .filing_type import FilingType, FilingTypeSchema
-from .fee_item import FeeItem, FeeItemSchema
 from .invoice import Invoice, InvoiceSchema
 from .payment import Payment, PaymentSchema
 from .payment_account import PaymentAccount, PaymentAccountSchema
 from .payment_method import PaymentMethod, PaymentMethodSchema
-from .status_code import StatusCode, StatusCodeSchema
 from .receipt import Receipt, ReceiptSchema
+from .status_code import StatusCode, StatusCodeSchema
 from .transaction import Transaction, TransactionSchema

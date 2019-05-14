@@ -13,13 +13,12 @@
 # limitations under the License.
 """Model to handle all operations related to Payment Status master data."""
 
-from .db import db, ma
 from .code_table import CodeTable
+from .db import db, ma
 
 
 class StatusCode(db.Model, CodeTable):
-    """This class manages all of the base data about a Payment Status Code.
-    """
+    """This class manages all of the base data about a Payment Status Code."""
 
     __tablename__ = 'status_code'
 

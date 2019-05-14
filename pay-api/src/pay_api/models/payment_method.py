@@ -13,13 +13,12 @@
 # limitations under the License.
 """Model to handle all operations related to Payment System master data."""
 
-from .db import db, ma
 from .code_table import CodeTable
+from .db import db, ma
 
 
 class PaymentMethod(db.Model, CodeTable):
-    """This class manages all of the base data about a Payment System Code.
-    """
+    """This class manages all of the base data about Payment Method."""
 
     __tablename__ = 'payment_method'
 
