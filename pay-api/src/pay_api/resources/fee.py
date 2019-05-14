@@ -13,6 +13,7 @@
 # limitations under the License.
 """Resource for Fee Calculation endpoints."""
 from datetime import datetime
+from http import HTTPStatus
 
 from flask import jsonify, request
 from flask_restplus import Namespace, Resource, cors
@@ -47,7 +48,7 @@ class Fee(Resource):
                 filing_type_code=filing_type_code,
                 valid_date=date,
                 jurisdiction=jurisdiction,
-                priority=priority).asdict(), 200
+                priority=priority).asdict(), HTTPStatus.OK
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         return jsonify(response), status
