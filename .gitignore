@@ -111,6 +111,7 @@ venv.bak/
 *.sln
 node_modules
 *.code-workspace
+.history/
 
 # pycharm
 .idea/
