@@ -41,7 +41,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     app.config.from_object(config.CONFIGURATION[run_mode])
 
     # initialize tracer
-    api_tracer = ApiTracer()
+    api_tracer = ApiTracer("Payment Services")
     global tracing  # pylint: disable=global-statement,invalid-name
     tracing = ApiTracing(api_tracer.tracer)
 
