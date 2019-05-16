@@ -11,21 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Meta information about the service.
-
-Currently this only provides API versioning information
-"""
-from flask_restplus import Namespace, Resource
+"""Base class for code model."""
 
 
-API = Namespace('batch', description='Service - Batch Pay')
+class CodeTable:
+    """This class provides base methods for Code Table."""
 
-
-@API.route('')
-class Batch(Resource):
-    """Information about the endpoint."""
-
-    @staticmethod
-    def get():
-        """Information about the endpoint."""
-        return {'message': 'batch pay'}, 200
+    @classmethod
+    def find_by_code(cls, code):
+        """Given a fee_code, this will return fee code details."""
+        code_table = cls.query.filter_by(code=code).one_or_none()  # pylint: disable=no-member
+        return code_table

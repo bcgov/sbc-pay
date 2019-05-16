@@ -11,20 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Endpoints to check and manage payments."""
-from flask_restplus import Namespace, Resource
-
-from pay_api import tracing as _tracing
-
-API = Namespace('payments', description='Service - Payments')
+"""Error definitions."""
+from enum import Enum
+from http import HTTPStatus
 
 
-@API.route('')
-class Payment(Resource):
-    """Payment endpoint resource."""
+class Error(Enum):
+    """Error Codes."""
 
-    @staticmethod
-    @_tracing.trace()
-    def get():
-        """Get payment."""
-        return {'message': 'pay'}, 200
+    PAY001 = 'Invalid Corp Type or Filing Type', HTTPStatus.BAD_REQUEST
+    PAY002 = 'No matching record found for Corp Type and Filing Type', HTTPStatus.BAD_REQUEST
+
+    def __new__(cls, message, status):
+        """Attributes for the enum."""
+        obj = object.__new__(cls)
+        obj.message = message
+        obj.status = status
+        return obj

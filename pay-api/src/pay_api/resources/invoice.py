@@ -15,6 +15,7 @@
 from flask import current_app, request
 from flask_restplus import Namespace, Resource
 
+from pay_api import tracing as _tracing
 from pay_api.services.paybc import PayBcService
 from pay_api.utils.util import cors_preflight
 
@@ -32,6 +33,7 @@ class Invoice(Resource):
     @staticmethod
     @API.doc('Creates invoice in payment system')
     @API.response(201, 'Invoice created successfully')
+    @_tracing.trace()
     def post():
         """Return a new invoice in the payment system."""
         request_json = request.get_json()
@@ -41,7 +43,7 @@ class Invoice(Resource):
             invoice_response = PAY_BC_SERVICE.create_payment_records(request_json)
             response_json = {
                 'paybc_reference_number': invoice_response.get('pbc_ref_number', None),
-                'invoice_number': invoice_response.get('invoice_number', None)
+                'invoice_number': invoice_response.get('invoice_number', None),
             }
         else:
             response_json = {'message': 'Invoice created successfully'}

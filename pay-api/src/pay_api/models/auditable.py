@@ -11,15 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Create SQLAlchenmy and Schema managers.
-
-These will get initialized by the application using the models
-"""
-from flask_marshmallow import Marshmallow
-from flask_sqlalchemy import SQLAlchemy
+"""Base class for auditable model."""
+from .db import db
 
 
-# by convention in the Flask community these are lower case,
-# whereas pylint wants them upper case
-ma = Marshmallow()  # pylint: disable=invalid-name
-db = SQLAlchemy()  # pylint: disable=invalid-name
+class Auditable(object):
+    """This class provides base methods for Code Table."""
+
+    created_by = db.Column('created_by', db.String(50), nullable=False)
+    created_on = db.Column('created_on', db.DateTime, nullable=False)
+    updated_by = db.Column('updated_by', db.String(50), nullable=True)
+    updated_on = db.Column('updated_on', db.DateTime, nullable=True)

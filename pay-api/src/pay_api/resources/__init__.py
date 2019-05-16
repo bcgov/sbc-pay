@@ -23,13 +23,12 @@ That are used to expose operational health information about the service, and me
 from flask import Blueprint
 from flask_restplus import Api
 
+from .fee import API as FEE_API
 # from .trace import API as TRACE_API
-from .batch import API as BATCH_API
 from .invoice import API as INVOICE_API
 from .meta import API as META_API
 from .ops import API as OPS_API
 from .pay import API as PAY_API
-from .refund import API as REFUND_API
 
 
 __all__ = ('API_BLUEPRINT', 'OPS_BLUEPRINT')
@@ -68,7 +67,6 @@ API = Api(API_BLUEPRINT,
 API.add_namespace(META_API, path='/meta')
 # API.add_namespace(TRACE_API, path='/trace')
 
-API.add_namespace(BATCH_API, path='/batch')
 API.add_namespace(INVOICE_API, path='/invoices')
 API.add_namespace(PAY_API, path='/payments')
-API.add_namespace(REFUND_API, path='/refunds')
+API.add_namespace(FEE_API, path='/fees')

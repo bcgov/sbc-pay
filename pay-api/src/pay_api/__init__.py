@@ -25,12 +25,14 @@ from pay_api import models
 from pay_api.models import db, ma
 from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
-
+from sbc_common_components.tracing.api_tracer import ApiTracer
+from sbc_common_components.tracing.api_tracing import ApiTracing
 
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
 # lower case name as used by convention in most Flask apps
 jwt = JwtManager()  # pylint: disable=invalid-name
+tracing = None  # pylint: disable=invalid-name
 
 
 def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
@@ -38,11 +40,11 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     app = Flask(__name__)
     app.config.from_object(config.CONFIGURATION[run_mode])
 
-    # start tracer
-    # tracer = init_tracer(__name__)
-    # FlaskTracing(tracer)
+    # initialize tracer
+    api_tracer = ApiTracer()
+    global tracing  # pylint: disable=global-statement,invalid-name
+    tracing = ApiTracing(api_tracer.tracer)
 
-    from pay_api import models
     from pay_api.resources import API_BLUEPRINT, OPS_BLUEPRINT
 
     db.init_app(app)
@@ -66,8 +68,10 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
 
 def setup_jwt_manager(app, jwt_manager):
     """Use flask app to configure the JWTManager to work for a particular Realm."""
+
     def get_roles(a_dict):
         return a_dict['realm_access']['roles']  # pragma: no cover
+
     app.config['JWT_ROLE_CALLBACK'] = get_roles
 
     jwt_manager.init_app(app)
@@ -75,12 +79,9 @@ def setup_jwt_manager(app, jwt_manager):
 
 def register_shellcontext(app):
     """Register shell context objects."""
+
     def shell_context():
         """Shell context objects."""
-        return {
-            'app': app,
-            'jwt': jwt,
-            'db': db,
-            'models': models}  # pragma: no cover
+        return {'app': app, 'jwt': jwt, 'db': db, 'models': models}  # pragma: no cover
 
     app.shell_context_processor(shell_context)
