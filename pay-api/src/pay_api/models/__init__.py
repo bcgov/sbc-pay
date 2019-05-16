@@ -13,6 +13,11 @@
 # limitations under the License.
 
 """This exports all of the models and schemas used by the application."""
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
+
+from sbc_common_components.tracing.db_tracing import DBTracing
+
 from .corp_type import CorpType, CorpTypeSchema
 from .db import db, ma
 from .fee_code import FeeCode, FeeCodeSchema
@@ -26,3 +31,5 @@ from .payment_method import PaymentMethod, PaymentMethodSchema
 from .receipt import Receipt, ReceiptSchema
 from .status_code import StatusCode, StatusCodeSchema
 from .transaction import Transaction, TransactionSchema
+
+event.listen(Engine, 'before_cursor_execute', DBTracing.query_tracing)

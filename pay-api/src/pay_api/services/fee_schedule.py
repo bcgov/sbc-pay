@@ -21,7 +21,10 @@ from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.utils.errors import Error
 
+from sbc_common_components.tracing.service_tracing import ServiceTracing
 
+
+@ServiceTracing.trace(ServiceTracing.enable_tracing, ServiceTracing.should_be_tracing)
 class FeeSchedule:  # pylint: disable=too-many-instance-attributes
     """Service to manage Fee related operations."""
 
@@ -121,6 +124,7 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         self._fee_end_date = value
         self._dao.fee_end_date = value
 
+    @ServiceTracing.disable_tracing
     def asdict(self):
         """Return the User as a python dict."""
         d = {
@@ -132,8 +136,8 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
             'tax': {
                 # TODO Populate Tax details here
                 'gst': 0,
-                'pst': 0
-            }
+                'pst': 0,
+            },
         }
         return d
 
@@ -142,22 +146,21 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         self._dao.save()
 
     @classmethod
-    def find_by_corp_type_and_filing_type(cls, corp_type: str,  # pylint: disable=too-many-arguments
-                                          filing_type_code: str,
-                                          valid_date: date,
-                                          jurisdiction: str,
-                                          priority: bool):
+    def find_by_corp_type_and_filing_type(
+        cls,
+        corp_type: str,  # pylint: disable=too-many-arguments
+        filing_type_code: str,
+        valid_date: date,
+        jurisdiction: str,
+        priority: bool,
+    ):
         """Calculate fees for the filing by using the arguments."""
         current_app.logger.debug('<get_fees_by_corp_type_and_filing_type')
         if not corp_type and not filing_type_code:
             raise BusinessException(Error.PAY001)
         if jurisdiction or priority:
             current_app.logger.warn('Not using Jurisdiction and priority now!!!')
-        fee_schedule_dao = FeeScheduleModel.find_by_filing_type_and_corp_type(
-            corp_type,
-            filing_type_code,
-            valid_date
-        )
+        fee_schedule_dao = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type, filing_type_code, valid_date)
 
         if not fee_schedule_dao:
             raise BusinessException(Error.PAY002)

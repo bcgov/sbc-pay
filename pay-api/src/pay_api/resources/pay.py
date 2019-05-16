@@ -12,15 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Endpoints to check and manage payments."""
-import opentracing
-from flask_opentracing import FlaskTracing
 from flask_restplus import Namespace, Resource
 
+from pay_api import tracing as _tracing
 
 API = Namespace('payments', description='Service - Payments')
-
-TRACER = opentracing.tracer
-TRACING = FlaskTracing(TRACER)
 
 
 @API.route('')
@@ -28,7 +24,7 @@ class Payment(Resource):
     """Payment endpoint resource."""
 
     @staticmethod
-    @TRACING.trace()
+    @_tracing.trace()
     def get():
         """Get payment."""
         return {'message': 'pay'}, 200
