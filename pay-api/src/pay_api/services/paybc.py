@@ -21,7 +21,7 @@ from flask import current_app
 from pay_api.utils.enums import AuthHeaderType, ContentType
 
 from .oauth_service import OAuthService
-
+from random import randint
 
 class PayBcService(OAuthService):
     """Service to manage PayBC communication."""
@@ -137,6 +137,7 @@ class PayBcService(OAuthService):
             cust_trx_type=invoice_request.get('customer_transaction_type', None),
             # bill_to_customer_number=contact.get('contact_number', None),
             # site_number=site.get('site_number', None), total=invoice_request.get('total'),
+            transaction_number='CP' + str(randint(10000, 99999)),
             transaction_date=curr_time,
             gl_date=curr_time,
             term_name='IMMEDIATE',
