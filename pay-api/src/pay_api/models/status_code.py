@@ -22,7 +22,7 @@ class StatusCode(db.Model, CodeTable):
 
     __tablename__ = 'status_code'
 
-    code = db.Column(db.String(10), primary_key=True)
+    code = db.Column(db.String(20), primary_key=True)
     description = db.Column('description', db.String(200), nullable=False)
 
     def save(self):

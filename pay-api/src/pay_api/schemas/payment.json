@@ -1,0 +1,183 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "title": "Payment Request",
+  "required": [
+    "payment_info",
+    "business_info",
+    "filing_info"
+  ],
+  "properties": {
+    "payment_info": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/payment_info"
+        }
+      ]
+    },
+    "business_info": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/business_info"
+        }
+      ]
+    },
+    "filing_info": {
+      "oneOf": [
+        {
+          "$ref": "#/definitions/filing_info"
+        }
+      ]
+    }
+  },
+  "definitions": {
+    "payment_info": {
+      "$id": "payment_info",
+      "type": "object",
+      "required": [
+        "method_of_payment",
+        "payment_system"
+      ],
+      "properties": {
+        "method_of_payment": {
+          "$id": "#/properties/method_of_payment",
+          "type": "string",
+          "title": "Method of payment",
+          "default": "CC",
+          "examples": [
+            "CC"
+          ],
+          "pattern": "^(.*)$"
+        },
+        "payment_system": {
+          "$id": "#/properties/payment_system",
+          "type": "string",
+          "title": "Payment System",
+          "default": "PAYBC",
+          "examples": [
+            "PAYBC"
+          ],
+          "pattern": "^(.*)$"
+        }
+      }
+    },
+    "business_info": {
+      "$id": "business_info",
+      "type": "object",
+      "required": [
+        "business_identifier",
+        "corp_type",
+        "business_name"
+      ],
+      "properties": {
+        "business_identifier": {
+          "$id": "#/properties/business_identifier",
+          "type": "string",
+          "title": "The Business_identifier Schema",
+          "default": "",
+          "examples": [
+            "CP1000"
+          ],
+          "pattern": "^(.*)$"
+        },
+        "corp_type": {
+          "$id": "#/properties/corp_type",
+          "type": "string",
+          "title": "The Corp_type Schema",
+          "default": "",
+          "examples": [
+            "CP"
+          ],
+          "pattern": "^(.*)$"
+        },
+        "business_name": {
+          "$id": "#/properties/business_name",
+          "type": "string",
+          "title": "The Business_name Schema",
+          "default": "",
+          "examples": [
+            "XYZ Corp"
+          ],
+          "pattern": "^(.*)$"
+        }
+      }
+    },
+    "filing_info": {
+      "$id": "filing_info",
+      "type": "object",
+      "title": "Filing Info",
+      "properties": {
+        "date": {
+          "$id": "#/properties/date",
+          "type": "string",
+          "title": "Date on which fees are applicable",
+          "default": "",
+          "examples": [
+            "2019-01-01"
+          ],
+          "pattern": "^\\d{4}\\-(0?[1-9]|1[012])\\-(0?[1-9]|[12][0-9]|3[01])$"
+        },
+        "filing_types": {
+          "$id": "#/properties/filing_types",
+          "type": "array",
+          "title": "Filing Types",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "#/definitions/filing_type"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "filing_type": {
+      "$id": "filing_type",
+      "type": "object",
+      "title": "Filing Type",
+      "required": [
+        "filing_type_code"
+      ],
+      "properties": {
+        "filing_type_code": {
+          "$id": "#/properties/filing_types/items/properties/filing_type_code",
+          "type": "string",
+          "title": "Filing type code",
+          "default": "",
+          "examples": [
+            "OTADD"
+          ],
+          "pattern": "^(.*)$"
+        },
+        "priority": {
+          "$id": "#/properties/filing_types/items/properties/priority",
+          "type": "boolean",
+          "title": "Filing Priority",
+          "default": false,
+          "examples": [
+            true
+          ]
+        },
+        "filing_description": {
+          "$id": "#/properties/filing_types/items/properties/filing_description",
+          "type": "string",
+          "title": "Filing description",
+          "default": "",
+          "examples": [
+            "2019 Annual Report"
+          ],
+          "pattern": "^(.*)$"
+        },
+        "quantity": {
+          "$id": "#/properties/filing_types/items/properties/quantity",
+          "type": "integer",
+          "title": "Quantity",
+          "default": 1,
+          "examples": [
+            1
+          ]
+        }
+      }
+    }
+  }
+}

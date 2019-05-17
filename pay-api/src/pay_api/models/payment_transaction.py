@@ -11,28 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Model to handle all operations related to Fee Item."""
+"""Model to handle all operations related to Payment Status master data."""
+from datetime import datetime
 
 from sqlalchemy import ForeignKey
 
 from .db import db, ma
 
 
-class FeeItem(db.Model):
-    """This class manages all of the base data about Fee Item."""
+class PaymentTransaction(db.Model):  # pylint: disable=too-few-public-methods
+    """This class manages all of the base data about Payment Transaction."""
 
-    __tablename__ = 'fee_item'
+    __tablename__ = 'payment_transaction'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
     invoice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
-    filing_fees = db.Column(db.Integer, nullable=False)
-    fee_schedule_id = db.Column(db.Integer, ForeignKey('fee_schedule.fee_schedule_id'), nullable=False)
-    processing_fees = db.Column(db.Integer, nullable=True)
-    service_fees = db.Column(db.Integer, nullable=True)
-    description = db.Column(db.String(200), nullable=True)
-    gst = db.Column(db.Integer, nullable=True)
-    pst = db.Column(db.Integer, nullable=True)
-    total = db.Column(db.Integer, nullable=False)
+    date = db.Column(db.DateTime, default=datetime.today(), nullable=False)
 
     def save(self):
         """Save status."""
@@ -40,10 +35,10 @@ class FeeItem(db.Model):
         db.session.commit()
 
 
-class FeeItemSchema(ma.ModelSchema):
-    """Main schema used to serialize the Status Code."""
+class PaymentTransactionSchema(ma.ModelSchema):
+    """Main schema used to serialize the PaymentTransaction."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
-        model = FeeItem
+        model = PaymentTransaction

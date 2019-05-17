@@ -45,3 +45,22 @@ class OAuthService:
         response.raise_for_status()
         current_app.logger.debug('>post')
         return response
+
+    @staticmethod
+    def get(endpoint, token, auth_header_type: AuthHeaderType, content_type: ContentType):
+        """GET service."""
+        current_app.logger.debug('<post')
+
+        headers = {
+            'Authorization': auth_header_type.value.format(token),
+            'Content-Type': content_type.value
+        }
+
+        current_app.logger.debug('Endpoint : {}'.format(endpoint))
+        current_app.logger.debug('headers : {}'.format(headers))
+        response = requests.get(endpoint, headers=headers)
+        current_app.logger.info('response : {}'.format(response.text))
+        print('response : {}'.format(response.text))
+        response.raise_for_status()
+        current_app.logger.debug('>post')
+        return response

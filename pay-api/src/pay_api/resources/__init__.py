@@ -28,7 +28,7 @@ from .fee import API as FEE_API
 from .invoice import API as INVOICE_API
 from .meta import API as META_API
 from .ops import API as OPS_API
-from .pay import API as PAY_API
+from .payment import API as PAY_API
 
 
 __all__ = ('API_BLUEPRINT', 'OPS_BLUEPRINT')

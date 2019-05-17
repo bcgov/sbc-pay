@@ -21,6 +21,7 @@ class Error(Enum):
 
     PAY001 = 'Invalid Corp Type or Filing Type', HTTPStatus.BAD_REQUEST
     PAY002 = 'No matching record found for Corp Type and Filing Type', HTTPStatus.BAD_REQUEST
+    PAY003 = 'Invalid Corp Type or Payment Method', HTTPStatus.BAD_REQUEST
 
     def __new__(cls, message, status):
         """Attributes for the enum."""
@@ -28,3 +29,9 @@ class Error(Enum):
         obj.message = message
         obj.status = status
         return obj
+
+    @staticmethod
+    def create(code, message, status):
+        Error(code, message, status)
+
+

@@ -123,17 +123,22 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
 
     def asdict(self):
         """Return the User as a python dict."""
+        service_fees = 0  # TODO Populate Service fees here
+        processing_fees = 0  # TODO Populate Processing fees here
+        pst = 0  # TODO Populate Tax details here
+        gst = 0  # TODO Populate Tax details here
+        total = self._fee_amount + service_fees + processing_fees + pst + gst
         d = {
             'filing_type': self._filing_type,
             'filing_type_code': self.filing_type_code,
             'filing_fees': self._fee_amount,
-            'service_fees': 0,  # TODO Populate Service fees here
-            'processing_fees': 0,  # TODO Populate Processing fees here
+            'service_fees': service_fees,
+            'processing_fees': 0,
             'tax': {
-                # TODO Populate Tax details here
-                'gst': 0,
-                'pst': 0
-            }
+                'gst': gst,
+                'pst': pst
+            },
+            'total': total
         }
         return d
 

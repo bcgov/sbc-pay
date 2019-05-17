@@ -17,6 +17,9 @@ from sqlalchemy import ForeignKey
 
 from .auditable import Auditable
 from .db import db, ma
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import relationship
+from .payment_system import PaymentSystem
 
 
 class Payment(db.Model, Auditable):
@@ -25,12 +28,13 @@ class Payment(db.Model, Auditable):
     __tablename__ = 'payment'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    transaction_id = db.Column(db.String(10))
     payment_system_code = db.Column(db.String(10), ForeignKey('payment_system.code'), nullable=False)
     payment_method_code = db.Column(db.String(10), ForeignKey('payment_method.code'), nullable=False)
     payment_status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
     total = db.Column(db.Integer, nullable=False)
     paid = db.Column(db.Integer, nullable=True)
+
+    payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='joined', innerjoin=True)
 
     def save(self):
         """Save status."""

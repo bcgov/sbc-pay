@@ -30,9 +30,9 @@ def validate_schema(data: dict, schema_file: dict) -> Tuple[bool, iter]:
     if Draft7Validator(schema, format_checker=draft7_format_checker).is_valid(data):
         return True, None
 
-    errors = Draft7Validator(schema,
-                             format_checker=draft7_format_checker
-                             ).iter_errors(data)
+    errors = _serialize_errors(Draft7Validator(schema,
+                                               format_checker=draft7_format_checker
+                                               ).iter_errors(data))
     return False, errors
 
 
@@ -44,3 +44,10 @@ def _load_json_schema(filename: str):
 
     with open(absolute_path) as schema_file:
         return json.loads(schema_file.read())
+
+
+def _serialize_errors(errors):
+    error_message = []
+    for error in errors:
+        error_message.append(error.message)
+    return error_message
