@@ -29,6 +29,7 @@ from .fee_schedule import FeeSchedule
 from .payment_system_factory import PaymentSystemFactory
 from .base_payment_system import PaymentSystemService
 from .payment_account import PaymentAccount
+from .payment_line_item import PaymentLineItem
 
 
 class PaymentService:
@@ -41,6 +42,7 @@ class PaymentService:
 
         payment_info = payment_request.get('payment_info')
         business_info = payment_request.get('business_info')
+        contact_info = payment_request.get('contact_info')
         filing_info = payment_request.get('filing_info')
 
         # TODO DI Pay BC
@@ -50,12 +52,16 @@ class PaymentService:
         # Calculate the fees
         fees = []
         for filing_type_info in filing_info.get('filing_types'):
-            fees.append(FeeSchedule.find_by_corp_type_and_filing_type(
+            fee: FeeSchedule = FeeSchedule.find_by_corp_type_and_filing_type(
                 corp_type=business_info.get('corp_type', None),
                 filing_type_code=filing_type_info.get('filing_type_code', None),
                 valid_date=filing_info.get('date', None),
                 jurisdiction=None,
-                priority=filing_info.get('priority', None)).asdict())
+                priority=filing_info.get('priority', None))
+            if not filing_type_info.get('filing_description'):
+                fee.description = filing_type_info.get('filing_description')
+
+            fees.append(fee.asdict())
 
         """
         Step 1 : Check if payment account exists in DB, 
@@ -71,23 +77,36 @@ class PaymentService:
                     If fails adjust the invoice to zero in payment system else Return with payment identfier
                 If failed  : rollback the transaction (except account creation)
         """
-        payment_account = PaymentAccount.query()??
+        payment_account = PaymentAccount.find_account(business_info.get('business_identifier', None),
+                                                      business_info.get('corp_type', None),
+                                                      pay_service.get_payment_system_code())
         if payment_account:
-            if not pay_service.is_valid_account():
+            payment_account_dict = payment_account.asdict()
+            if not pay_service.is_valid_account(payment_account_dict.get('party_number'),
+                                                payment_account_dict.get('account_number'),
+                                                payment_account_dict.get('site_number')):
                 payment_account.delete()
                 payment_account = None
         if not payment_account:
-            party_number, account_number, site_number = pay_service.create_account(business_info.get('business_name'))
-            PaymentAccount.create()??
+            party_number, account_number, site_number = pay_service.create_account(business_info.get('business_name'),
+                                                                                   contact_info)
+            payment_account = PaymentAccount.create(business_info, account_number, party_number, site_number)
 
+        payment = Payment.create(payment_info, fees, pay_service.get_payment_system_code())
 
-        Payment.create(payment_info, fees)
-        Invoice.create()??
-        PaymentLineItem.create() - iter
+        invoice = Invoice.create(payment_account, payment, fees)
+        line_items: [PaymentLineItem] = []
+        for fee in fees:
+            line_items.append(PaymentLineItem.create(invoice.id, fee))
 
-        inv = pay_service.create_invoice()
-        Invoice.update()
-        commit()
+        pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice.id)
+
+        invoice = Invoice.find_by_id(invoice.id)
+        invoice.invoice_status_code = 'CREATED'
+        invoice.reference_number = pay_system_invoice.get('pbc_ref_number', None)
+        invoice.invoice_number = pay_system_invoice.get('invoice_number', None)
+
+        invoice.save()
 
         current_app.logger.debug('>create_payment')
 

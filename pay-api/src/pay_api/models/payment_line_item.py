@@ -27,6 +27,7 @@ class PaymentLineItem(db.Model):
     invoice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
     filing_fees = db.Column(db.Integer, nullable=False)
     fee_schedule_id = db.Column(db.Integer, ForeignKey('fee_schedule.fee_schedule_id'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=True)
     processing_fees = db.Column(db.Integer, nullable=True)
     service_fees = db.Column(db.Integer, nullable=True)
     description = db.Column(db.String(200), nullable=True)

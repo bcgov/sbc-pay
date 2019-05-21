@@ -135,17 +135,54 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         """Save the information to the DB."""
         self._dao.save()
 
+    def delete(self):
+        """Delete."""
+        self._dao.delete(self.id)
+
+    def asdict(self):
+        """Return the Payment Account as a python dict."""
+        d = {
+            'id': self._id,
+            'corp_number': self._corp_number,
+            'corp_type_code': self._corp_type_code,
+            'payment_system_code':self._payment_system_code,
+            'account_number':self._account_number,
+            'party_number':self._party_number,
+            'site_number':self._site_number
+        }
+        return d
+
     @staticmethod
-    def create(business_info: Dict[str, Any]):
+    def create(business_info: Dict[str, Any], account_number:str, party_number: str = None, site_number:str=None):
         """Create Payment account record."""
         current_app.logger.debug('<create')
         p = PaymentAccount()
         p.corp_number = business_info.get('business_identifier', None)
         p.corp_type_code = business_info.get('corp_type', None)
-        p.account_number = None  # TODO
-        p.party_number = None  # TODO
-        p.site_number = None  # TODO
+        p.account_number = account_number
+        p.party_number = party_number
+        p.site_number = site_number
 
         p.save()
         current_app.logger.debug('>create')
         return p
+
+    @classmethod
+    def find_account(cls, corp_number:str,
+                             corp_type: str,  payment_system: str):
+        """Find payment account by corp number, corp type and payment system code."""
+        current_app.logger.debug('<find_payment_account')
+        if not corp_number and not corp_type and not payment_system:
+            raise BusinessException(Error.PAY004)
+
+        account_dao = PaymentAccountModel.find_by_corp_number_and_corp_type_and_system(
+            corp_number,
+            corp_type,
+            payment_system
+        )
+
+        payment_account = PaymentAccount()
+        payment_account._dao = account_dao  # pylint: disable=protected-access
+
+        current_app.logger.debug('>find_payment_account')
+        return payment_account

@@ -33,11 +33,11 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         super(PaymentSystemService, self).__init__()
 
     @abstractmethod
-    def create_account(self, name: str = None):
+    def create_account(self, name: str, account_info: Dict[str, Any]):
         pass
 
     @abstractmethod
-    def is_valid_account(self, number: str = None):
+    def is_valid_account(self, party_number: str = None, account_number: str = None, site_number: str = None):
         pass
 
     @abstractmethod
@@ -50,4 +50,8 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
 
     @abstractmethod
     def get_receipt(self):
+        pass
+
+    @abstractmethod
+    def get_payment_system_code(self):
         pass

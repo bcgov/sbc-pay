@@ -27,7 +27,7 @@ class Invoice(db.Model, Auditable):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     payment_id = db.Column(db.Integer, ForeignKey('payment.id'), nullable=False)
 
-    invoice_number = db.Column(db.String(50), nullable=False)
+    invoice_number = db.Column(db.String(50), nullable=True)
     reference_number = db.Column(db.String(50), nullable=True)
     invoice_status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
     account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=False)
@@ -41,6 +41,10 @@ class Invoice(db.Model, Auditable):
         db.session.add(self)
         db.session.commit()
 
+    @classmethod
+    def find_by_id(cls, id: int):
+        """Return a Invoice by id."""
+        return cls.query.get(id)
 
 class InvoiceSchema(ma.ModelSchema):
     """Main schema used to serialize the Status Code."""

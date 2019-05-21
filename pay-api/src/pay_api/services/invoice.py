@@ -19,6 +19,8 @@ from flask import current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.services.payment import Payment
+from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.errors import Error
 from pay_api.models.status_code import StatusCode
 
@@ -32,9 +34,7 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         self._id: int = None
         self._payment_id: int = None
         self._invoice_number: str = None
-        self._transaction_number: str = None
         self._reference_number: str = None
-        self._transaction_number: str = None
         self._invoice_status_code: str = None
         self._account_id: str = None
         self._total: int = None
@@ -58,9 +58,7 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         self.id: int = self._dao.id
         self.payment_id: int = self._dao.payment_id
         self.invoice_number: str = self._dao.invoice_number
-        self.transaction_number: str = self._dao.transaction_number
         self.reference_number: str = self._dao.reference_number
-        self.transaction_number: str = self._dao.transaction_number
         self.invoice_status_code: str = self._dao.invoice_status_code
         self.account_id: str = self._dao.account_id
         self.refund: int = self._dao.refund
@@ -105,17 +103,6 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         """Set the invoice_number."""
         self._invoice_number = value
         self._dao.invoice_number = value
-
-    @property
-    def transaction_number(self):
-        """Return the transaction_number."""
-        return self._transaction_number
-
-    @transaction_number.setter
-    def transaction_number(self, value: str):
-        """Set the transaction_number."""
-        self._transaction_number = value
-        self._dao.transaction_number = value
 
     @property
     def invoice_status_code(self):
@@ -232,18 +219,15 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         self._dao.save()
 
     @staticmethod
-    def create(fees: [Dict[str, Any]]):
+    def create(account:PaymentAccount, payment:Payment, fees: [Dict[str, Any]]):
         """Create invoice record."""
         current_app.logger.debug('<create')
         i = Invoice()
         i.created_on = date.today()
         i.created_by = 'test'
-        i.payment_id = None #TODO
-        i.invoice_number = None  # TODO
-        i.transaction_number = None  # TODO
-        i.reference_number = None #TODO
+        i.payment_id = payment.id
         i.invoice_status_code = 'DRAFT'
-        i.account_id = None #TODO
+        i.account_id = account.id
         i.total = sum((fee.get('total')) for fee in fees)
         i.paid = 0
         i.payment_date = None #TODO
@@ -252,3 +236,13 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         i.save()
         current_app.logger.debug('>create')
         return i
+
+    @staticmethod
+    def find_by_id(id: int):
+        invoice_dao = InvoiceModel.find_by_id(id)
+
+        invoice = Invoice()
+        invoice._dao = invoice_dao  # pylint: disable=protected-access
+
+        current_app.logger.debug('>get_fees_by_corp_type_and_filing_type')
+        return invoice

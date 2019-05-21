@@ -33,19 +33,24 @@ from flask import current_app
 from pay_api.utils.enums import AuthHeaderType, ContentType
 
 from .oauth_service import OAuthService
+from pay_api.services.payment_account import PaymentAccount
+from .payment_line_item import PaymentLineItem
 
 
 class PaybcService(PaymentSystemService, OAuthService):
     """Service to manage Payment related operations."""
 
-    def create_account(self, name: str, account_request: Dict[str, Any]):
+    def get_payment_system_code(self):
+        return 'PAYBC'
+
+    def create_account(self, name: str, account_info: Dict[str, Any]):
         access_token = self.__get_token().json().get('access_token')
         party = self.__create_party(access_token, name)
         account = self.__create_paybc_account(access_token, party)
-        site = self.__create_site(access_token, party, account, account_request)
+        site = self.__create_site(access_token, party, account, account_info)
         return party.get('party_number'), account.get('account_number'), site.get('site_number')
 
-    def is_valid_account(self, party_number: str = None, account_number: str = None, site_number: str = None):
+    def is_valid_account(self, party_number: str, account_number: str, site_number: str):
         current_app.logger.debug('<is_valid_account')
         is_valid: bool = False
         if party_number and account_number and site_number:
@@ -58,12 +63,12 @@ class PaybcService(PaymentSystemService, OAuthService):
         current_app.logger.debug('>is_valid_account')
         return is_valid
 
-    def create_invoice(self, account_details: Tuple[str], line_items: [Dict[str, Any]], invoice_number: int):
+    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_number: int):
         current_app.logger.debug('<create_invoice')
         now = datetime.datetime.now()
         curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
         invoice_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/' \
-            .format(account_details[0], account_details[1], account_details[2])
+            .format(payment_account.party_number, payment_account.account_number, payment_account.site_number)
 
         invoice = dict(
             batch_source='BC REG MANUAL_OTHER',
@@ -82,9 +87,9 @@ class PaybcService(PaymentSystemService, OAuthService):
                     'line_number': index,
                     'line_type': 'LINE',
                     'memo_line_name': 'Test Memo Line',
-                    'description': line_item.get('description', None),
-                    'unit_price': line_item.get('total', None),
-                    'quantity': 1
+                    'description': line_item.description,
+                    'unit_price': line_item.total,
+                    'quantity': line_item.quantity
                 }
             )
 
@@ -126,7 +131,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         current_app.logger.debug('>Creating account')
         return account_response.json()
 
-    def __create_site(self, access_token, party, account, account_request):
+    def __create_site(self, access_token, party, account, account_info):
         """Create site in PayBC."""
         current_app.logger.debug('<Creating site ')
         site_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/' \
@@ -135,11 +140,11 @@ class PaybcService(PaymentSystemService, OAuthService):
             'party_number': account.get('party_number', None),
             'account_number': account.get('account_number', None),
             'site_name': party.get('customer_name') + ' Site',
-            'city': account_request.get('city', None),
-            'address_line_1': account_request.get('address_line_1', None),
-            'postal_code': account_request.get('postal_code', None),
-            'province': account_request.get('province', None),
-            'country': account_request.get('country', 'CA'),
+            'city': account_info.get('city', None),
+            'address_line_1': account_info.get('address_line_1', None),
+            'postal_code': account_info.get('postal_code', None),
+            'province': account_info.get('province', None),
+            'country': account_info.get('country', 'CA'),
             'customer_site_id': '1'
         }
 
