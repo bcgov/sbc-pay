@@ -42,16 +42,18 @@ class PaymentService:
 
         payment_info = payment_request.get('payment_info')
         business_info = payment_request.get('business_info')
-        contact_info = payment_request.get('contact_info')
+        contact_info = payment_request.get('business_info').get('contact_info')
         filing_info = payment_request.get('filing_info')
 
-        # TODO DI Pay BC
+        current_app.logger.debug('Creating PaymentSystemService impl')
         pay_service: PaymentSystemService = PaymentSystemFactory.create(payment_info.get('method_of_payment', None),
                                                                         business_info.get('corp_type', None))
 
+        current_app.logger.debug('Calculate the fees')
         # Calculate the fees
         fees = []
         for filing_type_info in filing_info.get('filing_types'):
+            current_app.logger.debug('Getting fees for {} '.format(filing_type_info.get('filing_type_code')))
             fee: FeeSchedule = FeeSchedule.find_by_corp_type_and_filing_type(
                 corp_type=business_info.get('corp_type', None),
                 filing_type_code=filing_type_info.get('filing_type_code', None),
@@ -77,10 +79,12 @@ class PaymentService:
                     If fails adjust the invoice to zero in payment system else Return with payment identfier
                 If failed  : rollback the transaction (except account creation)
         """
+        current_app.logger.debug('Check if payment account exists')
         payment_account = PaymentAccount.find_account(business_info.get('business_identifier', None),
                                                       business_info.get('corp_type', None),
                                                       pay_service.get_payment_system_code())
         if payment_account:
+            current_app.logger.debug('Payment account exists')
             payment_account_dict = payment_account.asdict()
             if not pay_service.is_valid_account(payment_account_dict.get('party_number'),
                                                 payment_account_dict.get('account_number'),
@@ -88,19 +92,27 @@ class PaymentService:
                 payment_account.delete()
                 payment_account = None
         if not payment_account:
+            current_app.logger.debug('No payment accounts, creating new')
             party_number, account_number, site_number = pay_service.create_account(business_info.get('business_name'),
                                                                                    contact_info)
             payment_account = PaymentAccount.create(business_info, account_number, party_number, site_number)
 
+        current_app.logger.debug('Creating payment record')
+
         payment = Payment.create(payment_info, fees, pay_service.get_payment_system_code())
+
+        current_app.logger.debug('Creating Invoice record')
 
         invoice = Invoice.create(payment_account, payment, fees)
         line_items: [PaymentLineItem] = []
         for fee in fees:
+            current_app.logger.debug('Creating line items')
             line_items.append(PaymentLineItem.create(invoice.id, fee))
 
+        current_app.logger.debug('Handing off to payment system to create invoice')
         pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice.id)
 
+        current_app.logger.debug('Uodating invoice record')
         invoice = Invoice.find_by_id(invoice.id)
         invoice.invoice_status_code = 'CREATE'
         invoice.reference_number = pay_system_invoice.get('pbc_ref_number', None)

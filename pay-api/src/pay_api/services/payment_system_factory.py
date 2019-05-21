@@ -34,6 +34,7 @@ class PaymentSystemFactory:
         """Create a subclass of PaymentSystemService based on input params."""
         current_app.logger.debug('<create')
         _instance = None
+        current_app.logger.debug('payment_method: {}, corp_type : {}'.format(payment_method, corp_type))
         if not payment_method and not corp_type:
             raise BusinessException(Error.PAY003)
         if payment_method == 'CC' and corp_type == 'CP':
