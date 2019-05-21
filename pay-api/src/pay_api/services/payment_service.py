@@ -103,8 +103,11 @@ class PaymentService:
         payment = Payment.create(payment_info, fees, pay_service.get_payment_system_code())
 
         current_app.logger.debug(payment)
+        print(payment)
 
         current_app.logger.debug('Creating Invoice record for payment {}'.format(payment.id))
+        print('Creating Invoice record for payment {}'.format(payment.id))
+
 
         invoice = Invoice.create(payment_account, payment, fees)
         line_items: [PaymentLineItem] = []
