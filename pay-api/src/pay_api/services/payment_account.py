@@ -14,7 +14,7 @@
 """Service to manage Fee Calculation."""
 
 from datetime import date
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
@@ -153,16 +153,16 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         return d
 
     @staticmethod
-    def create(business_info: Dict[str, Any], account_number: str, party_number: str = None, site_number: str = None,
+    def create(business_info: Dict[str, Any], account_details: Tuple[str],
                payment_system: str = None):
         """Create Payment account record."""
         current_app.logger.debug('<create')
         p = PaymentAccount()
         p.corp_number = business_info.get('business_identifier', None)
         p.corp_type_code = business_info.get('corp_type', None)
-        p.account_number = account_number
-        p.party_number = party_number
-        p.site_number = site_number
+        p.account_number = account_details[0]
+        p.party_number = account_details[1]
+        p.site_number = account_details[2]
         p.payment_system_code = payment_system
 
         p.save()

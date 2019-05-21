@@ -175,7 +175,7 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         self._dao.save()
 
     @staticmethod
-    def create(payment_info: Dict[str, Any], fees: [Dict[str, Any]], payment_system:str='CC'):
+    def create(payment_info: Dict[str, Any], fees: [Dict[str, Any]], payment_system: str = 'CC'):
         """Create payment record."""
         current_app.logger.debug('<create_payment')
         p = Payment()
@@ -187,5 +187,6 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         p.created_by = 'test'
         p.created_on = date.today()
         p.save()
+
         current_app.logger.debug('>create_payment')
         return p
