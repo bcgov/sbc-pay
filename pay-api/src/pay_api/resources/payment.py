@@ -30,7 +30,7 @@ API = Namespace('payments', description='Payment System - Payments')
 
 
 @cors_preflight('POST')
-@API.route('/', methods=['POST', 'OPTIONS'])
+@API.route('', methods=['POST', 'OPTIONS'])
 class Payment(Resource):
     """Endpoint resource to create payment."""
 

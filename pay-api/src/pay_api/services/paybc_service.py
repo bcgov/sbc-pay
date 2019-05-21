@@ -24,6 +24,7 @@ from typing import Any, Dict, Tuple
 
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.oauth_service import OAuthService
+from pay_api.utils.constants import DEFAULT_COUNTRY, DEFAULT_JURISDICTION
 import base64
 import datetime
 from typing import Any, Dict
@@ -143,8 +144,8 @@ class PaybcService(PaymentSystemService, OAuthService):
             'city': account_info.get('city', None),
             'address_line_1': account_info.get('address_line_1', None),
             'postal_code': account_info.get('postal_code', None),
-            'province': account_info.get('province', None),
-            'country': account_info.get('country', 'CA'),
+            'province': account_info.get('province', DEFAULT_JURISDICTION),
+            'country': account_info.get('country', DEFAULT_COUNTRY),
             'customer_site_id': '1'
         }
 

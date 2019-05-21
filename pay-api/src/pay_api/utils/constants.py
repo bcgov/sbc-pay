@@ -14,3 +14,4 @@
 """Constants."""
 
 DEFAULT_JURISDICTION = 'BC'
+DEFAULT_COUNTRY = 'CA'

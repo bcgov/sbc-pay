@@ -35,7 +35,6 @@
       "$id": "payment_info",
       "type": "object",
       "required": [
-        "method_of_payment",
         "payment_system"
       ],
       "properties": {
@@ -67,13 +66,14 @@
       "required": [
         "business_identifier",
         "corp_type",
-        "business_name"
+        "business_name",
+        "contact_info"
       ],
       "properties": {
         "business_identifier": {
           "$id": "#/properties/business_identifier",
           "type": "string",
-          "title": "The Business_identifier Schema",
+          "title": "Business/Corp Identifier",
           "default": "",
           "examples": [
             "CP1000"
@@ -83,7 +83,7 @@
         "corp_type": {
           "$id": "#/properties/corp_type",
           "type": "string",
-          "title": "The Corp_type Schema",
+          "title": "Corp Type",
           "default": "",
           "examples": [
             "CP"
@@ -93,12 +93,19 @@
         "business_name": {
           "$id": "#/properties/business_name",
           "type": "string",
-          "title": "The Business_name Schema",
+          "title": "Business Name",
           "default": "",
           "examples": [
             "XYZ Corp"
           ],
           "pattern": "^(.*)$"
+        },
+        "contact_info": {
+          "oneOf": [
+            {
+              "$ref": "#/definitions/contact_info"
+            }
+          ]
         }
       }
     },
@@ -106,6 +113,9 @@
       "$id": "filing_info",
       "type": "object",
       "title": "Filing Info",
+      "required": [
+        "filing_types"
+      ],
       "properties": {
         "date": {
           "$id": "#/properties/date",
@@ -118,9 +128,7 @@
           "pattern": "^\\d{4}\\-(0?[1-9]|1[012])\\-(0?[1-9]|[12][0-9]|3[01])$"
         },
         "filing_types": {
-          "$id": "#/properties/filing_types",
           "type": "array",
-          "title": "Filing Types",
           "items": {
             "oneOf": [
               {
@@ -175,6 +183,70 @@
           "default": 1,
           "examples": [
             1
+          ]
+        }
+      }
+    },
+    "contact_info": {
+      "$id": "contact_info",
+      "type": "object",
+      "title": "Contact Info",
+      "required": [
+        "city",
+        "postal_code",
+        "province",
+        "address_line_1",
+        "country"
+      ],
+      "properties": {
+        "city": {
+          "$id": "#/properties/city",
+          "type": "string",
+          "title": "City",
+          "default": "",
+          "examples": [
+            "Victoria",
+            "Vancouver"
+          ],
+          "pattern": "^(.*)$"
+        },
+        "postal_code": {
+          "$id": "#/properties/postal_code",
+          "type": "string",
+          "title": "Postal Code",
+          "default": "",
+          "examples": [
+            "V8P2N2"
+          ],
+          "pattern": "^(.*)$"
+        },
+        "province": {
+          "$id": "#/properties/province",
+          "type": "string",
+          "title": ":Province",
+          "default": "",
+          "examples": [
+            "BC"
+          ],
+          "pattern": "^(.*)$"
+        },
+        "address_line_1": {
+          "$id": "#/properties/address_line_1",
+          "type": "string",
+          "title": "Address line 1",
+          "default": "",
+          "examples": [
+            "1000 Douglas Street"
+          ]
+        },
+        "country": {
+          "$id": "#/properties/country",
+          "type": "string",
+          "title": "Country",
+          "default": "CA",
+          "examples": [
+            "CA",
+            "US"
           ]
         }
       }

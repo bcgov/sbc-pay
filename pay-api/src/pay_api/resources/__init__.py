@@ -68,5 +68,5 @@ API.add_namespace(META_API, path='/meta')
 # API.add_namespace(TRACE_API, path='/trace')
 
 API.add_namespace(INVOICE_API, path='/invoices')
-API.add_namespace(PAY_API, path='/paymentss')
+API.add_namespace(PAY_API, path='/payments')
 API.add_namespace(FEE_API, path='/fees')
