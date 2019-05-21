@@ -1,18 +1,19 @@
 """payment_master_inserts
 
-Revision ID: 96569f18920e
-Revises: 0d50feb5a623
-Create Date: 2019-05-16 15:24:20.085282
+Revision ID: e936f818e210
+Revises: a377560a51ab
+Create Date: 2019-05-21 13:06:56.599945
 
 """
+
 from alembic import op
-from sqlalchemy import String
+from sqlalchemy import Date, Integer, String
 from sqlalchemy.sql import column, table
 
 
 # revision identifiers, used by Alembic.
-revision = '96569f18920e'
-down_revision = '0d50feb5a623'
+revision = 'e936f818e210'
+down_revision = 'a377560a51ab'
 branch_labels = None
 depends_on = None
 
@@ -48,6 +49,7 @@ def upgrade():
         [
             {'code': 'DRAFT', 'description': 'Draft'},
             {'code': 'IN_PROGRESS', 'description': 'In Progress'},
+            {'code': 'CREATE', 'description': 'Created'},
             {'code': 'COMPLETE', 'description': 'Completed'},
             {'code': 'PARTIAL', 'description': 'Partial'},
             {'code': 'FAIL', 'description': 'Failed'},

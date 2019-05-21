@@ -102,7 +102,7 @@ class PaymentService:
         pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice.id)
 
         invoice = Invoice.find_by_id(invoice.id)
-        invoice.invoice_status_code = 'CREATED'
+        invoice.invoice_status_code = 'CREATE'
         invoice.reference_number = pay_system_invoice.get('pbc_ref_number', None)
         invoice.invoice_number = pay_system_invoice.get('invoice_number', None)
 
