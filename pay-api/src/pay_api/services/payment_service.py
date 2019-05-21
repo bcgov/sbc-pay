@@ -95,7 +95,8 @@ class PaymentService:
             current_app.logger.debug('No payment accounts, creating new')
             party_number, account_number, site_number = pay_service.create_account(business_info.get('business_name'),
                                                                                    contact_info)
-            payment_account = PaymentAccount.create(business_info, account_number, party_number, site_number)
+            payment_account = PaymentAccount.create(business_info, account_number, party_number, site_number,
+                                                    pay_service.get_payment_system_code())
 
         current_app.logger.debug('Creating payment record')
 

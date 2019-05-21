@@ -145,15 +145,16 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
             'id': self._id,
             'corp_number': self._corp_number,
             'corp_type_code': self._corp_type_code,
-            'payment_system_code':self._payment_system_code,
-            'account_number':self._account_number,
-            'party_number':self._party_number,
-            'site_number':self._site_number
+            'payment_system_code': self._payment_system_code,
+            'account_number': self._account_number,
+            'party_number': self._party_number,
+            'site_number': self._site_number
         }
         return d
 
     @staticmethod
-    def create(business_info: Dict[str, Any], account_number:str, party_number: str = None, site_number:str=None):
+    def create(business_info: Dict[str, Any], account_number: str, party_number: str = None, site_number: str = None,
+               payment_system: str = None):
         """Create Payment account record."""
         current_app.logger.debug('<create')
         p = PaymentAccount()
@@ -162,14 +163,15 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         p.account_number = account_number
         p.party_number = party_number
         p.site_number = site_number
+        p.payment_system_code = payment_system
 
         p.save()
         current_app.logger.debug('>create')
         return p
 
     @classmethod
-    def find_account(cls, corp_number:str,
-                             corp_type: str,  payment_system: str):
+    def find_account(cls, corp_number: str,
+                     corp_type: str, payment_system: str):
         """Find payment account by corp number, corp type and payment system code."""
         current_app.logger.debug('<find_payment_account')
         if not corp_number and not corp_type and not payment_system:
