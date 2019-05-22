@@ -68,8 +68,9 @@ class PaybcService(PaymentSystemService, OAuthService):
             comments='',
             lines=[]
         )
-
-        for index, line_item in line_items:
+        index: int = 0
+        for line_item in line_items:
+            index = index + 1
             invoice['lines'].append(
                 {
                     'line_number': index,
