@@ -70,6 +70,7 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         """Set the id."""
         self._id = value
         self._dao.id = value
+        print('Setting payment id in Payment : {}'.format(value))
 
     @property
     def payment_system_code(self):
