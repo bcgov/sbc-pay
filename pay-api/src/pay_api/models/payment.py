@@ -37,9 +37,10 @@ class Payment(db.Model, Auditable):
     payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='joined', innerjoin=True)
 
     def save(self):
-        """Save status."""
+        """Save Payment."""
         db.session.add(self)
         db.session.commit()
+        return self
 
 
 class PaymentSchema(ma.ModelSchema):

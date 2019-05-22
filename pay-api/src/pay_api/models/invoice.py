@@ -40,11 +40,13 @@ class Invoice(db.Model, Auditable):
         """Save status."""
         db.session.add(self)
         db.session.commit()
+        return self
 
     @classmethod
     def find_by_id(cls, id: int):
         """Return a Invoice by id."""
         return cls.query.get(id)
+
 
 class InvoiceSchema(ma.ModelSchema):
     """Main schema used to serialize the Status Code."""

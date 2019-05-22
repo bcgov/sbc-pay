@@ -172,7 +172,7 @@ class Payment():  # pylint: disable=too-many-instance-attributes
 
     def save(self):
         """Save the information to the DB."""
-        self._dao.save()
+        return self._dao.save()
 
     @staticmethod
     def create(payment_info: Dict[str, Any], fees: [Dict[str, Any]], payment_system: str = 'CC'):
