@@ -21,7 +21,7 @@ from flask import current_app
 from pay_api.utils.enums import AuthHeaderType, ContentType
 
 from .oauth_service import OAuthService
-
+from random import randint
 
 class PayBcService(OAuthService):
     """Service to manage PayBC communication."""
@@ -40,8 +40,11 @@ class PayBcService(OAuthService):
         account = self.create_account(access_token, party, invoice_request)
         site = self.create_site(access_token, account, invoice_request)
         self.create_contact(access_token, site, invoice_request)
-        invoice = self.create_invoice(access_token, site, invoice_request)
         current_app.logger.debug('>Inside create invoice')
+        invoice = self.create_invoice(access_token, site, invoice_request)
+        current_app.logger.debug('>Inside adjust invoice')
+        adjinvoice = self.do_adjustment(access_token, site ,invoice.get('invoice_number', None))
+        
         return invoice
 
     def get_token(self):
@@ -138,6 +141,7 @@ class PayBcService(OAuthService):
             # bill_to_customer_number=contact.get('contact_number', None),
             # site_number=site.get('site_number', None), total=invoice_request.get('total'),
             transaction_date=curr_time,
+            transaction_number='CP' + str(randint(10000, 99999)),
             gl_date=curr_time,
             term_name='IMMEDIATE',
             comments=invoice_request.get('comments', None),
@@ -160,3 +164,27 @@ class PayBcService(OAuthService):
 
         current_app.logger.debug('>Creating PayBC Invoice Record')
         return invoice_response.json()
+
+    def do_adjustment(self, access_token, site, invoice_number):
+        """"Adjust the amount"""
+        current_app.logger.debug('>Creating PayBC Adjustment  For Invoice: ', invoice_number)
+        adjustment_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/adjs/' \
+            .format(site.get('party_number', None), site.get('account_number', None), site.get('site_number', None), invoice_number,)
+        current_app.logger.debug('>Creating PayBC Adjustment URL', adjustment_url)
+
+        adjustment = dict(
+            comment='New Comment',
+            lines=[]
+        )
+        adjustment['lines'].append(
+            {
+                'line_number': '1',
+                'adjustment_amount': '100',
+                'activity_name': 'BC Registries Write Off',
+            }
+        )
+
+        adjustment_response = self.post(adjustment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, adjustment)
+
+        current_app.logger.debug('>Created PayBC Invoice Adjustment')
+        return adjustment_response.json()    

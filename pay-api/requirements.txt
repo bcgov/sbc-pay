@@ -1,7 +1,6 @@
 Click==7.0
 Flask-Migrate==2.4.0
 Flask-Moment==0.7.0
-Flask-OpenTracing==1.0.0
 Flask-SQLAlchemy==2.4.0
 Flask-Script==2.0.6
 Flask==1.0.2
@@ -26,7 +25,6 @@ itsdangerous==1.1.0
 jsonschema==3.0.1
 marshmallow-sqlalchemy==0.16.3
 marshmallow==2.19.2
-opentracing==2.0.0
 psycopg2-binary==2.8.2
 pyasn1==0.4.5
 pyrsistent==0.15.1
@@ -39,3 +37,6 @@ requests==2.21.0
 rsa==4.0
 six==1.12.0
 urllib3==1.24.3
+
+-e git://github.com/pwei1018/jaeger-client-python.git@186f14e14758273ed108508c0d388a4f4de5c75b#egg=jaeger-client
+-e git+https://github.com/pwei1018/sbc-common-components.git#egg=sbc-common-components-1.0.0&subdirectory=python

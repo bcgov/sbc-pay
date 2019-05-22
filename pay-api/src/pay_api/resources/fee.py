@@ -19,12 +19,12 @@ from flask import jsonify, request
 from flask_restplus import Namespace, Resource, cors
 
 from pay_api import jwt as _jwt
+from pay_api import tracing as _tracing
 from pay_api.exceptions import BusinessException
 from pay_api.services import FeeSchedule
 from pay_api.utils.constants import DEFAULT_JURISDICTION
 from pay_api.utils.roles import Role
 from pay_api.utils.util import cors_preflight
-
 
 API = Namespace('fees', description='Payment System - Fees')
 
@@ -36,6 +36,7 @@ class Fee(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
+    @_tracing.trace()
     @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
     def get(corp_type, filing_type_code):
         """Calculate the fee for the filing using the corp type/filing type and return fee."""
@@ -43,12 +44,17 @@ class Fee(Resource):
         jurisdiction = request.args.get('jurisdiction', DEFAULT_JURISDICTION)
         priority = request.args.get('priority', False)
         try:
-            response, status = FeeSchedule.find_by_corp_type_and_filing_type(
-                corp_type=corp_type,
-                filing_type_code=filing_type_code,
-                valid_date=date,
-                jurisdiction=jurisdiction,
-                priority=priority).asdict(), HTTPStatus.OK
+
+            response, status = (
+                FeeSchedule.find_by_corp_type_and_filing_type(
+                    corp_type=corp_type,
+                    filing_type_code=filing_type_code,
+                    valid_date=date,
+                    jurisdiction=jurisdiction,
+                    priority=priority,
+                ).asdict(),
+                HTTPStatus.OK,
+            )
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         return jsonify(response), status
