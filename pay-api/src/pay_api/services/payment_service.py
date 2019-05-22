@@ -67,7 +67,6 @@ class PaymentService:
 
         """
         Step 1 : Check if payment account exists in DB, 
-                If yes : Check if the account is valid in payment system.
                 If no  : Create account in payment system and update the DB, 
         Step 2 : 
             Create Payment record - flush
@@ -87,13 +86,8 @@ class PaymentService:
         print(payment_account.id)
         if payment_account.id:
             current_app.logger.debug('Payment account exists')
-            payment_account_dict = payment_account.asdict()
-            if not pay_service.is_valid_account(payment_account_dict.get('party_number'),
-                                                payment_account_dict.get('account_number'),
-                                                payment_account_dict.get('site_number')):
-                payment_account.delete()
-                payment_account = None
-        if payment_account is None or not payment_account.id:
+
+        else:
             current_app.logger.debug('No payment accounts, creating new')
             party_number, account_number, site_number = pay_service.create_account(business_info.get('business_name'),
                                                                                    contact_info)

@@ -51,19 +51,6 @@ class PaybcService(PaymentSystemService, OAuthService):
         site = self.__create_site(access_token, party, account, account_info)
         return party.get('party_number'), account.get('account_number'), site.get('site_number')
 
-    def is_valid_account(self, party_number: str, account_number: str, site_number: str):
-        current_app.logger.debug('<is_valid_account')
-        is_valid: bool = False
-        if party_number and account_number and site_number:
-            site_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/' \
-                .format(party_number, account_number, site_number)
-            access_token = self.__get_token().json().get('access_token')
-            site_response = self.get(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
-            is_valid = site_response.get('party_number') == party_number and site_response.get(
-                'account_number') == account_number and site_response.get('site_number') == site_number
-        current_app.logger.debug('>is_valid_account')
-        return is_valid
-
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_number: int):
         current_app.logger.debug('<create_invoice')
         now = datetime.datetime.now()
