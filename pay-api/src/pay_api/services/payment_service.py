@@ -93,7 +93,7 @@ class PaymentService:
                                                 payment_account_dict.get('site_number')):
                 payment_account.delete()
                 payment_account = None
-        if not payment_account.id:
+        if payment_account is None or not payment_account.id:
             current_app.logger.debug('No payment accounts, creating new')
             party_number, account_number, site_number = pay_service.create_account(business_info.get('business_name'),
                                                                                    contact_info)
@@ -111,7 +111,7 @@ class PaymentService:
         print('Creating Invoice record for payment {}'.format(payment.id))
 
         invoice = Invoice.create(payment_account, payment, fees)
-        line_items: [PaymentLineItem] = []
+        line_items = []
         for fee in fees:
             current_app.logger.debug('Creating line items')
             line_items.append(PaymentLineItem.create(invoice.id, fee))
