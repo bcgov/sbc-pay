@@ -35,7 +35,7 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         self._total: int = None
         self._paid: int = None
         self._created_by: str = None
-        self._created_on: datetime = date.today()
+        self._created_on: datetime = datetime.now()
         self._updated_by: str = None
         self._updated_on: datetime = None
 
