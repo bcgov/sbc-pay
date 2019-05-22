@@ -92,6 +92,7 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         """Set the payment_id."""
         self._payment_id = value
         self._dao.payment_id = value
+        print('Setting payment id in invoie : {}'.format(value))
 
     @property
     def invoice_number(self):
