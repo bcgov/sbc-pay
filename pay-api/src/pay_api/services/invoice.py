@@ -13,17 +13,15 @@
 # limitations under the License.
 """Service to manage Fee Calculation."""
 
-from datetime import date
-from typing import Dict, Any
+from datetime import datetime
+
 from flask import current_app
 
-from pay_api.exceptions import BusinessException
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.services.fee_schedule import FeeSchedule
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.errors import Error
-from pay_api.models.status_code import StatusCode
-from pay_api.services.fee_schedule import FeeSchedule
+
 
 class Invoice():  # pylint: disable=too-many-instance-attributes
     """Service to manage Invoice related operations."""
@@ -40,11 +38,11 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         self._total: int = None
         self._paid: int = None
         self._refund: int = None
-        self._payment_date: date = None
+        self._payment_date: datetime = None
         self._created_by: str = None
-        self._created_on: date = None
+        self._created_on: datetime = None
         self._updated_by: str = None
-        self._updated_on: date = None
+        self._updated_on: datetime = None
 
     @property
     def _dao(self):
@@ -62,14 +60,14 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         self.invoice_status_code: str = self._dao.invoice_status_code
         self.account_id: str = self._dao.account_id
         self.refund: int = self._dao.refund
-        self.payment_date: date = self._dao.payment_date
+        self.payment_date: datetime = self._dao.payment_date
 
         self.total: int = self._dao.total
         self.paid: int = self._dao.paid
         self.created_by: str = self._dao.created_by
-        self.created_on: date = self._dao.created_on
+        self.created_on: datetime = self._dao.created_on
         self.updated_by: str = self._dao.updated_by
-        self.updated_on: date = self._dao.updated_on
+        self.updated_on: datetime = self._dao.updated_on
 
     @property
     def id(self):
@@ -154,7 +152,7 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         return self._payment_date
 
     @payment_date.setter
-    def payment_date(self, value: date):
+    def payment_date(self, value: datetime):
         """Set the payment_date."""
         self._payment_date = value
         self._dao.payment_date = value
@@ -195,10 +193,10 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
     @property
     def created_on(self):
         """Return the created_on."""
-        return self._created_on if self._created_on is not None else date.today()
+        return self._created_on if self._created_on is not None else datetime.now()
 
     @created_on.setter
-    def created_on(self, value: date):
+    def created_on(self, value: datetime):
         """Set the created_on."""
         self._created_on = value
         self._dao.created_on = value
@@ -220,31 +218,39 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         return self._updated_on
 
     @updated_on.setter
-    def updated_on(self, value: date):
+    def updated_on(self, value: datetime):
         """Set the updated_on."""
         self._updated_on = value
         self._dao.updated_on = value
+
+    def commit(self):
+        """Save the information to the DB."""
+        return self._dao.commit()
+
+    def flush(self):
+        """Save the information to the DB."""
+        return self._dao.flush()
 
     def save(self):
         """Save the information to the DB."""
         return self._dao.save()
 
     @staticmethod
-    def create(account:PaymentAccount, payment:Payment, fees: [FeeSchedule]):
+    def create(account: PaymentAccount, payment: Payment, fees: [FeeSchedule]):
         """Create invoice record."""
         current_app.logger.debug('<create')
         i = Invoice()
-        i.created_on = date.today()
+        i.created_on = datetime.now()
         i.created_by = 'test'
         i.payment_id = payment.id
         i.invoice_status_code = 'DRAFT'
         i.account_id = account.id
         i.total = sum(fee.total for fee in fees)
         i.paid = 0
-        i.payment_date = None #TODO
+        i.payment_date = None  # TODO
         i.refund = 0
 
-        i._dao = i.save()
+        i._dao = i.flush()
         current_app.logger.debug('>create')
         return i
 

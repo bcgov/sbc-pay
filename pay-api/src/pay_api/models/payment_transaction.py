@@ -16,10 +16,11 @@ from datetime import datetime
 
 from sqlalchemy import ForeignKey
 
+from .base_model import BaseModel
 from .db import db, ma
 
 
-class PaymentTransaction(db.Model):  # pylint: disable=too-few-public-methods
+class PaymentTransaction(db.Model, BaseModel):  # pylint: disable=too-few-public-methods
     """This class manages all of the base data about Payment Transaction."""
 
     __tablename__ = 'payment_transaction'
@@ -28,11 +29,6 @@ class PaymentTransaction(db.Model):  # pylint: disable=too-few-public-methods
     status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
     invoice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
     date = db.Column(db.DateTime, default=datetime.today(), nullable=False)
-
-    def save(self):
-        """Save status."""
-        db.session.add(self)
-        db.session.commit()
 
 
 class PaymentTransactionSchema(ma.ModelSchema):

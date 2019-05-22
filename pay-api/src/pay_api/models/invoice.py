@@ -15,11 +15,12 @@
 
 from sqlalchemy import ForeignKey
 
-from .auditable import Auditable
+from .audit import Audit
+from .base_model import BaseModel
 from .db import db, ma
 
 
-class Invoice(db.Model, Auditable):
+class Invoice(db.Model, Audit, BaseModel):
     """This class manages all of the base data about Invoice."""
 
     __tablename__ = 'invoice'
@@ -35,12 +36,6 @@ class Invoice(db.Model, Auditable):
     paid = db.Column(db.Integer, nullable=True)
     payment_date = db.Column(db.DateTime, nullable=True)
     refund = db.Column(db.Integer, nullable=True)
-
-    def save(self):
-        """Save status."""
-        db.session.add(self)
-        db.session.commit()
-        return self
 
     @classmethod
     def find_by_id(cls, id: int):

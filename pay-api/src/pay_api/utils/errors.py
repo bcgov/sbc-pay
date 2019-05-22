@@ -34,5 +34,3 @@ class Error(Enum):
     @staticmethod
     def create(code, message, status):
         Error(code, message, status)
-
-

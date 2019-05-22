@@ -13,14 +13,13 @@
 # limitations under the License.
 """Service to manage Fee Calculation."""
 
-from datetime import date
-from typing import Dict, Any, Tuple
+from typing import Any, Dict, Tuple
+
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.utils.errors import Error
-from pay_api.models.status_code import StatusCode
 
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes
@@ -134,10 +133,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
     def save(self):
         """Save the information to the DB."""
         return self._dao.save()
-
-    def delete(self):
-        """Delete."""
-        self._dao.delete(self.id)
 
     def asdict(self):
         """Return the Payment Account as a python dict."""

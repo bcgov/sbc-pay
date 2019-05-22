@@ -45,7 +45,6 @@ AUTHORIZATIONS = {
 
 OPS_BLUEPRINT = Blueprint('API_OPS', __name__, url_prefix='/ops')
 
-
 API_OPS = Api(OPS_BLUEPRINT,
               title='Service OPS API',
               version='1.0',

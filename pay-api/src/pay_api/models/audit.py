@@ -11,4 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Factory to manage instance creation."""
+"""Base class for audit model."""
+from .db import db
+
+
+class Audit(object):
+    """This class provides base methods for Code Table."""
+
+    created_by = db.Column('created_by', db.String(50), nullable=False)
+    created_on = db.Column('created_on', db.DateTime, nullable=False)
+    updated_by = db.Column('updated_by', db.String(50), nullable=True)
+    updated_on = db.Column('updated_on', db.DateTime, nullable=True)

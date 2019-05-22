@@ -22,9 +22,7 @@ from pay_api.exceptions import BusinessException
 from pay_api.services import PaymentService
 from pay_api.utils.roles import Role
 from pay_api.utils.util import cors_preflight
-from pay_api.schemas import utils as schema_utils
-from flask import json
-from pay_api.utils.errors import Error
+
 
 API = Namespace('payments', description='Payment System - Payments')
 
@@ -40,12 +38,12 @@ class Payment(Resource):
     def post():
         """Create the payment records."""
         request_json = request.get_json()
-        #valid_format, errors = schema_utils.validate_schema(request_json, 'payment.json')
-        #if not valid_format:
-         #   return jsonify({'code': 'PAY003', 'message': errors}), 400
+        # valid_format, errors = schema_utils.validate_schema(request_json, 'payment.json')
+        # if not valid_format:
+        #   return jsonify({'code': 'PAY003', 'message': errors}), 400
 
         try:
-            payment_response = PaymentService.create_payment(request_json)
+            response, status = PaymentService.create_payment(request_json), HTTPStatus.CREATED
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
-        return jsonify({}), 200
+        return jsonify(response), status

@@ -140,7 +140,7 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
     @property
     def service_fees(self):
         """Return the fee amount."""
-        return 0  #TODO
+        return 0  # TODO
 
     @property
     def gst(self):

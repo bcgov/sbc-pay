@@ -13,21 +13,16 @@
 # limitations under the License.
 """Service to manage Payment."""
 
-from datetime import date
+from typing import Any, Dict, Tuple
 
 from flask import current_app
 
-from pay_api.exceptions import BusinessException
-from pay_api.models import FeeSchedule as FeeScheduleModel
-from pay_api.utils.errors import Error
-from typing import Any, Dict, Tuple
-from pay_api.services.paybc_service import PaybcService
-from .payment import Payment
-from .invoice import Invoice
+from pay_api.factory.payment_system_factory import PaymentSystemFactory
 
-from .fee_schedule import FeeSchedule
-from .payment_system_factory import PaymentSystemFactory
 from .base_payment_system import PaymentSystemService
+from .fee_schedule import FeeSchedule
+from .invoice import Invoice
+from .payment import Payment
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
 
@@ -96,33 +91,40 @@ class PaymentService:
 
         current_app.logger.debug('Creating payment record for account : {}'.format(payment_account.id))
 
-        payment = Payment.create(payment_info, fees, pay_service.get_payment_system_code())
+        payment: Payment = None
 
-        current_app.logger.debug(payment)
-        print(payment)
+        try:
+            payment: Payment = Payment.create(payment_info, fees, pay_service.get_payment_system_code())
+            current_app.logger.debug(payment)
+            print(payment)
 
-        current_app.logger.debug('Creating Invoice record for payment {}'.format(payment.id))
-        print('Creating Invoice record for payment {}'.format(payment.id))
+            current_app.logger.debug('Creating Invoice record for payment {}'.format(payment.id))
+            print('Creating Invoice record for payment {}'.format(payment.id))
+            invoice = Invoice.create(payment_account, payment, fees)
+            line_items = []
+            for fee in fees:
+                current_app.logger.debug('Creating line items')
+                line_items.append(PaymentLineItem.create(invoice.id, fee))
+            print('------Line Items------')
+            print(line_items)
+            print(len(line_items))
+            current_app.logger.debug('Handing off to payment system to create invoice')
+            pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice.id)
 
-        invoice = Invoice.create(payment_account, payment, fees)
-        line_items = []
-        for fee in fees:
-            current_app.logger.debug('Creating line items')
-            line_items.append(PaymentLineItem.create(invoice.id, fee))
-        print('------Line Items------')
-        print(line_items)
-        print(len(line_items))
-        current_app.logger.debug('Handing off to payment system to create invoice')
-        pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice.id)
+            current_app.logger.debug('Uodating invoice record')
+            invoice = Invoice.find_by_id(invoice.id)
+            invoice.invoice_status_code = 'CREATE'
+            invoice.reference_number = pay_system_invoice.get('pbc_ref_number', None)
+            invoice.invoice_number = pay_system_invoice.get('invoice_number', None)
 
-        current_app.logger.debug('Uodating invoice record')
-        invoice = Invoice.find_by_id(invoice.id)
-        invoice.invoice_status_code = 'CREATE'
-        invoice.reference_number = pay_system_invoice.get('pbc_ref_number', None)
-        invoice.invoice_number = pay_system_invoice.get('invoice_number', None)
-
-        invoice.save()
+            invoice.save()
+        except Exception as e:
+            current_app.logger.error('Rolling back as error occured!')
+            current_app.logger.error(e)
+            if payment:
+                payment.rollback()
+            raise e
 
         current_app.logger.debug('>create_payment')
 
-        return None
+        return payment.asdict()

@@ -13,28 +13,18 @@
 # limitations under the License.
 """Service to manage Payment."""
 
-from datetime import date
-
-from flask import current_app
-
-from pay_api.exceptions import BusinessException
-from pay_api.models import FeeSchedule as FeeScheduleModel
-from pay_api.utils.errors import Error
-from typing import Any, Dict, Tuple
-
-from pay_api.services.base_payment_system import PaymentSystemService
-from pay_api.services.oauth_service import OAuthService
-from pay_api.utils.constants import DEFAULT_COUNTRY, DEFAULT_JURISDICTION
 import base64
 import datetime
 from typing import Any, Dict
 
 from flask import current_app
 
+from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.services.payment_account import PaymentAccount
+from pay_api.utils.constants import DEFAULT_COUNTRY, DEFAULT_JURISDICTION
 from pay_api.utils.enums import AuthHeaderType, ContentType
 
 from .oauth_service import OAuthService
-from pay_api.services.payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
 
 

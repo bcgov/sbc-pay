@@ -72,7 +72,7 @@ class PayBcService(OAuthService):
     def create_account(self, access_token, party, invoice_request):
         """Create account record in PayBC."""
         current_app.logger.debug('<Creating account')
-        account_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/'\
+        account_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/' \
             .format(party.get('party_number'), None)
         account: Dict[str, Any] = {
             'party_number': party.get('party_number'),
@@ -86,7 +86,7 @@ class PayBcService(OAuthService):
     def create_site(self, access_token, account, invoice_request):
         """Create site in PayBC."""
         current_app.logger.debug('<Creating site ')
-        site_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/'\
+        site_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/' \
             .format(account.get('party_number', None), account.get('account_number', None))
         site: Dict[str, Any] = {
             'party_number': account.get('party_number', None),
@@ -108,7 +108,7 @@ class PayBcService(OAuthService):
     def create_contact(self, access_token, site, invoice_request):
         """Create contact in PayBC."""
         current_app.logger.debug('<Creating site contact')
-        contact_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/conts/'\
+        contact_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/conts/' \
             .format(site.get('party_number', None), site.get('account_number', None), site.get('site_number', None))
         contact: Dict[str, Any] = {
             'party_number': site.get('party_number', None),
@@ -129,7 +129,7 @@ class PayBcService(OAuthService):
         current_app.logger.debug('<Creating PayBC Invoice Record')
         now = datetime.datetime.now()
         curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
-        invoice_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/'\
+        invoice_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/' \
             .format(site.get('party_number', None), site.get('account_number', None), site.get('site_number', None))
 
         invoice = dict(

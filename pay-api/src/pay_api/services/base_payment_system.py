@@ -13,15 +13,8 @@
 # limitations under the License.
 """Abstract class for payment system implementation."""
 
-from datetime import date
-
-from flask import current_app
-
-from pay_api.exceptions import BusinessException
-from pay_api.models import FeeSchedule as FeeScheduleModel
-from pay_api.utils.errors import Error
-from typing import Any, Dict, Tuple
 from abc import ABC, abstractmethod
+from typing import Any, Dict
 
 
 class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
@@ -35,7 +28,6 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     @abstractmethod
     def create_account(self, name: str, account_info: Dict[str, Any]):
         pass
-
 
     @abstractmethod
     def create_invoice(self):

@@ -14,15 +14,15 @@
 """Model to handle all operations related to Payment data."""
 
 from sqlalchemy import ForeignKey
-
-from .auditable import Auditable
-from .db import db, ma
-from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
+
+from .audit import Audit
+from .base_model import BaseModel
+from .db import db, ma
 from .payment_system import PaymentSystem
 
 
-class Payment(db.Model, Auditable):
+class Payment(db.Model, Audit, BaseModel):
     """This class manages all of the base data about Payment ."""
 
     __tablename__ = 'payment'
@@ -35,12 +35,6 @@ class Payment(db.Model, Auditable):
     paid = db.Column(db.Integer, nullable=True)
 
     payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='joined', innerjoin=True)
-
-    def save(self):
-        """Save Payment."""
-        db.session.add(self)
-        db.session.commit()
-        return self
 
 
 class PaymentSchema(ma.ModelSchema):

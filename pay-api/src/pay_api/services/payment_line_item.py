@@ -13,15 +13,11 @@
 # limitations under the License.
 """Service to manage Payment Line Items."""
 
-from datetime import date
-from typing import Dict, Any
 from flask import current_app
 
-from pay_api.exceptions import BusinessException
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
-from pay_api.utils.errors import Error
-from pay_api.models.status_code import StatusCode
 from pay_api.services.fee_schedule import FeeSchedule
+
 
 class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
     """Service to manage Payment Line Item operations."""
@@ -58,9 +54,9 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         self.service_fees: int = self._dao.service_fees
         self.description: str = self._dao.description
         self.gst: int = self._dao.gst
-        self.pst:int = self._dao.pst
-        self.total:int = self._dao.total
-        self.quantity:int=self._dao.quantity
+        self.pst: int = self._dao.pst
+        self.total: int = self._dao.total
+        self.quantity: int = self._dao.quantity
 
     @property
     def id(self):
@@ -183,9 +179,13 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         self._quantity = value
         self._dao.quantity = value
 
-    def save(self):
+    def commit(self):
         """Save the information to the DB."""
-        self._dao.save()
+        self._dao.commit()
+
+    def flush(self):
+        """Save the information to the DB."""
+        self._dao.flush()
 
     @staticmethod
     def create(invoice_id: int, fee: FeeSchedule):
@@ -203,6 +203,6 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         p.service_fees = fee.service_fees
         p.quantity = fee.quantity
 
-        p.save()
+        p.flush()
         current_app.logger.debug('>create')
         return p

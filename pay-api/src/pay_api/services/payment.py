@@ -13,15 +13,14 @@
 # limitations under the License.
 """Service to manage Fee Calculation."""
 
-from datetime import date
-from typing import Dict, Any
+from datetime import datetime
+from typing import Any, Dict
+
 from flask import current_app
 
-from pay_api.exceptions import BusinessException
 from pay_api.models import Payment as PaymentModel
-from pay_api.utils.errors import Error
-from pay_api.models.status_code import StatusCode
 from pay_api.models.fee_schedule import FeeSchedule
+
 
 class Payment():  # pylint: disable=too-many-instance-attributes
     """Service to manage Fee related operations."""
@@ -36,9 +35,9 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         self._total: int = None
         self._paid: int = None
         self._created_by: str = None
-        self._created_on: date = date.today()
+        self._created_on: datetime = date.today()
         self._updated_by: str = None
-        self._updated_on: date = None
+        self._updated_on: datetime = None
 
     @property
     def _dao(self):
@@ -56,9 +55,9 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         self.total: int = self._dao.total
         self.paid: int = self._dao.paid
         self.created_by: str = self._dao.created_by
-        self.created_on: date = self._dao.created_on
+        self.created_on: datetime = self._dao.created_on
         self.updated_by: str = self._dao.updated_by
-        self.updated_on: date = self._dao.updated_on
+        self.updated_on: datetime = self._dao.updated_on
 
     @property
     def id(self):
@@ -141,10 +140,10 @@ class Payment():  # pylint: disable=too-many-instance-attributes
     @property
     def created_on(self):
         """Return the created_on."""
-        return self._created_on if self._created_on is not None else date.today()
+        return self._created_on if self._created_on is not None else datetime.now()
 
     @created_on.setter
-    def created_on(self, value: date):
+    def created_on(self, value: datetime):
         """Set the created_on."""
         self._created_on = value
         self._dao.created_on = value
@@ -166,14 +165,34 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         return self._updated_on
 
     @updated_on.setter
-    def updated_on(self, value: date):
+    def updated_on(self, value: datetime):
         """Set the updated_on."""
         self._updated_on = value
         self._dao.updated_on = value
 
-    def save(self):
+    def commit(self):
         """Save the information to the DB."""
-        return self._dao.save()
+        return self._dao.commit()
+
+    def rollback(self):
+        """Rollback."""
+        return self._dao.rollback()
+
+    def flush(self):
+        """Save the information to the DB."""
+        return self._dao.flush()
+
+    def asdict(self):
+        """Return the payment as a python dict."""
+        d = {
+            'id': self._id,
+            'payment_system_code': self._payment_system_code,
+            'payment_method_code': self._payment_method_code,
+            'payment_status_code': self._payment_status_code,
+            'total': self._total,
+            'paid': self._paid
+        }
+        return d
 
     @staticmethod
     def create(payment_info: Dict[str, Any], fees: [FeeSchedule], payment_system: str = 'CC'):
@@ -186,8 +205,8 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         p.payment_system_code = payment_system
         p.total = sum(fee.total for fee in fees)
         p.created_by = 'test'
-        p.created_on = date.today()
-        pay_dao = p.save()
+        p.created_on = datetime.now()
+        pay_dao = p.flush()
         p = Payment()
         p._dao = pay_dao
         print('-----{}'.format(p.id))

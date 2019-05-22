@@ -13,15 +13,12 @@
 # limitations under the License.
 """Service to manage Fee Calculation."""
 
-from datetime import date
-from typing import Dict, Any
+from datetime import datetime
+
 from flask import current_app
 
-from pay_api.exceptions import BusinessException
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
-from pay_api.utils.errors import Error
-from pay_api.models.status_code import StatusCode
-from datetime import datetime
+
 
 class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
     """Service to manage Payment transaction operations."""
@@ -34,7 +31,7 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         self._payment_id: int = None
         self._redirect_url: str = None
         self._pay_system_url: str = None
-        self._transaction_start_time:datetime = None
+        self._transaction_start_time: datetime = None
         self._transaction_end_time: datetime = None
 
     @property
@@ -140,10 +137,10 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         """Create Payment account record."""
         current_app.logger.debug('<create')
         p = PaymentTransaction()
-        p.payment_id = None #TODO
+        p.payment_id = None  # TODO
         p.status_code = 'IN_PROGRESS'
-        p.pay_system_url = None #TODO
-        p.redirect_url = None #TODO
+        p.pay_system_url = None  # TODO
+        p.redirect_url = None  # TODO
         p.transaction_start_time = datetime.now()
         p.transaction_end_time = None
 

@@ -15,10 +15,11 @@
 
 from sqlalchemy import ForeignKey
 
+from .base_model import BaseModel
 from .db import db, ma
 
 
-class PaymentLineItem(db.Model):
+class PaymentLineItem(db.Model, BaseModel):
     """This class manages all of the base data about Fee Item."""
 
     __tablename__ = 'payment_line_item'
@@ -34,11 +35,6 @@ class PaymentLineItem(db.Model):
     gst = db.Column(db.Integer, nullable=True)
     pst = db.Column(db.Integer, nullable=True)
     total = db.Column(db.Integer, nullable=False)
-
-    def save(self):
-        """Save status."""
-        db.session.add(self)
-        db.session.commit()
 
 
 class PaymentLineItemSchema(ma.ModelSchema):
