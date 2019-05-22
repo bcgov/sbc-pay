@@ -60,10 +60,10 @@ class PaymentService:
                 valid_date=filing_info.get('date', None),
                 jurisdiction=None,
                 priority=filing_info.get('priority', None))
-            if not filing_type_info.get('filing_description'):
+            if filing_type_info.get('filing_description'):
                 fee.description = filing_type_info.get('filing_description')
 
-            fees.append(fee.asdict())
+            fees.append(fee)
 
         """
         Step 1 : Check if payment account exists in DB, 
@@ -83,7 +83,9 @@ class PaymentService:
         payment_account = PaymentAccount.find_account(business_info.get('business_identifier', None),
                                                       business_info.get('corp_type', None),
                                                       pay_service.get_payment_system_code())
-        if payment_account:
+        print(payment_account)
+        print(payment_account.id)
+        if payment_account.id:
             current_app.logger.debug('Payment account exists')
             payment_account_dict = payment_account.asdict()
             if not pay_service.is_valid_account(payment_account_dict.get('party_number'),
@@ -91,14 +93,14 @@ class PaymentService:
                                                 payment_account_dict.get('site_number')):
                 payment_account.delete()
                 payment_account = None
-        if not payment_account:
+        if not payment_account.id:
             current_app.logger.debug('No payment accounts, creating new')
             party_number, account_number, site_number = pay_service.create_account(business_info.get('business_name'),
                                                                                    contact_info)
             payment_account = PaymentAccount.create(business_info, (account_number, party_number, site_number),
                                                     pay_service.get_payment_system_code())
 
-        current_app.logger.debug('Creating payment record')
+        current_app.logger.debug('Creating payment record for account : {}'.format(payment_account.id))
 
         payment = Payment.create(payment_info, fees, pay_service.get_payment_system_code())
 
@@ -107,7 +109,6 @@ class PaymentService:
 
         current_app.logger.debug('Creating Invoice record for payment {}'.format(payment.id))
         print('Creating Invoice record for payment {}'.format(payment.id))
-
 
         invoice = Invoice.create(payment_account, payment, fees)
         line_items: [PaymentLineItem] = []

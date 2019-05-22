@@ -21,7 +21,7 @@ from pay_api.exceptions import BusinessException
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.utils.errors import Error
 from pay_api.models.status_code import StatusCode
-
+from pay_api.services.fee_schedule import FeeSchedule
 
 class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
     """Service to manage Payment Line Item operations."""
@@ -156,7 +156,7 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         return self._pst
 
     @pst.setter
-    def gst(self, value: int):
+    def pst(self, value: int):
         """Set the pst."""
         self._pst = value
         self._dao.pst = value
@@ -188,20 +188,20 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         self._dao.save()
 
     @staticmethod
-    def create(invoice_id: int, fee: Dict[str, Any]):
+    def create(invoice_id: int, fee: FeeSchedule):
         """Create Payment Line Item record."""
         current_app.logger.debug('<create')
         p = PaymentLineItem()
         p.invoice_id = invoice_id
-        p.total = fee.get('total')
-        p.fee_schedule_id = fee.get('fee_schedule_id')
-        p.description = fee.get('description')
-        p.filing_fees = fee.get('filing_fees', 0)
-        p.gst = fee.get('gst', 0)
-        p.processing_fees = fee.get('processing_fees', 0)
-        p.pst = fee.get('pst', 0)
-        p.service_fees = fee.get('service_fees', 0)
-        p.quantity = fee.get('quantity', 1)
+        p.total = fee.total
+        p.fee_schedule_id = fee.fee_schedule_id
+        p.description = fee.description
+        p.filing_fees = fee.fee_amount
+        p.gst = fee.gst
+        p.processing_fees = fee.processing_fees
+        p.pst = fee.pst
+        p.service_fees = fee.service_fees
+        p.quantity = fee.quantity
 
         p.save()
         current_app.logger.debug('>create')

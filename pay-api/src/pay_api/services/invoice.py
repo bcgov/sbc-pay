@@ -23,7 +23,7 @@ from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.errors import Error
 from pay_api.models.status_code import StatusCode
-
+from pay_api.services.fee_schedule import FeeSchedule
 
 class Invoice():  # pylint: disable=too-many-instance-attributes
     """Service to manage Invoice related operations."""
@@ -92,7 +92,6 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         """Set the payment_id."""
         self._payment_id = value
         self._dao.payment_id = value
-        print('Setting payment id in invoie : {}'.format(value))
 
     @property
     def invoice_number(self):
@@ -104,6 +103,17 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         """Set the invoice_number."""
         self._invoice_number = value
         self._dao.invoice_number = value
+
+    @property
+    def reference_number(self):
+        """Return the reference_number."""
+        return self._reference_number
+
+    @reference_number.setter
+    def reference_number(self, value: str):
+        """Set the reference_number."""
+        self._reference_number = value
+        self._dao.reference_number = value
 
     @property
     def invoice_status_code(self):
@@ -220,7 +230,7 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         return self._dao.save()
 
     @staticmethod
-    def create(account:PaymentAccount, payment:Payment, fees: [Dict[str, Any]]):
+    def create(account:PaymentAccount, payment:Payment, fees: [FeeSchedule]):
         """Create invoice record."""
         current_app.logger.debug('<create')
         i = Invoice()
@@ -229,12 +239,12 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         i.payment_id = payment.id
         i.invoice_status_code = 'DRAFT'
         i.account_id = account.id
-        i.total = sum((fee.get('total')) for fee in fees)
+        i.total = sum(fee.total for fee in fees)
         i.paid = 0
         i.payment_date = None #TODO
         i.refund = 0
 
-        i.save()
+        i._dao = i.save()
         current_app.logger.debug('>create')
         return i
 

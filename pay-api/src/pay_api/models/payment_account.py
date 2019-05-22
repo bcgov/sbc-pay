@@ -34,6 +34,7 @@ class PaymentAccount(db.Model):
         """Save Payment Account."""
         db.session.add(self)
         db.session.commit()
+        return self
 
     @classmethod
     def delete(cls, payment_id):

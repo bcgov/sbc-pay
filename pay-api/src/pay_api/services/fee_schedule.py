@@ -127,6 +127,41 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         """Return the description."""
         return self._description
 
+    @property
+    def total(self):
+        """Return the total fees calculated."""
+        return self._fee_amount + self.pst + self.gst
+
+    @property
+    def fee_amount(self):
+        """Return the fee amount."""
+        return self._fee_amount
+
+    @property
+    def service_fees(self):
+        """Return the fee amount."""
+        return 0  #TODO
+
+    @property
+    def gst(self):
+        """Return the fee amount."""
+        return 0  # TODO
+
+    @property
+    def pst(self):
+        """Return the fee amount."""
+        return 0  # TODO
+
+    @property
+    def processing_fees(self):
+        """Return the fee amount."""
+        return 0  # TODO
+
+    @property
+    def quantity(self):
+        """Return the fee amount."""
+        return 1  # TODO
+
     @description.setter
     def description(self, value: str):
         """Set the description."""
@@ -134,22 +169,17 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
 
     def asdict(self):
         """Return the User as a python dict."""
-        service_fees = 0  # TODO Populate Service fees here
-        processing_fees = 0  # TODO Populate Processing fees here
-        pst = 0  # TODO Populate Tax details here
-        gst = 0  # TODO Populate Tax details here
-        total = self._fee_amount + service_fees + processing_fees + pst + gst
         d = {
             'filing_type': self._filing_type,
             'filing_type_code': self.filing_type_code,
-            'filing_fees': self._fee_amount,
-            'service_fees': service_fees,
-            'processing_fees': 0,
+            'filing_fees': self.fee_amount,
+            'service_fees': self.service_fees,
+            'processing_fees': self.processing_fees,
             'tax': {
-                'gst': gst,
-                'pst': pst
+                'gst': self.gst,
+                'pst': self.pst
             },
-            'total': total
+            'total': self.total
         }
         if self.description:
             d['description'] = self.description

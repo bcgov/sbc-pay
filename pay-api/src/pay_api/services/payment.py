@@ -21,7 +21,7 @@ from pay_api.exceptions import BusinessException
 from pay_api.models import Payment as PaymentModel
 from pay_api.utils.errors import Error
 from pay_api.models.status_code import StatusCode
-
+from pay_api.models.fee_schedule import FeeSchedule
 
 class Payment():  # pylint: disable=too-many-instance-attributes
     """Service to manage Fee related operations."""
@@ -176,7 +176,7 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         return self._dao.save()
 
     @staticmethod
-    def create(payment_info: Dict[str, Any], fees: [Dict[str, Any]], payment_system: str = 'CC'):
+    def create(payment_info: Dict[str, Any], fees: [FeeSchedule], payment_system: str = 'CC'):
         """Create payment record."""
         current_app.logger.debug('<create_payment')
         p = Payment()
@@ -184,10 +184,12 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         p.payment_method_code = payment_info.get('method_of_payment', None)
         p.payment_status_code = 'DRAFT'
         p.payment_system_code = payment_system
-        p.total = sum((fee.get('total')) for fee in fees)
+        p.total = sum(fee.total for fee in fees)
         p.created_by = 'test'
         p.created_on = date.today()
-        p.save()
-
+        pay_dao = p.save()
+        p = Payment()
+        p._dao = pay_dao
+        print('-----{}'.format(p.id))
         current_app.logger.debug('>create_payment')
         return p

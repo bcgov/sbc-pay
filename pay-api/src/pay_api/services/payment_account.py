@@ -133,7 +133,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
 
     def save(self):
         """Save the information to the DB."""
-        self._dao.save()
+        return self._dao.save()
 
     def delete(self):
         """Delete."""
@@ -165,7 +165,10 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         p.site_number = account_details[2]
         p.payment_system_code = payment_system
 
-        p.save()
+        account_dao = p.save()
+
+        p = PaymentAccount()
+        p._dao = account_dao
         current_app.logger.debug('>create')
         return p
 
@@ -182,7 +185,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
             corp_type,
             payment_system
         )
-
+        print('account_dao : {}'.format(account_dao))
         payment_account = PaymentAccount()
         payment_account._dao = account_dao  # pylint: disable=protected-access
 
