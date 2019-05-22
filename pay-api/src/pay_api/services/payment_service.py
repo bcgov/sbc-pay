@@ -115,7 +115,9 @@ class PaymentService:
         for fee in fees:
             current_app.logger.debug('Creating line items')
             line_items.append(PaymentLineItem.create(invoice.id, fee))
-
+        print('------Line Items------')
+        print(line_items)
+        print(len(line_items))
         current_app.logger.debug('Handing off to payment system to create invoice')
         pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice.id)
 
