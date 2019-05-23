@@ -81,9 +81,10 @@ class PaybcService(PaymentSystemService, OAuthService):
         """Adjust the invoice to zero"""
         access_token: str = self.__get_token().json().get('access_token')
         invoice = self.__get_invoice(account_details, inv_number, access_token)
-        amount: float = 0 - float(invoice.get('amount_due'))
-        self.__add_adjustment(account_details, inv_number, 'Cancelling Invoice', amount, access_token=access_token)
-        return None
+        for line in invoice.get('lines'):
+            self.__add_adjustment(account_details, inv_number, 'Cancelling Invoice',
+                                  0 - line.get('unit_price') * line.get('quantity'), line=line.get('line_number'),
+                                  access_token=access_token)
 
     def get_receipt(self):
         return None

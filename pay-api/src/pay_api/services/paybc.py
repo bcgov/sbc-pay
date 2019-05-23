@@ -179,7 +179,7 @@ class PayBcService(OAuthService):
         adjustment['lines'].append(
             {
                 'line_number': '1',
-                'adjustment_amount': '100',
+                'adjustment_amount': '-100',
                 'activity_name': 'BC Registries Write Off',
             }
         )
