@@ -34,7 +34,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         pass
 
     @abstractmethod
-    def update_invoice(self):
+    def cancel_invoice(self):
         pass
 
     @abstractmethod

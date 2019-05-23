@@ -15,7 +15,7 @@
 
 import base64
 import datetime
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from flask import current_app
 
@@ -23,7 +23,6 @@ from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import DEFAULT_COUNTRY, DEFAULT_JURISDICTION
 from pay_api.utils.enums import AuthHeaderType, ContentType
-
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -78,7 +77,11 @@ class PaybcService(PaymentSystemService, OAuthService):
         current_app.logger.debug('>create_invoice')
         return invoice_response.json()
 
-    def update_invoice(self):
+    def cancel_invoice(self, account_details: Tuple[str], inv_number: str):
+        """Adjust the invoice to zero"""
+        access_token: str = self.__get_token().json().get('access_token')
+        invoice = self.__get_invoice(account_details, inv_number, access_token)
+        self.__add_adjustment(account_details, inv_number, 'Cancelling Invoice', invoice.get('amount_due'), access_token)
         return None
 
     def get_receipt(self):
@@ -144,3 +147,37 @@ class PaybcService(PaymentSystemService, OAuthService):
                                    data)
         current_app.logger.debug('>Getting token')
         return token_response
+
+    def __add_adjustment(self, account_details: Tuple[str], inv_number: str, comment: str, amount: str,
+                         access_token: str):
+        current_app.logger.debug('>Creating PayBC Adjustment  For Invoice: ', inv_number)
+        adjustment_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/adjs/' \
+            .format(account_details[0], account_details[1], account_details[2], inv_number)
+        current_app.logger.debug('>Creating PayBC Adjustment URL', adjustment_url)
+
+        adjustment = dict(
+            comment=comment,
+            lines=[
+                {
+                    'line_number': '1',
+                    'adjustment_amount': amount,
+                    'activity_name': 'BC Registries Write Off',
+                }
+            ]
+        )
+
+        adjustment_response = self.post(adjustment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                        adjustment)
+
+        current_app.logger.debug('>Created PayBC Invoice Adjustment')
+        return adjustment_response.json()
+
+    def __get_invoice(self, account_details: Tuple[str], inv_number: str, access_token: str):
+        current_app.logger.debug('<__get_invoice')
+        invoice_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/' \
+            .format(account_details[0], account_details[1], account_details[2], inv_number)
+
+        invoice_response = self.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+
+        current_app.logger.debug('>__get_invoice')
+        return invoice_response.json()

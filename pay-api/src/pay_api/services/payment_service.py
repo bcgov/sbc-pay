@@ -74,9 +74,9 @@ class PaymentService:
                 If failed  : rollback the transaction (except account creation)
         """
         current_app.logger.debug('Check if payment account exists')
-        payment_account = PaymentAccount.find_account(business_info.get('business_identifier', None),
-                                                      business_info.get('corp_type', None),
-                                                      pay_service.get_payment_system_code())
+        payment_account: PaymentAccount = PaymentAccount.find_account(business_info.get('business_identifier', None),
+                                                                      business_info.get('corp_type', None),
+                                                                      pay_service.get_payment_system_code())
         print(payment_account)
         print(payment_account.id)
         if payment_account.id:
@@ -92,6 +92,7 @@ class PaymentService:
         current_app.logger.debug('Creating payment record for account : {}'.format(payment_account.id))
 
         payment: Payment = None
+        pay_system_invoice: Dict[str, any] = None
 
         try:
             payment: Payment = Payment.create(payment_info, fees, pay_service.get_payment_system_code())
@@ -123,7 +124,11 @@ class PaymentService:
             current_app.logger.error(e)
             if payment:
                 payment.rollback()
-            raise e
+            if pay_system_invoice:
+                pay_service.cancel_invoice(
+                    (payment_account.party_number, payment_account.account_number, payment_account.site_number),
+                    pay_system_invoice.get('invoice_number'))
+            raise
 
         current_app.logger.debug('>create_payment')
 
