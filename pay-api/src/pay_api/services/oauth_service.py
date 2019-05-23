@@ -38,10 +38,8 @@ class OAuthService:
         current_app.logger.debug('Endpoint : {}'.format(endpoint))
         current_app.logger.debug('headers : {}'.format(headers))
         current_app.logger.debug('data : {}'.format(data))
-        print('data : {}'.format(data))
         response = requests.post(endpoint, data=data, headers=headers)
         current_app.logger.info('response : {}'.format(response.text))
-        print('response : {}'.format(response.text))
         response.raise_for_status()
         current_app.logger.debug('>post')
         return response
@@ -60,7 +58,6 @@ class OAuthService:
         current_app.logger.debug('headers : {}'.format(headers))
         response = requests.get(endpoint, headers=headers)
         current_app.logger.info('response : {}'.format(response.text))
-        print('response : {}'.format(response.text))
         response.raise_for_status()
         current_app.logger.debug('>post')
         return response

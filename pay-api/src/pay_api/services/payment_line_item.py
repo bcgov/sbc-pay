@@ -185,7 +185,7 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
 
     def flush(self):
         """Save the information to the DB."""
-        self._dao.flush()
+        return self._dao.flush()
 
     @staticmethod
     def create(invoice_id: int, fee: FeeSchedule):
@@ -203,6 +203,10 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         p.service_fees = fee.service_fees
         p.quantity = fee.quantity
 
-        p.flush()
+        p_dao = p.flush()
+
+        p = PaymentLineItem()
+        p._dao = p_dao
+
         current_app.logger.debug('>create')
         return p

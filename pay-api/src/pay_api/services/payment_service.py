@@ -77,8 +77,6 @@ class PaymentService:
         payment_account: PaymentAccount = PaymentAccount.find_account(business_info.get('business_identifier', None),
                                                                       business_info.get('corp_type', None),
                                                                       pay_service.get_payment_system_code())
-        print(payment_account)
-        print(payment_account.id)
         if payment_account.id:
             current_app.logger.debug('Payment account exists')
 
@@ -97,18 +95,13 @@ class PaymentService:
         try:
             payment: Payment = Payment.create(payment_info, fees, pay_service.get_payment_system_code())
             current_app.logger.debug(payment)
-            print(payment)
 
             current_app.logger.debug('Creating Invoice record for payment {}'.format(payment.id))
-            print('Creating Invoice record for payment {}'.format(payment.id))
             invoice = Invoice.create(payment_account, payment, fees)
             line_items = []
             for fee in fees:
                 current_app.logger.debug('Creating line items')
                 line_items.append(PaymentLineItem.create(invoice.id, fee))
-            print('------Line Items------')
-            print(line_items)
-            print(len(line_items))
             current_app.logger.debug('Handing off to payment system to create invoice')
             pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice.id)
 
@@ -133,3 +126,8 @@ class PaymentService:
         current_app.logger.debug('>create_payment')
 
         return payment.asdict()
+
+
+    @classmethod
+    def update_payment(cls, payment_identifier:int, payment_request: Tuple[Dict[str, Any]]):
+        pass

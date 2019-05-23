@@ -180,7 +180,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
             corp_type,
             payment_system
         )
-        print('account_dao : {}'.format(account_dao))
         payment_account = PaymentAccount()
         payment_account._dao = account_dao  # pylint: disable=protected-access
 

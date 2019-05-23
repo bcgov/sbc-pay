@@ -69,7 +69,6 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         """Set the id."""
         self._id = value
         self._dao.id = value
-        print('Setting payment id in Payment : {}'.format(value))
 
     @property
     def payment_system_code(self):
@@ -209,6 +208,5 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         pay_dao = p.flush()
         p = Payment()
         p._dao = pay_dao
-        print('-----{}'.format(p.id))
         current_app.logger.debug('>create_payment')
         return p
