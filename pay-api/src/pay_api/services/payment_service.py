@@ -81,7 +81,7 @@ class PaymentService:
             current_app.logger.debug('Payment account exists')
 
         else:
-            current_app.logger.debug('No payment accounts, creating new')
+            current_app.logger.debug('No payment account, creating new')
             party_number, account_number, site_number = pay_service.create_account(business_info.get('business_name'),
                                                                                    contact_info)
             payment_account = PaymentAccount.create(business_info, (account_number, party_number, site_number),
@@ -105,12 +105,12 @@ class PaymentService:
             current_app.logger.debug('Handing off to payment system to create invoice')
             pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice.id)
 
-            current_app.logger.debug('Uodating invoice record')
+            current_app.logger.debug('Updating invoice record')
             invoice = Invoice.find_by_id(invoice.id)
             invoice.invoice_status_code = 'CREATED'
             invoice.reference_number = pay_system_invoice.get('pbc_ref_number', None)
             invoice.invoice_number = pay_system_invoice.get('invoice_number', None)
-            if 1==1:
+            if 1 == 1:
                 raise Exception
             invoice.save()
         except Exception as e:
@@ -128,7 +128,6 @@ class PaymentService:
 
         return payment.asdict()
 
-
     @classmethod
-    def update_payment(cls, payment_identifier:int, payment_request: Tuple[Dict[str, Any]]):
+    def update_payment(cls, payment_identifier: int, payment_request: Tuple[Dict[str, Any]]):
         pass

@@ -81,7 +81,8 @@ class PaybcService(PaymentSystemService, OAuthService):
         """Adjust the invoice to zero"""
         access_token: str = self.__get_token().json().get('access_token')
         invoice = self.__get_invoice(account_details, inv_number, access_token)
-        self.__add_adjustment(account_details, inv_number, 'Cancelling Invoice', invoice.get('amount_due'), access_token)
+        amount: float = 0 - float(invoice.get('amount_due'))
+        self.__add_adjustment(account_details, inv_number, 'Cancelling Invoice', amount, access_token=access_token)
         return None
 
     def get_receipt(self):
@@ -148,8 +149,8 @@ class PaybcService(PaymentSystemService, OAuthService):
         current_app.logger.debug('>Getting token')
         return token_response
 
-    def __add_adjustment(self, account_details: Tuple[str], inv_number: str, comment: str, amount: str,
-                         access_token: str):
+    def __add_adjustment(self, account_details: Tuple[str], inv_number: str, comment: str, amount: float, line: int = 0,
+                         access_token: str = None):
         current_app.logger.debug('>Creating PayBC Adjustment  For Invoice: ', inv_number)
         adjustment_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/adjs/' \
             .format(account_details[0], account_details[1], account_details[2], inv_number)
@@ -159,7 +160,7 @@ class PaybcService(PaymentSystemService, OAuthService):
             comment=comment,
             lines=[
                 {
-                    'line_number': '1',
+                    'line_number': line,
                     'adjustment_amount': amount,
                     'activity_name': 'BC Registries Write Off',
                 }
