@@ -11,7 +11,6 @@ from alembic import op
 from sqlalchemy import Date, Integer, String
 from sqlalchemy.sql import column, table
 
-
 # revision identifiers, used by Alembic.
 revision = 'daa392b64cb7'
 down_revision = '55f71addab9d'
@@ -105,4 +104,3 @@ def upgrade():
 
 def downgrade():
     pass
-

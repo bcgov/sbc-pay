@@ -1,19 +1,18 @@
-"""payment_master_inserts
+"""payment_table_master_inserts
 
-Revision ID: e936f818e210
-Revises: a377560a51ab
-Create Date: 2019-05-21 13:06:56.599945
+Revision ID: 0420566ac811
+Revises: 4a4dfbf28f22
+Create Date: 2019-05-23 09:15:00.002181
 
 """
 
 from alembic import op
-from sqlalchemy import Date, Integer, String
+from sqlalchemy import String
 from sqlalchemy.sql import column, table
 
-
 # revision identifiers, used by Alembic.
-revision = 'e936f818e210'
-down_revision = 'a377560a51ab'
+revision = '0420566ac811'
+down_revision = '4a4dfbf28f22'
 branch_labels = None
 depends_on = None
 
@@ -49,11 +48,11 @@ def upgrade():
         [
             {'code': 'DRAFT', 'description': 'Draft'},
             {'code': 'IN_PROGRESS', 'description': 'In Progress'},
-            {'code': 'CREATE', 'description': 'Created'},
-            {'code': 'COMPLETE', 'description': 'Completed'},
+            {'code': 'CREATED', 'description': 'Created'},
+            {'code': 'COMPLETED', 'description': 'Completed'},
             {'code': 'PARTIAL', 'description': 'Partial'},
-            {'code': 'FAIL', 'description': 'Failed'},
-            {'code': 'REFUND', 'description': 'Refunded'}
+            {'code': 'FAILED', 'description': 'Failed'},
+            {'code': 'REFUNDED', 'description': 'Refunded'}
         ]
     )
 
