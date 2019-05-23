@@ -82,6 +82,10 @@ class PaybcService(PaymentSystemService, OAuthService):
         access_token: str = self.__get_token().json().get('access_token')
         invoice = self.__get_invoice(account_details, inv_number, access_token)
         for line in invoice.get('lines'):
+            current_app.logger.debug('Adding asjustment for line item : {} -- {}'.format(line.get('line_number'),
+                                                                                         line.get(
+                                                                                             'unit_price') * line.get(
+                                                                                             'quantity')))
             self.__add_adjustment(account_details, inv_number, 'Cancelling Invoice',
                                   0 - line.get('unit_price') * line.get('quantity'), line=line.get('line_number'),
                                   access_token=access_token)
