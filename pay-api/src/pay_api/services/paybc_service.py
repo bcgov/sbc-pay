@@ -160,8 +160,8 @@ class PaybcService(PaymentSystemService, OAuthService):
             comment=comment,
             lines=[
                 {
-                    'line_number': line,
-                    'adjustment_amount': amount,
+                    'line_number': str(line),
+                    'adjustment_amount': str(amount),
                     'activity_name': 'BC Registries Write Off',
                 }
             ]
