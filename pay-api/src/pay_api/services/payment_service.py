@@ -110,8 +110,6 @@ class PaymentService:
             invoice.invoice_status_code = 'CREATED'
             invoice.reference_number = pay_system_invoice.get('pbc_ref_number', None)
             invoice.invoice_number = pay_system_invoice.get('invoice_number', None)
-            if 1 == 1:
-                raise Exception
             invoice.save()
         except Exception as e:
             current_app.logger.error('Rolling back as error occured!')
