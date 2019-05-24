@@ -25,6 +25,7 @@ from .invoice import Invoice
 from .payment import Payment
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
+from pay_api.utils.enums import Status
 
 
 class PaymentService:
@@ -109,7 +110,7 @@ class PaymentService:
 
             current_app.logger.debug('Updating invoice record')
             invoice = Invoice.find_by_id(invoice.id)
-            invoice.invoice_status_code = 'CREATED'
+            invoice.invoice_status_code = Status.CREATED.value
             invoice.reference_number = pay_system_invoice.get('pbc_ref_number', None)
             invoice.invoice_number = pay_system_invoice.get('invoice_number', None)
             invoice.save()

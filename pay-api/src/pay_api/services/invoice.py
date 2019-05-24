@@ -21,6 +21,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.services.fee_schedule import FeeSchedule
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
+from pay_api.utils.enums import Status
 
 
 class Invoice():  # pylint: disable=too-many-instance-attributes
@@ -243,7 +244,7 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         i.created_on = datetime.now()
         i.created_by = 'test'
         i.payment_id = payment.id
-        i.invoice_status_code = 'DRAFT'
+        i.invoice_status_code = Status.DRAFT.value
         i.account_id = account.id
         i.total = sum(fee.total for fee in fees)
         i.paid = 0

@@ -21,7 +21,7 @@ from pay_api import jwt as _jwt
 from pay_api.exceptions import BusinessException
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import PaymentService
-from pay_api.utils.roles import Role
+from pay_api.utils.enums import Role
 from pay_api.utils.util import cors_preflight
 
 API = Namespace('payments', description='Payment System - Payments')

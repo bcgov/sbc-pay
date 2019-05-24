@@ -22,7 +22,10 @@ from flask import current_app
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import DEFAULT_COUNTRY, DEFAULT_JURISDICTION
+from pay_api.utils.constants import PAYBC_ADJ_ACTIVITY_NAME, PAYBC_BATCH_SOURCE, PAYBC_CUST_TRX_TYPE, \
+    PAYBC_MEMO_LINE_NAME, PAYBC_LINE_TYPE, PAYBC_TERM_NAME
 from pay_api.utils.enums import AuthHeaderType, ContentType
+from pay_api.utils.enums import PaymentSystem
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -32,7 +35,7 @@ class PaybcService(PaymentSystemService, OAuthService):
 
     def get_payment_system_code(self):
         """Return PAYBC as the system code"""
-        return 'PAYBC'
+        return PaymentSystem.PAYBC.value
 
     def create_account(self, name: str, account_info: Dict[str, Any]):
         """Create account in PayBC."""
@@ -51,12 +54,12 @@ class PaybcService(PaymentSystemService, OAuthService):
             .format(payment_account.party_number, payment_account.account_number, payment_account.site_number)
 
         invoice = dict(
-            batch_source='BC REG MANUAL_OTHER',
-            cust_trx_type='BC_REG_CO_OP',
+            batch_source=PAYBC_BATCH_SOURCE,
+            cust_trx_type=PAYBC_CUST_TRX_TYPE,
             transaction_date=curr_time,
             transaction_number=invoice_number,
             gl_date=curr_time,
-            term_name='IMMEDIATE',
+            term_name=PAYBC_TERM_NAME,
             comments='',
             lines=[]
         )
@@ -66,8 +69,8 @@ class PaybcService(PaymentSystemService, OAuthService):
             invoice['lines'].append(
                 {
                     'line_number': index,
-                    'line_type': 'LINE',
-                    'memo_line_name': 'Test Memo Line',
+                    'line_type': PAYBC_LINE_TYPE,
+                    'memo_line_name': PAYBC_MEMO_LINE_NAME,
                     'description': line_item.description,
                     'unit_price': line_item.total,
                     'quantity': line_item.quantity
@@ -172,7 +175,7 @@ class PaybcService(PaymentSystemService, OAuthService):
                 {
                     'line_number': str(line),
                     'adjustment_amount': str(amount),
-                    'activity_name': 'BC Registries Write Off',
+                    'activity_name': PAYBC_ADJ_ACTIVITY_NAME
                 }
             ]
         )

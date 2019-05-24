@@ -20,7 +20,7 @@ from datetime import date, timedelta
 
 from pay_api.models import CorpType, FeeCode, FeeSchedule, FilingType
 from pay_api.schemas import utils as schema_utils
-from pay_api.utils.roles import Role
+from pay_api.utils.enums import Role
 
 
 token_header = {

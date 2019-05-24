@@ -20,6 +20,7 @@ from flask import current_app
 
 from pay_api.models import Payment as PaymentModel
 from pay_api.models.fee_schedule import FeeSchedule
+from pay_api.utils.enums import Status
 
 
 class Payment():  # pylint: disable=too-many-instance-attributes
@@ -200,7 +201,7 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         p = Payment()
         p.paid = 0
         p.payment_method_code = payment_info.get('method_of_payment', None)
-        p.payment_status_code = 'DRAFT'
+        p.payment_status_code = Status.DRAFT.value
         p.payment_system_code = payment_system
         p.total = sum(fee.total for fee in fees)
         p.created_by = 'test'
