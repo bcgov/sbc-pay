@@ -19,6 +19,6 @@ class CodeTable:
 
     @classmethod
     def find_by_code(cls, code):
-        """Given a fee_code, this will return fee code details."""
+        """Given a code, this will return code master details."""
         code_table = cls.query.filter_by(code=code).one_or_none()  # pylint: disable=no-member
         return code_table

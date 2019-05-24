@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Service to manage Fee Calculation."""
+"""Service to manage Payment Account model related operations."""
 
 from typing import Any, Dict, Tuple
 
@@ -23,10 +23,9 @@ from pay_api.utils.errors import Error
 
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes
-    """Service to manage Payment account operations."""
+    """Service to manage Payment Account model related operations."""
 
     def __init__(self):
-        """Return a User Service object."""
         self.__dao = None
         self._id: int = None
         self._corp_number: str = None

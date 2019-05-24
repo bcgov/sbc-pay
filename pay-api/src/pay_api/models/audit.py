@@ -16,7 +16,7 @@ from .db import db
 
 
 class Audit(object):
-    """This class provides base methods for Code Table."""
+    """This class provides base methods for Auditable Table."""
 
     created_by = db.Column('created_by', db.String(50), nullable=False)
     created_on = db.Column('created_on', db.DateTime, nullable=False)

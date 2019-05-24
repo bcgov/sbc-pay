@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Service to manage Payment."""
+"""Service class to control all the operations related to Payment."""
 
 from typing import Any, Dict, Tuple
 
@@ -32,12 +32,27 @@ class PaymentService:
 
     @classmethod
     def create_payment(cls, payment_request: Tuple[Dict[str, Any]]):
-        """Create payment related records."""
+        """Create payment related records.
+
+        Does the following;
+        1. Calculate the fees based on the filing types received.
+        2. Check if the payment account exists,
+            2.1 If yes, use the one from database.
+            2.2 Else create one in payment system and update database.
+        3. Create payment record in database and flush.
+        4. Create invoice record in database and flush.
+        5. Create payment line items in database and flush.
+        6. Create invoice in payment system;
+            6.1 If successful update the invoice table with references from payment system.
+                6.1.1 If failed adjust the invoice to zero and roll back the transaction.
+            6.2 If fails rollback the transaction
+
+        """
         current_app.logger.debug('<create_payment')
 
         payment_info = payment_request.get('payment_info')
         business_info = payment_request.get('business_info')
-        contact_info = payment_request.get('business_info').get('contact_info')
+        contact_info = business_info.get('contact_info')
         filing_info = payment_request.get('filing_info')
 
         current_app.logger.debug('Creating PaymentSystemService impl')
@@ -60,19 +75,6 @@ class PaymentService:
 
             fees.append(fee)
 
-        """
-        Step 1 : Check if payment account exists in DB, 
-                If no  : Create account in payment system and update the DB, 
-        Step 2 : 
-            Create Payment record - flush
-            Create Invoice record - flush
-            Create line items - flush
-        Step 3 :
-            Create invoice in payment system:
-                If success : Update the invoice table with reference and invoice numbers, commit transaction:
-                    If fails adjust the invoice to zero in payment system else Return with payment identfier
-                If failed  : rollback the transaction (except account creation)
-        """
         current_app.logger.debug('Check if payment account exists')
         payment_account: PaymentAccount = PaymentAccount.find_account(business_info.get('business_identifier', None),
                                                                       business_info.get('corp_type', None),

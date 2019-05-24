@@ -38,9 +38,10 @@ class Payment(Resource):
     def post():
         """Create the payment records."""
         request_json = request.get_json()
+        # Validate the input request
         valid_format, errors = schema_utils.validate(request_json, 'payment_request')
         if not valid_format:
-            return jsonify({'code': 'PAY003', 'message': schema_utils.serialize(errors)}), 400
+            return jsonify({'code': 'PAY003', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
 
         try:
             response, status = PaymentService.create_payment(request_json), HTTPStatus.CREATED

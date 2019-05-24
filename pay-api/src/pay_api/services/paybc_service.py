@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Service to manage Payment."""
+"""Service to manage PayBC interaction."""
 
 import base64
 import datetime
@@ -28,12 +28,14 @@ from .payment_line_item import PaymentLineItem
 
 
 class PaybcService(PaymentSystemService, OAuthService):
-    """Service to manage Payment related operations."""
+    """Service to manage PayBC integration."""
 
     def get_payment_system_code(self):
+        """Return PAYBC as the system code"""
         return 'PAYBC'
 
     def create_account(self, name: str, account_info: Dict[str, Any]):
+        """Create account in PayBC."""
         access_token = self.__get_token().json().get('access_token')
         party = self.__create_party(access_token, name)
         account = self.__create_paybc_account(access_token, party)
@@ -41,6 +43,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         return party.get('party_number'), account.get('account_number'), site.get('site_number')
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_number: int):
+        """Create Invoice in PayBC."""
         current_app.logger.debug('<create_invoice')
         now = datetime.datetime.now()
         curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -91,6 +94,7 @@ class PaybcService(PaymentSystemService, OAuthService):
                                   access_token=access_token)
 
     def get_receipt(self):
+        """Get receipt from paybc."""
         return None
 
     def __create_party(self, access_token: str = None, party_name: str = None):
@@ -156,6 +160,7 @@ class PaybcService(PaymentSystemService, OAuthService):
 
     def __add_adjustment(self, account_details: Tuple[str], inv_number: str, comment: str, amount: float, line: int = 0,
                          access_token: str = None):
+        """Add adjustment to the invoice."""
         current_app.logger.debug('>Creating PayBC Adjustment  For Invoice: ', inv_number)
         adjustment_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/adjs/' \
             .format(account_details[0], account_details[1], account_details[2], inv_number)
@@ -179,6 +184,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         return adjustment_response.json()
 
     def __get_invoice(self, account_details: Tuple[str], inv_number: str, access_token: str):
+        """Get invoice from PayBC."""
         current_app.logger.debug('<__get_invoice')
         invoice_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/' \
             .format(account_details[0], account_details[1], account_details[2], inv_number)

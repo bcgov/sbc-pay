@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Model to handle all operations related to Payment Status master data."""
+"""Model to handle all operations related to Payment Transaction."""
 from datetime import datetime
 
 from sqlalchemy import ForeignKey

@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Model to handle all operations related to Fee Item."""
+"""Model to handle all operations related to Payment Line Item."""
 
 from sqlalchemy import ForeignKey
 
@@ -20,7 +20,7 @@ from .db import db, ma
 
 
 class PaymentLineItem(db.Model, BaseModel):
-    """This class manages all of the base data about Fee Item."""
+    """This class manages all of the base data about Payment Line Item."""
 
     __tablename__ = 'payment_line_item'
 

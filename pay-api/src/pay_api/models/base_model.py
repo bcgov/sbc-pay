@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Model to handle all operations related to Invoice."""
+"""Super class to handle all operations related to base model."""
 
 from .db import db
 
@@ -21,7 +21,7 @@ class BaseModel:
 
     @staticmethod
     def commit():
-        """Save and commit."""
+        """Commit the session."""
         db.session.commit()
 
     def flush(self):
@@ -31,7 +31,7 @@ class BaseModel:
         return self
 
     def save(self):
-        """Save and flush."""
+        """Save and commit."""
         db.session.add(self)
         db.session.commit()
         return self

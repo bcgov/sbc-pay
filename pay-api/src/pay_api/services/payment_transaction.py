@@ -134,7 +134,7 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def create():
-        """Create Payment account record."""
+        """Create Payment transaction record."""
         current_app.logger.debug('<create')
         p = PaymentTransaction()
         p.payment_id = None  # TODO

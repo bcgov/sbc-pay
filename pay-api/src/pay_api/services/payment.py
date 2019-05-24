@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Service to manage Fee Calculation."""
+"""Service to manage Payment model related operations."""
 
 from datetime import datetime
 from typing import Any, Dict
@@ -23,10 +23,10 @@ from pay_api.models.fee_schedule import FeeSchedule
 
 
 class Payment():  # pylint: disable=too-many-instance-attributes
-    """Service to manage Fee related operations."""
+    """Service to manage Payment model related operations."""
 
     def __init__(self):
-        """Return a User Service object."""
+        """Initialize the service."""
         self.__dao = None
         self._id: int = None
         self._payment_system_code: str = None
