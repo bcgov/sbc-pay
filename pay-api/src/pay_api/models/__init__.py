@@ -30,6 +30,5 @@ from .payment_method import PaymentMethod, PaymentMethodSchema
 from .payment_transaction import PaymentTransaction, PaymentTransactionSchema
 from .receipt import Receipt, ReceiptSchema
 from .status_code import StatusCode, StatusCodeSchema
-from .transaction import Transaction, TransactionSchema
 
 event.listen(Engine, 'before_cursor_execute', DBTracing.query_tracing)

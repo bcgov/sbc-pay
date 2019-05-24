@@ -171,9 +171,9 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     4H8UZcVFN95vEKxJiLRjAmj6g273pu9kK4ymXNEjWWJn
     -----END RSA PRIVATE KEY-----"""
 
-    PAYBC_BASE_URL = os.getenv('PAYBC_BASE_URL', '')
-    PAYBC_CLIENT_ID = os.getenv('PAYBC_CLIENT_ID', '')
-    PAYBC_CLIENT_SECRET = os.getenv('PAYBC_CLIENT_SECRET', '')
+    PAYBC_BASE_URL = 'https://mock-sbc-pay.pathfinder.gov.bc.ca/rest/PayBC+API+Reference/1.0.0'
+    PAYBC_CLIENT_ID = 'TEST'
+    PAYBC_CLIENT_SECRET = 'TEST'
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
