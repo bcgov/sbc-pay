@@ -20,7 +20,6 @@ from sqlalchemy.engine import Engine
 from .corp_type import CorpType, CorpTypeSchema
 from .db import db, ma
 from .fee_code import FeeCode, FeeCodeSchema
-from .fee_item import FeeItem, FeeItemSchema
 from .fee_schedule import FeeSchedule, FeeScheduleSchema
 from .filing_type import FilingType, FilingTypeSchema
 from .invoice import Invoice, InvoiceSchema
