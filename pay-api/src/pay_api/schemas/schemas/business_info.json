@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/business_info",
+  "type": "object",
+  "required": [
+    "business_identifier",
+    "corp_type",
+    "business_name",
+    "contact_info"
+  ],
+  "properties": {
+    "business_identifier": {
+      "$id": "#/properties/business_identifier",
+      "type": "string",
+      "title": "Business/Corp Identifier",
+      "default": "",
+      "examples": [
+        "CP1000"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "corp_type": {
+      "$id": "#/properties/corp_type",
+      "type": "string",
+      "title": "Corp Type",
+      "default": "",
+      "examples": [
+        "CP"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "business_name": {
+      "$id": "#/properties/business_name",
+      "type": "string",
+      "title": "Business Name",
+      "default": "",
+      "examples": [
+        "XYZ Corp"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "contact_info": {
+      "oneOf": [
+        {
+          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/contact_info"
+        }
+      ]
+    }
+  }
+}

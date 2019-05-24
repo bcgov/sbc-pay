@@ -1,0 +1,31 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/filing_info",
+    "type": "object",
+    "title": "Filing Info",
+    "required": [
+        "filing_types"
+    ],
+    "properties": {
+        "date": {
+          "$id": "#/properties/date",
+          "type": "string",
+          "title": "Date on which fees are applicable",
+          "default": "",
+          "examples": [
+            "2019-01-01"
+          ],
+          "pattern": "^\\d{4}\\-(0?[1-9]|1[012])\\-(0?[1-9]|[12][0-9]|3[01])$"
+        },
+        "filing_types": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {
+                "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/filing_type"
+              }
+            ]
+          }
+        }
+      }
+    }

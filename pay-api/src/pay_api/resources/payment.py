@@ -19,10 +19,10 @@ from flask_restplus import Namespace, Resource, cors
 
 from pay_api import jwt as _jwt
 from pay_api.exceptions import BusinessException
+from pay_api.schemas import utils as schema_utils
 from pay_api.services import PaymentService
 from pay_api.utils.roles import Role
 from pay_api.utils.util import cors_preflight
-
 
 API = Namespace('payments', description='Payment System - Payments')
 
@@ -38,9 +38,9 @@ class Payment(Resource):
     def post():
         """Create the payment records."""
         request_json = request.get_json()
-        # valid_format, errors = schema_utils.validate_schema(request_json, 'payment.json')
-        # if not valid_format:
-        #   return jsonify({'code': 'PAY003', 'message': errors}), 400
+        valid_format, errors = schema_utils.validate(request_json, 'payment_request')
+        if not valid_format:
+            return jsonify({'code': 'PAY003', 'message': schema_utils.serialize(errors)}), 400
 
         try:
             response, status = PaymentService.create_payment(request_json), HTTPStatus.CREATED

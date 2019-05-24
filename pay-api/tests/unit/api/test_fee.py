@@ -63,7 +63,7 @@ def test_fees_with_corp_type_and_filing_type(session, client, jwt, app):
         factory_fee_model('XXX', 100))
     rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}', headers=headers)
     assert rv.status_code == 200
-    assert schema_utils.validate_schema(rv.json, 'fees.json')
+    assert schema_utils.validate(rv.json, 'fees')
 
 
 def test_fees_with_corp_type_and_filing_type_with_valid_start_date(session, client, jwt, app):
@@ -82,8 +82,8 @@ def test_fees_with_corp_type_and_filing_type_with_valid_start_date(session, clie
         now - timedelta(1))
     rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}', headers=headers)
     assert rv.status_code == 200
-    assert schema_utils.validate_schema(rv.json, 'fees.json')
-    assert not schema_utils.validate_schema(rv.json, 'error.json')[0]
+    assert schema_utils.validate(rv.json, 'fees')
+    assert not schema_utils.validate(rv.json, 'error')[0]
 
 
 def test_fees_with_corp_type_and_filing_type_with_invalid_start_date(session, client, jwt, app):
@@ -102,8 +102,8 @@ def test_fees_with_corp_type_and_filing_type_with_invalid_start_date(session, cl
         now + timedelta(1))
     rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}', headers=headers)
     assert rv.status_code == 400
-    assert schema_utils.validate_schema(rv.json, 'error.json')
-    assert not schema_utils.validate_schema(rv.json, 'fees.json')[0]
+    assert schema_utils.validate(rv.json, 'error')
+    assert not schema_utils.validate(rv.json, 'fees')[0]
 
 
 def test_fees_with_corp_type_and_filing_type_with_valid_end_date(session, client, jwt, app):
@@ -123,7 +123,7 @@ def test_fees_with_corp_type_and_filing_type_with_valid_end_date(session, client
         now)
     rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}', headers=headers)
     assert rv.status_code == 200
-    assert schema_utils.validate_schema(rv.json, 'fees.json')
+    assert schema_utils.validate(rv.json, 'fees')
 
 
 def test_fees_with_corp_type_and_filing_type_with_invalid_end_date(session, client, jwt, app):
@@ -143,7 +143,7 @@ def test_fees_with_corp_type_and_filing_type_with_invalid_end_date(session, clie
         now - timedelta(1))
     rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}', headers=headers)
     assert rv.status_code == 400
-    assert schema_utils.validate_schema(rv.json, 'error.json')
+    assert schema_utils.validate(rv.json, 'error')
 
 
 def factory_filing_type_model(

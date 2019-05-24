@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/payment_info",
+  "type": "object",
+  "type": "object",
+  "required": [
+    "method_of_payment"
+  ],
+  "properties": {
+    "method_of_payment": {
+      "$id": "#/properties/method_of_payment",
+      "type": "string",
+      "title": "Method of payment",
+      "enum": ["CC"],
+      "examples": [
+        "CC"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "payment_system": {
+      "$id": "#/properties/payment_system",
+      "type": "string",
+      "title": "Payment System",
+      "default": "PAYBC",
+      "examples": [
+        "PAYBC"
+      ],
+      "pattern": "^(.*)$"
+    }
+  }
+}
