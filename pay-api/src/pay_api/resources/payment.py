@@ -14,6 +14,7 @@
 """Resource for Payment endpoints."""
 from http import HTTPStatus
 
+from flask import current_app
 from flask import jsonify, request
 from flask_restplus import Namespace, Resource, cors
 
@@ -37,6 +38,7 @@ class Payment(Resource):
     @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
     def post():
         """Create the payment records."""
+        current_app.logger.info('<Payment.post')
         request_json = request.get_json()
         # Validate the input request
         valid_format, errors = schema_utils.validate(request_json, 'payment_request')
@@ -47,4 +49,5 @@ class Payment(Resource):
             response, status = PaymentService.create_payment(request_json), HTTPStatus.CREATED
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
+        current_app.logger.debug('>Payment.post')
         return jsonify(response), status

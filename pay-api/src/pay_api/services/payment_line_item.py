@@ -179,10 +179,6 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         self._quantity = value
         self._dao.quantity = value
 
-    def commit(self):
-        """Save the information to the DB."""
-        self._dao.commit()
-
     def flush(self):
         """Save the information to the DB."""
         return self._dao.flush()
@@ -210,3 +206,13 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
 
         current_app.logger.debug('>create')
         return p
+
+    @staticmethod
+    def find_by_id(id: int):
+        line_dao = PaymentLineItemModel.find_by_id(id)
+
+        line = PaymentLineItem()
+        line._dao = line_dao  # pylint: disable=protected-access
+
+        current_app.logger.debug('>find_by_id')
+        return line

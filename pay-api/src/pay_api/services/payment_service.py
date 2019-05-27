@@ -18,14 +18,13 @@ from typing import Any, Dict, Tuple
 from flask import current_app
 
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
-
+from pay_api.utils.enums import Status
 from .base_payment_system import PaymentSystemService
 from .fee_schedule import FeeSchedule
 from .invoice import Invoice
 from .payment import Payment
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
-from pay_api.utils.enums import Status
 
 
 class PaymentService:
@@ -80,10 +79,7 @@ class PaymentService:
         payment_account: PaymentAccount = PaymentAccount.find_account(business_info.get('business_identifier', None),
                                                                       business_info.get('corp_type', None),
                                                                       pay_service.get_payment_system_code())
-        if payment_account.id:
-            current_app.logger.debug('Payment account exists')
-
-        else:
+        if not payment_account.id:
             current_app.logger.debug('No payment account, creating new')
             party_number, account_number, site_number = pay_service.create_account(business_info.get('business_name'),
                                                                                    contact_info)
@@ -114,6 +110,7 @@ class PaymentService:
             invoice.reference_number = pay_system_invoice.get('pbc_ref_number', None)
             invoice.invoice_number = pay_system_invoice.get('invoice_number', None)
             invoice.save()
+            payment.commit()
         except Exception as e:
             current_app.logger.error('Rolling back as error occured!')
             current_app.logger.error(e)
@@ -129,6 +126,3 @@ class PaymentService:
 
         return payment.asdict()
 
-    @classmethod
-    def update_payment(cls, payment_identifier: int, payment_request: Tuple[Dict[str, Any]]):
-        pass

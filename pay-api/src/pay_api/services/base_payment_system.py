@@ -30,24 +30,19 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     @abstractmethod
     def create_account(self, name: str, account_info: Dict[str, Any]):
         """Create account in payment system."""
-        pass
 
     @abstractmethod
     def create_invoice(self):
         """Create invoice in payment system."""
-        pass
 
     @abstractmethod
     def cancel_invoice(self):
         """Cancel invoice in payment system."""
-        pass
 
     @abstractmethod
     def get_receipt(self):
         """Get receipt from payment system."""
-        pass
 
     @abstractmethod
     def get_payment_system_code(self):
         """Return the payment system code. E.g, PAYBC, BCOL etc."""
-        pass

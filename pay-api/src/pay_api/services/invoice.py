@@ -224,10 +224,6 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         self._updated_on = value
         self._dao.updated_on = value
 
-    def commit(self):
-        """Save the information to the DB."""
-        return self._dao.commit()
-
     def flush(self):
         """Save the information to the DB."""
         return self._dao.flush()
@@ -262,5 +258,5 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         invoice = Invoice()
         invoice._dao = invoice_dao  # pylint: disable=protected-access
 
-        current_app.logger.debug('>get_fees_by_corp_type_and_filing_type')
+        current_app.logger.debug('>find_by_id')
         return invoice

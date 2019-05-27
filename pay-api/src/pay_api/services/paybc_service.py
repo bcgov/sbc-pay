@@ -98,7 +98,6 @@ class PaybcService(PaymentSystemService, OAuthService):
 
     def get_receipt(self):
         """Get receipt from paybc."""
-        return None
 
     def __create_party(self, access_token: str = None, party_name: str = None):
         """Create a party record in PayBC."""

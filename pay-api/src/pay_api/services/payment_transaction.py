@@ -130,20 +130,14 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
 
     def save(self):
         """Save the information to the DB."""
-        self._dao.save()
+        return self._dao.save()
 
     @staticmethod
-    def create():
-        """Create Payment transaction record."""
-        current_app.logger.debug('<create')
-        p = PaymentTransaction()
-        p.payment_id = None  # TODO
-        p.status_code = 'IN_PROGRESS'
-        p.pay_system_url = None  # TODO
-        p.redirect_url = None  # TODO
-        p.transaction_start_time = datetime.now()
-        p.transaction_end_time = None
+    def find_by_id(id: int):
+        transaction_dao = PaymentTransactionModel.find_by_id(id)
 
-        p.save()
-        current_app.logger.debug('>create')
-        return p
+        transaction = PaymentTransaction()
+        transaction._dao = transaction_dao  # pylint: disable=protected-access
+
+        current_app.logger.debug('>find_by_id')
+        return transaction

@@ -171,7 +171,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     4H8UZcVFN95vEKxJiLRjAmj6g273pu9kK4ymXNEjWWJn
     -----END RSA PRIVATE KEY-----"""
 
-    PAYBC_BASE_URL = 'https://mock-sbc-pay.pathfinder.gov.bc.ca/rest/PayBC+API+Reference/1.0.0'
+    PAYBC_BASE_URL = 'https://mock-lear-tools.pathfinder.gov.bc.ca/rest/PayBC+API+Reference/1.0.0'
     PAYBC_CLIENT_ID = 'TEST'
     PAYBC_CLIENT_SECRET = 'TEST'
 

@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests to assure the CorpType Class.
+"""Tests to assure the FeeSchedule Service.
 
-Test-Suite to ensure that the CorpType Class is working as expected.
+Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
+
 from datetime import datetime
 
 from pay_api.models import Invoice, Payment, PaymentAccount
-from pay_api.models.payment_transaction import PaymentTransaction
+from pay_api.services.invoice import Invoice as Invoice_service
 
 
 def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
@@ -40,29 +41,38 @@ def factory_invoice(payment_id: str, account_id: str):
                    total=0, created_by='test', created_on=datetime.now())
 
 
-def factory_payment_transaction(payment_id: str, status_code: str = 'DRAFT', redirect_url: str = 'http://google.com/',
-                                pay_system_url: str = 'http://google.com',
-                                transaction_start_time: datetime = datetime.now(),
-                                transaction_end_time: datetime = datetime.now()):
-    return PaymentTransaction(payment_id=payment_id,
-                              status_code=status_code,
-                              redirect_url=redirect_url,
-                              pay_system_url=pay_system_url,
-                              transaction_start_time=transaction_start_time,
-                              transaction_end_time=transaction_end_time)
-
-
-def test_payment_transaction(session):
-    """Assert a payment_transaction is stored.
-
-    Start with a blank database.
-    """
+def test_invoice_saved_from_new(session):
+    """Assert that the invoice is saved to the table."""
     payment_account = factory_payment_account()
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
-    invoice.save()
-    payment_transaction = factory_payment_transaction(payment_id=payment.id)
-    payment_transaction.save()
-    assert payment_transaction.id is not None
+    i = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
+    i.save()
+
+    invoice = Invoice_service.find_by_id(i.id)
+
+    assert invoice is not None
+    assert invoice.id is not None
+    assert invoice.payment_id is not None
+    assert invoice.invoice_number is  None
+    assert invoice.reference_number is  None
+    assert invoice.invoice_status_code is not None
+    assert invoice.refund is None
+    assert invoice.payment_date is None
+    assert invoice.total is not None
+    assert invoice.paid is None
+    assert invoice.created_on is not None
+    assert invoice.created_by is not None
+    assert invoice.updated_by is None
+    assert invoice.updated_on is None
+    assert invoice.account_id is not None
+
+
+
+def test_invoice_invalid_lookup(session):
+
+    invoice = Invoice_service.find_by_id(999)
+
+    assert invoice is not None
+    assert invoice.id is None

@@ -184,8 +184,8 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
             },
             'total': self.total
         }
-        if self.description:
-            d['description'] = self.description
+        # if self.description:
+        #   d['description'] = self.description
         return d
 
     def save(self):

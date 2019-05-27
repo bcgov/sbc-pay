@@ -36,6 +36,11 @@ class PaymentLineItem(db.Model, BaseModel):
     pst = db.Column(db.Integer, nullable=True)
     total = db.Column(db.Integer, nullable=False)
 
+    @classmethod
+    def find_by_id(cls, id: int):
+        """Return a Line Item by id."""
+        return cls.query.get(id)
+
 
 class PaymentLineItemSchema(ma.ModelSchema):
     """Main schema used to serialize the Status Code."""

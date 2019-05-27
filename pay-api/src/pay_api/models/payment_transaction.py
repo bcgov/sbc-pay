@@ -27,8 +27,17 @@ class PaymentTransaction(db.Model, BaseModel):  # pylint: disable=too-few-public
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
-    date = db.Column(db.DateTime, default=datetime.today(), nullable=False)
+    payment_id = db.Column(db.Integer, ForeignKey('payment.id'), nullable=False)
+    redirect_url = db.Column(db.String(200), nullable=False)
+    pay_system_url = db.Column(db.String(500), nullable=False)
+
+    transaction_start_time = db.Column(db.DateTime, default=datetime.today(), nullable=False)
+    transaction_end_time = db.Column(db.DateTime, default=datetime.today(), nullable=True)
+
+    @classmethod
+    def find_by_id(cls, id: int):
+        """Return a Payment Transaction by id."""
+        return cls.query.get(id)
 
 
 class PaymentTransactionSchema(ma.ModelSchema):

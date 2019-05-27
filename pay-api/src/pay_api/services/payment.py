@@ -211,3 +211,13 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         p._dao = pay_dao
         current_app.logger.debug('>create_payment')
         return p
+
+    @staticmethod
+    def find_by_id(id: int):
+        payment_dao = PaymentModel.find_by_id(id)
+
+        payment = Payment()
+        payment._dao = payment_dao  # pylint: disable=protected-access
+
+        current_app.logger.debug('>find_by_id')
+        return payment

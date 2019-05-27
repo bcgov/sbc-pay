@@ -31,6 +31,3 @@ class Error(Enum):
         obj.status = status
         return obj
 
-    @staticmethod
-    def create(code, message, status):
-        Error(code, message, status)
