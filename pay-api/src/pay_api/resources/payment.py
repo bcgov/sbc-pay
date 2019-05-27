@@ -14,7 +14,8 @@
 """Resource for Payment endpoints."""
 from http import HTTPStatus
 
-from flask import current_app
+from flask import current_app, g, jsonify
+
 from flask import jsonify, request
 from flask_restplus import Namespace, Resource, cors
 
@@ -46,7 +47,9 @@ class Payment(Resource):
             return jsonify({'code': 'PAY003', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
 
         try:
-            response, status = PaymentService.create_payment(request_json), HTTPStatus.CREATED
+            response, status = PaymentService.create_payment(request_json,
+                                                             g.jwt_oidc_token_info.get('preferred_username',
+                                                                                       None)), HTTPStatus.CREATED
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         current_app.logger.debug('>Payment.post')

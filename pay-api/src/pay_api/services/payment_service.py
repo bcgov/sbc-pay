@@ -31,7 +31,7 @@ class PaymentService:
     """Service to manage Payment related operations."""
 
     @classmethod
-    def create_payment(cls, payment_request: Tuple[Dict[str, Any]]):
+    def create_payment(cls, payment_request: Tuple[Dict[str, Any]], current_user: str = None):
         """Create payment related records.
 
         Does the following;
@@ -49,7 +49,6 @@ class PaymentService:
 
         """
         current_app.logger.debug('<create_payment')
-
         payment_info = payment_request.get('payment_info')
         business_info = payment_request.get('business_info')
         contact_info = business_info.get('contact_info')
@@ -92,11 +91,11 @@ class PaymentService:
         pay_system_invoice: Dict[str, any] = None
 
         try:
-            payment: Payment = Payment.create(payment_info, fees, pay_service.get_payment_system_code())
+            payment: Payment = Payment.create(payment_info, fees, current_user, pay_service.get_payment_system_code())
             current_app.logger.debug(payment)
 
             current_app.logger.debug('Creating Invoice record for payment {}'.format(payment.id))
-            invoice = Invoice.create(payment_account, payment, fees)
+            invoice = Invoice.create(payment_account, payment, fees, current_user)
             line_items = []
             for fee in fees:
                 current_app.logger.debug('Creating line items')
@@ -125,4 +124,3 @@ class PaymentService:
         current_app.logger.debug('>create_payment')
 
         return payment.asdict()
-

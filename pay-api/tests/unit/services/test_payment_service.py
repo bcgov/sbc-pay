@@ -56,13 +56,13 @@ def test_create_payment_record(session):
             ]
         }
     }
-    payment_response = PaymentService.create_payment(payment_request)
+    payment_response = PaymentService.create_payment(payment_request, 'test')
     account_model = PaymentAccountModel.find_by_corp_number_and_corp_type_and_system('CP1234', 'CP', 'PAYBC')
     account_id = account_model.id
     assert account_id is not None
     assert payment_response.get('id') is not None
     # Create another payment with same request, the account should be the same
-    PaymentService.create_payment(payment_request)
+    PaymentService.create_payment(payment_request, 'test')
     account_model = PaymentAccountModel.find_by_corp_number_and_corp_type_and_system('CP1234', 'CP', 'PAYBC')
     assert account_id == account_model.id
 
@@ -101,14 +101,14 @@ def test_create_payment_record_rollback(session):
     # Mock here that the invoice update fails here to test the rollback scenario
     with patch('pay_api.services.invoice.Invoice.save', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.create_payment(payment_request)
+            PaymentService.create_payment(payment_request, 'test')
         assert excinfo.type == Exception
 
     with patch('pay_api.services.payment.Payment.create', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.create_payment(payment_request)
+            PaymentService.create_payment(payment_request, 'test')
         assert excinfo.type == Exception
     with patch('pay_api.services.paybc_service.PaybcService.create_invoice', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.create_payment(payment_request)
+            PaymentService.create_payment(payment_request, 'test')
         assert excinfo.type == Exception

@@ -195,16 +195,16 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         return d
 
     @staticmethod
-    def create(payment_info: Dict[str, Any], fees: [FeeSchedule], payment_system: str = 'CC'):
+    def create(payment_info: Dict[str, Any], fees: [FeeSchedule], current_user: str = None, payment_system: str = 'CC'):
         """Create payment record."""
         current_app.logger.debug('<create_payment')
         p = Payment()
         p.paid = 0
         p.payment_method_code = payment_info.get('method_of_payment', None)
-        p.payment_status_code = Status.DRAFT.value
+        p.payment_status_code = Status.CREATED.value
         p.payment_system_code = payment_system
         p.total = sum(fee.total for fee in fees)
-        p.created_by = 'test'
+        p.created_by = current_user
         p.created_on = datetime.now()
         pay_dao = p.flush()
         p = Payment()

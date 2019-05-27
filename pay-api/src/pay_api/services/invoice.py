@@ -233,12 +233,12 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         return self._dao.save()
 
     @staticmethod
-    def create(account: PaymentAccount, payment: Payment, fees: [FeeSchedule]):
+    def create(account: PaymentAccount, payment: Payment, fees: [FeeSchedule], current_user: str):
         """Create invoice record."""
         current_app.logger.debug('<create')
         i = Invoice()
         i.created_on = datetime.now()
-        i.created_by = 'test'
+        i.created_by = current_user
         i.payment_id = payment.id
         i.invoice_status_code = Status.DRAFT.value
         i.account_id = account.id
