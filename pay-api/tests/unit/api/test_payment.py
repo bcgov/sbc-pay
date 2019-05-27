@@ -16,9 +16,9 @@
 
 Test-Suite to ensure that the /payments endpoint is working as expected.
 """
-from datetime import date, timedelta
 
-from pay_api.models import CorpType, FeeCode, FeeSchedule, FilingType
+import json
+
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import Role
 
@@ -82,6 +82,65 @@ def test_payment_creation(session, client, jwt, app):
             ]
         }
     }
-    rv = client.post(f'/api/v1/payments', data=data, headers=headers)
+    rv = client.post(f'/api/v1/payments', data=json.dumps(data), headers=headers)
     assert rv.status_code == 201
-    assert schema_utils.validate(rv.json, 'fees')
+
+
+def test_payment_incomplete_input(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    data = {
+        "payment_info": {
+            "method_of_payment": "CC"
+        },
+        "business_info": {
+            "business_identifier": "CP1234",
+            "corp_type": "CP",
+            "business_name": "ABC Corp",
+            "contact_info": {
+                "city": "Victoria",
+                "postal_code": "V8P2P2",
+                "province": "BC",
+                "address_line_1": "100 Douglas Street",
+                "country": "CA"
+            }
+        }
+    }
+    rv = client.post(f'/api/v1/payments', data=json.dumps(data), headers=headers)
+    assert rv.status_code == 400
+
+
+def test_payment_invalid_input(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    data = {
+        "payment_info": {
+            "method_of_payment": "CC"
+        },
+        "business_info": {
+            "business_identifier": "CP1234",
+            "corp_type": "PC",
+            "business_name": "ABC Corp",
+            "contact_info": {
+                "city": "Victoria",
+                "postal_code": "V8P2P2",
+                "province": "BC",
+                "address_line_1": "100 Douglas Street",
+                "country": "CA"
+            }
+        }, "filing_info": {
+            "filing_types": [
+                {
+                    "filing_type_code": "OTADD",
+                    "filing_description": "TEST"
+                },
+                {
+                    "filing_type_code": "OTANN"
+                }
+            ]
+        }
+    }
+    rv = client.post(f'/api/v1/payments', data=json.dumps(data), headers=headers)
+    assert rv.status_code == 400
