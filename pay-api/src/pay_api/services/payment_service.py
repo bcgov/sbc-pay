@@ -25,6 +25,7 @@ from .invoice import Invoice
 from .payment import Payment
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
+import time
 
 
 class PaymentService:
@@ -48,6 +49,8 @@ class PaymentService:
             6.2 If fails rollback the transaction
 
         """
+        start_time = time.time()
+
         current_app.logger.debug('<create_payment')
         payment_info = payment_request.get('payment_info')
         business_info = payment_request.get('business_info')
@@ -59,6 +62,7 @@ class PaymentService:
                                                                         business_info.get('corp_type', None))
 
         current_app.logger.debug('Calculate the fees')
+        start_time = time.time()
         # Calculate the fees
         fees = []
         for filing_type_info in filing_info.get('filing_types'):
@@ -74,16 +78,25 @@ class PaymentService:
 
             fees.append(fee)
 
+        current_app.logger.debug('TOTAL TIME FOR FEE CALCULATION : {}'.format(time.time() - start_time))
+
         current_app.logger.debug('Check if payment account exists')
+        start_time = time.time()
         payment_account: PaymentAccount = PaymentAccount.find_account(business_info.get('business_identifier', None),
                                                                       business_info.get('corp_type', None),
                                                                       pay_service.get_payment_system_code())
+        current_app.logger.debug('TOTAL TIME FOR ACCOUNT LOOKUP IN DB : {}'.format(time.time() - start_time))
         if not payment_account.id:
             current_app.logger.debug('No payment account, creating new')
+            start_time = time.time()
             party_number, account_number, site_number = pay_service.create_account(business_info.get('business_name'),
                                                                                    contact_info)
+            current_app.logger.debug('TOTAL TIME FOR ACCOUNT CREATION IN PAY SYSTEM : {}'.format(time.time() - start_time))
+            start_time = time.time()
             payment_account = PaymentAccount.create(business_info, (account_number, party_number, site_number),
                                                     pay_service.get_payment_system_code())
+            current_app.logger.debug(
+                'TOTAL TIME FOR ACCOUNT CREATION IN DB : {}'.format(time.time() - start_time))
 
         current_app.logger.debug('Creating payment record for account : {}'.format(payment_account.id))
 
@@ -91,17 +104,29 @@ class PaymentService:
         pay_system_invoice: Dict[str, any] = None
 
         try:
+            start_time = time.time()
             payment: Payment = Payment.create(payment_info, fees, current_user, pay_service.get_payment_system_code())
+            current_app.logger.debug(
+                'TOTAL TIME FOR PAYMENT CREATION IN DB : {}'.format(time.time() - start_time))
             current_app.logger.debug(payment)
 
             current_app.logger.debug('Creating Invoice record for payment {}'.format(payment.id))
+            start_time = time.time()
             invoice = Invoice.create(payment_account, payment, fees, current_user)
+            current_app.logger.debug(
+                'TOTAL TIME FOR INVOICE CREATION IN DB : {}'.format(time.time() - start_time))
+            start_time = time.time()
             line_items = []
             for fee in fees:
                 current_app.logger.debug('Creating line items')
                 line_items.append(PaymentLineItem.create(invoice.id, fee))
+            current_app.logger.debug(
+                'TOTAL TIME FOR LINE ITEM CREATION IN DB : {}'.format(time.time() - start_time))
             current_app.logger.debug('Handing off to payment system to create invoice')
+            start_time = time.time()
             pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice.id)
+            current_app.logger.debug(
+                'TOTAL TIME FOR INVOICE CREATION IN PAY SYSTEM : {}'.format(time.time() - start_time))
 
             current_app.logger.debug('Updating invoice record')
             invoice = Invoice.find_by_id(invoice.id)
