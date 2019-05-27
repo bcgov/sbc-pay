@@ -14,6 +14,7 @@
 """Service to manage PayBC communication."""
 import base64
 import datetime
+from random import randint
 from typing import Any, Dict
 
 from flask import current_app
@@ -21,7 +22,7 @@ from flask import current_app
 from pay_api.utils.enums import AuthHeaderType, ContentType
 
 from .oauth_service import OAuthService
-from random import randint
+
 
 class PayBcService(OAuthService):
     """Service to manage PayBC communication."""

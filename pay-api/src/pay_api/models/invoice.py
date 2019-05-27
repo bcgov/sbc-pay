@@ -20,7 +20,7 @@ from .base_model import BaseModel
 from .db import db, ma
 
 
-class Invoice(db.Model, Audit, BaseModel):
+class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Invoice."""
 
     __tablename__ = 'invoice'
@@ -38,9 +38,9 @@ class Invoice(db.Model, Audit, BaseModel):
     refund = db.Column(db.Integer, nullable=True)
 
     @classmethod
-    def find_by_id(cls, id: int):
+    def find_by_id(cls, identfier: int):
         """Return a Invoice by id."""
-        return cls.query.get(id)
+        return cls.query.get(identfier)
 
 
 class InvoiceSchema(ma.ModelSchema):

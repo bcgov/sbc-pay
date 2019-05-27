@@ -37,9 +37,9 @@ class PaymentLineItem(db.Model, BaseModel):
     total = db.Column(db.Integer, nullable=False)
 
     @classmethod
-    def find_by_id(cls, id: int):
+    def find_by_id(cls, identifier: int):
         """Return a Line Item by id."""
-        return cls.query.get(id)
+        return cls.query.get(identifier)
 
 
 class PaymentLineItemSchema(ma.ModelSchema):

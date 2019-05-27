@@ -21,11 +21,10 @@ from flask import current_app
 
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.constants import DEFAULT_COUNTRY, DEFAULT_JURISDICTION
-from pay_api.utils.constants import PAYBC_ADJ_ACTIVITY_NAME, PAYBC_BATCH_SOURCE, PAYBC_CUST_TRX_TYPE, \
-    PAYBC_MEMO_LINE_NAME, PAYBC_LINE_TYPE, PAYBC_TERM_NAME
-from pay_api.utils.enums import AuthHeaderType, ContentType
-from pay_api.utils.enums import PaymentSystem
+from pay_api.utils.constants import (
+    DEFAULT_COUNTRY, DEFAULT_JURISDICTION, PAYBC_ADJ_ACTIVITY_NAME, PAYBC_BATCH_SOURCE, PAYBC_CUST_TRX_TYPE,
+    PAYBC_LINE_TYPE, PAYBC_MEMO_LINE_NAME, PAYBC_TERM_NAME)
+from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -34,7 +33,7 @@ class PaybcService(PaymentSystemService, OAuthService):
     """Service to manage PayBC integration."""
 
     def get_payment_system_code(self):
-        """Return PAYBC as the system code"""
+        """Return PAYBC as the system code."""
         return PaymentSystem.PAYBC.value
 
     def create_account(self, name: str, account_info: Dict[str, Any]):
@@ -84,7 +83,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         return invoice_response.json()
 
     def cancel_invoice(self, account_details: Tuple[str], inv_number: str):
-        """Adjust the invoice to zero"""
+        """Adjust the invoice to zero."""
         access_token: str = self.__get_token().json().get('access_token')
         invoice = self.__get_invoice(account_details, inv_number, access_token)
         for line in invoice.get('lines'):

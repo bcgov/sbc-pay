@@ -22,6 +22,7 @@ from pay_api.services.payment_account import PaymentAccount as PaymentAccountSer
 
 
 def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
+    """Factory."""
     return PaymentAccount(corp_number=corp_number, corp_type_code=corp_type_code,
                           payment_system_code=payment_system_code)
 
@@ -43,6 +44,7 @@ def test_account_saved_from_new(session):
 
 
 def test_account_invalid_lookup(session):
+    """Invalid account test."""
     p = PaymentAccountService.find_account('1234', 'CP', 'PAYBC')
 
     assert p is not None
@@ -53,4 +55,3 @@ def test_account_invalid_lookup(session):
     with pytest.raises(BusinessException) as excinfo:
         p = PaymentAccountService.find_account(None, None, None)
     assert excinfo.value.status == Error.PAY004.status
-

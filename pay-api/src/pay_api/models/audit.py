@@ -15,7 +15,7 @@
 from .db import db
 
 
-class Audit(object):
+class Audit: # pylint: disable=too-few-public-methods
     """This class provides base methods for Auditable Table."""
 
     created_by = db.Column('created_by', db.String(50), nullable=False)

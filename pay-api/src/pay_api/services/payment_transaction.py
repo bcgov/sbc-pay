@@ -133,8 +133,9 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         return self._dao.save()
 
     @staticmethod
-    def find_by_id(id: int):
-        transaction_dao = PaymentTransactionModel.find_by_id(id)
+    def find_by_id(transaction_id: int):
+        """Find transaction by id."""
+        transaction_dao = PaymentTransactionModel.find_by_id(transaction_id)
 
         transaction = PaymentTransaction()
         transaction._dao = transaction_dao  # pylint: disable=protected-access

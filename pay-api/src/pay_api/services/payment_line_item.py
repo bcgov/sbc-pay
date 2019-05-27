@@ -202,14 +202,14 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         p_dao = p.flush()
 
         p = PaymentLineItem()
-        p._dao = p_dao
+        p._dao = p_dao  # pylint disable=protected-access
 
         current_app.logger.debug('>create')
         return p
 
     @staticmethod
-    def find_by_id(id: int):
-        line_dao = PaymentLineItemModel.find_by_id(id)
+    def find_by_id(line_id: int):
+        line_dao = PaymentLineItemModel.find_by_id(line_id)
 
         line = PaymentLineItem()
         line._dao = line_dao  # pylint: disable=protected-access

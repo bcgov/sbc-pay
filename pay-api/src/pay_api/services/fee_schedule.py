@@ -193,9 +193,9 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         self._dao.save()
 
     @classmethod
-    def find_by_corp_type_and_filing_type(
+    def find_by_corp_type_and_filing_type(  # pylint: disable=too-many-arguments
             cls,
-            corp_type: str,  # pylint: disable=too-many-arguments
+            corp_type: str,
             filing_type_code: str,
             valid_date: date,
             jurisdiction: str,

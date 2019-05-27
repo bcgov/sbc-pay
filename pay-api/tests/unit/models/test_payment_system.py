@@ -21,6 +21,7 @@ from pay_api.models.payment_system import PaymentSystem
 
 
 def factory_payment_system(code: str = 'PAYBC', description='PayBC'):
+    """Factory."""
     return PaymentSystem(code=code, description=description)
 
 

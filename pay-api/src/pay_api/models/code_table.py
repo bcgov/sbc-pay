@@ -14,7 +14,7 @@
 """Base class for code model."""
 
 
-class CodeTable:
+class CodeTable:  # pylint: disable=too-few-public-methods
     """This class provides base methods for Code Table."""
 
     @classmethod

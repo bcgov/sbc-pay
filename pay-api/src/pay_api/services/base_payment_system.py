@@ -14,11 +14,16 @@
 """Abstract class for payment system implementation."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
+
+from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.services.payment_account import PaymentAccount
+from .payment_line_item import PaymentLineItem
 
 
 class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     """Abstract base class for payment system.
+
     This class will list the operations implemented for any payment system.
     Any payment system service SHOULD implement this class and implement the abstract methods.
     """
@@ -32,11 +37,11 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Create account in payment system."""
 
     @abstractmethod
-    def create_invoice(self):
+    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_number: int):
         """Create invoice in payment system."""
 
     @abstractmethod
-    def cancel_invoice(self):
+    def cancel_invoice(self, account_details: Tuple[str], inv_number: str):
         """Cancel invoice in payment system."""
 
     @abstractmethod

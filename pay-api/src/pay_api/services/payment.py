@@ -214,6 +214,7 @@ class Payment():  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def find_by_id(id: int):
+        """Find payment by id."""
         payment_dao = PaymentModel.find_by_id(id)
 
         payment = Payment()

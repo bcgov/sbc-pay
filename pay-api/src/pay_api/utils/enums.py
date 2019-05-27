@@ -31,17 +31,19 @@ class ContentType(Enum):
 
 class Status(Enum):
     """Status enum codes."""
-    DRAFT = "DRAFT"
-    IN_PROGRESS = "IN_PROGRESS"
-    CREATED = "CREATED"
-    COMPLETED = "COMPLETED"
-    PARTIAL = "PARTIAL"
-    FAILED = "FAILED"
-    REFUNDED = "REFUNDED"
+
+    DRAFT = 'DRAFT'
+    IN_PROGRESS = 'IN_PROGRESS'
+    CREATED = 'CREATED'
+    COMPLETED = 'COMPLETED'
+    PARTIAL = 'PARTIAL'
+    FAILED = 'FAILED'
+    REFUNDED = 'REFUNDED'
 
 
 class PaymentSystem(Enum):
     """Payment System Codes."""
+
     PAYBC = 'PAYBC'
 
 

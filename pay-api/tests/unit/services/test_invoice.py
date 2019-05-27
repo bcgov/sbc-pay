@@ -24,17 +24,20 @@ from pay_api.services.invoice import Invoice as Invoice_service
 
 
 def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
+    """Factory."""
     return PaymentAccount(corp_number=corp_number, corp_type_code=corp_type_code,
                           payment_system_code=payment_system_code)
 
 
 def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC', payment_status_code='DRAFT',
                     total: int = 0):
+    """Factory."""
     return Payment(payment_system_code=payment_system_code, payment_method_code=payment_method_code,
                    payment_status_code=payment_status_code, total=total, created_by='test', created_on=datetime.now())
 
 
 def factory_invoice(payment_id: str, account_id: str):
+    """Factory."""
     return Invoice(payment_id=payment_id,
                    invoice_status_code='DRAFT',
                    account_id=account_id,
@@ -55,8 +58,8 @@ def test_invoice_saved_from_new(session):
     assert invoice is not None
     assert invoice.id is not None
     assert invoice.payment_id is not None
-    assert invoice.invoice_number is  None
-    assert invoice.reference_number is  None
+    assert invoice.invoice_number is None
+    assert invoice.reference_number is None
     assert invoice.invoice_status_code is not None
     assert invoice.refund is None
     assert invoice.payment_date is None
@@ -69,9 +72,8 @@ def test_invoice_saved_from_new(session):
     assert invoice.account_id is not None
 
 
-
 def test_invoice_invalid_lookup(session):
-
+    """Test invalid lookup."""
     invoice = Invoice_service.find_by_id(999)
 
     assert invoice is not None

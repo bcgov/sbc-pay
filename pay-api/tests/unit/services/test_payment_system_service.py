@@ -46,3 +46,4 @@ def test_base_payment_system(session):
             }
         )()
         paybc_impl.create_account()
+        assert excinfo is not None

@@ -26,6 +26,7 @@ from pay_api.utils.constants import DEFAULT_JURISDICTION
 from pay_api.utils.enums import Role
 from pay_api.utils.util import cors_preflight
 
+
 API = Namespace('fees', description='Payment System - Fees')
 
 

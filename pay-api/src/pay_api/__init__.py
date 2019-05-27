@@ -29,6 +29,7 @@ from pay_api.models import db, ma
 from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
 
+
 setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))  # important to do this first
 
 # lower case name as used by convention in most Flask apps
@@ -42,7 +43,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     app.config.from_object(config.CONFIGURATION[run_mode])
 
     # initialize tracer
-    api_tracer = ApiTracer("Payment Services")
+    api_tracer = ApiTracer('Payment Services')
     global tracing  # pylint: disable=global-statement,invalid-name
     tracing = ApiTracing(api_tracer.tracer)
 
@@ -69,7 +70,6 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
 
 def setup_jwt_manager(app, jwt_manager):
     """Use flask app to configure the JWTManager to work for a particular Realm."""
-
     def get_roles(a_dict):
         return a_dict['realm_access']['roles']  # pragma: no cover
 
@@ -80,7 +80,6 @@ def setup_jwt_manager(app, jwt_manager):
 
 def register_shellcontext(app):
     """Register shell context objects."""
-
     def shell_context():
         """Shell context objects."""
         return {'app': app, 'jwt': jwt, 'db': db, 'models': models}  # pragma: no cover

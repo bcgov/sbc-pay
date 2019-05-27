@@ -26,6 +26,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
     """Service to manage Payment Account model related operations."""
 
     def __init__(self):
+        """Initialize service."""
         self.__dao = None
         self._id: int = None
         self._corp_number: str = None

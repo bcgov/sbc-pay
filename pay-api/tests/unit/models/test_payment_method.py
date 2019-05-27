@@ -21,6 +21,7 @@ from pay_api.models import PaymentMethod
 
 
 def factory_payment_method(code: str = 'CC', description='Credit Card'):
+    """Factory."""
     return PaymentMethod(code=code, description=description)
 
 
@@ -32,6 +33,3 @@ def test_payment_method(session):
     payment_method = factory_payment_method(code='XX', description='TEST')
     payment_method.save()
     assert payment_method.code == 'XX'
-
-
-

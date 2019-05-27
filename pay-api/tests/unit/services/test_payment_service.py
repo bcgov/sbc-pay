@@ -23,35 +23,34 @@ import pytest
 
 from pay_api.models.payment_account import PaymentAccount as PaymentAccountModel
 from pay_api.services.payment_service import PaymentService
-from requests.exceptions import HTTPError
 
 
 def test_create_payment_record(session):
     """Assert that the payment records are created."""
     payment_request = {
-        "payment_info": {
-            "method_of_payment": "CC"
+        'payment_info': {
+            'method_of_payment': 'CC'
         },
-        "business_info": {
-            "business_identifier": "CP1234",
-            "corp_type": "CP",
-            "business_name": "ABC Corp",
-            "contact_info": {
-                "city": "Victoria",
-                "postal_code": "V8P2P2",
-                "province": "BC",
-                "address_line_1": "100 Douglas Street",
-                "country": "CA"
+        'business_info': {
+            'business_identifier': 'CP1234',
+            'corp_type': 'CP',
+            'business_name': 'ABC Corp',
+            'contact_info': {
+                'city': 'Victoria',
+                'postal_code': 'V8P2P2',
+                'province': 'BC',
+                'address_line_1': '100 Douglas Street',
+                'country': 'CA'
             }
         },
-        "filing_info": {
-            "filing_types": [
+        'filing_info': {
+            'filing_types': [
                 {
-                    "filing_type_code": "OTADD",
-                    "filing_description": "TEST"
+                    'filing_type_code': 'OTADD',
+                    'filing_description': 'TEST'
                 },
                 {
-                    "filing_type_code": "OTANN"
+                    'filing_type_code': 'OTANN'
                 }
             ]
         }
@@ -70,29 +69,29 @@ def test_create_payment_record(session):
 def test_create_payment_record_rollback(session):
     """Assert that the payment records are created."""
     payment_request = {
-        "payment_info": {
-            "method_of_payment": "CC"
+        'payment_info': {
+            'method_of_payment': 'CC'
         },
-        "business_info": {
-            "business_identifier": "CP1234",
-            "corp_type": "CP",
-            "business_name": "ABC Corp",
-            "contact_info": {
-                "city": "Victoria",
-                "postal_code": "V8P2P2",
-                "province": "BC",
-                "address_line_1": "100 Douglas Street",
-                "country": "CA"
+        'business_info': {
+            'business_identifier': 'CP1234',
+            'corp_type': 'CP',
+            'business_name': 'ABC Corp',
+            'contact_info': {
+                'city': 'Victoria',
+                'postal_code': 'V8P2P2',
+                'province': 'BC',
+                'address_line_1': '100 Douglas Street',
+                'country': 'CA'
             }
         },
-        "filing_info": {
-            "filing_types": [
+        'filing_info': {
+            'filing_types': [
                 {
-                    "filing_type_code": "OTADD",
-                    "filing_description": "TEST"
+                    'filing_type_code': 'OTADD',
+                    'filing_description': 'TEST'
                 },
                 {
-                    "filing_type_code": "OTANN"
+                    'filing_type_code': 'OTANN'
                 }
             ]
         }

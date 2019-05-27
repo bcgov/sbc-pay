@@ -21,6 +21,7 @@ from typing import Tuple
 
 from jsonschema import Draft7Validator, RefResolver, SchemaError, draft7_format_checker
 
+
 BASE_URI = 'https://bcrs.gov.bc.ca/.well_known/schemas'
 
 
@@ -109,6 +110,7 @@ def validate(json_data: json,
 
 
 def serialize(errors):
+    """Serialize errors."""
     error_message = []
     for error in errors:
         error_message.append(error.message)

@@ -36,11 +36,10 @@ class Payment(db.Model, Audit, BaseModel):
 
     payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='joined', innerjoin=True)
 
-
     @classmethod
-    def find_by_id(cls, id: int):
+    def find_by_id(cls, identifier: int):
         """Return a Payment by id."""
-        return cls.query.get(id)
+        return cls.query.get(identifier)
 
 
 class PaymentSchema(ma.ModelSchema):

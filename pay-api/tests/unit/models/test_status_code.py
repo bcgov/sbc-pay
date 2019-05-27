@@ -21,6 +21,7 @@ from pay_api.models.status_code import StatusCode
 
 
 def factory_status_code(code: str = 'DRAFT', description='Draft'):
+    """Factory."""
     return StatusCode(code=code, description=description)
 
 

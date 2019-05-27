@@ -24,12 +24,14 @@ from pay_api.services.payment import Payment as Payment_service
 
 
 def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
+    """Factory."""
     return PaymentAccount(corp_number=corp_number, corp_type_code=corp_type_code,
                           payment_system_code=payment_system_code)
 
 
 def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC', payment_status_code='DRAFT',
                     total: int = 0):
+    """Factory."""
     return Payment(payment_system_code=payment_system_code, payment_method_code=payment_method_code,
                    payment_status_code=payment_status_code, total=total, created_by='test', created_on=datetime.now())
 
@@ -57,6 +59,7 @@ def test_payment_saved_from_new(session):
 
 
 def test_payment_invalid_lookup(session):
+    """Test invalid lookup."""
     p = Payment_service.find_by_id(999)
 
     assert p is not None

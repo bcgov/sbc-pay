@@ -20,7 +20,6 @@ A simple decorator to add the options method to a Request Class.
 
 def cors_preflight(methods: str = 'GET'):
     """Render an option method on the class."""
-
     def wrapper(f):
         def options(self, *args, **kwargs):  # pylint: disable=unused-argument
             return {'Allow': 'GET'}, 200, \

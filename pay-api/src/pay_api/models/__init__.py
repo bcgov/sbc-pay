@@ -31,4 +31,5 @@ from .payment_transaction import PaymentTransaction, PaymentTransactionSchema
 from .receipt import Receipt, ReceiptSchema
 from .status_code import StatusCode, StatusCodeSchema
 
+
 event.listen(Engine, 'before_cursor_execute', DBTracing.query_tracing)

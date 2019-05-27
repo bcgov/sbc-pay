@@ -37,7 +37,6 @@ class PaymentAccount(db.Model, BaseModel):
                                                      payment_system: str
                                                      ):
         """Given a corp_number, corp_type and payment_system, this will return payment account."""
-
         account = None
         if corp_number and corp_type and payment_system:
             query = cls.query.filter_by(corp_number=corp_number). \

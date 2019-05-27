@@ -14,9 +14,7 @@
 """Resource for Payment endpoints."""
 from http import HTTPStatus
 
-from flask import current_app, g, jsonify
-
-from flask import jsonify, request
+from flask import current_app, g, jsonify, request
 from flask_restplus import Namespace, Resource, cors
 
 from pay_api import jwt as _jwt
@@ -25,6 +23,7 @@ from pay_api.schemas import utils as schema_utils
 from pay_api.services import PaymentService
 from pay_api.utils.enums import Role
 from pay_api.utils.util import cors_preflight
+
 
 API = Namespace('payments', description='Payment System - Payments')
 

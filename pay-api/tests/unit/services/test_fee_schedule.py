@@ -25,6 +25,7 @@ from pay_api import services
 from pay_api.models import CorpType, FeeCode, FilingType
 from pay_api.utils.errors import Error
 
+
 CORP_TYPE_CODE = 'CPX'
 FILING_TYPE_CODE = 'OTANNX'
 

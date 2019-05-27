@@ -19,8 +19,8 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 
 import json
 
-from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import Role
+
 
 token_header = {
     'alg': 'RS256',
@@ -56,29 +56,29 @@ def test_payment_creation(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     data = {
-        "payment_info": {
-            "method_of_payment": "CC"
+        'payment_info': {
+            'method_of_payment': 'CC'
         },
-        "business_info": {
-            "business_identifier": "CP1234",
-            "corp_type": "CP",
-            "business_name": "ABC Corp",
-            "contact_info": {
-                "city": "Victoria",
-                "postal_code": "V8P2P2",
-                "province": "BC",
-                "address_line_1": "100 Douglas Street",
-                "country": "CA"
+        'business_info': {
+            'business_identifier': 'CP1234',
+            'corp_type': 'CP',
+            'business_name': 'ABC Corp',
+            'contact_info': {
+                'city': 'Victoria',
+                'postal_code': 'V8P2P2',
+                'province': 'BC',
+                'address_line_1': '100 Douglas Street',
+                'country': 'CA'
             }
         },
-        "filing_info": {
-            "filing_types": [
+        'filing_info': {
+            'filing_types': [
                 {
-                    "filing_type_code": "OTADD",
-                    "filing_description": "TEST"
+                    'filing_type_code': 'OTADD',
+                    'filing_description': 'TEST'
                 },
                 {
-                    "filing_type_code": "OTANN"
+                    'filing_type_code': 'OTANN'
                 }
             ]
         }
@@ -92,19 +92,19 @@ def test_payment_incomplete_input(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     data = {
-        "payment_info": {
-            "method_of_payment": "CC"
+        'payment_info': {
+            'method_of_payment': 'CC'
         },
-        "business_info": {
-            "business_identifier": "CP1234",
-            "corp_type": "CP",
-            "business_name": "ABC Corp",
-            "contact_info": {
-                "city": "Victoria",
-                "postal_code": "V8P2P2",
-                "province": "BC",
-                "address_line_1": "100 Douglas Street",
-                "country": "CA"
+        'business_info': {
+            'business_identifier': 'CP1234',
+            'corp_type': 'CP',
+            'business_name': 'ABC Corp',
+            'contact_info': {
+                'city': 'Victoria',
+                'postal_code': 'V8P2P2',
+                'province': 'BC',
+                'address_line_1': '100 Douglas Street',
+                'country': 'CA'
             }
         }
     }
@@ -117,28 +117,28 @@ def test_payment_invalid_input(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     data = {
-        "payment_info": {
-            "method_of_payment": "CC"
+        'payment_info': {
+            'method_of_payment': 'CC'
         },
-        "business_info": {
-            "business_identifier": "CP1234",
-            "corp_type": "PC",
-            "business_name": "ABC Corp",
-            "contact_info": {
-                "city": "Victoria",
-                "postal_code": "V8P2P2",
-                "province": "BC",
-                "address_line_1": "100 Douglas Street",
-                "country": "CA"
+        'business_info': {
+            'business_identifier': 'CP1234',
+            'corp_type': 'PC',
+            'business_name': 'ABC Corp',
+            'contact_info': {
+                'city': 'Victoria',
+                'postal_code': 'V8P2P2',
+                'province': 'BC',
+                'address_line_1': '100 Douglas Street',
+                'country': 'CA'
             }
-        }, "filing_info": {
-            "filing_types": [
+        }, 'filing_info': {
+            'filing_types': [
                 {
-                    "filing_type_code": "OTADD",
-                    "filing_description": "TEST"
+                    'filing_type_code': 'OTADD',
+                    'filing_description': 'TEST'
                 },
                 {
-                    "filing_type_code": "OTANN"
+                    'filing_type_code': 'OTANN'
                 }
             ]
         }

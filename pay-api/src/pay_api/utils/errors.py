@@ -30,4 +30,3 @@ class Error(Enum):
         obj.message = message
         obj.status = status
         return obj
-

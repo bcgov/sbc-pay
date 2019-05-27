@@ -252,8 +252,9 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         return i
 
     @staticmethod
-    def find_by_id(id: int):
-        invoice_dao = InvoiceModel.find_by_id(id)
+    def find_by_id(identfier: int):
+        """Find invoice by id."""
+        invoice_dao = InvoiceModel.find_by_id(identfier)
 
         invoice = Invoice()
         invoice._dao = invoice_dao  # pylint: disable=protected-access

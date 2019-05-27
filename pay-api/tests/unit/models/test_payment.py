@@ -24,6 +24,7 @@ from pay_api.models import Payment
 
 def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC', payment_status_code='DRAFT',
                     total: int = 0):
+    """Factory."""
     return Payment(payment_system_code=payment_system_code, payment_method_code=payment_method_code,
                    payment_status_code=payment_status_code, total=total, created_by='test', created_on=datetime.now())
 
@@ -36,4 +37,3 @@ def test_payment(session):
     payment = factory_payment()
     payment.save()
     assert payment.id is not None
-
