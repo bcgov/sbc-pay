@@ -22,11 +22,11 @@ import pytest
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.paybc_service import PaybcService
 from pay_api.utils.errors import Error
+from pay_api.factory.payment_system_factory import PaymentSystemFactory
 
 
 def test_paybc_system_factory(session):
     """Assert a paybc service is returned."""
-    from pay_api.factory.payment_system_factory import PaymentSystemFactory
     instance = PaymentSystemFactory.create('CC', 'CP')
     assert isinstance(instance, PaybcService)
     assert isinstance(instance, PaymentSystemService)
@@ -34,7 +34,6 @@ def test_paybc_system_factory(session):
 
 def test_invalid_pay_system(session):
     """Test invalid data."""
-    from pay_api.factory.payment_system_factory import PaymentSystemFactory
     from pay_api.exceptions import BusinessException
 
     with pytest.raises(BusinessException) as excinfo:

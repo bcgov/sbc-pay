@@ -48,6 +48,36 @@
 				"description": "Calculate fees by Corp Type and Filing type"
 			},
 			"response": []
+		},
+		{
+			"name": "Create Payment Record",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"payment_info\": {\n    \"method_of_payment\": \"CC\"\n  },\n  \"business_info\": {\n    \"business_identifier\": \"CP1234\",\n    \"corp_type\": \"CP\",\n    \"business_name\": \"ABC Corp\",\n    \"contact_info\": {\n      \"city\": \"Victoria\",\n      \"postal_code\": \"V8P2P2\",\n      \"province\": \"BC\",\n      \"address_line_1\": \"100 Douglas Street\",\n      \"country\": \"CA\"\n    }\n  },\n  \"filing_info\": {\n    \"filing_types\": [\n      {\n        \"filing_type_code\": \"OTADD\",\n    \t\"filing_description\":\"TEST\"\n      },\n      {\n        \"filing_type_code\": \"OTANN\"\n      }\n    ]\n  }\n}"
+				},
+				"url": {
+					"raw": "{{pay-api-base-url}}/api/v1/payments",
+					"host": [
+						"{{pay-api-base-url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"payments"
+					]
+				}
+			},
+			"response": []
 		}
 	],
 	"auth": {
