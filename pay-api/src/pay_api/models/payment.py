@@ -31,8 +31,6 @@ class Payment(db.Model, Audit, BaseModel):
     payment_system_code = db.Column(db.String(10), ForeignKey('payment_system.code'), nullable=False)
     payment_method_code = db.Column(db.String(10), ForeignKey('payment_method.code'), nullable=False)
     payment_status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
-    total = db.Column(db.Integer, nullable=False)
-    paid = db.Column(db.Integer, nullable=True)
 
     payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='joined', innerjoin=True)
 

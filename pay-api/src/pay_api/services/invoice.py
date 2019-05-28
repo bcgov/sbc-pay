@@ -247,7 +247,7 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         i.payment_date = None  # TODO
         i.refund = 0
 
-        i._dao = i.flush()
+        i._dao = i.flush()  # pylint: disable=protected-access
         current_app.logger.debug('>create')
         return i
 

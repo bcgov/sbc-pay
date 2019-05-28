@@ -28,11 +28,10 @@ def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', pa
                           payment_system_code=payment_system_code)
 
 
-def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC', payment_status_code='DRAFT',
-                    total: int = 0):
+def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC', payment_status_code='DRAFT'):
     """Factory."""
     return Payment(payment_system_code=payment_system_code, payment_method_code=payment_method_code,
-                   payment_status_code=payment_status_code, total=total, created_by='test', created_on=datetime.now())
+                   payment_status_code=payment_status_code, created_by='test', created_on=datetime.now())
 
 
 def factory_invoice(payment_id: str, account_id: str):

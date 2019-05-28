@@ -163,7 +163,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         account_dao = p.save()
 
         p = PaymentAccount()
-        p._dao = account_dao
+        p._dao = account_dao  # pylint: disable=protected-access
         current_app.logger.debug('>create')
         return p
 

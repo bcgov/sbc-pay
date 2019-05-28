@@ -27,12 +27,12 @@ from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
 
 
-class PaymentService:
+class PaymentService:  # pylint: disable=too-few-public-methods
     """Service to manage Payment related operations."""
 
     @classmethod
-    def create_payment(cls, payment_request: Tuple[Dict[str, Any]],
-                       current_user: str = None):  # pylint disable = too-many-locals
+    def create_payment(cls, payment_request: Tuple[Dict[str, Any]],  # pylint: disable=too-many-locals
+                       current_user: str = None):
         """Create payment related records.
 
         Does the following;
@@ -92,7 +92,7 @@ class PaymentService:
         pay_system_invoice: Dict[str, any] = None
 
         try:
-            payment: Payment = Payment.create(payment_info, fees, current_user, pay_service.get_payment_system_code())
+            payment: Payment = Payment.create(payment_info, current_user, pay_service.get_payment_system_code())
             current_app.logger.debug(payment)
 
             current_app.logger.debug('Creating Invoice record for payment {}'.format(payment.id))

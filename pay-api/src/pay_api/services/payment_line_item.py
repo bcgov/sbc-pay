@@ -202,7 +202,7 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         p_dao = p.flush()
 
         p = PaymentLineItem()
-        p._dao = p_dao  # pylint disable=protected-access
+        p._dao = p_dao  # pylint: disable=protected-access
 
         current_app.logger.debug('>create')
         return p
