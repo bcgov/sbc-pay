@@ -38,7 +38,6 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         self._fee_end_date: date = None
         self._fee_amount: int = None
         self._filing_type: str = None
-        self._description: str = None
 
     @property
     def _dao(self):
@@ -127,7 +126,7 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
     @property
     def description(self):
         """Return the description."""
-        return self._description
+        return self._filing_type
 
     @property
     def total(self):
@@ -167,7 +166,7 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
     @description.setter
     def description(self, value: str):
         """Set the description."""
-        self._description = value
+        self._filing_type = value
 
     @ServiceTracing.disable_tracing
     def asdict(self):
