@@ -16,3 +16,4 @@
 from .fee_schedule import FeeSchedule
 from .paybc import PayBcService
 from .payment_service import PaymentService
+from .payment_transaction import PaymentTransaction as TransactionService

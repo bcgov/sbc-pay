@@ -42,6 +42,11 @@ class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
         """Return a Invoice by id."""
         return cls.query.get(identfier)
 
+    @classmethod
+    def find_by_payment_id(cls, identfier: int):
+        """Return a Invoice by id."""
+        return cls.query.filter_by(payment_id=identfier).all()
+
 
 class InvoiceSchema(ma.ModelSchema):
     """Main schema used to serialize the Status Code."""

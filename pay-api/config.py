@@ -90,6 +90,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     PAYBC_BASE_URL = os.getenv('PAYBC_BASE_URL')
     PAYBC_CLIENT_ID = os.getenv('PAYBC_CLIENT_ID')
     PAYBC_CLIENT_SECRET = os.getenv('PAYBC_CLIENT_SECRET')
+    PAYBC_PORTAL_URL=os.getenv('PAYBC_PORTAL_URL')
 
     TESTING = False
     DEBUG = True
@@ -174,6 +175,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     PAYBC_BASE_URL = 'https://mock-lear-tools.pathfinder.gov.bc.ca/rest/PayBC+API+Reference/1.0.0'
     PAYBC_CLIENT_ID = 'TEST'
     PAYBC_CLIENT_SECRET = 'TEST'
+    PAYBC_PORTAL_URL = ''
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

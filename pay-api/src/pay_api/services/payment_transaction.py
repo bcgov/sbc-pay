@@ -18,7 +18,11 @@ from datetime import datetime
 from flask import current_app
 
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
-
+from .payment import Payment
+from pay_api.utils.errors import Error
+from pay_api.exceptions import BusinessException
+from pay_api.utils.enums import Status, PaymentSystem
+from .invoice import InvoiceModel
 
 class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
     """Service to manage Payment transaction operations."""
@@ -131,6 +135,65 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
     def save(self):
         """Save the information to the DB."""
         return self._dao.save()
+
+    def asdict(self):
+        """Return the transaction as a python dict."""
+        d = {
+            'id': self._id,
+            'payment_id': self._payment_id,
+            'redirect_url': self._redirect_url,
+            'pay_system_url': self._pay_system_url,
+            'status_code': self._status_code,
+            'transaction_start_time': self._transaction_start_time
+        }
+        if self._transaction_start_time:
+            d['transaction_end_time'] = self._transaction_end_time
+        return d
+
+    def save(self):
+        """Save the fee schedule information."""
+        self._dao.save()
+
+    @staticmethod
+    def create(payment_identifier: str, redirect_uri: str):
+        """Create transaction record."""
+        current_app.logger.debug('<create transaction')
+        # Lookup payment record
+        payment: Payment = Payment.find_by_id(payment_identifier)
+        if not payment.id:
+            raise BusinessException(Error.PAY005)
+
+        transaction = PaymentTransaction()
+        transaction.payment_id = payment.id
+        transaction.redirect_url = redirect_uri
+        transaction.pay_system_url = None  # TODO
+        transaction.transaction_start_time = datetime.now()
+        transaction.status_code = Status.CREATED
+        transaction_dao = transaction.flush()
+        transaction._dao = transaction_dao  # pylint: disable=protected-access
+        transaction.pay_system_url = transaction.build_pay_system_url(payment)
+
+        transaction = PaymentTransaction()
+        transaction._dao = transaction_dao  # pylint: disable=protected-access
+        current_app.logger.debug('>create transaction')
+        return transaction
+
+    @staticmethod
+    def build_pay_system_url(payment: Payment, transaction_id: str):
+        current_app.logger.debug('<build_pay_system_url')
+        pay_system_url = ''
+        if payment.payment_system_code == PaymentSystem.PAYBC.value:
+            invoices = InvoiceModel.find_by_payment_id(payment.id)
+            if len(invoices) > 1 : #
+                raise NotImplementedError
+            pay_system_url = current_app.config.get('PAYBC_PORTAL_URL')+'/inv_number={}&pbc_ref_number={}'.format()
+
+
+        else :
+            raise NotImplementedError
+
+        current_app.logger.debug('>build_pay_system_url')
+        return pay_system_url
 
     @staticmethod
     def find_by_id(transaction_id: int):
