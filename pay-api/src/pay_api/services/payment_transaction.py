@@ -23,6 +23,8 @@ from pay_api.utils.errors import Error
 from pay_api.exceptions import BusinessException
 from pay_api.utils.enums import Status, PaymentSystem
 from .invoice import InvoiceModel
+import urllib.parse
+
 
 class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
     """Service to manage Payment transaction operations."""
@@ -146,13 +148,17 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
             'status_code': self._status_code,
             'transaction_start_time': self._transaction_start_time
         }
-        if self._transaction_start_time:
+        if self._transaction_end_time:
             d['transaction_end_time'] = self._transaction_end_time
         return d
 
     def save(self):
         """Save the fee schedule information."""
-        self._dao.save()
+        return self._dao.save()
+
+    def flush(self):
+        """Save the information to the DB."""
+        return self._dao.flush()
 
     @staticmethod
     def create(payment_identifier: str, redirect_uri: str):
@@ -168,10 +174,11 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         transaction.redirect_url = redirect_uri
         transaction.pay_system_url = None  # TODO
         transaction.transaction_start_time = datetime.now()
-        transaction.status_code = Status.CREATED
+        transaction.status_code = Status.CREATED.value
         transaction_dao = transaction.flush()
         transaction._dao = transaction_dao  # pylint: disable=protected-access
-        transaction.pay_system_url = transaction.build_pay_system_url(payment)
+        transaction.pay_system_url = transaction.build_pay_system_url(payment, transaction.id)
+        transaction_dao = transaction.save()
 
         transaction = PaymentTransaction()
         transaction._dao = transaction_dao  # pylint: disable=protected-access
@@ -181,15 +188,23 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def build_pay_system_url(payment: Payment, transaction_id: str):
         current_app.logger.debug('<build_pay_system_url')
-        pay_system_url = ''
         if payment.payment_system_code == PaymentSystem.PAYBC.value:
             invoices = InvoiceModel.find_by_payment_id(payment.id)
-            if len(invoices) > 1 : #
+            if len(invoices) > 1:  #
                 raise NotImplementedError
-            pay_system_url = current_app.config.get('PAYBC_PORTAL_URL')+'/inv_number={}&pbc_ref_number={}'.format()
 
+            print(type(invoices))
+            print(len(invoices))
+            invoice: InvoiceModel = invoices[0]
+            print(invoice)
+            print(type(invoice))
+            pay_system_url = current_app.config.get('PAYBC_PORTAL_URL') + '/inv_number={}&pbc_ref_number={}'.format(
+                invoice.invoice_number, invoice.reference_number)
+            pay_web_transaction_url = 'http://localhost:8000/fee-web/transactions'  # TODO
+            return_url = urllib.parse.quote(f'{pay_web_transaction_url}?transaction_id={transaction_id}', '')
+            pay_system_url += f'&redirect_uri={return_url}'
 
-        else :
+        else:
             raise NotImplementedError
 
         current_app.logger.debug('>build_pay_system_url')

@@ -38,7 +38,7 @@ class Transaction(Resource):
     def post(payment_identifier):
         """Create the Transaction records."""
         current_app.logger.info('<Transaction.post')
-        redirect_uri = flask.request.args.get('request_uri')
+        redirect_uri = flask.request.args.get('redirect_uri')
         try:
             if not redirect_uri:
                 raise BusinessException(Error.PAY007)
