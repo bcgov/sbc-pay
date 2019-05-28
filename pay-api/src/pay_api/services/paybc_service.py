@@ -71,6 +71,7 @@ class PaybcService(PaymentSystemService, OAuthService):
                     'line_type': PAYBC_LINE_TYPE,
                     'memo_line_name': PAYBC_MEMO_LINE_NAME,
                     'description': line_item.description,
+                    'attribute1':line_item.description,
                     'unit_price': line_item.total,
                     'quantity': line_item.quantity
                 }
