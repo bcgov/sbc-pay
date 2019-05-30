@@ -51,19 +51,36 @@ class Transaction(Resource):
 
 
 @cors_preflight('GET')
-@API.route('', methods=['GET', 'OPTIONS'])
+@API.route('/<string:transaction_identifier>', methods=['GET', 'OPTIONS'])
 class Transactions(Resource):
     """Endpoint resource to get transaction."""
 
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
-    def get(payment_identifier):
+    def get(payment_identifier, transaction_identifier):
         """Get the Transaction record."""
-        current_app.logger.info('<Transaction.get')
+        current_app.logger.info(
+            f'<Transaction.get for payment : {payment_identifier}, and transaction {transaction_identifier}')
         try:
-            response, status = TransactionService.find_by_id(payment_identifier).asdict(), HTTPStatus.CREATED
+            response, status = TransactionService.find_by_id(transaction_identifier).asdict(), HTTPStatus.OK
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         current_app.logger.debug('>Transaction.get')
+        return jsonify(response), status
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
+    def put(payment_identifier, transaction_identifier):
+        """Update the transaction record by querying payment system."""
+        current_app.logger.info(
+            f'<Transaction.post for payment : {payment_identifier}, and transaction {transaction_identifier}')
+        receipt_number = flask.request.args.get('receipt_number')
+        try:
+            response, status = TransactionService.update_transaction(payment_identifier, transaction_identifier,
+                                                                     receipt_number).asdict(), HTTPStatus.OK
+        except BusinessException as exception:
+            response, status = {'code': exception.code, 'message': exception.message}, exception.status
+        current_app.logger.debug('>Transaction.post')
         return jsonify(response), status

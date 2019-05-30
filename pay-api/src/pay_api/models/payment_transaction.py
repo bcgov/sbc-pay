@@ -14,10 +14,12 @@
 """Model to handle all operations related to Payment Transaction."""
 from datetime import datetime
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, text
+from sqlalchemy.dialects.postgresql import UUID
 
 from .base_model import BaseModel
 from .db import db, ma
+import uuid
 
 
 class PaymentTransaction(db.Model, BaseModel):  # pylint: disable=too-few-public-methods
@@ -25,19 +27,24 @@ class PaymentTransaction(db.Model, BaseModel):  # pylint: disable=too-few-public
 
     __tablename__ = 'payment_transaction'
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
     payment_id = db.Column(db.Integer, ForeignKey('payment.id'), nullable=False)
-    redirect_url = db.Column(db.String(200), nullable=False)
+    client_system_url = db.Column(db.String(500), nullable=False)
     pay_system_url = db.Column(db.String(500), nullable=True)
 
     transaction_start_time = db.Column(db.DateTime, default=datetime.today(), nullable=False)
-    transaction_end_time = db.Column(db.DateTime, default=datetime.today(), nullable=True)
+    transaction_end_time = db.Column(db.DateTime, nullable=True)
 
     @classmethod
     def find_by_id(cls, identifier: int):
         """Return a Payment Transaction by id."""
         return cls.query.get(identifier)
+
+    @classmethod
+    def find_by_payment_id(cls, payment_id: int):
+        """Return Payment Transactions by payment identifier."""
+        return cls.query.filter_by(payment_id=payment_id).all()
 
 
 class PaymentTransactionSchema(ma.ModelSchema):

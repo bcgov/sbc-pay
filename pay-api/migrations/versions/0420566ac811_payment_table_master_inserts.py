@@ -53,7 +53,8 @@ def upgrade():
             {'code': 'COMPLETED', 'description': 'Completed'},
             {'code': 'PARTIAL', 'description': 'Partial'},
             {'code': 'FAILED', 'description': 'Failed'},
-            {'code': 'REFUNDED', 'description': 'Refunded'}
+            {'code': 'REFUNDED', 'description': 'Refunded'},
+            {'code': 'CANCELLED', 'description': 'Cancelled'}
         ]
     )
 

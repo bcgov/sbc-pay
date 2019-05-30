@@ -13,17 +13,22 @@
 # limitations under the License.
 """Service to manage Fee Calculation."""
 
+import urllib.parse
+import uuid
 from datetime import datetime
 
 from flask import current_app
 
-from pay_api.models import PaymentTransaction as PaymentTransactionModel
-from .payment import Payment
-from pay_api.utils.errors import Error
 from pay_api.exceptions import BusinessException
+from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.utils.enums import Status, PaymentSystem
+from pay_api.utils.errors import Error
 from .invoice import InvoiceModel
-import urllib.parse
+from .payment import Payment
+from pay_api.factory.payment_system_factory import PaymentSystemFactory
+from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.services.payment_account import PaymentAccount
+from pay_api.services.invoice import Invoice
 
 
 class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
@@ -32,10 +37,10 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
     def __init__(self):
         """Return a User Service object."""
         self.__dao = None
-        self._id: int = None
+        self._id: uuid = None
         self._status_code: str = None
         self._payment_id: int = None
-        self._redirect_url: str = None
+        self._client_system_url: str = None
         self._pay_system_url: str = None
         self._transaction_start_time: datetime = None
         self._transaction_end_time: datetime = None
@@ -49,10 +54,10 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
     @_dao.setter
     def _dao(self, value):
         self.__dao = value
-        self.id: int = self._dao.id
+        self.id: uuid = self._dao.id
         self.status_code: str = self._dao.status_code
         self.payment_id: int = self._dao.payment_id
-        self.redirect_url: str = self._dao.redirect_url
+        self.client_system_url: str = self._dao.client_system_url
         self.pay_system_url: str = self._dao.pay_system_url
         self.transaction_start_time: datetime = self._dao.transaction_start_time
         self.transaction_end_time: datetime = self._dao.transaction_end_time
@@ -63,7 +68,7 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         return self._id
 
     @id.setter
-    def id(self, value: int):
+    def id(self, value: uuid):
         """Set the id."""
         self._id = value
         self._dao.id = value
@@ -91,15 +96,15 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         self._dao.payment_id = value
 
     @property
-    def redirect_url(self):
-        """Return the redirect_url."""
-        return self._redirect_url
+    def client_system_url(self):
+        """Return the client_system_url."""
+        return self._client_system_url
 
-    @redirect_url.setter
-    def redirect_url(self, value: str):
-        """Set the redirect_url."""
-        self._redirect_url = value
-        self._dao.redirect_url = value
+    @client_system_url.setter
+    def client_system_url(self, value: str):
+        """Set the client_system_url."""
+        self._client_system_url = value
+        self._dao.client_system_url = value
 
     @property
     def pay_system_url(self):
@@ -143,7 +148,7 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         d = {
             'id': self._id,
             'payment_id': self._payment_id,
-            'redirect_url': self._redirect_url,
+            'client_system_url': self._client_system_url,
             'pay_system_url': self._pay_system_url,
             'status_code': self._status_code,
             'transaction_start_time': self._transaction_start_time
@@ -169,11 +174,18 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         if not payment.id:
             raise BusinessException(Error.PAY005)
 
+        # If there are active transactions (status=CREATED), then invalidate all of them and create a new one.
+        existing_transactions = PaymentTransactionModel.find_by_payment_id(payment.id)
+        if existing_transactions:
+            for existing_transaction in existing_transactions:
+                if existing_transaction.status_code != Status.CANCELLED.value:
+                    existing_transaction.status_code = Status.CANCELLED.value
+                    existing_transaction.transaction_end_time = datetime.now()
+                    existing_transaction.save()
+
         transaction = PaymentTransaction()
         transaction.payment_id = payment.id
-        transaction.redirect_url = redirect_uri
-        transaction.pay_system_url = None  # TODO
-        transaction.transaction_start_time = datetime.now()
+        transaction.client_system_url = redirect_uri
         transaction.status_code = Status.CREATED.value
         transaction_dao = transaction.flush()
         transaction._dao = transaction_dao  # pylint: disable=protected-access
@@ -186,23 +198,23 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         return transaction
 
     @staticmethod
-    def build_pay_system_url(payment: Payment, transaction_id: str):
+    def build_pay_system_url(payment: Payment, transaction_id: uuid):
         current_app.logger.debug('<build_pay_system_url')
         if payment.payment_system_code == PaymentSystem.PAYBC.value:
             invoices = InvoiceModel.find_by_payment_id(payment.id)
-            if len(invoices) > 1:  #
+            if len(
+                    invoices) > 1:  # Only one invoice attached to one payment record, throwing error to remind this in future
                 raise NotImplementedError
 
-            print(type(invoices))
-            print(len(invoices))
             invoice: InvoiceModel = invoices[0]
-            print(invoice)
-            print(type(invoice))
-            pay_system_url = current_app.config.get('PAYBC_PORTAL_URL') + '/inv_number={}&pbc_ref_number={}'.format(
+
+            pay_system_url = current_app.config.get('PAYBC_PORTAL_URL') + '?inv_number={}&pbc_ref_number={}'.format(
                 invoice.invoice_number, invoice.reference_number)
-            pay_web_transaction_url = 'http://localhost:8000/fee-web/transactions'  # TODO
-            return_url = urllib.parse.quote(f'{pay_web_transaction_url}?transaction_id={transaction_id}', '')
-            pay_system_url += f'&redirect_uri={return_url}'
+
+            pay_web_transaction_url = current_app.config.get('AUTH_WEB_PAY_TRANSACTION_URL')
+            return_url = urllib.parse.quote(
+                f'{pay_web_transaction_url}?payment_id={payment.id}&transaction_id={transaction_id}', '')
+            pay_system_url += f'&redirect_url={return_url}'
 
         else:
             raise NotImplementedError
@@ -211,12 +223,54 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         return pay_system_url
 
     @staticmethod
-    def find_by_id(transaction_id: int):
+    def find_by_id(transaction_id: uuid):
         """Find transaction by id."""
         transaction_dao = PaymentTransactionModel.find_by_id(transaction_id)
+        if not transaction_dao.id:
+            raise BusinessException(Error.PAY008)
 
         transaction = PaymentTransaction()
         transaction._dao = transaction_dao  # pylint: disable=protected-access
 
         current_app.logger.debug('>find_by_id')
+        return transaction
+
+    @staticmethod
+    def update_transaction(payment_identifier: int, transaction_id: uuid, receipt_number: str):
+        """Update transaction record."""
+        payment: Payment = Payment.find_by_id(payment_identifier)
+        if not payment.id:
+            raise BusinessException(Error.PAY005)
+
+        pay_system_service: PaymentSystemService = PaymentSystemFactory.create(
+            payment_system=payment.payment_system_code)
+
+        invoice:[Invoice] = Invoice.find_by_payment_identfier(payment_identifier)
+        if len(invoice) > 1: # Multiple invoices against a payment is not implemented yet
+            raise NotImplementedError
+
+        payment_account = PaymentAccount.find_by_id(invoice[0].account_id)
+
+        receipt_details = pay_system_service.get_receipt(payment_account, receipt_number, invoice.invoice_number)
+        if receipt_details:
+            # Save receipt details to DB.
+            number = receipt_details[0]
+            date = receipt_details[1]
+            amount = receipt_details[2]
+            #TODO Save receipt
+            #TODO Check due amount in invoice and update the invoie table
+
+        #TODO save transaction with status transaction.save()
+
+        transaction_dao = PaymentTransactionModel.find_by_id(transaction_id)
+
+
+
+
+
+
+        transaction = PaymentTransaction()
+        transaction._dao = transaction_dao  # pylint: disable=protected-access
+
+        current_app.logger.debug('>update_transaction')
         return transaction

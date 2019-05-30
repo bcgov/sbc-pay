@@ -21,6 +21,7 @@ from datetime import datetime
 
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
+import uuid
 
 
 def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
@@ -81,7 +82,7 @@ def test_transaction_saved_from_new(session):
     payment_transaction.transaction_end_time = datetime.now()
     payment_transaction.transaction_start_time = datetime.now()
     payment_transaction.pay_system_url = 'http://google.com'
-    payment_transaction.redirect_url = 'http://google.com'
+    payment_transaction.client_system_url = 'http://google.com'
     payment_transaction.payment_id = payment.id
     payment_transaction = payment_transaction.save()
 
@@ -91,7 +92,7 @@ def test_transaction_saved_from_new(session):
     assert transaction.id is not None
     assert transaction.status_code is not None
     assert transaction.payment_id is not None
-    assert transaction.redirect_url is not None
+    assert transaction.client_system_url is not None
     assert transaction.pay_system_url is not None
     assert transaction.transaction_start_time is not None
     assert transaction.transaction_end_time is not None
@@ -99,7 +100,7 @@ def test_transaction_saved_from_new(session):
 
 def test_transaction_invalid_lookup(session):
     """Invalid lookup.."""
-    p = PaymentTransactionService.find_by_id(999)
+    p = PaymentTransactionService.find_by_id(uuid.uuid4())
 
     assert p is not None
     assert p.id is None

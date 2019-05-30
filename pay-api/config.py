@@ -19,7 +19,6 @@ import sys
 
 from dotenv import find_dotenv, load_dotenv
 
-
 # this will load all the envars from a .env file located in the project root (api)
 load_dotenv(find_dotenv())
 
@@ -36,7 +35,7 @@ def get_named_config(config_name: str = 'production'):
 
     :raise: KeyError: if an unknown configuration is requested
     """
-    if config_name in['production', 'staging', 'default']:
+    if config_name in ['production', 'staging', 'default']:
         config = ProdConfig()
     elif config_name == 'testing':
         config = TestConfig()
@@ -85,12 +84,12 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     except:
         JWT_OIDC_JWKS_CACHE_TIMEOUT = 300
 
-
     # PAYBC API Settings
     PAYBC_BASE_URL = os.getenv('PAYBC_BASE_URL')
     PAYBC_CLIENT_ID = os.getenv('PAYBC_CLIENT_ID')
     PAYBC_CLIENT_SECRET = os.getenv('PAYBC_CLIENT_SECRET')
-    PAYBC_PORTAL_URL=os.getenv('PAYBC_PORTAL_URL')
+    PAYBC_PORTAL_URL = os.getenv('PAYBC_PORTAL_URL')
+    AUTH_WEB_PAY_TRANSACTION_URL = os.getenv('AUTH_WEB_PAY_TRANSACTION_URL')
 
     TESTING = False
     DEBUG = True
@@ -111,13 +110,14 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     DB_NAME = os.getenv('DATABASE_TEST_NAME', '')
     DB_HOST = os.getenv('DATABASE_TEST_HOST', '')
     DB_PORT = os.getenv('DATABASE_TEST_PORT', '5432')
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_TEST_URL', 'postgresql://{user}:{password}@{host}:{port}/{name}'.format(
-        user=DB_USER,
-        password=DB_PASSWORD,
-        host=DB_HOST,
-        port=int(DB_PORT),
-        name=DB_NAME,
-    ))
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_TEST_URL',
+                                        'postgresql://{user}:{password}@{host}:{port}/{name}'.format(
+                                            user=DB_USER,
+                                            password=DB_PASSWORD,
+                                            host=DB_HOST,
+                                            port=int(DB_PORT),
+                                            name=DB_NAME,
+                                        ))
 
     JWT_OIDC_TEST_MODE = True
     JWT_OIDC_TEST_AUDIENCE = os.getenv('JWT_OIDC_AUDIENCE')

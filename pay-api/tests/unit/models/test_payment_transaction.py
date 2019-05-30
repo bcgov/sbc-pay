@@ -49,7 +49,7 @@ def factory_payment_transaction(payment_id: str, status_code: str = 'DRAFT', red
     """Factory."""
     return PaymentTransaction(payment_id=payment_id,
                               status_code=status_code,
-                              redirect_url=redirect_url,
+                              client_system_url=redirect_url,
                               pay_system_url=pay_system_url,
                               transaction_start_time=transaction_start_time,
                               transaction_end_time=transaction_end_time)

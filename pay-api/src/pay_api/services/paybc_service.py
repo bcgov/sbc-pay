@@ -94,8 +94,31 @@ class PaybcService(PaymentSystemService, OAuthService):
             self.__add_adjustment(account_details, inv_number, 'Cancelling Invoice',
                                   0 - amount, line=line.get('line_number'), access_token=access_token)
 
-    def get_receipt(self):
-        """Get receipt from paybc."""
+    def get_receipt(self, payment_account: PaymentAccount, receipt_number: str, invoice_number: str):
+        """Get receipt from paybc for the receipt number or get receipt against invoice number."""
+        access_token: str = self.__get_token().json().get('access_token')
+        current_app.logger.debug('<Getting receipt')
+        receipt_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/rcpts/'.format(
+            payment_account.party_number, payment_account.account_number, payment_account.site_number)
+
+        if not receipt_number:  # Find all receipts for the site and then match with invoice number
+            receipts_response = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+            for receipt in receipts_response:
+                for invoice in receipt.get('invoices'):
+                    if invoice.get('trx_number') == invoice_number:
+                        receipt_number = receipt.get('receipt_number')
+
+        if receipt_number:
+            receipt_url = receipt_url + f'{receipt_number}/'
+            receipt_response = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+            receipt_date = receipt_response.get('receipt_date')
+            amount: float = 0
+            for invoice in receipt_response.get('invoices'):
+                if invoice.get('trx_number') == invoice_number:
+                    amount += float(invoice.get('amount_to_apply'))
+
+            return receipt_number, receipt_date, amount
+        return None
 
     def __create_party(self, access_token: str = None, party_name: str = None):
         """Create a party record in PayBC."""
