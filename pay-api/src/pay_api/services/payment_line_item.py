@@ -27,14 +27,14 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         self.__dao = None
         self._id: int = None
         self._invoice_id: int = None
-        self._filing_fees: int = None
+        self._filing_fees: float = None
         self._fee_schedule_id: int = None
-        self._processing_fees: int = None
-        self._service_fees: int = None
+        self._processing_fees: float = None
+        self._service_fees: float = None
         self._description: str = None
-        self._gst: int = None
-        self._pst: int = None
-        self._total: int = None
+        self._gst: float = None
+        self._pst: float = None
+        self._total: float = None
         self._quantity: int = None
 
     @property
@@ -48,14 +48,14 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         self.__dao = value
         self.id: int = self._dao.id
         self.invoice_id: int = self._dao.invoice_id
-        self.filing_fees: int = self._dao.filing_fees
+        self.filing_fees: float = self._dao.filing_fees
         self.fee_schedule_id: int = self._dao.fee_schedule_id
-        self.processing_fees: int = self._dao.processing_fees
-        self.service_fees: int = self._dao.service_fees
+        self.processing_fees: float = self._dao.processing_fees
+        self.service_fees: float = self._dao.service_fees
         self.description: str = self._dao.description
-        self.gst: int = self._dao.gst
-        self.pst: int = self._dao.pst
-        self.total: int = self._dao.total
+        self.gst: float = self._dao.gst
+        self.pst: float = self._dao.pst
+        self.total: float = self._dao.total
         self.quantity: int = self._dao.quantity
 
     @property
@@ -86,7 +86,7 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         return self._filing_fees
 
     @filing_fees.setter
-    def filing_fees(self, value: int):
+    def filing_fees(self, value: float):
         """Set the filing_fees."""
         self._filing_fees = value
         self._dao.filing_fees = value
@@ -108,7 +108,7 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         return self._processing_fees
 
     @processing_fees.setter
-    def processing_fees(self, value: int):
+    def processing_fees(self, value: float):
         """Set the processing_fees."""
         self._processing_fees = value
         self._dao.processing_fees = value
@@ -119,7 +119,7 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         return self._service_fees
 
     @service_fees.setter
-    def service_fees(self, value: int):
+    def service_fees(self, value: float):
         """Set the service_fees."""
         self._service_fees = value
         self._dao.service_fees = value
@@ -141,7 +141,7 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         return self._gst
 
     @gst.setter
-    def gst(self, value: int):
+    def gst(self, value: float):
         """Set the gst."""
         self._gst = value
         self._dao.gst = value
@@ -152,7 +152,7 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         return self._pst
 
     @pst.setter
-    def pst(self, value: int):
+    def pst(self, value: float):
         """Set the pst."""
         self._pst = value
         self._dao.pst = value
@@ -163,7 +163,7 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         return self._total
 
     @total.setter
-    def total(self, value: int):
+    def total(self, value: float):
         """Set the total."""
         self._total = value
         self._dao.total = value

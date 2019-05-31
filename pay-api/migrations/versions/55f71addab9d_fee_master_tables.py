@@ -25,7 +25,7 @@ def upgrade():
                     )
     op.create_table('fee_code',
                     sa.Column('code', sa.String(length=10), nullable=False),
-                    sa.Column('amount', sa.Integer(), nullable=False),
+                    sa.Column('amount', sa.Float(), nullable=False),
                     sa.PrimaryKeyConstraint('code')
                     )
     op.create_table('filing_type',

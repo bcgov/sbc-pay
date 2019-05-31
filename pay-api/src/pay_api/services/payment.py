@@ -156,6 +156,10 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         """Save the information to the DB."""
         return self._dao.flush()
 
+    def save(self):
+        """Save the information to the DB."""
+        return self._dao.save()
+
     def asdict(self):
         """Return the payment as a python dict."""
         d = {

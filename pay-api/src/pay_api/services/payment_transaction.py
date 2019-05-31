@@ -29,6 +29,7 @@ from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.invoice import Invoice
+from pay_api.services.receipt import Receipt
 
 
 class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
@@ -173,6 +174,8 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         payment: Payment = Payment.find_by_id(payment_identifier)
         if not payment.id:
             raise BusinessException(Error.PAY005)
+        if payment.payment_status_code == Status.COMPLETED:  # Cannot start transaction on completed payment
+            raise BusinessException(Error.PAY006)
 
         # If there are active transactions (status=CREATED), then invalidate all of them and create a new one.
         existing_transactions = PaymentTransactionModel.find_by_payment_id(payment.id)
@@ -201,12 +204,7 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
     def build_pay_system_url(payment: Payment, transaction_id: uuid):
         current_app.logger.debug('<build_pay_system_url')
         if payment.payment_system_code == PaymentSystem.PAYBC.value:
-            invoices = InvoiceModel.find_by_payment_id(payment.id)
-            if len(
-                    invoices) > 1:  # Only one invoice attached to one payment record, throwing error to remind this in future
-                raise NotImplementedError
-
-            invoice: InvoiceModel = invoices[0]
+            invoice = InvoiceModel.find_by_payment_id(payment.id)
 
             pay_system_url = current_app.config.get('PAYBC_PORTAL_URL') + '?inv_number={}&pbc_ref_number={}'.format(
                 invoice.invoice_number, invoice.reference_number)
@@ -223,10 +221,10 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         return pay_system_url
 
     @staticmethod
-    def find_by_id(transaction_id: uuid):
+    def find_by_id(payment_identifier: int, transaction_id: uuid):
         """Find transaction by id."""
-        transaction_dao = PaymentTransactionModel.find_by_id(transaction_id)
-        if not transaction_dao.id:
+        transaction_dao = PaymentTransactionModel.find_by_id_and_payment_id(transaction_id, payment_identifier)
+        if not transaction_dao:
             raise BusinessException(Error.PAY008)
 
         transaction = PaymentTransaction()
@@ -237,37 +235,55 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def update_transaction(payment_identifier: int, transaction_id: uuid, receipt_number: str):
-        """Update transaction record."""
+        """Update transaction record.
+
+        Does the following:
+        1. Find the payment record with the id
+        2. Find the invoice record using the payment identifier
+        3. Call the pay system service and get the receipt details
+        4. Save the receipt record
+        5. Change the status of Invoice
+        6. Change the status of Payment
+        7. Update the transaction record
+        """
+        transaction_dao: PaymentTransactionModel = PaymentTransactionModel.find_by_id_and_payment_id(transaction_id,
+                                                                                                     payment_identifier)
+        if not transaction_dao:
+            raise BusinessException(Error.PAY008)
+        elif transaction_dao.status_code == Status.COMPLETED.value:
+            raise BusinessException(Error.PAY006)
+
         payment: Payment = Payment.find_by_id(payment_identifier)
-        if not payment.id:
-            raise BusinessException(Error.PAY005)
 
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create(
             payment_system=payment.payment_system_code)
 
-        invoice:[Invoice] = Invoice.find_by_payment_identfier(payment_identifier)
-        if len(invoice) > 1: # Multiple invoices against a payment is not implemented yet
-            raise NotImplementedError
+        invoice = Invoice.find_by_payment_identfier(payment_identifier)
 
-        payment_account = PaymentAccount.find_by_id(invoice[0].account_id)
+        payment_account = PaymentAccount.find_by_id(invoice.account_id)
 
         receipt_details = pay_system_service.get_receipt(payment_account, receipt_number, invoice.invoice_number)
         if receipt_details:
             # Save receipt details to DB.
-            number = receipt_details[0]
-            date = receipt_details[1]
-            amount = receipt_details[2]
-            #TODO Save receipt
-            #TODO Check due amount in invoice and update the invoie table
+            receipt: Receipt = Receipt()
+            receipt.receipt_number = receipt_details[0]
+            receipt.receipt_date = receipt_details[1]
+            receipt.receipt_amount = receipt_details[2]
+            receipt.invoice_id = invoice.id
+            receipt.save()
 
-        #TODO save transaction with status transaction.save()
+            invoice.paid = receipt.receipt_amount
+            if invoice.paid == invoice.total:
+                invoice.invoice_status_code = Status.COMPLETED.value
+                payment.payment_status_code = Status.COMPLETED.value
+                payment.save()
+            elif 0 < invoice.paid < invoice.total:
+                invoice.invoice_status_code = Status.PARTIAL.value
+            invoice.save()
 
-        transaction_dao = PaymentTransactionModel.find_by_id(transaction_id)
-
-
-
-
-
+        transaction_dao.transaction_end_time = datetime.now()
+        transaction_dao.status_code = Status.COMPLETED.value
+        transaction_dao = transaction_dao.save()
 
         transaction = PaymentTransaction()
         transaction._dao = transaction_dao  # pylint: disable=protected-access

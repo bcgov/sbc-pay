@@ -37,7 +37,7 @@ class PaymentTransaction(db.Model, BaseModel):  # pylint: disable=too-few-public
     transaction_end_time = db.Column(db.DateTime, nullable=True)
 
     @classmethod
-    def find_by_id(cls, identifier: int):
+    def find_by_id(cls, identifier: uuid):
         """Return a Payment Transaction by id."""
         return cls.query.get(identifier)
 
@@ -45,6 +45,11 @@ class PaymentTransaction(db.Model, BaseModel):  # pylint: disable=too-few-public
     def find_by_payment_id(cls, payment_id: int):
         """Return Payment Transactions by payment identifier."""
         return cls.query.filter_by(payment_id=payment_id).all()
+
+    @classmethod
+    def find_by_id_and_payment_id(cls, identifier: uuid, payment_id: int):
+        """Return Payment Transactions by payment identifier."""
+        return cls.query.filter_by(payment_id=payment_id).filter_by(id=identifier).one_or_none()
 
 
 class PaymentTransactionSchema(ma.ModelSchema):

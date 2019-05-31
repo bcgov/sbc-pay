@@ -8,7 +8,7 @@ Create Date: 2019-05-10 11:07:41.003718
 from datetime import date
 
 from alembic import op
-from sqlalchemy import Date, Integer, String
+from sqlalchemy import Date, Integer, String, Float
 from sqlalchemy.sql import column, table
 
 
@@ -26,7 +26,7 @@ def upgrade():
                             )
     fee_code_table = table('fee_code',
                            column('code', String),
-                           column('amount', Integer)
+                           column('amount', Float)
                            )
     filing_type_table = table('filing_type',
                               column('code', String),

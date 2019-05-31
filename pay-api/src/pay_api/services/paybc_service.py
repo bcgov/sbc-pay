@@ -27,6 +27,7 @@ from pay_api.utils.constants import (
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
+from dateutil import parser
 
 
 class PaybcService(PaymentSystemService, OAuthService):
@@ -56,7 +57,7 @@ class PaybcService(PaymentSystemService, OAuthService):
             batch_source=PAYBC_BATCH_SOURCE,
             cust_trx_type=PAYBC_CUST_TRX_TYPE,
             transaction_date=curr_time,
-            transaction_number=invoice_number,
+            transaction_number=f'{invoice_number}-{payment_account.corp_number}',
             gl_date=curr_time,
             term_name=PAYBC_TERM_NAME,
             comments='',
@@ -87,7 +88,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         access_token: str = self.__get_token().json().get('access_token')
         invoice = self.__get_invoice(account_details, inv_number, access_token)
         for line in invoice.get('lines'):
-            amount: int = line.get('unit_price') * line.get('quantity')
+            amount: float = line.get('unit_price') * line.get('quantity')
 
             current_app.logger.debug('Adding asjustment for line item : {} -- {}'
                                      .format(line.get('line_number'), amount))
@@ -111,7 +112,8 @@ class PaybcService(PaymentSystemService, OAuthService):
         if receipt_number:
             receipt_url = receipt_url + f'{receipt_number}/'
             receipt_response = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
-            receipt_date = receipt_response.get('receipt_date')
+            receipt_date = parser.parse(receipt_response.get('receipt_date'))
+
             amount: float = 0
             for invoice in receipt_response.get('invoices'):
                 if invoice.get('trx_number') == invoice_number:

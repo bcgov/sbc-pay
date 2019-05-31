@@ -51,7 +51,7 @@ class Transaction(Resource):
 
 
 @cors_preflight('GET')
-@API.route('/<string:transaction_identifier>', methods=['GET', 'OPTIONS'])
+@API.route('/<string:transaction_identifier>', methods=['GET', 'PUT', 'OPTIONS'])
 class Transactions(Resource):
     """Endpoint resource to get transaction."""
 
@@ -63,7 +63,8 @@ class Transactions(Resource):
         current_app.logger.info(
             f'<Transaction.get for payment : {payment_identifier}, and transaction {transaction_identifier}')
         try:
-            response, status = TransactionService.find_by_id(transaction_identifier).asdict(), HTTPStatus.OK
+            response, status = TransactionService.find_by_id(payment_identifier,
+                                                             transaction_identifier).asdict(), HTTPStatus.OK
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         current_app.logger.debug('>Transaction.get')

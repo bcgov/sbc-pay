@@ -86,7 +86,7 @@ def test_transaction_saved_from_new(session):
     payment_transaction.payment_id = payment.id
     payment_transaction = payment_transaction.save()
 
-    transaction = PaymentTransactionService.find_by_id(payment_transaction.id)
+    transaction = PaymentTransactionService.find_by_id(payment.id, payment_transaction.id)
 
     assert transaction is not None
     assert transaction.id is not None
@@ -100,7 +100,13 @@ def test_transaction_saved_from_new(session):
 
 def test_transaction_invalid_lookup(session):
     """Invalid lookup.."""
-    p = PaymentTransactionService.find_by_id(uuid.uuid4())
+    import pytest
+    from pay_api.exceptions import BusinessException
+    from pay_api.utils.errors import Error
 
-    assert p is not None
-    assert p.id is None
+    with pytest.raises(BusinessException) as excinfo:
+        p = PaymentTransactionService.find_by_id(1, uuid.uuid4())
+    assert excinfo.value.status == Error.PAY008.status
+    assert excinfo.value.message == Error.PAY008.message
+    assert excinfo.value.code == Error.PAY008.name
+
