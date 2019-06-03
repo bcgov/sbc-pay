@@ -101,10 +101,6 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         self._receipt_amount = value
         self._dao.receipt_amount = value
 
-    def flush(self):
-        """Save the information to the DB."""
-        return self._dao.flush()
-
     def save(self):
         """Save the information to the DB."""
         return self._dao.save()

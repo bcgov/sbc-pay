@@ -20,16 +20,16 @@ from datetime import datetime
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
+from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
+from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.services.invoice import Invoice
+from pay_api.services.payment_account import PaymentAccount
+from pay_api.services.receipt import Receipt
 from pay_api.utils.enums import Status, PaymentSystem
 from pay_api.utils.errors import Error
 from .invoice import InvoiceModel
 from .payment import Payment
-from pay_api.factory.payment_system_factory import PaymentSystemFactory
-from pay_api.services.base_payment_system import PaymentSystemService
-from pay_api.services.payment_account import PaymentAccount
-from pay_api.services.invoice import Invoice
-from pay_api.services.receipt import Receipt
 
 
 class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
@@ -140,10 +140,6 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         self._transaction_end_time = value
         self._dao.transaction_end_time = value
 
-    def save(self):
-        """Save the information to the DB."""
-        return self._dao.save()
-
     def asdict(self):
         """Return the transaction as a python dict."""
         d = {
@@ -172,9 +168,12 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('<create transaction')
         # Lookup payment record
         payment: Payment = Payment.find_by_id(payment_identifier)
+
+        print(payment.payment_status_code)
+
         if not payment.id:
             raise BusinessException(Error.PAY005)
-        if payment.payment_status_code == Status.COMPLETED:  # Cannot start transaction on completed payment
+        if payment.payment_status_code == Status.COMPLETED.value:  # Cannot start transaction on completed payment
             raise BusinessException(Error.PAY006)
 
         # If there are active transactions (status=CREATED), then invalidate all of them and create a new one.
@@ -198,6 +197,7 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         transaction = PaymentTransaction()
         transaction._dao = transaction_dao  # pylint: disable=protected-access
         current_app.logger.debug('>create transaction')
+
         return transaction
 
     @staticmethod
@@ -213,9 +213,6 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
             return_url = urllib.parse.quote(
                 f'{pay_web_transaction_url}?payment_id={payment.id}&transaction_id={transaction_id}', '')
             pay_system_url += f'&redirect_url={return_url}'
-
-        else:
-            raise NotImplementedError
 
         current_app.logger.debug('>build_pay_system_url')
         return pay_system_url

@@ -80,8 +80,13 @@ class PaybcService(PaymentSystemService, OAuthService):
         access_token = self.__get_token().json().get('access_token')
         invoice_response = self.post(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, invoice)
 
+        invoice = {
+            'invoice_number': invoice_response.json().get('invoice_number', None),
+            'reference_number': invoice_response.json().get('pbc_ref_number', None)
+        }
+
         current_app.logger.debug('>create_invoice')
-        return invoice_response.json()
+        return invoice
 
     def cancel_invoice(self, account_details: Tuple[str], inv_number: str):
         """Adjust the invoice to zero."""
@@ -213,8 +218,9 @@ class PaybcService(PaymentSystemService, OAuthService):
         current_app.logger.debug('<__get_invoice')
         invoice_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/' \
             .format(account_details[0], account_details[1], account_details[2], inv_number)
+        print(invoice_url)
 
         invoice_response = self.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
-
+        print(invoice_response)
         current_app.logger.debug('>__get_invoice')
         return invoice_response.json()

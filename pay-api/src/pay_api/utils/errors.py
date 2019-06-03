@@ -27,6 +27,7 @@ class Error(Enum):
     PAY006 = 'Transaction is already completed', HTTPStatus.BAD_REQUEST
     PAY007 = 'Invalid redirect uri', HTTPStatus.BAD_REQUEST
     PAY008 = 'Invalid transaction identifier', HTTPStatus.BAD_REQUEST
+    PAY009 = 'Invalid account identifier', HTTPStatus.BAD_REQUEST
     PAY999 = 'Invalid Request', HTTPStatus.BAD_REQUEST
 
     def __new__(cls, message, status):
