@@ -209,6 +209,7 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def find_by_id(line_id: int):
+        """Find by line id."""
         line_dao = PaymentLineItemModel.find_by_id(line_id)
 
         line = PaymentLineItem()

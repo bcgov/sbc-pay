@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Payment Transaction."""
+import uuid
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, text
+from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 
 from .base_model import BaseModel
 from .db import db, ma
-import uuid
 
 
 class PaymentTransaction(db.Model, BaseModel):  # pylint: disable=too-few-public-methods

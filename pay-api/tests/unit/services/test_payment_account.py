@@ -68,7 +68,7 @@ def test_account_invalid_lookup(session):
     from pay_api.exceptions import BusinessException
     from pay_api.utils.errors import Error
     with pytest.raises(BusinessException) as excinfo:
-        p = PaymentAccountService.find_account(None, None, None)
+        PaymentAccountService.find_account(None, None, None)
     assert excinfo.value.status == Error.PAY004.status
 
 
@@ -78,5 +78,5 @@ def test_account_find_by_invalid_id(session):
     from pay_api.exceptions import BusinessException
     from pay_api.utils.errors import Error
     with pytest.raises(BusinessException) as excinfo:
-        p = PaymentAccountService.find_by_id(999)
+        PaymentAccountService.find_by_id(999)
     assert excinfo.value.status == Error.PAY009.status

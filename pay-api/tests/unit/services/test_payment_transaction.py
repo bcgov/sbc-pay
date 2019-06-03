@@ -17,15 +17,16 @@
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
 
+import uuid
 from datetime import datetime
 
+import pytest
+
+from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
-import uuid
-import pytest
-from pay_api.exceptions import BusinessException
-from pay_api.utils.errors import Error
 from pay_api.utils.enums import Status
+from pay_api.utils.errors import Error
 
 
 def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
@@ -140,7 +141,7 @@ def test_transaction_create_from_invalid_payment(session):
     line.save()
 
     with pytest.raises(BusinessException) as excinfo:
-        transaction = PaymentTransactionService.create(999, 'http://google.com/')
+        PaymentTransactionService.create(999, 'http://google.com/')
     assert excinfo.value.status == Error.PAY005.status
     assert excinfo.value.message == Error.PAY005.message
     assert excinfo.value.code == Error.PAY005.name
@@ -215,7 +216,7 @@ def test_transaction_update_completed(session):
     transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451')
 
     with pytest.raises(BusinessException) as excinfo:
-        transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451')
+        PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451')
     assert excinfo.value.status == Error.PAY006.status
     assert excinfo.value.message == Error.PAY006.message
     assert excinfo.value.code == Error.PAY006.name
@@ -234,10 +235,10 @@ def test_transaction_create_new_on_completed_payment(session):
     line.save()
 
     transaction = PaymentTransactionService.create(payment.id, 'http://google.com/')
-    transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451')
+    PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451')
 
     with pytest.raises(BusinessException) as excinfo:
-        transaction = PaymentTransactionService.create(payment.id, 'http://google.com/')
+        PaymentTransactionService.create(payment.id, 'http://google.com/')
     assert excinfo.value.status == Error.PAY006.status
     assert excinfo.value.message == Error.PAY006.message
     assert excinfo.value.code == Error.PAY006.name
@@ -255,8 +256,8 @@ def test_multiple_transactions_for_single_payment(session):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    transaction = PaymentTransactionService.create(payment.id, 'http://google.com/')
-    transaction = PaymentTransactionService.create(payment.id, 'http://google.com/')
+    PaymentTransactionService.create(payment.id, 'http://google.com/')
+    PaymentTransactionService.create(payment.id, 'http://google.com/')
     transaction = PaymentTransactionService.create(payment.id, 'http://google.com/')
 
     assert transaction is not None
@@ -271,9 +272,8 @@ def test_multiple_transactions_for_single_payment(session):
 
 def test_transaction_invalid_lookup(session):
     """Invalid lookup.."""
-
     with pytest.raises(BusinessException) as excinfo:
-        p = PaymentTransactionService.find_by_id(1, uuid.uuid4())
+        PaymentTransactionService.find_by_id(1, uuid.uuid4())
     assert excinfo.value.status == Error.PAY008.status
     assert excinfo.value.message == Error.PAY008.message
     assert excinfo.value.code == Error.PAY008.name
@@ -281,9 +281,8 @@ def test_transaction_invalid_lookup(session):
 
 def test_transaction_invalid_update(session):
     """Invalid update.."""
-
     with pytest.raises(BusinessException) as excinfo:
-        p = PaymentTransactionService.update_transaction(1, uuid.uuid4(), None)
+        PaymentTransactionService.update_transaction(1, uuid.uuid4(), None)
     assert excinfo.value.status == Error.PAY008.status
     assert excinfo.value.message == Error.PAY008.message
     assert excinfo.value.code == Error.PAY008.name

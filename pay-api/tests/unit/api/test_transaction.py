@@ -18,9 +18,10 @@ Test-Suite to ensure that the /transactions endpoint is working as expected.
 """
 
 import json
+import uuid
 
 from pay_api.utils.enums import Role
-import uuid
+
 
 token_header = {
     'alg': 'RS256',
@@ -134,17 +135,6 @@ def test_transaction_post_no_redirect_uri(session, client, jwt, app):
                      headers=headers)
     assert rv.status_code == 400
     assert rv.json.get('code') == 'PAY007'
-
-
-def test_transactions_post_invalid_payment(session, client, jwt, app):
-    """Assert that the endpoint returns 201."""
-    token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    payment_id = 9999
-    rv = client.post(f'/api/v1/payments/{payment_id}/transactions', data=None,
-                     headers=headers)
-    assert rv.status_code == 400
-    assert rv.json.get('code') == 'PAY005'
 
 
 def test_transactions_post_invalid_payment(session, client, jwt, app):

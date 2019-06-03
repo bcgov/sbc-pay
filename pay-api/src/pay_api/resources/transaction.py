@@ -13,16 +13,18 @@
 # limitations under the License.
 """Resource for Transaction endpoints."""
 from http import HTTPStatus
+
 import flask
-from flask import current_app, g, jsonify, request
+from flask import current_app, jsonify
 from flask_restplus import Namespace, Resource, cors
 
 from pay_api import jwt as _jwt
 from pay_api.exceptions import BusinessException
 from pay_api.services import TransactionService
 from pay_api.utils.enums import Role
-from pay_api.utils.util import cors_preflight
 from pay_api.utils.errors import Error
+from pay_api.utils.util import cors_preflight
+
 
 API = Namespace('transactions', description='Payment System - Transactions')
 

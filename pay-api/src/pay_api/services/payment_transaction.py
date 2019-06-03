@@ -26,8 +26,9 @@ from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
-from pay_api.utils.enums import Status, PaymentSystem
+from pay_api.utils.enums import PaymentSystem, Status
 from pay_api.utils.errors import Error
+
 from .invoice import InvoiceModel
 from .payment import Payment
 
@@ -202,6 +203,7 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def build_pay_system_url(payment: Payment, transaction_id: uuid):
+        """Build pay system url which will be used to redirect to the payment system."""
         current_app.logger.debug('<build_pay_system_url')
         if payment.payment_system_code == PaymentSystem.PAYBC.value:
             invoice = InvoiceModel.find_by_payment_id(payment.id)
@@ -247,7 +249,7 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
                                                                                                      payment_identifier)
         if not transaction_dao:
             raise BusinessException(Error.PAY008)
-        elif transaction_dao.status_code == Status.COMPLETED.value:
+        if transaction_dao.status_code == Status.COMPLETED.value:
             raise BusinessException(Error.PAY006)
 
         payment: Payment = Payment.find_by_id(payment_identifier)

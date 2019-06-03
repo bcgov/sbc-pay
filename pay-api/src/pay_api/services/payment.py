@@ -19,7 +19,6 @@ from typing import Any, Dict
 from flask import current_app
 
 from pay_api.models import Payment as PaymentModel
-from pay_api.models.fee_schedule import FeeSchedule
 from pay_api.utils.enums import Status
 
 

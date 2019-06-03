@@ -13,10 +13,11 @@
 # limitations under the License.
 """Service to manage Receipt."""
 
+from datetime import datetime
+
 from flask import current_app
 
 from pay_api.models import Receipt as ReceiptModel
-from datetime import datetime
 
 
 class Receipt():  # pylint: disable=too-many-instance-attributes
@@ -107,6 +108,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def find_by_id(receipt_id: int):
+        """Find by receipt id."""
         receipt_dao = ReceiptModel.find_by_id(receipt_id)
 
         receipt = Receipt()
@@ -117,6 +119,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def find_by_invoice_id_and_receipt_number(invoice_id: int, receipt_number: str = None):
+        """Find by the combination of invoce id and receipt number."""
         receipt_dao = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id, receipt_number)
 
         receipt = Receipt()
