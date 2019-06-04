@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Payment Transaction."""
-import uuid
 from datetime import datetime
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.dialects.postgresql import UUID
 
 from .base_model import BaseModel
 from .db import db, ma
@@ -27,24 +25,19 @@ class PaymentTransaction(db.Model, BaseModel):  # pylint: disable=too-few-public
 
     __tablename__ = 'payment_transaction'
 
-    id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
     payment_id = db.Column(db.Integer, ForeignKey('payment.id'), nullable=False)
-    client_system_url = db.Column(db.String(500), nullable=False)
-    pay_system_url = db.Column(db.String(500), nullable=True)
+    redirect_url = db.Column(db.String(200), nullable=False)
+    pay_system_url = db.Column(db.String(500), nullable=False)
 
     transaction_start_time = db.Column(db.DateTime, default=datetime.today(), nullable=False)
-    transaction_end_time = db.Column(db.DateTime, nullable=True)
+    transaction_end_time = db.Column(db.DateTime, default=datetime.today(), nullable=True)
 
     @classmethod
-    def find_by_payment_id(cls, payment_id: int):
-        """Return Payment Transactions by payment identifier."""
-        return cls.query.filter_by(payment_id=payment_id).all()
-
-    @classmethod
-    def find_by_id_and_payment_id(cls, identifier: uuid, payment_id: int):
-        """Return Payment Transactions by payment identifier."""
-        return cls.query.filter_by(payment_id=payment_id).filter_by(id=identifier).one_or_none()
+    def find_by_id(cls, identifier: int):
+        """Return a Payment Transaction by id."""
+        return cls.query.get(identifier)
 
 
 class PaymentTransactionSchema(ma.ModelSchema):
