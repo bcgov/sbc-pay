@@ -11,14 +11,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Base class for auditable model."""
-from .db import db
+
+"""Tests to assure the CorpType Class.
+
+Test-Suite to ensure that the CorpType Class is working as expected.
+"""
+
+from pay_api.models.payment_system import PaymentSystem
 
 
-class Auditable(object):
-    """This class provides base methods for Code Table."""
+def factory_payment_system(code: str = 'PAYBC', description='PayBC'):
+    """Factory."""
+    return PaymentSystem(code=code, description=description)
 
-    created_by = db.Column('created_by', db.String(50), nullable=False)
-    created_on = db.Column('created_on', db.DateTime, nullable=False)
-    updated_by = db.Column('updated_by', db.String(50), nullable=True)
-    updated_on = db.Column('updated_on', db.DateTime, nullable=True)
+
+def test_payment_system(session):
+    """Assert a payment_system is stored.
+
+    Start with a blank database.
+    """
+    payment_method = factory_payment_system(code='XX', description='TEST')
+    payment_method.save()
+    assert payment_method.code == 'XX'

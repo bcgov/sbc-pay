@@ -16,12 +16,11 @@
 from datetime import date
 
 from flask import current_app
+from sbc_common_components.tracing.service_tracing import ServiceTracing
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.utils.errors import Error
-
-from sbc_common_components.tracing.service_tracing import ServiceTracing
 
 
 @ServiceTracing.trace(ServiceTracing.enable_tracing, ServiceTracing.should_be_tracing)
@@ -124,21 +123,68 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         self._fee_end_date = value
         self._dao.fee_end_date = value
 
+    @property
+    def description(self):
+        """Return the description."""
+        return self._filing_type
+
+    @property
+    def total(self):
+        """Return the total fees calculated."""
+        return self._fee_amount + self.pst + self.gst
+
+    @property
+    def fee_amount(self):
+        """Return the fee amount."""
+        return self._fee_amount
+
+    @property
+    def service_fees(self):
+        """Return the fee amount."""
+        return 0  # TODO
+
+    @property
+    def gst(self):
+        """Return the fee amount."""
+        return 0  # TODO
+
+    @property
+    def pst(self):
+        """Return the fee amount."""
+        return 0  # TODO
+
+    @property
+    def processing_fees(self):
+        """Return the fee amount."""
+        return 0  # TODO
+
+    @property
+    def quantity(self):
+        """Return the fee amount."""
+        return 1  # TODO
+
+    @description.setter
+    def description(self, value: str):
+        """Set the description."""
+        self._filing_type = value
+
     @ServiceTracing.disable_tracing
     def asdict(self):
         """Return the User as a python dict."""
         d = {
             'filing_type': self._filing_type,
             'filing_type_code': self.filing_type_code,
-            'filing_fees': self._fee_amount,
-            'service_fees': 0,  # TODO Populate Service fees here
-            'processing_fees': 0,  # TODO Populate Processing fees here
+            'filing_fees': self.fee_amount,
+            'service_fees': self.service_fees,
+            'processing_fees': self.processing_fees,
             'tax': {
-                # TODO Populate Tax details here
-                'gst': 0,
-                'pst': 0,
+                'gst': self.gst,
+                'pst': self.pst
             },
+            'total': self.total
         }
+        # if self.description:
+        #   d['description'] = self.description
         return d
 
     def save(self):
@@ -146,13 +192,13 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         self._dao.save()
 
     @classmethod
-    def find_by_corp_type_and_filing_type(
-        cls,
-        corp_type: str,  # pylint: disable=too-many-arguments
-        filing_type_code: str,
-        valid_date: date,
-        jurisdiction: str,
-        priority: bool,
+    def find_by_corp_type_and_filing_type(  # pylint: disable=too-many-arguments
+            cls,
+            corp_type: str,
+            filing_type_code: str,
+            valid_date: date,
+            jurisdiction: str,
+            priority: bool,
     ):
         """Calculate fees for the filing by using the arguments."""
         current_app.logger.debug('<get_fees_by_corp_type_and_filing_type')

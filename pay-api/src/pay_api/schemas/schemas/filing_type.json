@@ -1,0 +1,49 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/filing_type",
+  "type": "object",
+  "title": "Filing Type",
+  "required": [
+    "filing_type_code"
+  ],
+  "properties": {
+    "filing_type_code": {
+      "$id": "#/properties/filing_types/items/properties/filing_type_code",
+      "type": "string",
+      "title": "Filing type code",
+      "default": "",
+      "examples": [
+        "OTADD"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "priority": {
+      "$id": "#/properties/filing_types/items/properties/priority",
+      "type": "boolean",
+      "title": "Filing Priority",
+      "default": false,
+      "examples": [
+        true
+      ]
+    },
+    "filing_description": {
+      "$id": "#/properties/filing_types/items/properties/filing_description",
+      "type": "string",
+      "title": "Filing description",
+      "default": "",
+      "examples": [
+        "2019 Annual Report"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "quantity": {
+      "$id": "#/properties/filing_types/items/properties/quantity",
+      "type": "integer",
+      "title": "Quantity",
+      "default": 1,
+      "examples": [
+        1
+      ]
+    }
+  }
+}

@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/contact_info",
+  "type": "object",
+  "title": "Contact Info",
+  "required": [
+    "city",
+    "postal_code",
+    "province",
+    "address_line_1",
+    "country"
+  ],
+  "properties": {
+    "city": {
+      "$id": "#/properties/city",
+      "type": "string",
+      "title": "City",
+      "default": "",
+      "examples": [
+        "Victoria",
+        "Vancouver"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "postal_code": {
+      "$id": "#/properties/postal_code",
+      "type": "string",
+      "title": "Postal Code",
+      "default": "",
+      "examples": [
+        "V8P2N2"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "province": {
+      "$id": "#/properties/province",
+      "type": "string",
+      "title": ":Province",
+      "default": "",
+      "examples": [
+        "BC"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "address_line_1": {
+      "$id": "#/properties/address_line_1",
+      "type": "string",
+      "title": "Address line 1",
+      "default": "",
+      "examples": [
+        "1000 Douglas Street"
+      ]
+    },
+    "country": {
+      "$id": "#/properties/country",
+      "type": "string",
+      "title": "Country",
+      "default": "CA",
+      "examples": [
+        "CA",
+        "US"
+      ]
+    }
+  }
+}

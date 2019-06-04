@@ -15,10 +15,11 @@
 
 from sqlalchemy import ForeignKey
 
+from .base_model import BaseModel
 from .db import db, ma
 
 
-class Receipt(db.Model):
+class Receipt(db.Model, BaseModel):
     """This class manages all of the base data about Receipt."""
 
     __tablename__ = 'receipt'
@@ -28,11 +29,6 @@ class Receipt(db.Model):
     receipt_number = db.Column(db.String(50), nullable=False)
     receipt_date = db.Column(db.DateTime)
     receipt_amount = db.Column(db.Integer)
-
-    def save(self):
-        """Save status."""
-        db.session.add(self)
-        db.session.commit()
 
 
 class ReceiptSchema(ma.ModelSchema):

@@ -56,7 +56,7 @@ class FeeSchedule(db.Model):
             valid_date = date.today()
         fee_schedule = None
         if filing_type_code and corp_type_code:
-            query = cls.query.filter_by(filing_type_code=filing_type_code).\
+            query = cls.query.filter_by(filing_type_code=filing_type_code). \
                 filter_by(corp_type_code=corp_type_code). \
                 filter(FeeSchedule.fee_start_date <= valid_date). \
                 filter((FeeSchedule.fee_end_date.is_(None)) | (FeeSchedule.fee_end_date >= valid_date))

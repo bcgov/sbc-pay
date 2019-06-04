@@ -23,7 +23,7 @@ from pay_api import tracing as _tracing
 from pay_api.exceptions import BusinessException
 from pay_api.services import FeeSchedule
 from pay_api.utils.constants import DEFAULT_JURISDICTION
-from pay_api.utils.roles import Role
+from pay_api.utils.enums import Role
 from pay_api.utils.util import cors_preflight
 
 
@@ -45,6 +45,7 @@ class Fee(Resource):
         jurisdiction = request.args.get('jurisdiction', DEFAULT_JURISDICTION)
         priority = request.args.get('priority', False)
         try:
+
             response, status = (
                 FeeSchedule.find_by_corp_type_and_filing_type(
                     corp_type=corp_type,

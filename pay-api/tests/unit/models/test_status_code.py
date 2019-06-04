@@ -12,14 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests to assure the payments end-point.
+"""Tests to assure the CorpType Class.
 
-Test-Suite to ensure that the /payments endpoint is working as expected.
+Test-Suite to ensure that the CorpType Class is working as expected.
 """
 
+from pay_api.models.status_code import StatusCode
 
-def test_payments_get(client):
-    """Assert that the endpoint returns 200."""
-    rv = client.get('/api/v1/payments')
 
-    assert rv.status_code == 200
+def factory_status_code(code: str = 'DRAFT', description='Draft'):
+    """Factory."""
+    return StatusCode(code=code, description=description)
+
+
+def test_status_code(session):
+    """Assert a status_code is stored.
+
+    Start with a blank database.
+    """
+    status_code = factory_status_code(code='XX', description='TEST')
+    status_code.save()
+    assert status_code.code == 'XX'

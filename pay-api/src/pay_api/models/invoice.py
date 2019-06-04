@@ -15,11 +15,12 @@
 
 from sqlalchemy import ForeignKey
 
-from .auditable import Auditable
+from .audit import Audit
+from .base_model import BaseModel
 from .db import db, ma
 
 
-class Invoice(db.Model, Auditable):
+class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Invoice."""
 
     __tablename__ = 'invoice'
@@ -27,7 +28,7 @@ class Invoice(db.Model, Auditable):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     payment_id = db.Column(db.Integer, ForeignKey('payment.id'), nullable=False)
 
-    invoice_number = db.Column(db.String(50), nullable=False)
+    invoice_number = db.Column(db.String(50), nullable=True)
     reference_number = db.Column(db.String(50), nullable=True)
     invoice_status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
     account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=False)
@@ -36,10 +37,10 @@ class Invoice(db.Model, Auditable):
     payment_date = db.Column(db.DateTime, nullable=True)
     refund = db.Column(db.Integer, nullable=True)
 
-    def save(self):
-        """Save status."""
-        db.session.add(self)
-        db.session.commit()
+    @classmethod
+    def find_by_id(cls, identfier: int):
+        """Return a Invoice by id."""
+        return cls.query.get(identfier)
 
 
 class InvoiceSchema(ma.ModelSchema):
