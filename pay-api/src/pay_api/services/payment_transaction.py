@@ -263,12 +263,18 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
 
         receipt_details = pay_system_service.get_receipt(payment_account, receipt_number, invoice.invoice_number)
         if receipt_details:
+            # Find if a receipt exists with same receipt_number for the invoice
+            receipt: Receipt = Receipt.find_by_invoice_id_and_receipt_number(invoice.id, receipt_details[0])
+            if not receipt.id:
+                receipt: Receipt = Receipt()
+                receipt.receipt_number = receipt_details[0]
+                receipt.receipt_date = receipt_details[1]
+                receipt.receipt_amount = receipt_details[2]
+                receipt.invoice_id = invoice.id
+            else:
+                receipt.receipt_date = receipt_details[1]
+                receipt.receipt_amount = receipt_details[2]
             # Save receipt details to DB.
-            receipt: Receipt = Receipt()
-            receipt.receipt_number = receipt_details[0]
-            receipt.receipt_date = receipt_details[1]
-            receipt.receipt_amount = receipt_details[2]
-            receipt.invoice_id = invoice.id
             receipt.save()
 
             invoice.paid = receipt.receipt_amount
