@@ -111,7 +111,7 @@ class PaybcService(PaymentSystemService, OAuthService):
 
         if not receipt_number:  # Find all receipts for the site and then match with invoice number
             receipts_response = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
-            for receipt in receipts_response:
+            for receipt in receipts_response.get('items'):
                 for invoice in receipt.get('invoices'):
                     if invoice.get('trx_number') == invoice_number:
                         receipt_number = receipt.get('receipt_number')
