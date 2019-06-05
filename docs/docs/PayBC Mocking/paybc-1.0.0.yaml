@@ -22,9 +22,9 @@ paths:
                 $ref: '#/components/schemas/Party'
               examples:
                 party_info:
-                  value: '{"access_token": "11111"}'                
+                  value: '{"access_token": "11111"}'
         '400':
-          description: BadRequest
+          description: BadRequest0000000000000000000
           content:
             application/json:
               schema:
@@ -52,7 +52,7 @@ paths:
                 $ref: '#/components/schemas/Party'
               examples:
                 party_info:
-                  value: '{"party_number": "11111", "business_number": "000000000", "customer_name": "party-post","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"accounts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/ "}]}'                
+                  value: '{"party_number": "11111", "business_number": "000000000", "customer_name": "customer","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"accounts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/ "}]}'
         '400':
           description: BadRequest
           content:
@@ -73,7 +73,7 @@ paths:
         description: Party Number.
         required: true
         schema:
-          type: string        
+          type: string
       requestBody:
         content:
           application/json:
@@ -89,11 +89,11 @@ paths:
                 $ref: '#/components/schemas/Party'
               examples:
                 party_info1:
-                  value: '{"party_number": "11111", "business_number": "000000000", "customer_name": "party-put","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"accounts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/ "}]}'
+                  value: '{"party_number": "11111", "business_number": "000000000", "customer_name": "customer","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"accounts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/ "}]}'
                 party_info2:
-                  value: '{"party_number": "22222", "business_number": "000000000", "customer_name": "party-put","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/22222/"},{"rel":"accounts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/22222/accs/ "}]}'  
+                  value: '{"party_number": "22222", "business_number": "000000000", "customer_name": "customer","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/22222/"},{"rel":"accounts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/22222/accs/ "}]}'
                 party_info3:
-                  value: '{"party_number": "33333", "business_number": "000000000", "customer_name": "party-put","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/33333/"},{"rel":"accounts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/33333/accs/ "}]}'    
+                  value: '{"party_number": "33333", "business_number": "000000000", "customer_name": "customer","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/33333/"},{"rel":"accounts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/33333/accs/ "}]}'
         '400':
           description: BadRequest
           content:
@@ -112,7 +112,7 @@ paths:
         description: Party Number.
         required: true
         schema:
-          type: string        
+          type: string
       responses:
         '200':
           description: Success
@@ -122,11 +122,11 @@ paths:
                 $ref: '#/components/schemas/Party'
               examples:
                 party_info1:
-                  value: '{"party_number": "11111", "business_number": "000000000", "customer_name": "party-get","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"accounts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/ "}]}'
+                  value: '{"party_number": "11111", "business_number": "000000000", "customer_name": "customer","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"accounts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/ "}]}'
                 party_info2:
-                  value: '{"party_number": "22222", "business_number": "000000000", "customer_name": "party-get","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/22222/"},{"rel":"accounts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/22222/accs/ "}]}'  
+                  value: '{"party_number": "22222", "business_number": "000000000", "customer_name": "customer","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/22222/"},{"rel":"accounts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/22222/accs/ "}]}'
                 party_info3:
-                  value: '{"party_number": "33333", "business_number": "000000000", "customer_name": "party-get","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/33333/"},{"rel":"accounts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/33333/accs/ "}]}'    
+                  value: '{"party_number": "33333", "business_number": "000000000", "customer_name": "customer","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/33333/"},{"rel":"accounts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/33333/accs/ "}]}'
         '400':
           description: BadRequest
           content:
@@ -135,7 +135,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
     - name: party_number
-      in: path     
+      in: path
       required: true
       schema:
         format: string
@@ -143,10 +143,10 @@ paths:
       examples:
         party_info1:
           value: 11111
-        party_info2:  
+        party_info2:
           value: 22222
-        party_info3:  
-          value: 33333  
+        party_info3:
+          value: 33333
   /cfs/parties/{party_number}/accs/:
     post:
       tags:
@@ -169,7 +169,7 @@ paths:
                 $ref: '#/components/schemas/Acc'
               examples:
                 acc_info:
-                  value: '{"account_number":"4101","party_number":"11111","account_description":"acc-post","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4100/"},{"rel":"sites","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4100/sites/ "}]}'
+                  value: '{"account_number":"4101","party_number":"11111","account_description":"account","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/"},{"rel":"sites","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/ "}]}'
         '400':
           description: BadRequest
           content:
@@ -178,14 +178,14 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
     - name: party_number
-      in: path      
+      in: path
       required: true
       schema:
         format: string
         type: string
       examples:
         acc_info:
-          value: 11111       
+          value: 11111
   /cfs/parties/{party_number}/accs/{account_number}/:
     put:
       tags:
@@ -222,11 +222,11 @@ paths:
                 $ref: '#/components/schemas/Acc'
               examples:
                 acc_info1:
-                  value: '{"account_number":"4101","party_number":"11111","account_description":"acc-put","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/"},{"rel":"sites","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/ "}]}'
+                  value: '{"account_number":"4101","party_number":"11111","account_description":"account","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/"},{"rel":"sites","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/ "}]}'
                 acc_info2:
-                  value: '{"account_number":"4102","party_number":"11111","account_description":"acc-put","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4102/"},{"rel":"sites","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4102/sites/ "}]}' 
+                  value: '{"account_number":"4102","party_number":"11111","account_description":"account","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4102/"},{"rel":"sites","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4102/sites/ "}]}'
                 acc_info3:
-                  value: '{"account_number":"4103","party_number":"11111","account_description":"acc-put","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4103/"},{"rel":"sites","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4103/sites/ "}]}'    
+                  value: '{"account_number":"4103","party_number":"11111","account_description":"account","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4103/"},{"rel":"sites","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4103/sites/ "}]}'
         '400':
           description: BadRequest
           content:
@@ -261,44 +261,44 @@ paths:
                 $ref: '#/components/schemas/Acc'
               examples:
                 acc_info1:
-                  value: '{"account_number":"4101","party_number":"11111","account_description":"acc-get","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/"},{"rel":"sites","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/ "}]}'
+                  value: '{"account_number":"4101","party_number":"11111","account_description":"account","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/"},{"rel":"sites","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/ "}]}'
                 acc_info2:
-                  value: '{"account_number":"4102","party_number":"11111","account_description":"acc-get","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4102/"},{"rel":"sites","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4102/sites/ "}]}'
+                  value: '{"account_number":"4102","party_number":"11111","account_description":"account","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4102/"},{"rel":"sites","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4102/sites/ "}]}'
                 acc_info3:
-                  value: '{"account_number":"4103","party_number":"11111","account_description":"acc-get","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4103/"},{"rel":"sites","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4103/sites/ "}]}'
+                  value: '{"account_number":"4103","party_number":"11111","account_description":"account","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4103/"},{"rel":"sites","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4103/sites/ "}]}'
         '400':
           description: BadRequest
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-    parameters:    
+    parameters:
     - name: party_number
-      in: path      
-      required: true
-      schema:
-        format: string
-        type: string    
-      examples:        
-        acc_info1:
-          value: 11111      
-        acc_info2:
-          value: 11111
-        acc_info3:
-          value: 11111   
-    - name: account_number
-      in: path      
+      in: path
       required: true
       schema:
         format: string
         type: string
       examples:
         acc_info1:
-          value: 4101      
+          value: 11111
+        acc_info2:
+          value: 11111
+        acc_info3:
+          value: 11111
+    - name: account_number
+      in: path
+      required: true
+      schema:
+        format: string
+        type: string
+      examples:
+        acc_info1:
+          value: 4101
         acc_info2:
           value: 4102
         acc_info3:
-          value: 4103   
+          value: 4103
   /cfs/parties/{party_number}/accs/{account_number}/sites/:
     post:
       tags:
@@ -322,7 +322,7 @@ paths:
                 $ref: '#/components/schemas/Site'
               examples:
                 site_info:
-                  value: '{"site_number":"29921","party_number":"11111","account_number":"4101","customer_site_id":"1","site_name":"site-post","primary_bill_to":"Y","address_line_1":"TEST","address_line_2":null,"address_line_3":null,"city":"Victoria","postal_code":"A1A1A1","province":"BC","state":null,"country":"CA","customer_profile_class":"CAS_CORP_DEFAULT","provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29920/"},{"rel":"contacts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29920/conts/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29920/cms/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29920/deps/"},{"rel":"invoices","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29920/invs/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29920/rcpts/ "}]}'
+                  value: '{"site_number":"29921","party_number":"11111","account_number":"4101","customer_site_id":"1","site_name":"site","primary_bill_to":"Y","address_line_1":"TEST","address_line_2":null,"address_line_3":null,"city":"Victoria","postal_code":"A1A1A1","province":"BC","state":null,"country":"CA","customer_profile_class":"CAS_CORP_DEFAULT","provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"contacts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"invoices","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/ "}]}'
         '400':
           description: BadRequest
           content:
@@ -331,7 +331,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
     - name: party_number
-      in: path      
+      in: path
       required: true
       schema:
         format: string
@@ -340,7 +340,7 @@ paths:
         site_info:
           value: 11111
     - name: account_number
-      in: path      
+      in: path
       required: true
       schema:
         format: string
@@ -390,12 +390,12 @@ paths:
                 $ref: '#/components/schemas/Site'
               examples:
                 site_info1:
-                  value: '{"site_number":"29921","party_number":"11111","account_number":"4101","customer_site_id":"1","site_name":"site-put","primary_bill_to":"Y","address_line_1":"TEST","address_line_2":null,"address_line_3":null,"city":"Victoria","postal_code":"A1A1A1","province":"BC","state":null,"country":"CA","customer_profile_class":"CAS_CORP_DEFAULT","provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"contacts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"invoices","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/ "}]}'
+                  value: '{"site_number":"29921","party_number":"11111","account_number":"4101","customer_site_id":"1","site_name":"site","primary_bill_to":"Y","address_line_1":"TEST","address_line_2":null,"address_line_3":null,"city":"Victoria","postal_code":"A1A1A1","province":"BC","state":null,"country":"CA","customer_profile_class":"CAS_CORP_DEFAULT","provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"contacts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"invoices","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/ "}]}'
                 site_info2:
-                  value: '{"site_number":"29922","party_number":"11111","account_number":"4101","customer_site_id":"1","site_name":"site-put","primary_bill_to":"Y","address_line_1":"TEST","address_line_2":null,"address_line_3":null,"city":"Victoria","postal_code":"A1A1A1","province":"BC","state":null,"country":"CA","customer_profile_class":"CAS_CORP_DEFAULT","provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/"},{"rel":"contacts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/conts/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/cms/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/deps/"},{"rel":"invoices","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/invs/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/rcpts/ "}]}'
+                  value: '{"site_number":"29922","party_number":"11111","account_number":"4101","customer_site_id":"1","site_name":"site","primary_bill_to":"Y","address_line_1":"TEST","address_line_2":null,"address_line_3":null,"city":"Victoria","postal_code":"A1A1A1","province":"BC","state":null,"country":"CA","customer_profile_class":"CAS_CORP_DEFAULT","provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/"},{"rel":"contacts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/conts/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/cms/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/deps/"},{"rel":"invoices","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/invs/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/rcpts/ "}]}'
                 site_info3:
-                  value: '{"site_number":"29923","party_number":"11111","account_number":"4101","customer_site_id":"1","site_name":"site-put","primary_bill_to":"Y","address_line_1":"TEST","address_line_2":null,"address_line_3":null,"city":"Victoria","postal_code":"A1A1A1","province":"BC","state":null,"country":"CA","customer_profile_class":"CAS_CORP_DEFAULT","provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/"},{"rel":"contacts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/conts/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/cms/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/deps/"},{"rel":"invoices","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/invs/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/rcpts/ "}]}'
-                  
+                  value: '{"site_number":"29923","party_number":"11111","account_number":"4101","customer_site_id":"1","site_name":"site","primary_bill_to":"Y","address_line_1":"TEST","address_line_2":null,"address_line_3":null,"city":"Victoria","postal_code":"A1A1A1","province":"BC","state":null,"country":"CA","customer_profile_class":"CAS_CORP_DEFAULT","provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/"},{"rel":"contacts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/conts/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/cms/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/deps/"},{"rel":"invoices","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/invs/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/rcpts/ "}]}'
+
         '400':
           description: BadRequest
           content:
@@ -436,11 +436,11 @@ paths:
                 $ref: '#/components/schemas/Site'
               examples:
                 site_info1:
-                  value: '{"site_number":"29921","party_number":"11111","account_number":"4101","customer_site_id":"1","site_name":"site-get","primary_bill_to":"Y","address_line_1":"TEST","address_line_2":null,"address_line_3":null,"city":"Victoria","postal_code":"A1A1A1","province":"BC","state":null,"country":"CA","customer_profile_class":"CAS_CORP_DEFAULT","provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"contacts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"invoices","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/ "}]}'
+                  value: '{"site_number":"29921","party_number":"11111","account_number":"4101","customer_site_id":"1","site_name":"site","primary_bill_to":"Y","address_line_1":"TEST","address_line_2":null,"address_line_3":null,"city":"Victoria","postal_code":"A1A1A1","province":"BC","state":null,"country":"CA","customer_profile_class":"CAS_CORP_DEFAULT","provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"contacts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"invoices","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/ "}]}'
                 site_info2:
-                  value: '{"site_number":"29922","party_number":"11111","account_number":"4101","customer_site_id":"1","site_name":"site-get","primary_bill_to":"Y","address_line_1":"TEST","address_line_2":null,"address_line_3":null,"city":"Victoria","postal_code":"A1A1A1","province":"BC","state":null,"country":"CA","customer_profile_class":"CAS_CORP_DEFAULT","provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/"},{"rel":"contacts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/conts/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/cms/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/deps/"},{"rel":"invoices","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/invs/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/rcpts/ "}]}'
+                  value: '{"site_number":"29922","party_number":"11111","account_number":"4101","customer_site_id":"1","site_name":"site","primary_bill_to":"Y","address_line_1":"TEST","address_line_2":null,"address_line_3":null,"city":"Victoria","postal_code":"A1A1A1","province":"BC","state":null,"country":"CA","customer_profile_class":"CAS_CORP_DEFAULT","provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/"},{"rel":"contacts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/conts/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/cms/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/deps/"},{"rel":"invoices","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/invs/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/rcpts/ "}]}'
                 site_info3:
-                  value: '{"site_number":"29923","party_number":"11111","account_number":"4101","customer_site_id":"1","site_name":"site-get","primary_bill_to":"Y","address_line_1":"TEST","address_line_2":null,"address_line_3":null,"city":"Victoria","postal_code":"A1A1A1","province":"BC","state":null,"country":"CA","customer_profile_class":"CAS_CORP_DEFAULT","provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/"},{"rel":"contacts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/conts/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/cms/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/deps/"},{"rel":"invoices","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/invs/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/rcpts/ "}]}'               
+                  value: '{"site_number":"29923","party_number":"11111","account_number":"4101","customer_site_id":"1","site_name":"site","primary_bill_to":"Y","address_line_1":"TEST","address_line_2":null,"address_line_3":null,"city":"Victoria","postal_code":"A1A1A1","province":"BC","state":null,"country":"CA","customer_profile_class":"CAS_CORP_DEFAULT","provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/"},{"rel":"contacts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/conts/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/cms/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/deps/"},{"rel":"invoices","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/invs/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29923/rcpts/ "}]}'
         '400':
           description: BadRequest
           content:
@@ -449,7 +449,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
     - name: party_number
-      in: path  
+      in: path
       required: true
       schema:
         format: string
@@ -460,9 +460,9 @@ paths:
         site_info2:
           value: 11111
         site_info3:
-          value: 11111  
+          value: 11111
     - name: account_number
-      in: path     
+      in: path
       required: true
       schema:
         format: string
@@ -473,9 +473,9 @@ paths:
         site_info2:
           value: 4101
         site_info3:
-          value: 4101  
+          value: 4101
     - name: site_number
-      in: path      
+      in: path
       required: true
       schema:
         format: string
@@ -486,7 +486,7 @@ paths:
         site_info2:
           value: 29922
         site_info3:
-          value: 29923     
+          value: 29923
   /cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/conts/:
     post:
       tags:
@@ -510,7 +510,7 @@ paths:
                 $ref: '#/components/schemas/Cont'
               examples:
                 cont_info:
-                  value: '{"contact_number":"1000","party_number":"11111","account_number":"4101","site_number":"29921","full_name":"contact-post","first_name":"TEST","middle_name":null,"last_name":"TEST","phone_number":"1111111111","email_address":null,"provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/1000/ "}]}'
+                  value: '{"contact_number":"1001","party_number":"11111","account_number":"4101","site_number":"29921","full_name":"contact-full","first_name":"TEST","middle_name":null,"last_name":"TEST","phone_number":"1111111111","email_address":null,"provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/1001/ "}]}'
         '400':
           description: BadRequest
           content:
@@ -519,7 +519,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
     - name: party_number
-      in: path   
+      in: path
       required: true
       schema:
         format: string
@@ -528,7 +528,7 @@ paths:
         cont_info:
           value: 11111
     - name: account_number
-      in: path      
+      in: path
       required: true
       schema:
         format: string
@@ -537,14 +537,14 @@ paths:
         cont_info:
           value: 4101
     - name: site_number
-      in: path      
+      in: path
       required: true
       schema:
         format: string
         type: string
       examples:
         cont_info:
-          value: 29921 
+          value: 29921
   /cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/conts/{contact_number}:
     put:
       tags:
@@ -593,11 +593,11 @@ paths:
                 $ref: '#/components/schemas/Cont'
               examples:
                 cont_info1:
-                  value: '{"contact_number":"1001","party_number":"11111","account_number":"4101","site_number":"29921","full_name":"contact-put","first_name":"TEST","middle_name":null,"last_name":"TEST","phone_number":"1111111111","email_address":null,"provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/1001/ "}]}'
+                  value: '{"contact_number":"1001","party_number":"11111","account_number":"4101","site_number":"29921","full_name":"contact-full","first_name":"TEST","middle_name":null,"last_name":"TEST","phone_number":"1111111111","email_address":null,"provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/1001/ "}]}'
                 cont_info2:
-                  value: '{"contact_number":"1002","party_number":"11111","account_number":"4101","site_number":"29921","full_name":"contact-put","first_name":"TEST","middle_name":null,"last_name":"TEST","phone_number":"1111111111","email_address":null,"provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/1002/ "}]}'
+                  value: '{"contact_number":"1002","party_number":"11111","account_number":"4101","site_number":"29921","full_name":"contact-full","first_name":"TEST","middle_name":null,"last_name":"TEST","phone_number":"1111111111","email_address":null,"provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/1002/ "}]}'
                 cont_info3:
-                  value: '{"contact_number":"1003","party_number":"11111","account_number":"4101","site_number":"29921","full_name":"contact-put","first_name":"TEST","middle_name":null,"last_name":"TEST","phone_number":"1111111111","email_address":null,"provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/1003/ "}]}'  
+                  value: '{"contact_number":"1003","party_number":"11111","account_number":"4101","site_number":"29921","full_name":"contact-full","first_name":"TEST","middle_name":null,"last_name":"TEST","phone_number":"1111111111","email_address":null,"provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/1003/ "}]}'
         '400':
           description: BadRequest
           content:
@@ -644,11 +644,11 @@ paths:
                 $ref: '#/components/schemas/Cont'
               examples:
                 cont_info1:
-                  value: '{"contact_number":"1001","party_number":"11111","account_number":"4101","site_number":"29921","full_name":"contact-get","first_name":"TEST","middle_name":null,"last_name":"TEST","phone_number":"1111111111","email_address":null,"provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/1001/ "}]}'
+                  value: '{"contact_number":"1001","party_number":"11111","account_number":"4101","site_number":"29921","full_name":"contact-full","first_name":"TEST","middle_name":null,"last_name":"TEST","phone_number":"1111111111","email_address":null,"provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/1001/ "}]}'
                 cont_info2:
-                  value: '{"contact_number":"1002","party_number":"11111","account_number":"4101","site_number":"29921","full_name":"contact-get","first_name":"TEST","middle_name":null,"last_name":"TEST","phone_number":"1111111111","email_address":null,"provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/1002/ "}]}'
+                  value: '{"contact_number":"1002","party_number":"11111","account_number":"4101","site_number":"29921","full_name":"contact-full","first_name":"TEST","middle_name":null,"last_name":"TEST","phone_number":"1111111111","email_address":null,"provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/1002/ "}]}'
                 cont_info3:
-                  value: '{"contact_number":"1003","party_number":"11111","account_number":"4101","site_number":"29921","full_name":"contact-get","first_name":"TEST","middle_name":null,"last_name":"TEST","phone_number":"1111111111","email_address":null,"provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/1003/ "}]}'                  
+                  value: '{"contact_number":"1003","party_number":"11111","account_number":"4101","site_number":"29921","full_name":"contact-full","first_name":"TEST","middle_name":null,"last_name":"TEST","phone_number":"1111111111","email_address":null,"provider":"Finance and Citizens Services","links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/conts/1003/ "}]}'
         '400':
           description: BadRequest
           content:
@@ -657,33 +657,33 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
     - name: party_number
-      in: path      
+      in: path
       required: true
       schema:
         format: string
         type: string
       examples:
         cont_info1:
-          value: 11111  
+          value: 11111
         cont_info2:
-          value: 11111  
+          value: 11111
         cont_info3:
-          value: 11111         
+          value: 11111
     - name: account_number
-      in: path    
+      in: path
       required: true
       schema:
         format: string
         type: string
-      examples:        
+      examples:
         cont_info1:
           value: 4101
         cont_info2:
-          value: 4101  
+          value: 4101
         cont_info3:
-          value: 4101       
+          value: 4101
     - name: site_number
-      in: path      
+      in: path
       required: true
       schema:
         format: string
@@ -692,22 +692,22 @@ paths:
         cont_info1:
           value: 29921
         cont_info2:
-          value: 29921  
+          value: 29921
         cont_info3:
-          value: 29921        
+          value: 29921
     - name: contact_number
-      in: path  
+      in: path
       required: true
       schema:
         format: string
         type: string
       examples:
         cont_info1:
-          value: 1001  
+          value: 1001
         cont_info2:
-          value: 1002  
+          value: 1002
         cont_info3:
-          value: 1003  
+          value: 1003
   /cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/invs/:
     post:
       tags:
@@ -731,7 +731,7 @@ paths:
                 $ref: '#/components/schemas/Inv'
               examples:
                 inv_info:
-                  value: '{"invoice_number":"10020","pbc_ref_number":"10005","party_number":"11111","party_name":"invoice-post","account_name":"ABC Co-Ops","account_number":"4101","customer_site_id":"1","site_number":"29921","cust_trx_type":"WTS-INVOICE-STANDARD","transaction_date":"2019-04-12T07:00:00Z","batch_source":"MANUAL-OTHER","term_name":"IMMEDIATE","term_due_date":"2019-04-12T07:00:00Z","comments":"Invoice for ABC Co-Ops","late_charges_flag":null,"total":100,"amount_due":100,"amount_adjusted":null,"amount_adjusted_pending":null,"status":"OP","attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"provider":"Finance and Citizens Services","lines":[{"line_number":1,"line_type":"LINE","memo_line_name":"Test Memo Line","description":"Test Memo Line","unit_price":100,"quantity":1,"attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"adjustments":[]}],"adjustments":[],"credit_memos":[],"receipts":[],"links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10020/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/"},{"rel":"adjustments","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10020/adjs/ "}]}'
+                  value: '{"invoice_number":"10021","pbc_ref_number":"10005","party_number":"11111","party_name":"invoice","account_name":"ABC Co-Ops","account_number":"4101","customer_site_id":"1","site_number":"29921","cust_trx_type":"WTS-INVOICE-STANDARD","transaction_date":"2019-04-12T07:00:00Z","batch_source":"MANUAL-OTHER","term_name":"IMMEDIATE","term_due_date":"2019-04-12T07:00:00Z","comments":"Invoice for ABC Co-Ops","late_charges_flag":null,"total":100,"amount_due":100,"amount_adjusted":null,"amount_adjusted_pending":null,"status":"OP","attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"provider":"Finance and Citizens Services","lines":[{"line_number":1,"line_type":"LINE","memo_line_name":"Test Memo Line","description":"Test Memo Line","unit_price":100,"quantity":1,"attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"adjustments":[]}],"adjustments":[],"credit_memos":[],"receipts":[],"links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10021/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/"},{"rel":"adjustments","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10021/adjs/ "}]}'
         '400':
           description: BadRequest
           content:
@@ -740,7 +740,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
     - name: party_number
-      in: path   
+      in: path
       required: true
       schema:
         format: string
@@ -749,7 +749,7 @@ paths:
         inv_info:
           value: 11111
     - name: account_number
-      in: path      
+      in: path
       required: true
       schema:
         format: string
@@ -758,14 +758,14 @@ paths:
         inv_info:
           value: 4101
     - name: site_number
-      in: path      
+      in: path
       required: true
       schema:
         format: string
         type: string
       examples:
         inv_info:
-          value: 29921  
+          value: 29921
   /cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/invs/{invoice_number}/:
     put:
       tags:
@@ -814,11 +814,11 @@ paths:
                 $ref: '#/components/schemas/Inv'
               examples:
                 inv_info1:
-                  value: '{"invoice_number":"10021","pbc_ref_number":"10005","party_number":"11111","party_name":"invoice-put","account_name":"ABC Co-Ops","account_number":"4101","customer_site_id":"1","site_number":"29921","cust_trx_type":"WTS-INVOICE-STANDARD","transaction_date":"2019-04-12T07:00:00Z","batch_source":"MANUAL-OTHER","term_name":"IMMEDIATE","term_due_date":"2019-04-12T07:00:00Z","comments":"Invoice for ABC Co-Ops","late_charges_flag":null,"total":100,"amount_due":100,"amount_adjusted":null,"amount_adjusted_pending":null,"status":"OP","attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"provider":"Finance and Citizens Services","lines":[{"line_number":1,"line_type":"LINE","memo_line_name":"Test Memo Line","description":"Test Memo Line","unit_price":100,"quantity":1,"attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"adjustments":[]}],"adjustments":[],"credit_memos":[],"receipts":[],"links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10021/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/"},{"rel":"adjustments","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10021/adjs/ "}]}'
+                  value: '{"invoice_number":"10021","pbc_ref_number":"10005","party_number":"11111","party_name":"invoice","account_name":"ABC Co-Ops","account_number":"4101","customer_site_id":"1","site_number":"29921","cust_trx_type":"WTS-INVOICE-STANDARD","transaction_date":"2019-04-12T07:00:00Z","batch_source":"MANUAL-OTHER","term_name":"IMMEDIATE","term_due_date":"2019-04-12T07:00:00Z","comments":"Invoice for ABC Co-Ops","late_charges_flag":null,"total":100,"amount_due":100,"amount_adjusted":null,"amount_adjusted_pending":null,"status":"OP","attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"provider":"Finance and Citizens Services","lines":[{"line_number":1,"line_type":"LINE","memo_line_name":"Test Memo Line","description":"Test Memo Line","unit_price":100,"quantity":1,"attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"adjustments":[]}],"adjustments":[],"credit_memos":[],"receipts":[],"links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10021/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/"},{"rel":"adjustments","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10021/adjs/ "}]}'
                 inv_info2:
-                  value: '{"invoice_number":"10022","pbc_ref_number":"10005","party_number":"11111","party_name":"invoice-put","account_name":"ABC Co-Ops","account_number":"4101","customer_site_id":"1","site_number":"29921","cust_trx_type":"WTS-INVOICE-STANDARD","transaction_date":"2019-04-12T07:00:00Z","batch_source":"MANUAL-OTHER","term_name":"IMMEDIATE","term_due_date":"2019-04-12T07:00:00Z","comments":"Invoice for ABC Co-Ops","late_charges_flag":null,"total":100,"amount_due":100,"amount_adjusted":null,"amount_adjusted_pending":null,"status":"OP","attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"provider":"Finance and Citizens Services","lines":[{"line_number":1,"line_type":"LINE","memo_line_name":"Test Memo Line","description":"Test Memo Line","unit_price":100,"quantity":1,"attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"adjustments":[]}],"adjustments":[],"credit_memos":[],"receipts":[],"links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10022/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/"},{"rel":"adjustments","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10022/adjs/ "}]}'
+                  value: '{"invoice_number":"10022","pbc_ref_number":"10005","party_number":"11111","party_name":"invoice","account_name":"ABC Co-Ops","account_number":"4101","customer_site_id":"1","site_number":"29921","cust_trx_type":"WTS-INVOICE-STANDARD","transaction_date":"2019-04-12T07:00:00Z","batch_source":"MANUAL-OTHER","term_name":"IMMEDIATE","term_due_date":"2019-04-12T07:00:00Z","comments":"Invoice for ABC Co-Ops","late_charges_flag":null,"total":100,"amount_due":100,"amount_adjusted":null,"amount_adjusted_pending":null,"status":"OP","attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"provider":"Finance and Citizens Services","lines":[{"line_number":1,"line_type":"LINE","memo_line_name":"Test Memo Line","description":"Test Memo Line","unit_price":100,"quantity":1,"attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"adjustments":[]}],"adjustments":[],"credit_memos":[],"receipts":[],"links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10022/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/"},{"rel":"adjustments","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10022/adjs/ "}]}'
                 inv_info3:
-                  value: '{"invoice_number":"10023","pbc_ref_number":"10005","party_number":"11111","party_name":"invoice-put","account_name":"ABC Co-Ops","account_number":"4101","customer_site_id":"1","site_number":"29921","cust_trx_type":"WTS-INVOICE-STANDARD","transaction_date":"2019-04-12T07:00:00Z","batch_source":"MANUAL-OTHER","term_name":"IMMEDIATE","term_due_date":"2019-04-12T07:00:00Z","comments":"Invoice for ABC Co-Ops","late_charges_flag":null,"total":100,"amount_due":100,"amount_adjusted":null,"amount_adjusted_pending":null,"status":"OP","attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"provider":"Finance and Citizens Services","lines":[{"line_number":1,"line_type":"LINE","memo_line_name":"Test Memo Line","description":"Test Memo Line","unit_price":100,"quantity":1,"attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"adjustments":[]}],"adjustments":[],"credit_memos":[],"receipts":[],"links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10023/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/"},{"rel":"adjustments","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10023/adjs/ "}]}'                    
+                  value: '{"invoice_number":"10023","pbc_ref_number":"10005","party_number":"11111","party_name":"invoice","account_name":"ABC Co-Ops","account_number":"4101","customer_site_id":"1","site_number":"29921","cust_trx_type":"WTS-INVOICE-STANDARD","transaction_date":"2019-04-12T07:00:00Z","batch_source":"MANUAL-OTHER","term_name":"IMMEDIATE","term_due_date":"2019-04-12T07:00:00Z","comments":"Invoice for ABC Co-Ops","late_charges_flag":null,"total":100,"amount_due":100,"amount_adjusted":null,"amount_adjusted_pending":null,"status":"OP","attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"provider":"Finance and Citizens Services","lines":[{"line_number":1,"line_type":"LINE","memo_line_name":"Test Memo Line","description":"Test Memo Line","unit_price":100,"quantity":1,"attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"adjustments":[]}],"adjustments":[],"credit_memos":[],"receipts":[],"links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10023/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/"},{"rel":"adjustments","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10023/adjs/ "}]}'
         '400':
           description: BadRequest
           content:
@@ -865,11 +865,11 @@ paths:
                 $ref: '#/components/schemas/Inv'
               examples:
                 inv_info1:
-                  value: '{"invoice_number":"10021","pbc_ref_number":"10005","party_number":"11111","party_name":"invoice-get","account_name":"ABC Co-Ops","account_number":"4101","customer_site_id":"1","site_number":"29921","cust_trx_type":"WTS-INVOICE-STANDARD","transaction_date":"2019-04-12T07:00:00Z","batch_source":"MANUAL-OTHER","term_name":"IMMEDIATE","term_due_date":"2019-04-12T07:00:00Z","comments":"Invoice for ABC Co-Ops","late_charges_flag":null,"total":100,"amount_due":100,"amount_adjusted":null,"amount_adjusted_pending":null,"status":"OP","attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"provider":"Finance and Citizens Services","lines":[{"line_number":1,"line_type":"LINE","memo_line_name":"Test Memo Line","description":"Test Memo Line","unit_price":100,"quantity":1,"attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"adjustments":[]}],"adjustments":[],"credit_memos":[],"receipts":[],"links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10021/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/"},{"rel":"adjustments","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10021/adjs/ "}]}'
+                  value: '{"invoice_number":"10021","pbc_ref_number":"10005","party_number":"11111","party_name":"invoice","account_name":"ABC Co-Ops","account_number":"4101","customer_site_id":"1","site_number":"29921","cust_trx_type":"WTS-INVOICE-STANDARD","transaction_date":"2019-04-12T07:00:00Z","batch_source":"MANUAL-OTHER","term_name":"IMMEDIATE","term_due_date":"2019-04-12T07:00:00Z","comments":"Invoice for ABC Co-Ops","late_charges_flag":null,"total":100,"amount_due":100,"amount_adjusted":null,"amount_adjusted_pending":null,"status":"OP","attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"provider":"Finance and Citizens Services","lines":[{"line_number":1,"line_type":"LINE","memo_line_name":"Test Memo Line","description":"Test Memo Line","unit_price":100,"quantity":1,"attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"adjustments":[]}],"adjustments":[],"credit_memos":[],"receipts":[],"links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10021/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/"},{"rel":"adjustments","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10021/adjs/ "}]}'
                 inv_info2:
-                  value: '{"invoice_number":"10022","pbc_ref_number":"10005","party_number":"11111","party_name":"invoice-get","account_name":"ABC Co-Ops","account_number":"4101","customer_site_id":"1","site_number":"29921","cust_trx_type":"WTS-INVOICE-STANDARD","transaction_date":"2019-04-12T07:00:00Z","batch_source":"MANUAL-OTHER","term_name":"IMMEDIATE","term_due_date":"2019-04-12T07:00:00Z","comments":"Invoice for ABC Co-Ops","late_charges_flag":null,"total":100,"amount_due":100,"amount_adjusted":null,"amount_adjusted_pending":null,"status":"OP","attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"provider":"Finance and Citizens Services","lines":[{"line_number":1,"line_type":"LINE","memo_line_name":"Test Memo Line","description":"Test Memo Line","unit_price":100,"quantity":1,"attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"adjustments":[]}],"adjustments":[],"credit_memos":[],"receipts":[],"links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10022/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/"},{"rel":"adjustments","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10022/adjs/ "}]}'
+                  value: '{"invoice_number":"10022","pbc_ref_number":"10005","party_number":"11111","party_name":"invoice","account_name":"ABC Co-Ops","account_number":"4101","customer_site_id":"1","site_number":"29921","cust_trx_type":"WTS-INVOICE-STANDARD","transaction_date":"2019-04-12T07:00:00Z","batch_source":"MANUAL-OTHER","term_name":"IMMEDIATE","term_due_date":"2019-04-12T07:00:00Z","comments":"Invoice for ABC Co-Ops","late_charges_flag":null,"total":100,"amount_due":100,"amount_adjusted":null,"amount_adjusted_pending":null,"status":"OP","attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"provider":"Finance and Citizens Services","lines":[{"line_number":1,"line_type":"LINE","memo_line_name":"Test Memo Line","description":"Test Memo Line","unit_price":100,"quantity":1,"attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"adjustments":[]}],"adjustments":[],"credit_memos":[],"receipts":[],"links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10022/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/"},{"rel":"adjustments","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10022/adjs/ "}]}'
                 inv_info3:
-                  value: '{"invoice_number":"10023","pbc_ref_number":"10005","party_number":"11111","party_name":"invoice-get","account_name":"ABC Co-Ops","account_number":"4101","customer_site_id":"1","site_number":"29921","cust_trx_type":"WTS-INVOICE-STANDARD","transaction_date":"2019-04-12T07:00:00Z","batch_source":"MANUAL-OTHER","term_name":"IMMEDIATE","term_due_date":"2019-04-12T07:00:00Z","comments":"Invoice for ABC Co-Ops","late_charges_flag":null,"total":100,"amount_due":100,"amount_adjusted":null,"amount_adjusted_pending":null,"status":"OP","attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"provider":"Finance and Citizens Services","lines":[{"line_number":1,"line_type":"LINE","memo_line_name":"Test Memo Line","description":"Test Memo Line","unit_price":100,"quantity":1,"attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"adjustments":[]}],"adjustments":[],"credit_memos":[],"receipts":[],"links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10023/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/"},{"rel":"adjustments","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10023/adjs/ "}]}'                                    
+                  value: '{"invoice_number":"10023","pbc_ref_number":"10005","party_number":"11111","party_name":"invoice","account_name":"ABC Co-Ops","account_number":"4101","customer_site_id":"1","site_number":"29921","cust_trx_type":"WTS-INVOICE-STANDARD","transaction_date":"2019-04-12T07:00:00Z","batch_source":"MANUAL-OTHER","term_name":"IMMEDIATE","term_due_date":"2019-04-12T07:00:00Z","comments":"Invoice for ABC Co-Ops","late_charges_flag":null,"total":100,"amount_due":100,"amount_adjusted":null,"amount_adjusted_pending":null,"status":"OP","attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"provider":"Finance and Citizens Services","lines":[{"line_number":1,"line_type":"LINE","memo_line_name":"Test Memo Line","description":"Test Memo Line","unit_price":100,"quantity":1,"attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"adjustments":[]}],"adjustments":[],"credit_memos":[],"receipts":[],"links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10023/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/"},{"rel":"adjustments","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10023/adjs/ "}]}'
         '400':
           description: BadRequest
           content:
@@ -878,7 +878,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
     - name: party_number
-      in: path     
+      in: path
       required: true
       schema:
         format: string
@@ -889,9 +889,9 @@ paths:
         inv_info2:
           value: 11111
         inv_info3:
-          value: 11111  
+          value: 11111
     - name: account_number
-      in: path     
+      in: path
       required: true
       schema:
         format: string
@@ -904,7 +904,7 @@ paths:
         inv_info3:
           value: 4101
     - name: site_number
-      in: path   
+      in: path
       required: true
       schema:
         format: string
@@ -915,20 +915,20 @@ paths:
         inv_info2:
           value: 29921
         inv_info3:
-          value: 29921        
+          value: 29921
     - name: invoice_number
-      in: path  
+      in: path
       required: true
       schema:
         format: string
         type: string
       examples:
         inv_info1:
-          value: 10021   
+          value: 10021
         inv_info2:
           value: 10022
         inv_info3:
-          value: 10020             
+          value: 10023
   /cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/rcpts/:
     post:
       tags:
@@ -952,7 +952,7 @@ paths:
                 $ref: '#/components/schemas/Rcpt'
               examples:
                 rcpt_info:
-                  value: '{"receipt_number":"123451","party_number":"11111","party_name":"receipt-post","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "10020","amount_to_apply": "$9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
+                  value: '{"receipt_number":"123451","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "10021","amount_to_apply": "$9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'
         '400':
           description: BadRequest
           content:
@@ -975,7 +975,7 @@ paths:
                 $ref: '#/components/schemas/Rcpt'
               examples:
                 rcpt_info:
-                  value: '[{"receipt_number":"123451","party_number":"11111","party_name":"receipt-post","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "10020","amount_to_apply": "9.85","lines": [{"line_number": "23","amount_to_apply": "9.5" }] }] }]'                     
+                  value: '{"items":[{"receipt_number":"123451","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "10021","amount_to_apply": "9.85","lines": [{"line_number": "23","amount_to_apply": "9.5" }] }] }]}'
         '400':
           description: BadRequest
           content:
@@ -984,7 +984,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
     - name: party_number
-      in: path  
+      in: path
       required: true
       schema:
         format: string
@@ -993,7 +993,7 @@ paths:
         rcpt_info:
           value: 11111
     - name: account_number
-      in: path  
+      in: path
       required: true
       schema:
         format: string
@@ -1002,14 +1002,14 @@ paths:
         rcpt_info:
           value: 4101
     - name: site_number
-      in: path      
+      in: path
       required: true
       schema:
         format: string
         type: string
       examples:
         rcpt_info:
-          value: 29921  
+          value: 29921
   /cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/rcpts/{receipt_number}/:
     put:
       tags:
@@ -1058,11 +1058,11 @@ paths:
                 $ref: '#/components/schemas/Rcpt'
               examples:
                 rcpt_info1:
-                  value: '{"receipt_number":"123451","party_number":"11111","party_name":"receipt-get","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "555555","amount_to_apply": "$9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
+                  value: '{"receipt_number":"123451","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "10021","amount_to_apply": "$9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'
                 rcpt_info2:
-                  value: '{"receipt_number":"123452","party_number":"11111","party_name":"receipt-get","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "555555","amount_to_apply": "$9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
+                  value: '{"receipt_number":"123452","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "10021","amount_to_apply": "$9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'
                 rcpt_info3:
-                  value: '{"receipt_number":"123453","party_number":"11111","party_name":"receipt-get","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "555555","amount_to_apply": "$9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
+                  value: '{"receipt_number":"123453","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "10021","amount_to_apply": "$9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'
         '400':
           description: BadRequest
           content:
@@ -1109,11 +1109,11 @@ paths:
                 $ref: '#/components/schemas/Rcpt'
               examples:
                 rcpt_info1:
-                  value: '{"receipt_number":"123451","party_number":"11111","party_name":"receipt-get","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "555555","amount_to_apply": "$9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
+                  value: '{"receipt_number":"123451","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "10021","amount_to_apply": "$9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'
                 rcpt_info2:
-                  value: '{"receipt_number":"123452","party_number":"11111","party_name":"receipt-get","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "555555","amount_to_apply": "$9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
+                  value: '{"receipt_number":"123452","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "10021","amount_to_apply": "$9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'
                 rcpt_info3:
-                  value: '{"receipt_number":"123453","party_number":"11111","party_name":"receipt-get","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "555555","amount_to_apply": "$9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
+                  value: '{"receipt_number":"123453","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "10021","amount_to_apply": "$9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'
         '400':
           description: BadRequest
           content:
@@ -1122,7 +1122,7 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
     - name: party_number
-      in: path  
+      in: path
       required: true
       schema:
         format: string
@@ -1133,10 +1133,9 @@ paths:
         rcpt_info2:
           value: 11111
         rcpt_info3:
-          value: 11111 
-         
+          value: 11111
     - name: account_number
-      in: path      
+      in: path
       required: true
       schema:
         format: string
@@ -1149,7 +1148,7 @@ paths:
         rcpt_info3:
           value: 4101
     - name: site_number
-      in: path     
+      in: path
       required: true
       schema:
         format: string
@@ -1160,20 +1159,20 @@ paths:
         rcpt_info2:
           value: 29921
         rcpt_info3:
-          value: 29921        
+          value: 29921
     - name: receipt_number
-      in: path  
+      in: path
       required: true
       schema:
         format: string
         type: string
       examples:
         rcpt_info1:
-          value: 123451   
+          value: 123451
         rcpt_info2:
           value: 123452
         rcpt_info3:
-          value: 123453 
+          value: 123453
   /cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/invs/{invoice_number}/adjs/:
     post:
       tags:
@@ -1222,16 +1221,16 @@ paths:
                 $ref: '#/components/schemas/Inv'
               examples:
                 inv_info:
-                  value: '{"invoice_number":"10021","pbc_ref_number":"10005","party_number":"55555","party_name":"Steven-invoice-put","account_name":"ABC Co-Ops","account_number":"4102","customer_site_id":"1","site_number":"29921","cust_trx_type":"WTS-INVOICE-STANDARD","transaction_date":"2019-04-12T07:00:00Z","batch_source":"MANUAL-OTHER","term_name":"IMMEDIATE","term_due_date":"2019-04-12T07:00:00Z","comments":"Invoice for ABC Co-Ops","late_charges_flag":null,"total":100,"amount_due":100,"amount_adjusted":null,"amount_adjusted_pending":null,"status":"OP","attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"provider":"Finance and Citizens Services","lines":[{"line_number":1,"line_type":"LINE","memo_line_name":"Test Memo Line","description":"Test Memo Line","unit_price":100,"quantity":1,"attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"adjustments":[]}],"adjustments":[],"credit_memos":[],"receipts":[],"links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/invs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/invs/10021/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/deps/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/cms/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/rcpts/"},{"rel":"adjustments","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/98530/accs/4102/sites/29921/invs/10021/adjs/ "}]}'
+                  value: '{"invoice_number":"10021","pbc_ref_number":"10005","party_number":"11111","party_name":"adjust","account_name":"ABC Co-Ops","account_number":"4101","customer_site_id":"1","site_number":"29921","cust_trx_type":"WTS-INVOICE-STANDARD","transaction_date":"2019-04-12T07:00:00Z","batch_source":"MANUAL-OTHER","term_name":"IMMEDIATE","term_due_date":"2019-04-12T07:00:00Z","comments":"Invoice for ABC Co-Ops","late_charges_flag":null,"total":100,"amount_due":100,"amount_adjusted":null,"amount_adjusted_pending":null,"status":"OP","attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"provider":"Finance and Citizens Services","lines":[{"line_number":1,"line_type":"LINE","memo_line_name":"Test Memo Line","description":"Test Memo Line","unit_price":100,"quantity":1,"attribute_category":null,"attribute1":null,"attribute2":null,"attribute3":null,"attribute4":null,"attribute5":null,"attribute6":null,"attribute7":null,"attribute8":null,"attribute9":null,"attribute10":null,"attribute11":null,"attribute12":null,"attribute13":null,"attribute14":null,"attribute15":null,"adjustments":[]}],"adjustments":[],"credit_memos":[],"receipts":[],"links":[{"rel":"collection","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/"},{"rel":"parent","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/"},{"rel":"self","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10021/"},{"rel":"deposits","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/"},{"rel":"credit_memos","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/"},{"rel":"receipts","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/"},{"rel":"adjustments","href":"https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10021/adjs/ "}]}'
         '400':
           description: BadRequest
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-
     parameters:
     - name: party_number
+      required: true
       in: path
       schema:
         format: string
@@ -1240,6 +1239,7 @@ paths:
         inv_info:
           value: 11111
     - name: account_number
+      required: true
       in: path
       schema:
         format: string
@@ -1248,6 +1248,7 @@ paths:
         inv_info:
           value: 4101
     - name: site_number
+      required: true
       in: path
       schema:
         format: string
@@ -1256,13 +1257,14 @@ paths:
         inv_info:
           value: 29921
     - name: invoice_number
+      required: true
       in: path
       schema:
         format: string
         type: string
       examples:
         inv_info:
-          value: 10020
+          value: 10021
 components:
   schemas:
     ErrorResponse:
@@ -1532,112 +1534,38 @@ components:
         site_number:
           type: string
           description: Site Number.
-        invoice_number:
+        receipt_number:
           type: string
-          description: Invoice Number.
-        pbc_ref_number:
+          description: Receipt Number.
+        receipt_date:
           type: string
-          description: PayBC Reference Number.
+          description: Receipt Date.
+        receipt_amount:
+          type: string
+          description: Receipt Amount.
         party_name:
           type: string
           description: Party Name.
-        account_name:
+        payment_method:
           type: string
-          description: Account Name.
-        customer_site_id:
-          type: string
-          description: Customer Site ID.
-        cust_trx_type:
-          type: string
-          description: Customer Transaction Type.
-        transaction_date:
-          type: string
-          description: Transaction Date.
-        batch_source:
-          type: string
-          description: Batch Source.
-        term_name:
-          type: string
-          description: Term Name.
-        term_due_date:
-          type: string
-          description: Term Due Date.
+          description: Payment Method.
         comments:
           type: string
           description: Comments.
-        late_charges_flag:
-          type: string
-          description: Late Charges Flag.
-        total:
-          type: integer
-          description: Total.
-        amount_due:
-          type: integer
-          description: Amount Due.
-        amount_adjusted:
-          type: integer
-          description: Amount Adjusted.
-        amount_adjusted_pending:
-          type: integer
-          description: Amount Adjusted Pending.
-        status:
-          type: string
-          description: Status.
-        attribute_category:
-          type: string
-          description: Attribute Category.
-        attribute1:
-          type: string
-          description: Attribute 1.
-        attribute2:
-          type: string
-          description: Attribute 2.
-        attribute3:
-          type: string
-          description: Attribute 3.
-        attribute4:
-          type: string
-          description: Attribute 4.
-        attribute5:
-          type: string
-          description: Attribute 5.
-        attribute6:
-          type: string
-          description: Attribute 6.
-        attribute7:
-          type: string
-          description: Attribute 7.
-        attribute8:
-          type: string
-          description: Attribute 8.
-        attribute9:
-          type: string
-          description: Attribute 9.
-        attribute10:
-          type: string
-          description: Attribute 10.
-        attribute11:
-          type: string
-          description: Attribute 11.
-        attribute12:
-          type: string
-          description: Attribute 12.
-        attribute13:
-          type: string
-          description: Attribute 13.
-        attribute14:
-          type: string
-          description: Attribute 14.
-        attribute15:
-          type: string
-          description: Attribute 15.
-        provider:
-          type: string
-          description: Provider.
-        links:
-          type: array
-          items:
-            $ref: "#/components/schemas/Link"        
+        invoices:
+          type: object
+          properties:
+            trx_number:
+              type: string
+            amount_to_apply:
+              type: string
+            lines:
+              type: object
+              properties:
+                line_number:
+                  type: string
+                amount_to_apply:
+                  type: string
     Link:
       type: object
       properties:
