@@ -125,3 +125,13 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         current_app.logger.debug('>create_payment')
 
         return payment.asdict()
+
+    def get_payment(cls, payment_id):
+        payment: Payment = None
+        try:
+            payment: Payment = Payment.find_by_id(payment_id)
+            return payment
+        except Exception as e:
+            raise e
+
+

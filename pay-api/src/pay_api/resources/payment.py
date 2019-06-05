@@ -57,16 +57,11 @@ class Payment(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
-    def get():
-        """Create the payment records."""
-        request_json = request.get_json()
-        # Validate the input request
-        valid_format, errors = schema_utils.validate(request_json, 'payment_request')
-        if not valid_format:
-            return jsonify({'code': 'PAY003', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
+    def get(trasaction_id):
+        """Get the payment records."""
 
         try:
-            response, status = PaymentService.get_payment(request_json), HTTPStatus.OK
+            response, status = PaymentService.get_payment(trasaction_id), HTTPStatus.OK
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         return jsonify(response), status
