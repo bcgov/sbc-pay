@@ -52,7 +52,7 @@ class Transaction(Resource):
         return jsonify(response), status
 
 
-@cors_preflight('GET')
+@cors_preflight('PUT,GET')
 @API.route('/<string:transaction_identifier>', methods=['GET', 'PUT', 'OPTIONS'])
 class Transactions(Resource):
     """Endpoint resource to get transaction."""
