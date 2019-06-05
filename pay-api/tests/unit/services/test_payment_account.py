@@ -43,6 +43,21 @@ def test_account_saved_from_new(session):
     assert pa.asdict() is not None
 
 
+def test_account_find_by_id(session):
+    """Assert that the payment is saved to the table."""
+    payment_account = factory_payment_account()
+    payment_account.save()
+
+    pa = PaymentAccountService.find_by_id(payment_account.id)
+
+    assert pa is not None
+    assert pa.id is not None
+    assert pa.corp_number is not None
+    assert pa.corp_type_code is not None
+    assert pa.payment_system_code is not None
+    assert pa.asdict() is not None
+
+
 def test_account_invalid_lookup(session):
     """Invalid account test."""
     p = PaymentAccountService.find_account('1234', 'CP', 'PAYBC')
@@ -53,5 +68,15 @@ def test_account_invalid_lookup(session):
     from pay_api.exceptions import BusinessException
     from pay_api.utils.errors import Error
     with pytest.raises(BusinessException) as excinfo:
-        p = PaymentAccountService.find_account(None, None, None)
+        PaymentAccountService.find_account(None, None, None)
     assert excinfo.value.status == Error.PAY004.status
+
+
+def test_account_find_by_invalid_id(session):
+    """Invalid account test."""
+    import pytest
+    from pay_api.exceptions import BusinessException
+    from pay_api.utils.errors import Error
+    with pytest.raises(BusinessException) as excinfo:
+        PaymentAccountService.find_by_id(999)
+    assert excinfo.value.status == Error.PAY009.status

@@ -29,16 +29,16 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
     """
 
     @staticmethod
-    def create(payment_method: str = None, corp_type: str = None):
+    def create(payment_method: str = None, corp_type: str = None, payment_system: str = None):
         """Create a subclass of PaymentSystemService based on input params."""
         current_app.logger.debug('<create')
 
         _instance: PaymentSystemService = None
         current_app.logger.debug('payment_method: {}, corp_type : {}'.format(payment_method, corp_type))
-        if not payment_method and not corp_type:
+        if not payment_method and not corp_type and not payment_system:
             raise BusinessException(Error.PAY003)
 
-        if payment_method == 'CC' and corp_type == 'CP':
+        if (payment_method == 'CC' and corp_type == 'CP') or payment_system == 'PAYBC':
             _instance = PaybcService()
         else:
             raise BusinessException(Error.PAY003)

@@ -185,3 +185,16 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
 
         current_app.logger.debug('>find_payment_account')
         return payment_account
+
+    @staticmethod
+    def find_by_id(account_id: int):
+        """Find account by id."""
+        account_dao = PaymentAccountModel.find_by_id(account_id)
+        if not account_dao:
+            raise BusinessException(Error.PAY009)
+
+        account = PaymentAccount()
+        account._dao = account_dao  # pylint: disable=protected-access
+
+        current_app.logger.debug('>find_by_id')
+        return account

@@ -77,3 +77,39 @@ def test_invoice_invalid_lookup(session):
 
     assert invoice is not None
     assert invoice.id is None
+
+
+def test_invoice_find_by_valid_payment_id(session):
+    """Assert that the invoice is saved to the table."""
+    payment_account = factory_payment_account()
+    payment = factory_payment()
+    payment_account.save()
+    payment.save()
+    i = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
+    i.save()
+
+    invoice = Invoice_service.find_by_payment_identfier(payment.id)
+
+    assert invoice is not None
+    assert invoice.id is not None
+    assert invoice.payment_id is not None
+    assert invoice.invoice_number is None
+    assert invoice.reference_number is None
+    assert invoice.invoice_status_code is not None
+    assert invoice.refund is None
+    assert invoice.payment_date is None
+    assert invoice.total is not None
+    assert invoice.paid is None
+    assert invoice.created_on is not None
+    assert invoice.created_by is not None
+    assert invoice.updated_by is None
+    assert invoice.updated_on is None
+    assert invoice.account_id is not None
+
+
+def test_invoice_find_by_invalid_payment_id(session):
+    """Test invalid lookup."""
+    invoice = Invoice_service.find_by_payment_identfier(999)
+
+    assert invoice is not None
+    assert invoice.id is None

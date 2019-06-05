@@ -26,7 +26,7 @@ class FeeCode(db.Model, CodeTable):
     __tablename__ = 'fee_code'
 
     code = db.Column(db.String(10), primary_key=True)
-    amount = db.Column('amount', db.Integer, nullable=False)
+    amount = db.Column('amount', db.Float, nullable=False)
 
     def save(self):
         """Save fee code."""

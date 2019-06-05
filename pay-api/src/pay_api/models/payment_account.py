@@ -47,6 +47,11 @@ class PaymentAccount(db.Model, BaseModel):
 
         return account
 
+    @classmethod
+    def find_by_id(cls, identifier: int):
+        """Return a Account by id."""
+        return cls.query.get(identifier)
+
 
 class PaymentAccountSchema(ma.ModelSchema):
     """Main schema used to serialize the Payment Account."""

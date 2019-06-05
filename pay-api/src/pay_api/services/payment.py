@@ -19,7 +19,6 @@ from typing import Any, Dict
 from flask import current_app
 
 from pay_api.models import Payment as PaymentModel
-from pay_api.models.fee_schedule import FeeSchedule
 from pay_api.utils.enums import Status
 
 
@@ -155,6 +154,10 @@ class Payment():  # pylint: disable=too-many-instance-attributes
     def flush(self):
         """Save the information to the DB."""
         return self._dao.flush()
+
+    def save(self):
+        """Save the information to the DB."""
+        return self._dao.save()
 
     def asdict(self):
         """Return the payment as a python dict."""
