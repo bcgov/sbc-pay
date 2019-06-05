@@ -36,7 +36,7 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         self._fee_code: str = None
         self._fee_start_date: date = None
         self._fee_end_date: date = None
-        self._fee_amount: int = None
+        self._fee_amount: float = None
         self._filing_type: str = None
 
     @property
@@ -54,7 +54,7 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         self.fee_code: str = self._dao.fee_code
         self.fee_start_date: date = self._dao.fee_start_date
         self.fee_end_date: date = self._dao.fee_end_date
-        self._fee_amount: int = self._dao.fee.amount
+        self._fee_amount: float = self._dao.fee.amount
         self._filing_type: str = self._dao.filing_type.description
 
     @property

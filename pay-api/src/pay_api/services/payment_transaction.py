@@ -13,11 +13,24 @@
 # limitations under the License.
 """Service to manage Fee Calculation."""
 
+import urllib.parse
+import uuid
 from datetime import datetime
 
 from flask import current_app
 
+from pay_api.exceptions import BusinessException
+from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
+from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.services.invoice import Invoice
+from pay_api.services.payment_account import PaymentAccount
+from pay_api.services.receipt import Receipt
+from pay_api.utils.enums import PaymentSystem, Status
+from pay_api.utils.errors import Error
+
+from .invoice import InvoiceModel
+from .payment import Payment
 
 
 class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
@@ -26,10 +39,10 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
     def __init__(self):
         """Return a User Service object."""
         self.__dao = None
-        self._id: int = None
+        self._id: uuid = None
         self._status_code: str = None
         self._payment_id: int = None
-        self._redirect_url: str = None
+        self._client_system_url: str = None
         self._pay_system_url: str = None
         self._transaction_start_time: datetime = None
         self._transaction_end_time: datetime = None
@@ -43,10 +56,10 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
     @_dao.setter
     def _dao(self, value):
         self.__dao = value
-        self.id: int = self._dao.id
+        self.id: uuid = self._dao.id
         self.status_code: str = self._dao.status_code
         self.payment_id: int = self._dao.payment_id
-        self.redirect_url: str = self._dao.redirect_url
+        self.client_system_url: str = self._dao.client_system_url
         self.pay_system_url: str = self._dao.pay_system_url
         self.transaction_start_time: datetime = self._dao.transaction_start_time
         self.transaction_end_time: datetime = self._dao.transaction_end_time
@@ -57,7 +70,7 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         return self._id
 
     @id.setter
-    def id(self, value: int):
+    def id(self, value: uuid):
         """Set the id."""
         self._id = value
         self._dao.id = value
@@ -85,15 +98,15 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         self._dao.payment_id = value
 
     @property
-    def redirect_url(self):
-        """Return the redirect_url."""
-        return self._redirect_url
+    def client_system_url(self):
+        """Return the client_system_url."""
+        return self._client_system_url
 
-    @redirect_url.setter
-    def redirect_url(self, value: str):
-        """Set the redirect_url."""
-        self._redirect_url = value
-        self._dao.redirect_url = value
+    @client_system_url.setter
+    def client_system_url(self, value: str):
+        """Set the client_system_url."""
+        self._client_system_url = value
+        self._dao.client_system_url = value
 
     @property
     def pay_system_url(self):
@@ -128,17 +141,151 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         self._transaction_end_time = value
         self._dao.transaction_end_time = value
 
+    def asdict(self):
+        """Return the transaction as a python dict."""
+        d = {
+            'id': self._id,
+            'payment_id': self._payment_id,
+            'client_system_url': self._client_system_url,
+            'pay_system_url': self._pay_system_url,
+            'status_code': self._status_code,
+            'transaction_start_time': self._transaction_start_time
+        }
+        if self._transaction_end_time:
+            d['transaction_end_time'] = self._transaction_end_time
+        return d
+
     def save(self):
-        """Save the information to the DB."""
+        """Save the fee schedule information."""
         return self._dao.save()
 
+    def flush(self):
+        """Save the information to the DB."""
+        return self._dao.flush()
+
     @staticmethod
-    def find_by_id(transaction_id: int):
+    def create(payment_identifier: str, redirect_uri: str):
+        """Create transaction record."""
+        current_app.logger.debug('<create transaction')
+        # Lookup payment record
+        payment: Payment = Payment.find_by_id(payment_identifier)
+
+        print(payment.payment_status_code)
+
+        if not payment.id:
+            raise BusinessException(Error.PAY005)
+        if payment.payment_status_code == Status.COMPLETED.value:  # Cannot start transaction on completed payment
+            raise BusinessException(Error.PAY006)
+
+        # If there are active transactions (status=CREATED), then invalidate all of them and create a new one.
+        existing_transactions = PaymentTransactionModel.find_by_payment_id(payment.id)
+        if existing_transactions:
+            for existing_transaction in existing_transactions:
+                if existing_transaction.status_code != Status.CANCELLED.value:
+                    existing_transaction.status_code = Status.CANCELLED.value
+                    existing_transaction.transaction_end_time = datetime.now()
+                    existing_transaction.save()
+
+        transaction = PaymentTransaction()
+        transaction.payment_id = payment.id
+        transaction.client_system_url = redirect_uri
+        transaction.status_code = Status.CREATED.value
+        transaction_dao = transaction.flush()
+        transaction._dao = transaction_dao  # pylint: disable=protected-access
+        transaction.pay_system_url = transaction.build_pay_system_url(payment, transaction.id)
+        transaction_dao = transaction.save()
+
+        transaction = PaymentTransaction()
+        transaction._dao = transaction_dao  # pylint: disable=protected-access
+        current_app.logger.debug('>create transaction')
+
+        return transaction
+
+    @staticmethod
+    def build_pay_system_url(payment: Payment, transaction_id: uuid):
+        """Build pay system url which will be used to redirect to the payment system."""
+        current_app.logger.debug('<build_pay_system_url')
+        if payment.payment_system_code == PaymentSystem.PAYBC.value:
+            invoice = InvoiceModel.find_by_payment_id(payment.id)
+
+            pay_system_url = current_app.config.get('PAYBC_PORTAL_URL') + '?inv_number={}&pbc_ref_number={}'.format(
+                invoice.invoice_number, invoice.reference_number)
+
+            pay_web_transaction_url = current_app.config.get('AUTH_WEB_PAY_TRANSACTION_URL')
+            return_url = urllib.parse.quote(
+                f'{pay_web_transaction_url}?payment_id={payment.id}&transaction_id={transaction_id}', '')
+            pay_system_url += f'&redirect_url={return_url}'
+
+        current_app.logger.debug('>build_pay_system_url')
+        return pay_system_url
+
+    @staticmethod
+    def find_by_id(payment_identifier: int, transaction_id: uuid):
         """Find transaction by id."""
-        transaction_dao = PaymentTransactionModel.find_by_id(transaction_id)
+        transaction_dao = PaymentTransactionModel.find_by_id_and_payment_id(transaction_id, payment_identifier)
+        if not transaction_dao:
+            raise BusinessException(Error.PAY008)
 
         transaction = PaymentTransaction()
         transaction._dao = transaction_dao  # pylint: disable=protected-access
 
         current_app.logger.debug('>find_by_id')
+        return transaction
+
+    @staticmethod
+    def update_transaction(payment_identifier: int, transaction_id: uuid, receipt_number: str):
+        """Update transaction record.
+
+        Does the following:
+        1. Find the payment record with the id
+        2. Find the invoice record using the payment identifier
+        3. Call the pay system service and get the receipt details
+        4. Save the receipt record
+        5. Change the status of Invoice
+        6. Change the status of Payment
+        7. Update the transaction record
+        """
+        transaction_dao: PaymentTransactionModel = PaymentTransactionModel.find_by_id_and_payment_id(transaction_id,
+                                                                                                     payment_identifier)
+        if not transaction_dao:
+            raise BusinessException(Error.PAY008)
+        if transaction_dao.status_code == Status.COMPLETED.value:
+            raise BusinessException(Error.PAY006)
+
+        payment: Payment = Payment.find_by_id(payment_identifier)
+
+        pay_system_service: PaymentSystemService = PaymentSystemFactory.create(
+            payment_system=payment.payment_system_code)
+
+        invoice = Invoice.find_by_payment_identfier(payment_identifier)
+
+        payment_account = PaymentAccount.find_by_id(invoice.account_id)
+
+        receipt_details = pay_system_service.get_receipt(payment_account, receipt_number, invoice.invoice_number)
+        if receipt_details:
+            # Save receipt details to DB.
+            receipt: Receipt = Receipt()
+            receipt.receipt_number = receipt_details[0]
+            receipt.receipt_date = receipt_details[1]
+            receipt.receipt_amount = receipt_details[2]
+            receipt.invoice_id = invoice.id
+            receipt.save()
+
+            invoice.paid = receipt.receipt_amount
+            if invoice.paid == invoice.total:
+                invoice.invoice_status_code = Status.COMPLETED.value
+                payment.payment_status_code = Status.COMPLETED.value
+                payment.save()
+            elif 0 < invoice.paid < invoice.total:
+                invoice.invoice_status_code = Status.PARTIAL.value
+            invoice.save()
+
+        transaction_dao.transaction_end_time = datetime.now()
+        transaction_dao.status_code = Status.COMPLETED.value
+        transaction_dao = transaction_dao.save()
+
+        transaction = PaymentTransaction()
+        transaction._dao = transaction_dao  # pylint: disable=protected-access
+
+        current_app.logger.debug('>update_transaction')
         return transaction

@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests to assure the CorpType Class.
+"""Tests to assure the Receipt Class.
 
-Test-Suite to ensure that the CorpType Class is working as expected.
+Test-Suite to ensure that the Receipt Class is working as expected.
 """
+
 from datetime import datetime
 
-from pay_api.models import Invoice, Payment, PaymentAccount
-from pay_api.models.payment_transaction import PaymentTransaction
+from pay_api.models import Invoice, Payment, PaymentAccount, Receipt
 
 
 def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
@@ -42,21 +42,8 @@ def factory_invoice(payment_id: str, account_id: str):
                    total=0, created_by='test', created_on=datetime.now())
 
 
-def factory_payment_transaction(payment_id: str, status_code: str = 'DRAFT', redirect_url: str = 'http://google.com/',
-                                pay_system_url: str = 'http://google.com',
-                                transaction_start_time: datetime = datetime.now(),
-                                transaction_end_time: datetime = datetime.now()):
-    """Factory."""
-    return PaymentTransaction(payment_id=payment_id,
-                              status_code=status_code,
-                              client_system_url=redirect_url,
-                              pay_system_url=pay_system_url,
-                              transaction_start_time=transaction_start_time,
-                              transaction_end_time=transaction_end_time)
-
-
-def test_payment_transaction(session):
-    """Assert a payment_transaction is stored.
+def test_receipt(session):
+    """Assert a receipt is stored.
 
     Start with a blank database.
     """
@@ -65,7 +52,36 @@ def test_payment_transaction(session):
     payment_account.save()
     payment.save()
     invoice = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
-    invoice.save()
-    payment_transaction = factory_payment_transaction(payment_id=payment.id)
-    payment_transaction.save()
-    assert payment_transaction.id is not None
+    invoice = invoice.save()
+    receipt = Receipt()
+    receipt.receipt_amount = 100
+    receipt.receipt_date = datetime.now()
+    receipt.invoice_id = invoice.id
+    receipt.receipt_number = '123451'
+    receipt = receipt.save()
+    assert receipt.id is not None
+
+
+def test_receipt_find_by_id(session):
+    """Assert a invoice is stored.
+
+    Start with a blank database.
+    """
+    payment_account = factory_payment_account()
+    payment = factory_payment()
+    payment_account.save()
+    payment.save()
+    invoice = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
+    invoice = invoice.save()
+    receipt = Receipt()
+    receipt.receipt_amount = 100
+    receipt.receipt_date = datetime.now()
+    receipt.invoice_id = invoice.id
+    receipt.receipt_number = '123451'
+    receipt = receipt.save()
+    receipt = receipt.find_by_id(receipt.id)
+    assert receipt is not None
+    receipt = receipt.find_by_invoice_id_and_receipt_number(invoice.id, '123451')
+    assert receipt is not None
+    receipt = receipt.find_by_invoice_id_and_receipt_number(invoice.id, None)
+    assert receipt is not None

@@ -36,9 +36,9 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         self._reference_number: str = None
         self._invoice_status_code: str = None
         self._account_id: str = None
-        self._total: int = None
-        self._paid: int = None
-        self._refund: int = None
+        self._total: float = None
+        self._paid: float = None
+        self._refund: float = None
         self._payment_date: datetime = None
         self._created_by: str = None
         self._created_on: datetime = None
@@ -60,11 +60,11 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         self.reference_number: str = self._dao.reference_number
         self.invoice_status_code: str = self._dao.invoice_status_code
         self.account_id: str = self._dao.account_id
-        self.refund: int = self._dao.refund
+        self.refund: float = self._dao.refund
         self.payment_date: datetime = self._dao.payment_date
 
-        self.total: int = self._dao.total
-        self.paid: int = self._dao.paid
+        self.total: float = self._dao.total
+        self.paid: float = self._dao.paid
         self.created_by: str = self._dao.created_by
         self.created_on: datetime = self._dao.created_on
         self.updated_by: str = self._dao.updated_by
@@ -142,7 +142,7 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         return self._refund
 
     @refund.setter
-    def refund(self, value: int):
+    def refund(self, value: float):
         """Set the refund."""
         self._refund = value
         self._dao.refund = value
@@ -164,7 +164,7 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         return self._total
 
     @total.setter
-    def total(self, value: int):
+    def total(self, value: float):
         """Set the fee_start_date."""
         self._total = value
         self._dao.total = value
@@ -175,7 +175,7 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         return self._paid
 
     @paid.setter
-    def paid(self, value: int):
+    def paid(self, value: float):
         """Set the paid."""
         self._paid = value
         self._dao.paid = value
@@ -255,6 +255,17 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
     def find_by_id(identfier: int):
         """Find invoice by id."""
         invoice_dao = InvoiceModel.find_by_id(identfier)
+
+        invoice = Invoice()
+        invoice._dao = invoice_dao  # pylint: disable=protected-access
+
+        current_app.logger.debug('>find_by_id')
+        return invoice
+
+    @staticmethod
+    def find_by_payment_identfier(identfier: int):
+        """Find invoice by payment identifier."""
+        invoice_dao = InvoiceModel.find_by_payment_id(identfier)
 
         invoice = Invoice()
         invoice._dao = invoice_dao  # pylint: disable=protected-access

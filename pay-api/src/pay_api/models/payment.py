@@ -22,7 +22,7 @@ from .db import db, ma
 from .payment_system import PaymentSystem
 
 
-class Payment(db.Model, Audit, BaseModel):
+class Payment(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Payment ."""
 
     __tablename__ = 'payment'

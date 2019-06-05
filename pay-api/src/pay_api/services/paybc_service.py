@@ -17,6 +17,7 @@ import base64
 import datetime
 from typing import Any, Dict, Tuple
 
+from dateutil import parser
 from flask import current_app
 
 from pay_api.services.base_payment_system import PaymentSystemService
@@ -25,6 +26,7 @@ from pay_api.utils.constants import (
     DEFAULT_COUNTRY, DEFAULT_JURISDICTION, PAYBC_ADJ_ACTIVITY_NAME, PAYBC_BATCH_SOURCE, PAYBC_CUST_TRX_TYPE,
     PAYBC_LINE_TYPE, PAYBC_MEMO_LINE_NAME, PAYBC_TERM_NAME)
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem
+
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -56,7 +58,7 @@ class PaybcService(PaymentSystemService, OAuthService):
             batch_source=PAYBC_BATCH_SOURCE,
             cust_trx_type=PAYBC_CUST_TRX_TYPE,
             transaction_date=curr_time,
-            transaction_number=invoice_number,
+            transaction_number=f'{invoice_number}-{payment_account.corp_number}',
             gl_date=curr_time,
             term_name=PAYBC_TERM_NAME,
             comments='',
@@ -80,23 +82,52 @@ class PaybcService(PaymentSystemService, OAuthService):
         access_token = self.__get_token().json().get('access_token')
         invoice_response = self.post(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, invoice)
 
+        invoice = {
+            'invoice_number': invoice_response.json().get('invoice_number', None),
+            'reference_number': invoice_response.json().get('pbc_ref_number', None)
+        }
+
         current_app.logger.debug('>create_invoice')
-        return invoice_response.json()
+        return invoice
 
     def cancel_invoice(self, account_details: Tuple[str], inv_number: str):
         """Adjust the invoice to zero."""
         access_token: str = self.__get_token().json().get('access_token')
         invoice = self.__get_invoice(account_details, inv_number, access_token)
         for line in invoice.get('lines'):
-            amount: int = line.get('unit_price') * line.get('quantity')
+            amount: float = line.get('unit_price') * line.get('quantity')
 
             current_app.logger.debug('Adding asjustment for line item : {} -- {}'
                                      .format(line.get('line_number'), amount))
             self.__add_adjustment(account_details, inv_number, 'Cancelling Invoice',
                                   0 - amount, line=line.get('line_number'), access_token=access_token)
 
-    def get_receipt(self):
-        """Get receipt from paybc."""
+    def get_receipt(self, payment_account: PaymentAccount, receipt_number: str, invoice_number: str):
+        """Get receipt from paybc for the receipt number or get receipt against invoice number."""
+        access_token: str = self.__get_token().json().get('access_token')
+        current_app.logger.debug('<Getting receipt')
+        receipt_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/rcpts/'.format(
+            payment_account.party_number, payment_account.account_number, payment_account.site_number)
+
+        if not receipt_number:  # Find all receipts for the site and then match with invoice number
+            receipts_response = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+            for receipt in receipts_response:
+                for invoice in receipt.get('invoices'):
+                    if invoice.get('trx_number') == invoice_number:
+                        receipt_number = receipt.get('receipt_number')
+
+        if receipt_number:
+            receipt_url = receipt_url + f'{receipt_number}/'
+            receipt_response = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+            receipt_date = parser.parse(receipt_response.get('receipt_date'))
+
+            amount: float = 0
+            for invoice in receipt_response.get('invoices'):
+                if invoice.get('trx_number') == invoice_number:
+                    amount += float(invoice.get('amount_to_apply'))
+
+            return receipt_number, receipt_date, amount
+        return None
 
     def __create_party(self, access_token: str = None, party_name: str = None):
         """Create a party record in PayBC."""
@@ -189,8 +220,9 @@ class PaybcService(PaymentSystemService, OAuthService):
         current_app.logger.debug('<__get_invoice')
         invoice_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/' \
             .format(account_details[0], account_details[1], account_details[2], inv_number)
+        print(invoice_url)
 
         invoice_response = self.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
-
+        print(invoice_response)
         current_app.logger.debug('>__get_invoice')
         return invoice_response.json()

@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests to assure the CorpType Class.
+"""Tests to assure the Receipt Service.
 
-Test-Suite to ensure that the CorpType Class is working as expected.
+Test-Suite to ensure that the Receipt Service is working as expected.
 """
+
 from datetime import datetime
 
 from pay_api.models import Invoice, Payment, PaymentAccount
-from pay_api.models.payment_transaction import PaymentTransaction
+from pay_api.services.receipt import Receipt as ReceiptService
 
 
 def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
@@ -42,30 +43,42 @@ def factory_invoice(payment_id: str, account_id: str):
                    total=0, created_by='test', created_on=datetime.now())
 
 
-def factory_payment_transaction(payment_id: str, status_code: str = 'DRAFT', redirect_url: str = 'http://google.com/',
-                                pay_system_url: str = 'http://google.com',
-                                transaction_start_time: datetime = datetime.now(),
-                                transaction_end_time: datetime = datetime.now()):
-    """Factory."""
-    return PaymentTransaction(payment_id=payment_id,
-                              status_code=status_code,
-                              client_system_url=redirect_url,
-                              pay_system_url=pay_system_url,
-                              transaction_start_time=transaction_start_time,
-                              transaction_end_time=transaction_end_time)
-
-
-def test_payment_transaction(session):
-    """Assert a payment_transaction is stored.
-
-    Start with a blank database.
-    """
+def test_receipt_saved_from_new(session):
+    """Assert that the receipt is saved to the table."""
     payment_account = factory_payment_account()
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
-    invoice.save()
-    payment_transaction = factory_payment_transaction(payment_id=payment.id)
-    payment_transaction.save()
-    assert payment_transaction.id is not None
+    i = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
+    i.save()
+    receipt_service = ReceiptService()
+    receipt_service.receipt_number = '1234567890'
+    receipt_service.invoice_id = i.id
+    receipt_service.receipt_date = datetime.now()
+    receipt_service.receipt_amount = 100
+    receipt_service = receipt_service.save()
+
+    receipt_service = ReceiptService.find_by_id(receipt_service.id)
+
+    assert receipt_service is not None
+    assert receipt_service.id is not None
+    assert receipt_service.receipt_date is not None
+    assert receipt_service.invoice_id is not None
+
+    receipt_service = ReceiptService.find_by_invoice_id_and_receipt_number(i.id, receipt_service.receipt_number)
+
+    assert receipt_service is not None
+    assert receipt_service.id is not None
+
+
+def test_receipt_invalid_lookup(session):
+    """Test invalid lookup."""
+    receipt = ReceiptService.find_by_id(999)
+
+    assert receipt is not None
+    assert receipt.id is None
+
+    receipt = ReceiptService.find_by_invoice_id_and_receipt_number(999, '1234567890')
+
+    assert receipt is not None
+    assert receipt.id is None

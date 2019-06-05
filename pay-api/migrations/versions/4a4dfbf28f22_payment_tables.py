@@ -42,8 +42,8 @@ def upgrade():
                     sa.Column('payment_system_code', sa.String(length=10), nullable=False),
                     sa.Column('payment_method_code', sa.String(length=10), nullable=False),
                     sa.Column('payment_status_code', sa.String(length=10), nullable=False),
-                    sa.Column('total', sa.Integer(), nullable=False),
-                    sa.Column('paid', sa.Integer(), nullable=True),
+                    sa.Column('total', sa.Float(), nullable=False),
+                    sa.Column('paid', sa.Float(), nullable=True),
                     sa.ForeignKeyConstraint(['payment_method_code'], ['payment_method.code'], ),
                     sa.ForeignKeyConstraint(['payment_status_code'], ['status_code.code'], ),
                     sa.ForeignKeyConstraint(['payment_system_code'], ['payment_system.code'], ),
@@ -72,53 +72,30 @@ def upgrade():
                     sa.Column('reference_number', sa.String(length=50), nullable=True),
                     sa.Column('invoice_status_code', sa.String(length=10), nullable=False),
                     sa.Column('account_id', sa.Integer(), nullable=False),
-                    sa.Column('total', sa.Integer(), nullable=False),
-                    sa.Column('paid', sa.Integer(), nullable=True),
+                    sa.Column('total', sa.Float(), nullable=False),
+                    sa.Column('paid', sa.Float(), nullable=True),
                     sa.Column('payment_date', sa.DateTime(), nullable=True),
-                    sa.Column('refund', sa.Integer(), nullable=True),
+                    sa.Column('refund', sa.Float(), nullable=True),
                     sa.ForeignKeyConstraint(['account_id'], ['payment_account.id'], ),
                     sa.ForeignKeyConstraint(['invoice_status_code'], ['status_code.code'], ),
                     sa.ForeignKeyConstraint(['payment_id'], ['payment.id'], ),
                     sa.PrimaryKeyConstraint('id')
                     )
-    op.create_table('fee_item',
-                    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-                    sa.Column('invoice_id', sa.Integer(), nullable=False),
-                    sa.Column('filing_fees', sa.Integer(), nullable=False),
-                    sa.Column('fee_schedule_id', sa.Integer(), nullable=False),
-                    sa.Column('processing_fees', sa.Integer(), nullable=True),
-                    sa.Column('service_fees', sa.Integer(), nullable=True),
-                    sa.Column('description', sa.String(length=200), nullable=True),
-                    sa.Column('gst', sa.Integer(), nullable=True),
-                    sa.Column('pst', sa.Integer(), nullable=True),
-                    sa.Column('total', sa.Integer(), nullable=False),
-                    sa.ForeignKeyConstraint(['fee_schedule_id'], ['fee_schedule.fee_schedule_id'], ),
-                    sa.ForeignKeyConstraint(['invoice_id'], ['invoice.id'], ),
-                    sa.PrimaryKeyConstraint('id')
-                    )
+
     op.create_table('payment_line_item',
                     sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
                     sa.Column('invoice_id', sa.Integer(), nullable=False),
-                    sa.Column('filing_fees', sa.Integer(), nullable=False),
+                    sa.Column('filing_fees', sa.Float(), nullable=False),
                     sa.Column('fee_schedule_id', sa.Integer(), nullable=False),
                     sa.Column('quantity', sa.Integer(), nullable=True),
-                    sa.Column('processing_fees', sa.Integer(), nullable=True),
-                    sa.Column('service_fees', sa.Integer(), nullable=True),
+                    sa.Column('processing_fees', sa.Float(), nullable=True),
+                    sa.Column('service_fees', sa.Float(), nullable=True),
                     sa.Column('description', sa.String(length=200), nullable=True),
-                    sa.Column('gst', sa.Integer(), nullable=True),
-                    sa.Column('pst', sa.Integer(), nullable=True),
-                    sa.Column('total', sa.Integer(), nullable=False),
+                    sa.Column('gst', sa.Float(), nullable=True),
+                    sa.Column('pst', sa.Float(), nullable=True),
+                    sa.Column('total', sa.Float(), nullable=False),
                     sa.ForeignKeyConstraint(['fee_schedule_id'], ['fee_schedule.fee_schedule_id'], ),
                     sa.ForeignKeyConstraint(['invoice_id'], ['invoice.id'], ),
-                    sa.PrimaryKeyConstraint('id')
-                    )
-    op.create_table('payment_transaction',
-                    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-                    sa.Column('status_code', sa.String(length=10), nullable=False),
-                    sa.Column('invoice_id', sa.Integer(), nullable=False),
-                    sa.Column('date', sa.DateTime(), nullable=False),
-                    sa.ForeignKeyConstraint(['invoice_id'], ['invoice.id'], ),
-                    sa.ForeignKeyConstraint(['status_code'], ['status_code.code'], ),
                     sa.PrimaryKeyConstraint('id')
                     )
     op.create_table('receipt',
@@ -126,29 +103,18 @@ def upgrade():
                     sa.Column('invoice_id', sa.Integer(), nullable=False),
                     sa.Column('receipt_number', sa.String(length=50), nullable=False),
                     sa.Column('receipt_date', sa.DateTime(), nullable=True),
-                    sa.Column('receipt_amount', sa.Integer(), nullable=True),
+                    sa.Column('receipt_amount', sa.Float(), nullable=True),
                     sa.ForeignKeyConstraint(['invoice_id'], ['invoice.id'], ),
                     sa.PrimaryKeyConstraint('id')
                     )
-    op.create_table('transaction',
-                    sa.Column('id', sa.Integer(), autoincrement=True, nullable=False),
-                    sa.Column('status_code', sa.String(length=10), nullable=False),
-                    sa.Column('invoice_id', sa.Integer(), nullable=False),
-                    sa.Column('date', sa.DateTime(), nullable=False),
-                    sa.ForeignKeyConstraint(['invoice_id'], ['invoice.id'], ),
-                    sa.ForeignKeyConstraint(['status_code'], ['status_code.code'], ),
-                    sa.PrimaryKeyConstraint('id')
-                    )
+
     # ### end Alembic commands ###
 
 
 def downgrade():
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_table('transaction')
     op.drop_table('receipt')
-    op.drop_table('payment_transaction')
     op.drop_table('payment_line_item')
-    op.drop_table('fee_item')
     op.drop_table('invoice')
     op.drop_table('payment_account')
     op.drop_table('payment')

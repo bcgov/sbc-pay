@@ -19,6 +19,7 @@ from flask import current_app
 
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.utils.enums import Status
+
 from .base_payment_system import PaymentSystemService
 from .fee_schedule import FeeSchedule
 from .invoice import Invoice
@@ -107,7 +108,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             current_app.logger.debug('Updating invoice record')
             invoice = Invoice.find_by_id(invoice.id)
             invoice.invoice_status_code = Status.CREATED.value
-            invoice.reference_number = pay_system_invoice.get('pbc_ref_number', None)
+            invoice.reference_number = pay_system_invoice.get('reference_number', None)
             invoice.invoice_number = pay_system_invoice.get('invoice_number', None)
             invoice.save()
             payment.commit()
