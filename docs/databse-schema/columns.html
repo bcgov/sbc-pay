@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>auth Database</title>
+  <title>postgres Database</title>
   <!-- Tell the browser to be responsive to screen width -->
   <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
   <link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
@@ -46,7 +46,7 @@
     <nav class="navbar navbar-static-top">
       <div class="container">
         <div class="navbar-header">
-          <a href="index.html" class="navbar-brand"><b>auth</b> Database</a>
+          <a href="index.html" class="navbar-brand"><b>postgres</b> Database</a>
           <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse">
             <i class="fa fa-bars"></i>
           </button>
@@ -106,20 +106,42 @@
 				</thead>
 				<tbody>
 					<tr>
-					 <td>users</td>
+					 <td>payment_account</td>
 					 <td>Table</td>
-					 <td>passwd</td>
+					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>payment_system_code</td>
 					 <td>varchar</td>
-					 <td>100</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment</td>
+					 <td>Table</td>
+					 <td>updated_on</td>
+					 <td>timestamp</td>
+					 <td>29</td>
 					 <td title='nullable'>√</td>
 					 <td title=''></td>
 					 <td>null</td>
 					 <td></td>
 					</tr>
 					<tr>
-					 <td>action_log</td>
+					 <td>payment_account</td>
 					 <td>Table</td>
-					 <td>target_id</td>
+					 <td>corp_number</td>
+					 <td>varchar</td>
+					 <td>20</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_line_item</td>
+					 <td>Table</td>
+					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>fee_schedule_id</td>
 					 <td>int4</td>
 					 <td>10</td>
 					 <td title=''></td>
@@ -128,306 +150,31 @@
 					 <td></td>
 					</tr>
 					<tr>
-					 <td>affiliation</td>
+					 <td>payment_line_item</td>
 					 <td>Table</td>
-					 <td>last_access_date</td>
-					 <td>date</td>
-					 <td>13</td>
+					 <td>total</td>
+					 <td>float8</td>
+					 <td>17</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>receipt</td>
+					 <td>Table</td>
+					 <td>receipt_date</td>
+					 <td>timestamp</td>
+					 <td>29</td>
 					 <td title='nullable'>√</td>
 					 <td title=''></td>
 					 <td>null</td>
 					 <td></td>
 					</tr>
 					<tr>
-					 <td>action_log</td>
+					 <td>filing_type</td>
 					 <td>Table</td>
-					 <td>action_date</td>
-					 <td>date</td>
-					 <td>13</td>
-					 <td title=''></td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>affiliation</td>
-					 <td>Table</td>
-					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>affiliation_status_code</td>
-					 <td>varchar</td>
-					 <td>5</td>
-					 <td title=''></td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>affiliation</td>
-					 <td>Table</td>
-					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>affiliation_id</td>
-					 <td>serial</td>
-					 <td>10</td>
-					 <td title=''></td>
-					 <td title='Automatically updated by the database'>√</td>
-					 <td>nextval(&#39;affiliation_id_seq&#39;::regclass)</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>users</td>
-					 <td>Table</td>
-					 <td>email</td>
-					 <td>varchar</td>
-					 <td>254</td>
-					 <td title='nullable'>√</td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>affiliation</td>
-					 <td>Table</td>
-					 <td>effective_end_date</td>
-					 <td>date</td>
-					 <td>13</td>
-					 <td title='nullable'>√</td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>users</td>
-					 <td>Table</td>
-					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>user_type_code</td>
-					 <td>varchar</td>
-					 <td>20</td>
-					 <td title='nullable'>√</td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>affiliation_business</td>
-					 <td>Table</td>
-					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>business_id</td>
-					 <td>serial</td>
-					 <td>10</td>
-					 <td title=''></td>
-					 <td title='Automatically updated by the database'>√</td>
-					 <td>nextval(&#39;business_id_seq&#39;::regclass)</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>action_log</td>
-					 <td>Table</td>
-					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>action_code</td>
-					 <td>varchar</td>
-					 <td>20</td>
-					 <td title=''></td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>affiliation</td>
-					 <td>Table</td>
-					 <td>created_by_userid</td>
-					 <td>int4</td>
-					 <td>10</td>
-					 <td title='nullable'>√</td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>action_log</td>
-					 <td>Table</td>
-					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>log_id</td>
-					 <td>serial</td>
-					 <td>10</td>
-					 <td title=''></td>
-					 <td title='Automatically updated by the database'>√</td>
-					 <td>nextval(&#39;log_id_seq&#39;::regclass)</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>action_log</td>
-					 <td>Table</td>
-					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>user_id</td>
-					 <td>int4</td>
-					 <td>10</td>
-					 <td title=''></td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>action</td>
-					 <td>Table</td>
-					 <td>action_name</td>
-					 <td>varchar</td>
-					 <td>100</td>
-					 <td title=''></td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>users</td>
-					 <td>Table</td>
-					 <td>iss</td>
-					 <td>varchar</td>
-					 <td>1024</td>
-					 <td title='nullable'>√</td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td><p>From token. Keycloak base URL.</p></td>
-					</tr>
-					<tr>
-					 <td>affiliation</td>
-					 <td>Table</td>
-					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>user_id</td>
-					 <td>int4</td>
-					 <td>10</td>
-					 <td title=''></td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>affiliation_status</td>
-					 <td>Table</td>
-					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>status_code</td>
-					 <td>varchar</td>
-					 <td>20</td>
-					 <td title=''></td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>user_type</td>
-					 <td>Table</td>
-					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>user_type_code</td>
-					 <td>varchar</td>
-					 <td>20</td>
-					 <td title=''></td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>affiliation</td>
-					 <td>Table</td>
-					 <td>effective_start_date</td>
-					 <td>date</td>
-					 <td>13</td>
-					 <td title=''></td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>users</td>
-					 <td>Table</td>
-					 <td class='indexedColumn' title='Indexed'><i class='fa fa-sitemap fa-rotate-120' style='padding-right: 5px;'></i>username</td>
-					 <td>varchar</td>
-					 <td>100</td>
-					 <td title='nullable'>√</td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>users</td>
-					 <td>Table</td>
-					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>user_id</td>
-					 <td>serial</td>
-					 <td>10</td>
-					 <td title=''></td>
-					 <td title='Automatically updated by the database'>√</td>
-					 <td>nextval(&#39;users_id_seq&#39;::regclass)</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>affiliation_business</td>
-					 <td>Table</td>
-					 <td>corp_num</td>
-					 <td>varchar</td>
-					 <td>20</td>
-					 <td title='nullable'>√</td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>user_type</td>
-					 <td>Table</td>
-					 <td>user_type_name</td>
-					 <td>varchar</td>
-					 <td>50</td>
-					 <td title=''></td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>users</td>
-					 <td>Table</td>
-					 <td>lastname</td>
-					 <td>varchar</td>
-					 <td>200</td>
-					 <td title='nullable'>√</td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>users</td>
-					 <td>Table</td>
-					 <td class='indexedColumn' title='Indexed'><i class='fa fa-sitemap fa-rotate-120' style='padding-right: 5px;'></i>sub</td>
-					 <td>varchar</td>
-					 <td>36</td>
-					 <td title='nullable'>√</td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td><p>From token. Keycloak user id.</p></td>
-					</tr>
-					<tr>
-					 <td>action_log</td>
-					 <td>Table</td>
-					 <td>memo</td>
-					 <td>varchar</td>
-					 <td>250</td>
-					 <td title='nullable'>√</td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>action</td>
-					 <td>Table</td>
-					 <td>action_type</td>
-					 <td>varchar</td>
-					 <td>50</td>
-					 <td title='nullable'>√</td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>action_log</td>
-					 <td>Table</td>
-					 <td>target_type</td>
-					 <td>varchar</td>
-					 <td>50</td>
-					 <td title=''></td>
-					 <td title=''></td>
-					 <td>null</td>
-					 <td></td>
-					</tr>
-					<tr>
-					 <td>affiliation_status</td>
-					 <td>Table</td>
-					 <td>status_name</td>
+					 <td>description</td>
 					 <td>varchar</td>
 					 <td>200</td>
 					 <td title=''></td>
@@ -436,9 +183,20 @@
 					 <td></td>
 					</tr>
 					<tr>
-					 <td>affiliation</td>
+					 <td>payment_system</td>
 					 <td>Table</td>
-					 <td>creation_date</td>
+					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>code</td>
+					 <td>varchar</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>fee_schedule</td>
+					 <td>Table</td>
+					 <td>fee_end_date</td>
 					 <td>date</td>
 					 <td>13</td>
 					 <td title='nullable'>√</td>
@@ -447,20 +205,163 @@
 					 <td></td>
 					</tr>
 					<tr>
-					 <td>affiliation</td>
+					 <td>alembic_version</td>
 					 <td>Table</td>
-					 <td>modified_by_userid</td>
-					 <td>int4</td>
+					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>version_num</td>
+					 <td>varchar</td>
+					 <td>32</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>invoice</td>
+					 <td>Table</td>
+					 <td>total</td>
+					 <td>float8</td>
+					 <td>17</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_account</td>
+					 <td>Table</td>
+					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>corp_type_code</td>
+					 <td>varchar</td>
 					 <td>10</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>invoice</td>
+					 <td>Table</td>
+					 <td>updated_on</td>
+					 <td>timestamp</td>
+					 <td>29</td>
 					 <td title='nullable'>√</td>
 					 <td title=''></td>
 					 <td>null</td>
 					 <td></td>
 					</tr>
 					<tr>
-					 <td>affiliation</td>
+					 <td>payment</td>
 					 <td>Table</td>
-					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>business_id</td>
+					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>payment_system_code</td>
+					 <td>varchar</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>fee_schedule</td>
+					 <td>Table</td>
+					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>fee_code</td>
+					 <td>varchar</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_account</td>
+					 <td>Table</td>
+					 <td>account_number</td>
+					 <td>varchar</td>
+					 <td>50</td>
+					 <td title='nullable'>√</td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>invoice</td>
+					 <td>Table</td>
+					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>invoice_status_code</td>
+					 <td>varchar</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_transaction</td>
+					 <td>Table</td>
+					 <td>transaction_start_time</td>
+					 <td>timestamp</td>
+					 <td>29</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment</td>
+					 <td>Table</td>
+					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>payment_status_code</td>
+					 <td>varchar</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_line_item</td>
+					 <td>Table</td>
+					 <td>description</td>
+					 <td>varchar</td>
+					 <td>200</td>
+					 <td title='nullable'>√</td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>invoice</td>
+					 <td>Table</td>
+					 <td>refund</td>
+					 <td>float8</td>
+					 <td>17</td>
+					 <td title='nullable'>√</td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_method</td>
+					 <td>Table</td>
+					 <td>description</td>
+					 <td>varchar</td>
+					 <td>200</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_account</td>
+					 <td>Table</td>
+					 <td>party_number</td>
+					 <td>varchar</td>
+					 <td>50</td>
+					 <td title='nullable'>√</td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_line_item</td>
+					 <td>Table</td>
+					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>invoice_id</td>
 					 <td>int4</td>
 					 <td>10</td>
 					 <td title=''></td>
@@ -469,42 +370,273 @@
 					 <td></td>
 					</tr>
 					<tr>
-					 <td>affiliation_business</td>
+					 <td>invoice</td>
 					 <td>Table</td>
+					 <td>created_on</td>
+					 <td>timestamp</td>
+					 <td>29</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_line_item</td>
+					 <td>Table</td>
+					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>id</td>
+					 <td>serial</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title='Automatically updated by the database'>√</td>
+					 <td>nextval(&#39;payment_line_item_id_seq&#39;::regclass)</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>fee_schedule</td>
+					 <td>Table</td>
+					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>corp_type_code</td>
+					 <td>varchar</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_line_item</td>
+					 <td>Table</td>
+					 <td>pst</td>
+					 <td>float8</td>
+					 <td>17</td>
+					 <td title='nullable'>√</td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_method</td>
+					 <td>Table</td>
+					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>code</td>
+					 <td>varchar</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment</td>
+					 <td>Table</td>
+					 <td>created_on</td>
+					 <td>timestamp</td>
+					 <td>29</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_line_item</td>
+					 <td>Table</td>
+					 <td>service_fees</td>
+					 <td>float8</td>
+					 <td>17</td>
+					 <td title='nullable'>√</td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>invoice</td>
+					 <td>Table</td>
+					 <td>paid</td>
+					 <td>float8</td>
+					 <td>17</td>
+					 <td title='nullable'>√</td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>receipt</td>
+					 <td>Table</td>
+					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>invoice_id</td>
+					 <td>int4</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>receipt</td>
+					 <td>Table</td>
+					 <td>receipt_number</td>
+					 <td>varchar</td>
+					 <td>50</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>filing_type</td>
+					 <td>Table</td>
+					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>code</td>
+					 <td>varchar</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_line_item</td>
+					 <td>Table</td>
+					 <td>processing_fees</td>
+					 <td>float8</td>
+					 <td>17</td>
+					 <td title='nullable'>√</td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>invoice</td>
+					 <td>Table</td>
+					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>payment_id</td>
+					 <td>int4</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>fee_schedule</td>
+					 <td>Table</td>
+					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>filing_type_code</td>
+					 <td>varchar</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
 					 <td>corp_type</td>
+					 <td>Table</td>
+					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>code</td>
 					 <td>varchar</td>
-					 <td>20</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_transaction</td>
+					 <td>Table</td>
+					 <td>client_system_url</td>
+					 <td>varchar</td>
+					 <td>500</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>fee_code</td>
+					 <td>Table</td>
+					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>code</td>
+					 <td>varchar</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment</td>
+					 <td>Table</td>
+					 <td>updated_by</td>
+					 <td>varchar</td>
+					 <td>50</td>
 					 <td title='nullable'>√</td>
 					 <td title=''></td>
 					 <td>null</td>
 					 <td></td>
 					</tr>
 					<tr>
-					 <td>users</td>
+					 <td>receipt</td>
 					 <td>Table</td>
-					 <td>display_name</td>
-					 <td>varchar</td>
-					 <td>254</td>
+					 <td>receipt_amount</td>
+					 <td>float8</td>
+					 <td>17</td>
 					 <td title='nullable'>√</td>
 					 <td title=''></td>
 					 <td>null</td>
 					 <td></td>
 					</tr>
 					<tr>
-					 <td>users</td>
+					 <td>invoice</td>
 					 <td>Table</td>
-					 <td>user_source</td>
-					 <td>varchar</td>
-					 <td>20</td>
+					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>account_id</td>
+					 <td>int4</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_transaction</td>
+					 <td>Table</td>
+					 <td>transaction_end_time</td>
+					 <td>timestamp</td>
+					 <td>29</td>
 					 <td title='nullable'>√</td>
 					 <td title=''></td>
 					 <td>null</td>
 					 <td></td>
 					</tr>
 					<tr>
-					 <td>action</td>
+					 <td>invoice</td>
 					 <td>Table</td>
-					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>action_code</td>
+					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>id</td>
+					 <td>serial</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title='Automatically updated by the database'>√</td>
+					 <td>nextval(&#39;invoice_id_seq&#39;::regclass)</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment</td>
+					 <td>Table</td>
+					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>id</td>
+					 <td>serial</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title='Automatically updated by the database'>√</td>
+					 <td>nextval(&#39;payment_id_seq&#39;::regclass)</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>fee_schedule</td>
+					 <td>Table</td>
+					 <td>fee_start_date</td>
+					 <td>date</td>
+					 <td>13</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>invoice</td>
+					 <td>Table</td>
+					 <td>created_by</td>
 					 <td>varchar</td>
 					 <td>50</td>
 					 <td title=''></td>
@@ -513,31 +645,141 @@
 					 <td></td>
 					</tr>
 					<tr>
-					 <td>users</td>
+					 <td>status_code</td>
 					 <td>Table</td>
-					 <td>firstname</td>
+					 <td>description</td>
 					 <td>varchar</td>
-					 <td>100</td>
+					 <td>200</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>invoice</td>
+					 <td>Table</td>
+					 <td>reference_number</td>
+					 <td>varchar</td>
+					 <td>50</td>
 					 <td title='nullable'>√</td>
 					 <td title=''></td>
 					 <td>null</td>
 					 <td></td>
 					</tr>
 					<tr>
-					 <td>users</td>
+					 <td>payment_transaction</td>
 					 <td>Table</td>
-					 <td>creation_date</td>
-					 <td>timestamptz</td>
-					 <td>35</td>
+					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>payment_id</td>
+					 <td>int4</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>invoice</td>
+					 <td>Table</td>
+					 <td>updated_by</td>
+					 <td>varchar</td>
+					 <td>50</td>
 					 <td title='nullable'>√</td>
 					 <td title=''></td>
 					 <td>null</td>
 					 <td></td>
 					</tr>
 					<tr>
-					 <td>action</td>
+					 <td>corp_type</td>
 					 <td>Table</td>
-					 <td>path</td>
+					 <td>description</td>
+					 <td>varchar</td>
+					 <td>200</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>status_code</td>
+					 <td>Table</td>
+					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>code</td>
+					 <td>varchar</td>
+					 <td>20</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>invoice</td>
+					 <td>Table</td>
+					 <td>payment_date</td>
+					 <td>timestamp</td>
+					 <td>29</td>
+					 <td title='nullable'>√</td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_line_item</td>
+					 <td>Table</td>
+					 <td>gst</td>
+					 <td>float8</td>
+					 <td>17</td>
+					 <td title='nullable'>√</td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_account</td>
+					 <td>Table</td>
+					 <td>site_number</td>
+					 <td>varchar</td>
+					 <td>50</td>
+					 <td title='nullable'>√</td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment</td>
+					 <td>Table</td>
+					 <td>created_by</td>
+					 <td>varchar</td>
+					 <td>50</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>receipt</td>
+					 <td>Table</td>
+					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>id</td>
+					 <td>serial</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title='Automatically updated by the database'>√</td>
+					 <td>nextval(&#39;receipt_id_seq&#39;::regclass)</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_transaction</td>
+					 <td>Table</td>
+					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>status_code</td>
+					 <td>varchar</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_transaction</td>
+					 <td>Table</td>
+					 <td>pay_system_url</td>
 					 <td>varchar</td>
 					 <td>500</td>
 					 <td title='nullable'>√</td>
@@ -546,11 +788,99 @@
 					 <td></td>
 					</tr>
 					<tr>
-					 <td>user_type</td>
+					 <td>fee_code</td>
 					 <td>Table</td>
-					 <td>full_desc</td>
+					 <td>amount</td>
+					 <td>float8</td>
+					 <td>17</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_line_item</td>
+					 <td>Table</td>
+					 <td>filing_fees</td>
+					 <td>float8</td>
+					 <td>17</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_transaction</td>
+					 <td>Table</td>
+					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>id</td>
+					 <td>uuid</td>
+					 <td>2147483647</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>fee_schedule</td>
+					 <td>Table</td>
+					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>fee_schedule_id</td>
+					 <td>serial</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title='Automatically updated by the database'>√</td>
+					 <td>nextval(&#39;fee_schedule_fee_schedule_id_seq&#39;::regclass)</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_system</td>
+					 <td>Table</td>
+					 <td>description</td>
 					 <td>varchar</td>
-					 <td>250</td>
+					 <td>200</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_account</td>
+					 <td>Table</td>
+					 <td class='primaryKey' title='Primary Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>id</td>
+					 <td>serial</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title='Automatically updated by the database'>√</td>
+					 <td>nextval(&#39;payment_account_id_seq&#39;::regclass)</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>invoice</td>
+					 <td>Table</td>
+					 <td>invoice_number</td>
+					 <td>varchar</td>
+					 <td>50</td>
+					 <td title='nullable'>√</td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment</td>
+					 <td>Table</td>
+					 <td class='foreignKey' title='Foreign Key'><i class='icon ion-key iconkey' style='padding-left: 5px;'></i>payment_method_code</td>
+					 <td>varchar</td>
+					 <td>10</td>
+					 <td title=''></td>
+					 <td title=''></td>
+					 <td>null</td>
+					 <td></td>
+					</tr>
+					<tr>
+					 <td>payment_line_item</td>
+					 <td>Table</td>
+					 <td>quantity</td>
+					 <td>int4</td>
+					 <td>10</td>
 					 <td title='nullable'>√</td>
 					 <td title=''></td>
 					 <td>null</td>

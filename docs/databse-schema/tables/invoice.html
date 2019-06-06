@@ -188,14 +188,6 @@
 				 <td>
 				  <table border='0' cellspacing='0' cellpadding='0'>
 				   <tr>
-					<td title="fee_item.invoice_id references invoice.id via fee_item_invoice_id_fkey">
-						<a href='fee_item.html'>fee_item</a><span class='relatedKey'>.invoice_id</span>
-					</td>
-					<td class="constraint detail">
-						fee_item_invoice_id_fkey <span title='Restrict delete:&#10;Parent cannot be deleted if children exist'>R</span>
-					</td>
-				   </tr>
-				   <tr>
 					<td title="payment_line_item.invoice_id references invoice.id via payment_line_item_invoice_id_fkey">
 						<a href='payment_line_item.html'>payment_line_item</a><span class='relatedKey'>.invoice_id</span>
 					</td>
@@ -204,27 +196,11 @@
 					</td>
 				   </tr>
 				   <tr>
-					<td title="payment_transaction.invoice_id references invoice.id via payment_transaction_invoice_id_fkey">
-						<a href='payment_transaction.html'>payment_transaction</a><span class='relatedKey'>.invoice_id</span>
-					</td>
-					<td class="constraint detail">
-						payment_transaction_invoice_id_fkey <span title='Restrict delete:&#10;Parent cannot be deleted if children exist'>R</span>
-					</td>
-				   </tr>
-				   <tr>
 					<td title="receipt.invoice_id references invoice.id via receipt_invoice_id_fkey">
 						<a href='receipt.html'>receipt</a><span class='relatedKey'>.invoice_id</span>
 					</td>
 					<td class="constraint detail">
 						receipt_invoice_id_fkey <span title='Restrict delete:&#10;Parent cannot be deleted if children exist'>R</span>
-					</td>
-				   </tr>
-				   <tr>
-					<td title="transaction.invoice_id references invoice.id via transaction_invoice_id_fkey">
-						<a href='transaction.html'>transaction</a><span class='relatedKey'>.invoice_id</span>
-					</td>
-					<td class="constraint detail">
-						transaction_invoice_id_fkey <span title='Restrict delete:&#10;Parent cannot be deleted if children exist'>R</span>
 					</td>
 				   </tr>
 				  </table>				 
@@ -346,8 +322,8 @@
 				</tr>
 				<tr>
 				 <td><span id="total">total</span></td>
-				 <td>int4</td>
-				 <td>10</td>
+				 <td>float8</td>
+				 <td>17,17</td>
 				 <td title=''></td>
 				 <td title=''></td>
 				 <td>null</td>
@@ -363,8 +339,8 @@
 				</tr>
 				<tr>
 				 <td><span id="paid">paid</span></td>
-				 <td>int4</td>
-				 <td>10</td>
+				 <td>float8</td>
+				 <td>17,17</td>
 				 <td title='nullable'>√</td>
 				 <td title=''></td>
 				 <td>null</td>
@@ -397,8 +373,8 @@
 				</tr>
 				<tr>
 				 <td><span id="refund">refund</span></td>
-				 <td>int4</td>
-				 <td>10</td>
+				 <td>float8</td>
+				 <td>17,17</td>
 				 <td title='nullable'>√</td>
 				 <td title=''></td>
 				 <td>null</td>
@@ -473,34 +449,29 @@
             <div class="tab-content no-padding">            
 				<div class="chart tab-pane active" id="oneDegreeImg-chart" style="position: relative; overflow-x:auto;">					
 					<map id="oneDegreeRelationshipsDiagram" name="oneDegreeRelationshipsDiagram">
-<area shape="rect" id="node1" href="fee_item.html" title="fee_item" alt="" coords="883,556,1058,732">
-<area shape="rect" id="node2" href="invoice.html" title="invoice" alt="" coords="488,301,813,781">
-<area shape="rect" id="node3" href="payment_account.html" title="payment_account" alt="" coords="217,568,443,744">
-<area shape="rect" id="node4" href="status_code.html" title="status_code" alt="" coords="5,309,172,427">
-<area shape="rect" id="node5" href="payment.html" title="payment" alt="" coords="216,304,444,509">
-<area shape="rect" id="node6" href="payment_line_item.html" title="payment_line_item" alt="" coords="865,749,1077,925">
-<area shape="rect" id="node7" href="payment_transaction.html" title="payment_transaction" alt="" coords="857,5,1084,181">
-<area shape="rect" id="node8" href="receipt.html" title="receipt" alt="" coords="886,392,1055,539">
-<area shape="rect" id="node9" href="transaction.html" title="transaction" alt="" coords="891,199,1051,375">
+<area shape="rect" id="node1" href="invoice.html" title="invoice" alt="" coords="488,12,813,492">
+<area shape="rect" id="node2" href="payment_account.html" title="payment_account" alt="" coords="217,325,443,501">
+<area shape="rect" id="node3" href="status_code.html" title="status_code" alt="" coords="5,203,172,320">
+<area shape="rect" id="node4" href="payment.html" title="payment" alt="" coords="216,67,444,272">
+<area shape="rect" id="node5" href="payment_line_item.html" title="payment_line_item" alt="" coords="857,5,1069,181">
+<area shape="rect" id="node6" href="receipt.html" title="receipt" alt="" coords="879,199,1048,345">
 </map>
 
 					<a name='diagram'><img id='oneDegreeImg' src='../diagrams/invoice.1degree.png' usemap='#oneDegreeRelationshipsDiagram' class='diagram' border='0' alt='' align='left'></a>							
 				</div>
 				<div class="chart tab-pane " id="twodegreesDegreeImg-chart" style="position: relative; overflow-x:auto;">					
 					<map id="twoDegreesRelationshipsDiagram" name="twoDegreesRelationshipsDiagram">
-<area shape="rect" id="node1" href="fee_item.html" title="fee_item" alt="" coords="918,199,1093,375">
-<area shape="rect" id="node2" href="fee_schedule.html" title="fee_schedule" alt="" coords="597,180,774,268">
-<area shape="rect" id="node3" href="invoice.html" title="invoice" alt="" coords="523,285,848,765">
-<area shape="rect" id="node4" href="corp_type.html" title="corp_type" alt="" coords="31,248,181,336">
-<area shape="rect" id="node5" href="payment_account.html" title="payment_account" alt="" coords="252,273,477,449">
-<area shape="rect" id="node6" href="status_code.html" title="status_code" alt="" coords="23,705,189,823">
-<area shape="rect" id="node7" href="payment.html" title="payment" alt="" coords="251,467,479,672">
-<area shape="rect" id="node9" href="payment_system.html" title="payment_system" alt="" coords="7,388,205,476">
-<area shape="rect" id="node8" href="payment_method.html" title="payment_method" alt="" coords="5,528,207,616">
-<area shape="rect" id="node10" href="payment_line_item.html" title="payment_line_item" alt="" coords="899,5,1111,181">
-<area shape="rect" id="node11" href="payment_transaction.html" title="payment_transaction" alt="" coords="892,556,1119,732">
-<area shape="rect" id="node12" href="receipt.html" title="receipt" alt="" coords="921,392,1090,539">
-<area shape="rect" id="node13" href="transaction.html" title="transaction" alt="" coords="925,749,1085,925">
+<area shape="rect" id="node1" href="fee_schedule.html" title="fee_schedule" alt="" coords="276,57,453,145">
+<area shape="rect" id="node2" href="corp_type.html" title="corp_type" alt="" coords="31,161,181,249">
+<area shape="rect" id="node3" href="invoice.html" title="invoice" alt="" coords="523,124,848,604">
+<area shape="rect" id="node4" href="payment_account.html" title="payment_account" alt="" coords="252,169,477,345">
+<area shape="rect" id="node5" href="status_code.html" title="status_code" alt="" coords="23,545,189,663">
+<area shape="rect" id="node6" href="payment.html" title="payment" alt="" coords="251,363,479,568">
+<area shape="rect" id="node8" href="payment_system.html" title="payment_system" alt="" coords="7,272,205,360">
+<area shape="rect" id="node7" href="payment_method.html" title="payment_method" alt="" coords="5,424,207,512">
+<area shape="rect" id="node9" href="payment_line_item.html" title="payment_line_item" alt="" coords="892,5,1104,181">
+<area shape="rect" id="node10" href="payment_transaction.html" title="payment_transaction" alt="" coords="572,621,799,709">
+<area shape="rect" id="node11" href="receipt.html" title="receipt" alt="" coords="913,215,1083,361">
 </map>
 
 					<a name='diagram'><img id='twodegreesDegreeImg' src='../diagrams/invoice.2degrees.png' usemap='#twoDegreesRelationshipsDiagram' class='diagram' border='0' alt='' align='left'></a>							
