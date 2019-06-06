@@ -109,6 +109,64 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "Get Transaction",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{pay-api-base-url}}/api/v1/payments/1/transactions/69bae55d-1eb3-4351-b02a-fce2b9edd120",
+					"host": [
+						"{{pay-api-base-url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"payments",
+						"1",
+						"transactions",
+						"69bae55d-1eb3-4351-b02a-fce2b9edd120"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Transaction",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{pay-api-base-url}}/api/v1/payments/4/transactions/7997b2f5-d008-4dee-9346-c5e40e1023d1?receipt_number=12345",
+					"host": [
+						"{{pay-api-base-url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"payments",
+						"4",
+						"transactions",
+						"7997b2f5-d008-4dee-9346-c5e40e1023d1"
+					],
+					"query": [
+						{
+							"key": "receipt_number",
+							"value": "12345"
+						}
+					]
+				}
+			},
+			"response": []
 		}
 	],
 	"auth": {
