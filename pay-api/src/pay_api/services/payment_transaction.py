@@ -213,8 +213,8 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
 
             pay_web_transaction_url = current_app.config.get('AUTH_WEB_PAY_TRANSACTION_URL')
             return_url = urllib.parse.quote(
-                f'{pay_web_transaction_url}?payment_id={payment.id}&transaction_id={transaction_id}', '')
-            pay_system_url += f'&redirect_url={return_url}'
+                f'{pay_web_transaction_url}/returnpayment/{payment.id}/transaction/{transaction_id}', '')
+            pay_system_url += f'&redirect_uri={return_url}'
 
         current_app.logger.debug('>build_pay_system_url')
         return pay_system_url
