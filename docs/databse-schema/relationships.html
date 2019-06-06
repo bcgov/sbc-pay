@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
-  <title>auth Database</title>
+  <title>postgres Database</title>
   <!-- Tell the browser to be responsive to screen width -->
   <meta content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" name="viewport">
   <link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
@@ -46,7 +46,7 @@
     <nav class="navbar navbar-static-top">
       <div class="container">
         <div class="navbar-header">
-          <a href="index.html" class="navbar-brand"><b>auth</b> Database</a>
+          <a href="index.html" class="navbar-brand"><b>postgres</b> Database</a>
           <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar-collapse">
             <i class="fa fa-bars"></i>
           </button>
@@ -96,26 +96,38 @@
             <div class="tab-content no-padding">            
 				<div class="chart tab-pane active" id="compactDegreeImg-chart" style="position: relative; overflow-x:auto;">
 																					<map id="compactRelationshipsDiagram" name="compactRelationshipsDiagram">
-<area shape="rect" id="node1" href="tables/action.html" title="action" alt="" coords="259,25,406,143">
-<area shape="rect" id="node2" href="tables/action_log.html" title="action_log" alt="" coords="520,5,673,181">
-<area shape="rect" id="node7" href="tables/users.html" title="users" alt="" coords="247,429,418,635">
-<area shape="rect" id="node3" href="tables/affiliation.html" title="affiliation" alt="" coords="485,236,708,441">
-<area shape="rect" id="node4" href="tables/affiliation_business.html" title="affiliation_business" alt="" coords="224,295,441,412">
-<area shape="rect" id="node5" href="tables/affiliation_status.html" title="affiliation_status" alt="" coords="234,160,431,277">
-<area shape="rect" id="node6" href="tables/user_type.html" title="user_type" alt="" coords="5,488,180,605">
+<area shape="rect" id="node1" href="tables/corp_type.html" title="corp_type" alt="" coords="31,177,181,295">
+<area shape="rect" id="node2" href="tables/fee_code.html" title="fee_code" alt="" coords="291,176,438,293">
+<area shape="rect" id="node3" href="tables/fee_schedule.html" title="fee_schedule" alt="" coords="547,65,725,271">
+<area shape="rect" id="node4" href="tables/filing_type.html" title="filing_type" alt="" coords="288,5,441,123">
+<area shape="rect" id="node5" href="tables/invoice.html" title="invoice" alt="" coords="533,372,739,577">
+<area shape="rect" id="node6" href="tables/payment.html" title="payment" alt="" coords="251,504,479,709">
+<area shape="rect" id="node7" href="tables/payment_account.html" title="payment_account" alt="" coords="252,311,477,487">
+<area shape="rect" id="node13" href="tables/status_code.html" title="status_code" alt="" coords="23,692,189,809">
+<area shape="rect" id="node9" href="tables/payment_method.html" title="payment_method" alt="" coords="5,557,207,675">
+<area shape="rect" id="node10" href="tables/payment_system.html" title="payment_system" alt="" coords="7,393,205,511">
+<area shape="rect" id="node8" href="tables/payment_line_item.html" title="payment_line_item" alt="" coords="793,40,1005,216">
+<area shape="rect" id="node11" href="tables/payment_transaction.html" title="payment_transaction" alt="" coords="523,660,749,836">
+<area shape="rect" id="node12" href="tables/receipt.html" title="receipt" alt="" coords="815,343,984,489">
 </map>
 
 					<a name='diagram'><img id='compactDegreeImg' src='diagrams/summary/relationships.real.compact.png' usemap='#compactRelationshipsDiagram' class='diagram' border='0' alt='' align='left'></a>							
 				</div>
 				<div class="chart tab-pane " id="largeDegreeImg-chart" style="position: relative; overflow-x:auto;">
 																					<map id="largeRelationshipsDiagram" name="largeRelationshipsDiagram">
-<area shape="rect" id="node1" href="tables/action.html" title="action" alt="" coords="259,37,406,219">
-<area shape="rect" id="node2" href="tables/action_log.html" title="action_log" alt="" coords="520,5,673,275">
-<area shape="rect" id="node7" href="tables/users.html" title="users" alt="" coords="247,545,418,961">
-<area shape="rect" id="node3" href="tables/affiliation.html" title="affiliation" alt="" coords="485,317,708,675">
-<area shape="rect" id="node4" href="tables/affiliation_business.html" title="affiliation_business" alt="" coords="224,376,441,528">
-<area shape="rect" id="node5" href="tables/affiliation_status.html" title="affiliation_status" alt="" coords="234,236,431,359">
-<area shape="rect" id="node6" href="tables/user_type.html" title="user_type" alt="" coords="5,780,180,932">
+<area shape="rect" id="node1" href="tables/corp_type.html" title="corp_type" alt="" coords="31,300,181,423">
+<area shape="rect" id="node2" href="tables/fee_code.html" title="fee_code" alt="" coords="291,181,438,304">
+<area shape="rect" id="node3" href="tables/fee_schedule.html" title="fee_schedule" alt="" coords="547,71,725,311">
+<area shape="rect" id="node4" href="tables/filing_type.html" title="filing_type" alt="" coords="288,5,441,128">
+<area shape="rect" id="node5" href="tables/invoice.html" title="invoice" alt="" coords="533,352,739,827">
+<area shape="rect" id="node6" href="tables/payment.html" title="payment" alt="" coords="251,608,479,907">
+<area shape="rect" id="node7" href="tables/payment_account.html" title="payment_account" alt="" coords="252,321,477,591">
+<area shape="rect" id="node13" href="tables/status_code.html" title="status_code" alt="" coords="23,901,189,1024">
+<area shape="rect" id="node9" href="tables/payment_method.html" title="payment_method" alt="" coords="5,761,207,884">
+<area shape="rect" id="node10" href="tables/payment_system.html" title="payment_system" alt="" coords="7,491,205,613">
+<area shape="rect" id="node8" href="tables/payment_line_item.html" title="payment_line_item" alt="" coords="793,21,1005,408">
+<area shape="rect" id="node11" href="tables/payment_transaction.html" title="payment_transaction" alt="" coords="523,867,749,1136">
+<area shape="rect" id="node12" href="tables/receipt.html" title="receipt" alt="" coords="815,440,984,651">
 </map>
 
 					<a name='diagram'><img id='largeDegreeImg' src='diagrams/summary/relationships.real.large.png' usemap='#largeRelationshipsDiagram' class='diagram' border='0' alt='' align='left'></a>							
