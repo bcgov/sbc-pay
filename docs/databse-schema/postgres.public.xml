@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<database name="postgres" schema="public" type="PostgreSQL - 11.2 (Debian 11.2-1.pgdg90+1)">
+   <tables>
+      <table name="alembic_version" numRows="1" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="false" digits="0" id="0" name="version_num" nullable="false" remarks="" size="32" type="varchar"/>
+         <primaryKey column="version_num" sequenceNumberInPK="1"/>
+         <index name="alembic_version_pkc" unique="true">
+            <column ascending="true" name="version_num"/>
+         </index>
+      </table>
+      <table name="corp_type" numRows="1" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="false" digits="0" id="0" name="code" nullable="false" remarks="" size="10" type="varchar">
+            <child column="corp_type_code" foreignKey="fee_schedule_corp_type_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="fee_schedule"/>
+            <child column="corp_type_code" foreignKey="payment_account_corp_type_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="payment_account"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="1" name="description" nullable="false" remarks="" size="200" type="varchar"/>
+         <primaryKey column="code" sequenceNumberInPK="1"/>
+         <index name="corp_type_pkey" unique="true">
+            <column ascending="true" name="code"/>
+         </index>
+      </table>
+      <table name="fee_code" numRows="7" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="false" digits="0" id="0" name="code" nullable="false" remarks="" size="10" type="varchar">
+            <child column="fee_code" foreignKey="fee_schedule_fee_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="fee_schedule"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="1" name="amount" nullable="false" remarks="" size="10" type="int4"/>
+         <primaryKey column="code" sequenceNumberInPK="1"/>
+         <index name="fee_code_pkey" unique="true">
+            <column ascending="true" name="code"/>
+         </index>
+      </table>
+      <table name="fee_item" numRows="0" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="true" defaultValue="nextval('fee_item_id_seq'::regclass)" digits="0" id="0" name="id" nullable="false" remarks="" size="10" type="serial"/>
+         <column autoUpdated="false" digits="0" id="1" name="invoice_id" nullable="false" remarks="" size="10" type="int4">
+            <parent column="id" foreignKey="fee_item_invoice_id_fkey" implied="false" onDeleteCascade="false" schema="public" table="invoice"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="2" name="filing_fees" nullable="false" remarks="" size="10" type="int4"/>
+         <column autoUpdated="false" digits="0" id="3" name="fee_schedule_id" nullable="false" remarks="" size="10" type="int4">
+            <parent column="fee_schedule_id" foreignKey="fee_item_fee_schedule_id_fkey" implied="false" onDeleteCascade="false" schema="public" table="fee_schedule"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="4" name="processing_fees" nullable="true" remarks="" size="10" type="int4"/>
+         <column autoUpdated="false" digits="0" id="5" name="service_fees" nullable="true" remarks="" size="10" type="int4"/>
+         <column autoUpdated="false" digits="0" id="6" name="description" nullable="true" remarks="" size="200" type="varchar"/>
+         <column autoUpdated="false" digits="0" id="7" name="gst" nullable="true" remarks="" size="10" type="int4"/>
+         <column autoUpdated="false" digits="0" id="8" name="pst" nullable="true" remarks="" size="10" type="int4"/>
+         <column autoUpdated="false" digits="0" id="9" name="total" nullable="false" remarks="" size="10" type="int4"/>
+         <primaryKey column="id" sequenceNumberInPK="1"/>
+         <index name="fee_item_pkey" unique="true">
+            <column ascending="true" name="id"/>
+         </index>
+      </table>
+      <table name="fee_schedule" numRows="11" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="true" defaultValue="nextval('fee_schedule_fee_schedule_id_seq'::regclass)" digits="0" id="0" name="fee_schedule_id" nullable="false" remarks="" size="10" type="serial">
+            <child column="fee_schedule_id" foreignKey="fee_item_fee_schedule_id_fkey" implied="false" onDeleteCascade="false" schema="public" table="fee_item"/>
+            <child column="fee_schedule_id" foreignKey="payment_line_item_fee_schedule_id_fkey" implied="false" onDeleteCascade="false" schema="public" table="payment_line_item"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="1" name="filing_type_code" nullable="false" remarks="" size="10" type="varchar">
+            <parent column="code" foreignKey="fee_schedule_filing_type_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="filing_type"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="2" name="corp_type_code" nullable="false" remarks="" size="10" type="varchar">
+            <parent column="code" foreignKey="fee_schedule_corp_type_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="corp_type"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="3" name="fee_code" nullable="false" remarks="" size="10" type="varchar">
+            <parent column="code" foreignKey="fee_schedule_fee_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="fee_code"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="4" name="fee_start_date" nullable="false" remarks="" size="13" type="date"/>
+         <column autoUpdated="false" digits="0" id="5" name="fee_end_date" nullable="true" remarks="" size="13" type="date"/>
+         <primaryKey column="fee_schedule_id" sequenceNumberInPK="1"/>
+         <index name="fee_schedule_pkey" unique="true">
+            <column ascending="true" name="fee_schedule_id"/>
+         </index>
+         <index name="unique_fee_sched_1" unique="true">
+            <column ascending="true" name="filing_type_code"/>
+            <column ascending="true" name="corp_type_code"/>
+            <column ascending="true" name="fee_code"/>
+         </index>
+      </table>
+      <table name="filing_type" numRows="11" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="false" digits="0" id="0" name="code" nullable="false" remarks="" size="10" type="varchar">
+            <child column="filing_type_code" foreignKey="fee_schedule_filing_type_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="fee_schedule"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="1" name="description" nullable="false" remarks="" size="200" type="varchar"/>
+         <primaryKey column="code" sequenceNumberInPK="1"/>
+         <index name="filing_type_pkey" unique="true">
+            <column ascending="true" name="code"/>
+         </index>
+      </table>
+      <table name="invoice" numRows="0" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="false" digits="0" id="0" name="created_by" nullable="false" remarks="" size="50" type="varchar"/>
+         <column autoUpdated="false" digits="6" id="1" name="created_on" nullable="false" remarks="" size="29" type="timestamp"/>
+         <column autoUpdated="false" digits="0" id="2" name="updated_by" nullable="true" remarks="" size="50" type="varchar"/>
+         <column autoUpdated="false" digits="6" id="3" name="updated_on" nullable="true" remarks="" size="29" type="timestamp"/>
+         <column autoUpdated="true" defaultValue="nextval('invoice_id_seq'::regclass)" digits="0" id="4" name="id" nullable="false" remarks="" size="10" type="serial">
+            <child column="invoice_id" foreignKey="fee_item_invoice_id_fkey" implied="false" onDeleteCascade="false" schema="public" table="fee_item"/>
+            <child column="invoice_id" foreignKey="payment_line_item_invoice_id_fkey" implied="false" onDeleteCascade="false" schema="public" table="payment_line_item"/>
+            <child column="invoice_id" foreignKey="payment_transaction_invoice_id_fkey" implied="false" onDeleteCascade="false" schema="public" table="payment_transaction"/>
+            <child column="invoice_id" foreignKey="receipt_invoice_id_fkey" implied="false" onDeleteCascade="false" schema="public" table="receipt"/>
+            <child column="invoice_id" foreignKey="transaction_invoice_id_fkey" implied="false" onDeleteCascade="false" schema="public" table="transaction"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="5" name="payment_id" nullable="false" remarks="" size="10" type="int4">
+            <parent column="id" foreignKey="invoice_payment_id_fkey" implied="false" onDeleteCascade="false" schema="public" table="payment"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="6" name="invoice_number" nullable="true" remarks="" size="50" type="varchar"/>
+         <column autoUpdated="false" digits="0" id="7" name="reference_number" nullable="true" remarks="" size="50" type="varchar"/>
+         <column autoUpdated="false" digits="0" id="8" name="invoice_status_code" nullable="false" remarks="" size="10" type="varchar">
+            <parent column="code" foreignKey="invoice_invoice_status_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="status_code"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="9" name="account_id" nullable="false" remarks="" size="10" type="int4">
+            <parent column="id" foreignKey="invoice_account_id_fkey" implied="false" onDeleteCascade="false" schema="public" table="payment_account"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="10" name="total" nullable="false" remarks="" size="10" type="int4"/>
+         <column autoUpdated="false" digits="0" id="11" name="paid" nullable="true" remarks="" size="10" type="int4"/>
+         <column autoUpdated="false" digits="6" id="12" name="payment_date" nullable="true" remarks="" size="29" type="timestamp"/>
+         <column autoUpdated="false" digits="0" id="13" name="refund" nullable="true" remarks="" size="10" type="int4"/>
+         <primaryKey column="id" sequenceNumberInPK="1"/>
+         <index name="invoice_pkey" unique="true">
+            <column ascending="true" name="id"/>
+         </index>
+      </table>
+      <table name="payment" numRows="0" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="false" digits="0" id="0" name="created_by" nullable="false" remarks="" size="50" type="varchar"/>
+         <column autoUpdated="false" digits="6" id="1" name="created_on" nullable="false" remarks="" size="29" type="timestamp"/>
+         <column autoUpdated="false" digits="0" id="2" name="updated_by" nullable="true" remarks="" size="50" type="varchar"/>
+         <column autoUpdated="false" digits="6" id="3" name="updated_on" nullable="true" remarks="" size="29" type="timestamp"/>
+         <column autoUpdated="true" defaultValue="nextval('payment_id_seq'::regclass)" digits="0" id="4" name="id" nullable="false" remarks="" size="10" type="serial">
+            <child column="payment_id" foreignKey="invoice_payment_id_fkey" implied="false" onDeleteCascade="false" schema="public" table="invoice"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="5" name="payment_system_code" nullable="false" remarks="" size="10" type="varchar">
+            <parent column="code" foreignKey="payment_payment_system_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="payment_system"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="6" name="payment_method_code" nullable="false" remarks="" size="10" type="varchar">
+            <parent column="code" foreignKey="payment_payment_method_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="payment_method"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="7" name="payment_status_code" nullable="false" remarks="" size="10" type="varchar">
+            <parent column="code" foreignKey="payment_payment_status_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="status_code"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="8" name="total" nullable="false" remarks="" size="10" type="int4"/>
+         <column autoUpdated="false" digits="0" id="9" name="paid" nullable="true" remarks="" size="10" type="int4"/>
+         <primaryKey column="id" sequenceNumberInPK="1"/>
+         <index name="payment_pkey" unique="true">
+            <column ascending="true" name="id"/>
+         </index>
+      </table>
+      <table name="payment_account" numRows="0" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="true" defaultValue="nextval('payment_account_id_seq'::regclass)" digits="0" id="0" name="id" nullable="false" remarks="" size="10" type="serial">
+            <child column="account_id" foreignKey="invoice_account_id_fkey" implied="false" onDeleteCascade="false" schema="public" table="invoice"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="1" name="corp_number" nullable="false" remarks="" size="20" type="varchar"/>
+         <column autoUpdated="false" digits="0" id="2" name="corp_type_code" nullable="false" remarks="" size="10" type="varchar">
+            <parent column="code" foreignKey="payment_account_corp_type_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="corp_type"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="3" name="payment_system_code" nullable="false" remarks="" size="10" type="varchar">
+            <parent column="code" foreignKey="payment_account_payment_system_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="payment_system"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="4" name="account_number" nullable="true" remarks="" size="50" type="varchar"/>
+         <column autoUpdated="false" digits="0" id="5" name="party_number" nullable="true" remarks="" size="50" type="varchar"/>
+         <column autoUpdated="false" digits="0" id="6" name="site_number" nullable="true" remarks="" size="50" type="varchar"/>
+         <primaryKey column="id" sequenceNumberInPK="1"/>
+         <index name="payment_account_pkey" unique="true">
+            <column ascending="true" name="id"/>
+         </index>
+      </table>
+      <table name="payment_line_item" numRows="0" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="true" defaultValue="nextval('payment_line_item_id_seq'::regclass)" digits="0" id="0" name="id" nullable="false" remarks="" size="10" type="serial"/>
+         <column autoUpdated="false" digits="0" id="1" name="invoice_id" nullable="false" remarks="" size="10" type="int4">
+            <parent column="id" foreignKey="payment_line_item_invoice_id_fkey" implied="false" onDeleteCascade="false" schema="public" table="invoice"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="2" name="filing_fees" nullable="false" remarks="" size="10" type="int4"/>
+         <column autoUpdated="false" digits="0" id="3" name="fee_schedule_id" nullable="false" remarks="" size="10" type="int4">
+            <parent column="fee_schedule_id" foreignKey="payment_line_item_fee_schedule_id_fkey" implied="false" onDeleteCascade="false" schema="public" table="fee_schedule"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="4" name="quantity" nullable="true" remarks="" size="10" type="int4"/>
+         <column autoUpdated="false" digits="0" id="5" name="processing_fees" nullable="true" remarks="" size="10" type="int4"/>
+         <column autoUpdated="false" digits="0" id="6" name="service_fees" nullable="true" remarks="" size="10" type="int4"/>
+         <column autoUpdated="false" digits="0" id="7" name="description" nullable="true" remarks="" size="200" type="varchar"/>
+         <column autoUpdated="false" digits="0" id="8" name="gst" nullable="true" remarks="" size="10" type="int4"/>
+         <column autoUpdated="false" digits="0" id="9" name="pst" nullable="true" remarks="" size="10" type="int4"/>
+         <column autoUpdated="false" digits="0" id="10" name="total" nullable="false" remarks="" size="10" type="int4"/>
+         <primaryKey column="id" sequenceNumberInPK="1"/>
+         <index name="payment_line_item_pkey" unique="true">
+            <column ascending="true" name="id"/>
+         </index>
+      </table>
+      <table name="payment_method" numRows="1" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="false" digits="0" id="0" name="code" nullable="false" remarks="" size="10" type="varchar">
+            <child column="payment_method_code" foreignKey="payment_payment_method_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="payment"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="1" name="description" nullable="false" remarks="" size="200" type="varchar"/>
+         <primaryKey column="code" sequenceNumberInPK="1"/>
+         <index name="payment_method_pkey" unique="true">
+            <column ascending="true" name="code"/>
+         </index>
+      </table>
+      <table name="payment_system" numRows="1" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="false" digits="0" id="0" name="code" nullable="false" remarks="" size="10" type="varchar">
+            <child column="payment_system_code" foreignKey="payment_payment_system_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="payment"/>
+            <child column="payment_system_code" foreignKey="payment_account_payment_system_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="payment_account"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="1" name="description" nullable="false" remarks="" size="200" type="varchar"/>
+         <primaryKey column="code" sequenceNumberInPK="1"/>
+         <index name="payment_system_pkey" unique="true">
+            <column ascending="true" name="code"/>
+         </index>
+      </table>
+      <table name="payment_transaction" numRows="0" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="true" defaultValue="nextval('payment_transaction_id_seq'::regclass)" digits="0" id="0" name="id" nullable="false" remarks="" size="10" type="serial"/>
+         <column autoUpdated="false" digits="0" id="1" name="status_code" nullable="false" remarks="" size="10" type="varchar">
+            <parent column="code" foreignKey="payment_transaction_status_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="status_code"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="2" name="invoice_id" nullable="false" remarks="" size="10" type="int4">
+            <parent column="id" foreignKey="payment_transaction_invoice_id_fkey" implied="false" onDeleteCascade="false" schema="public" table="invoice"/>
+         </column>
+         <column autoUpdated="false" digits="6" id="3" name="date" nullable="false" remarks="" size="29" type="timestamp"/>
+         <primaryKey column="id" sequenceNumberInPK="1"/>
+         <index name="payment_transaction_pkey" unique="true">
+            <column ascending="true" name="id"/>
+         </index>
+      </table>
+      <table name="receipt" numRows="0" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="true" defaultValue="nextval('receipt_id_seq'::regclass)" digits="0" id="0" name="id" nullable="false" remarks="" size="10" type="serial"/>
+         <column autoUpdated="false" digits="0" id="1" name="invoice_id" nullable="false" remarks="" size="10" type="int4">
+            <parent column="id" foreignKey="receipt_invoice_id_fkey" implied="false" onDeleteCascade="false" schema="public" table="invoice"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="2" name="receipt_number" nullable="false" remarks="" size="50" type="varchar"/>
+         <column autoUpdated="false" digits="6" id="3" name="receipt_date" nullable="true" remarks="" size="29" type="timestamp"/>
+         <column autoUpdated="false" digits="0" id="4" name="receipt_amount" nullable="true" remarks="" size="10" type="int4"/>
+         <primaryKey column="id" sequenceNumberInPK="1"/>
+         <index name="receipt_pkey" unique="true">
+            <column ascending="true" name="id"/>
+         </index>
+      </table>
+      <table name="status_code" numRows="7" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="false" digits="0" id="0" name="code" nullable="false" remarks="" size="20" type="varchar">
+            <child column="invoice_status_code" foreignKey="invoice_invoice_status_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="invoice"/>
+            <child column="payment_status_code" foreignKey="payment_payment_status_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="payment"/>
+            <child column="status_code" foreignKey="payment_transaction_status_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="payment_transaction"/>
+            <child column="status_code" foreignKey="transaction_status_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="transaction"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="1" name="description" nullable="false" remarks="" size="200" type="varchar"/>
+         <primaryKey column="code" sequenceNumberInPK="1"/>
+         <index name="status_code_pkey" unique="true">
+            <column ascending="true" name="code"/>
+         </index>
+      </table>
+      <table name="transaction" numRows="0" remarks="" schema="public" type="TABLE">
+         <column autoUpdated="true" defaultValue="nextval('transaction_id_seq'::regclass)" digits="0" id="0" name="id" nullable="false" remarks="" size="10" type="serial"/>
+         <column autoUpdated="false" digits="0" id="1" name="status_code" nullable="false" remarks="" size="10" type="varchar">
+            <parent column="code" foreignKey="transaction_status_code_fkey" implied="false" onDeleteCascade="false" schema="public" table="status_code"/>
+         </column>
+         <column autoUpdated="false" digits="0" id="2" name="invoice_id" nullable="false" remarks="" size="10" type="int4">
+            <parent column="id" foreignKey="transaction_invoice_id_fkey" implied="false" onDeleteCascade="false" schema="public" table="invoice"/>
+         </column>
+         <column autoUpdated="false" digits="6" id="3" name="date" nullable="false" remarks="" size="29" type="timestamp"/>
+         <primaryKey column="id" sequenceNumberInPK="1"/>
+         <index name="transaction_pkey" unique="true">
+            <column ascending="true" name="id"/>
+         </index>
+      </table>
+   </tables>
+</database>
