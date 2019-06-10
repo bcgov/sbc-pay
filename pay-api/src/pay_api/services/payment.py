@@ -179,7 +179,8 @@ class Payment():  # pylint: disable=too-many-instance-attributes
 
         invoices = []
         for invoice in self._invoices:
-            invoices.append(Invoice.populate(invoice).asdict())
+            if Invoice.populate(invoice).invoice_status_code != Status.CANCELLED.value:
+                invoices.append(Invoice.populate(invoice).asdict())
 
         d = {
             'id': self._id,

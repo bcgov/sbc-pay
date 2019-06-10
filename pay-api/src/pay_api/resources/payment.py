@@ -54,16 +54,19 @@ class Payment(Resource):
         current_app.logger.debug('>Payment.post')
         return jsonify(response), status
 
+
+@cors_preflight('GET')
+@API.route('/<string:payment_id>', methods=['GET', 'OPTIONS'])
+class Payments(Resource):
+    """Endpoint resource to create payment."""
+
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
-    def get():
+    def get(payment_id):
         """Get the payment records."""
-        request_json = request.get_json()
-        if not request_json:
-            request_json = request.values
         try:
-            response, status = PaymentService.get_payment(request_json.get('payment_identifier')), HTTPStatus.OK
+            response, status = PaymentService.get_payment(payment_id), HTTPStatus.OK
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         return jsonify(response), status
