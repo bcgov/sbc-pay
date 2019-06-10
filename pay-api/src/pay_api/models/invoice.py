@@ -14,6 +14,7 @@
 """Model to handle all operations related to Invoice."""
 
 from sqlalchemy import ForeignKey
+from sqlalchemy.orm import relationship
 
 from .audit import Audit
 from .base_model import BaseModel
@@ -47,6 +48,10 @@ class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
         """Return a Invoice by id."""
         return cls.query.filter_by(payment_id=identfier).one_or_none()
 
+    @classmethod
+    def find_all_by_payment_id(cls, identfier: int):
+        """Return a Invoice by id."""
+        return cls.query.filter_by(payment_id=identfier)
 
 class InvoiceSchema(ma.ModelSchema):
     """Main schema used to serialize the Status Code."""
