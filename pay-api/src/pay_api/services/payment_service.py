@@ -135,5 +135,3 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             return payment.asdict()
         except Exception as e:
             raise e
-
-

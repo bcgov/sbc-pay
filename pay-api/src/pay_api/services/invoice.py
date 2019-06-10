@@ -272,7 +272,7 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def populate(value):
-        invoice:Invoice=Invoice()
+        invoice: Invoice = Invoice()
         invoice._dao = value
         return invoice
 

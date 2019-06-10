@@ -44,8 +44,8 @@ class PayBcService(OAuthService):
         current_app.logger.debug('>Inside create invoice')
         invoice = self.create_invoice(access_token, site, invoice_request)
         current_app.logger.debug('>Inside adjust invoice')
-        adjinvoice = self.do_adjustment(access_token, site ,invoice.get('invoice_number', None))
-        
+        adjinvoice = self.do_adjustment(access_token, site, invoice.get('invoice_number', None))
+
         return invoice
 
     def get_token(self):
@@ -188,4 +188,4 @@ class PayBcService(OAuthService):
         adjustment_response = self.post(adjustment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, adjustment)
 
         current_app.logger.debug('>Created PayBC Invoice Adjustment')
-        return adjustment_response.json()    
+        return adjustment_response.json()

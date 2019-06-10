@@ -257,7 +257,7 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create(
             payment_system=payment.payment_system_code)
 
-        invoice = Invoice.find_by_payment_identfier(payment_identifier)
+        invoice = Invoice.find_by_payment_identifier(payment_identifier)
 
         payment_account = PaymentAccount.find_by_id(invoice.account_id)
 
