@@ -28,8 +28,8 @@ from pay_api.utils.util import cors_preflight
 API = Namespace('payments', description='Payment System - Payments')
 
 
-@cors_preflight('POST')
-@API.route('', methods=['POST', 'OPTIONS'])
+@cors_preflight('GET, POST')
+@API.route('', methods=['GET', 'POST', 'OPTIONS'])
 class Payment(Resource):
     """Endpoint resource to create payment."""
 
@@ -57,11 +57,13 @@ class Payment(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
-    def get(trasaction_id):
+    def get():
         """Get the payment records."""
-
+        request_json = request.get_json()
+        if not request_json:
+            request_json = request.values
         try:
-            response, status = PaymentService.get_payment(trasaction_id), HTTPStatus.OK
+            response, status = PaymentService.get_payment(request_json.get('payment_identifier')), HTTPStatus.OK
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         return jsonify(response), status

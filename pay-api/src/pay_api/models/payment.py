@@ -20,6 +20,7 @@ from .audit import Audit
 from .base_model import BaseModel
 from .db import db, ma
 from .payment_system import PaymentSystem
+from .invoice import Invoice
 
 
 class Payment(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-attributes
@@ -33,6 +34,7 @@ class Payment(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
     payment_status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
 
     payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='joined', innerjoin=True)
+    invoices = relationship('Invoice')
 
     @classmethod
     def find_by_id(cls, identifier: int):

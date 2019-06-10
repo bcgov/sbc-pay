@@ -19,7 +19,6 @@ from flask import current_app
 
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.services.fee_schedule import FeeSchedule
-from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import Status
 
@@ -232,14 +231,40 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         """Save the information to the DB."""
         return self._dao.save()
 
+    def asdict(self):
+        """Return the invoice as a python dict."""
+        d = {
+            'id': self._id,
+            'created_by': self._created_by,
+            'created_on': self._created_on,
+            'updated_by': self._updated_by,
+            'updated_on': self._updated_on,
+            'invoice_number': self._invoice_number,
+            'reference_number': self._reference_number,
+            'invoice_status_code': self._invoice_status_code,
+            'account_id': self._account_id,
+            'payment_id': self._payment_id,
+            'payment_data': self._payment_date,
+            'total': self._total,
+            'paid': self._paid,
+            'refund': self._refund
+        }
+        return d
+
     @staticmethod
-    def create(account: PaymentAccount, payment: Payment, fees: [FeeSchedule], current_user: str):
+    def populate(value):
+        invoice:Invoice=Invoice()
+        invoice._dao = value
+        return invoice
+
+    @staticmethod
+    def create(account: PaymentAccount, payment_id: int, fees: [FeeSchedule], current_user: str):
         """Create invoice record."""
         current_app.logger.debug('<create')
         i = Invoice()
         i.created_on = datetime.now()
         i.created_by = current_user
-        i.payment_id = payment.id
+        i.payment_id = payment_id
         i.invoice_status_code = Status.DRAFT.value
         i.account_id = account.id
         i.total = sum(fee.total for fee in fees)
@@ -266,6 +291,17 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
     def find_by_payment_identfier(identfier: int):
         """Find invoice by payment identifier."""
         invoice_dao = InvoiceModel.find_by_payment_id(identfier)
+
+        invoice = Invoice()
+        invoice._dao = invoice_dao  # pylint: disable=protected-access
+
+        current_app.logger.debug('>find_by_id')
+        return invoice
+
+    @staticmethod
+    def find_all_by_payment_identfier(identfier: int):
+        """Find invoice by payment identifier."""
+        invoice_dao = InvoiceModel.find_all_by_payment_id(identfier)
 
         invoice = Invoice()
         invoice._dao = invoice_dao  # pylint: disable=protected-access
