@@ -14,9 +14,11 @@
 """Model to handle all operations related to Payment Line Item."""
 
 from sqlalchemy import ForeignKey
+from sqlalchemy.orm import relationship
 
 from .base_model import BaseModel
 from .db import db, ma
+from .fee_schedule import FeeSchedule
 
 
 class PaymentLineItem(db.Model, BaseModel):
@@ -35,6 +37,8 @@ class PaymentLineItem(db.Model, BaseModel):
     gst = db.Column(db.Float, nullable=True)
     pst = db.Column(db.Float, nullable=True)
     total = db.Column(db.Float, nullable=False)
+
+    fee_schedule = relationship(FeeSchedule, foreign_keys=[fee_schedule_id], lazy='joined', innerjoin=True)
 
     @classmethod
     def find_by_id(cls, identifier: int):

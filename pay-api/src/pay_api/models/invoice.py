@@ -19,6 +19,7 @@ from sqlalchemy.orm import relationship
 from .audit import Audit
 from .base_model import BaseModel
 from .db import db, ma
+from .payment_line_item import PaymentLineItem
 
 
 class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-attributes
@@ -37,6 +38,8 @@ class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
     paid = db.Column(db.Float, nullable=True)
     payment_date = db.Column(db.DateTime, nullable=True)
     refund = db.Column(db.Float, nullable=True)
+
+    payment_line_items = relationship('PaymentLineItem')
 
     @classmethod
     def find_by_id(cls, identfier: int):
