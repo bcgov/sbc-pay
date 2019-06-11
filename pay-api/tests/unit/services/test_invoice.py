@@ -88,7 +88,7 @@ def test_invoice_find_by_valid_payment_id(session):
     i = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
     i.save()
 
-    invoice = Invoice_service.find_by_payment_identfier(payment.id)
+    invoice = Invoice_service.find_by_payment_identifier(payment.id)
 
     assert invoice is not None
     assert invoice.id is not None
@@ -109,7 +109,7 @@ def test_invoice_find_by_valid_payment_id(session):
 
 def test_invoice_find_by_invalid_payment_id(session):
     """Test invalid lookup."""
-    invoice = Invoice_service.find_by_payment_identfier(999)
+    invoice = Invoice_service.find_by_payment_identifier(999)
 
     assert invoice is not None
     assert invoice.id is None

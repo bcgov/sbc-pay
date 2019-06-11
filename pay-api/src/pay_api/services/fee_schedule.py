@@ -16,11 +16,11 @@
 from datetime import date
 
 from flask import current_app
-from sbc_common_components.tracing.service_tracing import ServiceTracing
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.utils.errors import Error
+from sbc_common_components.tracing.service_tracing import ServiceTracing
 
 
 @ServiceTracing.trace(ServiceTracing.enable_tracing, ServiceTracing.should_be_tracing)

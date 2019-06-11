@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "c6a419a0-1476-48b5-8ff5-81e55eb331d0",
+		"_postman_id": "2577fbc6-2466-45e0-84c2-c3ecad120227",
 		"name": "pay-api",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -28,10 +28,6 @@
 			"request": {
 				"method": "GET",
 				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": ""
-				},
 				"url": {
 					"raw": "{{pay-api-base-url}}/api/v1/fees/{{corp-type}}/{{filing-type-code}}",
 					"host": [
@@ -63,7 +59,7 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"payment_info\": {\n    \"method_of_payment\": \"CC\"\n  },\n  \"business_info\": {\n    \"business_identifier\": \"cp0000019\",\n    \"corp_type\": \"CP\",\n    \"business_name\": \"ABC Corp\",\n    \"contact_info\": {\n      \"city\": \"Victoria\",\n      \"postal_code\": \"V8P2P2\",\n      \"province\": \"BC\",\n      \"address_line_1\": \"100 Douglas Street\",\n      \"country\": \"CA\"\n    }\n  },\n  \"filing_info\": {\n    \"filing_types\": [\n      {\n        \"filing_type_code\": \"OTCDR\",\n    \t\"filing_description\":\"Change of Directors - Director A\"\n      },{\n        \"filing_type_code\": \"OTCDR\",\n    \t\"filing_description\":\"Change of Directors - Director B\"\n      },\n      {\n        \"filing_type_code\": \"OTADD\",\n    \t\"filing_description\":\"Change of Address\"\n      },\n      {\n        \"filing_type_code\": \"OTANN\"\n      }\n      \n    ]\n  }\n}"
+					"raw": "{\n  \"payment_info\": {\n    \"method_of_payment\": \"CC\"\n  },\n  \"business_info\": {\n    \"business_identifier\": \"CP1234\",\n    \"corp_type\": \"CP\",\n    \"business_name\": \"ABC Corp\",\n    \"contact_info\": {\n      \"city\": \"Victoria\",\n      \"postal_code\": \"V8P2P2\",\n      \"province\": \"BC\",\n      \"address_line_1\": \"100 Douglas Street\",\n      \"country\": \"CA\"\n    }\n  },\n  \"filing_info\": {\n    \"filing_types\": [\n      {\n        \"filing_type_code\": \"OTADD\",\n    \t\"filing_description\":\"TEST\"\n      },\n      {\n        \"filing_type_code\": \"OTANN\"\n      }\n    ]\n  }\n}"
 				},
 				"url": {
 					"raw": "{{pay-api-base-url}}/api/v1/payments",
@@ -74,6 +70,40 @@
 						"api",
 						"v1",
 						"payments"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Payment Record",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{pay-api-base-url}}/api/v1/payments/1",
+					"host": [
+						"{{pay-api-base-url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"payments",
+						"1"
 					]
 				}
 			},

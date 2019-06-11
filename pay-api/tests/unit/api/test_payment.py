@@ -145,3 +145,42 @@ def test_payment_invalid_input(session, client, jwt, app):
     }
     rv = client.post(f'/api/v1/payments', data=json.dumps(data), headers=headers)
     assert rv.status_code == 400
+
+
+def test_payment_get(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    data = {
+        'payment_info': {
+            'method_of_payment': 'CC'
+        },
+        'business_info': {
+            'business_identifier': 'CP1234',
+            'corp_type': 'CP',
+            'business_name': 'ABC Corp',
+            'contact_info': {
+                'city': 'Victoria',
+                'postal_code': 'V8P2P2',
+                'province': 'BC',
+                'address_line_1': '100 Douglas Street',
+                'country': 'CA'
+            }
+        },
+        'filing_info': {
+            'filing_types': [
+                {
+                    'filing_type_code': 'OTADD',
+                    'filing_description': 'TEST'
+                },
+                {
+                    'filing_type_code': 'OTANN'
+                }
+            ]
+        }
+    }
+    rv = client.post(f'/api/v1/payments', data=json.dumps(data), headers=headers)
+    pay_id = rv.json.get('id')
+
+    rv = client.get(f'/api/v1/payments/{pay_id}', headers=headers)
+    assert rv.status_code == 200

@@ -183,6 +183,30 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         """Save the information to the DB."""
         return self._dao.flush()
 
+    def asdict(self):
+        """Return the invoice as a python dict."""
+        d = {
+            'id': self._id,
+            'invoice_id': self._invoice_id,
+            'filing_fees': self._filing_fees,
+            'fee_schedule_id': self._fee_schedule_id,
+            'quantity': self._quantity,
+            'processing_fees': self._processing_fees,
+            'service_fees': self._service_fees,
+            'description': self._description,
+            'gst': self._gst,
+            'pst': self._pst,
+            'total': self._total
+        }
+        return d
+
+    @staticmethod
+    def populate(value):
+        """Populate PaymentLineItem."""
+        payment_line_item: PaymentLineItem = PaymentLineItem()
+        payment_line_item._dao = value   # pylint: disable=protected-access
+        return payment_line_item
+
     @staticmethod
     def create(invoice_id: int, fee: FeeSchedule):
         """Create Payment Line Item record."""
