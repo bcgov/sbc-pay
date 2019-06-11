@@ -48,7 +48,8 @@ def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees
     return PaymentLineItem(invoice_id=invoice_id,
                            fee_schedule_id=fee_schedule_id,
                            filing_fees=filing_fees,
-                           total=total)
+                           total=total,
+                           line_item_status_code='CREATED')
 
 
 def test_line_saved_from_new(session):

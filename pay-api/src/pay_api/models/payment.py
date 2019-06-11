@@ -21,6 +21,7 @@ from .base_model import BaseModel
 from .db import db, ma
 from .invoice import Invoice
 from .payment_system import PaymentSystem
+from .invoice import Invoice  # pylint: disable=unused-import
 
 
 class Payment(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-attributes
@@ -32,6 +33,7 @@ class Payment(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
     payment_system_code = db.Column(db.String(10), ForeignKey('payment_system.code'), nullable=False)
     payment_method_code = db.Column(db.String(10), ForeignKey('payment_method.code'), nullable=False)
     payment_status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
+    paid = db.Column(db.Float, nullable=True)
 
     payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='joined', innerjoin=True)
     invoices = relationship('Invoice')

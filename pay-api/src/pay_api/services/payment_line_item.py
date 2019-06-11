@@ -17,9 +17,10 @@ from flask import current_app
 
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.fee_schedule import FeeSchedule
+from pay_api.utils.enums import Status
 
 
-class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
+class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
     """Service to manage Payment Line Item operations."""
 
     def __init__(self):
@@ -36,6 +37,7 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         self._pst: float = None
         self._total: float = None
         self._quantity: int = None
+        self._line_item_status_code: str = None
 
     @property
     def _dao(self):
@@ -57,6 +59,7 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         self.pst: float = self._dao.pst
         self.total: float = self._dao.total
         self.quantity: int = self._dao.quantity
+        self._line_item_status_code: str = self._dao.line_item_status_code
 
     @property
     def id(self):
@@ -179,9 +182,22 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         self._quantity = value
         self._dao.quantity = value
 
-    def flush(self):
-        """Save the information to the DB."""
-        return self._dao.flush()
+    @property
+    def line_item_status_code(self):
+        """Return the line_item_status_code."""
+        return self._line_item_status_code
+
+    @line_item_status_code.setter
+    def line_item_status_code(self, value: str):
+        """Set the line_item_status_code."""
+        self._line_item_status_code = value
+        self._dao.line_item_status_code = value
+
+    @staticmethod
+    def populate(value):
+        line_item: PaymentLineItem = PaymentLineItem()
+        line_item._dao = value
+        return line_item
 
     def asdict(self):
         """Return the invoice as a python dict."""
@@ -196,16 +212,18 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
             'description': self._description,
             'gst': self._gst,
             'pst': self._pst,
-            'total': self._total
+            'total': self._total,
+            'line_item_status_code': self.line_item_status_code,
         }
         return d
 
-    @staticmethod
-    def populate(value):
-        """Populate PaymentLineItem."""
-        payment_line_item: PaymentLineItem = PaymentLineItem()
-        payment_line_item._dao = value   # pylint: disable=protected-access
-        return payment_line_item
+    def flush(self):
+        """Save the information to the DB."""
+        return self._dao.flush()
+
+    def save(self):
+        """Save the information to the DB."""
+        return self._dao.save()
 
     @staticmethod
     def create(invoice_id: int, fee: FeeSchedule):
@@ -222,6 +240,7 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
         p.pst = fee.pst
         p.service_fees = fee.service_fees
         p.quantity = fee.quantity
+        p.line_item_status_code = Status.CREATED.value
 
         p_dao = p.flush()
 

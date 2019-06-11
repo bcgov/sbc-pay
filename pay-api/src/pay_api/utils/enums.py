@@ -40,6 +40,7 @@ class Status(Enum):
     FAILED = 'FAILED'
     REFUNDED = 'REFUNDED'
     CANCELLED = 'CANCELLED'
+    UPDATED = 'UPDATED'
 
 
 class PaymentSystem(Enum):
