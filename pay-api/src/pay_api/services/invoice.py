@@ -262,7 +262,7 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
             'invoice_status_code': self._invoice_status_code,
             'account_id': self._account_id,
             'payment_id': self._payment_id,
-            'payment_data': self._payment_date,
+            'payment_date': self._payment_date,
             'total': self._total,
             'paid': self._paid,
             'refund': self._refund,
