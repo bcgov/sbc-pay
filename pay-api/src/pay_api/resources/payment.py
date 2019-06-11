@@ -28,8 +28,8 @@ from pay_api.utils.util import cors_preflight
 API = Namespace('payments', description='Payment System - Payments')
 
 
-@cors_preflight('GET, POST')
-@API.route('', methods=['GET', 'POST', 'OPTIONS'])
+@cors_preflight('POST')
+@API.route('', methods=['POST', 'OPTIONS'])
 class Payment(Resource):
     """Endpoint resource to create payment."""
 
