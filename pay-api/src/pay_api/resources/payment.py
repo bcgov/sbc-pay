@@ -70,6 +70,10 @@ class Payments(Resource):
             response, status = PaymentService.get_payment(payment_id), HTTPStatus.OK
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
     def put(payment_identifier):
         """Update the payment records."""
         current_app.logger.info('<Payment.put')

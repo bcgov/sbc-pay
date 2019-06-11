@@ -241,7 +241,6 @@ def test_payment_put(session, client, jwt, app):
     rv = client.post(f'/api/v1/payments', data=json.dumps(data), headers=headers)
     pay_id = rv.json.get('id')
 
-
     transaction = factory_payment_transaction(pay_id)
     transaction.save()
 
