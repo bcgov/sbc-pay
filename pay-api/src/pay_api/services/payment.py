@@ -177,8 +177,9 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         """Return the payment as a python dict."""
         invoices = []
         for invoice in self._invoices:
-            if Invoice.populate(invoice).invoice_status_code != Status.CANCELLED.value:
-                invoices.append(Invoice.populate(invoice).asdict())
+            current_invoice = Invoice.populate(invoice)
+            if current_invoice.invoice_status_code != Status.CANCELLED.value:
+                invoices.append(current_invoice.asdict())
 
         d = {
             'id': self._id,
