@@ -14,10 +14,12 @@
 """Model to handle all operations related to Invoice."""
 
 from sqlalchemy import ForeignKey
+from sqlalchemy.orm import relationship
 
 from .audit import Audit
 from .base_model import BaseModel
 from .db import db, ma
+from .payment_line_item import PaymentLineItem  # pylint: disable=unused-import
 
 
 class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-attributes
@@ -37,15 +39,22 @@ class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
     payment_date = db.Column(db.DateTime, nullable=True)
     refund = db.Column(db.Float, nullable=True)
 
-    @classmethod
-    def find_by_id(cls, identfier: int):
-        """Return a Invoice by id."""
-        return cls.query.get(identfier)
+    payment_line_items = relationship('PaymentLineItem')
 
     @classmethod
-    def find_by_payment_id(cls, identfier: int):
+    def find_by_id(cls, identifier: int):
         """Return a Invoice by id."""
-        return cls.query.filter_by(payment_id=identfier).one_or_none()
+        return cls.query.get(identifier)
+
+    @classmethod
+    def find_by_payment_id(cls, identifier: int):
+        """Return a Invoice by id."""
+        return cls.query.filter_by(payment_id=identifier).one_or_none()
+
+    @classmethod
+    def find_all_by_payment_id(cls, identifier: int):
+        """Return a Invoice by id."""
+        return cls.query.filter_by(payment_id=identifier)
 
 
 class InvoiceSchema(ma.ModelSchema):

@@ -35,6 +35,7 @@ class PaymentLineItem(db.Model, BaseModel):
     gst = db.Column(db.Float, nullable=True)
     pst = db.Column(db.Float, nullable=True)
     total = db.Column(db.Float, nullable=False)
+    line_item_status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
 
     @classmethod
     def find_by_id(cls, identifier: int):

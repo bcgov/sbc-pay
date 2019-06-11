@@ -33,7 +33,7 @@ from .invoice import InvoiceModel
 from .payment import Payment
 
 
-class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
+class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
     """Service to manage Payment transaction operations."""
 
     def __init__(self):
@@ -149,7 +149,7 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
             'client_system_url': self._client_system_url,
             'pay_system_url': self._pay_system_url,
             'status_code': self._status_code,
-            'transaction_start_time': self._transaction_start_time
+            'transaction_start_time': self._transaction_start_time,
         }
         if self._transaction_end_time:
             d['transaction_end_time'] = self._transaction_end_time
@@ -209,11 +209,13 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
             invoice = InvoiceModel.find_by_payment_id(payment.id)
 
             pay_system_url = current_app.config.get('PAYBC_PORTAL_URL') + '?inv_number={}&pbc_ref_number={}'.format(
-                invoice.invoice_number, invoice.reference_number)
+                invoice.invoice_number, invoice.reference_number
+            )
 
             pay_web_transaction_url = current_app.config.get('AUTH_WEB_PAY_TRANSACTION_URL')
             return_url = urllib.parse.quote(
-                f'{pay_web_transaction_url}/returnpayment/{payment.id}/transaction/{transaction_id}', '')
+                f'{pay_web_transaction_url}/returnpayment/{payment.id}/transaction/{transaction_id}', ''
+            )
             pay_system_url += f'&redirect_uri={return_url}'
 
         current_app.logger.debug('>build_pay_system_url')
@@ -233,6 +235,19 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         return transaction
 
     @staticmethod
+    def find_active_by_payment_id(payment_identifier: int):
+        """Find active transaction by id."""
+        existing_transactions = PaymentTransactionModel.find_by_payment_id(payment_identifier)
+        transaction: PaymentTransaction = None
+        if existing_transactions:
+            for existing_transaction in existing_transactions:
+                if existing_transaction.status_code not in (Status.COMPLETED.value, Status.CANCELLED.value):
+                    transaction = existing_transaction
+
+        current_app.logger.debug('>find_active_by_payment_id')
+        return transaction
+
+    @staticmethod
     def update_transaction(payment_identifier: int, transaction_id: uuid, receipt_number: str):
         """Update transaction record.
 
@@ -245,8 +260,9 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         6. Change the status of Payment
         7. Update the transaction record
         """
-        transaction_dao: PaymentTransactionModel = PaymentTransactionModel.find_by_id_and_payment_id(transaction_id,
-                                                                                                     payment_identifier)
+        transaction_dao: PaymentTransactionModel = PaymentTransactionModel.find_by_id_and_payment_id(
+            transaction_id, payment_identifier
+        )
         if not transaction_dao:
             raise BusinessException(Error.PAY008)
         if transaction_dao.status_code == Status.COMPLETED.value:
@@ -255,9 +271,10 @@ class PaymentTransaction():  # pylint: disable=too-many-instance-attributes
         payment: Payment = Payment.find_by_id(payment_identifier)
 
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create(
-            payment_system=payment.payment_system_code)
+            payment_system=payment.payment_system_code
+        )
 
-        invoice = Invoice.find_by_payment_identfier(payment_identifier)
+        invoice = Invoice.find_by_payment_identifier(payment_identifier)
 
         payment_account = PaymentAccount.find_by_id(invoice.account_id)
 

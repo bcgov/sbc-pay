@@ -50,29 +50,29 @@ paths:
             X-Application-Context:
               schema:
                 type: string
-              description: X-Application-Context	
-              examples: 
+              description: X-Application-Context
+              examples:
                 fee_1:
                   value: 'application:prod'
             Access-Control-Allow-Origin:
               schema:
                 type: string
               description: Access-Control-Allow-Origin
-              examples: 
+              examples:
                 fee_1:
                   value: '*'
             Access-Control-Allow-Methods:
               schema:
                 type: string
               description: Access-Control-Allow-Methods
-              examples: 
+              examples:
                 fee_1:
                   value: 'GET, POST, DELETE, PUT'
             Access-Control-Allow-Headers:
               schema:
                 type: string
               description: Access-Control-Allow-Headers
-              examples: 
+              examples:
                 fee_1:
                   value: 'Content-Type, api_key, Authorization'
 
@@ -252,28 +252,40 @@ components:
           type: string
           description: Description of the error.
       description: Contains details of an error that was encountered.
-    Fee:
+    Payment_Line_Item:
       type: object
       properties:
-        filing_type_code:
-          type: string
-          description: Filing Type Code
-        filing_type:
-          type: string
-          description: Filing Type
-        filing_fees:
+        id:
           type: integer
+          description: Unique identifier for payment line item
+        invoice_id:
+          type: integer
+          description: Unique identifier for invoice
+        fee_schedule_id:
+          type: id
+          description: Fee schedule id
+        quantity:
+          type: integer
+          description: Quantity of fee
+        filing_fees:
+          type: float
           description: Fees for filing
         service_fees:
-          type: integer
+          type: float
           description: Applicable service fees
         processing_fees:
-          type: integer
+          type: float
           description: Applicable processing fees
-        tax:
-          type: object
-          items:
-            $ref: "#/components/schemas/Tax"
+        description:
+          type: string
+          description: Description of the fee item
+        gst:
+          type: float
+          description: Applicable gst of the fee item
+        pst:
+          type: float
+          description: Applicable pst of the fee item
+
     Tax:
       type: object
       properties:
@@ -369,16 +381,74 @@ components:
     Payment:
       type: object
       properties:
-        payment_identifier:
-          type: string
+        id:
+          type: integer
           description: Unique identifier for payment
-        payment_status:
+        payment_create_by:
           type: string
-          description: Status of payment.
-          enum: [pending, complete]
-        fees:
+          description: username of the account
+        payment_create_date:
+          type: datetime
+          description: payment creation date
+        payment_invoices:
           type: array
           items:
-              $ref: "#/components/schemas/Fee"
+              $ref: "#/components/schemas/Invoice"
+        payment_method_code:
+          type: string
+          description: code of payment method
+        payment_status_code:
+          type: string
+          description: Status of payment.
+          enum: [DRAFT, IN_PROGRESS, CREATED, COMPLETED, PARTIAL, FAILED, REFUNDED, CANCELLED]
+        payment_update_by:
+          type: string
+          description: username of the account that made update
+        payment_update_date:
+          type: datetime
+          description: payment update date
 
-
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for invoice
+        account_id:
+          type: integer
+          description: id of the account
+        create_by:
+          type: string
+          description: username of the account
+        create_on:
+          type: datetime
+          description: invoice creation date
+        payment_date:
+          type: datetime
+          description: date made payment
+        payment_id:
+          type: integer
+          description: id of the account
+        paid:
+          type: float
+          description: id of the account
+        payment_line_items:
+          type: array
+          items:
+              $ref: "#/components/schemas/Payment_Line_Item"
+        reference_number:
+          type: string
+          description: reference number
+        payment_status_code:
+          type: string
+          description: Status of payment.
+          enum: [DRAFT, IN_PROGRESS, CREATED, COMPLETED, PARTIAL, FAILED, REFUNDED, CANCELLED]
+        payment_system_code:
+          type: string
+          description: code of payment system
+        payment_update_by:
+          type: string
+          description: username of the account that made update
+        payment_update_date:
+          type: datetime
+          description: payment update date

@@ -25,22 +25,32 @@ from pay_api.services.invoice import Invoice as Invoice_service
 
 def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
     """Factory."""
-    return PaymentAccount(corp_number=corp_number, corp_type_code=corp_type_code,
-                          payment_system_code=payment_system_code)
+    return PaymentAccount(
+        corp_number=corp_number, corp_type_code=corp_type_code, payment_system_code=payment_system_code
+    )
 
 
 def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC', payment_status_code='DRAFT'):
     """Factory."""
-    return Payment(payment_system_code=payment_system_code, payment_method_code=payment_method_code,
-                   payment_status_code=payment_status_code, created_by='test', created_on=datetime.now())
+    return Payment(
+        payment_system_code=payment_system_code,
+        payment_method_code=payment_method_code,
+        payment_status_code=payment_status_code,
+        created_by='test',
+        created_on=datetime.now(),
+    )
 
 
 def factory_invoice(payment_id: str, account_id: str):
     """Factory."""
-    return Invoice(payment_id=payment_id,
-                   invoice_status_code='DRAFT',
-                   account_id=account_id,
-                   total=0, created_by='test', created_on=datetime.now())
+    return Invoice(
+        payment_id=payment_id,
+        invoice_status_code='DRAFT',
+        account_id=account_id,
+        total=0,
+        created_by='test',
+        created_on=datetime.now(),
+    )
 
 
 def test_invoice_saved_from_new(session):
@@ -88,7 +98,7 @@ def test_invoice_find_by_valid_payment_id(session):
     i = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
     i.save()
 
-    invoice = Invoice_service.find_by_payment_identfier(payment.id)
+    invoice = Invoice_service.find_by_payment_identifier(payment.id)
 
     assert invoice is not None
     assert invoice.id is not None
@@ -109,7 +119,7 @@ def test_invoice_find_by_valid_payment_id(session):
 
 def test_invoice_find_by_invalid_payment_id(session):
     """Test invalid lookup."""
-    invoice = Invoice_service.find_by_payment_identfier(999)
+    invoice = Invoice_service.find_by_payment_identifier(999)
 
     assert invoice is not None
     assert invoice.id is None

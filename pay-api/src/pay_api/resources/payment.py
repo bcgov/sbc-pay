@@ -46,10 +46,41 @@ class Payment(Resource):
             return jsonify({'code': 'PAY999', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
 
         try:
-            response, status = PaymentService.create_payment(request_json,
-                                                             g.jwt_oidc_token_info.get('preferred_username',
-                                                                                       None)), HTTPStatus.CREATED
+            response, status = (
+                PaymentService.create_payment(request_json, g.jwt_oidc_token_info.get('preferred_username', None)),
+                HTTPStatus.CREATED,
+            )
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         current_app.logger.debug('>Payment.post')
+        return jsonify(response), status
+
+
+@cors_preflight(['GET', 'PUT'])
+@API.route('/<string:payment_identifier>', methods=['GET', 'PUT', 'OPTIONS'])
+class Payments(Resource):
+    """Endpoint resource to create payment."""
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
+    def put(payment_identifier):
+        """Update the payment records."""
+        current_app.logger.info('<Payment.put')
+        request_json = request.get_json()
+        # Validate the input request
+        valid_format, errors = schema_utils.validate(request_json, 'payment_request')
+        if not valid_format:
+            return jsonify({'code': 'PAY003', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
+
+        try:
+            response, status = (
+                PaymentService.update_payment(
+                    payment_identifier, request_json, g.jwt_oidc_token_info.get('preferred_username', None)
+                ),
+                HTTPStatus.OK,
+            )
+        except BusinessException as exception:
+            response, status = {'code': exception.code, 'message': exception.message}, exception.status
+        current_app.logger.debug('>Payment.put')
         return jsonify(response), status

@@ -30,6 +30,7 @@ def test_base_payment_system(session):
         {
             'create_account': lambda self: print('Inside create_account'),
             'create_invoice': lambda self: print('Inside create_invoice'),
+            'update_invoice': lambda self: print('Inside update_invoice'),
             'cancel_invoice': lambda self: print('Inside cancel_invoice'),
             'get_receipt': lambda self: print('Inside get_receipt'),
             'get_payment_system_code': lambda self: print('Inside get_payment_system_code')

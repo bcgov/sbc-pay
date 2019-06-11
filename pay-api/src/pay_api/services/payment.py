@@ -19,10 +19,11 @@ from typing import Any, Dict
 from flask import current_app
 
 from pay_api.models import Payment as PaymentModel
+from pay_api.services.invoice import Invoice
 from pay_api.utils.enums import Status
 
 
-class Payment():  # pylint: disable=too-many-instance-attributes
+class Payment:  # pylint: disable=too-many-instance-attributes
     """Service to manage Payment model related operations."""
 
     def __init__(self):
@@ -32,10 +33,12 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         self._payment_system_code: str = None
         self._payment_method_code: str = None
         self._payment_status_code: str = None
+        self._paid: float = None
         self._created_by: str = None
         self._created_on: datetime = datetime.now()
         self._updated_by: str = None
         self._updated_on: datetime = None
+        self._invoices = None
 
     @property
     def _dao(self):
@@ -50,10 +53,12 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         self.payment_system_code: str = self._dao.payment_system_code
         self.payment_method_code: str = self._dao.payment_method_code
         self.payment_status_code: str = self._dao.payment_status_code
+        self.paid: str = self._dao.paid
         self.created_by: str = self._dao.created_by
         self.created_on: datetime = self._dao.created_on
         self.updated_by: str = self._dao.updated_by
         self.updated_on: datetime = self._dao.updated_on
+        self.invoices = self._dao.invoices
 
     @property
     def id(self):
@@ -100,6 +105,17 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         self._dao.payment_status_code = value
 
     @property
+    def paid(self):
+        """Return the paid."""
+        return self._paid
+
+    @paid.setter
+    def paid(self, value: float):
+        """Set the paid."""
+        self._paid = value
+        self._dao.paid = value
+
+    @property
     def created_by(self):
         """Return the created_by."""
         return self._created_by
@@ -143,6 +159,17 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         self._updated_on = value
         self._dao.updated_on = value
 
+    @property
+    def invoices(self):
+        """Return the payment invoices."""
+        return self._invoices
+
+    @invoices.setter
+    def invoices(self, value):
+        """Set the invoices."""
+        self._invoices = value
+        self._dao.invoices = value
+
     def commit(self):
         """Save the information to the DB."""
         return self._dao.commit()
@@ -161,11 +188,22 @@ class Payment():  # pylint: disable=too-many-instance-attributes
 
     def asdict(self):
         """Return the payment as a python dict."""
+
+        invoices = []
+        for invoice in self._invoices:
+            invoices.append(Invoice.populate(invoice).asdict())
+
         d = {
             'id': self._id,
             'payment_system_code': self._payment_system_code,
             'payment_method_code': self._payment_method_code,
-            'payment_status_code': self._payment_status_code
+            'payment_status_code': self._payment_status_code,
+            'paid': self._paid,
+            'payment_create_date': self._created_on,
+            'payment_create_by': self._created_by,
+            'payment_update_date': self._updated_on,
+            'payment_update_by': self._updated_by,
+            'payment_invoices': invoices,
         }
         return d
 
@@ -177,6 +215,7 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         p.payment_method_code = payment_info.get('method_of_payment', None)
         p.payment_status_code = Status.CREATED.value
         p.payment_system_code = payment_system
+        p.paid = 0
         p.created_by = current_user
         p.created_on = datetime.now()
         pay_dao = p.flush()
