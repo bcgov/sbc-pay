@@ -19,6 +19,7 @@ from typing import Any, Dict
 from flask import current_app
 
 from pay_api.models import Payment as PaymentModel
+from pay_api.services.invoice import Invoice
 from pay_api.utils.enums import Status
 
 
@@ -36,6 +37,7 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         self._created_on: datetime = datetime.now()
         self._updated_by: str = None
         self._updated_on: datetime = None
+        self._invoices = None
 
     @property
     def _dao(self):
@@ -54,6 +56,7 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         self.created_on: datetime = self._dao.created_on
         self.updated_by: str = self._dao.updated_by
         self.updated_on: datetime = self._dao.updated_on
+        self.invoices = self._dao.invoices
 
     @property
     def id(self):
@@ -143,6 +146,17 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         self._updated_on = value
         self._dao.updated_on = value
 
+    @property
+    def invoices(self):
+        """Return the payment invoices."""
+        return self._invoices
+
+    @invoices.setter
+    def invoices(self, value):
+        """Set the invoices."""
+        self._invoices = value
+        self._dao.invoices = value
+
     def commit(self):
         """Save the information to the DB."""
         return self._dao.commit()
@@ -161,11 +175,22 @@ class Payment():  # pylint: disable=too-many-instance-attributes
 
     def asdict(self):
         """Return the payment as a python dict."""
+        invoices = []
+        for invoice in self._invoices:
+            current_invoice = Invoice.populate(invoice)
+            if current_invoice.invoice_status_code != Status.CANCELLED.value:
+                invoices.append(current_invoice.asdict())
+
         d = {
             'id': self._id,
             'payment_system_code': self._payment_system_code,
             'payment_method_code': self._payment_method_code,
-            'payment_status_code': self._payment_status_code
+            'payment_status_code': self._payment_status_code,
+            'payment_create_date': self._created_on,
+            'payment_create_by': self._created_by,
+            'payment_update_date': self._updated_on,
+            'payment_update_by': self._updated_by,
+            'payment_invoices': invoices
         }
         return d
 

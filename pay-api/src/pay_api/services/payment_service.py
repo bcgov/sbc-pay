@@ -97,7 +97,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             current_app.logger.debug(payment)
 
             current_app.logger.debug('Creating Invoice record for payment {}'.format(payment.id))
-            invoice = Invoice.create(payment_account, payment, fees, current_user)
+            invoice = Invoice.create(payment_account, payment.id, fees, current_user)
 
             line_items = []
             for fee in fees:
@@ -126,3 +126,13 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         current_app.logger.debug('>create_payment')
 
         return payment.asdict()
+
+    @classmethod
+    def get_payment(cls, payment_id):
+        """Get payment related records."""
+        payment: Payment = None
+        try:
+            payment: Payment = Payment.find_by_id(payment_id)
+            return payment.asdict()
+        except Exception as e:
+            raise e
