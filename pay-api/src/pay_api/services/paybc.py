@@ -167,10 +167,11 @@ class PayBcService(OAuthService):
         return invoice_response.json()
 
     def do_adjustment(self, access_token, site, invoice_number):
-        """"Adjust the amount"""
+        """Adjust the amount."""
         current_app.logger.debug('>Creating PayBC Adjustment  For Invoice: ', invoice_number)
         adjustment_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/adjs/' \
-            .format(site.get('party_number', None), site.get('account_number', None), site.get('site_number', None), invoice_number,)
+            .format(site.get('party_number', None), site.get('account_number', None), site.get('site_number', None),
+                    invoice_number,)
         current_app.logger.debug('>Creating PayBC Adjustment URL', adjustment_url)
 
         adjustment = dict(
@@ -185,7 +186,8 @@ class PayBcService(OAuthService):
             }
         )
 
-        adjustment_response = self.post(adjustment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, adjustment)
+        adjustment_response = self.post(adjustment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                        adjustment)
 
         current_app.logger.debug('>Created PayBC Invoice Adjustment')
         return adjustment_response.json()

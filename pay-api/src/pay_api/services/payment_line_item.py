@@ -202,8 +202,9 @@ class PaymentLineItem():  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def populate(value):
+        """Populate PaymentLineItem."""
         payment_line_item: PaymentLineItem = PaymentLineItem()
-        payment_line_item._dao = value
+        payment_line_item._dao = value   # pylint: disable=protected-access
         return payment_line_item
 
     @staticmethod

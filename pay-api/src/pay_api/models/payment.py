@@ -19,8 +19,8 @@ from sqlalchemy.orm import relationship
 from .audit import Audit
 from .base_model import BaseModel
 from .db import db, ma
-from .payment_system import PaymentSystem
 from .invoice import Invoice
+from .payment_system import PaymentSystem
 
 
 class Payment(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-attributes

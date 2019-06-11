@@ -157,7 +157,6 @@ class Payment():  # pylint: disable=too-many-instance-attributes
         self._invoices = value
         self._dao.invoices = value
 
-
     def commit(self):
         """Save the information to the DB."""
         return self._dao.commit()
@@ -176,7 +175,6 @@ class Payment():  # pylint: disable=too-many-instance-attributes
 
     def asdict(self):
         """Return the payment as a python dict."""
-
         invoices = []
         for invoice in self._invoices:
             if Invoice.populate(invoice).invoice_status_code != Status.CANCELLED.value:

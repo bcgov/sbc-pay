@@ -129,6 +129,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
     @classmethod
     def get_payment(cls, payment_id):
+        """Get payment related records."""
         payment: Payment = None
         try:
             payment: Payment = Payment.find_by_id(payment_id)
