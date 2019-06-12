@@ -265,7 +265,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
             'total': self._total,
             'paid': self._paid,
             'refund': self._refund,
-            'payment_line_items': payment_line_items,
+            'payment_line_items': payment_line_items
         }
         return d
 

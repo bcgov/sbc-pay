@@ -106,7 +106,7 @@ class PaybcService(PaymentSystemService, OAuthService):
                 'Updating Invoice',
                 amount,
                 line=line.get('line_number'),
-                access_token=access_token,
+                access_token=access_token
             )
         return invoice
 

@@ -203,7 +203,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes
             'payment_create_by': self._created_by,
             'payment_update_date': self._updated_on,
             'payment_update_by': self._updated_by,
-            'payment_invoices': invoices,
+            'payment_invoices': invoices
         }
         return d
 

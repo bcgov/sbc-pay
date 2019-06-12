@@ -59,7 +59,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         self.pst: float = self._dao.pst
         self.total: float = self._dao.total
         self.quantity: int = self._dao.quantity
-        self._line_item_status_code: str = self._dao.line_item_status_code
+        self.line_item_status_code: str = self._dao.line_item_status_code
 
     @property
     def id(self):
@@ -213,7 +213,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
             'gst': self._gst,
             'pst': self._pst,
             'total': self._total,
-            'line_item_status_code': self.line_item_status_code,
+            'line_item_status_code': self.line_item_status_code
         }
         return d
 
