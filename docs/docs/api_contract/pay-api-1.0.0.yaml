@@ -54,12 +54,20 @@ paths:
               examples:
                 fee_1:
                   value: 'application:prod'
+                fee_2:
+                  value: 'application:prod'
+                fee_3:
+                  value: 'application:prod'
             Access-Control-Allow-Origin:
               schema:
                 type: string
               description: Access-Control-Allow-Origin
               examples:
                 fee_1:
+                  value: '*'
+                fee_2:
+                  value: '*'
+                fee_3:
                   value: '*'
             Access-Control-Allow-Methods:
               schema:
@@ -68,12 +76,20 @@ paths:
               examples:
                 fee_1:
                   value: 'GET, POST, DELETE, PUT'
+                fee_2:
+                  value: 'GET, POST, DELETE, PUT'
+                fee_3:
+                  value: 'GET, POST, DELETE, PUT'
             Access-Control-Allow-Headers:
               schema:
                 type: string
               description: Access-Control-Allow-Headers
               examples:
                 fee_1:
+                  value: 'Content-Type, api_key, Authorization'
+                fee_2:
+                  value: 'Content-Type, api_key, Authorization'
+                fee_3:
                   value: 'Content-Type, api_key, Authorization'
 
           content:
@@ -83,8 +99,33 @@ paths:
               examples:
                 fee_1:
                   value: '{
-                    "filing_type":"annual-report",
+                    "filing_type":"Annual Report",
+                    "filing_type_code":"OTANN",
                     "filing_fees":40,
+                    "service_fees":0,
+                    "processing_fees":0,
+                    "tax": {
+                      "gst":17.7,
+                      "pst":0
+                    }
+                  }'
+                fee_2:
+                  value: '{
+                    "filing_type":"Change of Registered Office Address",
+                    "filing_type_code":"OTAOAD",
+                    "filing_fees":20,
+                    "service_fees":10,
+                    "processing_fees":5,
+                    "tax": {
+                      "gst":0,
+                      "pst":0
+                    }
+                  }'
+                fee_3:
+                  value: '{
+                    "filing_type":"Change of Director",
+                    "filing_type_code":"OTADD",
+                    "filing_fees":55,
                     "service_fees":0,
                     "processing_fees":0,
                     "tax": {
@@ -116,6 +157,10 @@ paths:
         examples:
           fee_1:
             value: CP
+          fee_2:
+            value: CP
+          fee_3:
+            value: CP
       - name: filing_type_code
         in: path
         required: true
@@ -123,7 +168,11 @@ paths:
           type: string
         examples:
           fee_1:
-            value: AR
+            value: OTANN
+          fee_2:
+            value: OTAOAD
+          fee_3:
+            value: OTADD
       - name: date
         in: query
         schema:
@@ -138,6 +187,7 @@ paths:
         examples:
           fee_1:
             value: false
+
   /api/v1/payments:
     post:
       tags:
@@ -151,10 +201,55 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PaymentRequest'
+            examples:
+                payment_post_1:
+                  value : '{
+                      "payment_info": {
+                        "method_of_payment": "CC"
+                      },
+                      "business_info": {
+                        "business_identifier": "CP1234",
+                        "corp_type": "CP",
+                        "business_name": "ABC Corp",
+                        "contact_info": {
+                          "city": "Victoria",
+                          "postal_code": "V8P2P2",
+                          "province": "BC",
+                          "address_line_1": "100 Douglas Street",
+                          "country": "CA"
+                        }
+                      },
+                      "filing_info": {
+                        "filing_types": [
+                          {
+                            "filing_type_code": "OTADD",
+                          "filing_description":"TEST"
+                          },
+                          {
+                            "filing_type_code": "OTANN"
+                          }
+                        ]
+                      }
+                    }'
         required: true
       responses:
         '201':
           description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+              examples:
+                payment_post_1:
+                  value : '{
+                      "id": 1,
+                      "created_by": "cp0001219",
+                      "created_on": "Wed, 12 Jun 2019 15:24:23 GMT",
+                      "payment_method": "CC",
+                      "payment_system": "PAYBC",
+                      "status_code": "CREATED"
+                  }'
+
         '400':
           description: BadRequest
           content:
@@ -201,16 +296,109 @@ paths:
       responses:
         '200':
           description: Success
+          headers:
+            X-Application-Context:
+              schema:
+                type: string
+              description: X-Application-Context
+              examples:
+                payment_get_1:
+                  value: 'application:prod'
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              description: Access-Control-Allow-Origin
+              examples:
+                payment_get_1:
+                  value: '*'
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+              description: Access-Control-Allow-Methods
+              examples:
+                payment_get_1:
+                  value: 'GET, POST, DELETE, PUT'
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              description: Access-Control-Allow-Headers
+              examples:
+                payment_get_1:
+                  value: 'Content-Type, api_key, Authorization'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Payment'
+              examples:
+                payment_get_1:
+                  value: '{
+                      "created_by": "cp0001219",
+                      "created_on": "Wed, 12 Jun 2019 15:24:23 GMT",
+                      "id": 29,
+                      "invoices": [
+                          {
+                              "account_id": 1,
+                              "created_by": "cp0001219",
+                              "created_on": "Wed, 12 Jun 2019 15:24:23 GMT",
+                              "id": 29,
+                              "invoice_number": "10021",
+                              "invoice_status": "CREATED",
+                              "line_items": [
+                                  {
+                                      "description": "TEST",
+                                      "fee_schedule_id": 2,
+                                      "filing_fees": 20,
+                                      "gst": 0,
+                                      "id": 54,
+                                      "processing_fees": 0,
+                                      "pst": 0,
+                                      "quantity": 1,
+                                      "service_fees": 0,
+                                      "total": 20
+                                  },
+                                  {
+                                      "description": "Annual Report",
+                                      "fee_schedule_id": 1,
+                                      "filing_fees": 30,
+                                      "gst": 0,
+                                      "id": 55,
+                                      "processing_fees": 0,
+                                      "pst": 0,
+                                      "quantity": 1,
+                                      "service_fees": 0,
+                                      "total": 30
+                                  }
+                              ],
+                              "paid": 0,
+                              "payment_date": null,
+                              "payment_id": 29,
+                              "reference_number": "10005",
+                              "refund": 0,
+                              "total": 50,
+                              "updated_by": null,
+                              "updated_on": null
+                          }
+                      ],
+                      "payment_method": "CC",
+                      "payment_system": "PAYBC",
+                      "status_code": "CREATED"
+                  }'
         '400':
           description: BadRequest
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+    - name: payment_identifier
+      in: path     
+      required: true
+      schema:
+        format: string
+        type: string
+      examples:
+        payment_get_1:
+          value: 1
 
   /api/v1/payments/:payment_identifier/receipts:
     get:
@@ -384,27 +572,27 @@ components:
         id:
           type: integer
           description: Unique identifier for payment
-        payment_create_by:
+        created_by:
           type: string
           description: username of the account
-        payment_create_date:
+        created_on:
           type: datetime
           description: payment creation date
-        payment_invoices:
+        invoices:
           type: array
           items:
               $ref: "#/components/schemas/Invoice"
-        payment_method_code:
+        payment_method:
           type: string
           description: code of payment method
-        payment_status_code:
+        payment_status:
           type: string
           description: Status of payment.
           enum: [DRAFT, IN_PROGRESS, CREATED, COMPLETED, PARTIAL, FAILED, REFUNDED, CANCELLED]
-        payment_update_by:
+        updated_by:
           type: string
           description: username of the account that made update
-        payment_update_date:
+        updated_date:
           type: datetime
           description: payment update date
 
@@ -417,10 +605,10 @@ components:
         account_id:
           type: integer
           description: id of the account
-        create_by:
+        created_by:
           type: string
           description: username of the account
-        create_on:
+        created_on:
           type: datetime
           description: invoice creation date
         payment_date:
@@ -432,23 +620,14 @@ components:
         paid:
           type: float
           description: id of the account
-        payment_line_items:
+        line_items:
           type: array
           items:
               $ref: "#/components/schemas/Payment_Line_Item"
         reference_number:
           type: string
           description: reference number
-        payment_status_code:
+        invoice_status:
           type: string
           description: Status of payment.
           enum: [DRAFT, IN_PROGRESS, CREATED, COMPLETED, PARTIAL, FAILED, REFUNDED, CANCELLED]
-        payment_system_code:
-          type: string
-          description: code of payment system
-        payment_update_by:
-          type: string
-          description: username of the account that made update
-        payment_update_date:
-          type: datetime
-          description: payment update date

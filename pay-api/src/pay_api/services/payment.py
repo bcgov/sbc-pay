@@ -183,15 +183,20 @@ class Payment():  # pylint: disable=too-many-instance-attributes
 
         d = {
             'id': self._id,
-            'payment_system_code': self._payment_system_code,
-            'payment_method_code': self._payment_method_code,
-            'payment_status_code': self._payment_status_code,
-            'payment_create_date': self._created_on,
-            'payment_create_by': self._created_by,
-            'payment_update_date': self._updated_on,
-            'payment_update_by': self._updated_by,
-            'payment_invoices': invoices
+            'payment_system': self._payment_system_code,
+            'payment_method': self._payment_method_code,
+            'status_code': self._payment_status_code,
+            'created_on': self._created_on,
+            'created_by': self._created_by
         }
+
+        if self._updated_on:
+            d.updated_on = self._updated_on
+        if self._updated_by:
+            d.updated_by = self._updated_by
+        if invoices:
+            d['invoices'] = invoices
+
         return d
 
     @staticmethod
