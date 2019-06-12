@@ -272,7 +272,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
     @staticmethod
     def populate(value):
         invoice: Invoice = Invoice()
-        invoice._dao = value
+        invoice._dao = value # pylint: disable=protected-access
         return invoice
 
     @staticmethod
@@ -309,17 +309,6 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
     def find_by_payment_identifier(identifier: int):
         """Find invoice by payment identifier."""
         invoice_dao = InvoiceModel.find_by_payment_id(identifier)
-
-        invoice = Invoice()
-        invoice._dao = invoice_dao  # pylint: disable=protected-access
-
-        current_app.logger.debug('>find_by_id')
-        return invoice
-
-    @staticmethod
-    def find_all_by_payment_identifier(identifier: int):
-        """Find invoice by payment identifier."""
-        invoice_dao = InvoiceModel.find_all_by_payment_id(identifier)
 
         invoice = Invoice()
         invoice._dao = invoice_dao  # pylint: disable=protected-access

@@ -138,14 +138,15 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
     @classmethod
     def get_payment(cls, payment_id):
+        """Get payment related records."""
         try:
             payment: Payment = Payment.find_by_id(payment_id)
             return payment.asdict()
-        except Exception as e:
-            raise e
+        except Exception:
+            raise BusinessException(Error.PAY005)
 
     @classmethod
-    def update_payment(cls, payment_id: int, payment_request: Tuple[Dict[str, Any]], current_user: str = None):  # pylint: disable=too-many-locals
+    def update_payment(cls, payment_id: int, payment_request: Tuple[Dict[str, Any]], current_user: str = None):  # pylint: disable=too-many-locals,too-many-statements
         """Update payment related records.
 
             Does the following;
@@ -167,7 +168,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         current_app.logger.debug('<update_payment')
         payment_info = payment_request.get('payment_info')
         business_info = payment_request.get('business_info')
-        contact_info = business_info.get('contact_info')
         filing_info = payment_request.get('filing_info')
 
         current_app.logger.debug('Creating PaymentSystemService impl')
@@ -193,21 +193,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             fees.append(fee)
 
         current_app.logger.debug('Check if payment account exists')
-        payment_account: PaymentAccount = PaymentAccount.find_account(
-            business_info.get('business_identifier', None),
-            business_info.get('corp_type', None),
-            pay_service.get_payment_system_code(),
-        )
-        if not payment_account.id:
-            current_app.logger.debug('No payment account, creating new')
-            party_number, account_number, site_number = pay_service.create_account(
-                business_info.get('business_name'), contact_info
-            )
-            payment_account = PaymentAccount.create(
-                business_info, (account_number, party_number, site_number), pay_service.get_payment_system_code()
-            )
-
-        current_app.logger.debug('Updating payment record for account : {}'.format(payment_account.id))
 
         payment: Payment = None
 
@@ -248,6 +233,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                         current_app.logger.debug('Creating line items')
                         line_items.append(PaymentLineItem.create(invoice.id, fee))
                     current_app.logger.debug('Handing off to payment system to update invoice')
+
+                    payment_account: PaymentAccount = PaymentAccount.find_by_id(invoice.account_id)
 
                     # update invoice
                     pay_service.update_invoice(

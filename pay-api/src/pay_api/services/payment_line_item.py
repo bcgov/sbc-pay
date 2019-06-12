@@ -196,7 +196,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def populate(value):
         line_item: PaymentLineItem = PaymentLineItem()
-        line_item._dao = value
+        line_item._dao = value # pylint: disable=protected-access
         return line_item
 
     def asdict(self):
@@ -220,10 +220,6 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
     def flush(self):
         """Save the information to the DB."""
         return self._dao.flush()
-
-    def save(self):
-        """Save the information to the DB."""
-        return self._dao.save()
 
     @staticmethod
     def create(invoice_id: int, fee: FeeSchedule):

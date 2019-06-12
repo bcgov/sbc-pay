@@ -28,7 +28,7 @@ from pay_api.services.payment_service import PaymentService
 from pay_api.utils.enums import Status
 
 
-def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
+def factory_payment_account(corp_number: str = 'CP1234', corp_type_code: str ='CP', payment_system_code : str ='PAYBC'):
     """Factory."""
     return PaymentAccount(
         corp_number=corp_number,
@@ -41,7 +41,7 @@ def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', pa
 
 
 def factory_payment(
-    payment_system_code: str = 'PAYBC', payment_method_code='CC', payment_status_code=Status.DRAFT.value
+    payment_system_code: str = 'PAYBC', payment_method_code: str ='CC', payment_status_code: str = Status.DRAFT.value
 ):
     """Factory."""
     return Payment(
@@ -199,11 +199,10 @@ def test_update_payment_record(session):
     }
 
     payment_response = PaymentService.update_payment(payment.id, payment_request, 'test')
-
     assert payment_response.get('id') is not None
 
 
-def test_update_payment_record_transaction_completed(session):
+def test_update_payment_record_transaction_invalid(session):
     """Assert that the payment records are updated."""
     payment_account = factory_payment_account()
     payment = factory_payment()
@@ -239,6 +238,122 @@ def test_update_payment_record_transaction_completed(session):
     with pytest.raises(BusinessException) as excinfo:
         PaymentService.update_payment(payment.id, payment_request, 'test')
     assert excinfo.type == BusinessException
+
+
+def test_update_payment_completed_invalid(session):
+    """Assert that the payment records are updated."""
+    payment_account = factory_payment_account()
+    payment = factory_payment()
+    payment_account.save()
+    payment.payment_status_code = Status.COMPLETED.value
+    payment.save()
+    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice.save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+    transaction = factory_payment_transaction(payment.id)
+    transaction.save()
+
+    payment_request = {
+        'payment_info': {'method_of_payment': 'CC'},
+        'business_info': {
+            'business_identifier': 'CP1234',
+            'corp_type': 'CP',
+            'business_name': 'ABC Corp',
+            'contact_info': {
+                'city': 'Victoria',
+                'postal_code': 'V8P2P2',
+                'province': 'BC',
+                'address_line_1': '100 Douglas Street',
+                'country': 'CA',
+            },
+        },
+        'filing_info': {
+            'filing_types': [{'filing_type_code': 'OTADD', 'filing_description': 'TEST'}, {'filing_type_code': 'OTANN'}]
+        },
+    }
+
+    with pytest.raises(BusinessException) as excinfo:
+        PaymentService.update_payment(payment.id, payment_request, 'test')
+    assert excinfo.type == BusinessException
+
+
+def test_update_payment_cancel_invalid(session):
+    """Assert that the payment records are updated."""
+    payment_account = factory_payment_account()
+    payment = factory_payment()
+    payment_account.save()
+    payment.payment_status_code = Status.CANCELLED.value
+    payment.save()
+    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice.save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+    transaction = factory_payment_transaction(payment.id)
+    transaction.save()
+
+    payment_request = {
+        'payment_info': {'method_of_payment': 'CC'},
+        'business_info': {
+            'business_identifier': 'CP1234',
+            'corp_type': 'CP',
+            'business_name': 'ABC Corp',
+            'contact_info': {
+                'city': 'Victoria',
+                'postal_code': 'V8P2P2',
+                'province': 'BC',
+                'address_line_1': '100 Douglas Street',
+                'country': 'CA',
+            },
+        },
+        'filing_info': {
+            'filing_types': [{'filing_type_code': 'OTADD', 'filing_description': 'TEST'}, {'filing_type_code': 'OTANN'}]
+        },
+    }
+
+    with pytest.raises(BusinessException) as excinfo:
+        PaymentService.update_payment(payment.id, payment_request, 'test')
+    assert excinfo.type == BusinessException
+
+
+def test_update_payment_invoice_cancel_invalid(session):
+    """Assert that the payment records are updated."""
+    payment_account = factory_payment_account()
+    payment = factory_payment()
+    payment_account.save()
+    payment.save()
+    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice.invoice_status_code = Status.CANCELLED.value
+    invoice.save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+    transaction = factory_payment_transaction(payment.id)
+    transaction.save()
+
+    payment_request = {
+        'payment_info': {'method_of_payment': 'CC'},
+        'business_info': {
+            'business_identifier': 'CP1234',
+            'corp_type': 'CP',
+            'business_name': 'ABC Corp',
+            'contact_info': {
+                'city': 'Victoria',
+                'postal_code': 'V8P2P2',
+                'province': 'BC',
+                'address_line_1': '100 Douglas Street',
+                'country': 'CA',
+            },
+        },
+        'filing_info': {
+            'filing_types': [{'filing_type_code': 'OTADD', 'filing_description': 'TEST'}, {'filing_type_code': 'OTANN'}]
+        },
+    }
+
+    payment_response = PaymentService.update_payment(payment.id, payment_request, 'test')
+    assert payment_response.get('id') is not None
 
 
 def test_update_payment_record_rollback(session):

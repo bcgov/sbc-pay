@@ -46,10 +46,9 @@ class Payment(Resource):
             return jsonify({'code': 'PAY999', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
 
         try:
-            response, status = (
-                PaymentService.create_payment(request_json, g.jwt_oidc_token_info.get('preferred_username', None)),
-                HTTPStatus.CREATED,
-            )
+            response, status = PaymentService.create_payment(request_json,
+                                                             g.jwt_oidc_token_info.get('preferred_username',
+                                                                                       None)), HTTPStatus.CREATED
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         current_app.logger.debug('>Payment.post')
@@ -57,7 +56,7 @@ class Payment(Resource):
 
 
 @cors_preflight(['GET', 'PUT'])
-@API.route('/<string:payment_identifier>', methods=['GET', 'PUT', 'OPTIONS'])
+@API.route('/<string:payment_id>', methods=['GET', 'PUT', 'OPTIONS'])
 class Payments(Resource):
     """Endpoint resource to create payment."""
 
@@ -70,11 +69,12 @@ class Payments(Resource):
             response, status = PaymentService.get_payment(payment_id), HTTPStatus.OK
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
+        return jsonify(response), status
 
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
-    def put(payment_identifier):
+    def put(payment_id):
         """Update the payment records."""
         current_app.logger.info('<Payment.put')
         request_json = request.get_json()
@@ -86,7 +86,7 @@ class Payments(Resource):
         try:
             response, status = (
                 PaymentService.update_payment(
-                    payment_identifier, request_json, g.jwt_oidc_token_info.get('preferred_username', None)
+                    payment_id, request_json, g.jwt_oidc_token_info.get('preferred_username', None)
                 ),
                 HTTPStatus.OK,
             )
