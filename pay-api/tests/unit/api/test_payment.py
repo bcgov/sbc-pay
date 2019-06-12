@@ -218,7 +218,7 @@ def test_payment_get_exception(session, client, jwt, app):
     pay_id = '123456sdf'
 
     rv = client.get(f'/api/v1/payments/{pay_id}', headers=headers)
-    assert rv.status_code == 500
+    assert rv.status_code == 400
 
 
 def test_payment_put(session, client, jwt, app):
