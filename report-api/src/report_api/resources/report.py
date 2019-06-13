@@ -15,9 +15,9 @@
 from flask_restplus import Namespace, Resource
 from jinja2 import TemplateNotFound
 from flask import Response, request, abort
-from report_api.services.report_service import ReportService
+from report_api.services import ReportService
 
-API = Namespace('payments', description='Service - Payments')
+API = Namespace('Reports', description='Service - Reports')
 
 
 @API.route('')
@@ -26,7 +26,7 @@ class Report(Resource):
     @staticmethod
     def get():
         """Get Status"""
-        return {'message': 'Rerport generation up and running'}, 200
+        return {'message': 'Report generation up and running'}, 200
 
     @staticmethod
     def post():

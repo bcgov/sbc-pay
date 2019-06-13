@@ -14,7 +14,8 @@
 """Endpoints to check and manage payments."""
 from http import HTTPStatus
 from flask_restplus import Namespace, Resource
-from flask import request, Response
+from flask import request, Response, abort
+from jinja2 import TemplateNotFound
 from report_api.services.template_service import TemplateService
 
 
@@ -28,14 +29,17 @@ class Templates(Resource):
     @staticmethod
     def get():
         """ Return all report-templates or returns specific html of a template"""
-        template_name = request.args.get('templatename')
+        template_name = request.args.get('name')
         if template_name is None:
             templates = TemplateService.find_all_templates()
             response = {'report-templates': templates}
         else:
-            html = TemplateService.get_stored_template(request.args.get('templatename'))
-            print(html)
-            response = Response(html, HTTPStatus.OK)
-            response.headers.set('Content-Disposition', 'attachment', filename={request.args.get('templatename')})
-            response.headers.set('Content-Type', 'application/html')
-        return response, HTTPStatus.OK
+            try:
+                print("here -------------------------------------")
+                html = TemplateService.get_stored_template(request.args.get('name'))
+                response = Response(html, HTTPStatus.OK)
+                response.headers.set('Content-Disposition', 'attachment', filename={request.args.get('name')})
+                response.headers.set('Content-Type', 'application/html')
+            except TemplateNotFound:
+                abort(404, 'Template not found')
+        return response

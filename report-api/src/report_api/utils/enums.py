@@ -12,18 +12,3 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Enum definitions."""
-from enum import Enum
-
-
-class AuthHeaderType(Enum):
-    """Authorization header types."""
-
-    BASIC = 'Basic {}'
-    BEARER = 'Bearer {}'
-
-
-class ContentType(Enum):
-    """Http Content Types."""
-
-    JSON = 'application/json'
-    FORM_URL_ENCODED = 'application/x-www-form-urlencoded'

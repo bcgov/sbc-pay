@@ -18,7 +18,6 @@ import os
 import os.path
 import fnmatch
 from jinja2 import Environment, FileSystemLoader
-from flask import url_for
 from report_api import TEMPLATE_FOLDER_PATH
 
 ENV = Environment(loader=FileSystemLoader('.'))
@@ -37,7 +36,5 @@ class TemplateService:
     @classmethod
     def get_stored_template(cls, templatename: str, ):
         template = ENV.get_template('{}/{}.html'.format(TEMPLATE_FOLDER_PATH, templatename))
-        logo_url = url_for('static', filename='images/bc_logo.png')
-
-        html_template = template.render(logoUrl=logo_url)
+        html_template = template.render()
         return html_template
