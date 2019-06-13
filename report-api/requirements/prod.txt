@@ -1,0 +1,21 @@
+setuptools==39.2.0
+gunicorn
+Flask
+Flask-Migrate
+Flask-Script
+Flask-Moment
+Flask-SQLAlchemy
+Flask-RESTplus
+Flask-Marshmallow<3
+flask-jwt-oidc>=0.1.5
+python-dotenv
+psycopg2-binary
+marshmallow
+marshmallow-sqlalchemy
+jsonschema
+requests
+cairocffi>=0.9.0
+
+#For report generation
+WeasyPrint==47
+Flask-WeasyPrint
