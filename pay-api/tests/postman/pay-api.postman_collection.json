@@ -1,7 +1,7 @@
 {
 	"info": {
-		"_postman_id": "64d34ce5-3797-4405-ac5c-0242bfadc4de",
-		"name": "pay-api copy",
+		"_postman_id": "1458f159-81c5-4167-af63-dc277c2255a8",
+		"name": "pay-api",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -28,6 +28,10 @@
 			"request": {
 				"method": "GET",
 				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
 				"url": {
 					"raw": "{{pay-api-base-url}}/api/v1/fees/{{corp-type}}/{{filing-type-code}}",
 					"host": [
@@ -95,7 +99,7 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/1",
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
@@ -103,92 +107,7 @@
 						"api",
 						"v1",
 						"payments",
-						"1"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Create a Transaction Record",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": ""
-				},
-				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/1/transactions?redirect_uri=http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd",
-					"host": [
-						"{{pay-api-base-url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"payments",
-						"1",
-						"transactions"
-					],
-					"query": [
-						{
-							"key": "redirect_uri",
-							"value": "http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd"
-						}
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Get Transaction",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/1/transactions/69bae55d-1eb3-4351-b02a-fce2b9edd120",
-					"host": [
-						"{{pay-api-base-url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"payments",
-						"1",
-						"transactions",
-						"69bae55d-1eb3-4351-b02a-fce2b9edd120"
-					]
-				}
-			},
-			"response": []
-		},
-		{
-			"name": "Update Transaction",
-			"request": {
-				"method": "PUT",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": ""
-				},
-				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/4/transactions/7997b2f5-d008-4dee-9346-c5e40e1023d1?receipt_number=12345",
-					"host": [
-						"{{pay-api-base-url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"payments",
-						"4",
-						"transactions",
-						"7997b2f5-d008-4dee-9346-c5e40e1023d1"
-					],
-					"query": [
-						{
-							"key": "receipt_number",
-							"value": "12345"
-						}
+						"{{payment-identifier}}"
 					]
 				}
 			},
@@ -211,7 +130,7 @@
 					"raw": "{\n  \"payment_info\": {\n    \"method_of_payment\": \"CC\"\n  },\n  \"business_info\": {\n    \"business_identifier\": \"cp0000019\",\n    \"corp_type\": \"CP\",\n    \"business_name\": \"ABC Corp\",\n    \"contact_info\": {\n      \"city\": \"Victoria\",\n      \"postal_code\": \"V8P2P2\",\n      \"province\": \"BC\",\n      \"address_line_1\": \"100 Douglas Street\",\n      \"country\": \"CA\"\n    }\n  },\n  \"filing_info\": {\n    \"filing_types\": [\n      {\n        \"filing_type_code\": \"OTCDR\",\n    \t\"filing_description\":\"Change of Directors - Director A\"\n      },\n      {\n        \"filing_type_code\": \"OTANN\"\n      }\n      \n    ]\n  }\n}"
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/1",
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
@@ -219,7 +138,90 @@
 						"api",
 						"v1",
 						"payments",
-						"1"
+						"{{payment-identifier}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Create a Transaction Record",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/transactions?redirect_uri=http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd",
+					"host": [
+						"{{pay-api-base-url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"payments",
+						"{{payment-identifier}}",
+						"transactions"
+					],
+					"query": [
+						{
+							"key": "redirect_uri",
+							"value": "http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Transaction",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/transactions/{{transaction-identifier}}",
+					"host": [
+						"{{pay-api-base-url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"payments",
+						"{{payment-identifier}}",
+						"transactions",
+						"{{transaction-identifier}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Update Transaction",
+			"request": {
+				"method": "PUT",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/transactions/{{transaction-identifier}}",
+					"host": [
+						"{{pay-api-base-url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"payments",
+						"{{payment-identifier}}",
+						"transactions",
+						"{{transaction-identifier}}"
 					]
 				}
 			},

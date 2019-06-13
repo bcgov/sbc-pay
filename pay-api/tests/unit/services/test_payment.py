@@ -30,12 +30,14 @@ def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', pa
                           payment_system_code=payment_system_code)
 
 
-def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC', payment_status_code=Status.DRAFT.value):
+def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC',
+                    payment_status_code=Status.DRAFT.value):
     """Factory."""
     return Payment(payment_system_code=payment_system_code, payment_method_code=payment_method_code,
                    payment_status_code=payment_status_code, created_by='test', created_on=datetime.now())
 
-def factory_invoice(payment_id: str, account_id: str, invoice_status_code:str = Status.DRAFT.value):
+
+def factory_invoice(payment_id: str, account_id: str, invoice_status_code: str = Status.DRAFT.value):
     """Factory."""
     return Invoice(
         payment_id=payment_id,
@@ -45,6 +47,7 @@ def factory_invoice(payment_id: str, account_id: str, invoice_status_code:str = 
         created_by='test',
         created_on=datetime.now(),
     )
+
 
 def test_payment_saved_from_new(session):
     """Assert that the payment is saved to the table."""
@@ -92,4 +95,4 @@ def test_payment_with_no_active_invoice(session):
 
     json = p.asdict()
 
-    assert not json['payment_invoices']
+    assert json.get('invoices', None) is None

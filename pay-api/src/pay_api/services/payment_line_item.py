@@ -203,9 +203,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         """Return the invoice as a python dict."""
         d = {
             'id': self._id,
-            'invoice_id': self._invoice_id,
             'filing_fees': self._filing_fees,
-            'fee_schedule_id': self._fee_schedule_id,
             'quantity': self._quantity,
             'processing_fees': self._processing_fees,
             'service_fees': self._service_fees,
@@ -213,7 +211,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
             'gst': self._gst,
             'pst': self._pst,
             'total': self._total,
-            'line_item_status_code': self.line_item_status_code
+            'status_code': self._line_item_status_code
         }
         return d
 

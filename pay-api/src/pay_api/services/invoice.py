@@ -258,15 +258,15 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
             'updated_on': self._updated_on,
             'invoice_number': self._invoice_number,
             'reference_number': self._reference_number,
-            'invoice_status_code': self._invoice_status_code,
+            'invoice_status': self._invoice_status_code,
             'account_id': self._account_id,
-            'payment_id': self._payment_id,
-            'payment_data': self._payment_date,
+            'payment_date': self._payment_date,
             'total': self._total,
             'paid': self._paid,
             'refund': self._refund,
-            'payment_line_items': payment_line_items
+            'line_items': payment_line_items
         }
+
         return d
 
     @staticmethod
