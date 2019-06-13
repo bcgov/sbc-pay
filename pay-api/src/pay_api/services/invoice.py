@@ -24,7 +24,7 @@ from pay_api.services.payment_line_item import PaymentLineItem
 from pay_api.utils.enums import Status
 
 
-class Invoice():  # pylint: disable=too-many-instance-attributes
+class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Service to manage Invoice related operations."""
 
     def __init__(self):
@@ -63,7 +63,6 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
         self.account_id: str = self._dao.account_id
         self.refund: float = self._dao.refund
         self.payment_date: datetime = self._dao.payment_date
-
         self.total: float = self._dao.total
         self.paid: float = self._dao.paid
         self.created_by: str = self._dao.created_by
@@ -228,12 +227,12 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
 
     @property
     def payment_line_items(self):
-        """Return the payment invoices."""
+        """Return the payment payment_line_items."""
         return self._payment_line_items
 
     @payment_line_items.setter
     def payment_line_items(self, value):
-        """Set the invoices."""
+        """Set the payment_line_items."""
         self._payment_line_items = value
         self._dao.payment_line_items = value
 
@@ -248,8 +247,8 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
     def asdict(self):
         """Return the invoice as a python dict."""
         payment_line_items = []
-        for payment_line_item in self._payment_line_items:
-            payment_line_items.append(PaymentLineItem.populate(payment_line_item).asdict())
+        for item in self._payment_line_items:
+            payment_line_items.append(PaymentLineItem.populate(item).asdict())
 
         d = {
             'id': self._id,
@@ -261,8 +260,7 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
             'reference_number': self._reference_number,
             'invoice_status': self._invoice_status_code,
             'account_id': self._account_id,
-            'payment_id': self._payment_id,
-            'payment_date': self._payment_date,
+            'payment_data': self._payment_date,
             'total': self._total,
             'paid': self._paid,
             'refund': self._refund,
@@ -273,9 +271,8 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def populate(value):
-        """Populate Invoice."""
         invoice: Invoice = Invoice()
-        invoice._dao = value   # pylint: disable=protected-access
+        invoice._dao = value # pylint: disable=protected-access
         return invoice
 
     @staticmethod
@@ -312,17 +309,6 @@ class Invoice():  # pylint: disable=too-many-instance-attributes
     def find_by_payment_identifier(identifier: int):
         """Find invoice by payment identifier."""
         invoice_dao = InvoiceModel.find_by_payment_id(identifier)
-
-        invoice = Invoice()
-        invoice._dao = invoice_dao  # pylint: disable=protected-access
-
-        current_app.logger.debug('>find_by_id')
-        return invoice
-
-    @staticmethod
-    def find_all_by_payment_identifier(identifier: int):
-        """Find invoice by payment identifier."""
-        invoice_dao = InvoiceModel.find_all_by_payment_id(identifier)
 
         invoice = Invoice()
         invoice._dao = invoice_dao  # pylint: disable=protected-access

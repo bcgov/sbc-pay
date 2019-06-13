@@ -28,6 +28,8 @@ class Error(Enum):
     PAY007 = 'Invalid redirect uri', HTTPStatus.BAD_REQUEST
     PAY008 = 'Invalid transaction identifier', HTTPStatus.BAD_REQUEST
     PAY009 = 'Invalid account identifier', HTTPStatus.BAD_REQUEST
+    PAY010 = 'Payment is already completed', HTTPStatus.BAD_REQUEST
+    PAY011 = 'Payment is already cancelled', HTTPStatus.BAD_REQUEST
     PAY999 = 'Invalid Request', HTTPStatus.BAD_REQUEST
 
     def __new__(cls, message, status):

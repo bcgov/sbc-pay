@@ -28,7 +28,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     Any payment system service SHOULD implement this class and implement the abstract methods.
     """
 
-    def __init__(self):
+    def __init__(self):  # pylint: disable=useless-super-delegation
         """Initialize."""
         super(PaymentSystemService, self).__init__()
 
@@ -39,6 +39,10 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     @abstractmethod
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_number: int):
         """Create invoice in payment system."""
+
+    @abstractmethod
+    def update_invoice(self, account_details: Tuple[str], inv_number: str):
+        """Update invoice in payment system."""
 
     @abstractmethod
     def cancel_invoice(self, account_details: Tuple[str], inv_number: str):
