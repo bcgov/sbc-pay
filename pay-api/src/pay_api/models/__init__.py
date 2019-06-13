@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """This exports all of the models and schemas used by the application."""
-
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 

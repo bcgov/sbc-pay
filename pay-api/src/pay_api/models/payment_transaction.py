@@ -17,7 +17,6 @@ from datetime import datetime
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
-
 from .base_model import BaseModel
 from .db import db, ma
 

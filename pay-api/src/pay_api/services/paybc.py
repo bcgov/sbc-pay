@@ -53,11 +53,14 @@ class PayBcService(OAuthService):
         current_app.logger.debug('<Getting token')
         token_url = current_app.config.get('PAYBC_BASE_URL') + '/oauth/token'
         basic_auth_encoded = base64.b64encode(
-            bytes(current_app.config.get('PAYBC_CLIENT_ID') + ':' + current_app.config.get('PAYBC_CLIENT_SECRET'),
-                  'utf-8')).decode('utf-8')
+            bytes(
+                current_app.config.get('PAYBC_CLIENT_ID') + ':' + current_app.config.get('PAYBC_CLIENT_SECRET'), 'utf-8'
+            )
+        ).decode('utf-8')
         data = 'grant_type=client_credentials'
-        token_response = self.post(token_url, basic_auth_encoded, AuthHeaderType.BASIC, ContentType.FORM_URL_ENCODED,
-                                   data)
+        token_response = self.post(
+            token_url, basic_auth_encoded, AuthHeaderType.BASIC, ContentType.FORM_URL_ENCODED, data
+        )
         current_app.logger.debug('>Getting token')
         return token_response
 
@@ -65,9 +68,7 @@ class PayBcService(OAuthService):
         """Create a party record in PayBC."""
         current_app.logger.debug('<Creating party Record')
         party_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/'
-        party: Dict[str, Any] = {
-            'customer_name': invoice_request.get('entity_name', None)
-        }
+        party: Dict[str, Any] = {'customer_name': invoice_request.get('entity_name', None)}
 
         party_response = self.post(party_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, party)
         current_app.logger.debug('>Creating party Record')
@@ -76,11 +77,12 @@ class PayBcService(OAuthService):
     def create_account(self, access_token, party, invoice_request):
         """Create account record in PayBC."""
         current_app.logger.debug('<Creating account')
-        account_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/' \
-            .format(party.get('party_number'), None)
+        account_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/'.format(
+            party.get('party_number'), None
+        )
         account: Dict[str, Any] = {
             'party_number': party.get('party_number'),
-            'account_description': invoice_request.get('entity_legal_name', None)
+            'account_description': invoice_request.get('entity_legal_name', None),
         }
 
         account_response = self.post(account_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, account)
@@ -90,8 +92,9 @@ class PayBcService(OAuthService):
     def create_site(self, access_token, account, invoice_request):
         """Create site in PayBC."""
         current_app.logger.debug('<Creating site ')
-        site_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/' \
-            .format(account.get('party_number', None), account.get('account_number', None))
+        site_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/'.format(
+            account.get('party_number', None), account.get('account_number', None)
+        )
         site: Dict[str, Any] = {
             'party_number': account.get('party_number', None),
             'account_number': account.get('account_number', None),
@@ -101,7 +104,7 @@ class PayBcService(OAuthService):
             'postal_code': invoice_request.get('postal_code', None),
             'province': invoice_request.get('province', None),
             'country': invoice_request.get('country', None),
-            'customer_site_id': invoice_request.get('customer_site_id', None)
+            'customer_site_id': invoice_request.get('customer_site_id', None),
         }
 
         site_response = self.post(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, site)
@@ -112,15 +115,16 @@ class PayBcService(OAuthService):
     def create_contact(self, access_token, site, invoice_request):
         """Create contact in PayBC."""
         current_app.logger.debug('<Creating site contact')
-        contact_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/conts/' \
-            .format(site.get('party_number', None), site.get('account_number', None), site.get('site_number', None))
+        contact_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/conts/'.format(
+            site.get('party_number', None), site.get('account_number', None), site.get('site_number', None)
+        )
         contact: Dict[str, Any] = {
             'party_number': site.get('party_number', None),
             'account_number': site.get('account_number', None),
             'site_number': site.get('site_number', None),
             'first_name': invoice_request.get('contact_first_name', None),
             'last_name': invoice_request.get('contact_last_name', None),
-            'phone_number': invoice_request.get('contact_number', None)
+            'phone_number': invoice_request.get('contact_number', None),
         }
 
         contact_response = self.post(contact_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, contact)
@@ -133,8 +137,9 @@ class PayBcService(OAuthService):
         current_app.logger.debug('<Creating PayBC Invoice Record')
         now = datetime.datetime.now()
         curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
-        invoice_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/' \
-            .format(site.get('party_number', None), site.get('account_number', None), site.get('site_number', None))
+        invoice_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/'.format(
+            site.get('party_number', None), site.get('account_number', None), site.get('site_number', None)
+        )
 
         invoice = dict(
             batch_source=invoice_request.get('batch_source', None),
@@ -146,7 +151,7 @@ class PayBcService(OAuthService):
             gl_date=curr_time,
             term_name='IMMEDIATE',
             comments=invoice_request.get('comments', None),
-            lines=[]
+            lines=[],
         )
 
         for line_item in invoice_request.get('lineItems'):
@@ -157,7 +162,7 @@ class PayBcService(OAuthService):
                     'memo_line_name': line_item.get('line_name', None),
                     'description': line_item.get('description', None),
                     'unit_price': line_item.get('unit_price', None),
-                    'quantity': line_item.get('quantity', None)
+                    'quantity': line_item.get('quantity', None),
                 }
             )
 
@@ -169,25 +174,24 @@ class PayBcService(OAuthService):
     def do_adjustment(self, access_token, site, invoice_number):
         """Adjust the amount."""
         current_app.logger.debug('>Creating PayBC Adjustment  For Invoice: ', invoice_number)
-        adjustment_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/adjs/' \
-            .format(site.get('party_number', None), site.get('account_number', None), site.get('site_number', None),
-                    invoice_number,)
+        adjustment_url = current_app.config.get(
+            'PAYBC_BASE_URL'
+        ) + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/adjs/'.format(
+            site.get('party_number', None),
+            site.get('account_number', None),
+            site.get('site_number', None),
+            invoice_number,
+        )
         current_app.logger.debug('>Creating PayBC Adjustment URL', adjustment_url)
 
-        adjustment = dict(
-            comment='New Comment',
-            lines=[]
-        )
+        adjustment = dict(comment='New Comment', lines=[])
         adjustment['lines'].append(
-            {
-                'line_number': '1',
-                'adjustment_amount': '-100',
-                'activity_name': 'BC Registries Write Off',
-            }
+            {'line_number': '1', 'adjustment_amount': '-100', 'activity_name': 'BC Registries Write Off'}
         )
 
-        adjustment_response = self.post(adjustment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
-                                        adjustment)
+        adjustment_response = self.post(
+            adjustment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, adjustment
+        )
 
         current_app.logger.debug('>Created PayBC Invoice Adjustment')
         return adjustment_response.json()
