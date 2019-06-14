@@ -25,7 +25,7 @@ class Report(Resource):
     """Payment endpoint resource."""
     @staticmethod
     def get():
-        """Get Status"""
+        """Get Status of the report service"""
         return {'message': 'Report generation up and running'}, 200
 
     @staticmethod

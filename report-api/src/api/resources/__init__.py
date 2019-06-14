@@ -21,7 +21,7 @@ All services have 2 defaults sets of endpoints:
 That are used to expose operational health information about the service, and meta information.
 """
 from flask import Blueprint
-from flask_restplus import Api
+from .swaggerhelper import Api
 
 # from .trace import API as TRACE_API
 from .meta import API as META_API
@@ -47,7 +47,7 @@ OPS_BLUEPRINT = Blueprint('API_OPS', __name__, url_prefix='/ops')
 API_OPS = Api(OPS_BLUEPRINT,
               title='Service OPS API',
               version='1.0',
-              description='The Core API for the Payment System',
+              description='Report API',
               security=['apikey'],
               authorizations=AUTHORIZATIONS)
 
@@ -56,9 +56,9 @@ API_OPS.add_namespace(OPS_API, path='/')
 API_BLUEPRINT = Blueprint('API', __name__, url_prefix='/api/v1')
 
 API = Api(API_BLUEPRINT,
-          title='Payment API',
+          title='Report API',
           version='1.0',
-          description='The Core API for the Payment System',
+          description='Report API',
           security=['apikey'],
           authorizations=AUTHORIZATIONS)
 

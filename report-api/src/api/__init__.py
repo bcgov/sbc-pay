@@ -42,9 +42,6 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
 
     from api.resources import API_BLUEPRINT, OPS_BLUEPRINT
 
-    # db.init_app(app)
-    # ma.init_app(app)
-
     app.register_blueprint(API_BLUEPRINT)
     app.register_blueprint(OPS_BLUEPRINT)
 
