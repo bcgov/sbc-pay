@@ -16,7 +16,7 @@ from http import HTTPStatus
 from flask_restplus import Namespace, Resource
 from flask import request, Response, abort
 from jinja2 import TemplateNotFound
-from report_api.services.template_service import TemplateService
+from api.services.template_service import TemplateService
 
 
 API = Namespace('payments', description='Service - Payments')

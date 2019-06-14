@@ -47,7 +47,7 @@ def read(filepath):
 REQUIREMENTS = read_requirements('requirements/prod.txt')
 
 setup(
-    name="report_api",
+    name="api",
     packages=find_packages('src'),
     package_dir={'': 'src'},
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],

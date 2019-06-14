@@ -18,7 +18,7 @@ import base64
 from weasyprint import HTML
 from jinja2 import Environment, FileSystemLoader, Template
 from flask import url_for, request
-from report_api import TEMPLATE_FOLDER_PATH
+from api import TEMPLATE_FOLDER_PATH
 
 ENV = Environment(loader=FileSystemLoader('.'))
 

@@ -35,7 +35,7 @@ itsdangerous==1.1.0
 jsonschema==3.0.1
 marshmallow-sqlalchemy==0.16.3
 marshmallow==2.19.2
-psycopg2-binary==2.8.2
+psycopg2-binary==2.8.3
 pyasn1==0.4.5
 pycparser==2.19
 pyrsistent==0.15.2

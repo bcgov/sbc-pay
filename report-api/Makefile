@@ -80,15 +80,15 @@ pylint:
 	pylint --rcfile=setup.cfg \
 	 --load-plugins=pylint_flask \
 	 --disable=C0301,W0511 \
-	 src/report_api
+	 src/api
 
 ## run flake8 on the package and tests
 flake8:
-	flake8 src/report_api tests
+	flake8 src/api tests
 
 ## Verify source code license headers.
 license:
-	./scripts/verify_license_headers.sh src/report_api tests
+	./scripts/verify_license_headers.sh src/api tests
 
 #################################################################################
 # Self Documenting Commands                                                     #

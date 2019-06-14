@@ -13,7 +13,7 @@
 # limitations under the License.
 """Provides the WSGI entry point for running the application
 """
-from report_api import create_app
+from api import create_app
 
 
 application = create_app()

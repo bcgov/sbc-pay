@@ -1,6 +1,12 @@
 import json
 import base64
 
+
+def test_get_generate(client):
+    # Call to generate report with existing template
+    rv = client.get('/api/v1/reports')
+    assert rv.status_code == 200
+
 def test_generate_report_with_existing_template(client):
     # Call to generate report with existing template
     rv = client.get('/api/v1/templates')

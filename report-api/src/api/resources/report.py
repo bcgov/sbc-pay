@@ -15,7 +15,7 @@
 from flask_restplus import Namespace, Resource
 from jinja2 import TemplateNotFound
 from flask import Response, request, abort
-from report_api.services import ReportService
+from api.services import ReportService
 
 API = Namespace('Reports', description='Service - Reports')
 

@@ -16,7 +16,7 @@
 """
 import logging
 
-from report_api import create_app
+from api import create_app
 
 
 APP = create_app()

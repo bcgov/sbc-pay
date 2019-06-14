@@ -20,9 +20,9 @@ import os
 from flask import Flask
 
 import config
-from report_api import models
-from report_api.utils.logging import setup_logging
-from report_api.utils.run_version import get_run_version
+from api import models
+from api.utils.logging import setup_logging
+from api.utils.run_version import get_run_version
 
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
@@ -40,7 +40,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     global TEMPLATE_FOLDER_PATH # pylint: disable=global-statement
     TEMPLATE_FOLDER_PATH = "report-templates/"
 
-    from report_api.resources import API_BLUEPRINT, OPS_BLUEPRINT
+    from api.resources import API_BLUEPRINT, OPS_BLUEPRINT
 
     # db.init_app(app)
     # ma.init_app(app)

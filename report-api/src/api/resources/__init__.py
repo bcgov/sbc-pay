@@ -26,7 +26,7 @@ from flask_restplus import Api
 # from .trace import API as TRACE_API
 from .meta import API as META_API
 from .ops import API as OPS_API
-from .report import API as report_API
+from .report import API as api
 from .templates import API as TEMPLATES_API
 
 __all__ = ('API_BLUEPRINT', 'OPS_BLUEPRINT')
@@ -64,5 +64,5 @@ API = Api(API_BLUEPRINT,
 
 API.add_namespace(META_API, path='/meta')
 
-API.add_namespace(report_API, path='/reports')
+API.add_namespace(api, path='/reports')
 API.add_namespace(TEMPLATES_API, path='/templates')

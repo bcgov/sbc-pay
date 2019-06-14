@@ -16,7 +16,7 @@
 
 import pytest
 
-from report_api import create_app
+from api import create_app
 
 
 @pytest.fixture(scope='session')

@@ -14,7 +14,7 @@
 
 
 from unittest.mock import Mock, patch
-from report_api.services import TemplateService
+from api.services import TemplateService
 
 def test_find_all_templates_by_three_templates(app):
     """Test create account."""

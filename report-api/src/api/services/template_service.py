@@ -18,7 +18,7 @@ import os
 import os.path
 import fnmatch
 from jinja2 import Environment, FileSystemLoader
-from report_api import TEMPLATE_FOLDER_PATH
+from api import TEMPLATE_FOLDER_PATH
 
 ENV = Environment(loader=FileSystemLoader('.'))
 
