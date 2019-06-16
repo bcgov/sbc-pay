@@ -36,11 +36,10 @@ RUN python3 -m pip install -r requirements/prod.txt
 RUN python3 setup.py install
 
 
-EXPOSE 5000
+EXPOSE 5001
 
 ENV NUM_WORKERS=3
 ENV TIMEOUT=120
 
 #CMD ["gunicorn", "--bind", "0.0.0.0:5001", "--timeout", "$TIMEOUT", "--workers", "$NUM_WORKERS", "wsgi:app"]
-#CMD gunicorn --bind 0.0.0.0:5010 --timeout $TIMEOUT --workers $NUM_WORKERS  wsgi:application
-CMD [ "python", "wsgi.py" ]
+CMD gunicorn --bind 0.0.0.0:5001 --timeout $TIMEOUT --workers $NUM_WORKERS  wsgi:application
