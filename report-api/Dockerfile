@@ -42,4 +42,5 @@ ENV NUM_WORKERS=3
 ENV TIMEOUT=120
 
 #CMD ["gunicorn", "--bind", "0.0.0.0:5001", "--timeout", "$TIMEOUT", "--workers", "$NUM_WORKERS", "wsgi:app"]
-CMD gunicorn --bind 0.0.0.0:5010 --timeout $TIMEOUT --workers $NUM_WORKERS  wsgi:application
+#CMD gunicorn --bind 0.0.0.0:5010 --timeout $TIMEOUT --workers $NUM_WORKERS  wsgi:application
+CMD [ "python", "wsgi.py" ]
