@@ -23,7 +23,7 @@ def test_generate_report_with_existing_template(client):
     }
 
     rv = client.post(request_url, data=json.dumps(request_data), content_type="application/json")
-    assert rv.status_code == 201
+    assert rv.status_code == 200
     assert rv.content_type == 'application/pdf'
 
 def test_generate_report_with_invalid_template(client):
@@ -53,7 +53,7 @@ def test_generate_report_with_template(client):
         "report_name" : "Test Report"
     }
     rv = client.post(request_url, data=json.dumps(request_data), content_type="application/json")
-    assert rv.status_code == 201
+    assert rv.status_code == 200
     assert rv.content_type == 'application/pdf'
 
 

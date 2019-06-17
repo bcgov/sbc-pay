@@ -45,11 +45,11 @@ openshift/      - OpenShift-specific files
 go to where Dockerfile exits
 
 ```
-docker build --tag=reportService .     \\build
+docker build --tag reportservice .     \\build
 
-docker run -p 5011:5011 reportService     \\run
+docker run -p 5011:5011 reportservice     \\run
  
-docker run -it  reportService sh  \\getting into docker
+docker run -it  reportservice sh  \\getting into docker
 
 ```
 ## Deployment (OpenShift)

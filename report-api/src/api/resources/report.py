@@ -14,7 +14,7 @@
 """Endpoints to check and manage payments."""
 from flask_restplus import Namespace, Resource
 from jinja2 import TemplateNotFound
-from flask import Response, request, abort
+from flask import  request, abort
 from api.services import ReportService
 
 API = Namespace('Reports', description='Service - Reports')
@@ -38,17 +38,15 @@ class Report(Resource):
         if 'template_name' in request_json: #Ignore template if template_name is present
             template_name = request_json['template_name']
             try:
-                pdf = ReportService.create_report_from_stored_template(template_name, template_vars)
+                pdf = ReportService.create_report_from_stored_template(template_name, template_vars, report_name)
             except TemplateNotFound:
                 abort(404, 'Template not found')
 
         elif 'template' in request_json:
-            pdf = ReportService.create_report_from_template(request_json['template'], template_vars)
+            pdf = ReportService.create_report_from_template(request_json['template'], template_vars, report_name)
 
         if pdf is not None:
-            response = Response(pdf, 201)
-            response.headers.set('Content-Disposition', 'attachment', filename='{}.pdf'.format(report_name))
-            response.headers.set('Content-Type', 'application/pdf')
+            response = pdf
         else:
             abort(400, 'PDF cannot be generate')
         return response
