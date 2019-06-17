@@ -19,7 +19,8 @@ from sqlalchemy.orm import relationship
 from .audit import Audit
 from .base_model import BaseModel
 from .db import db, ma
-from .payment_line_item import PaymentLineItem  # pylint: disable=unused-import
+from .payment_line_item import PaymentLineItemSchema
+from .base_schema import BaseSchema
 
 
 class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-attributes
@@ -39,7 +40,7 @@ class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
     payment_date = db.Column(db.DateTime, nullable=True)
     refund = db.Column(db.Float, nullable=True)
 
-    payment_line_items = relationship('PaymentLineItem')
+    payment_line_items = relationship('PaymentLineItem', lazy='noload')
 
     @classmethod
     def find_by_id(cls, identifier: int):
@@ -52,10 +53,17 @@ class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
         return cls.query.filter_by(payment_id=identifier).one_or_none()
 
 
-class InvoiceSchema(ma.ModelSchema):
+class InvoiceSchema(ma.ModelSchema, BaseSchema):
     """Main schema used to serialize the Status Code."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Invoice
+
+    line_items = ma.Nested(PaymentLineItemSchema, many=True)
+
+    _links = ma.Hyperlinks({
+        'self': ma.URLFor('API.invoices_invoice', payment_id='<payment_id>', invoice_id='<id>'),
+        'collection': ma.URLFor('API.invoices_invoices', payment_id='<payment_id>')
+    })

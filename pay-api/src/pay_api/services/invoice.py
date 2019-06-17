@@ -22,6 +22,7 @@ from pay_api.services.fee_schedule import FeeSchedule
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.payment_line_item import PaymentLineItem
 from pay_api.utils.enums import Status
+from pay_api.models import InvoiceSchema
 
 
 class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
@@ -246,33 +247,36 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
 
     def asdict(self):
         """Return the invoice as a python dict."""
-        payment_line_items = []
-        for item in self._payment_line_items:
-            payment_line_items.append(PaymentLineItem.populate(item).asdict())
+        # payment_line_items = []
+        # for item in self._payment_line_items:
+        #    payment_line_items.append(PaymentLineItem.populate(item).asdict())
 
-        d = {
-            'id': self._id,
-            'created_by': self._created_by,
-            'created_on': self._created_on,
-            'updated_by': self._updated_by,
-            'updated_on': self._updated_on,
-            'invoice_number': self._invoice_number,
-            'reference_number': self._reference_number,
-            'invoice_status': self._invoice_status_code,
-            'account_id': self._account_id,
-            'payment_date': self._payment_date,
-            'total': self._total,
-            'paid': self._paid,
-            'refund': self._refund,
-            'line_items': payment_line_items
-        }
+        # d = {
+        #    'id': self._id,
+        #    'created_by': self._created_by,
+        #    'created_on': self._created_on,
+        #    'updated_by': self._updated_by,
+        #    'updated_on': self._updated_on,
+        #    'invoice_number': self._invoice_number,
+        #    'reference_number': self._reference_number,
+        #    'invoice_status': self._invoice_status_code,
+        #    'account_id': self._account_id,
+        #    'payment_date': self._payment_date,
+        #    'total': self._total,
+        #    'paid': self._paid,
+        #    'refund': self._refund,
+        #    'line_items': payment_line_items
+        # }
+
+        invoice_schema = InvoiceSchema()
+        d = invoice_schema.dump(self._dao).data
 
         return d
 
     @staticmethod
     def populate(value):
         invoice: Invoice = Invoice()
-        invoice._dao = value # pylint: disable=protected-access
+        invoice._dao = value  # pylint: disable=protected-access
         return invoice
 
     @staticmethod
@@ -315,3 +319,16 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
 
         current_app.logger.debug('>find_by_id')
         return invoice
+
+    @staticmethod
+    def get_invoices(payment_identifier):
+        """Find invoices."""
+        current_app.logger.debug('<get_invoices')
+
+        data = {'items': []}
+        daos = [InvoiceModel.find_by_payment_id(payment_identifier)]  # Treating as a set to avoid re-work in future
+        for dao in daos:
+            data['items'].append(Invoice.populate(dao).asdict())
+
+        current_app.logger.debug('>get_invoices')
+        return data

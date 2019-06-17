@@ -11,10 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Exposes all of the Services used in the API."""
+"""Super class to handle all operations related to base schema."""
 
-from .fee_schedule import FeeSchedule
-from .paybc import PayBcService
-from .payment_service import PaymentService
-from .payment_transaction import PaymentTransaction as TransactionService
-from .invoice import Invoice as InvoiceService
+from marshmallow import post_dump
+
+
+class BaseSchema:
+    """Base Schema."""
+
+    @post_dump
+    def remove_skip_values(self, data):
+        return {
+            key: value for key, value in data.items()
+            if value is not None
+        }

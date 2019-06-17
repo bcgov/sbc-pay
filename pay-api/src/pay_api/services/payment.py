@@ -19,7 +19,7 @@ from typing import Any, Dict
 from flask import current_app
 
 from pay_api.models import Payment as PaymentModel
-from pay_api.services.invoice import Invoice
+from pay_api.models.payment import PaymentSchema
 from pay_api.utils.enums import Status
 
 
@@ -168,7 +168,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes
     def invoices(self, value):
         """Set the invoices."""
         self._invoices = value
-        self._dao.invoices = value
+        # self._dao.invoices = value
 
     def commit(self):
         """Save the information to the DB."""
@@ -188,27 +188,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes
 
     def asdict(self):
         """Return the payment as a python dict."""
-        invoices = []
-        for invoice in self._invoices:
-            current_invoice = Invoice.populate(invoice)
-            if current_invoice.invoice_status_code != Status.CANCELLED.value:
-                invoices.append(current_invoice.asdict())
-        d = {
-            'id': self._id,
-            'payment_system': self._payment_system_code,
-            'payment_method': self._payment_method_code,
-            'status_code': self._payment_status_code,
-            'created_on': self._created_on,
-            'created_by': self._created_by,
-            'paid': self._paid
-        }
-
-        if self._updated_on:
-            d['updated_on'] = self._updated_on
-        if self._updated_by:
-            d['updated_by'] = self._updated_by
-        if invoices:
-            d['invoices'] = invoices
+        payment_schema = PaymentSchema()
+        d = payment_schema.dump(self._dao).data
 
         return d
 

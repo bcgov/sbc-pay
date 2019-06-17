@@ -19,8 +19,11 @@ from sqlalchemy.orm import relationship
 from .audit import Audit
 from .base_model import BaseModel
 from .db import db, ma
-from .invoice import Invoice # pylint: disable=unused-import
 from .payment_system import PaymentSystem
+from .invoice import InvoiceSchema
+from marshmallow import fields
+from .base_schema import BaseSchema
+from .invoice import Invoice
 
 
 class Payment(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-attributes
@@ -34,8 +37,10 @@ class Payment(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
     payment_status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
     paid = db.Column(db.Float, nullable=True)
 
-    payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='joined', innerjoin=True)
+    payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='select', innerjoin=True)
+#    invoices = relationship(Invoice, lazy='select')
     invoices = relationship('Invoice')
+
 
     @classmethod
     def find_by_id(cls, identifier: int):
@@ -43,10 +48,23 @@ class Payment(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
         return cls.query.get(identifier)
 
 
-class PaymentSchema(ma.ModelSchema):
+class PaymentSchema(ma.ModelSchema, BaseSchema):
     """Main schema used to serialize the Payment."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Payment
+
+    payment_system_code = fields.String(dump_to='payment_system')
+    payment_method_code = fields.String(dump_to='payment_method')
+    payment_status_code = fields.String(dump_to='status_code')
+
+    invoices = ma.Nested(InvoiceSchema, many=True)
+
+    _links = ma.Hyperlinks({
+        'self': ma.URLFor('API.payments_payments', payment_id='<id>'),
+        'collection': ma.URLFor('API.payments_payment'),
+        'invoices': ma.URLFor('API.invoices_invoices', payment_id='<id>')
+    })
+
