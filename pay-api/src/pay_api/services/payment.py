@@ -21,7 +21,7 @@ from flask import current_app
 from pay_api.models import Payment as PaymentModel
 from pay_api.models.payment import PaymentSchema
 from pay_api.utils.enums import Status
-
+import copy
 
 class Payment:  # pylint: disable=too-many-instance-attributes
     """Service to manage Payment model related operations."""
@@ -168,7 +168,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes
     def invoices(self, value):
         """Set the invoices."""
         self._invoices = value
-        # self._dao.invoices = value
 
     def commit(self):
         """Save the information to the DB."""
@@ -189,7 +188,14 @@ class Payment:  # pylint: disable=too-many-instance-attributes
     def asdict(self):
         """Return the payment as a python dict."""
         payment_schema = PaymentSchema()
-        d = payment_schema.dump(self._dao).data
+        # Need to filter out cancelled invoices here. So take a copy and work on the copy
+        dao_copy = copy.deepcopy(self._dao)
+        #for inv in dao_copy.invoices:
+        #    print(type(dao_copy.invoices))
+        #    if inv.invoice_status_code == Status.CANCELLED.value:
+        #        dao_copy.invoices.remove(inv)
+
+        d = payment_schema.dump(self._dao)
 
         return d
 

@@ -38,14 +38,19 @@ class Payment(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
     paid = db.Column(db.Float, nullable=True)
 
     payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='select', innerjoin=True)
-#    invoices = relationship(Invoice, lazy='select')
     invoices = relationship('Invoice')
 
+    # invoices = relationship('Invoice')
 
     @classmethod
-    def find_by_id(cls, identifier: int):
+    def find_by_id(cls, identifier: int, active_invoices: bool = False):
         """Return a Payment by id."""
-        return cls.query.get(identifier)
+        if active_invoices:
+            query = cls.query.filter_by(id=identifier). \
+                filter(Payment.invoices.has(Invoice.invoice_status_code != 'CANCELLED'))
+            return query.one_or_none()
+        else:
+            return cls.query.get(identifier)
 
 
 class PaymentSchema(ma.ModelSchema, BaseSchema):
@@ -67,4 +72,3 @@ class PaymentSchema(ma.ModelSchema, BaseSchema):
         'collection': ma.URLFor('API.payments_payment'),
         'invoices': ma.URLFor('API.invoices_invoices', payment_id='<id>')
     })
-

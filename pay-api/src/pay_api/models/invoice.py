@@ -40,7 +40,7 @@ class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
     payment_date = db.Column(db.DateTime, nullable=True)
     refund = db.Column(db.Float, nullable=True)
 
-    payment_line_items = relationship('PaymentLineItem', lazy='noload')
+    payment_line_items = relationship('PaymentLineItem')
 
     @classmethod
     def find_by_id(cls, identifier: int):
