@@ -1,209 +1,225 @@
 <!DOCTYPE html>
 <html>
-	<head lang="en">
-		<style>
-table {
-	border-collapse: collapse;
-	border: 1px orange;
-}
+<head lang="en">
+    <style>
+        table {
+            border-collapse: collapse;
+            border: 1px #fcba19;
+            width: 700px;
+        }
 
-th,
-td {
-	border: 1px solid orange;
-	vertical-align: top
-}
+        th,
+        td {
+            border: 1px solid #fcba19;
+            vertical-align: top
+        }
 
-.tdDetails {
-	padding-top: 45px;
-}
+        .tdDetails {
+            padding-top: 45px;
+        }
 
-.divCell {
-	padding-left: 10px;
-	float: left;
-	display: table-column;
-}
+        .divCell {
+            padding-left: 10px;
+            float: left;
+            display: table-column;
+        }
 
-.divContent {
-	padding-top: 30px;
-}
+        .divContent {
+            padding-top: 30px;
+        }
 
-.divTableRow {
-	clear: both;
-}
+        .divTableRow {
+            clear: both;
+        }
 
-.divTableCell {
-	float: left;
-	height: 17px;
-	overflow: hidden;
-	padding: 3px 1.8%;
-	color: #1a5a96;
-	font-weight: bold;
-	width: 200px;
-}
+        .divTableCell {
+            float: left;
+            height: 17px;
+            overflow: hidden;
+            padding: 3px 1.8%;
+            font-weight: bold;
+            width: 200px;
+            font-size: 16px;
+            font-family: Times;
+            color: #003267;
+        }
 
-hr {
-	border: none;
-	height: 1px;
-	color: orange;
-	background-color: orange;
-}
+        hr {
+            border: none;
+            height: 1px;
+            color: #fcba19;
+            background-color: #fcba19;
+        }
 
-.divTableRow.hrRow {
-	padding: 20px 0px 10px 9px;
-}
+        .divTableRow.hrRow {
+            padding: 10px 0px 10px 9px;
+        }
 
-.tdLogo {
-	padding-top: 30px;
-}
+        .tdLogo {
+            height: 90px;
+            padding: 30px 20px 0px 20px;
+        }
 
-.divCellTxtUnbold {
-	font-weight: normal ! important;
-}
+        .divCellTxtUnbold {
+            font-weight: normal ! important;
+            font-size: 16px;
+            font-family: Times;
+            color: #003267;
+        }
 
-.divCellFooter {
-	width: 553px;
-}
+        .divCellFooter {
+            width: 673px;
+        }
 
-.footerTxt {
-	font-size: 13px;
-}
+        .footerTxt {
+            font-size: 13px;
+            padding-left: 120px;
+        }
 
-.divCellHeader1 {
-	background-color: #1a5a96;
-	width: 474px;
-	color: white
-}
+        .divCellHeader1 {
+            background-color: #1a5a96;
+            width: 543px;
+            font-size: 16px;
+            font-family: Times;
+            color: #ffffff;
+        }
 
-.divCellHeader2 {
-	background-color: orange;
-	width: 474px;
-	height: 12px;
-	font-size: 11px;
-}
+        .divCellHeader2 {
+            background-color: #fcba19;
+            width: 543px;
+            height: 12px;
+            font-size: 11px;
+            font-family: Times;
+            color: #003267;
+        }
 
-</style>
-		<meta charset="UTF-8">
-		</head>
-		<body>
-			<table>
-				<tbody>
-					<tr>
-						<td class="tdLogo">
-							<img src="{{bclogoUrl}}" alt="" style="height:80px;">
-							</td>
-							<td class="tdDetails">
+        .divCellHeader3 {
+            padding-bottom: 20px;
+            width: 400px;
+            padding-top: 30px;
+        }
 
-									<div class="divTableRow" >
-										<div class="divTableCell divCellHeader1">RECEIPT</div>
-									</div>
-									<div class="divTableRow">
-										<div class="divTableCell divCellHeader2">BC Society . Societies Act</div>
-									</div>
-									<div class="divTableRow" style="padding-top:20px;">
-										<div class="divTableCell" style="padding-bottom:20px;width:400px;">
-											<p style="display:inline;">This is confirmation of payment for filing</p>
-										</div>
-									</div>
-									<div class="divTableRow">
-										<div class="divTableCell">Form Filed:</div>
-										<div class="divTableCell divCellTxtUnbold">{{formFiled}}</div>
-									</div>
-									<div class="divTableRow">
-										<div class="divTableCell">Incorporation Number:</div>
-										<div class="divTableCell divCellTxtUnbold">{{incorporationNumber}}</div>
-									</div>
-									<div class="divTableRow">
-										<div class="divTableCell">Business Number:</div>
-										<div class="divTableCell divCellTxtUnbold">{{businessNumber}}</div>
-									</div>
-									<div class="divTableRow">
-										<div class="divTableCell">Society Name:</div>
-										<div class="divTableCell divCellTxtUnbold">{{societyName}}</div>
-									</div>
-									<div class="divTableRow">
-										<div class="divTableCell">Filing Date and Time:</div>
-										<div class="divTableCell divCellTxtUnbold">{{filingDateTime}}</div>
-									</div>
-									<div class="divTableRow hrRow">
-										<hr>
-										</div>
-										<div class="divTableRow">
-											<div class="divTableCell">Fee:</div>
-											<div class="divTableCell divCellTxtUnbold">{{fee}}</div>
-										</div>
-										<div class="divTableRow hrRow">
-											<hr>
-											</div>
-											<div class="divTableRow">
-												<div class="divTableCell">Payment Method:</div>
-												<div class="divTableCell divCellTxtUnbold">{{paymentMethod}}</div>
-											</div>
-											<div class="divTableRow">
-												<div class="divTableCell">Payment Invoice Number:</div>
-												<div class="divTableCell divCellTxtUnbold">{{paymentInvoiceNumber}}</div>
-											</div>
-											<div class="divTableRow">
-												<div class="divTableCell">Transaction ID:</div>
-												<div class="divTableCell divCellTxtUnbold">{{transactionId}}</div>
-											</div>
-											<div class="divTableRow">
-												<div class="divTableCell">Credit Card Type:</div>
-												<div class="divTableCell divCellTxtUnbold">{{creditCardType}}</div>
-											</div>
-											<div class="divTableRow">
-												<div class="divTableCell">Credit Card Number:</div>
-												<div class="divTableCell divCellTxtUnbold">{{creditCardNumber}}</div>
-											</div>
-											<div class="divTableRow">
-												<div class="divTableCell">Authorization Number: :</div>
-												<div class="divTableCell divCellTxtUnbold">{{authorisationNumber}}</div>
-											</div>
-											<div class="divTableRow">
-												<p>
-													<img src="{{registriesurl}}" alt="BC registries Logo" style="padding-left: 90px;padding-top: 20px;height:300px;width:400px;">
-													</p>
-												</div>
+        .logo2 {
+            padding: 20px 0px 40px 120px;
+            width: 300px;
+        }
 
-										</td>
-									</tr>
-									<tr class="tdivCellFooter">
+        .imgLogo {
+            height: 90px;
+        }
 
-										<td colspan="2">
-											<div class="divTableRow">
-												<div class="divTableCell divCellFooter"
-												style="background-color:#1a5a96;color:white;">
-												<label class="footerTxt" style="padding-left: 70px;padding-right: 15px;">
-												BC REGISTRIES AND ONLINE SERVICES
-												</label>
-												<label style="padding-left:121px;" class="footerTxt">
-												TST: 111362712</label>
+        .divFooter1 {
+            background-color: #1a5a96;
+            color: white;
+        }
+    </style>
+    <meta charset="UTF-8">
+</head>
+<body>
+<table>
+    <tbody>
+    <tr>
+        <td class="tdLogo">
+            <img src="{{ bclogoUrl }}" alt="" style="height:80px;" class="imgLogo">
+        </td>
+        <td class="tdDetails">
 
-												</div>
+            <div class="divTableRow">
+                <div class="divTableCell divCellHeader1">RECEIPT</div>
+            </div>
+            <div class="divTableRow">
+                <div class="divTableCell divCellHeader2">BC Cooperative . Cooperative Act</div>
+            </div>
+              <div class="divTableRow">
+                     <div class="divTableCell divCellHeader3">
+                        This is confirmation of payment for your filing
+                     </div>
+              </div>
 
-											</div>
-										</td>
-									</tr>
-									<tr>
+            <div class="divTableRow">
+                <div class="divTableCell">Incorporation Number:</div>
+                <div class="divTableCell divCellTxtUnbold">{{ incorporationNumber }}</div>
+            </div>
+            <div class="divTableRow">
+                <div class="divTableCell">Business Number:</div>
+                <div class="divTableCell divCellTxtUnbold">{{ businessNumber }}</div>
+            </div>
+            <div class="divTableRow">
+                <div class="divTableCell">Society Name:</div>
+                <div class="divTableCell divCellTxtUnbold">{{ societyName }}</div>
+            </div>
+            <div class="divTableRow">
+                <div class="divTableCell">Filing Date and Time:</div>
+                <div class="divTableCell divCellTxtUnbold">{{ filingDateTime }}</div>
+            </div>
+            <div class="divTableRow hrRow">
+                <hr>
+            </div>
+             <div class="divTableRow">
+                <div class="divTableCell">Form Filed:</div>
+            </div>
+             {% for item in line_items %}
+            <div class="divTableRow">
+                <div class="divTableCell">{{ item.description }}</div>
+                <div class="divTableCell divCellTxtUnbold">{{ item.filing_fees }}</div>
+            </div>
+            {% endfor %}
+            <div class="divTableRow hrRow">
+                <hr>
+            </div>
 
-										<td colspan="2">
-											<div class="divTableRow">
-												<div class="divTableCell divCellFooter" style="background-color:orange;">
-												<label class="footerTxt" style="padding-left:70px;">
-												Incorporation Number {{incorporationNumber}}
-												</label>
-												<label class="footerTxt" style="padding-left:45px;">
-												www.bc.ca/Societies
-												</label>
+            <div class="divTableRow">
+                <div class="divTableCell">Payment Invoice Number:</div>
+                <div class="divTableCell divCellTxtUnbold">{{ paymentInvoiceNumber }}</div>
+            </div>
+            <div class="divTableRow">
+                <div class="divTableCell">Transaction ID:</div>
+                <div class="divTableCell divCellTxtUnbold">{{ transactionId }}</div>
+            </div>
+            <div class="divTableRow">
+                <p>
+                    <img src="{{ registriesurl }}" alt="BC registries Logo"
+                         style="padding-left: 90px;padding-top: 20px;height:300px;width:400px;">
+                </p>
+            </div>
 
-												<label class="footerTxt" style="padding-left:50px;">
-												Page 1 of 1
-												</label>
-												</div>
+        </td>
+    </tr>
+    <tr class="tdivCellFooter">
+               <td colspan="2">
+                  <div class="divTableRow">
+                     <div class="divTableCell divCellFooter divFooter1"
+                        >
+                        <label class="footerTxt " style="padding-right: 15px;">
+                        BC REGISTRIES AND ONLINE SERVICES
+                        </label>
+                        <label style="padding-left:190px;" class="footerTxt">
+                        TST: 111362712</label>
+                     </div>
+                  </div>
+               </td>
+            </tr>
+    <tr>
 
-											</div>
-										</td>
-									</tr>
-								</tbody>
-							</table>
-						</body>
-					</html>
+        <td colspan="2">
+            <div class="divTableRow">
+                <div class="divTableCell divCellFooter" style="background-color:#fcba19;">
+                    <label class="footerTxt" style="padding-left:70px;">
+                        Incorporation Number {{ incorporationNumber }}
+                    </label>
+                    <label class="footerTxt" style="padding-left:45px;">
+                        www.bc.ca/Societies
+                    </label>
+
+                    <label class="footerTxt" style="padding-left:50px;">
+                        Page 1 of 1
+                    </label>
+                </div>
+
+            </div>
+        </td>
+    </tr>
+    </tbody>
+</table>
+</body>
+</html>
