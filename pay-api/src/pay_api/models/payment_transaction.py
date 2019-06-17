@@ -15,9 +15,12 @@
 import uuid
 from datetime import datetime
 
+from marshmallow import fields
 from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
+
 from .base_model import BaseModel
+from .base_schema import BaseSchema
 from .db import db, ma
 
 
@@ -46,10 +49,21 @@ class PaymentTransaction(db.Model, BaseModel):  # pylint: disable=too-few-public
         return cls.query.filter_by(payment_id=payment_id).filter_by(id=identifier).one_or_none()
 
 
-class PaymentTransactionSchema(ma.ModelSchema):
+class PaymentTransactionSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the PaymentTransaction."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = PaymentTransaction
+
+    status_code = fields.String(data_key='status_code')
+    payment_id = fields.Integer(data_key='payment_id')
+    transaction_end_time = fields.String(data_key='end_time')
+    transaction_start_time = fields.String(data_key='start_time')
+
+    # pylint: disable=no-member
+    _links = ma.Hyperlinks({
+        'self': ma.URLFor('API.transactions_transactions', payment_id='<payment_id>', transaction_id='<id>'),
+        'collection': ma.URLFor('API.transactions_transaction', payment_id='<payment_id>')
+    })

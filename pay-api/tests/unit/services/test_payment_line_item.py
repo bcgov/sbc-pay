@@ -19,9 +19,10 @@ Test-Suite to ensure that the FeeSchedule Service is working as expected.
 
 from datetime import datetime
 
-from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem
+from pay_api.models import FeeSchedule, Invoice, InvoiceSchema, Payment, PaymentAccount, PaymentLineItem
 from pay_api.services.payment_line_item import PaymentLineItem as PaymentLineService
 from pay_api.utils.enums import Status
+
 
 def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
     """Factory."""
@@ -29,7 +30,8 @@ def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', pa
                           payment_system_code=payment_system_code)
 
 
-def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC', payment_status_code=Status.DRAFT.value):
+def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC',
+                    payment_status_code=Status.DRAFT.value):
     """Factory."""
     return Payment(payment_system_code=payment_system_code, payment_method_code=payment_method_code,
                    payment_status_code=payment_status_code, created_by='test', created_on=datetime.now())
@@ -43,13 +45,14 @@ def factory_invoice(payment_id: str, account_id: str):
                    total=0, created_by='test', created_on=datetime.now())
 
 
-def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees: int = 10, total: int = 10):
+def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees: int = 10, total: int = 10,
+                              status='CREATED'):
     """Factory."""
     return PaymentLineItem(invoice_id=invoice_id,
                            fee_schedule_id=fee_schedule_id,
                            filing_fees=filing_fees,
                            total=total,
-                           line_item_status_code='CREATED')
+                           line_item_status_code=status)
 
 
 def test_line_saved_from_new(session):
@@ -63,6 +66,8 @@ def test_line_saved_from_new(session):
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, status='CANCELLED')
+    line.save()
 
     p = PaymentLineService.find_by_id(line.id)
 
@@ -75,6 +80,12 @@ def test_line_saved_from_new(session):
     assert p.service_fees is None
     assert p.gst is None
     assert p.pst is None
+    assert p.line_item_status_code is not None
+    invoice = Invoice.find_by_id(invoice.id)
+    schema = InvoiceSchema()
+    d = schema.dump(invoice)
+    assert d.get('id') == invoice.id
+    assert len(d.get('line_items')) == 1
 
 
 def test_line_invalid_lookup(session):

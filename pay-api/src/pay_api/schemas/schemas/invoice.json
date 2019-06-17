@@ -1,0 +1,129 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/invoice",
+  "type": "object",
+  "title": "Invoice",
+  "required": [
+    "_links",
+    "created_by",
+    "created_on",
+    "id",
+    "invoice_number",
+    "reference_number",
+      "status_code",
+    "total"
+  ],
+  "properties": {
+    "_links": {
+      "oneOf": [
+        {
+          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/links"
+        }
+      ]
+    },
+    "created_by": {
+      "$id": "#/properties/created_by",
+      "type": "string",
+      "title": "Created By",
+      "default": "",
+      "examples": [
+        "CP0001219"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "created_on": {
+      "$id": "#/properties/created_on",
+      "type": "string",
+      "title": "Created On",
+      "default": "",
+      "examples": [
+        "2019-06-05T11:23:03.196226+00:00"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "id": {
+      "$id": "#/properties/id",
+      "type": "integer",
+      "title": "Invoice Identifier",
+      "default": 0,
+      "examples": [
+        1
+      ]
+    },
+    "invoice_number": {
+      "$id": "#/properties/invoice_number",
+      "type": "string",
+      "title": "Invoice Number",
+      "default": "",
+      "examples": [
+        "10020"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "reference_number": {
+      "$id": "#/properties/reference_number",
+      "type": "string",
+      "title": "Reference Number",
+      "default": "",
+      "examples": [
+        "10005"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "status_code": {
+      "$id": "#/properties/status_code",
+      "type": "string",
+      "title": "Invoice status code",
+      "default": "",
+      "examples": [
+        "CREATED"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "total": {
+      "$id": "#/properties/total",
+      "type": "integer",
+      "title": "Total amount",
+      "default": 0,
+      "examples": [
+        50
+      ]
+    },
+    "payment_date": {
+      "$id": "#/properties/payment_date",
+      "type": "string",
+      "title": "Payment Date",
+      "default": 0
+    },
+    "refund": {
+      "$id": "#/properties/refund",
+      "type": "number",
+      "title": "Refund Amount",
+      "default": 0
+    },
+    "updated_by": {
+      "$id": "#/properties/updated_by",
+      "type": "string",
+      "title": "Updated By",
+      "default": 0
+    },
+    "updated_on": {
+      "$id": "#/properties/updated_on",
+      "type": "string",
+      "title": "Updated On",
+      "default": 0
+    },
+    "line_items": {
+      "type": "array",
+      "items": {
+        "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/line_item"
+      }
+    },
+    "receipts": {
+      "type": "array",
+      "items": {
+        "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/receipt"
+      }
+    }
+  }
+}

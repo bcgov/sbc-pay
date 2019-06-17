@@ -44,7 +44,7 @@ class PayBcService(OAuthService):
         current_app.logger.debug('>Inside create invoice')
         invoice = self.create_invoice(access_token, site, invoice_request)
         current_app.logger.debug('>Inside adjust invoice')
-        adjinvoice = self.do_adjustment(access_token, site, invoice.get('invoice_number', None))
+        self.do_adjustment(access_token, site, invoice.get('invoice_number', None))
 
         return invoice
 
@@ -77,6 +77,7 @@ class PayBcService(OAuthService):
     def create_account(self, access_token, party, invoice_request):
         """Create account record in PayBC."""
         current_app.logger.debug('<Creating account')
+        # pylint: disable=too-many-format-args
         account_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/'.format(
             party.get('party_number'), None
         )

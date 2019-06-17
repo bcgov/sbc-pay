@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Base class for audit model."""
+from flask import current_app
+from sqlalchemy.orm import validates
+
 from .db import db
 
 
@@ -22,3 +25,9 @@ class Audit:  # pylint: disable=too-few-public-methods
     created_on = db.Column('created_on', db.DateTime, nullable=False)
     updated_by = db.Column('updated_by', db.String(50), nullable=True)
     updated_on = db.Column('updated_on', db.DateTime, nullable=True)
+
+    @validates('created_by', 'updated_by')
+    def convert_upper(self, key, value):  # pylint: disable=no-self-use
+        """Convert the annotated columns to upper case on save."""
+        current_app.logger.debug(f'Converting to upper for Key {key} and value {value}')
+        return value.upper() if value else value

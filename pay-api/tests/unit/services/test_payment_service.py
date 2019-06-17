@@ -28,7 +28,8 @@ from pay_api.services.payment_service import PaymentService
 from pay_api.utils.enums import Status
 
 
-def factory_payment_account(corp_number: str = 'CP1234', corp_type_code: str ='CP', payment_system_code : str ='PAYBC'):
+def factory_payment_account(corp_number: str = 'CP1234', corp_type_code: str = 'CP',
+                            payment_system_code: str = 'PAYBC'):
     """Factory."""
     return PaymentAccount(
         corp_number=corp_number,
@@ -41,14 +42,14 @@ def factory_payment_account(corp_number: str = 'CP1234', corp_type_code: str ='C
 
 
 def factory_payment(
-    payment_system_code: str = 'PAYBC', payment_method_code: str ='CC', payment_status_code: str = Status.DRAFT.value
+        payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC',
+        payment_status_code: str = Status.DRAFT.value
 ):
     """Factory."""
     return Payment(
         payment_system_code=payment_system_code,
         payment_method_code=payment_method_code,
         payment_status_code=payment_status_code,
-        paid=0,
         created_by='test',
         created_on=datetime.now(),
     )
@@ -79,12 +80,12 @@ def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees
 
 
 def factory_payment_transaction(
-    payment_id: str,
-    status_code: str = Status.DRAFT.value,
-    client_system_url: str = 'http://google.com/',
-    pay_system_url: str = 'http://google.com',
-    transaction_start_time: datetime = datetime.now(),
-    transaction_end_time: datetime = datetime.now(),
+        payment_id: str,
+        status_code: str = Status.DRAFT.value,
+        client_system_url: str = 'http://google.com/',
+        pay_system_url: str = 'http://google.com',
+        transaction_start_time: datetime = datetime.now(),
+        transaction_end_time: datetime = datetime.now(),
 ):
     """Factory."""
     return PaymentTransaction(
@@ -235,9 +236,8 @@ def test_update_payment_record_transaction_invalid(session):
         },
     }
 
-    with pytest.raises(BusinessException) as excinfo:
-        PaymentService.update_payment(payment.id, payment_request, 'test')
-    assert excinfo.type == BusinessException
+    payment_response = PaymentService.update_payment(payment.id, payment_request, 'test')
+    assert payment_response.get('id') is not None
 
 
 def test_update_payment_completed_invalid(session):
@@ -391,16 +391,16 @@ def test_update_payment_record_rollback(session):
 
     # Mock here that the invoice update fails here to test the rollback scenario
     with patch(
-        'pay_api.services.payment_transaction.PaymentTransaction.find_active_by_payment_id',
-        side_effect=Exception('mocked error'),
+            'pay_api.services.payment_transaction.PaymentTransaction.find_active_by_payment_id',
+            side_effect=Exception('mocked error'),
     ):
         with pytest.raises(Exception) as excinfo:
             PaymentService.update_payment(payment.id, payment_request, 'test')
         assert excinfo.type == Exception
 
     with patch(
-        'pay_api.services.payment_transaction.PaymentTransaction.update_transaction',
-        side_effect=Exception('mocked error'),
+            'pay_api.services.payment_transaction.PaymentTransaction.update_transaction',
+            side_effect=Exception('mocked error'),
     ):
         with pytest.raises(Exception) as excinfo:
             PaymentService.update_payment(payment.id, payment_request, 'test')

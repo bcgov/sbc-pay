@@ -30,6 +30,7 @@ class Error(Enum):
     PAY009 = 'Invalid account identifier', HTTPStatus.BAD_REQUEST
     PAY010 = 'Payment is already completed', HTTPStatus.BAD_REQUEST
     PAY011 = 'Payment is already cancelled', HTTPStatus.BAD_REQUEST
+    PAY012 = 'Invalid invoice identifier', HTTPStatus.BAD_REQUEST
     PAY999 = 'Invalid Request', HTTPStatus.BAD_REQUEST
 
     def __new__(cls, message, status):

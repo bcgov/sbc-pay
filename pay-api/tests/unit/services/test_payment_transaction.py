@@ -47,7 +47,6 @@ def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC'
         payment_system_code=payment_system_code,
         payment_method_code=payment_method_code,
         payment_status_code=payment_status_code,
-        paid=0,
         created_by='test',
         created_on=datetime.now(),
     )
@@ -77,12 +76,12 @@ def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees
 
 
 def factory_payment_transaction(
-    payment_id: str,
-    status_code: str = 'DRAFT',
-    client_system_url: str = 'http://google.com/',
-    pay_system_url: str = 'http://google.com',
-    transaction_start_time: datetime = datetime.now(),
-    transaction_end_time: datetime = datetime.now(),
+        payment_id: str,
+        status_code: str = 'DRAFT',
+        client_system_url: str = 'http://google.com/',
+        pay_system_url: str = 'http://google.com',
+        transaction_start_time: datetime = datetime.now(),
+        transaction_end_time: datetime = datetime.now(),
 ):
     """Factory."""
     return PaymentTransaction(
@@ -353,3 +352,23 @@ def test_transaction_find_active_none_lookup(session):
 
     transaction = PaymentTransactionService.find_active_by_payment_id(payment.id)
     assert transaction is None
+
+
+def test_transaction_find_by_payment_id(session):
+    """Find all transactions by payment id.."""
+    payment_account = factory_payment_account()
+    payment = factory_payment()
+    payment_account.save()
+    payment.save()
+    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice.save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+    transaction = factory_payment_transaction(payment.id, Status.CREATED.value)
+    transaction.save()
+
+    transaction = PaymentTransactionService.find_by_payment_id(payment.id)
+    assert transaction is not None
+    assert transaction.get('items') is not None
+    assert transaction.get('items')[0].get('_links') is not None

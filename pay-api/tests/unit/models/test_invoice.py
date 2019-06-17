@@ -19,7 +19,7 @@ Test-Suite to ensure that the CorpType Class is working as expected.
 
 from datetime import datetime
 
-from pay_api.models import Invoice, Payment, PaymentAccount
+from pay_api.models import Invoice, InvoiceSchema, Payment, PaymentAccount
 
 
 def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
@@ -68,3 +68,20 @@ def test_invoice_find_by_id(session):
     invoice = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
     invoice.save()
     assert invoice.find_by_id(invoice.id) is not None
+    schema = InvoiceSchema()
+    d = schema.dump(invoice)
+    assert d.get('id') == invoice.id
+
+
+def test_invoice_find_by_id_and_payment_id(session):
+    """Assert a invoice is stored.
+
+    Start with a blank database.
+    """
+    payment_account = factory_payment_account()
+    payment = factory_payment()
+    payment_account.save()
+    payment.save()
+    invoice = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
+    invoice.save()
+    assert invoice.find_by_id_and_payment_id(invoice.id, payment.id) is not None

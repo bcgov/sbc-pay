@@ -11,24 +11,26 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Service to manage Fee Calculation."""
+"""Service to manage Invoice."""
 
 from datetime import datetime
 
 from flask import current_app
 
+from pay_api.exceptions import BusinessException
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import InvoiceSchema
 from pay_api.services.fee_schedule import FeeSchedule
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.services.payment_line_item import PaymentLineItem
 from pay_api.utils.enums import Status
+from pay_api.utils.errors import Error
 
 
 class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
     """Service to manage Invoice related operations."""
 
     def __init__(self):
-        """Return a User Service object."""
+        """Initialize the service."""
         self.__dao = None
         self._id: int = None
         self._payment_id: int = None
@@ -40,11 +42,11 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._paid: float = None
         self._refund: float = None
         self._payment_date: datetime = None
+        self._payment_line_items = None
         self._created_by: str = None
         self._created_on: datetime = None
         self._updated_by: str = None
         self._updated_on: datetime = None
-        self._payment_line_items = None
 
     @property
     def _dao(self):
@@ -182,50 +184,6 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._dao.paid = value
 
     @property
-    def created_by(self):
-        """Return the created_by."""
-        return self._created_by
-
-    @created_by.setter
-    def created_by(self, value: str):
-        """Set the created_by."""
-        self._created_by = value
-        self._dao.created_by = value
-
-    @property
-    def created_on(self):
-        """Return the created_on."""
-        return self._created_on if self._created_on is not None else datetime.now()
-
-    @created_on.setter
-    def created_on(self, value: datetime):
-        """Set the created_on."""
-        self._created_on = value
-        self._dao.created_on = value
-
-    @property
-    def updated_by(self):
-        """Return the updated_by."""
-        return self._updated_by
-
-    @updated_by.setter
-    def updated_by(self, value: str):
-        """Set the created_by."""
-        self._updated_by = value
-        self._dao.updated_by = value
-
-    @property
-    def updated_on(self):
-        """Return the updated_on."""
-        return self._updated_on
-
-    @updated_on.setter
-    def updated_on(self, value: datetime):
-        """Set the updated_on."""
-        self._updated_on = value
-        self._dao.updated_on = value
-
-    @property
     def payment_line_items(self):
         """Return the payment payment_line_items."""
         return self._payment_line_items
@@ -236,43 +194,70 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._payment_line_items = value
         self._dao.payment_line_items = value
 
-    def flush(self):
-        """Save the information to the DB."""
-        return self._dao.flush()
+    @property
+    def created_by(self):
+        """Return the created_by."""
+        return self._created_by
+
+    @property
+    def created_on(self):
+        """Return the created_on."""
+        return self._created_on if self._created_on is not None else datetime.now()
+
+    @property
+    def updated_on(self):
+        """Return the updated_on."""
+        return self._updated_on
+
+    @property
+    def updated_by(self):
+        """Return the updated_by."""
+        return self._updated_by
+
+    @created_by.setter
+    def created_by(self, value: str):
+        """Set the created_by."""
+        self._created_by = value
+        self._dao.created_by = value
+
+    @created_on.setter
+    def created_on(self, value: datetime):
+        """Set the created_on."""
+        self._created_on = value
+        self._dao.created_on = value
+
+    @updated_by.setter
+    def updated_by(self, value: str):
+        """Set the created_by."""
+        self._updated_by = value
+        self._dao.updated_by = value
+
+    @updated_on.setter
+    def updated_on(self, value: datetime):
+        """Set the updated_on."""
+        self._updated_on = value
+        self._dao.updated_on = value
 
     def save(self):
         """Save the information to the DB."""
         return self._dao.save()
 
+    def flush(self):
+        """Save the information to the DB."""
+        return self._dao.flush()
+
     def asdict(self):
         """Return the invoice as a python dict."""
-        payment_line_items = []
-        for item in self._payment_line_items:
-            payment_line_items.append(PaymentLineItem.populate(item).asdict())
-
-        d = {
-            'id': self._id,
-            'created_by': self._created_by,
-            'created_on': self._created_on,
-            'updated_by': self._updated_by,
-            'updated_on': self._updated_on,
-            'invoice_number': self._invoice_number,
-            'reference_number': self._reference_number,
-            'invoice_status': self._invoice_status_code,
-            'account_id': self._account_id,
-            'payment_date': self._payment_date,
-            'total': self._total,
-            'paid': self._paid,
-            'refund': self._refund,
-            'line_items': payment_line_items
-        }
+        invoice_schema = InvoiceSchema()
+        d = invoice_schema.dump(self._dao)
 
         return d
 
     @staticmethod
     def populate(value):
+        """Populate invoice service."""
         invoice: Invoice = Invoice()
-        invoice._dao = value # pylint: disable=protected-access
+        invoice._dao = value  # pylint: disable=protected-access
         return invoice
 
     @staticmethod
@@ -295,9 +280,13 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return i
 
     @staticmethod
-    def find_by_id(identifier: int):
+    def find_by_id(identifier: int, pay_id: int = None):
         """Find invoice by id."""
-        invoice_dao = InvoiceModel.find_by_id(identifier)
+        invoice_dao = InvoiceModel.find_by_id(identifier) if not pay_id else InvoiceModel.find_by_id_and_payment_id(
+            identifier, pay_id)
+
+        if not invoice_dao:
+            raise BusinessException(Error.PAY012)
 
         invoice = Invoice()
         invoice._dao = invoice_dao  # pylint: disable=protected-access
@@ -315,3 +304,17 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
 
         current_app.logger.debug('>find_by_id')
         return invoice
+
+    @staticmethod
+    def get_invoices(payment_identifier):
+        """Find invoices."""
+        current_app.logger.debug('<get_invoices')
+
+        data = {'items': []}
+        daos = [InvoiceModel.find_by_payment_id(payment_identifier)]  # Treating as a set to avoid re-work in future
+        for dao in daos:
+            if dao:
+                data['items'].append(Invoice.populate(dao).asdict())
+
+        current_app.logger.debug('>get_invoices')
+        return data
