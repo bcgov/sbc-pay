@@ -35,11 +35,10 @@ class Templates(Resource):
             response = {'report-templates': templates}
         else:
             try:
-                print("here -------------------------------------")
                 html = TemplateService.get_stored_template(request.args.get('name'))
                 response = Response(html, HTTPStatus.OK)
                 response.headers.set('Content-Disposition', 'attachment', filename={request.args.get('name')})
                 response.headers.set('Content-Type', 'application/html')
             except TemplateNotFound:
-                abort(404, 'Template not found')
+                abort(HTTPStatus.NOT_FOUND, 'Template not found')
         return response

@@ -22,6 +22,7 @@ from api import TEMPLATE_FOLDER_PATH
 
 ENV = Environment(loader=FileSystemLoader('.'))
 
+
 class ReportService:
     """Service for all template related operations"""
 
