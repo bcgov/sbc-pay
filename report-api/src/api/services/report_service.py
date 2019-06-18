@@ -29,7 +29,7 @@ class ReportService:
     @classmethod
     def create_report_from_stored_template(cls, template_name: str, template_args: object, report_name: str):
         template = ENV.get_template('{}/{}.html'.format(TEMPLATE_FOLDER_PATH, template_name))
-        bc_logo_url = url_for('static', filename='images/bc_logo.png')
+        bc_logo_url = url_for('static', filename='images/bcgov-logo-vert.jpg')
         registries_url = url_for('static', filename='images/reg_logo.png')
         html_out = template.render(template_args, bclogoUrl=bc_logo_url, registriesurl=registries_url)
         pdf_out = render_pdf(HTML(string=html_out, base_url=request.base_url), automatic_download=True, download_filename='{}.pdf'.format(report_name))
