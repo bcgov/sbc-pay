@@ -11,18 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Meta information about the service.
-to support swagger on http
-"""
+"""For fixing swagger in openshift."""
 from flask import url_for
 from flask_restplus import Api as BaseApi
 
 
 class Api(BaseApi):
-    """
-    Monkey patch Swagger API to return HTTPS URLs
-    """
+    """Monkey patch Swagger API to return HTTPS URLs."""
+
     @property
     def specs_url(self):
+        """Switch to https."""
         scheme = 'http' if '5000' in self.base_url else 'https'
         return url_for(self.endpoint('specs'), _external=True, _scheme=scheme)

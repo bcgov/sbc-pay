@@ -13,9 +13,11 @@
 # limitations under the License.
 """Endpoints to check and manage payments."""
 from http import HTTPStatus
+
+from flask import Response, abort, request
 from flask_restplus import Namespace, Resource
-from flask import request, Response, abort
 from jinja2 import TemplateNotFound
+
 from api.services.template_service import TemplateService
 
 
@@ -28,7 +30,7 @@ class Templates(Resource):
 
     @staticmethod
     def get():
-        """ Return all report-templates or returns specific html of a template"""
+        """Return all report-templates or returns specific html of a template."""
         template_name = request.args.get('name')
         if template_name is None:
             templates = TemplateService.find_all_templates()

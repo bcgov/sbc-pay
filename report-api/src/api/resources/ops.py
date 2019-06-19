@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Endpoints to check and manage the health of the service."""
-from flask_restplus import Namespace, Resource
-API = Namespace('OPS', description='Service - OPS checks')
 
+from flask_restplus import Namespace, Resource
+
+
+API = Namespace('OPS', description='Service - OPS checks')
 
 
 @API.route('healthz')
@@ -26,8 +28,7 @@ class Healthz(Resource):
 
     @staticmethod
     def get():
-
-      # made it here, so all checks passed
+        """Made it here..so its all fine."""
         return {'message': 'api is healthy'}, 200
 
 

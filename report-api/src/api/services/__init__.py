@@ -13,5 +13,5 @@
 # limitations under the License.
 """Exposes all of the Services used in the API."""
 
-from .template_service import TemplateService
 from .report_service import ReportService
+from .template_service import TemplateService

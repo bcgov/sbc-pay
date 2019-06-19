@@ -13,10 +13,13 @@
 # limitations under the License.
 """Endpoints to check and manage payments."""
 from http import HTTPStatus
+
+from flask import abort, request
 from flask_restplus import Namespace, Resource
 from jinja2 import TemplateNotFound
-from flask import  request, abort
+
 from api.services import ReportService
+
 
 API = Namespace('Reports', description='Service - Reports')
 
@@ -24,19 +27,20 @@ API = Namespace('Reports', description='Service - Reports')
 @API.route('')
 class Report(Resource):
     """Payment endpoint resource."""
+
     @staticmethod
     def get():
-        """Get Status of the report service"""
+        """Get Status of the report service."""
         return {'message': 'Report generation up and running'}, HTTPStatus.OK
 
     @staticmethod
     def post():
-        """Creates a report"""
+        """Create a report."""
         request_json = request.get_json()
         template_vars = request_json['template_vars']
         report_name = request_json['report_name']
         pdf = None
-        if 'template_name' in request_json: #Ignore template if template_name is present
+        if 'template_name' in request_json:   # Ignore template if template_name is present
             template_name = request_json['template_name']
             try:
                 pdf = ReportService.create_report_from_stored_template(template_name, template_vars, report_name)

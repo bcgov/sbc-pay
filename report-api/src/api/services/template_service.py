@@ -12,20 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Service to  manage report-templates"""
+"""Service to  manage report-templates."""
 
+import fnmatch
 import os
 import os.path
-import fnmatch
+
 from jinja2 import Environment, FileSystemLoader
+
 from api import TEMPLATE_FOLDER_PATH
+
 
 ENV = Environment(loader=FileSystemLoader('.'))
 
+
 class TemplateService:
-    """Service for all template related operations"""
+    """Service for all template related operations."""
+
     @staticmethod
     def find_all_templates():
+        """Get all templates."""
         template_names = []
         list_of_files = os.listdir(TEMPLATE_FOLDER_PATH)
         for filename in list_of_files:
@@ -35,6 +41,7 @@ class TemplateService:
 
     @classmethod
     def get_stored_template(cls, templatename: str, ):
+        """Get a stored template."""
         template = ENV.get_template('{}/{}.html'.format(TEMPLATE_FOLDER_PATH, templatename))
         html_template = template.render()
         return html_template

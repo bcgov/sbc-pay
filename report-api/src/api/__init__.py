@@ -11,10 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The report Microservice.
+"""The report Microservice.This module is the API for the Legal Entity system."""
 
-This module is the API for the Legal Entity system.
-"""
 import os
 
 from flask import Flask
@@ -24,11 +22,13 @@ from api import models
 from api.utils.logging import setup_logging
 from api.utils.run_version import get_run_version
 
+
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
 # lower case name as used by convention in most Flask apps
 tracing = None  # pylint: disable=invalid-name
 TEMPLATE_FOLDER_PATH = 'report-templates/'
+
 
 def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     """Return a configured Flask App using the Factory method."""
@@ -36,18 +36,17 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     app.config.from_object(config.CONFIGURATION[run_mode])
 
     # initialize tracer
-    global tracing  # pylint: disable=global-statement,invalid-name
-    global TEMPLATE_FOLDER_PATH # pylint: disable=global-statement
-    TEMPLATE_FOLDER_PATH = "report-templates/"
+    global tracing  # pylint:  disable=global-statement,invalid-name
+    global TEMPLATE_FOLDER_PATH  # pylint:  disable=global-statement
+    TEMPLATE_FOLDER_PATH = 'report-templates/'
 
     from api.resources import API_BLUEPRINT, OPS_BLUEPRINT
 
     app.register_blueprint(API_BLUEPRINT)
     app.register_blueprint(OPS_BLUEPRINT)
 
-
     @app.after_request
-    def add_version(response):  # pylint: disable=unused-variable
+    def add_version(response):  # pylint:  disable=unused-variable
         version = get_run_version()
         response.headers['API'] = f'report_api/{version}'
         return response
@@ -57,11 +56,8 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     return app
 
 
-
-
 def register_shellcontext(app):
     """Register shell context objects."""
-
     def shell_context():
         """Shell context objects."""
         return {'app': app, 'models': models}  # pragma: no cover

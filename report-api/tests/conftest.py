@@ -41,9 +41,6 @@ def client(app):  # pylint: disable=redefined-outer-name
     return app.test_client()
 
 
-
-
-
 @pytest.fixture(scope='session')
 def client_ctx(app):
     """Return session-wide Flask test client."""

@@ -21,13 +21,14 @@ All services have 2 defaults sets of endpoints:
 That are used to expose operational health information about the service, and meta information.
 """
 from flask import Blueprint
-from .swaggerhelper import Api
 
 # from .trace import API as TRACE_API
 from .meta import API as META_API
 from .ops import API as OPS_API
-from .report import API as api
+from .report import API as REPORT_API
+from .swaggerhelper import Api
 from .templates import API as TEMPLATES_API
+
 
 __all__ = ('API_BLUEPRINT', 'OPS_BLUEPRINT')
 
@@ -64,5 +65,5 @@ API = Api(API_BLUEPRINT,
 
 API.add_namespace(META_API, path='/meta')
 
-API.add_namespace(api, path='/reports')
+API.add_namespace(REPORT_API, path='/reports')
 API.add_namespace(TEMPLATES_API, path='/templates')
