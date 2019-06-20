@@ -62,7 +62,7 @@ class PaymentSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     payment_status_code = fields.String(data_key='status_code')
 
     # pylint: disable=no-member
-    invoices = ma.Nested(InvoiceSchema, many=True, exclude=('payment_line_items',))
+    invoices = ma.Nested(InvoiceSchema, many=True, exclude=('payment_line_items', 'receipts'))
     transactions = ma.Nested(PaymentTransactionSchema, many=True)
 
     _links = ma.Hyperlinks({

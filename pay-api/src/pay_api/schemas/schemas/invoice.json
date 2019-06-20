@@ -1,17 +1,17 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/payment_response",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/invoice",
   "type": "object",
-  "title": "Payment Response",
+  "title": "Invoice",
   "required": [
     "_links",
-    "id",
-    "invoices",
-    "payment_method",
-    "payment_system",
-    "status_code",
     "created_by",
-    "created_on"
+    "created_on",
+    "id",
+    "invoice_number",
+    "reference_number",
+    "status_code",
+    "total"
   ],
   "properties": {
     "_links": {
@@ -33,11 +33,11 @@
     },
     "created_on": {
       "$id": "#/properties/created_on",
-      "type": "string",
+      "type": "date",
       "title": "The Created_on Schema",
       "default": "",
       "examples": [
-        "2019-06-05T11:23:03.191477+00:00"
+        "2019-06-05T11:23:03.196226+00:00"
       ],
       "pattern": "^(.*)$"
     },
@@ -50,23 +50,23 @@
         1
       ]
     },
-    "payment_method": {
-      "$id": "#/properties/payment_method",
+    "invoice_number": {
+      "$id": "#/properties/invoice_number",
       "type": "string",
-      "title": "The Payment_method Schema",
+      "title": "The Invoice_number Schema",
       "default": "",
       "examples": [
-        "CC"
+        "10020"
       ],
       "pattern": "^(.*)$"
     },
-    "payment_system": {
-      "$id": "#/properties/payment_system",
+    "reference_number": {
+      "$id": "#/properties/reference_number",
       "type": "string",
-      "title": "The Payment_system Schema",
+      "title": "The Reference_number Schema",
       "default": "",
       "examples": [
-        "PAYBC"
+        "10005"
       ],
       "pattern": "^(.*)$"
     },
@@ -80,17 +80,26 @@
       ],
       "pattern": "^(.*)$"
     },
-    "invoices": {
+    "total": {
+      "$id": "#/properties/total",
+      "type": "integer",
+      "title": "The Total Schema",
+      "default": 0,
+      "examples": [
+        50
+      ]
+    },
+    "line_items": {
       "anyOf": [
         {
-          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/invoice"
+          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/line_item"
         }
       ]
     },
-    "transactions": {
+    "receipts": {
       "anyOf": [
         {
-          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/transaction"
+          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/receipt"
         }
       ]
     }

@@ -1,0 +1,112 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/line_item",
+  "type": "object",
+  "title": "Payment Line Item",
+  "required": [
+    "description",
+    "filing_fees",
+    "gst",
+    "id",
+    "processing_fees",
+    "pst",
+    "quantity",
+    "service_fees",
+    "status_code",
+    "total"
+  ],
+  "properties": {
+    "description": {
+      "$id": "#/properties/line_items/items/properties/description",
+      "type": "string",
+      "title": "The Description Schema",
+      "default": "",
+      "examples": [
+        "TEST"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "filing_fees": {
+      "$id": "#/properties/line_items/items/properties/filing_fees",
+      "type": "integer",
+      "title": "The Filing_fees Schema",
+      "default": 0,
+      "examples": [
+        20
+      ]
+    },
+    "gst": {
+      "$id": "#/properties/line_items/items/properties/gst",
+      "type": "integer",
+      "title": "The Gst Schema",
+      "default": 0,
+      "examples": [
+        0
+      ]
+    },
+    "id": {
+      "$id": "#/properties/line_items/items/properties/id",
+      "type": "integer",
+      "title": "The Id Schema",
+      "default": 0,
+      "examples": [
+        1
+      ]
+    },
+    "processing_fees": {
+      "$id": "#/properties/line_items/items/properties/processing_fees",
+      "type": "integer",
+      "title": "The Processing_fees Schema",
+      "default": 0,
+      "examples": [
+        0
+      ]
+    },
+    "pst": {
+      "$id": "#/properties/line_items/items/properties/pst",
+      "type": "integer",
+      "title": "The Pst Schema",
+      "default": 0,
+      "examples": [
+        0
+      ]
+    },
+    "quantity": {
+      "$id": "#/properties/line_items/items/properties/quantity",
+      "type": "integer",
+      "title": "The Quantity Schema",
+      "default": 0,
+      "examples": [
+        1
+      ]
+    },
+    "service_fees": {
+      "$id": "#/properties/line_items/items/properties/service_fees",
+      "type": "integer",
+      "title": "The Service_fees Schema",
+      "default": 0,
+      "examples": [
+        0
+      ]
+    },
+    "status_code": {
+      "$id": "#/properties/line_items/items/properties/status_code",
+      "type": "string",
+      "title": "The Status_code Schema",
+      "default": "",
+      "examples": [
+        "CREATED"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "total": {
+      "$id": "#/properties/line_items/items/properties/total",
+      "type": "integer",
+      "title": "The Total Schema",
+      "default": 0,
+      "examples": [
+        20
+      ]
+    }
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/receipt",
+  "type": "object",
+  "title": "Receipt",
+  "required": [
+    "id",
+    "receipt_amount",
+    "receipt_date",
+    "receipt_number"
+  ],
+  "properties": {
+    "id": {
+      "$id": "#/properties/receipts/items/properties/id",
+      "type": "integer",
+      "title": "The Id Schema",
+      "default": 0,
+      "examples": [
+        1
+      ]
+    },
+    "receipt_amount": {
+      "$id": "#/properties/receipts/items/properties/receipt_amount",
+      "type": "integer",
+      "title": "The Receipt_amount Schema",
+      "default": 0,
+      "examples": [
+        0
+      ]
+    },
+    "receipt_date": {
+      "$id": "#/properties/receipts/items/properties/receipt_date",
+      "type": "string",
+      "title": "The Receipt_date Schema",
+      "default": "",
+      "examples": [
+        "2019-01-02T00:00:00+00:00"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "receipt_number": {
+      "$id": "#/properties/receipts/items/properties/receipt_number",
+      "type": "string",
+      "title": "The Receipt_number Schema",
+      "default": "",
+      "examples": [
+        "123451"
+      ],
+      "pattern": "^(.*)$"
+    }
+  }
+}

@@ -22,6 +22,7 @@ from datetime import datetime
 
 from pay_api.models import PaymentTransaction
 from pay_api.utils.enums import Role
+from pay_api.schemas import utils as schema_utils
 
 
 token_header = {
@@ -107,6 +108,7 @@ def test_payment_creation(session, client, jwt, app):
     rv = client.post(f'/api/v1/payments', data=json.dumps(data), headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
+    assert schema_utils.validate(rv.json, 'payment_response')
 
 
 def test_payment_incomplete_input(session, client, jwt, app):

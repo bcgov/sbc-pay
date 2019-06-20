@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/links",
+  "type": "object",
+  "title": "Links",
+  "required": [
+    "collection",
+    "self"
+  ],
+  "properties": {
+    "collection": {
+      "$id": "#/properties/_links/properties/collection",
+      "type": "string",
+      "title": "The Collection Schema",
+      "default": "",
+      "examples": [
+        "/api/v1/payments"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "self": {
+      "$id": "#/properties/_links/properties/self",
+      "type": "string",
+      "title": "The Self Schema",
+      "default": "",
+      "examples": [
+        "/api/v1/payments/1"
+      ],
+      "pattern": "^(.*)$"
+    }
+  }
+}

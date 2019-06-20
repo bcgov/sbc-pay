@@ -1,302 +1,95 @@
 {
-	"info": {
-		"_postman_id": "1458f159-81c5-4167-af63-dc277c2255a8",
-		"name": "pay-api",
-		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
-	},
-	"item": [
+	"id": "b3555e23-c2e8-4f8f-aba5-3f97a6b0e8da",
+	"name": "PAY-API-DEV",
+	"values": [
 		{
-			"name": "Get Fees",
-			"event": [
-				{
-					"listen": "test",
-					"script": {
-						"id": "1ab09244-2ee0-4849-9ca0-ee39660b7dfe",
-						"exec": [
-							"pm.test(\"Status code is 200\", function () {",
-							"    pm.response.to.have.status(200);",
-							"});",
-							"pm.test(\"filing type code matches\", function () {",
-							"    var jsonData = pm.response.json();",
-							"    pm.expect(jsonData.filing_type_code).to.eql(environment['filing-type-code']);",
-							"});"
-						],
-						"type": "text/javascript"
-					}
-				}
-			],
-			"request": {
-				"method": "GET",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": ""
-				},
-				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/fees/{{corp-type}}/{{filing-type-code}}",
-					"host": [
-						"{{pay-api-base-url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"fees",
-						"{{corp-type}}",
-						"{{filing-type-code}}"
-					]
-				},
-				"description": "Calculate fees by Corp Type and Filing type"
+			"key": "pay-api-base-url",
+			"value": "https://pay-api-dev.pathfinder.gov.bc.ca",
+			"description": {
+				"content": "",
+				"type": "text/plain"
 			},
-			"response": []
+			"enabled": true
 		},
 		{
-			"name": "Create Payment Record",
-			"request": {
-				"method": "POST",
-				"header": [
-					{
-						"key": "Content-Type",
-						"name": "Content-Type",
-						"value": "application/json",
-						"type": "text"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"payment_info\": {\n    \"method_of_payment\": \"CC\"\n  },\n  \"business_info\": {\n    \"business_identifier\": \"CP1234\",\n    \"corp_type\": \"CP\",\n    \"business_name\": \"ABC Corp\",\n    \"contact_info\": {\n      \"city\": \"Victoria\",\n      \"postal_code\": \"V8P2P2\",\n      \"province\": \"BC\",\n      \"address_line_1\": \"100 Douglas Street\",\n      \"country\": \"CA\"\n    }\n  },\n  \"filing_info\": {\n    \"filing_types\": [\n      {\n        \"filing_type_code\": \"OTADD\",\n    \t\"filing_description\":\"TEST\"\n      },\n      {\n        \"filing_type_code\": \"OTANN\"\n      }\n    ]\n  }\n}"
-				},
-				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments",
-					"host": [
-						"{{pay-api-base-url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"payments"
-					]
-				}
+			"key": "tokenUrl",
+			"value": "https://auth-api-dev.pathfinder.gov.bc.ca/api/v1/token",
+			"description": {
+				"content": "",
+				"type": "text/plain"
 			},
-			"response": []
+			"enabled": true
 		},
 		{
-			"name": "Get Payment Record",
-			"protocolProfileBehavior": {
-				"disableBodyPruning": true
+			"key": "userName",
+			"value": "CP1234567",
+			"description": {
+				"content": "",
+				"type": "text/plain"
 			},
-			"request": {
-				"method": "GET",
-				"header": [
-					{
-						"key": "Content-Type",
-						"name": "Content-Type",
-						"type": "text",
-						"value": "application/json"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": ""
-				},
-				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}",
-					"host": [
-						"{{pay-api-base-url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"payments",
-						"{{payment-identifier}}"
-					]
-				}
-			},
-			"response": []
+			"enabled": true
 		},
 		{
-			"name": "Update Payment Record ",
-			"request": {
-				"method": "PUT",
-				"header": [
-					{
-						"key": "Content-Type",
-						"name": "Content-Type",
-						"value": "application/json",
-						"type": "text"
-					}
-				],
-				"body": {
-					"mode": "raw",
-					"raw": "{\n  \"payment_info\": {\n    \"method_of_payment\": \"CC\"\n  },\n  \"business_info\": {\n    \"business_identifier\": \"cp0000019\",\n    \"corp_type\": \"CP\",\n    \"business_name\": \"ABC Corp\",\n    \"contact_info\": {\n      \"city\": \"Victoria\",\n      \"postal_code\": \"V8P2P2\",\n      \"province\": \"BC\",\n      \"address_line_1\": \"100 Douglas Street\",\n      \"country\": \"CA\"\n    }\n  },\n  \"filing_info\": {\n    \"filing_types\": [\n      {\n        \"filing_type_code\": \"OTCDR\",\n    \t\"filing_description\":\"Change of Directors - Director A\"\n      },\n      {\n        \"filing_type_code\": \"OTANN\"\n      }\n      \n    ]\n  }\n}"
-				},
-				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}",
-					"host": [
-						"{{pay-api-base-url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"payments",
-						"{{payment-identifier}}"
-					]
-				}
+			"key": "passCode",
+			"value": "123456789",
+			"description": {
+				"content": "",
+				"type": "text/plain"
 			},
-			"response": []
+			"enabled": true
 		},
 		{
-			"name": "Create a Transaction Record",
-			"request": {
-				"method": "POST",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": ""
-				},
-				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/transactions?redirect_uri=http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd",
-					"host": [
-						"{{pay-api-base-url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"payments",
-						"{{payment-identifier}}",
-						"transactions"
-					],
-					"query": [
-						{
-							"key": "redirect_uri",
-							"value": "http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd"
-						}
-					]
-				}
-			},
-			"response": []
+			"key": "accessToken",
+			"value": "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJUbWdtZUk0MnVsdUZ0N3FQbmUtcTEzdDUwa0JDbjF3bHF6dHN0UGdUM1dFIn0.eyJqdGkiOiI1MGEzNDJjNC01M2VkLTQ5MGQtYTg2Ni04MDJkM2QwMTNmNjQiLCJleHAiOjE1NjExNTkzODMsIm5iZiI6MCwiaWF0IjoxNTYxMDcyOTgzLCJpc3MiOiJodHRwczovL3Nzby1kZXYucGF0aGZpbmRlci5nb3YuYmMuY2EvYXV0aC9yZWFsbXMvZmNmMGtwcXIiLCJhdWQiOiJzYmMtYXV0aC13ZWIiLCJzdWIiOiIzODAyZWMzOS0yMmM5LTRiZTMtOTNiMy00NjE4NGUxYTBiODAiLCJ0eXAiOiJCZWFyZXIiLCJhenAiOiJzYmMtYXV0aC13ZWIiLCJhdXRoX3RpbWUiOjAsInNlc3Npb25fc3RhdGUiOiI2MWQyMTFhNC04OTU2LTQ4NDItYmU0Ni0zMjI2NmU0NzEzMjAiLCJhY3IiOiIxIiwiYWxsb3dlZC1vcmlnaW5zIjpbImh0dHA6Ly8xOTIuMTY4LjAuMTM6ODA4MC8iLCIxOTIuMTY4LjAuMTMiLCIqIiwiaHR0cDovLzE5Mi4xNjguMC4xMzo4MDgwIl0sInJlYWxtX2FjY2VzcyI6eyJyb2xlcyI6WyJlZGl0IiwidW1hX2F1dGhvcml6YXRpb24iLCJiYXNpYyJdfSwicmVzb3VyY2VfYWNjZXNzIjp7ImFjY291bnQiOnsicm9sZXMiOlsibWFuYWdlLWFjY291bnQiLCJtYW5hZ2UtYWNjb3VudC1saW5rcyIsInZpZXctcHJvZmlsZSJdfX0sInByZWZlcnJlZF91c2VybmFtZSI6ImNwMTIzNDU2NyJ9.AULuZ8MwrCzs3_3l2CJjUEmLTM-dEuzvfIw-kCDm-bh4FuSpi27ovInMHtxw7VPWL112QOThiX-AdNxqhEy6zSZCJg4WKffxkF7aLKoMI573ySledF4EBk3aCYZi8Bfc33UyZkAq-4yzhY14g0qN3rrMSoT4_Qht2goNwjXcBRNH9Dwm00M5fH0QHASXZWr5paAvqMBjuWE0XZB018ik_4eWpT8nm_47uS2kJJI3CKwCtwNo4SnhWFL082CgjZq6mYvyaNTAfvYcm18tLhfbcGL9KefJ39wj9IJV17q4KCdr9hHBOsmN1wfWGSM_h7PTRs3HT4ZEt3zcJdG8xXZzAg",
+			"enabled": true
 		},
 		{
-			"name": "Get Transaction",
-			"request": {
-				"method": "GET",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": ""
-				},
-				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/transactions/{{transaction-identifier}}",
-					"host": [
-						"{{pay-api-base-url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"payments",
-						"{{payment-identifier}}",
-						"transactions",
-						"{{transaction-identifier}}"
-					]
-				}
+			"key": "corp-type",
+			"value": "CP",
+			"description": {
+				"content": "",
+				"type": "text/plain"
 			},
-			"response": []
+			"enabled": true
 		},
 		{
-			"name": "Update Transaction",
-			"request": {
-				"method": "PUT",
-				"header": [],
-				"body": {
-					"mode": "raw",
-					"raw": ""
-				},
-				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/transactions/{{transaction-identifier}}",
-					"host": [
-						"{{pay-api-base-url}}"
-					],
-					"path": [
-						"api",
-						"v1",
-						"payments",
-						"{{payment-identifier}}",
-						"transactions",
-						"{{transaction-identifier}}"
-					]
-				}
+			"key": "filing-type-code",
+			"value": "OTCDR",
+			"description": {
+				"content": "",
+				"type": "text/plain"
 			},
-			"response": []
+			"enabled": true
+		},
+		{
+			"key": "payment-identifier",
+			"value": "29",
+			"description": {
+				"content": "",
+				"type": "text/plain"
+			},
+			"enabled": true
+		},
+		{
+			"key": "transaction-identifier",
+			"value": "3c1186f5-4e06-48f9-92b6-7eb7fe577921",
+			"description": {
+				"content": "",
+				"type": "text/plain"
+			},
+			"enabled": true
+		},
+		{
+			"key": "invoice_id",
+			"value": "29",
+			"description": {
+				"content": "",
+				"type": "text/plain"
+			},
+			"enabled": true
 		}
 	],
-	"auth": {
-		"type": "oauth2",
-		"oauth2": [
-			{
-				"key": "accessToken",
-				"value": "{{accessToken}}",
-				"type": "string"
-			},
-			{
-				"key": "addTokenTo",
-				"value": "header",
-				"type": "string"
-			}
-		]
-	},
-	"event": [
-		{
-			"listen": "prerequest",
-			"script": {
-				"id": "dca1bb4a-f917-43e2-ae5d-3cd3c52d1daf",
-				"type": "text/javascript",
-				"exec": [
-					"function getvar(variableName) {",
-					"    let value = pm.variables.get(variableName);",
-					"    if (!value) throw new Error(",
-					"        `Variable '${variableName}' is not defined.`);",
-					"    return value;",
-					"}",
-					"",
-					"let tokenUrl = getvar('tokenUrl');",
-					"let userName = getvar('userName');",
-					"let passCode = getvar('passCode');",
-					"",
-					"let getTokenRequest = {",
-					"    method: 'POST',",
-					"    url: tokenUrl,",
-					"    header: {",
-					"        'content-type': 'application/json'",
-					"    },",
-					" ",
-					"    body: {",
-					"        mode: 'raw',",
-					"        raw: JSON.stringify({ \"username\": userName, \"password\": passCode })",
-					"    }",
-					"    ",
-					"};",
-					"",
-					"pm.sendRequest(getTokenRequest, (err, response) => {",
-					"    let jsonResponse = response.json(),",
-					"        newAccessToken = jsonResponse.access_token;",
-					"",
-					"    console.log({ err, jsonResponse, newAccessToken })",
-					"",
-					"    pm.environment.set('accessToken', newAccessToken);",
-					"    pm.variables.set('accessToken', newAccessToken);",
-					"});",
-					""
-				]
-			}
-		},
-		{
-			"listen": "test",
-			"script": {
-				"id": "c078047b-a96e-41ad-8b31-a89c2528dd8e",
-				"type": "text/javascript",
-				"exec": [
-					""
-				]
-			}
-		}
-	]
+	"_postman_variable_scope": "environment",
+	"_postman_exported_at": "2019-06-20T23:23:08.428Z",
+	"_postman_exported_using": "Postman/6.7.4"
 }

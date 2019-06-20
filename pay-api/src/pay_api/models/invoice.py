@@ -24,6 +24,7 @@ from .base_model import BaseModel
 from .base_schema import BaseSchema
 from .db import db, ma
 from .payment_line_item import PaymentLineItemSchema
+from .receipt import ReceiptSchema
 
 
 class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-attributes
@@ -44,6 +45,7 @@ class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
     refund = db.Column(db.Float, nullable=True)
 
     payment_line_items = relationship('PaymentLineItem')
+    receipts = relationship('Receipt')
 
     @classmethod
     def find_by_id(cls, identifier: int):
@@ -72,6 +74,7 @@ class InvoiceSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     invoice_status_code = fields.String(data_key='status_code')
     # pylint: disable=no-member
     payment_line_items = ma.Nested(PaymentLineItemSchema, many=True, data_key='line_items')
+    receipts = ma.Nested(ReceiptSchema, many=True, data_key='receipts')
 
     _links = ma.Hyperlinks({
         'self': ma.URLFor('API.invoices_invoice', payment_id='<payment_id>', invoice_id='<id>'),
