@@ -24,13 +24,14 @@ from flask import Blueprint
 from flask_restplus import Api
 
 from .fee import API as FEE_API
-# from .trace import API as TRACE_API
-from .paybc_invoice import API as PAYBC_INVOICE_API
+from .invoice import API as INVOICE_API
 from .meta import API as META_API
 from .ops import API as OPS_API
+# from .trace import API as TRACE_API
+from .paybc_invoice import API as PAYBC_INVOICE_API
 from .payment import API as PAY_API
 from .transaction import API as TRANSACTION_API
-from .invoice import API as INVOICE_API
+
 
 __all__ = ('API_BLUEPRINT', 'OPS_BLUEPRINT')
 
@@ -70,6 +71,5 @@ API.add_namespace(PAYBC_INVOICE_API, path='/paybc/invoices')
 
 API.add_namespace(PAY_API, path='/payments')
 API.add_namespace(FEE_API, path='/fees')
-API.add_namespace(TRANSACTION_API, path='/payments/<string:payment_id>/transactions')
-API.add_namespace(INVOICE_API, path='/payments/<string:payment_id>/invoices')
-
+API.add_namespace(TRANSACTION_API, path='/payments/<int:payment_id>/transactions')
+API.add_namespace(INVOICE_API, path='/payments/<int:payment_id>/invoices')

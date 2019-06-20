@@ -58,16 +58,26 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         """Return the _id."""
         return self._id
 
+    @property
+    def corp_number(self):
+        """Return the corp_number."""
+        return self._corp_number
+
+    @property
+    def corp_type_code(self):
+        """Return the corp_type_code."""
+        return self._corp_type_code
+
+    @property
+    def payment_system_code(self):
+        """Return the payment_system_code."""
+        return self._payment_system_code
+
     @id.setter
     def id(self, value: int):
         """Set the id."""
         self._id = value
         self._dao.id = value
-
-    @property
-    def corp_number(self):
-        """Return the corp_number."""
-        return self._corp_number
 
     @corp_number.setter
     def corp_number(self, value: str):
@@ -75,21 +85,11 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         self._corp_number = value
         self._dao.corp_number = value
 
-    @property
-    def corp_type_code(self):
-        """Return the corp_type_code."""
-        return self._corp_type_code
-
     @corp_type_code.setter
     def corp_type_code(self, value: str):
         """Set the corp_type_code."""
         self._corp_type_code = value
         self._dao.corp_type_code = value
-
-    @property
-    def payment_system_code(self):
-        """Return the payment_system_code."""
-        return self._payment_system_code
 
     @payment_system_code.setter
     def payment_system_code(self, value: str):

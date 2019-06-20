@@ -14,12 +14,11 @@
 """Resource for Payment endpoints."""
 from http import HTTPStatus
 
-from flask import current_app, g, jsonify, request
+from flask import jsonify
 from flask_restplus import Namespace, Resource, cors
 
 from pay_api import jwt as _jwt
 from pay_api.exceptions import BusinessException
-from pay_api.schemas import utils as schema_utils
 from pay_api.services import InvoiceService
 from pay_api.utils.enums import Role
 from pay_api.utils.util import cors_preflight
@@ -38,15 +37,12 @@ class Invoices(Resource):
     @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
     def get(payment_id):
         """Get the Invoice records."""
-        try:
-            response, status = InvoiceService.get_invoice(payment_id), HTTPStatus.OK
-        except BusinessException as exception:
-            response, status = {'code': exception.code, 'message': exception.message}, exception.status
+        response, status = InvoiceService.get_invoices(payment_id), HTTPStatus.OK
         return jsonify(response), status
 
 
 @cors_preflight(['GET', 'PUT'])
-@API.route('/<string:invoice_id>', methods=['GET', 'OPTIONS'])
+@API.route('/<int:invoice_id>', methods=['GET', 'OPTIONS'])
 class Invoice(Resource):
     """Endpoint resource to get invoice."""
 
@@ -56,8 +52,7 @@ class Invoice(Resource):
     def get(payment_id, invoice_id):
         """Get the Invoice records."""
         try:
-            response, status = InvoiceService.find_by_id(invoice_id).asdict(), HTTPStatus.OK
+            response, status = InvoiceService.find_by_id(invoice_id, payment_id).asdict(), HTTPStatus.OK
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         return jsonify(response), status
-

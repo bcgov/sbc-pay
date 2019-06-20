@@ -20,10 +20,6 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 import json
 from datetime import datetime
 
-from unittest.mock import patch
-import pytest
-
-from pay_api.exceptions import BusinessException
 from pay_api.models import PaymentTransaction
 from pay_api.utils.enums import Role
 
@@ -58,12 +54,12 @@ def get_claims(role: str = Role.BASIC.value):
 
 
 def factory_payment_transaction(
-    payment_id: str,
-    status_code: str = 'DRAFT',
-    client_system_url: str = 'http://google.com/',
-    pay_system_url: str = 'http://google.com',
-    transaction_start_time: datetime = datetime.now(),
-    transaction_end_time: datetime = datetime.now(),
+        payment_id: str,
+        status_code: str = 'DRAFT',
+        client_system_url: str = 'http://google.com/',
+        pay_system_url: str = 'http://google.com',
+        transaction_start_time: datetime = datetime.now(),
+        transaction_end_time: datetime = datetime.now(),
 ):
     """Factory."""
     return PaymentTransaction(
@@ -110,6 +106,7 @@ def test_payment_creation(session, client, jwt, app):
     }
     rv = client.post(f'/api/v1/payments', data=json.dumps(data), headers=headers)
     assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
 
 
 def test_payment_incomplete_input(session, client, jwt, app):
@@ -216,6 +213,11 @@ def test_payment_get_exception(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     pay_id = '123456sdf'
+
+    rv = client.get(f'/api/v1/payments/{pay_id}', headers=headers)
+    assert rv.status_code == 404
+
+    pay_id = '9999999999'
 
     rv = client.get(f'/api/v1/payments/{pay_id}', headers=headers)
     assert rv.status_code == 400

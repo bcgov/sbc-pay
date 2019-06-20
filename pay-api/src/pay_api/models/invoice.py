@@ -13,14 +13,17 @@
 # limitations under the License.
 """Model to handle all operations related to Invoice."""
 
+from marshmallow import fields, post_dump
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
+from pay_api.utils.enums import Status
+
 from .audit import Audit
 from .base_model import BaseModel
+from .base_schema import BaseSchema
 from .db import db, ma
 from .payment_line_item import PaymentLineItemSchema
-from .base_schema import BaseSchema
 
 
 class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-attributes
@@ -52,18 +55,37 @@ class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
         """Return a Invoice by id."""
         return cls.query.filter_by(payment_id=identifier).one_or_none()
 
+    @classmethod
+    def find_by_id_and_payment_id(cls, identifier: int, pay_id: int):
+        """Return a Invoice by id."""
+        return cls.query.filter_by(payment_id=pay_id).filter_by(id=identifier).one_or_none()
 
-class InvoiceSchema(ma.ModelSchema, BaseSchema):
-    """Main schema used to serialize the Status Code."""
+
+class InvoiceSchema(BaseSchema):  # pylint: disable=too-many-ancestors
+    """Main schema used to serialize the invoice."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Invoice
 
-    line_items = ma.Nested(PaymentLineItemSchema, many=True)
+    invoice_status_code = fields.String(data_key='status_code')
+    # pylint: disable=no-member
+    payment_line_items = ma.Nested(PaymentLineItemSchema, many=True, data_key='line_items')
 
     _links = ma.Hyperlinks({
         'self': ma.URLFor('API.invoices_invoice', payment_id='<payment_id>', invoice_id='<id>'),
         'collection': ma.URLFor('API.invoices_invoices', payment_id='<payment_id>')
     })
+
+    @post_dump
+    def _remove_cancelled_lines(self, data, many):  # pylint: disable=unused-argument,no-self-use
+        if data.get('line_items'):
+            for line in list(data.get('line_items')):
+                if line.get('status_code') == Status.CANCELLED.value:
+                    data.get('line_items').remove(line)
+
+        if 'line_items' in data and not data.get('line_items'):
+            data.pop('line_items')
+
+        return data

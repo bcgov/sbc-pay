@@ -15,13 +15,22 @@
 
 from marshmallow import post_dump
 
+from .db import ma
 
-class BaseSchema:
+
+class BaseSchema(ma.ModelSchema):
     """Base Schema."""
 
-    @post_dump
-    def remove_skip_values(self, data, many):
-        return {
-            key: value for key, value in data.items()
-            if value
-        }
+    @post_dump(pass_many=True)
+    def _remove_empty(self, data, many):  # pylint: disable=no-self-use
+        """Remove all empty values from the dumped dict."""
+        if not many:
+            return {
+                key: value for key, value in data.items()
+                if value
+            }
+        for item in data:
+            for key in list(item):
+                if not item[key]:
+                    item.pop(key)
+        return data

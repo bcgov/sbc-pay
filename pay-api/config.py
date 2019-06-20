@@ -176,7 +176,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     PAYBC_CLIENT_ID = 'TEST'
     PAYBC_CLIENT_SECRET = 'TEST'
     PAYBC_PORTAL_URL = ''
-    SERVER_NAME = ''
+    SERVER_NAME = 'localhost:5001'
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

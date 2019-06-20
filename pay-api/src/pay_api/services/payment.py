@@ -21,7 +21,7 @@ from flask import current_app
 from pay_api.models import Payment as PaymentModel
 from pay_api.models.payment import PaymentSchema
 from pay_api.utils.enums import Status
-import copy
+
 
 class Payment:  # pylint: disable=too-many-instance-attributes
     """Service to manage Payment model related operations."""
@@ -33,7 +33,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         self._payment_system_code: str = None
         self._payment_method_code: str = None
         self._payment_status_code: str = None
-        self._paid: float = None
         self._created_by: str = None
         self._created_on: datetime = datetime.now()
         self._updated_by: str = None
@@ -53,7 +52,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         self.payment_system_code: str = self._dao.payment_system_code
         self.payment_method_code: str = self._dao.payment_method_code
         self.payment_status_code: str = self._dao.payment_status_code
-        self.paid: str = self._dao.paid
         self.created_by: str = self._dao.created_by
         self.created_on: datetime = self._dao.created_on
         self.updated_by: str = self._dao.updated_by
@@ -65,16 +63,15 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         """Return the _id."""
         return self._id
 
-    @id.setter
-    def id(self, value: int):
-        """Set the id."""
-        self._id = value
-        self._dao.id = value
-
     @property
     def payment_system_code(self):
         """Return the payment_system_code."""
         return self._payment_system_code
+
+    @property
+    def payment_method_code(self):
+        """Return the payment_method_code."""
+        return self._payment_method_code
 
     @payment_system_code.setter
     def payment_system_code(self, value: str):
@@ -82,10 +79,11 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         self._payment_system_code = value
         self._dao.payment_system_code = value
 
-    @property
-    def payment_method_code(self):
-        """Return the payment_method_code."""
-        return self._payment_method_code
+    @id.setter
+    def id(self, value: int):
+        """Set the id."""
+        self._id = value
+        self._dao.id = value
 
     @payment_method_code.setter
     def payment_method_code(self, value: str):
@@ -103,17 +101,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         """Set the payment_status_code."""
         self._payment_status_code = value
         self._dao.payment_status_code = value
-
-    @property
-    def paid(self):
-        """Return the paid."""
-        return self._paid
-
-    @paid.setter
-    def paid(self, value: float):
-        """Set the paid."""
-        self._paid = value
-        self._dao.paid = value
 
     @property
     def created_by(self):
@@ -188,13 +175,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes
     def asdict(self):
         """Return the payment as a python dict."""
         payment_schema = PaymentSchema()
-        # Need to filter out cancelled invoices here. So take a copy and work on the copy
-        dao_copy = copy.deepcopy(self._dao)
-        #for inv in dao_copy.invoices:
-        #    print(type(dao_copy.invoices))
-        #    if inv.invoice_status_code == Status.CANCELLED.value:
-        #        dao_copy.invoices.remove(inv)
-
         d = payment_schema.dump(self._dao)
 
         return d
@@ -207,7 +187,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         p.payment_method_code = payment_info.get('method_of_payment', None)
         p.payment_status_code = Status.CREATED.value
         p.payment_system_code = payment_system
-        p.paid = 0
         p.created_by = current_user
         p.created_on = datetime.now()
         pay_dao = p.flush()

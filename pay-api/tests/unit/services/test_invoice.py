@@ -19,6 +19,9 @@ Test-Suite to ensure that the FeeSchedule Service is working as expected.
 
 from datetime import datetime
 
+import pytest
+
+from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem
 from pay_api.services.invoice import Invoice as Invoice_service
 from pay_api.utils.enums import Status
@@ -31,7 +34,8 @@ def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', pa
     )
 
 
-def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC', payment_status_code=Status.DRAFT.value):
+def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC',
+                    payment_status_code=Status.DRAFT.value):
     """Factory."""
     return Payment(
         payment_system_code=payment_system_code,
@@ -53,6 +57,7 @@ def factory_invoice(payment_id: str, account_id: str):
         created_on=datetime.now(),
     )
 
+
 def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees: int = 10, total: int = 10):
     """Factory."""
     return PaymentLineItem(
@@ -62,6 +67,7 @@ def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees
         total=total,
         line_item_status_code=Status.CREATED.value,
     )
+
 
 def test_invoice_saved_from_new(session):
     """Assert that the invoice is saved to the table."""
@@ -96,10 +102,9 @@ def test_invoice_saved_from_new(session):
 
 def test_invoice_invalid_lookup(session):
     """Test invalid lookup."""
-    invoice = Invoice_service.find_by_id(999)
-
-    assert invoice is not None
-    assert invoice.id is None
+    with pytest.raises(BusinessException) as excinfo:
+        Invoice_service.find_by_id(999)
+    assert excinfo.type == BusinessException
 
 
 def test_invoice_find_by_valid_payment_id(session):
@@ -129,6 +134,35 @@ def test_invoice_find_by_valid_payment_id(session):
     assert invoice.updated_on is None
     assert invoice.account_id is not None
     assert not invoice.payment_line_items
+
+
+def test_invoice_get_invoices(session):
+    """Assert that get_invoices works."""
+    payment_account = factory_payment_account()
+    payment = factory_payment()
+    payment_account.save()
+    payment.save()
+    i = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
+    i.save()
+
+    invoices = Invoice_service.get_invoices(payment.id)
+
+    assert invoices is not None
+    assert len(invoices.get('items')) == 1
+    assert not invoices.get('items')[0].get('line_items')
+
+
+def test_invoice_get_invoices_with_no_invoice(session):
+    """Assert that get_invoices works."""
+    payment_account = factory_payment_account()
+    payment = factory_payment()
+    payment_account.save()
+    payment.save()
+
+    invoices = Invoice_service.get_invoices(payment.id)
+
+    assert invoices is not None
+    assert len(invoices.get('items')) == 0
 
 
 def test_invoice_find_by_invalid_payment_id(session):
