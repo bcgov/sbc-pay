@@ -93,5 +93,4 @@ def test_payment_with_no_active_invoice(session):
     assert p.id is not None
 
     json = p.asdict()
-    print(json)
     assert json.get('invoices', None) is None

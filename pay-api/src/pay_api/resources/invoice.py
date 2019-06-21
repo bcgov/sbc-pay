@@ -27,7 +27,7 @@ from pay_api.utils.util import cors_preflight
 API = Namespace('invoices', description='Payment System - Invoices')
 
 
-@cors_preflight(['GET', 'PUT'])
+@cors_preflight(['GET'])
 @API.route('', methods=['GET', 'OPTIONS'])
 class Invoices(Resource):
     """Endpoint resource to get invoice."""
@@ -41,7 +41,7 @@ class Invoices(Resource):
         return jsonify(response), status
 
 
-@cors_preflight(['GET', 'PUT'])
+@cors_preflight(['GET'])
 @API.route('/<int:invoice_id>', methods=['GET', 'OPTIONS'])
 class Invoice(Resource):
     """Endpoint resource to get invoice."""

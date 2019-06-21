@@ -377,16 +377,13 @@ def test_transaction_put_completed_payment(session, client, jwt, app):
     redirect_uri = 'http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd'
     rv = client.post(f'/api/v1/payments/{payment_id}/transactions?redirect_uri={redirect_uri}', data=None,
                      headers=headers)
-    print(rv.json)
 
     txn_id = rv.json.get('id')
     rv = client.put(f'/api/v1/payments/{payment_id}/transactions/{txn_id}', data=None,
                     headers=headers)
-    print(rv.json)
 
     rv = client.put(f'/api/v1/payments/{payment_id}/transactions/{txn_id}', data=None,
                     headers=headers)
-    print(rv.json)
 
     assert rv.status_code == 400
     assert rv.json.get('code') == 'PAY006'
