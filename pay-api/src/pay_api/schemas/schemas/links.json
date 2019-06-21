@@ -11,7 +11,7 @@
     "collection": {
       "$id": "#/properties/_links/properties/collection",
       "type": "string",
-      "title": "The Collection Schema",
+      "title": "Collection",
       "default": "",
       "examples": [
         "/api/v1/payments"
@@ -21,7 +21,7 @@
     "self": {
       "$id": "#/properties/_links/properties/self",
       "type": "string",
-      "title": "The Self Schema",
+      "title": "Self URL",
       "default": "",
       "examples": [
         "/api/v1/payments/1"

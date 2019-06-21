@@ -18,10 +18,10 @@ Test-Suite to ensure that the /invoices endpoint is working as expected.
 """
 
 import json
-from datetime import datetime
 
-from pay_api.models import PaymentTransaction
+from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import Role
+
 
 token_header = {
     'alg': 'RS256',
@@ -92,6 +92,7 @@ def test_invoices_get(session, client, jwt, app):
     assert rv.status_code == 200
     assert rv.json.get('items') is not None
     assert len(rv.json.get('items')) == 1
+    assert schema_utils.validate(rv.json, 'invoices')[0]
 
 
 def test_invoice_get(session, client, jwt, app):
@@ -134,6 +135,7 @@ def test_invoice_get(session, client, jwt, app):
     invoice_link = rv.json.get('items')[0].get('_links').get('self')
     rv = client.get(f'{invoice_link}', headers=headers)
     assert rv.status_code == 200
+    assert schema_utils.validate(rv.json, 'invoice')[0]
 
 
 def test_invoice_get_invalid(session, client, jwt, app):
@@ -176,4 +178,3 @@ def test_invoice_get_invalid(session, client, jwt, app):
     invoice_link = rv.json.get('items')[0].get('_links').get('self')
     rv = client.get(f'{invoice_link}11', headers=headers)
     assert rv.status_code == 400
-

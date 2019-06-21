@@ -24,7 +24,7 @@
     "created_by": {
       "$id": "#/properties/created_by",
       "type": "string",
-      "title": "The Created_by Schema",
+      "title": "Created By",
       "default": "",
       "examples": [
         "CP0001219"
@@ -34,7 +34,27 @@
     "created_on": {
       "$id": "#/properties/created_on",
       "type": "string",
-      "title": "The Created_on Schema",
+      "title": "Created On",
+      "default": "",
+      "examples": [
+        "2019-06-05T11:23:03.191477+00:00"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "updated_by": {
+      "$id": "#/properties/updated_by",
+      "type": "string",
+      "title": "Updated By",
+      "default": "",
+      "examples": [
+        "CP0001219"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "updated_on": {
+      "$id": "#/properties/updated_on",
+      "type": "string",
+      "title": "Updated On",
       "default": "",
       "examples": [
         "2019-06-05T11:23:03.191477+00:00"
@@ -44,7 +64,7 @@
     "id": {
       "$id": "#/properties/id",
       "type": "integer",
-      "title": "The Id Schema",
+      "title": "Payment Identifier",
       "default": 0,
       "examples": [
         1
@@ -53,7 +73,7 @@
     "payment_method": {
       "$id": "#/properties/payment_method",
       "type": "string",
-      "title": "The Payment_method Schema",
+      "title": "Payment Method",
       "default": "",
       "examples": [
         "CC"
@@ -63,7 +83,7 @@
     "payment_system": {
       "$id": "#/properties/payment_system",
       "type": "string",
-      "title": "The Payment_system Schema",
+      "title": "Payment System",
       "default": "",
       "examples": [
         "PAYBC"
@@ -73,7 +93,7 @@
     "status_code": {
       "$id": "#/properties/status_code",
       "type": "string",
-      "title": "The Status_code Schema",
+      "title": "Payment Status",
       "default": "",
       "examples": [
         "CREATED"
@@ -81,18 +101,16 @@
       "pattern": "^(.*)$"
     },
     "invoices": {
-      "anyOf": [
-        {
-          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/invoice"
-        }
-      ]
+      "type": "array",
+      "items": {
+        "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/invoice"
+      }
     },
     "transactions": {
-      "anyOf": [
-        {
-          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/transaction"
-        }
-      ]
+      "type": "array",
+      "items": {
+        "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/transaction"
+      }
     }
   }
 }

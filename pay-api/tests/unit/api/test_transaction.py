@@ -20,7 +20,9 @@ Test-Suite to ensure that the /transactions endpoint is working as expected.
 import json
 import uuid
 
+from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import Role
+
 
 token_header = {
     'alg': 'RS256',
@@ -92,6 +94,7 @@ def test_transaction_post(session, client, jwt, app):
                      headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('payment_id') == payment_id
+    assert schema_utils.validate(rv.json, 'transaction')[0]
 
 
 def test_transaction_post_no_redirect_uri(session, client, jwt, app):
@@ -191,6 +194,7 @@ def test_transaction_get(session, client, jwt, app):
     assert rv.status_code == 200
     assert rv.json.get('payment_id') == payment_id
     assert rv.json.get('id') == txn_id
+    assert schema_utils.validate(rv.json, 'transaction')[0]
 
 
 def test_transaction_get_invalid_payment_and_transaction(session, client, jwt, app):
@@ -442,3 +446,5 @@ def test_transactions_get(session, client, jwt, app):
     assert rv.status_code == 200
     assert rv.json.get('items') is not None
     assert len(rv.json.get('items')) == 1
+
+    assert schema_utils.validate(rv.json, 'transactions')[0]

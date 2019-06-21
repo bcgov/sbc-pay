@@ -24,7 +24,7 @@
     "client_system_url": {
       "$id": "#/properties/transactions/items/properties/client_system_url",
       "type": "string",
-      "title": "The Client_system_url Schema",
+      "title": "Client System URL",
       "default": "",
       "examples": [
         "http://localhost:8080/coops-web/transactions?transaction_id=abcd"
@@ -34,7 +34,7 @@
     "end_time": {
       "$id": "#/properties/transactions/items/properties/end_time",
       "type": "string",
-      "title": "The End_time Schema",
+      "title": "Transaction End Time",
       "default": "",
       "examples": [
         "2019-06-05 11:38:12.924134"
@@ -44,7 +44,7 @@
     "id": {
       "$id": "#/properties/transactions/items/properties/id",
       "type": "string",
-      "title": "The Id Schema",
+      "title": "Transaction identifier",
       "default": "",
       "examples": [
         "7997b2f5-d008-4dee-9346-c5e40e1023d1"
@@ -54,7 +54,7 @@
     "pay_system_url": {
       "$id": "#/properties/transactions/items/properties/pay_system_url",
       "type": "string",
-      "title": "The Pay_system_url Schema",
+      "title": "Payment System URL",
       "default": "",
       "examples": [
         "https://paydev.gov.bc.ca/public/searchInvoice?inv_number=10020&pbc_ref_number=10005&redirect_url=http%3A%2F%2Fauth-ui-dev.pathfinder.gov.bc.ca%2Ftransactions%3Fpayment_id%3D1%26transaction_id%3D7997b2f5-d008-4dee-9346-c5e40e1023d1"
@@ -64,7 +64,7 @@
     "payment_id": {
       "$id": "#/properties/transactions/items/properties/payment_id",
       "type": "integer",
-      "title": "The Payment_id Schema",
+      "title": "Payment Identifier",
       "default": 0,
       "examples": [
         1
@@ -73,7 +73,7 @@
     "start_time": {
       "$id": "#/properties/transactions/items/properties/start_time",
       "type": "string",
-      "title": "The Start_time Schema",
+      "title": "Transaction start time",
       "default": "",
       "examples": [
         "2019-06-05 11:22:50.457856"
@@ -83,7 +83,7 @@
     "status_code": {
       "$id": "#/properties/transactions/items/properties/status_code",
       "type": "string",
-      "title": "The Status_code Schema",
+      "title": "Transaction status",
       "default": "",
       "examples": [
         "CANCELLED"
