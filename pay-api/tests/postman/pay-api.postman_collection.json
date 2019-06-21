@@ -1,7 +1,8 @@
 {
 	"info": {
-		"_postman_id": "1458f159-81c5-4167-af63-dc277c2255a8",
+		"_postman_id": "add98474-9d75-444d-87ae-51e0d1ac8c1c",
 		"name": "pay-api",
+		"description": "version=1.0.0",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -114,6 +115,74 @@
 			"response": []
 		},
 		{
+			"name": "Get Invoices for the payment",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}",
+					"host": [
+						"{{pay-api-base-url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"payments",
+						"{{payment-identifier}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Invoice for the payment",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}",
+					"host": [
+						"{{pay-api-base-url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"payments",
+						"{{payment-identifier}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
 			"name": "Update Payment Record ",
 			"request": {
 				"method": "PUT",
@@ -176,7 +245,41 @@
 			"response": []
 		},
 		{
-			"name": "Get Transaction",
+			"name": "Get Transactions for the payment",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"type": "text",
+						"value": "application/json"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": ""
+				},
+				"url": {
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}",
+					"host": [
+						"{{pay-api-base-url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"payments",
+						"{{payment-identifier}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Transaction for the payment",
 			"request": {
 				"method": "GET",
 				"header": [],
@@ -202,7 +305,7 @@
 			"response": []
 		},
 		{
-			"name": "Update Transaction",
+			"name": "Update Transaction against a payment",
 			"request": {
 				"method": "PUT",
 				"header": [],

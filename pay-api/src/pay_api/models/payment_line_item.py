@@ -13,6 +13,7 @@
 # limitations under the License.
 """Model to handle all operations related to Payment Line Item."""
 
+from marshmallow import fields
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
@@ -48,9 +49,12 @@ class PaymentLineItem(db.Model, BaseModel):
 
 
 class PaymentLineItemSchema(ma.ModelSchema):
-    """Main schema used to serialize the Status Code."""
+    """Main schema used to serialize the Payment line item."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = PaymentLineItem
+        exclude = ['fee_schedule_id', 'fee_schedule']
+
+    line_item_status_code = fields.String(data_key='status_code')

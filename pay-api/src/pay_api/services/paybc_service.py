@@ -240,9 +240,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         current_app.logger.debug('<__get_invoice')
         invoice_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/' \
             .format(account_details[0], account_details[1], account_details[2], inv_number)
-        print(invoice_url)
 
         invoice_response = self.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
-        print(invoice_response)
         current_app.logger.debug('>__get_invoice')
         return invoice_response.json()

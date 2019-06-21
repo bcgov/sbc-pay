@@ -29,15 +29,15 @@ from pay_api.utils.util import cors_preflight
 API = Namespace('transactions', description='Payment System - Transactions')
 
 
-@cors_preflight('POST')
-@API.route('', methods=['POST', 'OPTIONS'])
+@cors_preflight('POST,GET')
+@API.route('', methods=['GET', 'POST', 'OPTIONS'])
 class Transaction(Resource):
     """Endpoint resource to create transaction."""
 
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
-    def post(payment_identifier):
+    def post(payment_id):
         """Create the Transaction records."""
         current_app.logger.info('<Transaction.post')
         redirect_uri = flask.request.args.get('redirect_uri')
@@ -45,28 +45,38 @@ class Transaction(Resource):
             if not redirect_uri:
                 raise BusinessException(Error.PAY007)
 
-            response, status = TransactionService.create(payment_identifier, redirect_uri).asdict(), HTTPStatus.CREATED
+            response, status = TransactionService.create(payment_id, redirect_uri).asdict(), HTTPStatus.CREATED
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         current_app.logger.debug('>Transaction.post')
         return jsonify(response), status
 
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
+    def get(payment_id):
+        """Get all transaction records for a payment."""
+        current_app.logger.info('<Transaction.get')
+        response, status = TransactionService.find_by_payment_id(payment_id), HTTPStatus.OK
+        current_app.logger.debug('>Transaction.get')
+        return jsonify(response), status
+
 
 @cors_preflight('PUT,GET')
-@API.route('/<string:transaction_identifier>', methods=['GET', 'PUT', 'OPTIONS'])
+@API.route('/<uuid:transaction_id>', methods=['GET', 'PUT', 'OPTIONS'])
 class Transactions(Resource):
     """Endpoint resource to get transaction."""
 
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
-    def get(payment_identifier, transaction_identifier):
+    def get(payment_id, transaction_id):
         """Get the Transaction record."""
         current_app.logger.info(
-            f'<Transaction.get for payment : {payment_identifier}, and transaction {transaction_identifier}')
+            f'<Transaction.get for payment : {payment_id}, and transaction {transaction_id}')
         try:
-            response, status = TransactionService.find_by_id(payment_identifier,
-                                                             transaction_identifier).asdict(), HTTPStatus.OK
+            response, status = TransactionService.find_by_id(payment_id,
+                                                             transaction_id).asdict(), HTTPStatus.OK
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         current_app.logger.debug('>Transaction.get')
@@ -75,13 +85,13 @@ class Transactions(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
-    def put(payment_identifier, transaction_identifier):
+    def put(payment_id, transaction_id):
         """Update the transaction record by querying payment system."""
         current_app.logger.info(
-            f'<Transaction.post for payment : {payment_identifier}, and transaction {transaction_identifier}')
+            f'<Transaction.post for payment : {payment_id}, and transaction {transaction_id}')
         receipt_number = flask.request.args.get('receipt_number')
         try:
-            response, status = TransactionService.update_transaction(payment_identifier, transaction_identifier,
+            response, status = TransactionService.update_transaction(payment_id, transaction_id,
                                                                      receipt_number).asdict(), HTTPStatus.OK
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status

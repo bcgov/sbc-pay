@@ -16,12 +16,14 @@
 import urllib.parse
 import uuid
 from datetime import datetime
+from typing import Dict
 
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
+from pay_api.models import PaymentTransactionSchema
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.payment_account import PaymentAccount
@@ -142,18 +144,17 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         self._dao.transaction_end_time = value
 
     def asdict(self):
-        """Return the transaction as a python dict."""
-        d = {
-            'id': self._id,
-            'payment_id': self._payment_id,
-            'client_system_url': self._client_system_url,
-            'pay_system_url': self._pay_system_url,
-            'status_code': self._status_code,
-            'transaction_start_time': self._transaction_start_time,
-        }
-        if self._transaction_end_time:
-            d['transaction_end_time'] = self._transaction_end_time
+        """Return the invoice as a python dict."""
+        txn_schema = PaymentTransactionSchema()
+        d = txn_schema.dump(self._dao)
         return d
+
+    @staticmethod
+    def populate(value):
+        """Pouplate the service."""
+        transaction: PaymentTransaction = PaymentTransaction()
+        transaction._dao = value  # pylint: disable=protected-access
+        return transaction
 
     def save(self):
         """Save the fee schedule information."""
@@ -169,8 +170,6 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('<create transaction')
         # Lookup payment record
         payment: Payment = Payment.find_by_id(payment_identifier)
-
-        print(payment.payment_status_code)
 
         if not payment.id:
             raise BusinessException(Error.PAY005)
@@ -312,3 +311,15 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
 
         current_app.logger.debug('>update_transaction')
         return transaction
+
+    @staticmethod
+    def find_by_payment_id(payment_identifier: int):
+        """Find all transactions by payment id."""
+        transactions_dao = PaymentTransactionModel.find_by_payment_id(payment_identifier)
+        data: Dict = {'items': []}
+        if transactions_dao:
+            for transaction_dao in transactions_dao:
+                data['items'].append(PaymentTransaction.populate(transaction_dao).asdict())
+
+        current_app.logger.debug('>find_by_payment_id')
+        return data

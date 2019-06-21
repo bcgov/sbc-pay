@@ -56,7 +56,7 @@ class Payment(Resource):
 
 
 @cors_preflight(['GET', 'PUT'])
-@API.route('/<string:payment_id>', methods=['GET', 'PUT', 'OPTIONS'])
+@API.route('/<int:payment_id>', methods=['GET', 'PUT', 'OPTIONS'])
 class Payments(Resource):
     """Endpoint resource to create payment."""
 

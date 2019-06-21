@@ -20,6 +20,7 @@ Test-Suite to ensure that the /transactions endpoint is working as expected.
 import json
 import uuid
 
+from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import Role
 
 
@@ -93,6 +94,7 @@ def test_transaction_post(session, client, jwt, app):
                      headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('payment_id') == payment_id
+    assert schema_utils.validate(rv.json, 'transaction')[0]
 
 
 def test_transaction_post_no_redirect_uri(session, client, jwt, app):
@@ -192,6 +194,7 @@ def test_transaction_get(session, client, jwt, app):
     assert rv.status_code == 200
     assert rv.json.get('payment_id') == payment_id
     assert rv.json.get('id') == txn_id
+    assert schema_utils.validate(rv.json, 'transaction')[0]
 
 
 def test_transaction_get_invalid_payment_and_transaction(session, client, jwt, app):
@@ -374,10 +377,71 @@ def test_transaction_put_completed_payment(session, client, jwt, app):
     redirect_uri = 'http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd'
     rv = client.post(f'/api/v1/payments/{payment_id}/transactions?redirect_uri={redirect_uri}', data=None,
                      headers=headers)
+
     txn_id = rv.json.get('id')
     rv = client.put(f'/api/v1/payments/{payment_id}/transactions/{txn_id}', data=None,
                     headers=headers)
+
     rv = client.put(f'/api/v1/payments/{payment_id}/transactions/{txn_id}', data=None,
                     headers=headers)
+
     assert rv.status_code == 400
     assert rv.json.get('code') == 'PAY006'
+
+
+def test_transactions_get(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    # Create a payment first
+    data = {
+        'payment_info': {
+            'method_of_payment': 'CC'
+        },
+        'business_info': {
+            'business_identifier': 'CP1234',
+            'corp_type': 'CP',
+            'business_name': 'ABC Corp',
+            'contact_info': {
+                'city': 'Victoria',
+                'postal_code': 'V8P2P2',
+                'province': 'BC',
+                'address_line_1': '100 Douglas Street',
+                'country': 'CA'
+            }
+        },
+        'filing_info': {
+            'filing_types': [
+                {
+                    'filing_type_code': 'OTADD',
+                    'filing_description': 'TEST'
+                },
+                {
+                    'filing_type_code': 'OTANN'
+                }
+            ]
+        }
+    }
+    rv = client.post(f'/api/v1/payments', data=json.dumps(data), headers=headers)
+
+    transactions_link = rv.json.get('_links').get('transactions')
+    rv = client.get(f'{transactions_link}', headers=headers)
+    assert rv.status_code == 200
+    assert rv.json.get('items') is not None
+    assert len(rv.json.get('items')) == 0
+
+    redirect_uri = 'http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd'
+    rv = client.post(f'{transactions_link}?redirect_uri={redirect_uri}', data=None,
+                     headers=headers)
+    txn_id = rv.json.get('id')
+    rv = client.get(f'{transactions_link}/{txn_id}', headers=headers)
+    assert rv.status_code == 200
+    assert rv.json.get('id') == txn_id
+
+    rv = client.get(f'{transactions_link}', headers=headers)
+    assert rv.status_code == 200
+    assert rv.json.get('items') is not None
+    assert len(rv.json.get('items')) == 1
+
+    assert schema_utils.validate(rv.json, 'transactions')[0]

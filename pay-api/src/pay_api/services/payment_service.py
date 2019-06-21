@@ -26,30 +26,31 @@ from .base_payment_system import PaymentSystemService
 from .fee_schedule import FeeSchedule
 from .invoice import Invoice
 from .payment import Payment
-from .payment_transaction import PaymentTransaction
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
+from .payment_transaction import PaymentTransaction
 
 
 class PaymentService:  # pylint: disable=too-few-public-methods
     """Service to manage Payment related operations."""
 
     @classmethod
-    def create_payment(cls, payment_request: Tuple[Dict[str, Any]], current_user: str = None):  # pylint: disable=too-many-locals, too-many-statements
+    def create_payment(cls, payment_request: Tuple[Dict[str, Any]], current_user: str = None):
+        # pylint: disable=too-many-locals, too-many-statements
         """Create payment related records.
 
-            Does the following;
-            1. Calculate the fees based on the filing types received.
-            2. Check if the payment account exists,
-                2.1 If yes, use the one from database.
-                2.2 Else create one in payment system and update database.
-            3. Create payment record in database and flush.
-            4. Create invoice record in database and flush.
-            5. Create payment line items in database and flush.
-            6. Create invoice in payment system;
-                6.1 If successful update the invoice table with references from payment system.
-                    6.1.1 If failed adjust the invoice to zero and roll back the transaction.
-                6.2 If fails rollback the transaction
+        Does the following;
+        1. Calculate the fees based on the filing types received.
+        2. Check if the payment account exists,
+            2.1 If yes, use the one from database.
+            2.2 Else create one in payment system and update database.
+        3. Create payment record in database and flush.
+        4. Create invoice record in database and flush.
+        5. Create payment line items in database and flush.
+        6. Create invoice in payment system;
+            6.1 If successful update the invoice table with references from payment system.
+                6.1.1 If failed adjust the invoice to zero and roll back the transaction.
+            6.2 If fails rollback the transaction
         """
         current_app.logger.debug('<create_payment')
         payment_info = payment_request.get('payment_info')
@@ -141,29 +142,33 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         """Get payment related records."""
         try:
             payment: Payment = Payment.find_by_id(payment_id)
+            if not payment.id:
+                raise BusinessException(Error.PAY005)
             return payment.asdict()
-        except Exception:
-            raise BusinessException(Error.PAY005)
+        except Exception as e:
+            current_app.logger.debug('Error on get payment {}', e)
+            raise
 
     @classmethod
-    def update_payment(cls, payment_id: int, payment_request: Tuple[Dict[str, Any]], current_user: str = None):  # pylint: disable=too-many-locals,too-many-statements
+    def update_payment(cls, payment_id: int, payment_request: Tuple[Dict[str, Any]], current_user: str = None):
+        # pylint: disable=too-many-locals,too-many-statements
         """Update payment related records.
 
-            Does the following;
-            1. Calculate the fees based on the filing types received.
-            2. Check if the payment account exists,
-                3.1 If yes, use the one from database.
-                3.2 Else create one in payment system and update database.
-            3. Check PayBC invoice status
-                1.1 If payment completed, do not update the payment,
-                1.2 Else continue the process.
-            4. Get invoice record in database.
-            5. Invalidate old payment line items and create new payment line items in database and flush.
-            6. Update invoice in payment system;
-                6.1 If successful update the invoice table with references from payment system.
-                    6.1.1 If failed adjust the invoice to zero and roll back the transaction.
-                6.2 If fails rollback the transaction
-            7. Update payment record in database and flush.
+        Does the following;
+        1. Calculate the fees based on the filing types received.
+        2. Check if the payment account exists,
+            3.1 If yes, use the one from database.
+            3.2 Else create one in payment system and update database.
+        3. Check PayBC invoice status
+            1.1 If payment completed, do not update the payment,
+            1.2 Else continue the process.
+        4. Get invoice record in database.
+        5. Invalidate old payment line items and create new payment line items in database and flush.
+        6. Update invoice in payment system;
+            6.1 If successful update the invoice table with references from payment system.
+                6.1.1 If failed adjust the invoice to zero and roll back the transaction.
+            6.2 If fails rollback the transaction
+        7. Update payment record in database and flush.
         """
         current_app.logger.debug('<update_payment')
         payment_info = payment_request.get('payment_info')
@@ -200,11 +205,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             # get existing payment transaction
             transaction: PaymentTransaction = PaymentTransaction.find_active_by_payment_id(payment_id)
             current_app.logger.debug(transaction)
-            if transaction is None:
-                raise BusinessException(Error.PAY008)
-
-            # check existing payment status in PayBC;
-            PaymentTransaction.update_transaction(payment_id, transaction.id, None)
+            if transaction:
+                # check existing payment status in PayBC;
+                PaymentTransaction.update_transaction(payment_id, transaction.id, None)
 
             # update transaction function will update the status from PayBC
             payment: Payment = Payment.find_by_id(payment_id)

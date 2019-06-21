@@ -66,16 +66,16 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         """Return the _id."""
         return self._id
 
+    @property
+    def invoice_id(self):
+        """Return the _invoice_id."""
+        return self._invoice_id
+
     @id.setter
     def id(self, value: int):
         """Set the id."""
         self._id = value
         self._dao.id = value
-
-    @property
-    def invoice_id(self):
-        """Return the _invoice_id."""
-        return self._invoice_id
 
     @invoice_id.setter
     def invoice_id(self, value: int):
@@ -99,16 +99,16 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         """Return the _fee_schedule_id."""
         return self._fee_schedule_id
 
+    @property
+    def processing_fees(self):
+        """Return the _processing_fees."""
+        return self._processing_fees
+
     @fee_schedule_id.setter
     def fee_schedule_id(self, value: int):
         """Set the fee_schedule_id."""
         self._fee_schedule_id = value
         self._dao.fee_schedule_id = value
-
-    @property
-    def processing_fees(self):
-        """Return the _processing_fees."""
-        return self._processing_fees
 
     @processing_fees.setter
     def processing_fees(self, value: float):
@@ -165,16 +165,16 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         """Return the _total."""
         return self._total
 
+    @property
+    def quantity(self):
+        """Return the _quantity."""
+        return self._quantity
+
     @total.setter
     def total(self, value: float):
         """Set the total."""
         self._total = value
         self._dao.total = value
-
-    @property
-    def quantity(self):
-        """Return the _quantity."""
-        return self._quantity
 
     @quantity.setter
     def quantity(self, value: int):
@@ -192,28 +192,6 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         """Set the line_item_status_code."""
         self._line_item_status_code = value
         self._dao.line_item_status_code = value
-
-    @staticmethod
-    def populate(value):
-        line_item: PaymentLineItem = PaymentLineItem()
-        line_item._dao = value # pylint: disable=protected-access
-        return line_item
-
-    def asdict(self):
-        """Return the invoice as a python dict."""
-        d = {
-            'id': self._id,
-            'filing_fees': self._filing_fees,
-            'quantity': self._quantity,
-            'processing_fees': self._processing_fees,
-            'service_fees': self._service_fees,
-            'description': self._description,
-            'gst': self._gst,
-            'pst': self._pst,
-            'total': self._total,
-            'status_code': self._line_item_status_code
-        }
-        return d
 
     def flush(self):
         """Save the information to the DB."""
