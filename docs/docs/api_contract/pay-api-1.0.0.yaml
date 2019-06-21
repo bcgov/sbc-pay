@@ -900,7 +900,7 @@ paths:
         payment_1:
           value: 153
 
-  /api/v1/payments/:payment_identifier/transactions/:invoice_id:
+  /api/v1/payments/:payment_identifier/invoices/:invoice_id:
     get:
       tags:
         - Invoices
