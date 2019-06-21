@@ -500,8 +500,6 @@ paths:
           required: true
           schema:
             type: string
-          examples:
-            transaction_post_1: 'http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd'
       responses:
         '201':
           description: Created
@@ -657,11 +655,26 @@ paths:
             type: string
       responses:
         '200':
-          description: Updated
+          description: OK
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Transaction'
+              examples:
+                payment_1:
+                  value: '{
+                            "_links": {
+                                "collection": "/api/v1/payments/153/transactions",
+                                "self": "/api/v1/payments/153/transactions/3378001e-cfd5-479b-84a2-bfd4e7eb804d"
+                            },
+                            "client_system_url": "http://localhost:8080/coops-web/transactions?transaction_id=abcd",
+                            "end_time": "2019-06-20 14:55:41.309606",
+                            "id": "3378001e-cfd5-479b-84a2-bfd4e7eb804d",
+                            "pay_system_url": "http://localhost:8080/Payment?inv_number=10021&pbc_ref_number=10005&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Freturnpayment%2F153%2Ftransaction%2F3378001e-cfd5-479b-84a2-bfd4e7eb804d",
+                            "payment_id": 153,
+                            "start_time": "2019-06-20 14:55:41.309574",
+                            "status_code": "COMPLETED"
+                        }'
         '400':
           description: BadRequest
           content:
@@ -696,36 +709,49 @@ paths:
                 type: string
               description: X-Application-Context
               examples:
-                payment_get_1:
+                payment_1:
                   value: 'application:prod'
             Access-Control-Allow-Origin:
               schema:
                 type: string
               description: Access-Control-Allow-Origin
               examples:
-                payment_get_1:
+                payment_1:
                   value: '*'
             Access-Control-Allow-Methods:
               schema:
                 type: string
               description: Access-Control-Allow-Methods
               examples:
-                payment_get_1:
+                payment_1:
                   value: 'GET, POST, DELETE, PUT'
             Access-Control-Allow-Headers:
               schema:
                 type: string
               description: Access-Control-Allow-Headers
               examples:
-                payment_get_1:
+                payment_1:
                   value: 'Content-Type, api_key, Authorization'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Transaction'
+                $ref: '#/components/schemas/Transactions'
               examples:
-                payment_get_1:
-                  value: ''
+                payment_1:
+                  value: '{
+                            "_links": {
+                                "collection": "/api/v1/payments/153/transactions",
+                                "self": "/api/v1/payments/153/transactions/3378001e-cfd5-479b-84a2-bfd4e7eb804d"
+                            },
+                            "client_system_url": "http://localhost:8080/coops-web/transactions?transaction_id=abcd",
+                            "end_time": "2019-06-20 14:55:41.309606",
+                            "id": "3378001e-cfd5-479b-84a2-bfd4e7eb804d",
+                            "pay_system_url": "http://localhost:8080/Payment?inv_number=10021&pbc_ref_number=10005&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Freturnpayment%2F153%2Ftransaction%2F3378001e-cfd5-479b-84a2-bfd4e7eb804d",
+                            "payment_id": 153,
+                            "start_time": "2019-06-20 14:55:41.309574",
+                            "status_code": "CREATED"
+                        }'
+
         '400':
           description: BadRequest
           content:
@@ -740,9 +766,266 @@ paths:
         format: string
         type: string
       examples:
-        payment_get_1:
-          value: 1  
-          
+        payment_1:
+          value: 153
+    - name: transaction_identifier
+      in: path     
+      required: true
+      schema:
+        format: string
+        type: string
+      examples:
+        payment_1:
+          value: '3378001e-cfd5-479b-84a2-bfd4e7eb804d' 
+    - name: receipt_number
+      in: query
+      description: Receipt Number for the payment
+      required: true
+      schema:
+        type: string
+      examples:
+        payment_1:
+          value: 'http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd' 
+  /api/v1/payments/:payment_identifier/invoices:
+    get:
+      tags:
+        - Invoices
+      summary: Get Invoices
+      description: Get Invoices for the payment
+      operationId: Get_Invoices
+      parameters:
+        - name: payment_identifier
+          in: path
+          description: Unique Identifier for the payment
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          headers:
+            X-Application-Context:
+              schema:
+                type: string
+              description: X-Application-Context
+              examples:
+                payment_1:
+                  value: 'application:prod'
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              description: Access-Control-Allow-Origin
+              examples:
+                payment_1:
+                  value: '*'
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+              description: Access-Control-Allow-Methods
+              examples:
+                payment_1:
+                  value: 'GET, POST, DELETE, PUT'
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              description: Access-Control-Allow-Headers
+              examples:
+                payment_1:
+                  value: 'Content-Type, api_key, Authorization'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoices'
+              examples:
+                payment_1:
+                  value: '{
+                            "items": [
+                                {
+                                    "_links": {
+                                        "collection": "/api/v1/payments/153/invoices",
+                                        "self": "/api/v1/payments/153/invoices/152"
+                                    },
+                                    "created_by": "CP1234567",
+                                    "created_on": "2019-06-18T11:10:00.982551+00:00",
+                                    "id": 152,
+                                    "invoice_number": "10021",
+                                    "line_items": [
+                                        {
+                                            "description": "Change of Directors - Director A",
+                                            "filing_fees": 20,
+                                            "gst": 0,
+                                            "id": 371,
+                                            "processing_fees": 0,
+                                            "pst": 0,
+                                            "quantity": 1,
+                                            "service_fees": 0,
+                                            "status_code": "CREATED",
+                                            "total": 20
+                                        },
+                                        {
+                                            "description": "Annual Report",
+                                            "filing_fees": 30,
+                                            "gst": 0,
+                                            "id": 372,
+                                            "processing_fees": 0,
+                                            "pst": 0,
+                                            "quantity": 1,
+                                            "service_fees": 0,
+                                            "status_code": "CREATED",
+                                            "total": 30
+                                        }
+                                    ],
+                                    "reference_number": "10005",
+                                    "status_code": "CREATED",
+                                    "total": 50,
+                                    "updated_by": "CP1234567",
+                                    "updated_on": "2019-06-20T16:30:04.441211+00:00"
+                                }
+                            ]
+                        }'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+    - name: payment_identifier
+      in: path     
+      required: true
+      schema:
+        format: string
+        type: string
+      examples:
+        payment_1:
+          value: 153
+
+  /api/v1/payments/:payment_identifier/transactions/:invoice_id:
+    get:
+      tags:
+        - Invoices
+      summary: Get Invoice
+      description: Get an invoice for the payment
+      operationId: Get_Invoice
+      parameters:
+        - name: payment_identifier
+          in: path
+          description: Unique Identifier for the payment
+          required: true
+          schema:
+            type: string
+        - name: invoice_id
+          in: path
+          description: Unique Identifier for the invoice
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          headers:
+            X-Application-Context:
+              schema:
+                type: string
+              description: X-Application-Context
+              examples:
+                payment_1:
+                  value: 'application:prod'
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              description: Access-Control-Allow-Origin
+              examples:
+                payment_1:
+                  value: '*'
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+              description: Access-Control-Allow-Methods
+              examples:
+                payment_1:
+                  value: 'GET, POST, DELETE, PUT'
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              description: Access-Control-Allow-Headers
+              examples:
+                payment_1:
+                  value: 'Content-Type, api_key, Authorization'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+              examples:
+                payment_1:
+                  value: '{
+                            "_links": {
+                                "collection": "/api/v1/payments/153/invoices",
+                                "self": "/api/v1/payments/153/invoices/152"
+                            },
+                            "created_by": "CP1234567",
+                            "created_on": "2019-06-18T11:10:00.982551+00:00",
+                            "id": 152,
+                            "invoice_number": "10021",
+                            "line_items": [
+                                {
+                                    "description": "Change of Directors - Director A",
+                                    "filing_fees": 20,
+                                    "gst": 0,
+                                    "id": 371,
+                                    "processing_fees": 0,
+                                    "pst": 0,
+                                    "quantity": 1,
+                                    "service_fees": 0,
+                                    "status_code": "CREATED",
+                                    "total": 20
+                                },
+                                {
+                                    "description": "Annual Report",
+                                    "filing_fees": 30,
+                                    "gst": 0,
+                                    "id": 372,
+                                    "processing_fees": 0,
+                                    "pst": 0,
+                                    "quantity": 1,
+                                    "service_fees": 0,
+                                    "status_code": "CREATED",
+                                    "total": 30
+                                }
+                            ],
+                            "reference_number": "10005",
+                            "status_code": "CREATED",
+                            "total": 50,
+                            "updated_by": "CP1234567",
+                            "updated_on": "2019-06-20T16:30:04.441211+00:00"
+                        }'
+
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+    - name: payment_identifier
+      in: path     
+      required: true
+      schema:
+        format: string
+        type: string
+      examples:
+        payment_1:
+          value: 153
+    - name: invoice_id
+      in: path     
+      required: true
+      schema:
+        format: string
+        type: string
+      examples:
+        payment_1:
+          value: 152 
+
   /api/v1/payments/:payment_identifier/receipts:
     get:
       tags:
@@ -771,6 +1054,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+
 components:
   schemas:
     ErrorResponse:
@@ -783,40 +1067,6 @@ components:
           type: string
           description: Description of the error.
       description: Contains details of an error that was encountered.
-    Payment_Line_Item:
-      type: object
-      properties:
-        id:
-          type: integer
-          description: Unique identifier for payment line item
-        invoice_id:
-          type: integer
-          description: Unique identifier for invoice
-        fee_schedule_id:
-          type: id
-          description: Fee schedule id
-        quantity:
-          type: integer
-          description: Quantity of fee
-        filing_fees:
-          type: float
-          description: Fees for filing
-        service_fees:
-          type: float
-          description: Applicable service fees
-        processing_fees:
-          type: float
-          description: Applicable processing fees
-        description:
-          type: string
-          description: Description of the fee item
-        gst:
-          type: float
-          description: Applicable gst of the fee item
-        pst:
-          type: float
-          description: Applicable pst of the fee item
-
     Tax:
       type: object
       properties:
@@ -826,6 +1076,65 @@ components:
         pst:
           type: integer
           description: Provincial Sales Tax
+    Fee:
+      type: object
+      properties:
+        filing_type_code:
+          type: string
+          description: Filing Type Code
+        filing_type:
+          type: string
+          description: Filing Type
+        filing_fees:
+          type: integer
+          description: Fees for filing
+        service_fees:
+          type: integer
+          description: Applicable service fees
+        processing_fees:
+          type: integer
+          description: Applicable processing fees
+        tax:
+          type: object
+          items:
+            $ref: "#/components/schemas/Tax"
+    PaymentLineItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for payment line item
+        invoice_id:
+          type: integer
+          description: Unique identifier for invoice
+        fee_schedule_id:
+          type: integer
+          description: Fee schedule id
+        quantity:
+          type: integer
+          description: Quantity of fee
+        filing_fees:
+          type: number
+          description: Fees for filing
+        service_fees:
+          type: number
+          description: Applicable service fees
+        processing_fees:
+          type: number
+          description: Applicable processing fees
+        description:
+          type: number
+          description: Description of the fee item
+        gst:
+          type: number
+          description: Applicable gst of the fee item
+        pst:
+          type: number
+          description: Applicable pst of the fee item
+        status_code:
+          type: string
+          description: Line item status
+          enum: [DRAFT, IN_PROGRESS, CREATED, COMPLETED, PARTIAL, FAILED, REFUNDED, CANCELLED]
     PaymentRequest:
       type: object
       properties:
@@ -912,6 +1221,10 @@ components:
     Payment:
       type: object
       properties:
+        _links:
+          type: object
+          items:
+            $ref: "#/components/schemas/Links"
         id:
           type: integer
           description: Unique identifier for payment
@@ -919,29 +1232,37 @@ components:
           type: string
           description: username of the account
         created_on:
-          type: datetime
+          type: string
           description: payment creation date
         invoices:
           type: array
           items:
               $ref: "#/components/schemas/Invoice"
+        transactions:
+          type: array
+          items:
+              $ref: "#/components/schemas/Transaction"
         payment_method:
           type: string
           description: code of payment method
-        payment_status:
+        status_code:
           type: string
           description: Status of payment.
           enum: [DRAFT, IN_PROGRESS, CREATED, COMPLETED, PARTIAL, FAILED, REFUNDED, CANCELLED]
         updated_by:
           type: string
           description: username of the account that made update
-        updated_date:
-          type: datetime
+        updated_on:
+          type: string
           description: payment update date
 
     Invoice:
       type: object
       properties:
+        _links:
+          type: object
+          items:
+            $ref: "#/components/schemas/Links"
         id:
           type: integer
           description: Unique identifier for invoice
@@ -952,25 +1273,80 @@ components:
           type: string
           description: username of the account
         created_on:
-          type: datetime
+          type: string
           description: invoice creation date
         payment_date:
-          type: datetime
+          type: string
           description: date made payment
         payment_id:
           type: integer
-          description: id of the account
+          description: payment identifier
         paid:
-          type: float
-          description: id of the account
+          type: number
+          description: amount paid
         line_items:
           type: array
           items:
-              $ref: "#/components/schemas/Payment_Line_Item"
+              $ref: "#/components/schemas/PaymentLineItem"
         reference_number:
           type: string
           description: reference number
-        invoice_status:
+        status_code:
           type: string
           description: Status of payment.
           enum: [DRAFT, IN_PROGRESS, CREATED, COMPLETED, PARTIAL, FAILED, REFUNDED, CANCELLED]
+
+    Invoices:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+              $ref: "#/components/schemas/Invoice"
+
+    Transaction:
+      type: object
+      properties:
+        _links:
+          type: object
+          items:
+            $ref: "#/components/schemas/Links"
+        id:
+          type: string
+          description: Unique identifier for transaction
+        client_system_url:
+          type: string
+          description: Client system url
+        start_time:
+          type: string
+          description: transaction start time
+        end_time:
+          type: string
+          description: transaction end time
+        pay_system_url:
+          type: string
+          description: Payment system url
+        payment_id:
+          type: integer
+          description: id of the payment
+        status_code:
+          type: string
+          description: Status of payment.
+          enum: [DRAFT, IN_PROGRESS, CREATED, COMPLETED, PARTIAL, FAILED, REFUNDED, CANCELLED]
+    Transactions:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+              $ref: "#/components/schemas/Transaction"
+    Links:
+      type: object
+      properties:
+        self:
+          type: string
+          description: Self link
+        collection:
+          type: string
+          description: collection link
+

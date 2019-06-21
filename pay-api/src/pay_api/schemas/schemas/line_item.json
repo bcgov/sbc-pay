@@ -19,7 +19,7 @@
     "description": {
       "$id": "#/properties/line_items/items/properties/description",
       "type": "string",
-      "title": "The Description Schema",
+      "title": "Description",
       "default": "",
       "examples": [
         "TEST"
@@ -29,7 +29,7 @@
     "filing_fees": {
       "$id": "#/properties/line_items/items/properties/filing_fees",
       "type": "integer",
-      "title": "The Filing_fees Schema",
+      "title": "Filing Fees",
       "default": 0,
       "examples": [
         20
@@ -38,7 +38,7 @@
     "gst": {
       "$id": "#/properties/line_items/items/properties/gst",
       "type": "integer",
-      "title": "The Gst Schema",
+      "title": "GST",
       "default": 0,
       "examples": [
         0
@@ -47,7 +47,7 @@
     "id": {
       "$id": "#/properties/line_items/items/properties/id",
       "type": "integer",
-      "title": "The Id Schema",
+      "title": "Line Identifier",
       "default": 0,
       "examples": [
         1
@@ -56,7 +56,7 @@
     "processing_fees": {
       "$id": "#/properties/line_items/items/properties/processing_fees",
       "type": "integer",
-      "title": "The Processing_fees Schema",
+      "title": "Processing fees",
       "default": 0,
       "examples": [
         0
@@ -65,7 +65,7 @@
     "pst": {
       "$id": "#/properties/line_items/items/properties/pst",
       "type": "integer",
-      "title": "The Pst Schema",
+      "title": "PST",
       "default": 0,
       "examples": [
         0
@@ -74,7 +74,7 @@
     "quantity": {
       "$id": "#/properties/line_items/items/properties/quantity",
       "type": "integer",
-      "title": "The Quantity Schema",
+      "title": "Quantity",
       "default": 0,
       "examples": [
         1
@@ -83,7 +83,7 @@
     "service_fees": {
       "$id": "#/properties/line_items/items/properties/service_fees",
       "type": "integer",
-      "title": "The Service_fees Schema",
+      "title": "Service Fees",
       "default": 0,
       "examples": [
         0
@@ -92,7 +92,7 @@
     "status_code": {
       "$id": "#/properties/line_items/items/properties/status_code",
       "type": "string",
-      "title": "The Status_code Schema",
+      "title": ":Line Status Code",
       "default": "",
       "examples": [
         "CREATED"
@@ -102,7 +102,7 @@
     "total": {
       "$id": "#/properties/line_items/items/properties/total",
       "type": "integer",
-      "title": "The Total Schema",
+      "title": "Line Total",
       "default": 0,
       "examples": [
         20

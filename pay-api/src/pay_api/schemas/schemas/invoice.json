@@ -10,7 +10,7 @@
     "id",
     "invoice_number",
     "reference_number",
-    "status_code",
+      "status_code",
     "total"
   ],
   "properties": {
