@@ -134,7 +134,7 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}",
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/invoices/152",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
@@ -142,7 +142,9 @@
 						"api",
 						"v1",
 						"payments",
-						"{{payment-identifier}}"
+						"{{payment-identifier}}",
+						"invoices",
+						"152"
 					]
 				}
 			},
@@ -168,7 +170,7 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}",
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/invoices/{{invoice_id}}",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
@@ -176,7 +178,9 @@
 						"api",
 						"v1",
 						"payments",
-						"{{payment-identifier}}"
+						"{{payment-identifier}}",
+						"invoices",
+						"{{invoice_id}}"
 					]
 				}
 			},
@@ -184,8 +188,11 @@
 		},
 		{
 			"name": "Update Payment Record ",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
 			"request": {
-				"method": "PUT",
+				"method": "GET",
 				"header": [
 					{
 						"key": "Content-Type",
@@ -199,7 +206,7 @@
 					"raw": "{\n  \"payment_info\": {\n    \"method_of_payment\": \"CC\"\n  },\n  \"business_info\": {\n    \"business_identifier\": \"cp0000019\",\n    \"corp_type\": \"CP\",\n    \"business_name\": \"ABC Corp\",\n    \"contact_info\": {\n      \"city\": \"Victoria\",\n      \"postal_code\": \"V8P2P2\",\n      \"province\": \"BC\",\n      \"address_line_1\": \"100 Douglas Street\",\n      \"country\": \"CA\"\n    }\n  },\n  \"filing_info\": {\n    \"filing_types\": [\n      {\n        \"filing_type_code\": \"OTCDR\",\n    \t\"filing_description\":\"Change of Directors - Director A\"\n      },\n      {\n        \"filing_type_code\": \"OTANN\"\n      }\n      \n    ]\n  }\n}"
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}",
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/transactions",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
@@ -207,7 +214,8 @@
 						"api",
 						"v1",
 						"payments",
-						"{{payment-identifier}}"
+						"{{payment-identifier}}",
+						"transactions"
 					]
 				}
 			},
@@ -215,8 +223,11 @@
 		},
 		{
 			"name": "Create a Transaction Record",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
 			"request": {
-				"method": "POST",
+				"method": "GET",
 				"header": [],
 				"body": {
 					"mode": "raw",
@@ -264,7 +275,7 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}",
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/transactions",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
@@ -272,7 +283,8 @@
 						"api",
 						"v1",
 						"payments",
-						"{{payment-identifier}}"
+						"{{payment-identifier}}",
+						"transactions"
 					]
 				}
 			},
