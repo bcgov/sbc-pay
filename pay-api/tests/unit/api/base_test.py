@@ -27,13 +27,13 @@ token_header = {
 }
 
 
-def get_claims(role: str = Role.BASIC.value):
+def get_claims(app_request, role: str = Role.BASIC.value):
     """Return the claim with the role param."""
     claim = {
         'jti': 'a50fafa4-c4d6-4a9b-9e51-1e5e0d102878',
         'exp': 31531718745,
         'iat': 1531718745,
-        'iss': 'https://sso-dev.pathfinder.gov.bc.ca/auth/realms/fcf0kpqr',
+        'iss': app_request.config['JWT_OIDC_ISSUER'],
         'aud': 'sbc-auth-web',
         'sub': '15099883-3c3f-4b4c-a124-a1824d6cba84',
         'typ': 'Bearer',

@@ -26,21 +26,23 @@ from pay_api.utils.enums import Role
 from pay_api.utils.util import cors_preflight
 
 
-API = Namespace('Invoice receipts', description='Payment System - Receipts')
+API = Namespace('invoice-receipts', description='Payment System - Receipts')
 
 
 @cors_preflight('POST')
-@API.route('', methods=['POST', 'OPTIONS'])
+@API.route('/receipts', methods=['POST', 'OPTIONS'])
+@API.route('/invoices/<int:invoice_id>/receipts', methods=['POST', 'OPTIONS'])
 class InvoiceReceipt(Resource):
     """Endpoint resource to create receipt.Use this endpoint when no invoice number is available."""
 
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
-    def post(payment_id, invoice_id):
+    def post(payment_id, invoice_id =''):
         """Create the Receipt for the Payment."""
         request_json = request.get_json()
         current_app.logger.info('<Receipt.post')
+        print("--------***",payment_id,invoice_id)
         try:
             valid_format, errors = schema_utils.validate(request_json, 'payment_receipt_input')
             if not valid_format:

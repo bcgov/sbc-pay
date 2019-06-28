@@ -31,7 +31,6 @@ from .ops import API as OPS_API
 # from .trace import API as TRACE_API
 from .paybc_invoice import API as PAYBC_INVOICE_API
 from .payment import API as PAY_API
-from .payment_receipt import API as PAYMENT_RECEIPT_API
 from .transaction import API as TRANSACTION_API
 
 
@@ -76,5 +75,5 @@ API.add_namespace(FEE_API, path='/fees')
 API.add_namespace(TRANSACTION_API, path='/payments/<int:payment_id>/transactions')
 API.add_namespace(INVOICE_API, path='/payments/<int:payment_id>/invoices')
 
-API.add_namespace(PAYMENT_RECEIPT_API, path='/payments/<int:payment_id>/receipts')
-API.add_namespace(INVOICE_RECEIPT_API, path='/payments/<int:payment_id>/invoices/<int:invoice_id>/receipts')
+
+API.add_namespace(INVOICE_RECEIPT_API, path='/payments/<int:payment_id>')

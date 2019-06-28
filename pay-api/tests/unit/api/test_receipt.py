@@ -57,7 +57,7 @@ data = {
 @pytest.fixture
 def run_around_tests(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
-    token = jwt.create_jwt(get_claims(), token_header)
+    token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     # Create a payment first
@@ -67,7 +67,7 @@ def run_around_tests(session, client, jwt, app):
 
 def test_receipt_creation(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
-    token = jwt.create_jwt(get_claims(), token_header)
+    token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.post(f'/api/v1/payments', data=json.dumps(data), headers=headers)
@@ -93,7 +93,7 @@ def test_receipt_creation(session, client, jwt, app):
 
 def test_receipt_creation_with_invoice(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
-    token = jwt.create_jwt(get_claims(), token_header)
+    token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.post(f'/api/v1/payments', data=json.dumps(data), headers=headers)
