@@ -145,7 +145,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
             'report_name': 'payment_receipt_coops'
         }
         template_vars = receipt_dict['template_vars']
-        template_vars['coops_name'] = filing_data.get('corpNum')
+        template_vars['coops_name'] = filing_data.get('corpName')
         template_vars['filing_date_time'] = filing_data.get('filingDateTime')
         # inovice number not mandatory ;since only one invoice exist for a payment now
         if not invoice_identifier:

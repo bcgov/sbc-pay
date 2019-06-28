@@ -10,9 +10,9 @@
    ],
    "properties": {
      "corpNum": {
-       "$id": "#/properties/corpNum",
+       "$id": "#/properties/corpName",
        "type": "string",
-       "title": "The Corpnum Schema",
+       "title": "The corpName Schema",
        "default": "",
        "examples": [
          "CP1234"
