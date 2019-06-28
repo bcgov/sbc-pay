@@ -134,7 +134,7 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/invoices/152",
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/invoices/{{invoice_id}}",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
@@ -144,7 +144,7 @@
 						"payments",
 						"{{payment-identifier}}",
 						"invoices",
-						"152"
+						"{{invoice_id}}"
 					]
 				}
 			},
@@ -188,11 +188,8 @@
 		},
 		{
 			"name": "Update Payment Record ",
-			"protocolProfileBehavior": {
-				"disableBodyPruning": true
-			},
 			"request": {
-				"method": "GET",
+				"method": "PUT",
 				"header": [
 					{
 						"key": "Content-Type",
@@ -223,11 +220,8 @@
 		},
 		{
 			"name": "Create a Transaction Record",
-			"protocolProfileBehavior": {
-				"disableBodyPruning": true
-			},
 			"request": {
-				"method": "GET",
+				"method": "POST",
 				"header": [],
 				"body": {
 					"mode": "raw",

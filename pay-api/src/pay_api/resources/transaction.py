@@ -25,7 +25,6 @@ from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.util import cors_preflight
 
-
 API = Namespace('transactions', description='Payment System - Transactions')
 
 

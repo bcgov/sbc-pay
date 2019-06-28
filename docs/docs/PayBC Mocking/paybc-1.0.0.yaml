@@ -952,7 +952,7 @@ paths:
                 $ref: '#/components/schemas/Rcpt'
               examples:
                 rcpt_info:
-                  value: '{"receipt_number":"123451","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "10021","amount_to_apply": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
+                  value: '{"receipt_number":"123451","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"invoice_number": "10021","amount_applied": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
         '400':
           description: BadRequest
           content:
@@ -975,7 +975,7 @@ paths:
                 $ref: '#/components/schemas/Rcpt'
               examples:
                 rcpt_info:
-                  value: '{"items":[{"receipt_number":"123451","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "10021","amount_to_apply": "9.85","lines": [{"line_number": "23","amount_to_apply": "9.5" }] }] }]}'                     
+                  value: '{"items":[{"receipt_number":"123451","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"invoice_number": "10021","amount_applied": "9.85","lines": [{"line_number": "23","amount_to_apply": "9.5" }] }] }]}'                     
         '400':
           description: BadRequest
           content:
@@ -1058,11 +1058,11 @@ paths:
                 $ref: '#/components/schemas/Rcpt'
               examples:
                 rcpt_info1:
-                  value: '{"receipt_number":"123451","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "10021","amount_to_apply": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
+                  value: '{"receipt_number":"123451","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"invoice_number": "10021","amount_applied": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
                 rcpt_info2:
-                  value: '{"receipt_number":"123452","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "10021","amount_to_apply": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
+                  value: '{"receipt_number":"123452","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"invoice_number": "10021","amount_applied": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
                 rcpt_info3:
-                  value: '{"receipt_number":"123453","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "10021","amount_to_apply": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
+                  value: '{"receipt_number":"123453","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"invoice_number": "10021","amount_applied": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
         '400':
           description: BadRequest
           content:
@@ -1109,11 +1109,11 @@ paths:
                 $ref: '#/components/schemas/Rcpt'
               examples:
                 rcpt_info1:
-                  value: '{"receipt_number":"123451","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "10021","amount_to_apply": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
+                  value: '{"receipt_number":"123451","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"invoice_number": "10021","amount_applied": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
                 rcpt_info2:
-                  value: '{"receipt_number":"123452","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "10021","amount_to_apply": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
+                  value: '{"receipt_number":"123452","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"invoice_number": "10021","amount_applied": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
                 rcpt_info3:
-                  value: '{"receipt_number":"123453","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"trx_number": "10021","amount_to_apply": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
+                  value: '{"receipt_number":"123453","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"invoice_number": "10021","amount_applied": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'                     
         '400':
           description: BadRequest
           content:

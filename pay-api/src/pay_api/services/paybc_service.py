@@ -128,12 +128,11 @@ class PaybcService(PaymentSystemService, OAuthService):
         current_app.logger.debug('<Getting receipt')
         receipt_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/rcpts/'.format(
             payment_account.party_number, payment_account.account_number, payment_account.site_number)
-
         if not receipt_number:  # Find all receipts for the site and then match with invoice number
             receipts_response = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
             for receipt in receipts_response.get('items'):
                 for invoice in receipt.get('invoices'):
-                    if invoice.get('trx_number') == invoice_number:
+                    if invoice.get('invoice_number') == invoice_number:
                         receipt_number = receipt.get('receipt_number')
 
         if receipt_number:
@@ -143,8 +142,8 @@ class PaybcService(PaymentSystemService, OAuthService):
 
             amount: float = 0
             for invoice in receipt_response.get('invoices'):
-                if invoice.get('trx_number') == invoice_number:
-                    amount += float(invoice.get('amount_to_apply'))
+                if invoice.get('invoice_number') == invoice_number:
+                    amount += float(invoice.get('amount_applied'))
 
             return receipt_number, receipt_date, amount
         return None

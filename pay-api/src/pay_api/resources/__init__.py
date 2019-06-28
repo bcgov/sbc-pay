@@ -27,7 +27,6 @@ from .fee import API as FEE_API
 from .invoice import API as INVOICE_API
 from .meta import API as META_API
 from .ops import API as OPS_API
-# from .trace import API as TRACE_API
 from .paybc_invoice import API as PAYBC_INVOICE_API
 from .payment import API as PAY_API
 from .transaction import API as TRANSACTION_API
