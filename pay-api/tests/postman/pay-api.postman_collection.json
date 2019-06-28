@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "add98474-9d75-444d-87ae-51e0d1ac8c1c",
+		"_postman_id": "58ca385b-25ba-46e0-bb39-7518020d47a0",
 		"name": "pay-api",
 		"description": "version=1.0.0",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -337,6 +337,72 @@
 						"{{payment-identifier}}",
 						"transactions",
 						"{{transaction-identifier}}"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Generate Receipt with Payment Identifier",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"corpNum\": \"CP1234\",\n    \"filingDateTime\": \"June 27, 2019\",\n    \"fileName\":\"director-change\"\n}"
+				},
+				"url": {
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/receipts",
+					"host": [
+						"{{pay-api-base-url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"payments",
+						"{{payment-identifier}}",
+						"receipts"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Generate Receipt with Payment Identifier and Invoice Identifier",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"corpNum\": \"CP1234\",\n    \"filingDateTime\": \"June 27, 2019\",\n    \"fileName\":\"director-change\"\n}"
+				},
+				"url": {
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/invoices/{{invoice_id}}/receipts",
+					"host": [
+						"{{pay-api-base-url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"payments",
+						"{{payment-identifier}}",
+						"invoices",
+						"{{invoice_id}}",
+						"receipts"
 					]
 				}
 			},

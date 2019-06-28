@@ -91,6 +91,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     PAYBC_PORTAL_URL = os.getenv('PAYBC_PORTAL_URL')
     AUTH_WEB_PAY_TRANSACTION_URL = os.getenv('AUTH_WEB_PAY_TRANSACTION_URL')
 
+    # REPORT API Settings
+    REPORT_API_BASE_URL = os.getenv('REPORT_API_BASE_URL')
+
     TESTING = False
     DEBUG = True
 
