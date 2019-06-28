@@ -301,9 +301,12 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
             elif 0 < invoice.paid < invoice.total:
                 invoice.invoice_status_code = Status.PARTIAL.value
             invoice.save()
+            transaction_dao.status_code = Status.COMPLETED.value
+        else:
+            transaction_dao.status_code = Status.FAILED.value
 
         transaction_dao.transaction_end_time = datetime.now()
-        transaction_dao.status_code = Status.COMPLETED.value
+
         transaction_dao = transaction_dao.save()
 
         transaction = PaymentTransaction()

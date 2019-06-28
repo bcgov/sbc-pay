@@ -131,13 +131,22 @@ class PaybcService(PaymentSystemService, OAuthService):
         if not receipt_number:  # Find all receipts for the site and then match with invoice number
             receipts_response = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
             for receipt in receipts_response.get('items'):
-                for invoice in receipt.get('invoices'):
-                    if invoice.get('invoice_number') == invoice_number:
-                        receipt_number = receipt.get('receipt_number')
+                if receipt.get('invoices'):
+                    for invoice in receipt.get('invoices'):
+                        if invoice.get('invoice_number') == invoice_number:
+                            receipt_number = receipt.get('receipt_number')
+                            break
+                else:
+                    expanded_receipt = self.__get_receipt_by_number(access_token, receipt_url,
+                                                                    receipt.get('receipt_number'))
+                    for invoice in expanded_receipt.get('invoices'):
+                        if invoice.get('invoice_number') == invoice_number:
+                            return receipt.get('receipt_number'), parser.parse(
+                                expanded_receipt.get('receipt_date')), float(
+                                invoice.get('amount_applied'))
 
         if receipt_number:
-            receipt_url = receipt_url + f'{receipt_number}/'
-            receipt_response = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+            receipt_response = self.__get_receipt_by_number(access_token, receipt_url, receipt_number)
             receipt_date = parser.parse(receipt_response.get('receipt_date'))
 
             amount: float = 0
@@ -147,6 +156,11 @@ class PaybcService(PaymentSystemService, OAuthService):
 
             return receipt_number, receipt_date, amount
         return None
+
+    def __get_receipt_by_number(self, access_token: str = None, receipt_url: str = None, receipt_number: str = None):
+        """Get receipt details by receipt number."""
+        receipt_url = receipt_url + f'{receipt_number}/'
+        return self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
 
     def __create_party(self, access_token: str = None, party_name: str = None):
         """Create a party record in PayBC."""

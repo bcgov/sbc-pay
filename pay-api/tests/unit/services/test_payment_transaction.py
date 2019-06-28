@@ -219,7 +219,7 @@ def test_transaction_update_with_no_receipt(session):
     assert transaction.pay_system_url is not None
     assert transaction.transaction_start_time is not None
     assert transaction.transaction_end_time is not None
-    assert transaction.status_code == Status.COMPLETED.value
+    assert transaction.status_code == Status.FAILED.value
     assert transaction.asdict() is not None
 
 
