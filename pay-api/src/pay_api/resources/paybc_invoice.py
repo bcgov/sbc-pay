@@ -15,8 +15,8 @@
 from flask import current_app, request
 from flask_restplus import Namespace, Resource
 
-from pay_api import tracing as _tracing
 from pay_api.services.paybc import PayBcService
+from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
 
 

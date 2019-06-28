@@ -17,11 +17,12 @@ from http import HTTPStatus
 from flask import current_app, g, jsonify, request
 from flask_restplus import Namespace, Resource, cors
 
-from pay_api import jwt as _jwt
 from pay_api.exceptions import BusinessException
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import PaymentService
+from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.enums import Role
+from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
 
 
@@ -36,6 +37,7 @@ class Payment(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
+    @_tracing.trace()
     def post():
         """Create the payment records."""
         current_app.logger.info('<Payment.post')
@@ -63,6 +65,7 @@ class Payments(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
+    @_tracing.trace()
     def get(payment_id):
         """Get the payment records."""
         try:
@@ -74,6 +77,7 @@ class Payments(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
+    @_tracing.trace()
     def put(payment_id):
         """Update the payment records."""
         current_app.logger.info('<Payment.put')

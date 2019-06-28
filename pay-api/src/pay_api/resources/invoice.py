@@ -17,10 +17,11 @@ from http import HTTPStatus
 from flask import jsonify
 from flask_restplus import Namespace, Resource, cors
 
-from pay_api import jwt as _jwt
 from pay_api.exceptions import BusinessException
 from pay_api.services import InvoiceService
+from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.enums import Role
+from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
 
 
@@ -35,6 +36,7 @@ class Invoices(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
+    @_tracing.trace()
     def get(payment_id):
         """Get the Invoice records."""
         response, status = InvoiceService.get_invoices(payment_id), HTTPStatus.OK
@@ -49,6 +51,7 @@ class Invoice(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
+    @_tracing.trace()
     def get(payment_id, invoice_id):
         """Get the Invoice records."""
         try:
