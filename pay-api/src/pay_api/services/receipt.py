@@ -14,10 +14,15 @@
 """Service to manage Receipt."""
 
 from datetime import datetime
+from typing import Any, Dict, Tuple
 
 from flask import current_app
 
 from pay_api.models import Receipt as ReceiptModel
+from pay_api.utils.enums import AuthHeaderType, ContentType
+
+from .invoice import Invoice
+from .oauth_service import OAuthService
 
 
 class Receipt():  # pylint: disable=too-many-instance-attributes
@@ -127,3 +132,38 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
 
         current_app.logger.debug('>find_by_invoice_id_and_receipt_number')
         return receipt
+
+    @staticmethod
+    def create_receipt(payment_identifier: str, invoice_identifier: str, filing_data: Tuple[Dict[str, Any]]):
+        """Create receipt."""
+        current_app.logger.debug('<create receipt', invoice_identifier)
+        receipt_dict = {
+            'template_vars': {
+                'line_items': [],
+            },
+            'template_name': 'payment_receipt_coops',
+            'report_name': 'payment_receipt_coops'
+        }
+        template_vars = receipt_dict['template_vars']
+        template_vars['coops_name'] = filing_data.get('corpNum')
+        template_vars['filing_date_time'] = filing_data.get('filingDateTime')
+        # inovice number not mandatory ;since only one invoice exist for a payment now
+        if not invoice_identifier:
+            invoice_data = Invoice.find_by_payment_identifier(payment_identifier).asdict()
+        else:
+            invoice_data = Invoice.find_by_id(invoice_identifier, payment_identifier).asdict()
+
+        template_vars['incorporation_number'] = invoice_data['created_by']
+        template_vars['payment_invoice_number'] = invoice_data['invoice_number']
+        template_vars['receipt_number'] = invoice_data['receipts'][0]['receipt_number']
+        for line_item in invoice_data['line_items']:
+            template_vars['line_items'].append(
+                {
+                    'description': line_item['description'],
+                    'filing_fees': line_item['filing_fees'],
+                }
+            )
+
+        pdf_response = OAuthService.post(current_app.config.get('REPORT_API_BASE_URL'), '', AuthHeaderType.BEARER,
+                                         ContentType.JSON, receipt_dict)
+        return pdf_response

@@ -146,19 +146,15 @@
             </tr>
             <tr>
               <td class="name"><strong>Incorporation Number:</strong></td>
-              <td class="value">{{ incorporationNumber }}</td>
-            </tr>
-            <tr>
-              <td class="name"><strong>Business Number:</strong></td>
-              <td class="value">{{ businessNumber }}</td>
+              <td class="value">{{ incorporation_number }}</td>
             </tr>
             <tr>
               <td class="name"><strong>Cooperative Name:</strong></td>
-              <td class="value">{{ societyName }}</td>
+              <td class="value">{{ coops_name }}</td>
             </tr>
             <tr>
               <td class="name"><strong>Filing Date and Time:</strong></td>
-              <td class="value">{{ filingDateTime }}</td>
+              <td class="value">{{ filing_date_time }}</td>
             </tr>
             <tr>
               <td class="spacer" colspan="2">
@@ -174,7 +170,7 @@
                 <table class="receipt-items">
                   <tr>
                     <td class="name"><strong>{{ item.description }}</strong></td>
-                    <td class="value">{{ item.filing_fees }}</td>
+                    <td class="value">${{ item.filing_fees }}</td>
                   </tr>
                 </table>
                 {% endfor %}
@@ -186,12 +182,12 @@
               </td>
             </tr>
             <tr>
-              <td><strong>Payment Invoice Number:</strong></td>
-              <td>{{ paymentInvoiceNumber }}</td>
+              <td><strong>Invoice Number:</strong></td>
+              <td>{{ payment_invoice_number }}</td>
             </tr>
             <tr>
-              <td><strong>Transaction ID:</strong></td>
-              <td>{{ transactionId }}</td>
+              <td><strong>Receipt Number:</strong></td>
+              <td>{{ receipt_number }}</td>
             </tr>
             <tr>
               <td colspan="2" class="watermark-cell">
@@ -207,17 +203,14 @@
     <tfoot>
       <tr class="bcgov-footer-row bcgov-blue-bg">
         <td></td>
-        <td colspan="2">
+        <td colspan="4">
           <span class="wordmark">BC Registries and Online Services</span>
-        </td>
-        <td class="align-right">
-          TST: 111362712
         </td>
       </tr>
       <tr class="bcgov-footer-row bcgov-gold-bg">
         <td></td>
         <td colspan="2">
-          Incorporation Number {{ incorporationNumber }}
+          Incorporation Number {{ incorporation_number }}
         </td>
         <td class="align-right">
           Page 1 of 1

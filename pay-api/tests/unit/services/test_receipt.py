@@ -19,8 +19,10 @@ Test-Suite to ensure that the Receipt Service is working as expected.
 
 from datetime import datetime
 
-from pay_api.models import Invoice, Payment, PaymentAccount
+from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
+from pay_api.services.payment_service import PaymentService
 from pay_api.services.receipt import Receipt as ReceiptService
+from pay_api.utils.enums import Status
 
 
 def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
@@ -41,6 +43,36 @@ def factory_invoice(payment_id: str, account_id: str):
                    invoice_status_code='DRAFT',
                    account_id=account_id,
                    total=0, created_by='test', created_on=datetime.now())
+
+
+def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees: int = 10, total: int = 10):
+    """Factory."""
+    return PaymentLineItem(
+        invoice_id=invoice_id,
+        fee_schedule_id=fee_schedule_id,
+        filing_fees=filing_fees,
+        total=total,
+        line_item_status_code=Status.CREATED.value,
+    )
+
+
+def factory_payment_transaction(
+        payment_id: str,
+        status_code: str = Status.DRAFT.value,
+        client_system_url: str = 'http://google.com/',
+        pay_system_url: str = 'http://google.com',
+        transaction_start_time: datetime = datetime.now(),
+        transaction_end_time: datetime = datetime.now(),
+):
+    """Factory."""
+    return PaymentTransaction(
+        payment_id=payment_id,
+        status_code=status_code,
+        client_system_url=client_system_url,
+        pay_system_url=pay_system_url,
+        transaction_start_time=transaction_start_time,
+        transaction_end_time=transaction_end_time,
+    )
 
 
 def test_receipt_saved_from_new(session):
@@ -82,3 +114,89 @@ def test_receipt_invalid_lookup(session):
 
     assert receipt is not None
     assert receipt.id is None
+
+
+def test_create_receipt_without_invoice(session):
+    """Try creating a receipt without invoice number."""
+    payment_account = factory_payment_account()
+    payment = factory_payment()
+    payment_account.save()
+    payment.save()
+    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice.save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+    transaction = factory_payment_transaction(payment.id)
+    transaction.save()
+
+    payment_request = {
+        'payment_info': {'method_of_payment': 'CC'},
+        'business_info': {
+            'business_identifier': 'CP1234',
+            'corp_type': 'CP',
+            'business_name': 'ABC Corp',
+            'contact_info': {
+                'city': 'Victoria',
+                'postal_code': 'V8P2P2',
+                'province': 'BC',
+                'address_line_1': '100 Douglas Street',
+                'country': 'CA',
+            },
+        },
+        'filing_info': {
+            'filing_types': [{'filing_type_code': 'OTADD', 'filing_description': 'TEST'}, {'filing_type_code': 'OTANN'}]
+        },
+    }
+
+    PaymentService.update_payment(payment.id, payment_request, 'test')
+    input_data = {
+        'corpNum': 'Pennsular Coop ',
+        'filingDateTime': '1999',
+        'fileName': 'coopser'
+    }
+    response = ReceiptService.create_receipt(payment.id, '', input_data)
+    assert response is not None
+
+
+def test_create_receipt_with_invoice(session):
+    """Try creating a receipt with invoice number."""
+    payment_account = factory_payment_account()
+    payment = factory_payment()
+    payment_account.save()
+    payment.save()
+    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice.save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+    transaction = factory_payment_transaction(payment.id)
+    transaction.save()
+
+    payment_request = {
+        'payment_info': {'method_of_payment': 'CC'},
+        'business_info': {
+            'business_identifier': 'CP1234',
+            'corp_type': 'CP',
+            'business_name': 'ABC Corp',
+            'contact_info': {
+                'city': 'Victoria',
+                'postal_code': 'V8P2P2',
+                'province': 'BC',
+                'address_line_1': '100 Douglas Street',
+                'country': 'CA',
+            },
+        },
+        'filing_info': {
+            'filing_types': [{'filing_type_code': 'OTADD', 'filing_description': 'TEST'}, {'filing_type_code': 'OTANN'}]
+        },
+    }
+
+    PaymentService.update_payment(payment.id, payment_request, 'test')
+    input_data = {
+        'corpNum': 'Pennsular Coop ',
+        'filingDateTime': '1999',
+        'fileName': 'coopser'
+    }
+    response = ReceiptService.create_receipt(payment.id, invoice.id, input_data)
+    assert response is not None
