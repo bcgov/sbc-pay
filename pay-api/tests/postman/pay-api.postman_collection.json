@@ -333,6 +333,72 @@
 				}
 			},
 			"response": []
+		},
+		{
+			"name": "Generate Receipt with Payment Identifier",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"corpNum\": \"CP1234\",\n    \"filingDateTime\": \"June 27, 2019\",\n    \"fileName\":\"director-change\"\n}"
+				},
+				"url": {
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/receipts",
+					"host": [
+						"{{pay-api-base-url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"payments",
+						"{{payment-identifier}}",
+						"receipts"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Generate Receipt with Payment Identifier and Invoice Identifier",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"corpNum\": \"CP1234\",\n    \"filingDateTime\": \"June 27, 2019\",\n    \"fileName\":\"director-change\"\n}"
+				},
+				"url": {
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/invoices/{{invoice_id}}/receipts",
+					"host": [
+						"{{pay-api-base-url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"payments",
+						"{{payment-identifier}}",
+						"invoices",
+						"{{invoice_id}}",
+						"receipts"
+					]
+				}
+			},
+			"response": []
 		}
 	],
 	"auth": {

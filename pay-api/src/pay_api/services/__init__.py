@@ -18,3 +18,4 @@ from .invoice import Invoice as InvoiceService
 from .paybc import PayBcService
 from .payment_service import PaymentService
 from .payment_transaction import PaymentTransaction as TransactionService
+from .receipt import Receipt as ReceiptService
