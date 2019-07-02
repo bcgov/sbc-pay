@@ -251,7 +251,12 @@
                         "key": "PAYBC_CLIENT_SECRET"
                       }
                     }
+                  },
+                  {
+                     "name": "REPORT_API_BASE_URL",
+                     "value": "https://report-api-dev.pathfinder.gov.bc.ca/api/v1/reports"
                   }
+
                 ],
                 "resources": {},
                 "livenessProbe": {
