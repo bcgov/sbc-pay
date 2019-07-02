@@ -15,12 +15,14 @@
 
 import base64
 import datetime
+import urllib.parse
 from typing import Any, Dict, Tuple
 
 from dateutil import parser
 from flask import current_app
 
 from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.services.invoice import Invoice
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import (
     DEFAULT_COUNTRY, DEFAULT_JURISDICTION, PAYBC_ADJ_ACTIVITY_NAME, PAYBC_BATCH_SOURCE, PAYBC_CUST_TRX_TYPE,
@@ -33,6 +35,18 @@ from .payment_line_item import PaymentLineItem
 
 class PaybcService(PaymentSystemService, OAuthService):
     """Service to manage PayBC integration."""
+
+    def get_payment_system_url(self, invoice: Invoice, return_url: str):
+        """Return the payment system url."""
+        current_app.logger.debug('<get_payment_system_url')
+
+        pay_system_url = current_app.config.get(
+            'PAYBC_PORTAL_URL') + f'?inv_number={invoice.invoice_number}&pbc_ref_number={invoice.reference_number}'
+        encoded_return_url = urllib.parse.quote(return_url, '')
+        pay_system_url += f'&redirect_uri={encoded_return_url}'
+
+        current_app.logger.debug('>get_payment_system_url')
+        return pay_system_url
 
     def get_payment_system_code(self):
         """Return PAYBC as the system code."""
@@ -131,19 +145,12 @@ class PaybcService(PaymentSystemService, OAuthService):
         if not receipt_number:  # Find all receipts for the site and then match with invoice number
             receipts_response = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
             for receipt in receipts_response.get('items'):
-                if receipt.get('invoices'):
-                    for invoice in receipt.get('invoices'):
-                        if invoice.get('invoice_number') == invoice_number:
-                            receipt_number = receipt.get('receipt_number')
-                            break
-                else:
-                    expanded_receipt = self.__get_receipt_by_number(access_token, receipt_url,
-                                                                    receipt.get('receipt_number'))
-                    for invoice in expanded_receipt.get('invoices'):
-                        if invoice.get('invoice_number') == invoice_number:
-                            return receipt.get('receipt_number'), parser.parse(
-                                expanded_receipt.get('receipt_date')), float(
-                                invoice.get('amount_applied'))
+                expanded_receipt = self.__get_receipt_by_number(access_token, receipt_url,
+                                                                receipt.get('receipt_number'))
+                for invoice in expanded_receipt.get('invoices'):
+                    if invoice.get('invoice_number') == invoice_number:
+                        return receipt.get('receipt_number'), parser.parse(
+                            expanded_receipt.get('receipt_date')), float(invoice.get('amount_applied'))
 
         if receipt_number:
             receipt_response = self.__get_receipt_by_number(access_token, receipt_url, receipt_number)
@@ -160,7 +167,7 @@ class PaybcService(PaymentSystemService, OAuthService):
     def __get_receipt_by_number(self, access_token: str = None, receipt_url: str = None, receipt_number: str = None):
         """Get receipt details by receipt number."""
         receipt_url = receipt_url + f'{receipt_number}/'
-        return self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+        return self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, True).json()
 
     def __create_party(self, access_token: str = None, party_name: str = None):
         """Create a party record in PayBC."""

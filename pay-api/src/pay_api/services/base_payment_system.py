@@ -16,6 +16,7 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Tuple
 
+from pay_api.services.invoice import Invoice
 from pay_api.services.payment_account import PaymentAccount
 
 from .payment_line_item import PaymentLineItem
@@ -51,6 +52,10 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     @abstractmethod
     def get_receipt(self, payment_account: PaymentAccount, receipt_number: str, invoice_number: str):
         """Get receipt from payment system."""
+
+    @abstractmethod
+    def get_payment_system_url(self, invoice: Invoice, return_url: str):
+        """Return the payment system portal URL for payment."""
 
     @abstractmethod
     def get_payment_system_code(self):

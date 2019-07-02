@@ -372,3 +372,20 @@ def test_transaction_find_by_payment_id(session):
     assert transaction is not None
     assert transaction.get('items') is not None
     assert transaction.get('items')[0].get('_links') is not None
+
+
+def test_no_existing_transaction(session):
+    """Assert that the payment is saved to the table."""
+    payment_account = factory_payment_account()
+    payment = factory_payment()
+    payment_account.save()
+    payment.save()
+    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice.save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    transaction = PaymentTransactionService.find_active_by_payment_id(payment.id)
+
+    assert transaction is None

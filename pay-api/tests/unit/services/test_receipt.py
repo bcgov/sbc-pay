@@ -27,8 +27,14 @@ from pay_api.utils.enums import Status
 
 def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
     """Factory."""
-    return PaymentAccount(corp_number=corp_number, corp_type_code=corp_type_code,
-                          payment_system_code=payment_system_code)
+    return PaymentAccount(
+        corp_number=corp_number,
+        corp_type_code=corp_type_code,
+        payment_system_code=payment_system_code,
+        party_number='11111',
+        account_number='4101',
+        site_number='29921',
+    )
 
 
 def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC', payment_status_code='DRAFT'):
@@ -42,7 +48,7 @@ def factory_invoice(payment_id: str, account_id: str):
     return Invoice(payment_id=payment_id,
                    invoice_status_code='DRAFT',
                    account_id=account_id,
-                   total=0, created_by='test', created_on=datetime.now())
+                   total=0, created_by='test', created_on=datetime.now(), invoice_number='10021')
 
 
 def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees: int = 10, total: int = 10):
@@ -151,7 +157,7 @@ def test_create_receipt_without_invoice(session):
 
     PaymentService.update_payment(payment.id, payment_request, 'test')
     input_data = {
-        'corpNum': 'Pennsular Coop ',
+        'corpName': 'Pennsular Coop ',
         'filingDateTime': '1999',
         'fileName': 'coopser'
     }
@@ -194,7 +200,7 @@ def test_create_receipt_with_invoice(session):
 
     PaymentService.update_payment(payment.id, payment_request, 'test')
     input_data = {
-        'corpNum': 'Pennsular Coop ',
+        'corpName': 'Pennsular Coop ',
         'filingDateTime': '1999',
         'fileName': 'coopser'
     }

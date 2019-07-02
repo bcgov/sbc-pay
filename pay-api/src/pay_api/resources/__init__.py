@@ -74,5 +74,4 @@ API.add_namespace(FEE_API, path='/fees')
 API.add_namespace(TRANSACTION_API, path='/payments/<int:payment_id>/transactions')
 API.add_namespace(INVOICE_API, path='/payments/<int:payment_id>/invoices')
 
-
 API.add_namespace(INVOICE_RECEIPT_API, path='/payments/<int:payment_id>')

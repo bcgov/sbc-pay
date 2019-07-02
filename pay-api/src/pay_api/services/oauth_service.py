@@ -11,13 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Service to invoke Rest services which uses OAuth 2.0 implementation."""
+"""Service to invoke Rest services."""
 import json
 
 import requests
 from flask import current_app
+from requests.adapters import HTTPAdapter  # pylint:disable=ungrouped-imports
+from urllib3.util.retry import Retry
 
 from pay_api.utils.enums import AuthHeaderType, ContentType
+
+RETRY_ADAPTER = HTTPAdapter(max_retries=Retry(total=3, backoff_factor=1, status_forcelist=[404, 500]))
 
 
 class OAuthService:
@@ -45,9 +49,10 @@ class OAuthService:
         return response
 
     @staticmethod
-    def get(endpoint, token, auth_header_type: AuthHeaderType, content_type: ContentType):
+    def get(endpoint, token, auth_header_type: AuthHeaderType, content_type: ContentType,
+            retry_on_failure: bool = False):
         """GET service."""
-        current_app.logger.debug('<post')
+        current_app.logger.debug('<GET')
 
         headers = {
             'Authorization': auth_header_type.value.format(token),
@@ -56,8 +61,11 @@ class OAuthService:
 
         current_app.logger.debug('Endpoint : {}'.format(endpoint))
         current_app.logger.debug('headers : {}'.format(headers))
-        response = requests.get(endpoint, headers=headers)
+        session = requests.Session()
+        if retry_on_failure:
+            session.mount(endpoint, RETRY_ADAPTER)
+        response = session.get(endpoint, headers=headers)
         current_app.logger.info('response : {}'.format(response.text))
         response.raise_for_status()
-        current_app.logger.debug('>post')
+        current_app.logger.debug('>GET')
         return response

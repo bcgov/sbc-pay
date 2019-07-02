@@ -83,7 +83,7 @@ def test_receipt_creation(session, client, jwt, app):
                     headers=headers)
 
     filing_data = {
-        'corpNum': 'CP1234',
+        'corpName': 'CP1234',
         'filingDateTime': 'June 27, 2019',
         'fileName': 'director-change'
     }
@@ -108,10 +108,51 @@ def test_receipt_creation_with_invoice(session, client, jwt, app):
     client.put(f'/api/v1/payments/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}',
                data=None, headers=headers)
     filing_data = {
-        'corpNum': 'CP1234',
+        'corpName': 'CP1234',
         'filingDateTime': 'June 27, 2019',
         'fileName': 'director-change'
     }
     rv = client.post(f'/api/v1/payments/{pay_id}/invoices/{inovice_id}/receipts', data=json.dumps(filing_data),
                      headers=headers)
     assert rv.status_code == 201
+
+
+def test_receipt_creation_with_invalid_request(session, client, jwt, app):
+    """Assert that the endpoint returns 400."""
+    token = jwt.create_jwt(get_claims(app_request=app), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post(f'/api/v1/payments', data=json.dumps(data), headers=headers)
+    pay_id = rv.json.get('id')
+    inovice_id = rv.json.get('invoices')[0].get('id')
+    payment_id = rv.json.get('id')
+    redirect_uri = 'http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd'
+    receipt_number = '123451'
+    rv = client.post(f'/api/v1/payments/{payment_id}/transactions?redirect_uri={redirect_uri}', data=None,
+                     headers=headers)
+    txn_id = rv.json.get('id')
+    client.put(f'/api/v1/payments/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}',
+               data=None, headers=headers)
+    filing_data = {
+        'corpName': 'CP1234'
+    }
+    rv = client.post(f'/api/v1/payments/{pay_id}/invoices/{inovice_id}/receipts', data=json.dumps(filing_data),
+                     headers=headers)
+    assert rv.status_code == 400
+
+
+def test_receipt_creation_with_invalid_identifiers(session, client, jwt, app):
+    """Assert that the endpoint returns 400."""
+    token = jwt.create_jwt(get_claims(app_request=app), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    payment_id = 1111
+    inovice_id = 2222
+    filing_data = {
+        'corpName': 'CP1234',
+        'filingDateTime': 'June 27, 2019',
+        'fileName': 'director-change'
+    }
+    rv = client.post(f'/api/v1/payments/{payment_id}/invoices/{inovice_id}/receipts', data=json.dumps(filing_data),
+                     headers=headers)
+    assert rv.status_code == 400

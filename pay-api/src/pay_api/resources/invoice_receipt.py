@@ -18,10 +18,10 @@ from http import HTTPStatus
 from flask import Response, current_app, jsonify, request
 from flask_restplus import Namespace, Resource, cors
 
-from pay_api import jwt as _jwt
 from pay_api.exceptions import BusinessException
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import ReceiptService
+from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.enums import Role
 from pay_api.utils.util import cors_preflight
 
@@ -38,11 +38,10 @@ class InvoiceReceipt(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
-    def post(payment_id, invoice_id =''):
+    def post(payment_id, invoice_id=''):
         """Create the Receipt for the Payment."""
         request_json = request.get_json()
         current_app.logger.info('<Receipt.post')
-        print("--------***",payment_id,invoice_id)
         try:
             valid_format, errors = schema_utils.validate(request_json, 'payment_receipt_input')
             if not valid_format:
