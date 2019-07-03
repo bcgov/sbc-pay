@@ -183,7 +183,7 @@ if( run_pipeline ) {
 
             '''
           } catch (Exception e) {
-              echo "EXCEPTION: ${e}"report-microservices
+              echo "EXCEPTION: ${e}"
           }
         }
       }
