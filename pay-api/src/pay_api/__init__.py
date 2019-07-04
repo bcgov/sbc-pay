@@ -19,33 +19,22 @@ This module is the API for the Legal Entity system.
 import os
 
 from flask import Flask
-from flask_jwt_oidc import JwtManager
-from sbc_common_components.tracing.api_tracer import ApiTracer
-from sbc_common_components.tracing.api_tracing import ApiTracing
 
 import config
 from config import _Config
 from pay_api.models import db, ma
+from pay_api.utils.auth import jwt
 from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
 
 
 setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))  # important to do this first
 
-# lower case name as used by convention in most Flask apps
-jwt = JwtManager()  # pylint: disable=invalid-name
-tracing = None  # pylint: disable=invalid-name
-
 
 def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     """Return a configured Flask App using the Factory method."""
     app = Flask(__name__)
     app.config.from_object(config.CONFIGURATION[run_mode])
-
-    # initialize tracer
-    api_tracer = ApiTracer('Payment Services')
-    global tracing  # pylint: disable=global-statement,invalid-name
-    tracing = ApiTracing(api_tracer.tracer)
 
     from pay_api.resources import API_BLUEPRINT, OPS_BLUEPRINT
 

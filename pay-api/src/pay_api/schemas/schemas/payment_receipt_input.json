@@ -5,17 +5,17 @@
   	 "title": "payment_receipt_input",
    "$comment": "schema for receipt generation when invoking with only payment id",
     "required": [
-     "corpNum",
+     "corpName",
      "filingDateTime"
    ],
    "properties": {
-     "corpNum": {
+     "corpName": {
        "$id": "#/properties/corpName",
        "type": "string",
        "title": "The corpName Schema",
        "default": "",
        "examples": [
-         "CP1234"
+         "ABC Co-op"
        ],
        "pattern": "^(.*)$"
      },

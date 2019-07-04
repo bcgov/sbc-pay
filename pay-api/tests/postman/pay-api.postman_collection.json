@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "58ca385b-25ba-46e0-bb39-7518020d47a0",
+		"_postman_id": "74062391-038e-4796-86bf-7e33e866dc03",
 		"name": "pay-api",
 		"description": "version=1.0.0",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -134,7 +134,7 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/invoices/152",
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/invoices",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
@@ -143,8 +143,7 @@
 						"v1",
 						"payments",
 						"{{payment-identifier}}",
-						"invoices",
-						"152"
+						"invoices"
 					]
 				}
 			},
@@ -188,11 +187,8 @@
 		},
 		{
 			"name": "Update Payment Record ",
-			"protocolProfileBehavior": {
-				"disableBodyPruning": true
-			},
 			"request": {
-				"method": "GET",
+				"method": "PUT",
 				"header": [
 					{
 						"key": "Content-Type",
@@ -206,7 +202,7 @@
 					"raw": "{\n  \"payment_info\": {\n    \"method_of_payment\": \"CC\"\n  },\n  \"business_info\": {\n    \"business_identifier\": \"cp0000019\",\n    \"corp_type\": \"CP\",\n    \"business_name\": \"ABC Corp\",\n    \"contact_info\": {\n      \"city\": \"Victoria\",\n      \"postal_code\": \"V8P2P2\",\n      \"province\": \"BC\",\n      \"address_line_1\": \"100 Douglas Street\",\n      \"country\": \"CA\"\n    }\n  },\n  \"filing_info\": {\n    \"filing_types\": [\n      {\n        \"filing_type_code\": \"OTCDR\",\n    \t\"filing_description\":\"Change of Directors - Director A\"\n      },\n      {\n        \"filing_type_code\": \"OTANN\"\n      }\n      \n    ]\n  }\n}"
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/transactions",
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
@@ -214,8 +210,7 @@
 						"api",
 						"v1",
 						"payments",
-						"{{payment-identifier}}",
-						"transactions"
+						"{{payment-identifier}}"
 					]
 				}
 			},
@@ -223,11 +218,8 @@
 		},
 		{
 			"name": "Create a Transaction Record",
-			"protocolProfileBehavior": {
-				"disableBodyPruning": true
-			},
 			"request": {
-				"method": "GET",
+				"method": "POST",
 				"header": [],
 				"body": {
 					"mode": "raw",

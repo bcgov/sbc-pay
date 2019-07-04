@@ -13,7 +13,6 @@
 # limitations under the License.
 """Service to manage Fee Calculation."""
 
-import urllib.parse
 import uuid
 from datetime import datetime
 from typing import Dict
@@ -28,7 +27,7 @@ from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
-from pay_api.utils.enums import PaymentSystem, Status
+from pay_api.utils.enums import Status
 from pay_api.utils.errors import Error
 
 from .invoice import InvoiceModel
@@ -204,21 +203,15 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
     def build_pay_system_url(payment: Payment, transaction_id: uuid):
         """Build pay system url which will be used to redirect to the payment system."""
         current_app.logger.debug('<build_pay_system_url')
-        if payment.payment_system_code == PaymentSystem.PAYBC.value:
-            invoice = InvoiceModel.find_by_payment_id(payment.id)
-
-            pay_system_url = current_app.config.get('PAYBC_PORTAL_URL') + '?inv_number={}&pbc_ref_number={}'.format(
-                invoice.invoice_number, invoice.reference_number
-            )
-
-            pay_web_transaction_url = current_app.config.get('AUTH_WEB_PAY_TRANSACTION_URL')
-            return_url = urllib.parse.quote(
-                f'{pay_web_transaction_url}/returnpayment/{payment.id}/transaction/{transaction_id}', ''
-            )
-            pay_system_url += f'&redirect_uri={return_url}'
+        pay_system_service: PaymentSystemService = PaymentSystemFactory.create(
+            payment_system=payment.payment_system_code
+        )
+        invoice = InvoiceModel.find_by_payment_id(payment.id)
+        pay_web_transaction_url = current_app.config.get('AUTH_WEB_PAY_TRANSACTION_URL')
+        return_url = f'{pay_web_transaction_url}/returnpayment/{payment.id}/transaction/{transaction_id}'
 
         current_app.logger.debug('>build_pay_system_url')
-        return pay_system_url
+        return pay_system_service.get_payment_system_url(Invoice.populate(invoice), return_url)
 
     @staticmethod
     def find_by_id(payment_identifier: int, transaction_id: uuid):
@@ -301,9 +294,12 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
             elif 0 < invoice.paid < invoice.total:
                 invoice.invoice_status_code = Status.PARTIAL.value
             invoice.save()
+            transaction_dao.status_code = Status.COMPLETED.value
+        else:
+            transaction_dao.status_code = Status.FAILED.value
 
         transaction_dao.transaction_end_time = datetime.now()
-        transaction_dao.status_code = Status.COMPLETED.value
+
         transaction_dao = transaction_dao.save()
 
         transaction = PaymentTransaction()
