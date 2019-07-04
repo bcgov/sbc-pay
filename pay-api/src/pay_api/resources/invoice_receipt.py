@@ -48,6 +48,7 @@ class InvoiceReceipt(Resource):
                 return jsonify({'code': 'PAY999', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
 
             pdf = ReceiptService.create_receipt(payment_id, invoice_id, request_json)
+            current_app.logger.info('<InvoiceReceipt received pdf')
             response = Response(pdf, 201)
             file_name = request_json.get('fileName')
             file_name = 'Coops-Filing' if not file_name else file_name
