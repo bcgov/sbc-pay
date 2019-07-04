@@ -1,0 +1,66 @@
+{
+	"info": {
+		"_postman_id": "7aabcf9c-8320-4c68-b299-11c531331492",
+		"name": "pdf-create",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Create PDF",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"template_vars\": {\n        \"title\": \"Annual-report\",\n        \"formFiled\": \"BC Annual registies\",\n        \"incorporationNumber\": \"CP\",\n        \"businessNumber\": \"business number not avaialble\",\n        \"societyName\": \"society\",\n        \"filingDateTime\": \"may 23, 2019\",\n        \"line_items\": [\n            {\n                \"description\": \"TEST\",\n                \"filing_fees\": 20\n            },\n            {\n                \"description\": \"Annual Report\",\n                \"filing_fees\": 30\n            },\n            {\n                \"description\": \"total\",\n                \"filing_fees\": 50\n            }\n        ],\n        \"fee\": \"$40.0\",\n        \"paymentMethod\": \"Credit Card\",\n        \"paymentInvoiceNumber\": \"REGI000001011842\",\n        \"receiptNumber\": \"1003276\",\n        \"creditCardType\": \"visa\",\n        \"creditCardNumber\": \"XXXXXXXXXXXXXX\",\n        \"authorisationNumber\": \"TEST\"\n    },\n    \"template_name\": \"payment_receipt_coops\",\n    \"report_name\": \"payment_receipt_coops\"\n}"
+				},
+				"url": {
+					"raw": "https://report-api-dev.pathfinder.gov.bc.ca/api/v1/reports",
+					"protocol": "https",
+					"host": [
+						"report-api-dev",
+						"pathfinder",
+						"gov",
+						"bc",
+						"ca"
+					],
+					"path": [
+						"api",
+						"v1",
+						"reports"
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "9ec28d1b-bef9-4f79-a975-5c966a283b99",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "64c84eb3-d8c1-4963-9ee0-f8c88fc33e6b",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}

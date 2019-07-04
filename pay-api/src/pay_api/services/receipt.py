@@ -18,6 +18,8 @@ from typing import Any, Dict, Tuple
 
 from flask import current_app
 
+from pay_api.exceptions import BusinessException
+from pay_api.utils.errors import Error
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import AuthHeaderType, ContentType
 
@@ -136,7 +138,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def create_receipt(payment_identifier: str, invoice_identifier: str, filing_data: Tuple[Dict[str, Any]]):
         """Create receipt."""
-        current_app.logger.debug('<create receipt', invoice_identifier)
+        current_app.logger.debug('<create receipt initiated', payment_identifier, invoice_identifier)
         receipt_dict = {
             'template_vars': {
                 'line_items': [],
@@ -155,6 +157,9 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
 
         template_vars['incorporation_number'] = invoice_data['created_by']
         template_vars['payment_invoice_number'] = invoice_data['invoice_number']
+        if 'receipts' not in invoice_data:
+            raise BusinessException(Error.PAY999)
+
         template_vars['receipt_number'] = invoice_data['receipts'][0]['receipt_number']
         for line_item in invoice_data['line_items']:
             template_vars['line_items'].append(
@@ -170,7 +175,10 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
                 'filing_fees': invoice_data['total']
             }
         )
+        current_app.logger.debug('<OAuthService invoked from receipt.py', current_app.config.get('REPORT_API_BASE_URL'))
 
         pdf_response = OAuthService.post(current_app.config.get('REPORT_API_BASE_URL'), '', AuthHeaderType.BEARER,
                                          ContentType.JSON, receipt_dict)
+        current_app.logger.debug('<OAuthService responded to receipt.py')
+
         return pdf_response
