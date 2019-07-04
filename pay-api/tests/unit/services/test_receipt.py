@@ -19,6 +19,9 @@ Test-Suite to ensure that the Receipt Service is working as expected.
 
 from datetime import datetime
 
+import pytest
+
+from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
 from pay_api.services.payment_service import PaymentService
 from pay_api.services.receipt import Receipt as ReceiptService
@@ -206,3 +209,46 @@ def test_create_receipt_with_invoice(session):
     }
     response = ReceiptService.create_receipt(payment.id, invoice.id, input_data)
     assert response is not None
+
+
+def test_create_receipt_with_no_receipt(session):
+    """Try creating a receipt with invoice number."""
+    payment_account = factory_payment_account()
+    payment = factory_payment()
+    payment_account.save()
+    payment.save()
+    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice.save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    payment_request = {
+        'payment_info': {'method_of_payment': 'CC'},
+        'business_info': {
+            'business_identifier': 'CP1234',
+            'corp_type': 'CP',
+            'business_name': 'ABC Corp',
+            'contact_info': {
+                'city': 'Victoria',
+                'postal_code': 'V8P2P2',
+                'province': 'BC',
+                'address_line_1': '100 Douglas Street',
+                'country': 'CA',
+            },
+        },
+        'filing_info': {
+            'filing_types': [{'filing_type_code': 'OTADD', 'filing_description': 'TEST'}, {'filing_type_code': 'OTANN'}]
+        },
+    }
+
+    PaymentService.update_payment(payment.id, payment_request, 'test')
+    input_data = {
+        'corpName': 'Pennsular Coop ',
+        'filingDateTime': '1999',
+        'fileName': 'coopser'
+    }
+
+    with pytest.raises(BusinessException) as excinfo:
+        ReceiptService.create_receipt(payment.id, '', input_data)
+    assert excinfo.type == BusinessException
