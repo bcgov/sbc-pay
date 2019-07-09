@@ -19,9 +19,9 @@ from typing import Any, Dict, Tuple
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
-from pay_api.utils.errors import Error
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import AuthHeaderType, ContentType
+from pay_api.utils.errors import Error
 
 from .invoice import Invoice
 from .oauth_service import OAuthService

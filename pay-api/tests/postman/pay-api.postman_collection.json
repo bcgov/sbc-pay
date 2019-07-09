@@ -311,7 +311,7 @@
 		{
 			"name": "Update Transaction against a payment",
 			"request": {
-				"method": "PUT",
+				"method": "PATCH",
 				"header": [],
 				"body": {
 					"mode": "raw",

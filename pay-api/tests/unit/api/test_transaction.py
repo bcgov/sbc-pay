@@ -288,7 +288,7 @@ def test_transaction_put(session, client, jwt, app):
     rv = client.post(f'/api/v1/payments/{payment_id}/transactions?redirect_uri={redirect_uri}', data=None,
                      headers=headers)
     txn_id = rv.json.get('id')
-    rv = client.put(f'/api/v1/payments/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}', data=None,
+    rv = client.patch(f'/api/v1/payments/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}', data=None,
                     headers=headers)
     assert rv.status_code == 200
 
@@ -333,7 +333,7 @@ def test_transaction_put_with_no_receipt(session, client, jwt, app):
     rv = client.post(f'/api/v1/payments/{payment_id}/transactions?redirect_uri={redirect_uri}', data=None,
                      headers=headers)
     txn_id = rv.json.get('id')
-    rv = client.put(f'/api/v1/payments/{payment_id}/transactions/{txn_id}', data=None,
+    rv = client.patch(f'/api/v1/payments/{payment_id}/transactions/{txn_id}', data=None,
                     headers=headers)
     assert rv.status_code == 200
 
@@ -379,10 +379,10 @@ def test_transaction_put_completed_payment(session, client, jwt, app):
                      headers=headers)
 
     txn_id = rv.json.get('id')
-    rv = client.put(f'/api/v1/payments/{payment_id}/transactions/{txn_id}', data=None,
+    rv = client.patch(f'/api/v1/payments/{payment_id}/transactions/{txn_id}', data=None,
                     headers=headers)
 
-    rv = client.put(f'/api/v1/payments/{payment_id}/transactions/{txn_id}', data=None,
+    rv = client.patch(f'/api/v1/payments/{payment_id}/transactions/{txn_id}', data=None,
                     headers=headers)
 
     assert rv.status_code == 400
