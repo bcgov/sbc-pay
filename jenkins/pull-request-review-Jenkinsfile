@@ -387,32 +387,34 @@ if( run_pipeline ) {
         }
 
         stage("Quality Gate - API") {
-          def qualityJson = sh(returnStdout: true,
-                              script: "curl \"${sonarqubeUrl}/api/qualitygates/project_status?projectKey=${sonarProjectKey}\"")
-          echo qualityJson
+          timeout(time: 2, unit: 'MINUTES') {
+            def qualityJson = sh(returnStdout: true,
+                                script: "curl \"${sonarqubeUrl}/api/qualitygates/project_status?projectKey=${sonarProjectKey}\"")
+            echo qualityJson
 
-          def quality = jsonParse(qualityJson)
+            def quality = jsonParse(qualityJson)
 
-          if (quality["projectStatus"]["status"] == 'OK' || quality["projectStatus"]["status"] == 'WARN') {
+            if (quality["projectStatus"]["status"] == 'OK' || quality["projectStatus"]["status"] == 'WARN') {
 
-            if (quality["projectStatus"]["status"] == 'WARN') {
-              rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) quality check get Warning status!! Please check it out. " + "${sonarqubeUrl}" + "/dashboard?id=" + "${sonarProjectKey}" )
+              if (quality["projectStatus"]["status"] == 'WARN') {
+                rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) quality check get Warning status!! Please check it out. " + "${sonarqubeUrl}" + "/dashboard?id=" + "${sonarProjectKey}" )
+              }
+              stage_status = 'success'
+              stage_description = 'Quality check succeeded!'
+              rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review done!! Please code review if you are available. " + "${REPO_URL}" + "/pull/" + "${env.CHANGE_ID}" )
+            } else {
+              stage_status = 'error'
+              stage_description = 'Quality check failed!'
+              rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review quality check failed!! " + "${sonarqubeUrl}" + "/dashboard?id=" + "${sonarProjectKey}")
             }
-            stage_status = 'success'
-            stage_description = 'Quality check succeeded!'
-            rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review done!! Please code review if you are available. " + "${REPO_URL}" + "/pull/" + "${env.CHANGE_ID}" )
-          } else {
-            stage_status = 'error'
-            stage_description = 'Quality check failed!'
-            rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "Pull Request (${env.BRANCH_NAME}) Review quality check failed!! " + "${sonarqubeUrl}" + "/dashboard?id=" + "${sonarProjectKey}")
-          }
 
-          pullrequestStatus("${env.GITHUB_TOKEN}",
-                            stage_status,
-                            "${sonarqubeUrl}" + "/dashboard?id=" + "${sonarProjectKey}",
-                            'continuous-integration/QualityCheck',
-                            stage_description,
-                            "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
+            pullrequestStatus("${env.GITHUB_TOKEN}",
+                              stage_status,
+                              "${sonarqubeUrl}" + "/dashboard?id=" + "${sonarProjectKey}",
+                              'continuous-integration/QualityCheck-' + "${apiApp}",
+                              stage_description,
+                              "${GITHUB_API_URL}" + '/statuses/' + "${LAST_COMMIT_SHA}")
+          }
         }
       }
     }
