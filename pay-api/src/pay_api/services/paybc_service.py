@@ -85,7 +85,7 @@ class PaybcService(PaymentSystemService, OAuthService):
                 {
                     'line_number': index,
                     'line_type': PAYBC_LINE_TYPE,
-                    'memo_line_name': current_app.config.get('PAYBC_MEMO_LINE_NAME'),
+                    'memo_line_name': 'Test Memo Line',
                     'description': line_item.description,
                     'attribute1': line_item.description,
                     'unit_price': line_item.total,
