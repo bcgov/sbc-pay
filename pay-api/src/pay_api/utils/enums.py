@@ -47,6 +47,7 @@ class PaymentSystem(Enum):
     """Payment System Codes."""
 
     PAYBC = 'PAYBC'
+    BCOL = 'BCOL'
 
 
 class Role(Enum):
@@ -55,5 +56,5 @@ class Role(Enum):
     BASIC = 'basic'
     PREMIUM = 'premium'
     STAFF = 'staff'
-    VIEWER = 'viewer'
-    EDITOR = 'editor'
+    VIEWER = 'view'
+    EDITOR = 'edit'

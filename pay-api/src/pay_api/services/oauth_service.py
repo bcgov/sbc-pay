@@ -21,7 +21,8 @@ from urllib3.util.retry import Retry
 
 from pay_api.utils.enums import AuthHeaderType, ContentType
 
-RETRY_ADAPTER = HTTPAdapter(max_retries=Retry(total=3, backoff_factor=1, status_forcelist=[404, 500]))
+
+RETRY_ADAPTER = HTTPAdapter(max_retries=Retry(total=5, backoff_factor=1, status_forcelist=[404, 500]))
 
 
 class OAuthService:

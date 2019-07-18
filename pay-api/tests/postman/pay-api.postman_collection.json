@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "74062391-038e-4796-86bf-7e33e866dc03",
+		"_postman_id": "3005cbcc-a6fa-4dab-bdb5-4e9185f46fe4",
 		"name": "pay-api",
 		"description": "version=1.0.0",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
@@ -311,7 +311,7 @@
 		{
 			"name": "Update Transaction against a payment",
 			"request": {
-				"method": "PUT",
+				"method": "PATCH",
 				"header": [],
 				"body": {
 					"mode": "raw",
@@ -395,6 +395,43 @@
 						"invoices",
 						"{{invoice_id}}",
 						"receipts"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "POC  - BCOL - Verify User",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true
+			},
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"name": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"userId\":\"pc25020\",\n\t\"userKey\":\"3065\"\n}"
+				},
+				"url": {
+					"raw": "{{pay-api-base-url}}/api/v1/bcol/accounts/180670/users/pb25020",
+					"host": [
+						"{{pay-api-base-url}}"
+					],
+					"path": [
+						"api",
+						"v1",
+						"bcol",
+						"accounts",
+						"180670",
+						"users",
+						"pb25020"
 					]
 				}
 			},

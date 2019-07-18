@@ -65,8 +65,8 @@ class Transaction(Resource):
         return jsonify(response), status
 
 
-@cors_preflight('PUT,GET')
-@API.route('/<uuid:transaction_id>', methods=['GET', 'PUT', 'OPTIONS'])
+@cors_preflight('PATCH,GET')
+@API.route('/<uuid:transaction_id>', methods=['GET', 'PATCH', 'OPTIONS'])
 class Transactions(Resource):
     """Endpoint resource to get transaction."""
 
@@ -90,7 +90,7 @@ class Transactions(Resource):
     @cors.crossdomain(origin='*')
     @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
     @_tracing.trace()
-    def put(payment_id, transaction_id):
+    def patch(payment_id, transaction_id):
         """Update the transaction record by querying payment system."""
         current_app.logger.info(
             f'<Transaction.post for payment : {payment_id}, and transaction {transaction_id}')

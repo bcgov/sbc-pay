@@ -26,7 +26,7 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import (
     DEFAULT_COUNTRY, DEFAULT_JURISDICTION, PAYBC_ADJ_ACTIVITY_NAME, PAYBC_BATCH_SOURCE, PAYBC_CUST_TRX_TYPE,
-    PAYBC_LINE_TYPE, PAYBC_MEMO_LINE_NAME, PAYBC_TERM_NAME)
+    PAYBC_LINE_TYPE, PAYBC_TERM_NAME)
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem
 
 from .oauth_service import OAuthService
@@ -85,7 +85,7 @@ class PaybcService(PaymentSystemService, OAuthService):
                 {
                     'line_number': index,
                     'line_type': PAYBC_LINE_TYPE,
-                    'memo_line_name': PAYBC_MEMO_LINE_NAME,
+                    'memo_line_name': current_app.config.get('PAYBC_MEMO_LINE_NAME'),
                     'description': line_item.description,
                     'attribute1': line_item.description,
                     'unit_price': line_item.total,

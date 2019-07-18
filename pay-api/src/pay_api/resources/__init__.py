@@ -23,6 +23,7 @@ That are used to expose operational health information about the service, and me
 from flask import Blueprint
 from flask_restplus import Api
 
+from .bcol_profile import API as BCOL_API
 from .fee import API as FEE_API
 from .invoice import API as INVOICE_API
 from .invoice_receipt import API as INVOICE_RECEIPT_API
@@ -75,3 +76,5 @@ API.add_namespace(TRANSACTION_API, path='/payments/<int:payment_id>/transactions
 API.add_namespace(INVOICE_API, path='/payments/<int:payment_id>/invoices')
 
 API.add_namespace(INVOICE_RECEIPT_API, path='/payments/<int:payment_id>')
+
+API.add_namespace(BCOL_API, path='/bcol/accounts/<string:account_id>/users/<string:user_id>')

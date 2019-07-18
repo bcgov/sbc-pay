@@ -79,7 +79,7 @@ def test_receipt_creation(session, client, jwt, app):
     rv = client.post(f'/api/v1/payments/{payment_id}/transactions?redirect_uri={redirect_uri}', data=None,
                      headers=headers)
     txn_id = rv.json.get('id')
-    rv = client.put(f'/api/v1/payments/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}', data=None,
+    rv = client.patch(f'/api/v1/payments/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}', data=None,
                     headers=headers)
 
     filing_data = {
@@ -105,7 +105,7 @@ def test_receipt_creation_with_invoice(session, client, jwt, app):
     rv = client.post(f'/api/v1/payments/{payment_id}/transactions?redirect_uri={redirect_uri}', data=None,
                      headers=headers)
     txn_id = rv.json.get('id')
-    client.put(f'/api/v1/payments/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}',
+    client.patch(f'/api/v1/payments/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}',
                data=None, headers=headers)
     filing_data = {
         'corpName': 'CP1234',
@@ -131,7 +131,7 @@ def test_receipt_creation_with_invalid_request(session, client, jwt, app):
     rv = client.post(f'/api/v1/payments/{payment_id}/transactions?redirect_uri={redirect_uri}', data=None,
                      headers=headers)
     txn_id = rv.json.get('id')
-    client.put(f'/api/v1/payments/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}',
+    client.patch(f'/api/v1/payments/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}',
                data=None, headers=headers)
     filing_data = {
         'corpName': 'CP1234'
