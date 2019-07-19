@@ -83,7 +83,7 @@
         }
       },
       "data": {
-        "REPORT_API_BASE_URL": "${REPORT_API_NAME}-${TAG_NAME}.pathfinder.gov.bc.ca/api/v1/reports"
+        "REPORT_API_BASE_URL": "https://${REPORT_API_NAME}-${TAG_NAME}.pathfinder.gov.bc.ca/api/v1/reports"
       }
     }
   ],
