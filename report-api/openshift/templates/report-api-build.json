@@ -23,7 +23,9 @@
       "metadata": {
         "name": "${NAME}",
         "labels": {
-          "app": "${NAME}"
+          "app": "${NAME}",
+          "app-group": "${APP_GROUP}",
+          "template": "${NAME}-build"
         }
       },
       "spec": {
@@ -64,11 +66,18 @@
       "value": "report-api"
     },
     {
+      "name": "APP_GROUP",
+      "displayName": "App Group",
+      "description": "The name assigned to all of the deployments in this project.",
+      "required": true,
+      "value": "sbc-pay"
+    },
+    {
       "name": "GIT_REPO_URL",
       "displayName": "Git Repo URL",
       "description": "The URL to your GIT repo, don't use the this default unless your just experimenting.",
       "required": true,
-      "value": "https://github.com/bcgov/sbc-pay"
+      "value": "https://github.com/bcgov/sbc-pay.git"
     },
     {
       "name": "GIT_REF",
@@ -96,7 +105,7 @@
       "displayName": "Source Image Name Space",
       "required": true,
       "description": "The name space of the  source image.",
-      "value": "openshift"
+      "value": "d7eovc-tools"
     },
     {
       "name": "SOURCE_IMAGE_NAME",
@@ -110,7 +119,7 @@
       "displayName": "Source Image Tag",
       "required": true,
       "description": "The tag of the source image.",
-      "value": "3.6"
+      "value": "3.7"
     },
     {
       "name": "OUTPUT_IMAGE_TAG",
@@ -119,7 +128,7 @@
       "required": true,
       "value": "latest"
     },
-     {
+    {
       "name": "DOCKER_FILE_PATH",
       "displayName": "Docker File Path",
       "description": "The path to the docker file defining the build.",
