@@ -361,7 +361,7 @@
       "displayName": "Database Name for unit testing",
       "description": "A valid database name for unit testing used by the service.",
       "required": true,
-      "value": "pay-testdb"
+      "value": "pay_testdb"
     },
     {
       "name": "DATABASE_TEST_HOST",
