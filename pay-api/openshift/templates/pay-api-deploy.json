@@ -389,6 +389,15 @@
                         "key": "AUTH_WEB_PAY_TRANSACTION_URL"
                       }
                     }
+                  },
+                  {
+                    "name": "POD_TESTING",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${NAME}-${TAG_NAME}-config",
+                        "key": "POD_TESTING"
+                      }
+                    }
                   }
                 ],
                 "resources": {

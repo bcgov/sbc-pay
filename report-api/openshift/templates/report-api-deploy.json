@@ -74,7 +74,17 @@
                     "protocol": "TCP"
                   }
                 ],
-                "env": [],
+                "env": [
+                  {
+                    "name": "POD_TESTING",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${NAME}-${TAG_NAME}-config",
+                        "key": "POD_TESTING"
+                      }
+                    }
+                  }
+                ],
                 "resources": {
                   "requests": {
                     "cpu": "${CPU_REQUEST}",
