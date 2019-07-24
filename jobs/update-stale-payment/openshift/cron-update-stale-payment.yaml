@@ -218,7 +218,7 @@ parameters:
     displayName: Name
     description: "The name assigned to all of the OpenShift resources associated to the\nserver instance."
     required: true
-    value: pay-api
+    value: cron-update-stale-payment
   -
     name: APP_GROUP
     displayName: 'App Group'
