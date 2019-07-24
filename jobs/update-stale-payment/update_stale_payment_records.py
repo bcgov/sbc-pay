@@ -80,7 +80,7 @@ def run():
     application.logger.debug('Ran Batch Job--')
 
     application.app_context().push()
-    stale_transactions = PaymentTransactionModel.find_stale_records(hours=1)
+    stale_transactions = PaymentTransactionModel.find_stale_records(hours=4)
     if len(stale_transactions) == 0:
         application.logger.info(f' Job Ran at {datetime.datetime.now()}.But No records found!')
     for transaction in stale_transactions:
