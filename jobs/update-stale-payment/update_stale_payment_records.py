@@ -85,10 +85,10 @@ def run():
         application.logger.info(f' Job Ran at {datetime.datetime.now()}.But No records found!')
     for transaction in stale_transactions:
         try:
-            application.logger.info("Job found records.payment_id:",transaction.payment_id,"transaction.id:",transaction.id)
+            application.logger.debug('Job found records.Payment Id: {}, Transaction Id : {}'.format(transaction.payment_id, transaction.id))
             TransactionService.update_transaction(transaction.payment_id, transaction.id, '')
-            application.logger.info("Job updated records.payment_id:", transaction.payment_id, "transaction.id:",
-                                    transaction.id)
+            application.logger.debug(
+                'Job Updated records.Payment Id: {}, Transaction Id : {}'.format(transaction.payment_id, transaction.id))
         except BusinessException as err:  # just catch and continue .Don't stop
             application.logger.error('Error on update_transaction')
             application.logger.error(err)
