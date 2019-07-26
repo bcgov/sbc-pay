@@ -30,7 +30,7 @@ class PaymentTransaction(db.Model, BaseModel):  # pylint: disable=too-few-public
     __tablename__ = 'payment_transaction'
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
+    status_code = db.Column(db.String(20), ForeignKey('status_code.code'), nullable=False)
     payment_id = db.Column(db.Integer, ForeignKey('payment.id'), nullable=False)
     client_system_url = db.Column(db.String(500), nullable=False)
     pay_system_url = db.Column(db.String(500), nullable=True)
