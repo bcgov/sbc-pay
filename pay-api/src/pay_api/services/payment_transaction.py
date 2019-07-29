@@ -331,7 +331,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         if transaction_dao.status_code == Status.COMPLETED.value:
             status_code = payment.payment_status_code
         else:
-            status_code = f'TRANSACTION_{transaction_dao.status_code}'
+            status_code = 'TRANSACTION_FAILED'
 
         payload = {
             'paymentToken': {
