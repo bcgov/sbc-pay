@@ -4,7 +4,7 @@
 # Testing
 pytest<4.1
 pytest-mock
-pytest-cov
+requests
 pyhamcrest
 
 # Lint and code style
@@ -19,4 +19,3 @@ autopep8
 coverage
 pylint
 pylint-flask
-

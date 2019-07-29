@@ -13,15 +13,17 @@
 # limitations under the License.
 """Model to handle all operations related to Payment Transaction."""
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from marshmallow import fields
 from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 
+from pay_api.utils.enums import Status
 from .base_model import BaseModel
 from .base_schema import BaseSchema
 from .db import db, ma
+
 
 
 class PaymentTransaction(db.Model, BaseModel):  # pylint: disable=too-few-public-methods
@@ -38,6 +40,7 @@ class PaymentTransaction(db.Model, BaseModel):  # pylint: disable=too-few-public
     transaction_start_time = db.Column(db.DateTime, default=datetime.today(), nullable=False)
     transaction_end_time = db.Column(db.DateTime, default=datetime.today(), nullable=True)
 
+
     @classmethod
     def find_by_payment_id(cls, payment_id: int):
         """Return Payment Transactions by payment identifier."""
@@ -47,6 +50,15 @@ class PaymentTransaction(db.Model, BaseModel):  # pylint: disable=too-few-public
     def find_by_id_and_payment_id(cls, identifier: uuid, payment_id: int):
         """Return Payment Transactions by payment identifier."""
         return cls.query.filter_by(payment_id=payment_id).filter_by(id=identifier).one_or_none()
+
+    @classmethod
+    def find_stale_records(cls, days: int = 0, hours: int = 0, minutes: int = 0):
+        """Return old records who elapsed a certain time and is not complete
+        Used in the batch job to find orphan records which are untouched for a time"""
+        oldest_transaction_time = datetime.now() - (timedelta(days=days, hours=hours, minutes=minutes))
+        completed_status = [Status.COMPLETED.value, Status.CANCELLED.value, Status.FAILED.value]
+        return cls.query.filter(PaymentTransaction.status_code.notin_(completed_status)).\
+            filter(PaymentTransaction.transaction_start_time < oldest_transaction_time).all()
 
 
 class PaymentTransactionSchema(BaseSchema):  # pylint: disable=too-many-ancestors

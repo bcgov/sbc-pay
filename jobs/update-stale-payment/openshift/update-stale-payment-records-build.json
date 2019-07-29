@@ -3,7 +3,7 @@
   "apiVersion": "v1",
   "metadata": {
     "annotations": {
-      "description": "Build template for a report-api server.",
+      "description": "Build template for a update-stale-payment.",
       "tags": "flask",
       "iconClass": "icon-python"
     },
@@ -23,9 +23,7 @@
       "metadata": {
         "name": "${NAME}",
         "labels": {
-          "app": "${NAME}",
-          "app-group": "${APP_GROUP}",
-          "template": "${NAME}-build"
+          "app": "${NAME}"
         }
       },
       "spec": {
@@ -38,9 +36,14 @@
           "contextDir": "${SOURCE_CONTEXT_DIR}"
         },
         "strategy": {
-          "type": "Docker",
-          "dockerStrategy": {
-            "dockerfilePath": "${DOCKER_FILE_PATH}"
+          "type": "Source",
+          "sourceStrategy": {
+            "from": {
+              "kind": "${SOURCE_IMAGE_KIND}",
+              "name": "${SOURCE_IMAGE_NAME}:${SOURCE_IMAGE_TAG}",
+              "namespace": "${SOURCE_IMAGE_NAME_SPACE}"
+            },
+            "env": []
           }
         },
         "output": {
@@ -63,14 +66,7 @@
       "displayName": "Name",
       "description": "The name assigned to all of the objects defined in this template.  You should keep this as default unless your know what your doing.",
       "required": true,
-      "value": "report-api"
-    },
-    {
-      "name": "APP_GROUP",
-      "displayName": "App Group",
-      "description": "The name assigned to all of the deployments in this project.",
-      "required": true,
-      "value": "sbc-pay"
+      "value": "update-stale-payment"
     },
     {
       "name": "GIT_REPO_URL",
@@ -91,7 +87,7 @@
       "displayName": "Source Context Directory",
       "description": "The source context directory.",
       "required": true,
-      "value": "report-api"
+      "value": "jobs/update-stale-payment"
     },
     {
       "name": "SOURCE_IMAGE_KIND",
@@ -105,7 +101,7 @@
       "displayName": "Source Image Name Space",
       "required": true,
       "description": "The name space of the  source image.",
-      "value": "d7eovc-tools"
+      "value": "openshift"
     },
     {
       "name": "SOURCE_IMAGE_NAME",
@@ -119,7 +115,7 @@
       "displayName": "Source Image Tag",
       "required": true,
       "description": "The tag of the source image.",
-      "value": "3.7"
+      "value": "3.6"
     },
     {
       "name": "OUTPUT_IMAGE_TAG",
@@ -127,13 +123,6 @@
       "description": "The tag given to the built image.",
       "required": true,
       "value": "latest"
-    },
-    {
-      "name": "DOCKER_FILE_PATH",
-      "displayName": "Docker File Path",
-      "description": "The path to the docker file defining the build.",
-      "required": false,
-      "value": "Dockerfile"
     }
   ]
 }

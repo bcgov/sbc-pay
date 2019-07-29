@@ -1,0 +1,246 @@
+{
+  "kind": "Template",
+  "apiVersion": "v1",
+  "metadata": {
+    "annotations": {
+      "description": "Pre deployment template for a pay api service. This template may not include real value of secrets; you need to manually replace the value in Openshift.",
+      "tags": "${NAME}-${TAG_NAME}"
+    },
+    "name": "${NAME}-pre-deploy"
+  },
+  "objects": [
+    {
+      "kind": "Secret",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "${KEYCLOAK_NAME}-${TAG_NAME}-secret",
+        "labels": {
+          "app": "${NAME}-${TAG_NAME}",
+          "app-group": "${APP_GROUP}",
+          "template": "${NAME}-pre-deploy"
+        }
+      },
+      "stringData": {
+        "JWT_OIDC_ALGORITHMS": "${JWT_OIDC_ALGORITHMS}",
+        "JWT_OIDC_AUDIENCE": "${JWT_OIDC_AUDIENCE}",
+        "JWT_OIDC_CLIENT_SECRET": "${JWT_OIDC_CLIENT_SECRET}",
+        "JWT_OIDC_ISSUER": "${JWT_OIDC_ISSUER}",
+        "JWT_OIDC_JWKS_CACHE_TIMEOUT": "${JWT_OIDC_JWKS_CACHE_TIMEOUT}",
+        "JWT_OIDC_WELL_KNOWN_CONFIG": "${JWT_OIDC_WELL_KNOWN_CONFIG}"
+      },
+      "type": "Opaque"
+    },
+    {
+      "kind": "Secret",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "${PAYBC_NAME}-${TAG_NAME}-secret",
+        "labels": {
+          "app": "${NAME}-${TAG_NAME}",
+          "app-group": "${APP_GROUP}",
+          "template": "${NAME}-pre-deploy"
+        }
+      },
+      "stringData": {
+        "PAYBC_BASE_URL": "${PAYBC_BASE_URL}",
+        "PAYBC_CLIENT_ID": "${PAYBC_CLIENT_ID}",
+        "PAYBC_CLIENT_SECRET": "${PAYBC_CLIENT_SECRET}",
+        "PAYBC_MEMO_LINE_NAME": "${PAYBC_MEMO_LINE_NAME}",
+        "PAYBC_PORTAL_URL": "${PAYBC_PORTAL_URL}"
+      },
+      "type": "Opaque"
+    },
+    {
+      "kind": "Secret",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "${BCOL_NAME}-${TAG_NAME}-secret",
+        "labels": {
+          "app": "${NAME}-${TAG_NAME}",
+          "app-group": "${APP_GROUP}",
+          "template": "${NAME}-pre-deploy"
+        }
+      },
+      "stringData": {
+        "BCOL_DEBIT_ACCOUNT_VERSION": "${BCOL_DEBIT_ACCOUNT_VERSION}",
+        "BCOL_LDAP_SERVER": "${BCOL_LDAP_SERVER}",
+        "BCOL_LDAP_USER_DN_PATTERN": "${BCOL_LDAP_USER_DN_PATTERN}",
+        "BCOL_LINK_CODE": "${BCOL_LINK_CODE}",
+        "BCOL_QUERY_PROFILE_WSDL_URL": "${BCOL_QUERY_PROFILE_WSDL_URL}",
+        "BCOL_VERIFY_USER_WSDL_URL": "${BCOL_VERIFY_USER_WSDL_URL}"
+      },
+      "type": "Opaque"
+    },
+    {
+      "kind": "ConfigMap",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "${NAME}-${TAG_NAME}-config",
+        "labels": {
+          "app": "${NAME}-${TAG_NAME}",
+          "app-group": "${APP_GROUP}",
+          "template": "${NAME}-pre-deploy"
+        }
+      },
+      "data": {
+        "REPORT_API_BASE_URL": "https://${REPORT_API_NAME}-${TAG_NAME}.pathfinder.gov.bc.ca/api/v1/reports",
+        "AUTH_WEB_PAY_TRANSACTION_URL": "https://${AUTH_WEB_NAME}-${TAG_NAME}.pathfinder.gov.bc.ca",
+        "POD_TESTING": "true"
+      }
+    }
+  ],
+  "parameters": [
+    {
+      "name": "NAME",
+      "displayName": "Name",
+      "description": "The name assigned to all of the OpenShift resources associated to the server instance.",
+      "required": true,
+      "value": "pay-api"
+    },
+    {
+      "name": "APP_GROUP",
+      "displayName": "App Group",
+      "description": "The name assigned to all of the deployments in this project.",
+      "required": true,
+      "value": "sbc-pay"
+    },
+    {
+      "name": "TAG_NAME",
+      "displayName": "Environment TAG name",
+      "description": "The TAG name for this environment, e.g., dev, test, prod",
+      "required": true,
+      "value": "dev"
+    },
+    {
+      "name": "KEYCLOAK_NAME",
+      "displayName": "Name",
+      "description": "The name assigned to all of the OpenShift resources associated to the server instance.",
+      "required": true,
+      "value": "keycloak"
+    },
+    {
+      "name": "PAYBC_NAME",
+      "displayName": "Name",
+      "description": "The name assigned to all of the OpenShift resources associated to the server instance.",
+      "required": true,
+      "value": "paybc"
+    },
+    {
+      "name": "BCOL_NAME",
+      "displayName": "BC Online Service Name",
+      "description": "The name assigned to all of the OpenShift resources associated to the server instance.",
+      "required": true,
+      "value": "bcol"
+    },
+    {
+      "name": "REPORT_API_NAME",
+      "displayName": "Report API Name",
+      "description": "The name assigned to all of the OpenShift resources associated to the server instance.",
+      "required": true,
+      "value": "report-api"
+    },
+    {
+      "name": "AUTH_WEB_NAME",
+      "displayName": "Auth Web Name",
+      "description": "The name assigned to all of the OpenShift resources associated to the server instance.",
+      "required": true,
+      "value": "auth-web"
+    },
+    {
+      "name": "JWT_OIDC_ALGORITHMS",
+      "required": true,
+      "generate": "expression",
+      "from": "[a-zA-Z0-9]{16}"
+    },
+    {
+      "name": "JWT_OIDC_AUDIENCE",
+      "required": true,
+      "generate": "expression",
+      "from": "[a-zA-Z0-9]{16}"
+    },
+    {
+      "name": "JWT_OIDC_CLIENT_SECRET",
+      "required": true,
+      "generate": "expression",
+      "from": "[a-zA-Z0-9]{16}"
+    },
+    {
+      "name": "JWT_OIDC_ISSUER",
+      "required": true,
+      "generate": "expression",
+      "from": "[a-zA-Z0-9]{16}"
+    },
+    {
+      "name": "JWT_OIDC_JWKS_CACHE_TIMEOUT",
+      "required": true,
+      "generate": "expression",
+      "from": "[a-zA-Z0-9]{16}"
+    },
+    {
+      "name": "JWT_OIDC_WELL_KNOWN_CONFIG",
+      "required": true,
+      "generate": "expression",
+      "from": "[a-zA-Z0-9]{16}"
+    },
+    {
+      "name": "PAYBC_BASE_URL",
+      "required": true,
+      "generate": "expression",
+      "from": "[a-zA-Z0-9]{16}"
+    },
+    {
+      "name": "PAYBC_CLIENT_ID",
+      "required": true,
+      "generate": "expression",
+      "from": "[a-zA-Z0-9]{16}"
+    },
+    {
+      "name": "PAYBC_CLIENT_SECRET",
+      "required": true,
+      "generate": "expression",
+      "from": "[a-zA-Z0-9]{16}"
+    },
+    {
+      "name": "PAYBC_MEMO_LINE_NAME",
+      "required": true,
+      "generate": "expression",
+      "from": "[a-zA-Z0-9]{16}"
+    },
+    {
+      "name": "PAYBC_PORTAL_URL",
+      "required": true,
+      "generate": "expression",
+      "from": "[a-zA-Z0-9]{16}"
+    },
+    {
+      "name": "BCOL_DEBIT_ACCOUNT_VERSION",
+      "required": true,
+      "generate": "expression",
+      "from": "[a-zA-Z0-9]{16}"
+    },
+    {
+      "name": "BCOL_LDAP_SERVER",
+      "required": true,
+      "generate": "expression",
+      "from": "[a-zA-Z0-9]{16}"
+    },
+    {
+      "name": "BCOL_LDAP_USER_DN_PATTERN",
+      "required": true,
+      "generate": "expression",
+      "from": "[a-zA-Z0-9]{16}"
+    },
+    {
+      "name": "BCOL_QUERY_PROFILE_WSDL_URL",
+      "required": true,
+      "generate": "expression",
+      "from": "[a-zA-Z0-9]{16}"
+    },
+    {
+      "name": "BCOL_VERIFY_USER_WSDL_URL",
+      "required": true,
+      "generate": "expression",
+      "from": "[a-zA-Z0-9]{16}"
+    }
+  ]
+}
