@@ -207,31 +207,31 @@ objects:
                     - 
                       name: NATS_SERVERS
                       valueFrom:
-                        secretKeyRef:
+                        configMapKeyRef:
                           name: "${NATS}-${TAG_NAME}-config"
                           key: NATS_SERVERS
                     - 
                       name: NATS_CLIENT_NAME
                       valueFrom:
-                        secretKeyRef:
+                        configMapKeyRef:
                           name: "${NATS}-${TAG_NAME}-config"
                           key: NATS_CLIENT_NAME
                     - 
                       name: NATS_CLUSTER_ID
                       valueFrom:
-                        secretKeyRef:
+                        configMapKeyRef:
                           name: "${NATS}-${TAG_NAME}-config"
                           key: NATS_CLUSTER_ID
                     - 
                       name: NATS_SUBJECT
                       valueFrom:
-                        secretKeyRef:
+                        configMapKeyRef:
                           name: "${NATS}-${TAG_NAME}-config"
                           key: NATS_SUBJECT
                     - 
                       name: NATS_QUEUE
                       valueFrom:
-                        secretKeyRef:
+                        configMapKeyRef:
                           name: "${NATS}-${TAG_NAME}-config"
                           key: NATS_QUEUE
               restartPolicy: Never
