@@ -18,12 +18,11 @@ Test-Suite to ensure that the /transactions endpoint is working as expected.
 """
 
 import json
-
-import pytest
 import uuid
 
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import Role
+
 
 token_header = {
     'alg': 'RS256',
@@ -450,7 +449,6 @@ def test_transactions_get(session, client, jwt, app):
 
 def test_transaction_patch_completed_payment_and_transaction_status(session, client, jwt, app):
     """Assert that payment tokens can be retrieved and decoded from the Queue."""
-
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 

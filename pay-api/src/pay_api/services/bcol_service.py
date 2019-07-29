@@ -31,6 +31,7 @@ from .payment_line_item import PaymentLineItem
 
 class BcolService(PaymentSystemService, OAuthService):
     """Service to manage BCOL integration."""
+
     query_profile_client = None
     auth_code_mapping = {
         'G': 'GDSA',

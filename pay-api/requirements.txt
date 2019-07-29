@@ -29,13 +29,13 @@ idna==2.8
 isodate==0.6.0
 itsdangerous==1.1.0
 jsonschema==3.0.1
-lxml==4.3.4
+lxml==4.4.0
 marshmallow-sqlalchemy==0.17.0
 marshmallow==3.0.0rc7
 protobuf==3.9.0
 psycopg2-binary==2.8.3
 pyasn1==0.4.5
-pyrsistent==0.15.3
+pyrsistent==0.15.4
 python-dateutil==2.8.0
 python-dotenv==0.10.3
 python-editor==1.0.4

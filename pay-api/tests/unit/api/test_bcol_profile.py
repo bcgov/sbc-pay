@@ -16,15 +16,9 @@
 
 Test-Suite to ensure that the /accounts/<id>/users/<user_id> endpoint is working as expected.
 """
-from datetime import date, timedelta
-
-from pay_api.models import CorpType, FeeCode, FeeSchedule, FilingType
-from pay_api.schemas import utils as schema_utils
-from pay_api.utils.enums import Role
 
 
 def test_get_account_profile(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
-
     rv = client.get(f'/api/v1/bcol/accounts/123456789/users/123456', headers={})
     assert rv.status_code == 400

@@ -22,6 +22,7 @@ from pay_api.services.bcol_service import BcolService
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
 
+
 API = Namespace('bcol profile', description='Payment System - BCOL Profiles')
 
 BCOL_SERVICE = BcolService()

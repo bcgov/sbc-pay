@@ -21,7 +21,7 @@ from flask import current_app
 from nats.aio.client import Client as NATS  # noqa N814; by convention the name is NATS
 from stan.aio.client import Client as STAN  # noqa N814; by convention the name is STAN
 
-from pay_api.utils.handlers import error_cb, closed_cb
+from pay_api.utils.handlers import closed_cb, error_cb
 
 
 def publish_response(payload):
@@ -33,13 +33,13 @@ async def publish(payload):  # pylint: disable=too-few-public-methods
     """Service to manage Queue publish operations."""
     current_app.logger.debug('<publish')
     # NATS client connections
-    nc = NATS()
-    sc = STAN()
+    nats_con = NATS()
+    stan_con = STAN()
 
     async def close():
         """Close the stream and nats connections."""
-        await sc.close()
-        await nc.close()
+        await stan_con.close()
+        await nats_con.close()
 
     # Connection and Queue configuration.
     def nats_connection_options():
@@ -55,21 +55,18 @@ async def publish(payload):  # pylint: disable=too-few-public-methods
         return {
             'cluster_id': current_app.config.get('NATS_CLUSTER_ID'),
             'client_id': str(random.SystemRandom().getrandbits(0x58)),
-            'nats': nc
+            'nats': nats_con
         }
-
-    async def ack_handler(ack):
-        current_app.logger.debug("Received ack: {}".format(ack.guid))
 
     try:
         # Connect to the NATS server, and then use that for the streaming connection.
-        await nc.connect(**nats_connection_options(), verbose=True, connect_timeout=1, reconnect_time_wait=1)
-        await sc.connect(**stan_connection_options())
+        await nats_con.connect(**nats_connection_options(), verbose=True, connect_timeout=3, reconnect_time_wait=1)
+        await stan_con.connect(**stan_connection_options())
 
         current_app.logger.debug(payload)
 
-        await sc.publish(subject=current_app.config.get('NATS_SUBJECT'),
-                         payload=json.dumps(payload).encode('utf-8'), ack_handler=ack_handler)
+        await nats_con.publish(subject=current_app.config.get('NATS_SUBJECT'),
+                               payload=json.dumps(payload).encode('utf-8'))
 
     except Exception as e:  # pylint: disable=broad-except
         current_app.logger.error(e)

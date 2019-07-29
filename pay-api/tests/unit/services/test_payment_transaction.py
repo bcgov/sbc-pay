@@ -17,9 +17,10 @@
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
 
-import pytest
 import uuid
 from datetime import datetime
+
+import pytest
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utilities used by the integration tests."""
-import json
 import os
 from typing import Callable
 
@@ -39,4 +38,3 @@ async def subscribe_to_queue(stan_client: stan.aio.client.Client,
                                 durable_name=entity_durable_name,
                                 cb=call_back)
     return entity_subject
-
