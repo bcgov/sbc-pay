@@ -17,6 +17,13 @@
 import pytest
 
 from api import create_app
+from api import jwt as _jwt
+
+
+@pytest.fixture(scope='session')
+def jwt(app):
+    """Return session-wide jwt manager."""
+    return _jwt
 
 
 @pytest.fixture(scope='session')

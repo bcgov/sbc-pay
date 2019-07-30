@@ -19,7 +19,7 @@ from flask_restplus import Namespace, Resource
 from jinja2 import TemplateNotFound
 
 from api.services import ReportService
-
+from api.utils.auth import jwt as _jwt
 
 API = Namespace('Reports', description='Service - Reports')
 
@@ -34,6 +34,7 @@ class Report(Resource):
         return {'message': 'Report generation up and running'}, HTTPStatus.OK
 
     @staticmethod
+    @_jwt.requires_auth
     def post():
         """Create a report."""
         request_json = request.get_json()

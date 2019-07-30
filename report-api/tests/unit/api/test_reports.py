@@ -20,6 +20,7 @@ Test suite for reports
 
 import base64
 import json
+from .base_test import get_claims, token_header
 
 
 def test_get_generate(client):
@@ -28,8 +29,11 @@ def test_get_generate(client):
     assert rv.status_code == 200
 
 
-def test_generate_report_with_existing_template(client):
+def test_generate_report_with_existing_template(client, jwt, app):
     """Call to generate report with existing template."""
+    token = jwt.create_jwt(get_claims(app_request=app), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
     rv = client.get('/api/v1/templates')
     print(rv.json)
     template_name = rv.json['report-templates'][0]
@@ -43,13 +47,16 @@ def test_generate_report_with_existing_template(client):
         'report_name': 'sample'
     }
 
-    rv = client.post(request_url, data=json.dumps(request_data), content_type='application/json')
+    rv = client.post(request_url, data=json.dumps(request_data), headers=headers)
     assert rv.status_code == 200
     assert rv.content_type == 'application/pdf'
 
 
-def test_generate_report_with_invalid_template(client):
+def test_generate_report_with_invalid_template(client, jwt, app):
     """Call to generate report with invalid template."""
+    token = jwt.create_jwt(get_claims(app_request=app), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
     template_name = 'some-random-text-to-fial-generation'
     request_url = '/api/v1/reports'.format(template_name)
     request_data = {
@@ -59,12 +66,14 @@ def test_generate_report_with_invalid_template(client):
         },
         'report_name': 'sample'
     }
-    rv = client.post(request_url, data=json.dumps(request_data), content_type='application/json')
+    rv = client.post(request_url, data=json.dumps(request_data), headers=headers)
     assert rv.status_code == 404
 
 
-def test_generate_report_with_template(client):
+def test_generate_report_with_template(client, jwt, app):
     """Call to generate report with new template."""
+    token = jwt.create_jwt(get_claims(app_request=app), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     template = '<html><body><h1>Sample Report</h1><h2>{{ title }}</h2></body></html>'
     template = base64.b64encode(bytes(template, 'utf-8')).decode('utf-8')
     request_url = '/api/v1/reports'
@@ -75,13 +84,15 @@ def test_generate_report_with_template(client):
         },
         'report_name': 'Test Report'
     }
-    rv = client.post(request_url, data=json.dumps(request_data), content_type='application/json')
+    rv = client.post(request_url, data=json.dumps(request_data), headers=headers)
     assert rv.status_code == 200
     assert rv.content_type == 'application/pdf'
 
 
-def test_generate_report_with_invalid_request(client):
+def test_generate_report_with_invalid_request(client, jwt, app):
     """Call to generate report with invalid request."""
+    token = jwt.create_jwt(get_claims(app_request=app), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     request_url = '/api/v1/reports'
     request_data = {
         'template_vars': {
@@ -89,5 +100,5 @@ def test_generate_report_with_invalid_request(client):
         },
         'report_name': 'Test Report'
     }
-    rv = client.post(request_url, data=json.dumps(request_data), content_type='application/json')
+    rv = client.post(request_url, data=json.dumps(request_data), headers=headers)
     assert rv.status_code == 400

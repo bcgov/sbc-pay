@@ -164,7 +164,7 @@ def test_create_receipt_without_invoice(session):
         'filingDateTime': '1999',
         'fileName': 'coopser'
     }
-    response = ReceiptService.create_receipt(payment.id, '', input_data)
+    response = ReceiptService.create_receipt(payment.id, '', input_data, None)
     assert response is not None
 
 
@@ -207,7 +207,7 @@ def test_create_receipt_with_invoice(session):
         'filingDateTime': '1999',
         'fileName': 'coopser'
     }
-    response = ReceiptService.create_receipt(payment.id, invoice.id, input_data)
+    response = ReceiptService.create_receipt(payment.id, invoice.id, input_data, None)
     assert response is not None
 
 
@@ -250,5 +250,5 @@ def test_create_receipt_with_no_receipt(session):
     }
 
     with pytest.raises(BusinessException) as excinfo:
-        ReceiptService.create_receipt(payment.id, '', input_data)
+        ReceiptService.create_receipt(payment.id, '', input_data, None)
     assert excinfo.type == BusinessException
