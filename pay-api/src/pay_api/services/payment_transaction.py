@@ -32,6 +32,7 @@ from pay_api.utils.errors import Error
 
 from .invoice import InvoiceModel
 from .payment import Payment
+from .queue_publisher import publish_response
 
 
 class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
@@ -300,6 +301,9 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
 
         transaction_dao.transaction_end_time = datetime.now()
 
+        # Publish status to Queue
+        PaymentTransaction.publish_status(transaction_dao, payment)
+
         transaction_dao = transaction_dao.save()
 
         transaction = PaymentTransaction()
@@ -319,3 +323,29 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
 
         current_app.logger.debug('>find_by_payment_id')
         return data
+
+    @staticmethod
+    def publish_status(transaction_dao: PaymentTransactionModel, payment: Payment):
+        """Publish payment/transaction status to the Queue."""
+        current_app.logger.debug('<publish_status')
+        if transaction_dao.status_code == Status.COMPLETED.value:
+            status_code = payment.payment_status_code
+        else:
+            status_code = 'TRANSACTION_FAILED'
+
+        payload = {
+            'paymentToken': {
+                'id': payment.id,
+                'statusCode': status_code
+            }
+        }
+
+        try:
+            publish_response(payload=payload)
+        except Exception as e:  # pylint: disable=broad-except
+            current_app.logger.error(e)
+            current_app.logger.warn(
+                f'Notification to Queue failed, marking the transaction : {transaction_dao.id} as EVENT_FAILED',
+                e)
+            transaction_dao.status_code = Status.EVENT_FAILED.value
+        current_app.logger.debug('>publish_status')

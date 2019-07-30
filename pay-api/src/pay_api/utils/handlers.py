@@ -11,14 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-"""Tests to assure the bcol accounts end-point.
-
-Test-Suite to ensure that the /accounts/<id>/users/<user_id> endpoint is working as expected.
-"""
+"""Callbacks and signal trapping used in the main loop."""
+from flask import current_app
 
 
-def test_get_account_profile(session, client, jwt, app):
-    """Assert that the endpoint returns 200."""
-    rv = client.get(f'/api/v1/bcol/accounts/123456789/users/123456', headers={})
-    assert rv.status_code == 400
+async def error_cb(e):
+    """Emit error message to the log stream."""
+    current_app.logger.error(e)
+    raise e
+
+
+async def closed_cb():
+    """Exit the session after the NATS connection is closed."""
+    current_app.logger.info('Connection to NATS is closed.')
+    # my_loop = asyncio.get_running_loop()
+    # await asyncio.sleep(0.1, loop=my_loop)
+    # my_loop.stop()

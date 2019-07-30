@@ -398,6 +398,51 @@
                         "key": "POD_TESTING"
                       }
                     }
+                  },
+                  {
+                    "name": "NATS_SERVERS",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${NATS}-${TAG_NAME}-config",
+                        "key": "NATS_SERVERS"
+                      }
+                    }
+                  },
+                  {
+                    "name": "NATS_CLIENT_NAME",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${NATS}-${TAG_NAME}-config",
+                        "key": "NATS_CLIENT_NAME"
+                      }
+                    }
+                  },
+                  {
+                    "name": "NATS_CLUSTER_ID",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${NATS}-${TAG_NAME}-config",
+                        "key": "NATS_CLUSTER_ID"
+                      }
+                    }
+                  },
+                  {
+                    "name": "NATS_SUBJECT",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${NATS}-${TAG_NAME}-config",
+                        "key": "NATS_SUBJECT"
+                      }
+                    }
+                  },
+                  {
+                    "name": "NATS_QUEUE",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${NATS}-${TAG_NAME}-config",
+                        "key": "NATS_QUEUE"
+                      }
+                    }
                   }
                 ],
                 "resources": {
@@ -641,6 +686,13 @@
       "description": "Jaeger Tracing collector address.",
       "required": true,
       "value": "--collector.host-port=jaeger-collector.d7eovc-${TAG_NAME}.svc:14267"
+    },
+    {
+      "name": "NATS",
+      "displayName": "NATS config",
+      "description": "NATS configurations for sbc-pay.",
+      "required": true,
+      "value": "nats"
     }
   ]
 }

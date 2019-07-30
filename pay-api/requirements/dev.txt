@@ -20,4 +20,11 @@ autopep8
 coverage
 pylint
 pylint-flask
+pydocstyle<4
+
+
+# docker
+lovely-pytest-docker
+pytest_docker
+pytest-asyncio
 

@@ -86,28 +86,36 @@ def test_find_older_records(session):
     payment_transaction_now = factory_payment_transaction(payment_id=payment.id)
     payment_transaction_now.save()
 
-    payment_transaction_100_days_old = factory_payment_transaction(payment_id=payment.id,
-                                                                   transaction_start_time=
-                                                                   datetime.now() - timedelta(days=100))
+    payment_transaction_100_days_old = factory_payment_transaction(
+        payment_id=payment.id,
+        transaction_start_time=datetime.now() - timedelta(days=100))
     payment_transaction_100_days_old.save()
 
-    payment_transaction_3_hours_old = factory_payment_transaction(payment_id=payment.id,
-                                                                  transaction_start_time=datetime.now() - timedelta(hours=3))
+    payment_transaction_3_hours_old = factory_payment_transaction(
+        payment_id=payment.id,
+        transaction_start_time=datetime.now() - timedelta(
+            hours=3))
 
     payment_transaction_3_hours_old.save()
 
-    payment_transaction_1_hour_old = factory_payment_transaction(payment_id=payment.id,
-                                                                 transaction_start_time=datetime.now() - timedelta(hours=1))
+    payment_transaction_1_hour_old = factory_payment_transaction(
+        payment_id=payment.id,
+        transaction_start_time=datetime.now() - timedelta(
+            hours=1))
     payment_transaction_1_hour_old.save()
 
-    payment_transaction_2_hours_old = factory_payment_transaction(payment_id=payment.id,
-                                                                  transaction_start_time=datetime.now() - timedelta(hours=2))
+    payment_transaction_2_hours_old = factory_payment_transaction(
+        payment_id=payment.id,
+        transaction_start_time=datetime.now() - timedelta(
+            hours=2))
     payment_transaction_2_hours_old.save()
 
-    all_records = payment_transaction_now.find_stale_records(hours=2, minutes=10) # find records which are 2.10 hours older
+    all_records = payment_transaction_now.find_stale_records(hours=2,
+                                                             minutes=10)  # find records which are 2.10 hours older
     assert len(all_records) == 2
     for record in all_records:
-        assert record.transaction_start_time < datetime.now()-timedelta(hours=2)
+        assert record.transaction_start_time < datetime.now() - timedelta(hours=2)
+
 
 def test_find_older_records_invalid_status(session):
     """Assert a payment_transaction is stored.
@@ -127,11 +135,19 @@ def test_find_older_records_invalid_status(session):
     payment_transaction_now_draft = factory_payment_transaction(payment_id=payment.id, status_code='DRAFT')
     payment_transaction_now_draft.save()  # not eligible
 
-    payment_transaction_now_draft_3_hours = factory_payment_transaction(payment_id=payment.id, status_code='DRAFT', transaction_start_time=datetime.now() - timedelta(hours=3))
+    payment_transaction_now_draft_3_hours = factory_payment_transaction(
+        payment_id=payment.id, status_code='DRAFT',
+        transaction_start_time=datetime.now() - timedelta(
+            hours=3))
     payment_transaction_now_draft_3_hours.save()  # this is eligible
 
-    payment_transaction_now_draft_completed_3_hours = factory_payment_transaction(payment_id=payment.id, status_code='COMPLETED', transaction_start_time=datetime.now() - timedelta(hours=3))
+    payment_transaction_now_draft_completed_3_hours = factory_payment_transaction(
+        payment_id=payment.id,
+        status_code='COMPLETED',
+        transaction_start_time=datetime.now() - timedelta(
+            hours=3))
     payment_transaction_now_draft_completed_3_hours.save()  # not eligible
 
-    all_records = payment_transaction_now.find_stale_records(hours=2, minutes=59)  # find records which are 2.59 hourolder
+    all_records = payment_transaction_now.find_stale_records(hours=2,
+                                                             minutes=59)  # find records which are 2.59 hourolder
     assert len(all_records) == 1

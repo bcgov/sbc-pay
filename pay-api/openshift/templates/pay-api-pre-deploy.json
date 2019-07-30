@@ -87,6 +87,25 @@
         "AUTH_WEB_PAY_TRANSACTION_URL": "https://${AUTH_WEB_NAME}-${TAG_NAME}.pathfinder.gov.bc.ca",
         "POD_TESTING": "true"
       }
+    },
+    {
+      "kind": "ConfigMap",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "${NATS}-${TAG_NAME}-config",
+        "labels": {
+          "app": "${NAME}-${TAG_NAME}",
+          "app-group": "${APP_GROUP}",
+          "template": "${NAME}-pre-deploy"
+        }
+      },
+      "data": {
+        "NATS_SERVERS": "nats://nats-streaming.hak2zo-dev.svc:4222",
+        "NATS_CLIENT_NAME": "entity.filing.payment.worker",
+        "NATS_CLUSTER_ID": "test-cluster",
+        "NATS_SUBJECT": "entity.filing.payment",
+        "NATS_QUEUE": "filing-worker"
+      }
     }
   ],
   "parameters": [
@@ -241,6 +260,13 @@
       "required": true,
       "generate": "expression",
       "from": "[a-zA-Z0-9]{16}"
+    },
+    {
+      "name": "NATS",
+      "displayName": "NATS config",
+      "description": "NATS configurations for sbc-pay.",
+      "required": true,
+      "value": "nats"
     }
   ]
 }

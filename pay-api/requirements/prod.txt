@@ -15,3 +15,5 @@ jsonschema
 requests
 zeep
 # python-ldap
+asyncio-nats-client
+asyncio-nats-streaming

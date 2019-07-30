@@ -289,7 +289,7 @@ def test_transaction_put(session, client, jwt, app):
                      headers=headers)
     txn_id = rv.json.get('id')
     rv = client.patch(f'/api/v1/payments/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}', data=None,
-                    headers=headers)
+                      headers=headers)
     assert rv.status_code == 200
 
 
@@ -334,11 +334,11 @@ def test_transaction_put_with_no_receipt(session, client, jwt, app):
                      headers=headers)
     txn_id = rv.json.get('id')
     rv = client.patch(f'/api/v1/payments/{payment_id}/transactions/{txn_id}', data=None,
-                    headers=headers)
+                      headers=headers)
     assert rv.status_code == 200
 
 
-def test_transaction_put_completed_payment(session, client, jwt, app):
+def test_transaction_put_completed_payment(session, client, jwt, app, stan_server):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -380,10 +380,10 @@ def test_transaction_put_completed_payment(session, client, jwt, app):
 
     txn_id = rv.json.get('id')
     rv = client.patch(f'/api/v1/payments/{payment_id}/transactions/{txn_id}', data=None,
-                    headers=headers)
+                      headers=headers)
 
     rv = client.patch(f'/api/v1/payments/{payment_id}/transactions/{txn_id}', data=None,
-                    headers=headers)
+                      headers=headers)
 
     assert rv.status_code == 400
     assert rv.json.get('code') == 'PAY006'
@@ -445,3 +445,51 @@ def test_transactions_get(session, client, jwt, app):
     assert len(rv.json.get('items')) == 1
 
     assert schema_utils.validate(rv.json, 'transactions')[0]
+
+
+def test_transaction_patch_completed_payment_and_transaction_status(session, client, jwt, app):
+    """Assert that payment tokens can be retrieved and decoded from the Queue."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    # Create a payment first
+    data = {
+        'payment_info': {
+            'method_of_payment': 'CC'
+        },
+        'business_info': {
+            'business_identifier': 'CP1234',
+            'corp_type': 'CP',
+            'business_name': 'ABC Corp',
+            'contact_info': {
+                'city': 'Victoria',
+                'postal_code': 'V8P2P2',
+                'province': 'BC',
+                'address_line_1': '100 Douglas Street',
+                'country': 'CA'
+            }
+        },
+        'filing_info': {
+            'filing_types': [
+                {
+                    'filing_type_code': 'OTADD',
+                    'filing_description': 'TEST'
+                },
+                {
+                    'filing_type_code': 'OTANN'
+                }
+            ]
+        }
+    }
+    rv = client.post(f'/api/v1/payments', data=json.dumps(data), headers=headers)
+    payment_id = rv.json.get('id')
+    redirect_uri = 'http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd'
+    rv = client.post(f'/api/v1/payments/{payment_id}/transactions?redirect_uri={redirect_uri}', data=None,
+                     headers=headers)
+
+    txn_id = rv.json.get('id')
+    rv = client.patch(f'/api/v1/payments/{payment_id}/transactions/{txn_id}', data=None,
+                      headers=headers)
+
+    assert rv.status_code == 200
+    assert rv.json.get('status_code') == 'COMPLETED'
