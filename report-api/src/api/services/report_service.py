@@ -20,7 +20,7 @@ from flask import request, url_for
 from flask_weasyprint import HTML, render_pdf
 from jinja2 import Environment, FileSystemLoader, Template
 
-from api import TEMPLATE_FOLDER_PATH
+from api.utils.util import TEMPLATE_FOLDER_PATH
 
 
 ENV = Environment(loader=FileSystemLoader('.'))

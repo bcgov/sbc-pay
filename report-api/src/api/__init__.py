@@ -25,20 +25,11 @@ from api.utils.run_version import get_run_version
 
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
-# lower case name as used by convention in most Flask apps
-tracing = None  # pylint: disable=invalid-name
-TEMPLATE_FOLDER_PATH = 'report-templates/'
-
 
 def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     """Return a configured Flask App using the Factory method."""
     app = Flask(__name__)
     app.config.from_object(config.CONFIGURATION[run_mode])
-
-    # initialize tracer
-    global tracing  # pylint:  disable=global-statement,invalid-name
-    global TEMPLATE_FOLDER_PATH  # pylint:  disable=global-statement
-    TEMPLATE_FOLDER_PATH = 'report-templates/'
 
     from api.resources import API_BLUEPRINT, OPS_BLUEPRINT
 
