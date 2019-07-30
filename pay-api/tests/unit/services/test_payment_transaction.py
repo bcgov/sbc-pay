@@ -21,6 +21,7 @@ import uuid
 from datetime import datetime
 
 import pytest
+from tests import skip_in_pod
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
@@ -170,6 +171,7 @@ def test_transaction_create_from_invalid_payment(session):
     assert excinfo.value.code == Error.PAY005.name
 
 
+@skip_in_pod
 def test_transaction_update(session, stan_server):
     """Assert that the payment is saved to the table."""
     payment_account = factory_payment_account()
@@ -195,8 +197,8 @@ def test_transaction_update(session, stan_server):
     assert transaction.transaction_end_time is not None
     assert transaction.status_code == Status.COMPLETED.value
 
-
-def test_transaction_update_with_no_receipt(session):
+@skip_in_pod
+def test_transaction_update_with_no_receipt(session, stan_server):
     """Assert that the payment is saved to the table."""
     payment_account = factory_payment_account()
     payment = factory_payment()
@@ -223,6 +225,7 @@ def test_transaction_update_with_no_receipt(session):
     assert transaction.asdict() is not None
 
 
+@skip_in_pod
 def test_transaction_update_completed(session, stan_server):
     """Assert that the payment is saved to the table."""
     payment_account = factory_payment_account()

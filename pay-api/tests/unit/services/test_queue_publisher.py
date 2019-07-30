@@ -21,11 +21,13 @@ from unittest.mock import patch
 
 import pytest
 from flask import current_app
+from tests import skip_in_pod
 
 from .utils import subscribe_to_queue
 
 
 @pytest.mark.asyncio
+@skip_in_pod
 async def test_publish(app, stan_server, client_id, stan, future, event_loop):
     """Assert that payment tokens can be retrieved and decoded from the Queue."""
     with app.app_context():
@@ -53,6 +55,7 @@ async def test_publish(app, stan_server, client_id, stan, future, event_loop):
 
 
 @pytest.mark.asyncio
+@skip_in_pod
 async def test_publish_transaction_failed(app, client_id, stan, future, stan_server):
     """Assert that payment tokens can be retrieved and decoded from the Queue."""
     with app.app_context():
@@ -80,6 +83,7 @@ async def test_publish_transaction_failed(app, client_id, stan, future, stan_ser
 
 
 @pytest.mark.asyncio
+@skip_in_pod
 async def test_publish_transaction_bulk_load(app, client_id, stan, future, stan_server):
     """Assert that payment tokens can be retrieved and decoded from the Queue."""
     with app.app_context():
@@ -107,6 +111,7 @@ async def test_publish_transaction_bulk_load(app, client_id, stan, future, stan_
 
 
 @pytest.mark.asyncio
+@skip_in_pod
 async def test_publish_transaction_nats_down(app, client_id, stan, future, stan_server):
     """Assert that payment tokens can be retrieved and decoded from the Queue."""
     with app.app_context():
