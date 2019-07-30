@@ -20,7 +20,6 @@ from tests import skip_in_pod
 
 from pay_api import utils
 from pay_api.version import __version__
-from tests import skip_in_pod
 
 
 @skip_in_pod

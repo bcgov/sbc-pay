@@ -20,6 +20,8 @@ Test-Suite to ensure that the /transactions endpoint is working as expected.
 import json
 import uuid
 
+from tests import skip_in_pod
+
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import Role
 
@@ -337,7 +339,7 @@ def test_transaction_put_with_no_receipt(session, client, jwt, app):
                       headers=headers)
     assert rv.status_code == 200
 
-
+@skip_in_pod
 def test_transaction_put_completed_payment(session, client, jwt, app, stan_server):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(), token_header)
@@ -447,7 +449,8 @@ def test_transactions_get(session, client, jwt, app):
     assert schema_utils.validate(rv.json, 'transactions')[0]
 
 
-def test_transaction_patch_completed_payment_and_transaction_status(session, client, jwt, app):
+@skip_in_pod
+def test_transaction_patch_completed_payment_and_transaction_status(session, client, jwt, app, stan_server):
     """Assert that payment tokens can be retrieved and decoded from the Queue."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
