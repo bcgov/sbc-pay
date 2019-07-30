@@ -47,7 +47,7 @@ class InvoiceReceipt(Resource):
             if not valid_format:
                 return jsonify({'code': 'PAY999', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
 
-            pdf = ReceiptService.create_receipt(payment_id, invoice_id, request_json)
+            pdf = ReceiptService.create_receipt(payment_id, invoice_id, request_json, _jwt.get_token_auth_header())
             current_app.logger.info('<InvoiceReceipt received pdf')
             response = Response(pdf, 201)
             file_name = request_json.get('fileName')

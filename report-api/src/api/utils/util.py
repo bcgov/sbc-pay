@@ -18,9 +18,12 @@ A simple decorator to add the options method to a Request Class.
 """
 # from functools import wraps
 
+TEMPLATE_FOLDER_PATH = 'report-templates/'
+
 
 def cors_preflight(methods: str = 'GET'):
     """Render an option method on the class."""
+
     def wrapper(f):
         def options(self, *args, **kwargs):  # pylint: disable=unused-argument
             return {'Allow': 'GET'}, 200, \
@@ -30,4 +33,5 @@ def cors_preflight(methods: str = 'GET'):
 
         setattr(f, 'options', options)
         return f
+
     return wrapper

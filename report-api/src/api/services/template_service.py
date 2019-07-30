@@ -20,7 +20,7 @@ import os.path
 
 from jinja2 import Environment, FileSystemLoader
 
-from api import TEMPLATE_FOLDER_PATH
+from api.utils.util import TEMPLATE_FOLDER_PATH
 
 
 ENV = Environment(loader=FileSystemLoader('.'))
