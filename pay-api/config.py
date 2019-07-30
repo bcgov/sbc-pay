@@ -16,6 +16,7 @@
 
 import os
 import sys
+import json
 
 from dotenv import find_dotenv, load_dotenv
 
@@ -26,7 +27,7 @@ CONFIGURATION = {
     'development': 'config.DevConfig',
     'testing': 'config.TestConfig',
     'production': 'config.ProdConfig',
-    'default': 'config.ProdConfig'
+    'default': 'config.ProdConfig',
 }
 
 
@@ -48,6 +49,7 @@ def get_named_config(config_name: str = 'production'):
 
 class _Config(object):  # pylint: disable=too-few-public-methods
     """Base class configuration that should set reasonable defaults for all the other configurations. """
+
     PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
     SECRET_KEY = 'a secret'
@@ -63,11 +65,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     DB_HOST = os.getenv('DATABASE_HOST', '')
     DB_PORT = os.getenv('DATABASE_PORT', '5432')
     SQLALCHEMY_DATABASE_URI = 'postgresql://{user}:{password}@{host}:{port}/{name}'.format(
-        user=DB_USER,
-        password=DB_PASSWORD,
-        host=DB_HOST,
-        port=int(DB_PORT),
-        name=DB_NAME,
+        user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=int(DB_PORT), name=DB_NAME
     )
     SQLALCHEMY_ECHO = True
 
@@ -109,6 +107,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     NATS_CLUSTER_ID = os.getenv('NATS_CLUSTER_ID', 'test-cluster')
     NATS_SUBJECT = os.getenv('NATS_SUBJECT', 'entity.filings')
     NATS_QUEUE = os.getenv('NATS_QUEUE', 'filing-worker')
+    # SERVICE Status Settings
+    SERVICE_SCHEDULE = os.getenv('SERVICE_SCHEDULE')
 
     TESTING = False
     DEBUG = True
@@ -121,6 +121,7 @@ class DevConfig(_Config):  # pylint: disable=too-few-public-methods
 
 class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     """In support of testing only used by the py.test suite."""
+
     DEBUG = True
     TESTING = True
     # POSTGRESQL
@@ -129,14 +130,12 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     DB_NAME = os.getenv('DATABASE_TEST_NAME', '')
     DB_HOST = os.getenv('DATABASE_TEST_HOST', '')
     DB_PORT = os.getenv('DATABASE_TEST_PORT', '5432')
-    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_TEST_URL',
-                                        'postgresql://{user}:{password}@{host}:{port}/{name}'.format(
-                                            user=DB_USER,
-                                            password=DB_PASSWORD,
-                                            host=DB_HOST,
-                                            port=int(DB_PORT),
-                                            name=DB_NAME,
-                                        ))
+    SQLALCHEMY_DATABASE_URI = os.getenv(
+        'DATABASE_TEST_URL',
+        'postgresql://{user}:{password}@{host}:{port}/{name}'.format(
+            user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=int(DB_PORT), name=DB_NAME
+        ),
+    )
 
     JWT_OIDC_TEST_MODE = True
     JWT_OIDC_TEST_AUDIENCE = os.getenv('JWT_OIDC_AUDIENCE')
@@ -150,7 +149,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
                 'alg': 'RS256',
                 'use': 'sig',
                 'n': 'AN-fWcpCyE5KPzHDjigLaSUVZI0uYrcGcc40InVtl-rQRDmAh-C2W8H4_Hxhr5VLc6crsJ2LiJTV_E72S03pzpOOaaYV6-TzAjCou2GYJIXev7f6Hh512PuG5wyxda_TlBSsI-gvphRTPsKCnPutrbiukCYrnPuWxX5_cES9eStR',
-                'e': 'AQAB'
+                'e': 'AQAB',
             }
         ]
     }
@@ -169,7 +168,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
                 'q': 'AOjX3OnPJnk0ZFUQBwhduCweRi37I6DAdLTnhDvcPTrrNWuKPg9uGwHjzFCJgKd8KBaDQ0X1rZTZLTqi3peT43s',
                 'dp': 'AN9kBoA5o6_Rl9zeqdsIdWFmv4DB5lEqlEnC7HlAP-3oo3jWFO9KQqArQL1V8w2D4aCd0uJULiC9pCP7aTHvBhc',
                 'dq': 'ANtbSY6njfpPploQsF9sU26U0s7MsuLljM1E8uml8bVJE1mNsiu9MgpUvg39jEu9BtM2tDD7Y51AAIEmIQex1nM',
-                'qi': 'XLE5O360x-MhsdFXx8Vwz4304-MJg-oGSJXCK_ZWYOB_FGXFRTfebxCsSYi0YwJo-oNu96bvZCuMplzRI1liZw'
+                'qi': 'XLE5O360x-MhsdFXx8Vwz4304-MJg-oGSJXCK_ZWYOB_FGXFRTfebxCsSYi0YwJo-oNu96bvZCuMplzRI1liZw',
             }
         ]
     }
@@ -196,6 +195,28 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     PAYBC_CLIENT_SECRET = 'TEST'
     PAYBC_PORTAL_URL = ''
     SERVER_NAME = 'localhost:5001'
+
+    schedule_json = [
+        {
+            "service_name": "PAYBC",
+            "schedules": [
+                {"up": "30 6 * * 1-2", "down": "19 10 * * 1-2"},
+                {"up": "30 6 * * 3", "down": "30 10 * * 3"},
+                {"up": "30 14 * * 4"},
+                {"down": "30 9 * * 5"},
+                {"up": "30 6 * * 7", "down": "30 21 * * 7"},
+            ],
+        },
+        {
+            "service_name": "BCOL",
+            "schedules": [
+                {"up": "30 06 * * 1-3", "down": "30 22 * * 1-3"},
+                {"up": "30 06 * * 6-7", "down": "30 20 * * 6-7"},
+            ],
+        },
+    ]
+
+    SERVICE_SCHEDULE = json.dumps(schedule_json)
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
