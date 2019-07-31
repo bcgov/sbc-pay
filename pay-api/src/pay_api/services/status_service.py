@@ -58,8 +58,14 @@ class StatusService:
                     if next_schedule_date is None or next_schedule_date >= downtime:
                         next_schedule_date = downtime
 
+                current_app.logger.debug(f'check date: {check_date_with_hours_aware}')
+                current_app.logger.debug(f'uptime: {uptime}')
+                current_app.logger.debug(f'downtime: {downtime}')
+
                 if schedule_date == check_date_aware.date():
-                    current_status = bool(downtime > check_date_with_hours_aware >= uptime)
+                    current_status = bool(check_date_with_hours_aware >= uptime)
+                    if downtime > uptime:
+                        current_status = bool(downtime > check_date_with_hours_aware >= uptime)
                 else:
                     current_status = bool(schedule_date > check_date_aware.date())
 

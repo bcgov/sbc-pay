@@ -138,6 +138,33 @@ def test_status_check_single_schedule(app):
         assert get_response['next_schedule_date'] == timezone.localize(datetime(1988, 7, 31, 21, 30))
 
 
+def test_status_check_single_schedule_down_first(app):
+    """Assert that the function return a valid schedule."""
+    # Sunday 6:30am - 9:30pm
+    schedule_json = [{'down': '30 6 * * 6', 'up': '30 21 * * 6'}]
+
+    # 2019-07-30 11:30am Saturday
+    check_date: datetime = datetime(1988, 7, 30, 11, 30)
+
+    with app.app_context():
+        service_name = 'PAYBC'
+
+        mock_get_schedule = patch('pay_api.services.status_service.StatusService.get_schedules')
+
+        mock_get = mock_get_schedule.start()
+        mock_get.return_value = schedule_json
+
+        get_response = StatusService().schedule_status(service_name=service_name, check_date=check_date)
+
+        mock_get.stop()
+
+        assert get_response is not None
+        assert get_response['service'] == service_name
+        assert not get_response['current_status']
+        timezone = pytz.timezone('US/Pacific')
+        assert get_response['next_schedule_date'] == timezone.localize(datetime(1988, 7, 30, 6, 30))
+
+
 def test_status_check_multiple_schedule(app):
     """Assert that the function don't return schedules."""
     # Saturday 6:30am - 9:30pm, Sunday 6:30am - 9:30pm
