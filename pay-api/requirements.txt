@@ -31,6 +31,7 @@ Mako==1.0.14
 MarkupSafe==1.1.1
 marshmallow-sqlalchemy==0.17.0
 marshmallow==3.0.0rc7
+pay-api==0.0.0
 protobuf==3.9.0
 psycopg2-binary==2.8.3
 pyasn1==0.4.6
