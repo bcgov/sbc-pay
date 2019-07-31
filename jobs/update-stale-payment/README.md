@@ -20,13 +20,13 @@ Now switch to DEV namepace
 
 Run the cron in DEV namespace
 
-# DEV
+### DEV
 `oc process -f cron-update-stale-payment.yaml -p ENV_TAG=latest -p TAG_NAME=dev | oc create -f -`
 
-# TEST
+### TEST
 `oc process -f cron-update-stale-payment.yaml -p ENV_TAG=test -p TAG_NAME=test | oc create -f -`
 
-# PROD
+### PROD
 `oc process -f cron-update-stale-payment.yaml -p ENV_TAG=prod -p TAG_NAME=prod | oc create -f -`
 
 ## Find the job running
