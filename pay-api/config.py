@@ -216,6 +216,8 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
         },
     ]
 
+    REPORT_API_BASE_URL = "https://mock-lear-tools.pathfinder.gov.bc.ca/rest/PayBC+API+Reference/1.0.0/cfs/parties/"
+
     SERVICE_SCHEDULE = json.dumps(schedule_json)
 
 
