@@ -21,8 +21,8 @@ import pytest
 
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.paybc_service import PaybcService
-from pay_api.utils.errors import Error
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
+from pay_api.utils.errors import Error
 
 
 def test_paybc_system_factory(session):
