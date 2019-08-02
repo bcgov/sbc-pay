@@ -21,9 +21,9 @@ import time
 
 import pytest
 from flask_migrate import Migrate, upgrade
-from nats.aio.client import Client as Nats
 from sqlalchemy import event, text
 from sqlalchemy.schema import DropConstraint, MetaData
+from nats.aio.client import Client as Nats
 from stan.aio.client import Client as Stan
 
 from pay_api import create_app
@@ -220,7 +220,9 @@ def future(event_loop):
 @pytest.fixture
 def create_mock_coro(mocker, monkeypatch):
     """Return a mocked coroutine, and optionally patch-it in."""
+
     def _create_mock_patch_coro(to_patch=None):
+        """Return a mocked coroutine, and optionally patch-it in."""
         mock = mocker.Mock()
 
         async def _coro(*args, **kwargs):

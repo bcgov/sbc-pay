@@ -70,7 +70,7 @@
                 "image": "docker-registry.default.svc:5000/${IMAGE_NAMESPACE}/${NAME}:${TAG_NAME}",
                 "ports": [
                   {
-                    "containerPort": 8080,
+                    "containerPort": 5001,
                     "protocol": "TCP"
                   }
                 ],
