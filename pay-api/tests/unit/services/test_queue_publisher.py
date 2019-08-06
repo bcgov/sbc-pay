@@ -21,6 +21,7 @@ from unittest.mock import patch
 
 import pytest
 from flask import current_app
+
 from tests import skip_in_pod
 
 from .utils import subscribe_to_queue
@@ -44,12 +45,8 @@ async def test_publish(app, stan_server, client_id, stan, future, event_loop):
 
         # publish message
         from pay_api.services.queue_publisher import publish
-        payload = {
-            'paymentToken': {
-                'id': 1,
-                'statusCode': 'COMPLETED'
-            }
-        }
+
+        payload = {'paymentToken': {'id': 1, 'statusCode': 'COMPLETED'}}
 
         await publish(payload=payload)
 
@@ -72,12 +69,8 @@ async def test_publish_transaction_failed(app, client_id, stan, future, stan_ser
 
         # publish message
         from pay_api.services.queue_publisher import publish
-        payload = {
-            'paymentToken': {
-                'id': 100,
-                'statusCode': 'TRANSACTION_FAILED'
-            }
-        }
+
+        payload = {'paymentToken': {'id': 100, 'statusCode': 'TRANSACTION_FAILED'}}
 
         await publish(payload=payload)
 
@@ -100,13 +93,9 @@ async def test_publish_transaction_bulk_load(app, client_id, stan, future, stan_
 
         # publish message
         from pay_api.services.queue_publisher import publish
+
         for i in range(10):
-            payload = {
-                'paymentToken': {
-                    'id': i,
-                    'statusCode': 'COMPLETED'
-                }
-            }
+            payload = {'paymentToken': {'id': i, 'statusCode': 'COMPLETED'}}
             await publish(payload=payload)
 
 
@@ -123,12 +112,8 @@ async def test_publish_transaction_nats_down(app, client_id, stan, future, stan_
 
         # publish message
         from pay_api.services.queue_publisher import publish
-        payload = {
-            'paymentToken': {
-                'id': 10,
-                'statusCode': 'COMPLETED'
-            }
-        }
-        with pytest.raises(Exception) as excinfo:
+
+        payload = {'paymentToken': {'id': 10, 'statusCode': 'COMPLETED'}}
+        with pytest.raises(Exception):
             await publish(payload=payload)
         mock.stop()

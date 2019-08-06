@@ -17,7 +17,6 @@ from http import HTTPStatus
 from flask import current_app, jsonify
 from flask_restplus import Namespace, Resource, cors
 
-from pay_api.exceptions import BusinessException
 from pay_api.services.status_service import StatusService
 from pay_api.utils.util import cors_preflight
 

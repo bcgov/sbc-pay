@@ -400,6 +400,15 @@
                     }
                   },
                   {
+                    "name": "SERVICE_SCHEDULE",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${NAME}-${TAG_NAME}-config",
+                        "key": "SERVICE_SCHEDULE"
+                      }
+                    }
+                  },
+                  {
                     "name": "NATS_SERVERS",
                     "valueFrom": {
                       "configMapKeyRef": {

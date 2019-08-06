@@ -21,13 +21,13 @@ import uuid
 from datetime import datetime
 
 import pytest
-from tests import skip_in_pod
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.utils.enums import Status
 from pay_api.utils.errors import Error
+from tests import skip_in_pod
 
 
 def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
@@ -196,6 +196,7 @@ def test_transaction_update(session, stan_server):
     assert transaction.transaction_start_time is not None
     assert transaction.transaction_end_time is not None
     assert transaction.status_code == Status.COMPLETED.value
+
 
 @skip_in_pod
 def test_transaction_update_with_no_receipt(session, stan_server):

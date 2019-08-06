@@ -20,10 +20,9 @@ Test-Suite to ensure that the /transactions endpoint is working as expected.
 import json
 import uuid
 
-from tests import skip_in_pod
-
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import Role
+from tests import skip_in_pod
 
 
 token_header = {
@@ -338,6 +337,7 @@ def test_transaction_put_with_no_receipt(session, client, jwt, app):
     rv = client.patch(f'/api/v1/payments/{payment_id}/transactions/{txn_id}', data=None,
                       headers=headers)
     assert rv.status_code == 200
+
 
 @skip_in_pod
 def test_transaction_put_completed_payment(session, client, jwt, app, stan_server):
