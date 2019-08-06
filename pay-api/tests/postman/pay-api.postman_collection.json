@@ -19,7 +19,7 @@
 							"});",
 							"pm.test(\"filing type code matches\", function () {",
 							"    var jsonData = pm.response.json();",
-							"    pm.expect(jsonData.filing_type_code).to.eql(environment['filing-type-code']);",
+							"    pm.expect(jsonData.filing_type_code).to.eql('OTADR');",
 							"});"
 						],
 						"type": "text/javascript"
@@ -34,7 +34,7 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/fees/{{corp-type}}/{{filing-type-code}}",
+					"raw": "{{pay-api-base-url}}/api/v1/fees/CP/OTADR",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
@@ -42,8 +42,8 @@
 						"api",
 						"v1",
 						"fees",
-						"{{corp-type}}",
-						"{{filing-type-code}}"
+						"CP",
+						"OTADR"
 					]
 				},
 				"description": "Calculate fees by Corp Type and Filing type"
@@ -52,6 +52,28 @@
 		},
 		{
 			"name": "Create Payment Record",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "fb863ef4-20af-4ecf-923c-2e4ff414ef5d",
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"pm.test(\"Set Payment Identifier\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.environment.set(\"payment-identifier\", jsonData.id);",
+							"    console.log(\"Created payment request with identifier \"+jsonData.id)",
+							"    console.log(\"Invoice identifier set as \"+jsonData.invoices[0].id)",
+							"    pm.environment.set(\"invoice_id\", jsonData.invoices[0].id);",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"request": {
 				"method": "POST",
 				"header": [
@@ -82,6 +104,20 @@
 		},
 		{
 			"name": "Get Payment Record",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "9e92a882-5f17-46e9-a6ee-f06c2f84869d",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"protocolProfileBehavior": {
 				"disableBodyPruning": true
 			},
@@ -116,6 +152,31 @@
 		},
 		{
 			"name": "Get Invoices for the payment",
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"id": "0436f54d-04c5-48ab-bba3-d070bf007832",
+						"exec": [
+							"",
+							""
+						],
+						"type": "text/javascript"
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"id": "ef805864-534e-4d5d-8bae-7ea9876bdc78",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"protocolProfileBehavior": {
 				"disableBodyPruning": true
 			},
@@ -151,6 +212,20 @@
 		},
 		{
 			"name": "Get Invoice for the payment",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "cb1edc83-120b-49d6-bc7b-a2842ddf070a",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"protocolProfileBehavior": {
 				"disableBodyPruning": true
 			},
@@ -187,6 +262,20 @@
 		},
 		{
 			"name": "Update Payment Record ",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "918c0676-e75b-4dcf-a26c-bbe105b1b2e9",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"request": {
 				"method": "PUT",
 				"header": [
@@ -218,6 +307,26 @@
 		},
 		{
 			"name": "Create a Transaction Record",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "e06eedb1-011c-458a-a739-21e6f33d6feb",
+						"exec": [
+							"pm.test(\"Status code is 201\", function () {",
+							"    pm.response.to.have.status(201);",
+							"});",
+							"pm.test(\"Set Transaction Identifier\", function () {",
+							"    var jsonData = pm.response.json();",
+							"    pm.environment.set(\"transaction-identifier\", jsonData.id);",
+							"    console.log(\"Created transaction with identifier \"+jsonData.id)",
+							"});",
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"request": {
 				"method": "POST",
 				"header": [],
@@ -226,7 +335,7 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/transactions?redirect_uri=http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd",
+					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/transactions?redirect_uri=https%3A%2F%2Fcoops.pathfinder.gov.bc.ca%2Fdashboard",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
@@ -240,7 +349,7 @@
 					"query": [
 						{
 							"key": "redirect_uri",
-							"value": "http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd"
+							"value": "https%3A%2F%2Fcoops.pathfinder.gov.bc.ca%2Fdashboard"
 						}
 					]
 				}
@@ -249,6 +358,20 @@
 		},
 		{
 			"name": "Get Transactions for the payment",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "1a7a7dd9-9e31-4f7d-9b34-3ca248f63b46",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"protocolProfileBehavior": {
 				"disableBodyPruning": true
 			},
@@ -284,6 +407,20 @@
 		},
 		{
 			"name": "Get Transaction for the payment",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "d1efea08-989a-4dc3-af29-872a5e9ba520",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"request": {
 				"method": "GET",
 				"header": [],
@@ -310,6 +447,20 @@
 		},
 		{
 			"name": "Update Transaction against a payment",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "b9e01256-ae86-4acc-bbd5-44dba862ee8a",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"request": {
 				"method": "PATCH",
 				"header": [],
@@ -336,6 +487,18 @@
 		},
 		{
 			"name": "Generate Receipt with Payment Identifier",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "5fad65bf-62e9-4d46-bae8-6b0a2d35649a",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"request": {
 				"method": "POST",
 				"header": [
@@ -368,6 +531,18 @@
 		},
 		{
 			"name": "Generate Receipt with Payment Identifier and Invoice Identifier",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "6c458ad7-32bc-4c4b-b033-cf3c2e16d872",
+						"exec": [
+							""
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"request": {
 				"method": "POST",
 				"header": [
@@ -402,6 +577,20 @@
 		},
 		{
 			"name": "POC  - BCOL - Verify User",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"id": "cf9bc42e-7943-4c77-a6d5-8ca64cee8732",
+						"exec": [
+							"pm.test(\"Status code is 200\", function () {",
+							"    pm.response.to.have.status(200);",
+							"});"
+						],
+						"type": "text/javascript"
+					}
+				}
+			],
 			"protocolProfileBehavior": {
 				"disableBodyPruning": true
 			},
