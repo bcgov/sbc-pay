@@ -319,6 +319,15 @@
                     }
                   },
                   {
+                    "name": "PAYBC_CONNECT_TIMEOUT",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "${PAYBC_NAME}-${TAG_NAME}-secret",
+                        "key": "PAYBC_CONNECT_TIMEOUT"
+                      }
+                    }
+                  },
+                  {
                     "name": "BCOL_DEBIT_ACCOUNT_VERSION",
                     "valueFrom": {
                       "secretKeyRef": {

@@ -17,7 +17,7 @@ from http import HTTPStatus
 from flask import current_app, g, jsonify, request
 from flask_restplus import Namespace, Resource, cors
 
-from pay_api.exceptions import BusinessException
+from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import PaymentService
 from pay_api.utils.auth import jwt as _jwt
@@ -53,6 +53,8 @@ class Payment(Resource):
                                                                                        None)), HTTPStatus.CREATED
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
+        except ServiceUnavailableException as exception:
+            response, status = {'code': exception.status_code}, HTTPStatus.BAD_REQUEST
         current_app.logger.debug('>Payment.post')
         return jsonify(response), status
 
@@ -96,5 +98,7 @@ class Payments(Resource):
             )
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
+        except ServiceUnavailableException as exception:
+            response, status = {'code': exception.status_code}, HTTPStatus.BAD_REQUEST
         current_app.logger.debug('>Payment.put')
         return jsonify(response), status

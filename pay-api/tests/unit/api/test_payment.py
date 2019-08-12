@@ -19,6 +19,9 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 
 import json
 from datetime import datetime
+from unittest.mock import patch
+
+from requests.exceptions import ConnectionError
 
 from pay_api.models import PaymentTransaction
 from pay_api.schemas import utils as schema_utils
@@ -397,3 +400,82 @@ def test_payment_put_invalid_input(session, client, jwt, app):
     }
     rv = client.put(f'/api/v1/payments/{pay_id}', data=json.dumps(data), headers=headers)
     assert rv.status_code == 400
+
+
+def test_payment_creation_when_paybc_down(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    data = {
+        'payment_info': {
+            'method_of_payment': 'CC'
+        },
+        'business_info': {
+            'business_identifier': 'CP1234',
+            'corp_type': 'CP',
+            'business_name': 'ABC Corp',
+            'contact_info': {
+                'city': 'Victoria',
+                'postal_code': 'V8P2P2',
+                'province': 'BC',
+                'address_line_1': '100 Douglas Street',
+                'country': 'CA'
+            }
+        },
+        'filing_info': {
+            'filing_types': [
+                {
+                    'filing_type_code': 'OTADD',
+                    'filing_description': 'TEST'
+                },
+                {
+                    'filing_type_code': 'OTANN'
+                }
+            ]
+        }
+    }
+    with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
+        rv = client.post(f'/api/v1/payments', data=json.dumps(data), headers=headers)
+        assert rv.status_code == 400
+
+
+def test_payment_put_when_paybc_down(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    data = {
+        'payment_info': {
+            'method_of_payment': 'CC'
+        },
+        'business_info': {
+            'business_identifier': 'CP1234',
+            'corp_type': 'CP',
+            'business_name': 'ABC Corp',
+            'contact_info': {
+                'city': 'Victoria',
+                'postal_code': 'V8P2P2',
+                'province': 'BC',
+                'address_line_1': '100 Douglas Street',
+                'country': 'CA'
+            }
+        },
+        'filing_info': {
+            'filing_types': [
+                {
+                    'filing_type_code': 'OTADD',
+                    'filing_description': 'TEST'
+                },
+                {
+                    'filing_type_code': 'OTANN'
+                }
+            ]
+        }
+    }
+    rv = client.post(f'/api/v1/payments', data=json.dumps(data), headers=headers)
+    pay_id = rv.json.get('id')
+
+    transaction = factory_payment_transaction(pay_id)
+    transaction.save()
+    with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
+        rv = client.put(f'/api/v1/payments/{pay_id}', data=json.dumps(data), headers=headers)
+        assert rv.status_code == 400

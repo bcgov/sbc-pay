@@ -17,12 +17,14 @@ import json
 import requests
 from flask import current_app
 from requests.adapters import HTTPAdapter  # pylint:disable=ungrouped-imports
+from requests.exceptions import ConnectTimeout, HTTPError, ConnectionError as ReqConnectionError  # pylint:disable=ungrouped-imports
 from urllib3.util.retry import Retry
 
+from pay_api.exceptions import ServiceUnavailableException
 from pay_api.utils.enums import AuthHeaderType, ContentType
 
 
-RETRY_ADAPTER = HTTPAdapter(max_retries=Retry(total=5, backoff_factor=1, status_forcelist=[404, 500]))
+RETRY_ADAPTER = HTTPAdapter(max_retries=Retry(total=5, backoff_factor=1, status_forcelist=[404]))
 
 
 class OAuthService:
@@ -43,11 +45,25 @@ class OAuthService:
         current_app.logger.debug('Endpoint : {}'.format(endpoint))
         current_app.logger.debug('headers : {}'.format(headers))
         current_app.logger.debug('data : {}'.format(data))
-        response = requests.post(endpoint, data=data, headers=headers)
-        current_app.logger.debug(response.headers)
+        response = None
+        try:
+            response = requests.post(endpoint, data=data, headers=headers,
+                                     timeout=current_app.config.get('CONNECT_TIMEOUT'))
+            response.raise_for_status()
+        except (ReqConnectionError, ConnectTimeout) as exc:
+            current_app.logger.error('---Error on POST---')
+            current_app.logger.error(exc)
+            raise ServiceUnavailableException(exc)
+        except HTTPError as exc:
+            current_app.logger.error(
+                'HTTPError on POST with status code {}'.format(response.status_code if response else ''))
+            if response and response.status_code >= 500:
+                raise ServiceUnavailableException(exc)
+            raise exc
 
-        current_app.logger.info('response : {}'.format(response.text))
-        response.raise_for_status()
+        current_app.logger.debug(response.headers if response else '')
+        current_app.logger.info('response : {}'.format(response.text if response else ''))
+
         current_app.logger.debug('>post')
         return response
 
@@ -67,8 +83,21 @@ class OAuthService:
         session = requests.Session()
         if retry_on_failure:
             session.mount(endpoint, RETRY_ADAPTER)
-        response = session.get(endpoint, headers=headers)
-        current_app.logger.info('response : {}'.format(response.text))
-        response.raise_for_status()
+        response = None
+        try:
+            response = session.get(endpoint, headers=headers, timeout=current_app.config.get('CONNECT_TIMEOUT'))
+            response.raise_for_status()
+        except (ReqConnectionError, ConnectTimeout) as exc:
+            current_app.logger.error('---Error on POST---')
+            current_app.logger.error(exc)
+            raise ServiceUnavailableException(exc)
+        except HTTPError as exc:
+            current_app.logger.error(
+                'HTTPError on POST with status code {}'.format(response.status_code if response else ''))
+            if response and response.status_code >= 500:
+                raise ServiceUnavailableException(exc)
+            raise exc
+
+        current_app.logger.info('response : {}'.format(response.text if response else ''))
         current_app.logger.debug('>GET')
         return response

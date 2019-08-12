@@ -31,8 +31,9 @@ from .meta import API as META_API
 from .ops import API as OPS_API
 from .paybc_invoice import API as PAYBC_INVOICE_API
 from .payment import API as PAY_API
-from .transaction import API as TRANSACTION_API
 from .status import API as SERVICE_STATUS_API
+from .transaction import API as TRANSACTION_API
+
 
 __all__ = ('API_BLUEPRINT', 'OPS_BLUEPRINT')
 

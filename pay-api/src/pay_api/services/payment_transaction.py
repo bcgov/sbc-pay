@@ -19,7 +19,7 @@ from typing import Dict
 
 from flask import current_app
 
-from pay_api.exceptions import BusinessException
+from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import PaymentTransactionSchema
@@ -48,6 +48,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         self._pay_system_url: str = None
         self._transaction_start_time: datetime = None
         self._transaction_end_time: datetime = None
+        self._pay_system_reason_code: str = None
 
     @property
     def _dao(self):
@@ -143,10 +144,23 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         self._transaction_end_time = value
         self._dao.transaction_end_time = value
 
+    @property
+    def pay_system_reason_code(self):
+        """Return the pay_system_reason_code."""
+        return self._pay_system_reason_code
+
+    @pay_system_reason_code.setter
+    def pay_system_reason_code(self, value: str):
+        """Set the pay_system_reason_code."""
+        self._pay_system_reason_code = value
+
     def asdict(self):
         """Return the invoice as a python dict."""
         txn_schema = PaymentTransactionSchema()
         d = txn_schema.dump(self._dao)
+        if self.pay_system_reason_code:
+            d['pay_system_reason_code'] = self.pay_system_reason_code
+
         return d
 
     @staticmethod
@@ -271,7 +285,13 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
 
         payment_account = PaymentAccount.find_by_id(invoice.account_id)
 
-        receipt_details = pay_system_service.get_receipt(payment_account, receipt_number, invoice.invoice_number)
+        try:
+            receipt_details = pay_system_service.get_receipt(payment_account, receipt_number, invoice.invoice_number)
+            txn_reason_code = None
+        except ServiceUnavailableException as exc:
+            txn_reason_code = exc.status_code
+            receipt_details = None
+
         if receipt_details:
             # Find if a receipt exists with same receipt_number for the invoice
             receipt: Receipt = Receipt.find_by_invoice_id_and_receipt_number(invoice.id, receipt_details[0])
@@ -308,6 +328,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
 
         transaction = PaymentTransaction()
         transaction._dao = transaction_dao  # pylint: disable=protected-access
+        transaction.pay_system_reason_code = txn_reason_code
 
         current_app.logger.debug('>update_transaction')
         return transaction
