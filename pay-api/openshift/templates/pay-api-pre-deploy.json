@@ -46,7 +46,8 @@
         "PAYBC_CLIENT_ID": "${PAYBC_CLIENT_ID}",
         "PAYBC_CLIENT_SECRET": "${PAYBC_CLIENT_SECRET}",
         "PAYBC_MEMO_LINE_NAME": "${PAYBC_MEMO_LINE_NAME}",
-        "PAYBC_PORTAL_URL": "${PAYBC_PORTAL_URL}"
+        "PAYBC_PORTAL_URL": "${PAYBC_PORTAL_URL}",
+        "PAYBC_CONNECT_TIMEOUT": "${PAYBC_CONNECT_TIMEOUT}"
       },
       "type": "Opaque"
     },
@@ -231,6 +232,12 @@
       "required": true,
       "generate": "expression",
       "from": "[a-zA-Z0-9]{16}"
+    },
+    {
+      "name": "PAYBC_CONNECT_TIMEOUT",
+      "required": true,
+      "generate": "expression",
+      "from": "[0-9]{16}"
     },
     {
       "name": "BCOL_DEBIT_ACCOUNT_VERSION",

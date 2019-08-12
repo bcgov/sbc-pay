@@ -21,8 +21,9 @@ from datetime import datetime
 from unittest.mock import patch
 
 import pytest
+from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
 
-from pay_api.exceptions import BusinessException
+from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
 from pay_api.services.payment_service import PaymentService
 from pay_api.utils.enums import Status
@@ -451,3 +452,46 @@ def test_update_payment_record_rollback(session):
         with pytest.raises(Exception) as excinfo:
             PaymentService.update_payment(payment.id, payment_request, 'test')
         assert excinfo.type == Exception
+
+
+def test_create_payment_record_rollback_on_paybc_connection_error(session):
+    """Assert that the payment records are not created."""
+    payment_request = {
+        'payment_info': {'method_of_payment': 'CC'},
+        'business_info': {
+            'business_identifier': 'CP1234',
+            'corp_type': 'CP',
+            'business_name': 'ABC Corp',
+            'contact_info': {
+                'city': 'Victoria',
+                'postal_code': 'V8P2P2',
+                'province': 'BC',
+                'address_line_1': '100 Douglas Street',
+                'country': 'CA',
+            },
+        },
+        'filing_info': {
+            'filing_types': [{'filing_type_code': 'OTADD', 'filing_description': 'TEST'}, {'filing_type_code': 'OTANN'}]
+        },
+    }
+    from unittest.mock import Mock
+    # Mock here that the invoice update fails here to test the rollback scenario
+    with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
+        with pytest.raises(ServiceUnavailableException) as excinfo:
+            PaymentService.create_payment(payment_request, 'test')
+        assert excinfo.type == ServiceUnavailableException
+    with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectTimeout('mocked error')):
+        with pytest.raises(ServiceUnavailableException) as excinfo:
+            PaymentService.create_payment(payment_request, 'test')
+        assert excinfo.type == ServiceUnavailableException
+
+    mock_create_site = patch('pay_api.services.oauth_service.requests.post')
+
+    mock_post = mock_create_site.start()
+    mock_post.return_value = Mock(status_code=503)
+
+    with patch('pay_api.services.oauth_service.requests.post', side_effect=HTTPError('mocked error')) as post_mock:
+        post_mock.status_Code = 503
+        with pytest.raises(HTTPError) as excinfo:
+            PaymentService.create_payment(payment_request, 'test')
+        assert excinfo.type == HTTPError

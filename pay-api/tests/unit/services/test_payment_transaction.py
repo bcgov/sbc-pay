@@ -393,3 +393,40 @@ def test_no_existing_transaction(session):
     transaction = PaymentTransactionService.find_active_by_payment_id(payment.id)
 
     assert transaction is None
+
+
+@skip_in_pod
+def test_transaction_update_on_paybc_connection_error(session, stan_server):
+    """Assert that the payment is saved to the table."""
+    payment_account = factory_payment_account()
+    payment = factory_payment()
+    payment_account.save()
+    payment.save()
+    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice.save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    transaction = PaymentTransactionService.create(payment.id, 'http://google.com/')
+
+    from unittest.mock import patch
+    from requests.exceptions import ConnectTimeout, ConnectionError
+
+    # Mock here that the invoice update fails here to test the rollback scenario
+    with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
+        transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451')
+        assert transaction.pay_system_reason_code == 'SERVICE_UNAVAILABLE'
+    with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectTimeout('mocked error')):
+        transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451')
+        assert transaction.pay_system_reason_code == 'SERVICE_UNAVAILABLE'
+
+    assert transaction is not None
+    assert transaction.id is not None
+    assert transaction.status_code is not None
+    assert transaction.payment_id is not None
+    assert transaction.client_system_url is not None
+    assert transaction.pay_system_url is not None
+    assert transaction.transaction_start_time is not None
+    assert transaction.transaction_end_time is not None
+    assert transaction.status_code == Status.FAILED.value

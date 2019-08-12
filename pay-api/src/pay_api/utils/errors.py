@@ -33,6 +33,7 @@ class Error(Enum):
     PAY012 = 'Invalid invoice identifier', HTTPStatus.BAD_REQUEST
     PAY020 = 'Invalid Account Number for the User', HTTPStatus.BAD_REQUEST
     PAY999 = 'Invalid Request', HTTPStatus.BAD_REQUEST
+    SERVICE_UNAVAILABLE = 'Service Unavailable', HTTPStatus.BAD_REQUEST
 
     def __new__(cls, message, status):
         """Attributes for the enum."""

@@ -220,7 +220,6 @@ def future(event_loop):
 @pytest.fixture
 def create_mock_coro(mocker, monkeypatch):
     """Return a mocked coroutine, and optionally patch-it in."""
-
     def _create_mock_patch_coro(to_patch=None):
         """Return a mocked coroutine, and optionally patch-it in."""
         mock = mocker.Mock()
