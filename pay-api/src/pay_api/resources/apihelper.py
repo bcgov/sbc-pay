@@ -11,12 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Provides the WSGI entry point for running the application
+"""Meta information about the service.
+
+to support swagger on http
 """
-from pay_api import create_app
+from flask import url_for
+from flask_restplus import Api as BaseApi
 
-# Openshift s2i expects a lower case name of application
-application = create_app()  # pylint: disable=invalid-name
 
-if __name__ == "__main__":
-    application.run()
+class Api(BaseApi):
+    """Monkey patch Swagger API to return HTTPS URLs."""
+
+    @property
+    def specs_url(self):
+        """Return URL for endpoint."""
+        scheme = 'http' if '5000' in self.base_url else 'https'
+        return url_for(self.endpoint('specs'), _external=True, _scheme=scheme)
