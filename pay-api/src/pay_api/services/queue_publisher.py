@@ -65,7 +65,7 @@ async def publish(payload):  # pylint: disable=too-few-public-methods
 
         current_app.logger.debug(payload)
 
-        await nats_con.publish(subject=current_app.config.get('NATS_SUBJECT'),
+        await stan_con.publish(subject=current_app.config.get('NATS_SUBJECT'),
                                payload=json.dumps(payload).encode('utf-8'))
 
     except Exception as e:  # pylint: disable=broad-except
