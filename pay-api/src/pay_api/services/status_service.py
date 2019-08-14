@@ -73,9 +73,6 @@ class StatusService:
                     current_status = bool(check_date_with_hours_aware >= uptime)
                     if downtime > uptime:
                         current_status = bool(downtime > check_date_with_hours_aware)
-                else:
-                    if schedule_date < check_date_aware.date():
-                        current_status = False
 
             response['current_status'] = current_status
 

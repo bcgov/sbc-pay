@@ -148,6 +148,31 @@ def test_status_check_status_false(app):
         assert get_response['next_down_time'] == 0
 
 
+def test_status_check_status_single_schedule(app):
+    """Assert that the function return a valid schedule."""
+    # Sunday 6:30am - 9:30pm
+    schedule_json = [{'up': '30 6 * * 7', 'down': '30 21 * * 7'}]
+
+    # 1988-07-31 10:30pm US/Pacific Sunday / 1988-08-01 5:30am UTC
+    check_date: datetime = datetime(1988, 8, 1, 5, 30)
+
+    with app.app_context():
+        service_name = 'PAYBC'
+
+        mock_get_schedule = patch('pay_api.services.status_service.StatusService.get_schedules')
+
+        mock_get = mock_get_schedule.start()
+        mock_get.return_value = schedule_json
+
+        get_response = StatusService().schedule_status(service_name=service_name, check_date=check_date)
+
+        mock_get.stop()
+
+        assert get_response is not None
+        assert get_response['service'] == service_name
+        assert not get_response['current_status']
+
+
 def test_status_check_single_schedule(app):
     """Assert that the function return a valid schedule."""
     # Sunday 6:30am - 9:30pm
