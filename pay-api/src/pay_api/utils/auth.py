@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Bring in the common JWT Manager."""
-from flask_jwt_oidc import JwtManager
+from pay_api.jwt_wrapper import JWTWrapper
 
 
-jwt = JwtManager()  # pylint: disable=invalid-name; lower case name as used by convention in most Flask apps
+jwt = JWTWrapper.get_instance()  # pylint: disable=invalid-name; lower case name as used by convention in most Flask apps

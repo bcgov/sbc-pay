@@ -21,8 +21,8 @@ All services have 2 defaults sets of endpoints:
 That are used to expose operational health information about the service, and meta information.
 """
 from flask import Blueprint
-from flask_restplus import Api
 
+from .apihelper import Api
 from .bcol_profile import API as BCOL_API
 from .fee import API as FEE_API
 from .invoice import API as INVOICE_API

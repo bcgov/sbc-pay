@@ -49,6 +49,41 @@ def test_get_schedules_with_name_not_exists(app):
         assert get_response is None
 
 
+def test_get_nearest_datetime(app):
+    """Assert that the function don't return schedules."""
+    with app.app_context():
+        dates: list = list()
+        dates.append(datetime(1988, 8, 1, 6, 30))
+        dates.append(datetime(1988, 8, 1, 7, 30))
+        check_date: datetime = datetime(1988, 8, 1, 5, 30)
+
+        get_response = StatusService().get_nearest_datetime(dates, check_date)
+        assert get_response == datetime(1988, 8, 1, 6, 30).timestamp()
+
+
+def test_get_nearest_datetime_without_list(app):
+    """Assert that the function don't return schedules."""
+    with app.app_context():
+        dates: list = list()
+
+        check_date: datetime = datetime(1988, 8, 1, 5, 30)
+
+        get_response = StatusService().get_nearest_datetime(dates, check_date)
+        assert get_response == 0
+
+
+def test_get_nearest_datetime_without_date(app):
+    """Assert that the function don't return schedules."""
+    with app.app_context():
+        dates: list = list()
+        dates.append(datetime(1988, 8, 1, 6, 30))
+        dates.append(datetime(1988, 8, 1, 7, 30))
+        check_date: datetime = None
+
+        get_response = StatusService().get_nearest_datetime(dates, check_date)
+        assert get_response == 0
+
+
 def test_status_check_without_name(app):
     """Assert that the function returns schedules."""
     with app.app_context():
@@ -81,16 +116,16 @@ def test_status_check_no_schedule(app):
         assert get_response is not None
         assert get_response['service'] == service_name
         assert get_response['current_status']
-        assert get_response['next_schedule_date'] is None
+        assert get_response['current_down_time'] == 0
 
 
 def test_status_check_status_false(app):
     """Assert that the function return a valid schedule."""
     # Sunday 6:30am - 9:30pm
-    schedule_json = [{'up': '30 6 * * 7', 'down': '30 21 * * 7'}]
+    schedule_json = [{'up': '30 6 * * 6', 'down': '30 21 * * 6'}, {'up': '30 6 * * 7', 'down': '30 21 * * 7'}]
 
-    # 2019-07-30 10:30pm Sunday
-    check_date: datetime = datetime(1988, 7, 31, 22, 30)
+    # 1988-07-31 10:30pm US/Pacific Sunday / 1988-08-01 5:30am UTC
+    check_date: datetime = datetime(1988, 8, 1, 5, 30)
 
     with app.app_context():
         service_name = 'PAYBC'
@@ -108,7 +143,34 @@ def test_status_check_status_false(app):
         assert get_response['service'] == service_name
         assert not get_response['current_status']
         timezone = pytz.timezone('US/Pacific')
-        assert get_response['next_schedule_date'] == timezone.localize(datetime(1988, 7, 31, 21, 30))
+        assert get_response['current_down_time'] == timezone.localize(datetime(1988, 7, 31, 21, 30)).timestamp()
+        assert get_response['next_up_time'] == timezone.localize(datetime(1988, 8, 6, 6, 30)).timestamp()
+        assert get_response['next_down_time'] == 0
+
+
+def test_status_check_status_single_schedule(app):
+    """Assert that the function return a valid schedule."""
+    # Sunday 6:30am - 9:30pm
+    schedule_json = [{'up': '30 6 * * 7', 'down': '30 21 * * 7'}]
+
+    # 1988-07-31 10:30pm US/Pacific Sunday / 1988-08-01 5:30am UTC
+    check_date: datetime = datetime(1988, 8, 1, 5, 30)
+
+    with app.app_context():
+        service_name = 'PAYBC'
+
+        mock_get_schedule = patch('pay_api.services.status_service.StatusService.get_schedules')
+
+        mock_get = mock_get_schedule.start()
+        mock_get.return_value = schedule_json
+
+        get_response = StatusService().schedule_status(service_name=service_name, check_date=check_date)
+
+        mock_get.stop()
+
+        assert get_response is not None
+        assert get_response['service'] == service_name
+        assert not get_response['current_status']
 
 
 def test_status_check_single_schedule(app):
@@ -116,8 +178,8 @@ def test_status_check_single_schedule(app):
     # Sunday 6:30am - 9:30pm
     schedule_json = [{'up': '30 6 * * 7', 'down': '30 21 * * 7'}]
 
-    # 2019-07-30 11:30am Saturday
-    check_date: datetime = datetime(1988, 7, 30, 11, 30)
+    # 1988-07-30 11:30am US/Pacific Saturday / 1988-07-30 6:30pm UTC
+    check_date: datetime = datetime(1988, 7, 30, 18, 30)
 
     with app.app_context():
         service_name = 'PAYBC'
@@ -135,7 +197,9 @@ def test_status_check_single_schedule(app):
         assert get_response['service'] == service_name
         assert get_response['current_status']
         timezone = pytz.timezone('US/Pacific')
-        assert get_response['next_schedule_date'] == timezone.localize(datetime(1988, 7, 31, 21, 30))
+        assert get_response['current_down_time'] == 0
+        assert get_response['next_down_time'] == timezone.localize(datetime(1988, 7, 31, 21, 30)).timestamp()
+        assert get_response['next_up_time'] == 0
 
 
 def test_status_check_single_schedule_down_first(app):
@@ -143,8 +207,8 @@ def test_status_check_single_schedule_down_first(app):
     # Sunday 6:30am - 9:30pm
     schedule_json = [{'down': '30 6 * * 6', 'up': '30 21 * * 6'}]
 
-    # 2019-07-30 11:30am Saturday
-    check_date: datetime = datetime(1988, 7, 30, 11, 30)
+    # 1988-07-30 11:30am US/Pacific Saturday / 1988-07-30 6:30pm UTC
+    check_date: datetime = datetime(1988, 7, 30, 18, 30)
 
     with app.app_context():
         service_name = 'PAYBC'
@@ -162,7 +226,9 @@ def test_status_check_single_schedule_down_first(app):
         assert get_response['service'] == service_name
         assert not get_response['current_status']
         timezone = pytz.timezone('US/Pacific')
-        assert get_response['next_schedule_date'] == timezone.localize(datetime(1988, 7, 30, 6, 30))
+        assert get_response['current_down_time'] == timezone.localize(datetime(1988, 7, 30, 6, 30)).timestamp()
+        assert get_response['next_down_time'] == 0
+        assert get_response['next_up_time'] == timezone.localize(datetime(1988, 7, 30, 21, 30)).timestamp()
 
 
 def test_status_check_multiple_schedule(app):
@@ -170,8 +236,8 @@ def test_status_check_multiple_schedule(app):
     # Saturday 6:30am - 9:30pm, Sunday 6:30am - 9:30pm
     schedule_json = [{'up': '30 6 * * 6', 'down': '30 21 * * 6'}, {'up': '30 6 * * 7', 'down': '30 21 * * 7'}]
 
-    # 1988-07-30 11:30am Saturday
-    check_date: datetime = datetime(1988, 7, 30, 11, 30)
+    # 1988-07-30 11:30am US/Pacific Saturday / 1988-07-30 6:30pm UTC
+    check_date: datetime = datetime(1988, 7, 30, 18, 30)
 
     with app.app_context():
         service_name = 'PAYBC'
@@ -189,7 +255,9 @@ def test_status_check_multiple_schedule(app):
         assert get_response['service'] == service_name
         assert get_response['current_status']
         timezone = pytz.timezone('US/Pacific')
-        assert get_response['next_schedule_date'] == timezone.localize(datetime(1988, 7, 30, 21, 30))
+        assert get_response['current_down_time'] == 0
+        assert get_response['next_up_time'] == 0
+        assert get_response['next_down_time'] == timezone.localize(datetime(1988, 7, 30, 21, 30)).timestamp()
 
 
 def test_status_check_multiple_flexible_schedule(app):
@@ -207,8 +275,8 @@ def test_status_check_multiple_flexible_schedule(app):
         {'up': '30 6 * * 7', 'down': '30 21 * * 7'},
     ]
 
-    # 1988-07-28 11:30am Saturday
-    check_date: datetime = datetime(1988, 7, 28, 11, 30)
+    # 1988-07-28 11:30am US/Pacific Thrusday / 1988-07-28 6:30pm UTC
+    check_date: datetime = datetime(1988, 7, 28, 18, 30)
 
     with app.app_context():
         service_name = 'PAYBC'
@@ -224,7 +292,9 @@ def test_status_check_multiple_flexible_schedule(app):
         assert get_response['service'] == service_name
         assert get_response['current_status']
         timezone = pytz.timezone('US/Pacific')
-        assert get_response['next_schedule_date'] == timezone.localize(datetime(1988, 7, 28, 21, 30))
+        assert get_response['current_down_time'] == 0
+        assert get_response['next_up_time'] == 0
+        assert get_response['next_down_time'] == timezone.localize(datetime(1988, 7, 28, 21, 30)).timestamp()
 
 
 def test_status_check_multiple_flexible_schedule_false(app):
@@ -242,8 +312,8 @@ def test_status_check_multiple_flexible_schedule_false(app):
         {'up': '30 6 * * 7', 'down': '30 21 * * 7'},
     ]
 
-    # 1988-07-29 11:30pm Friday
-    check_date: datetime = datetime(1988, 7, 29, 23, 30)
+    # 1988-07-29 11:30pm US/Pacific Friday / 1988-07-30 5:30am UTC
+    check_date: datetime = datetime(1988, 7, 30, 5, 30)
 
     with app.app_context():
         service_name = 'PAYBC'
@@ -257,6 +327,8 @@ def test_status_check_multiple_flexible_schedule_false(app):
 
         assert get_response is not None
         assert get_response['service'] == service_name
-        assert get_response['current_status']
+        assert not get_response['current_status']
         timezone = pytz.timezone('US/Pacific')
-        assert get_response['next_schedule_date'] == timezone.localize(datetime(1988, 7, 29, 21, 30))
+        assert get_response['current_down_time'] == timezone.localize(datetime(1988, 7, 29, 21, 30)).timestamp()
+        assert get_response['next_up_time'] == timezone.localize(datetime(1988, 7, 30, 6, 30)).timestamp()
+        assert get_response['next_down_time'] == 0
