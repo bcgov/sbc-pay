@@ -14,12 +14,13 @@
 """Endpoints to check and manage payments."""
 from http import HTTPStatus
 
-from flask import abort, request
+from flask import Response, abort, request
 from flask_restplus import Namespace, Resource
 from jinja2 import TemplateNotFound
 
 from api.services import ReportService
 from api.utils.auth import jwt as _jwt
+
 
 API = Namespace('Reports', description='Service - Reports')
 
@@ -40,19 +41,26 @@ class Report(Resource):
         request_json = request.get_json()
         template_vars = request_json['template_vars']
         report_name = request_json['report_name']
+        populate_page_number = bool(request_json.get('populate_page_number', None))
+
         pdf = None
-        if 'template_name' in request_json:   # Ignore template if template_name is present
+        if 'template_name' in request_json:  # Ignore template if template_name is present
             template_name = request_json['template_name']
             try:
-                pdf = ReportService.create_report_from_stored_template(template_name, template_vars, report_name)
+                pdf = ReportService.create_report_from_stored_template(template_name, template_vars,
+                                                                       populate_page_number)
             except TemplateNotFound:
                 abort(HTTPStatus.NOT_FOUND, 'Template not found')
 
         elif 'template' in request_json:
-            pdf = ReportService.create_report_from_template(request_json['template'], template_vars, report_name)
+            pdf = ReportService.create_report_from_template(request_json['template'], template_vars,
+                                                            populate_page_number)
 
         if pdf is not None:
-            response = pdf
+            response = Response(pdf, 200)
+            response.headers.set('Content-Disposition', 'attachment', filename='{}.pdf'.format(report_name))
+            response.headers.set('Content-Type', 'application/pdf')
+
         else:
-            abort(HTTPStatus.BAD_REQUEST, 'PDF cannot be generate')
+            abort(HTTPStatus.BAD_REQUEST, 'PDF cannot be generated')
         return response
