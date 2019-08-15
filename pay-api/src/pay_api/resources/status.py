@@ -13,6 +13,7 @@
 # limitations under the License.
 """Resource for Service status endpoints."""
 from http import HTTPStatus
+from datetime import datetime
 
 from flask import current_app, jsonify
 from flask_restplus import Namespace, Resource, cors
@@ -37,6 +38,6 @@ class ServiceStatus(Resource):
     def get(service_name: str):
         """Get the service schedule and return status and next schedule date/time."""
         current_app.logger.info('<ServiceStatus.get')
-        response, status = STATUS_SERVICE.schedule_status(service_name), HTTPStatus.OK
+        response, status = STATUS_SERVICE.schedule_status(service_name, datetime.utcnow()), HTTPStatus.OK
         current_app.logger.debug('>ServiceStatus.get')
         return jsonify(response), status
