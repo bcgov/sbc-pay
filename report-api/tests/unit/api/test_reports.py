@@ -20,6 +20,7 @@ Test suite for reports
 
 import base64
 import json
+
 from .base_test import get_claims, token_header
 
 
@@ -83,6 +84,26 @@ def test_generate_report_with_template(client, jwt, app):
             'title': 'This is a sample request'
         },
         'report_name': 'Test Report'
+    }
+    rv = client.post(request_url, data=json.dumps(request_data), headers=headers)
+    assert rv.status_code == 200
+    assert rv.content_type == 'application/pdf'
+
+
+def test_generate_report_with_page_number(client, jwt, app):
+    """Call to generate report with new template."""
+    token = jwt.create_jwt(get_claims(app_request=app), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    template = '<html><body><h1>Sample Report</h1><h2>{{ title }}</h2></body></html>'
+    template = base64.b64encode(bytes(template, 'utf-8')).decode('utf-8')
+    request_url = '/api/v1/reports'
+    request_data = {
+        'template': template,
+        'template_vars': {
+            'title': 'This is a sample request'
+        },
+        'report_name': 'Test Report',
+        'populate_page_number': 'true'
     }
     rv = client.post(request_url, data=json.dumps(request_data), headers=headers)
     assert rv.status_code == 200
