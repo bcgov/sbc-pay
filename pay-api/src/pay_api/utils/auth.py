@@ -15,4 +15,5 @@
 from pay_api.jwt_wrapper import JWTWrapper
 
 
-jwt = JWTWrapper.get_instance()  # pylint: disable=invalid-name; lower case name as used by convention in most Flask apps
+# lower case name as used by convention in most Flask apps
+jwt = JWTWrapper.get_instance()  # pylint: disable=invalid-name
