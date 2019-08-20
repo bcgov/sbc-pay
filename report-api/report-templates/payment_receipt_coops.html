@@ -4,10 +4,10 @@
 <head lang="en">
   <meta charset="UTF-8">
   <style>
-      @page {
-  size: A4; /* Change from the default size of A4 */
-  margin: 2cm; /* Set margin on each page */
-}
+    @page {
+      size: A4; /* Change from the default size of A4 */
+      margin: 2cm; /* Set margin on each page */
+    }
     body {
       font-family: Arial, Helvetica, sans-serif;
       font-size: 16px;
@@ -119,6 +119,13 @@
     .no-padding {
       padding: 0 !important;
     }
+
+    .float-right {
+      float: right;
+    }
+    .inline {
+      display: inline
+    }
   </style>
 </head>
 
@@ -209,11 +216,9 @@
       </tr>
       <tr class="bcgov-footer-row bcgov-gold-bg">
         <td></td>
-        <td colspan="2">
-          Incorporation Number {{ incorporation_number }}
-        </td>
-        <td class="align-right">
-          Page 1 of 1
+        <td colspan="3">
+          <div class="inline">Incorporation Number {{ incorporation_number }}</div>
+          <div class="inline float-right">Page 1 of 1</div>
         </td>
       </tr>
     </tfoot>
