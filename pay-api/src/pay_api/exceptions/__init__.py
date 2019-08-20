@@ -32,3 +32,13 @@ class BusinessException(Exception):
         self.message = error.message
         self.code = error.name
         self.status = error.status
+
+
+class ServiceUnavailableException(Exception):
+    """Exception to be raised if third party service is unavailable."""
+
+    def __init__(self, error, *args, **kwargs):
+        """Return a valid BusinessException."""
+        super(ServiceUnavailableException, self).__init__(*args, **kwargs)
+        self.error = error
+        self.status_code = Error.SERVICE_UNAVAILABLE.name

@@ -21,6 +21,19 @@ class Error(Enum):
 
     PAY001 = 'Invalid Corp Type or Filing Type', HTTPStatus.BAD_REQUEST
     PAY002 = 'No matching record found for Corp Type and Filing Type', HTTPStatus.BAD_REQUEST
+    PAY003 = 'Cannot identify payment system, Invalid Corp Type or Payment Method', HTTPStatus.BAD_REQUEST
+    PAY004 = 'Invalid Corp Number or Corp Type or Payment System Code', HTTPStatus.BAD_REQUEST
+    PAY005 = 'Invalid Payment Identifier', HTTPStatus.BAD_REQUEST
+    PAY006 = 'Transaction is already completed', HTTPStatus.BAD_REQUEST
+    PAY007 = 'Invalid redirect uri', HTTPStatus.BAD_REQUEST
+    PAY008 = 'Invalid transaction identifier', HTTPStatus.BAD_REQUEST
+    PAY009 = 'Invalid account identifier', HTTPStatus.BAD_REQUEST
+    PAY010 = 'Payment is already completed', HTTPStatus.BAD_REQUEST
+    PAY011 = 'Payment is already cancelled', HTTPStatus.BAD_REQUEST
+    PAY012 = 'Invalid invoice identifier', HTTPStatus.BAD_REQUEST
+    PAY020 = 'Invalid Account Number for the User', HTTPStatus.BAD_REQUEST
+    PAY999 = 'Invalid Request', HTTPStatus.BAD_REQUEST
+    SERVICE_UNAVAILABLE = 'Service Unavailable', HTTPStatus.BAD_REQUEST
 
     def __new__(cls, message, status):
         """Attributes for the enum."""

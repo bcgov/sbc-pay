@@ -6,7 +6,7 @@
       "description": "Deployment template for a pay api service.",
       "tags": "${NAME}-${TAG_NAME}"
     },
-    "name": "${NAME}-${TAG_NAME}-deploy-template"
+    "name": "${NAME}-${TAG_NAME}-deploy"
   },
   "objects": [
     {
@@ -16,7 +16,8 @@
         "name": "${NAME}-${TAG_NAME}",
         "labels": {
           "app": "${NAME}-${TAG_NAME}",
-          "app-group": "${APP_GROUP}-${TAG_NAME}"
+          "app-group": "${APP_GROUP}",
+          "template": "${NAME}-deploy"
         }
       },
       "spec": {
@@ -37,7 +38,7 @@
                     "name": "DATABASE_ADMIN_PASSWORD",
                     "valueFrom": {
                       "secretKeyRef": {
-                        "name": "postgresql-${TAG_NAME}",
+                        "name": "${DATABASE_NAME}-${TAG_NAME}-secret",
                         "key": "DATABASE_ADMIN_PASSWORD"
                       }
                     }
@@ -45,8 +46,8 @@
                   {
                     "name": "DATABASE_USERNAME",
                     "valueFrom": {
-                      "secretKeyRef": {
-                        "name": "postgresql-${TAG_NAME}",
+                      "configMapKeyRef": {
+                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
                         "key": "DATABASE_USER"
                       }
                     }
@@ -55,7 +56,7 @@
                     "name": "DATABASE_PASSWORD",
                     "valueFrom": {
                       "secretKeyRef": {
-                        "name": "postgresql-${TAG_NAME}",
+                        "name": "${DATABASE_NAME}-${TAG_NAME}-secret",
                         "key": "DATABASE_PASSWORD"
                       }
                     }
@@ -64,7 +65,7 @@
                     "name": "DATABASE_NAME",
                     "valueFrom": {
                       "configMapKeyRef": {
-                        "name": "${NAME}-${TAG_NAME}-config",
+                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
                         "key": "DATABASE_NAME"
                       }
                     }
@@ -73,7 +74,7 @@
                     "name": "DATABASE_HOST",
                     "valueFrom": {
                       "configMapKeyRef": {
-                        "name": "${NAME}-${TAG_NAME}-config",
+                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
                         "key": "DATABASE_HOST"
                       }
                     }
@@ -82,7 +83,7 @@
                     "name": "DATABASE_PORT",
                     "valueFrom": {
                       "configMapKeyRef": {
-                        "name": "${NAME}-${TAG_NAME}-config",
+                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
                         "key": "DATABASE_PORT"
                       }
                     }
@@ -120,7 +121,9 @@
           "metadata": {
             "labels": {
               "app": "${NAME}-${TAG_NAME}",
-              "deploymentconfig": "${NAME}-${TAG_NAME}"
+              "app-group": "${APP_GROUP}",
+              "deploymentconfig": "${NAME}-${TAG_NAME}",
+              "template": "${NAME}-deploy"
             }
           },
           "spec": {
@@ -138,8 +141,8 @@
                   {
                     "name": "DATABASE_USERNAME",
                     "valueFrom": {
-                      "secretKeyRef": {
-                        "name": "postgresql-${TAG_NAME}",
+                      "configMapKeyRef": {
+                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
                         "key": "DATABASE_USER"
                       }
                     }
@@ -148,7 +151,7 @@
                     "name": "DATABASE_PASSWORD",
                     "valueFrom": {
                       "secretKeyRef": {
-                        "name": "postgresql-${TAG_NAME}",
+                        "name": "${DATABASE_NAME}-${TAG_NAME}-secret",
                         "key": "DATABASE_PASSWORD"
                       }
                     }
@@ -157,7 +160,7 @@
                     "name": "DATABASE_NAME",
                     "valueFrom": {
                       "configMapKeyRef": {
-                        "name": "${NAME}-${TAG_NAME}-config",
+                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
                         "key": "DATABASE_NAME"
                       }
                     }
@@ -166,7 +169,7 @@
                     "name": "DATABASE_HOST",
                     "valueFrom": {
                       "configMapKeyRef": {
-                        "name": "${NAME}-${TAG_NAME}-config",
+                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
                         "key": "DATABASE_HOST"
                       }
                     }
@@ -175,8 +178,53 @@
                     "name": "DATABASE_PORT",
                     "valueFrom": {
                       "configMapKeyRef": {
-                        "name": "${NAME}-${TAG_NAME}-config",
+                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
                         "key": "DATABASE_PORT"
+                      }
+                    }
+                  },
+                  {
+                    "name": "DATABASE_TEST_USERNAME",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
+                        "key": "DATABASE_TEST_USER"
+                      }
+                    }
+                  },
+                  {
+                    "name": "DATABASE_TEST_PASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "${DATABASE_NAME}-${TAG_NAME}-secret",
+                        "key": "DATABASE_TEST_PASSWORD"
+                      }
+                    }
+                  },
+                  {
+                    "name": "DATABASE_TEST_NAME",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
+                        "key": "DATABASE_TEST_NAME"
+                      }
+                    }
+                  },
+                  {
+                    "name": "DATABASE_TEST_HOST",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
+                        "key": "DATABASE_TEST_HOST"
+                      }
+                    }
+                  },
+                  {
+                    "name": "DATABASE_TEST_PORT",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
+                        "key": "DATABASE_TEST_PORT"
                       }
                     }
                   },
@@ -184,7 +232,7 @@
                     "name": "JWT_OIDC_ALGORITHMS",
                     "valueFrom": {
                       "secretKeyRef": {
-                        "name": "keycloak-${TAG_NAME}",
+                        "name": "${KEYCLOAK_NAME}-${TAG_NAME}-secret",
                         "key": "JWT_OIDC_ALGORITHMS"
                       }
                     }
@@ -193,7 +241,7 @@
                     "name": "JWT_OIDC_AUDIENCE",
                     "valueFrom": {
                       "secretKeyRef": {
-                        "name": "keycloak-${TAG_NAME}",
+                        "name": "${KEYCLOAK_NAME}-${TAG_NAME}-secret",
                         "key": "JWT_OIDC_AUDIENCE"
                       }
                     }
@@ -202,7 +250,7 @@
                     "name": "JWT_OIDC_CLIENT_SECRET",
                     "valueFrom": {
                       "secretKeyRef": {
-                        "name": "keycloak-${TAG_NAME}",
+                        "name": "${KEYCLOAK_NAME}-${TAG_NAME}-secret",
                         "key": "JWT_OIDC_CLIENT_SECRET"
                       }
                     }
@@ -211,7 +259,7 @@
                     "name": "JWT_OIDC_WELL_KNOWN_CONFIG",
                     "valueFrom": {
                       "secretKeyRef": {
-                        "name": "keycloak-${TAG_NAME}",
+                        "name": "${KEYCLOAK_NAME}-${TAG_NAME}-secret",
                         "key": "JWT_OIDC_WELL_KNOWN_CONFIG"
                       }
                     }
@@ -220,7 +268,7 @@
                     "name": "JWT_OIDC_JWKS_CACHE_TIMEOUT",
                     "valueFrom": {
                       "secretKeyRef": {
-                        "name": "keycloak-${TAG_NAME}",
+                        "name": "${KEYCLOAK_NAME}-${TAG_NAME}-secret",
                         "key": "JWT_OIDC_JWKS_CACHE_TIMEOUT"
                       }
                     }
@@ -229,7 +277,7 @@
                     "name": "PAYBC_BASE_URL",
                     "valueFrom": {
                       "secretKeyRef": {
-                        "name": "paybc-config",
+                        "name": "${PAYBC_NAME}-${TAG_NAME}-secret",
                         "key": "PAYBC_BASE_URL"
                       }
                     }
@@ -238,7 +286,7 @@
                     "name": "PAYBC_CLIENT_ID",
                     "valueFrom": {
                       "secretKeyRef": {
-                        "name": "paybc-config",
+                        "name": "${PAYBC_NAME}-${TAG_NAME}-secret",
                         "key": "PAYBC_CLIENT_ID"
                       }
                     }
@@ -247,13 +295,184 @@
                     "name": "PAYBC_CLIENT_SECRET",
                     "valueFrom": {
                       "secretKeyRef": {
-                        "name": "paybc-config",
+                        "name": "${PAYBC_NAME}-${TAG_NAME}-secret",
                         "key": "PAYBC_CLIENT_SECRET"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PAYBC_MEMO_LINE_NAME",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "${PAYBC_NAME}-${TAG_NAME}-secret",
+                        "key": "PAYBC_MEMO_LINE_NAME"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PAYBC_PORTAL_URL",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "${PAYBC_NAME}-${TAG_NAME}-secret",
+                        "key": "PAYBC_PORTAL_URL"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PAYBC_CONNECT_TIMEOUT",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "${PAYBC_NAME}-${TAG_NAME}-secret",
+                        "key": "PAYBC_CONNECT_TIMEOUT"
+                      }
+                    }
+                  },
+                  {
+                    "name": "BCOL_DEBIT_ACCOUNT_VERSION",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "${BCOL_NAME}-${TAG_NAME}-secret",
+                        "key": "BCOL_DEBIT_ACCOUNT_VERSION"
+                      }
+                    }
+                  },
+                  {
+                    "name": "BCOL_LDAP_SERVER",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "${BCOL_NAME}-${TAG_NAME}-secret",
+                        "key": "BCOL_LDAP_SERVER"
+                      }
+                    }
+                  },
+                  {
+                    "name": "BCOL_LDAP_USER_DN_PATTERN",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "${BCOL_NAME}-${TAG_NAME}-secret",
+                        "key": "BCOL_LDAP_USER_DN_PATTERN"
+                      }
+                    }
+                  },
+                  {
+                    "name": "BCOL_LINK_CODE",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "${BCOL_NAME}-${TAG_NAME}-secret",
+                        "key": "BCOL_LINK_CODE"
+                      }
+                    }
+                  },
+                  {
+                    "name": "BCOL_QUERY_PROFILE_WSDL_URL",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "${BCOL_NAME}-${TAG_NAME}-secret",
+                        "key": "BCOL_QUERY_PROFILE_WSDL_URL"
+                      }
+                    }
+                  },
+                  {
+                    "name": "BCOL_VERIFY_USER_WSDL_URL",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "${BCOL_NAME}-${TAG_NAME}-secret",
+                        "key": "BCOL_VERIFY_USER_WSDL_URL"
+                      }
+                    }
+                  },
+                  {
+                    "name": "REPORT_API_BASE_URL",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${NAME}-${TAG_NAME}-config",
+                        "key": "REPORT_API_BASE_URL"
+                      }
+                    }
+                  },
+                  {
+                    "name": "AUTH_WEB_PAY_TRANSACTION_URL",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${NAME}-${TAG_NAME}-config",
+                        "key": "AUTH_WEB_PAY_TRANSACTION_URL"
+                      }
+                    }
+                  },
+                  {
+                    "name": "POD_TESTING",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${NAME}-${TAG_NAME}-config",
+                        "key": "POD_TESTING"
+                      }
+                    }
+                  },
+                  {
+                    "name": "SERVICE_SCHEDULE",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${NAME}-${TAG_NAME}-config",
+                        "key": "SERVICE_SCHEDULE"
+                      }
+                    }
+                  },
+                  {
+                    "name": "NATS_SERVERS",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${NATS}-${TAG_NAME}-config",
+                        "key": "NATS_SERVERS"
+                      }
+                    }
+                  },
+                  {
+                    "name": "NATS_CLIENT_NAME",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${NATS}-${TAG_NAME}-config",
+                        "key": "NATS_CLIENT_NAME"
+                      }
+                    }
+                  },
+                  {
+                    "name": "NATS_CLUSTER_ID",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${NATS}-${TAG_NAME}-config",
+                        "key": "NATS_CLUSTER_ID"
+                      }
+                    }
+                  },
+                  {
+                    "name": "NATS_SUBJECT",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${NATS}-${TAG_NAME}-config",
+                        "key": "NATS_SUBJECT"
+                      }
+                    }
+                  },
+                  {
+                    "name": "NATS_QUEUE",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${NATS}-${TAG_NAME}-config",
+                        "key": "NATS_QUEUE"
                       }
                     }
                   }
                 ],
-                "resources": {},
+                "resources": {
+                  "requests": {
+                    "cpu": "${CPU_REQUEST}",
+                    "memory": "${MEMORY_REQUEST}"
+                  },
+                  "limits": {
+                    "cpu": "${CPU_LIMIT}",
+                    "memory": "${MEMORY_LIMIT}"
+                  }
+                },
                 "livenessProbe": {
                   "httpGet": {
                     "path": "/ops/healthz",
@@ -301,7 +520,7 @@
                     "protocol": "UDP"
                   }
                 ],
-                "args": ["--collector.host-port=${JAEGER_COLLECTOR_URL}"]
+                "args": ["${JAEGER_COLLECTOR}"]
               }
             ],
             "restartPolicy": "Always",
@@ -314,22 +533,6 @@
       }
     },
     {
-      "kind": "ConfigMap",
-      "apiVersion": "v1",
-      "metadata": {
-        "name": "${NAME}-${TAG_NAME}-config",
-        "labels": {
-          "app": "${NAME}-${TAG_NAME}",
-          "app-group": "${APP_GROUP}-${TAG_NAME}"
-        }
-      },
-      "data": {
-        "DATABASE_HOST": "postgresql",
-        "DATABASE_NAME": "${DATABASE_NAME}",
-        "DATABASE_PORT": "5432"
-      }
-    },
-    {
       "kind": "Service",
       "apiVersion": "v1",
       "metadata": {
@@ -337,7 +540,8 @@
         "creationTimestamp": null,
         "labels": {
           "app": "${NAME}-${TAG_NAME}",
-          "app-group": "${APP_GROUP}-${TAG_NAME}"
+          "app-group": "${APP_GROUP}",
+          "template": "${NAME}-deploy"
         }
       },
       "spec": {
@@ -366,7 +570,8 @@
         "name": "${NAME}-${TAG_NAME}",
         "labels": {
           "app": "${NAME}-${TAG_NAME}",
-          "app-group": "${NAME}-${TAG_NAME}"
+          "app-group": "${APP_GROUP}",
+          "template": "${NAME}-deploy"
         }
       },
       "spec": {
@@ -414,14 +619,7 @@
       "displayName": "App Group",
       "description": "The name assigned to all of the deployments in this project.",
       "required": true,
-      "value": "pay-api"
-    },
-    {
-      "name": "DATABASE_NAME",
-      "displayName": "Database Name",
-      "description": "A valid database name used by the service.",
-      "required": true,
-      "value": "pay-db"
+      "value": "sbc-pay"
     },
     {
       "name": "IMAGE_NAMESPACE",
@@ -436,6 +634,34 @@
       "description": "The TAG name for this environment, e.g., dev, test, prod",
       "required": true,
       "value": "dev"
+    },
+    {
+      "name": "DATABASE_NAME",
+      "displayName": "Database App Name",
+      "description": "A valid database app name used by the service.",
+      "required": true,
+      "value": "postgresql"
+    },
+    {
+      "name": "KEYCLOAK_NAME",
+      "displayName": "Name",
+      "description": "The name assigned to all of the OpenShift resources associated to the server instance.",
+      "required": true,
+      "value": "keycloak"
+    },
+    {
+      "name": "PAYBC_NAME",
+      "displayName": "Name",
+      "description": "The name assigned to all of the OpenShift resources associated to the server instance.",
+      "required": true,
+      "value": "paybc"
+    },
+    {
+      "name": "BCOL_NAME",
+      "displayName": "Name",
+      "description": "The name assigned to all of the OpenShift resources associated to the server instance.",
+      "required": true,
+      "value": "bcol"
     },
     {
       "name": "CPU_REQUEST",
@@ -463,7 +689,7 @@
       "displayName": "Resources Memory Limit",
       "description": "The resources Memory limit (in Mi, Gi, etc) for this build.",
       "required": true,
-      "value": "4Gi"
+      "value": "2Gi"
     },
     {
       "name": "REPLICAS",
@@ -473,11 +699,18 @@
       "value": "1"
     },
     {
-      "name": "JAEGER_COLLECTOR_URL",
-      "displayName": "Jeager Tracing Collector URL",
-      "description": "The URL to your Collector service.",
+      "name": "JAEGER_COLLECTOR",
+      "displayName": "Jaeger Tracing collector address",
+      "description": "Jaeger Tracing collector address.",
       "required": true,
-      "value": "jaeger-collector.d7eovc-dev.svc:14267"
+      "value": "--collector.host-port=jaeger-collector.d7eovc-${TAG_NAME}.svc:14267"
+    },
+    {
+      "name": "NATS",
+      "displayName": "NATS config",
+      "description": "NATS configurations for sbc-pay.",
+      "required": true,
+      "value": "nats"
     }
   ]
 }

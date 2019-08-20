@@ -15,35 +15,26 @@
 
 This module is the API for the Legal Entity system.
 """
+
 import os
 
 from flask import Flask
-from flask_jwt_oidc import JwtManager
 
 import config
-from pay_api import models
+from config import _Config
 from pay_api.models import db, ma
+from pay_api.utils.auth import jwt
 from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
-from sbc_common_components.tracing.api_tracer import ApiTracer
-from sbc_common_components.tracing.api_tracing import ApiTracing
 
-setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
-# lower case name as used by convention in most Flask apps
-jwt = JwtManager()  # pylint: disable=invalid-name
-tracing = None  # pylint: disable=invalid-name
+setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))  # important to do this first
 
 
 def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     """Return a configured Flask App using the Factory method."""
     app = Flask(__name__)
     app.config.from_object(config.CONFIGURATION[run_mode])
-
-    # initialize tracer
-    api_tracer = ApiTracer("Payment Services")
-    global tracing  # pylint: disable=global-statement,invalid-name
-    tracing = ApiTracing(api_tracer.tracer)
 
     from pay_api.resources import API_BLUEPRINT, OPS_BLUEPRINT
 
@@ -68,7 +59,6 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
 
 def setup_jwt_manager(app, jwt_manager):
     """Use flask app to configure the JWTManager to work for a particular Realm."""
-
     def get_roles(a_dict):
         return a_dict['realm_access']['roles']  # pragma: no cover
 
@@ -79,6 +69,7 @@ def setup_jwt_manager(app, jwt_manager):
 
 def register_shellcontext(app):
     """Register shell context objects."""
+    from pay_api import models
 
     def shell_context():
         """Shell context objects."""

@@ -11,40 +11,51 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Resource for Invoice related endpoints."""
-from flask import current_app, request
-from flask_restplus import Namespace, Resource
+"""Resource for Payment endpoints."""
+from http import HTTPStatus
 
-from pay_api import tracing as _tracing
-from pay_api.services.paybc import PayBcService
+from flask import jsonify
+from flask_restplus import Namespace, Resource, cors
+
+from pay_api.exceptions import BusinessException
+from pay_api.services import InvoiceService
+from pay_api.utils.auth import jwt as _jwt
+from pay_api.utils.enums import Role
+from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
 
 
 API = Namespace('invoices', description='Payment System - Invoices')
 
-PAY_BC_SERVICE = PayBcService()
 
-
-@cors_preflight(['POST', 'OPTIONS'])
-@API.route('')
-class Invoice(Resource):
-    """Endpoint resource to manage invoices."""
+@cors_preflight(['GET'])
+@API.route('', methods=['GET', 'OPTIONS'])
+class Invoices(Resource):
+    """Endpoint resource to get invoice."""
 
     @staticmethod
-    @API.doc('Creates invoice in payment system')
-    @API.response(201, 'Invoice created successfully')
+    @cors.crossdomain(origin='*')
+    @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
     @_tracing.trace()
-    def post():
-        """Return a new invoice in the payment system."""
-        request_json = request.get_json()
-        user_type = 'basic'  # TODO We will get this from token, hard-coding for now
-        if user_type == 'basic' and request_json.get('method_of_payment', None) == 'CC':
-            current_app.logger.debug('Paying with credit card')
-            invoice_response = PAY_BC_SERVICE.create_payment_records(request_json)
-            response_json = {
-                'paybc_reference_number': invoice_response.get('pbc_ref_number', None),
-                'invoice_number': invoice_response.get('invoice_number', None),
-            }
-        else:
-            response_json = {'message': 'Invoice created successfully'}
-        return response_json, 201
+    def get(payment_id):
+        """Get the Invoice records."""
+        response, status = InvoiceService.get_invoices(payment_id), HTTPStatus.OK
+        return jsonify(response), status
+
+
+@cors_preflight(['GET'])
+@API.route('/<int:invoice_id>', methods=['GET', 'OPTIONS'])
+class Invoice(Resource):
+    """Endpoint resource to get invoice."""
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
+    @_tracing.trace()
+    def get(payment_id, invoice_id):
+        """Get the Invoice records."""
+        try:
+            response, status = InvoiceService.find_by_id(invoice_id, payment_id).asdict(), HTTPStatus.OK
+        except BusinessException as exception:
+            response, status = {'code': exception.code, 'message': exception.message}, exception.status
+        return jsonify(response), status

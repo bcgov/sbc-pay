@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/payment_response",
+  "type": "object",
+  "title": "Payment Response",
+  "required": [
+    "_links",
+    "id",
+    "invoices",
+    "payment_method",
+    "payment_system",
+    "status_code",
+    "created_by",
+    "created_on"
+  ],
+  "properties": {
+    "_links": {
+      "oneOf": [
+        {
+          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/links"
+        }
+      ]
+    },
+    "created_by": {
+      "$id": "#/properties/created_by",
+      "type": "string",
+      "title": "Created By",
+      "default": "",
+      "examples": [
+        "CP0001219"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "created_on": {
+      "$id": "#/properties/created_on",
+      "type": "string",
+      "title": "Created On",
+      "default": "",
+      "examples": [
+        "2019-06-05T11:23:03.191477+00:00"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "updated_by": {
+      "$id": "#/properties/updated_by",
+      "type": "string",
+      "title": "Updated By",
+      "default": "",
+      "examples": [
+        "CP0001219"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "updated_on": {
+      "$id": "#/properties/updated_on",
+      "type": "string",
+      "title": "Updated On",
+      "default": "",
+      "examples": [
+        "2019-06-05T11:23:03.191477+00:00"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "id": {
+      "$id": "#/properties/id",
+      "type": "integer",
+      "title": "Payment Identifier",
+      "default": 0,
+      "examples": [
+        1
+      ]
+    },
+    "payment_method": {
+      "$id": "#/properties/payment_method",
+      "type": "string",
+      "title": "Payment Method",
+      "default": "",
+      "examples": [
+        "CC"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "payment_system": {
+      "$id": "#/properties/payment_system",
+      "type": "string",
+      "title": "Payment System",
+      "default": "",
+      "examples": [
+        "PAYBC"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "status_code": {
+      "$id": "#/properties/status_code",
+      "type": "string",
+      "title": "Payment Status",
+      "default": "",
+      "examples": [
+        "CREATED"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "invoices": {
+      "type": "array",
+      "items": {
+        "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/invoice"
+      }
+    },
+    "transactions": {
+      "type": "array",
+      "items": {
+        "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/transaction"
+      }
+    }
+  }
+}

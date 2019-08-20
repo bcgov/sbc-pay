@@ -16,18 +16,18 @@
 
 A simple decorator to add the options method to a Request Class.
 """
-# from functools import wraps
 
 
 def cors_preflight(methods: str = 'GET'):
     """Render an option method on the class."""
     def wrapper(f):
         def options(self, *args, **kwargs):  # pylint: disable=unused-argument
-            return {'Allow': 'GET'}, 200, \
+            return {'Allow': methods}, 200, \
                    {'Access-Control-Allow-Origin': '*',
                     'Access-Control-Allow-Methods': methods,
-                    'Access-Control-Allow-Headers': 'Authorization, Content-Type'}
+                    'Access-Control-Allow-Headers': 'Authorization, Content-Type, registries-trace-id'}
 
         setattr(f, 'options', options)
         return f
+
     return wrapper

@@ -1,0 +1,34 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/payment_request",
+  "type": "object",
+  "title": "Payment Request",
+  "required": [
+    "payment_info",
+    "business_info",
+    "filing_info"
+  ],
+  "properties": {
+    "payment_info": {
+      "oneOf": [
+        {
+          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/payment_info"
+        }
+      ]
+    },
+    "business_info": {
+      "oneOf": [
+        {
+          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/business_info"
+        }
+      ]
+    },
+    "filing_info": {
+      "oneOf": [
+        {
+          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/filing_info"
+        }
+      ]
+    }
+  }
+}

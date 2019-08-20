@@ -27,3 +27,35 @@ class ContentType(Enum):
 
     JSON = 'application/json'
     FORM_URL_ENCODED = 'application/x-www-form-urlencoded'
+
+
+class Status(Enum):
+    """Status enum codes."""
+
+    DRAFT = 'DRAFT'
+    IN_PROGRESS = 'IN_PROGRESS'
+    CREATED = 'CREATED'
+    COMPLETED = 'COMPLETED'
+    PARTIAL = 'PARTIAL'
+    FAILED = 'FAILED'
+    REFUNDED = 'REFUNDED'
+    CANCELLED = 'CANCELLED'
+    UPDATED = 'UPDATED'
+    EVENT_FAILED = 'EVENT_FAILED'
+
+
+class PaymentSystem(Enum):
+    """Payment System Codes."""
+
+    PAYBC = 'PAYBC'
+    BCOL = 'BCOL'
+
+
+class Role(Enum):
+    """User Role."""
+
+    BASIC = 'basic'
+    PREMIUM = 'premium'
+    STAFF = 'staff'
+    VIEWER = 'view'
+    EDITOR = 'edit'

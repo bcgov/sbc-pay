@@ -4,6 +4,7 @@
 # Testing
 pytest<4.1
 pytest-mock
+pytest-cov
 pyhamcrest
 
 # Lint and code style
@@ -13,8 +14,17 @@ flake8-debugger
 flake8-docstrings
 flake8-isort
 flake8-quotes
+flake8-print
 pep8-naming
 autopep8
 coverage
 pylint
 pylint-flask
+pydocstyle<4
+
+
+# docker
+lovely-pytest-docker
+pytest_docker
+pytest-asyncio
+

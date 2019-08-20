@@ -15,10 +15,11 @@
 
 from sqlalchemy import ForeignKey
 
+from .base_model import BaseModel
 from .db import db, ma
 
 
-class Receipt(db.Model):
+class Receipt(db.Model, BaseModel):
     """This class manages all of the base data about Receipt."""
 
     __tablename__ = 'receipt'
@@ -27,12 +28,20 @@ class Receipt(db.Model):
     invoice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
     receipt_number = db.Column(db.String(50), nullable=False)
     receipt_date = db.Column(db.DateTime)
-    receipt_amount = db.Column(db.Integer)
+    receipt_amount = db.Column(db.Float)
 
-    def save(self):
-        """Save status."""
-        db.session.add(self)
-        db.session.commit()
+    @classmethod
+    def find_by_id(cls, identfier: int):
+        """Return a receipt by id."""
+        return cls.query.get(identfier)
+
+    @classmethod
+    def find_by_invoice_id_and_receipt_number(cls, invoice_id: int, receipt_number: str = None):
+        """Return a Receipt by invoice id and receipt_number."""
+        query = cls.query.filter_by(invoice_id=invoice_id)
+        if receipt_number:
+            query.filter_by(receipt_number=receipt_number)
+        return query.one_or_none()
 
 
 class ReceiptSchema(ma.ModelSchema):

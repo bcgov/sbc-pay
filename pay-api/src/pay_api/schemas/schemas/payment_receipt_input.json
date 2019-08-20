@@ -1,0 +1,43 @@
+ {
+   "$schema": "http://json-schema.org/draft-07/schema#",
+  	 "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/payment_receipt_input",
+  	 "type": "object",
+  	 "title": "payment_receipt_input",
+   "$comment": "schema for receipt generation when invoking with only payment id",
+    "required": [
+     "corpName",
+     "filingDateTime"
+   ],
+   "properties": {
+     "corpName": {
+       "$id": "#/properties/corpName",
+       "type": "string",
+       "title": "The corpName Schema",
+       "default": "",
+       "examples": [
+         "ABC Co-op"
+       ],
+       "pattern": "^(.*)$"
+     },
+     "filingDateTime": {
+       "$id": "#/properties/filingDateTime",
+       "type": "string",
+       "title": "The Filingdatetime Schema",
+       "default": "",
+       "examples": [
+         "June 27, 2019"
+       ],
+       "pattern": "^(.*)$"
+     },
+     "fileName": {
+       "$id": "#/properties/fileName",
+       "type": "string",
+       "title": "The Filename Schema",
+       "default": "",
+       "examples": [
+         "director-change"
+       ],
+       "pattern": "^(.*)$"
+     }
+   }
+ }

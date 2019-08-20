@@ -74,6 +74,7 @@ def test_find_by_corp_type_and_filing_type_from_new(session):
         'filing_fees': 100,
         'service_fees': 0,
         'processing_fees': 0,
+        'total': 100,
         'tax':
             {
                 'gst': 0,
