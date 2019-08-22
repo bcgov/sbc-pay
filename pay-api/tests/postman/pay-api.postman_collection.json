@@ -86,17 +86,17 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"payment_info\": {\n    \"method_of_payment\": \"CC\"\n  },\n  \"business_info\": {\n    \"business_identifier\": \"CP1234\",\n    \"corp_type\": \"CP\",\n    \"business_name\": \"ABC Corp\",\n    \"contact_info\": {\n      \"city\": \"Victoria\",\n      \"postal_code\": \"V8P2P2\",\n      \"province\": \"BC\",\n      \"address_line_1\": \"100 Douglas Street\",\n      \"country\": \"CA\"\n    }\n  },\n  \"filing_info\": {\n    \"filing_types\": [\n      {\n        \"filing_type_code\": \"OTADD\",\n    \t\"filing_description\":\"TEST\"\n      },\n      {\n        \"filing_type_code\": \"OTANN\"\n      }\n    ]\n  }\n}"
+					"raw": "{\n  \"paymentInfo\": {\n    \"methodOfPayment\": \"CC\"\n  },\n  \"businessInfo\": {\n    \"businessIdentifier\": \"CP1234\",\n    \"corpType\": \"CP\",\n    \"businessName\": \"ABC Corp\",\n    \"contactInfo\": {\n      \"city\": \"Victoria\",\n      \"postalCode\": \"V8P2P2\",\n      \"province\": \"BC\",\n      \"addressLine1\": \"100 Douglas Street\",\n      \"country\": \"CA\"\n    }\n  },\n  \"filingInfo\": {\n    \"filingTypes\": [\n      {\n        \"filingTypeCode\": \"OTADD\",\n    \t\"filingDescription\":\"TEST\"\n      },\n      {\n        \"filingTypeCode\": \"OTANN\"\n      }\n    ]\n  }\n}"
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments",
+					"raw": "{{pay-api-base-url}}/api/v1/payment-requests",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
 					"path": [
 						"api",
 						"v1",
-						"payments"
+						"payment-requests"
 					]
 				}
 			},
@@ -136,14 +136,14 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}",
+					"raw": "{{pay-api-base-url}}/api/v1/payment-requests/{{payment-identifier}}",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
 					"path": [
 						"api",
 						"v1",
-						"payments",
+						"payment-requests",
 						"{{payment-identifier}}"
 					]
 				}
@@ -195,14 +195,14 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/invoices",
+					"raw": "{{pay-api-base-url}}/api/v1/payment-requests/{{payment-identifier}}/invoices",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
 					"path": [
 						"api",
 						"v1",
-						"payments",
+						"payment-requests",
 						"{{payment-identifier}}",
 						"invoices"
 					]
@@ -244,14 +244,14 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/invoices/{{invoice_id}}",
+					"raw": "{{pay-api-base-url}}/api/v1/payment-requests/{{payment-identifier}}/invoices/{{invoice_id}}",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
 					"path": [
 						"api",
 						"v1",
-						"payments",
+						"payment-requests",
 						"{{payment-identifier}}",
 						"invoices",
 						"{{invoice_id}}"
@@ -288,17 +288,17 @@
 				],
 				"body": {
 					"mode": "raw",
-					"raw": "{\n  \"payment_info\": {\n    \"method_of_payment\": \"CC\"\n  },\n  \"business_info\": {\n    \"business_identifier\": \"cp0000019\",\n    \"corp_type\": \"CP\",\n    \"business_name\": \"ABC Corp\",\n    \"contact_info\": {\n      \"city\": \"Victoria\",\n      \"postal_code\": \"V8P2P2\",\n      \"province\": \"BC\",\n      \"address_line_1\": \"100 Douglas Street\",\n      \"country\": \"CA\"\n    }\n  },\n  \"filing_info\": {\n    \"filing_types\": [\n      {\n        \"filing_type_code\": \"OTCDR\",\n    \t\"filing_description\":\"Change of Directors - Director A\"\n      },\n      {\n        \"filing_type_code\": \"OTANN\"\n      }\n      \n    ]\n  }\n}"
+					"raw": "{\n  \"paymentInfo\": {\n    \"methodOfPayment\": \"CC\"\n  },\n  \"businessInfo\": {\n    \"businessIdentifier\": \"CP1234\",\n    \"corpType\": \"CP\",\n    \"businessName\": \"ABC Corp\",\n    \"contactInfo\": {\n      \"city\": \"Victoria\",\n      \"postalCode\": \"V8P2P2\",\n      \"province\": \"BC\",\n      \"addressLine1\": \"100 Douglas Street\",\n      \"country\": \"CA\"\n    }\n  },\n  \"filingInfo\": {\n    \"filingTypes\": [\n      {\n        \"filingTypeCode\": \"OTADD\",\n    \t\"filingDescription\":\"TEST\"\n      },\n      {\n        \"filingTypeCode\": \"OTANN\"\n      }\n    ]\n  }\n}"
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}",
+					"raw": "{{pay-api-base-url}}/api/v1/payment-requests/{{payment-identifier}}",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
 					"path": [
 						"api",
 						"v1",
-						"payments",
+						"payment-requests",
 						"{{payment-identifier}}"
 					]
 				}
@@ -335,14 +335,14 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/transactions?redirect_uri=https%3A%2F%2Fcoops.pathfinder.gov.bc.ca%2Fdashboard",
+					"raw": "{{pay-api-base-url}}/api/v1/payment-requests/{{payment-identifier}}/transactions?redirect_uri=https%3A%2F%2Fcoops.pathfinder.gov.bc.ca%2Fdashboard",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
 					"path": [
 						"api",
 						"v1",
-						"payments",
+						"payment-requests",
 						"{{payment-identifier}}",
 						"transactions"
 					],
@@ -390,14 +390,14 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/transactions",
+					"raw": "{{pay-api-base-url}}/api/v1/payment-requests/{{payment-identifier}}/transactions",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
 					"path": [
 						"api",
 						"v1",
-						"payments",
+						"payment-requests",
 						"{{payment-identifier}}",
 						"transactions"
 					]
@@ -429,14 +429,14 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/transactions/{{transaction-identifier}}",
+					"raw": "{{pay-api-base-url}}/api/v1/payment-requests/{{payment-identifier}}/transactions/{{transaction-identifier}}",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
 					"path": [
 						"api",
 						"v1",
-						"payments",
+						"payment-requests",
 						"{{payment-identifier}}",
 						"transactions",
 						"{{transaction-identifier}}"
@@ -469,14 +469,14 @@
 					"raw": ""
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/transactions/{{transaction-identifier}}",
+					"raw": "{{pay-api-base-url}}/api/v1/payment-requests/{{payment-identifier}}/transactions/{{transaction-identifier}}",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
 					"path": [
 						"api",
 						"v1",
-						"payments",
+						"payment-requests",
 						"{{payment-identifier}}",
 						"transactions",
 						"{{transaction-identifier}}"
@@ -514,14 +514,14 @@
 					"raw": "{\n    \"corpName\": \"CP1234\",\n    \"filingDateTime\": \"June 27, 2019\",\n    \"fileName\":\"director-change\"\n}"
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/receipts",
+					"raw": "{{pay-api-base-url}}/api/v1/payment-requests/{{payment-identifier}}/receipts",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
 					"path": [
 						"api",
 						"v1",
-						"payments",
+						"payment-requests",
 						"{{payment-identifier}}",
 						"receipts"
 					]
@@ -558,14 +558,14 @@
 					"raw": "{\n    \"corpName\": \"CP1234\",\n    \"filingDateTime\": \"June 27, 2019\",\n    \"fileName\":\"director-change\"\n}"
 				},
 				"url": {
-					"raw": "{{pay-api-base-url}}/api/v1/payments/{{payment-identifier}}/invoices/{{invoice_id}}/receipts",
+					"raw": "{{pay-api-base-url}}/api/v1/payment-requests/{{payment-identifier}}/invoices/{{invoice_id}}/receipts",
 					"host": [
 						"{{pay-api-base-url}}"
 					],
 					"path": [
 						"api",
 						"v1",
-						"payments",
+						"payment-requests",
 						"{{payment-identifier}}",
 						"invoices",
 						"{{invoice_id}}",

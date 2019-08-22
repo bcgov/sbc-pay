@@ -184,7 +184,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         """Create payment record."""
         current_app.logger.debug('<create_payment')
         p = Payment()
-        p.payment_method_code = payment_info.get('method_of_payment', None)
+        p.payment_method_code = payment_info.get('methodOfPayment', None)
         p.payment_status_code = Status.CREATED.value
         p.payment_system_code = payment_system
         p.created_by = current_user

@@ -23,7 +23,6 @@ import pytest
 from flask import current_app
 
 from tests import skip_in_pod
-
 from .utils import subscribe_to_queue
 
 

@@ -4,11 +4,11 @@
   "type": "object",
   "type": "object",
   "required": [
-    "method_of_payment"
+    "methodOfPayment"
   ],
   "properties": {
-    "method_of_payment": {
-      "$id": "#/properties/method_of_payment",
+    "methodOfPayment": {
+      "$id": "#/properties/methodOfPayment",
       "type": "string",
       "title": "Method of payment",
       "enum": ["CC"],
@@ -17,8 +17,8 @@
       ],
       "pattern": "^(.*)$"
     },
-    "payment_system": {
-      "$id": "#/properties/payment_system",
+    "paymentSystem": {
+      "$id": "#/properties/paymentSystem",
       "type": "string",
       "title": "Payment System",
       "default": "PAYBC",

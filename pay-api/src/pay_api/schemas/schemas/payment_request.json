@@ -4,26 +4,26 @@
   "type": "object",
   "title": "Payment Request",
   "required": [
-    "payment_info",
-    "business_info",
-    "filing_info"
+    "paymentInfo",
+    "businessInfo",
+    "filingInfo"
   ],
   "properties": {
-    "payment_info": {
+    "paymentInfo": {
       "oneOf": [
         {
           "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/payment_info"
         }
       ]
     },
-    "business_info": {
+    "businessInfo": {
       "oneOf": [
         {
           "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/business_info"
         }
       ]
     },
-    "filing_info": {
+    "filingInfo": {
       "oneOf": [
         {
           "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/filing_info"

@@ -7,11 +7,11 @@
     "_links",
     "id",
     "invoices",
-    "payment_method",
-    "payment_system",
-    "status_code",
-    "created_by",
-    "created_on"
+    "paymentMethod",
+    "paymentSystem",
+    "statusCode",
+    "createdBy",
+    "createdOn"
   ],
   "properties": {
     "_links": {
@@ -21,8 +21,8 @@
         }
       ]
     },
-    "created_by": {
-      "$id": "#/properties/created_by",
+    "createdBy": {
+      "$id": "#/properties/createdBy",
       "type": "string",
       "title": "Created By",
       "default": "",
@@ -31,8 +31,8 @@
       ],
       "pattern": "^(.*)$"
     },
-    "created_on": {
-      "$id": "#/properties/created_on",
+    "createdOn": {
+      "$id": "#/properties/createdOn",
       "type": "string",
       "title": "Created On",
       "default": "",
@@ -41,8 +41,8 @@
       ],
       "pattern": "^(.*)$"
     },
-    "updated_by": {
-      "$id": "#/properties/updated_by",
+    "updatedBy": {
+      "$id": "#/properties/updatedBy",
       "type": "string",
       "title": "Updated By",
       "default": "",
@@ -51,8 +51,8 @@
       ],
       "pattern": "^(.*)$"
     },
-    "updated_on": {
-      "$id": "#/properties/updated_on",
+    "updatedOn": {
+      "$id": "#/properties/updatedOn",
       "type": "string",
       "title": "Updated On",
       "default": "",
@@ -70,8 +70,8 @@
         1
       ]
     },
-    "payment_method": {
-      "$id": "#/properties/payment_method",
+    "paymentMethod": {
+      "$id": "#/properties/paymentMethod",
       "type": "string",
       "title": "Payment Method",
       "default": "",
@@ -80,8 +80,8 @@
       ],
       "pattern": "^(.*)$"
     },
-    "payment_system": {
-      "$id": "#/properties/payment_system",
+    "paymentSystem": {
+      "$id": "#/properties/paymentSystem",
       "type": "string",
       "title": "Payment System",
       "default": "",
@@ -90,8 +90,8 @@
       ],
       "pattern": "^(.*)$"
     },
-    "status_code": {
-      "$id": "#/properties/status_code",
+    "statusCode": {
+      "$id": "#/properties/statusCode",
       "type": "string",
       "title": "Payment Status",
       "default": "",
