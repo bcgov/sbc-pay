@@ -21,6 +21,7 @@ All services have 2 defaults sets of endpoints:
 That are used to expose operational health information about the service, and meta information.
 """
 from flask import Blueprint
+from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
 
 # from .trace import API as TRACE_API
 from .meta import API as META_API
@@ -62,6 +63,8 @@ API = Api(API_BLUEPRINT,
           description='Report API',
           security=['apikey'],
           authorizations=AUTHORIZATIONS)
+
+HANDLER = ExceptionHandler(API)
 
 API.add_namespace(META_API, path='/meta')
 

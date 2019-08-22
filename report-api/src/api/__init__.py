@@ -16,6 +16,7 @@
 import os
 
 from flask import Flask
+from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
 
 import config
 from api import models
@@ -38,6 +39,8 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     app.register_blueprint(OPS_BLUEPRINT)
 
     setup_jwt_manager(app, jwt)
+
+    ExceptionHandler(app)
 
     @app.after_request
     def add_version(response):  # pylint:  disable=unused-variable

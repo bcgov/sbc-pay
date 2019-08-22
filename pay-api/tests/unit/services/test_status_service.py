@@ -88,8 +88,9 @@ def test_status_check_without_name(app):
     """Assert that the function returns schedules."""
     with app.app_context():
         service_name = None
+        check_date = datetime.utcnow()
 
-        get_response = StatusService().schedule_status(service_name=service_name)
+        get_response = StatusService().schedule_status(service_name=service_name, check_date=check_date)
 
         assert get_response is not None
         assert get_response['service'] == service_name
@@ -103,13 +104,14 @@ def test_status_check_no_schedule(app):
 
     with app.app_context():
         service_name = 'PAYBC'
+        check_date = datetime.utcnow()
 
         mock_get_schedule = patch('pay_api.services.status_service.StatusService.get_schedules')
 
         mock_get = mock_get_schedule.start()
         mock_get.return_value = schedule_json
 
-        get_response = StatusService().schedule_status(service_name=service_name)
+        get_response = StatusService().schedule_status(service_name=service_name, check_date=check_date)
 
         mock_get.stop()
 

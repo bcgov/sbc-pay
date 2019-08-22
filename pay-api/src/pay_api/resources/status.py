@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Resource for Service status endpoints."""
-from http import HTTPStatus
 from datetime import datetime
+from http import HTTPStatus
 
 from flask import current_app, jsonify
 from flask_restplus import Namespace, Resource, cors
