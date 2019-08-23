@@ -153,15 +153,15 @@
             </tr>
             <tr>
               <td class="name"><strong>Incorporation Number:</strong></td>
-              <td class="value">{{ incorporation_number }}</td>
+              <td class="value">{{ incorporationNumber }}</td>
             </tr>
             <tr>
               <td class="name"><strong>Cooperative Name:</strong></td>
-              <td class="value">{{ coops_name }}</td>
+              <td class="value">{{ coopsName }}</td>
             </tr>
             <tr>
               <td class="name"><strong>Filing Date and Time:</strong></td>
-              <td class="value">{{ filing_date_time }}</td>
+              <td class="value">{{ filingDateTime }}</td>
             </tr>
             <tr>
               <td class="spacer" colspan="2">
@@ -173,11 +173,11 @@
             </tr>
             <tr>
               <td class="no-padding" colspan="2">
-                {% for item in line_items %}
+                {% for item in lineItems %}
                 <table class="receipt-items">
                   <tr>
                     <td class="name"><strong>{{ item.description }}</strong></td>
-                    <td class="value">${{ item.filing_fees }}</td>
+                    <td class="value">${{ item.filingFees }}</td>
                   </tr>
                 </table>
                 {% endfor %}
@@ -190,11 +190,11 @@
             </tr>
             <tr>
               <td><strong>Invoice Number:</strong></td>
-              <td>{{ payment_invoice_number }}</td>
+              <td>{{ paymentInvoiceNumber }}</td>
             </tr>
             <tr>
               <td><strong>Receipt Number:</strong></td>
-              <td>{{ receipt_number }}</td>
+              <td>{{ receiptNumber }}</td>
             </tr>
             <tr>
               <td colspan="2" class="watermark-cell">
@@ -217,7 +217,7 @@
       <tr class="bcgov-footer-row bcgov-gold-bg">
         <td></td>
         <td colspan="3">
-          <div class="inline">Incorporation Number {{ incorporation_number }}</div>
+          <div class="inline">Incorporation Number {{ incorporationNumber }}</div>
           <div class="inline float-right">Page 1 of 1</div>
         </td>
       </tr>
