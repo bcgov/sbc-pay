@@ -5,14 +5,14 @@
   "title": "Payment Line Item",
   "required": [
     "description",
-    "filing_fees",
+    "filingFees",
     "gst",
     "id",
-    "processing_fees",
+    "processingFees",
     "pst",
     "quantity",
-    "service_fees",
-    "status_code",
+    "serviceFees",
+    "statusCode",
     "total"
   ],
   "properties": {
@@ -26,8 +26,8 @@
       ],
       "pattern": "^(.*)$"
     },
-    "filing_fees": {
-      "$id": "#/properties/line_items/items/properties/filing_fees",
+    "filingFees": {
+      "$id": "#/properties/line_items/items/properties/filingFees",
       "type": "integer",
       "title": "Filing Fees",
       "default": 0,
@@ -53,8 +53,8 @@
         1
       ]
     },
-    "processing_fees": {
-      "$id": "#/properties/line_items/items/properties/processing_fees",
+    "processingFees": {
+      "$id": "#/properties/line_items/items/properties/processingFees",
       "type": "integer",
       "title": "Processing fees",
       "default": 0,
@@ -80,8 +80,8 @@
         1
       ]
     },
-    "service_fees": {
-      "$id": "#/properties/line_items/items/properties/service_fees",
+    "serviceFees": {
+      "$id": "#/properties/line_items/items/properties/serviceFees",
       "type": "integer",
       "title": "Service Fees",
       "default": 0,
@@ -89,8 +89,8 @@
         0
       ]
     },
-    "status_code": {
-      "$id": "#/properties/line_items/items/properties/status_code",
+    "statusCode": {
+      "$id": "#/properties/line_items/items/properties/statusCode",
       "type": "string",
       "title": ":Line Status Code",
       "default": "",

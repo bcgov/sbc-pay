@@ -153,8 +153,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         """Create Payment account record."""
         current_app.logger.debug('<create')
         p = PaymentAccount()
-        p.corp_number = business_info.get('business_identifier', None)
-        p.corp_type_code = business_info.get('corp_type', None)
+        p.corp_number = business_info.get('businessIdentifier', None)
+        p.corp_type_code = business_info.get('corpType', None)
         p.account_number = account_details[0]
         p.party_number = account_details[1]
         p.site_number = account_details[2]

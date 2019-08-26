@@ -19,6 +19,8 @@ This module is the API for the Legal Entity system.
 import os
 
 from flask import Flask
+from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
+from sbc_common_components.utils.camel_case_response import convert_to_camel
 
 import config
 from config import _Config
@@ -43,8 +45,11 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
 
     app.register_blueprint(API_BLUEPRINT)
     app.register_blueprint(OPS_BLUEPRINT)
+    app.after_request(convert_to_camel)
 
     setup_jwt_manager(app, jwt)
+
+    ExceptionHandler(app)
 
     @app.after_request
     def add_version(response):  # pylint: disable=unused-variable

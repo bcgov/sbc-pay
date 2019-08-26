@@ -41,11 +41,11 @@ def test_generate_report_with_existing_template(client, jwt, app):
     assert template_name is not None
     request_url = '/api/v1/reports'.format(template_name)
     request_data = {
-        'template_name': template_name,
-        'template_vars': {
+        'templateName': template_name,
+        'templateVars': {
             'title': 'This is a sample request'
         },
-        'report_name': 'sample'
+        'reportName': 'sample'
     }
 
     rv = client.post(request_url, data=json.dumps(request_data), headers=headers)
@@ -61,11 +61,11 @@ def test_generate_report_with_invalid_template(client, jwt, app):
     template_name = 'some-random-text-to-fial-generation'
     request_url = '/api/v1/reports'.format(template_name)
     request_data = {
-        'template_name': 'some-really-random-values',
-        'template_vars': {
+        'templateName': 'some-really-random-values',
+        'templateVars': {
             'title': 'This is a sample request'
         },
-        'report_name': 'sample'
+        'reportName': 'sample'
     }
     rv = client.post(request_url, data=json.dumps(request_data), headers=headers)
     assert rv.status_code == 404
@@ -80,10 +80,10 @@ def test_generate_report_with_template(client, jwt, app):
     request_url = '/api/v1/reports'
     request_data = {
         'template': template,
-        'template_vars': {
+        'templateVars': {
             'title': 'This is a sample request'
         },
-        'report_name': 'Test Report'
+        'reportName': 'Test Report'
     }
     rv = client.post(request_url, data=json.dumps(request_data), headers=headers)
     assert rv.status_code == 200
@@ -99,11 +99,11 @@ def test_generate_report_with_page_number(client, jwt, app):
     request_url = '/api/v1/reports'
     request_data = {
         'template': template,
-        'template_vars': {
+        'templateVars': {
             'title': 'This is a sample request'
         },
-        'report_name': 'Test Report',
-        'populate_page_number': 'true'
+        'reportName': 'Test Report',
+        'populatePageNumber': 'true'
     }
     rv = client.post(request_url, data=json.dumps(request_data), headers=headers)
     assert rv.status_code == 200
@@ -116,10 +116,10 @@ def test_generate_report_with_invalid_request(client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     request_url = '/api/v1/reports'
     request_data = {
-        'template_vars': {
+        'templateVars': {
             'title': 'This is a sample request'
         },
-        'report_name': 'Test Report'
+        'reportName': 'Test Report'
     }
     rv = client.post(request_url, data=json.dumps(request_data), headers=headers)
     assert rv.status_code == 400

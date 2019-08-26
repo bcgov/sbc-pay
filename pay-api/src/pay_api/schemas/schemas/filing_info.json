@@ -4,7 +4,7 @@
     "type": "object",
     "title": "Filing Info",
     "required": [
-        "filing_types"
+        "filingTypes"
     ],
     "properties": {
         "date": {
@@ -17,7 +17,7 @@
           ],
           "pattern": "^\\d{4}\\-(0?[1-9]|1[012])\\-(0?[1-9]|[12][0-9]|3[01])$"
         },
-        "filing_types": {
+        "filingTypes": {
           "type": "array",
           "items": {
             "oneOf": [

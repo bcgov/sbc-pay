@@ -205,8 +205,8 @@ class PaybcService(PaymentSystemService, OAuthService):
             'account_number': account.get('account_number', None),
             'site_name': party.get('customer_name') + ' Site',
             'city': account_info.get('city', None),
-            'address_line_1': account_info.get('address_line_1', None),
-            'postal_code': account_info.get('postal_code', None),
+            'address_line_1': account_info.get('addressLine1', None),
+            'postal_code': account_info.get('postalCode', None),
             'province': account_info.get('province', DEFAULT_JURISDICTION),
             'country': account_info.get('country', DEFAULT_COUNTRY),
             'customer_site_id': '1'

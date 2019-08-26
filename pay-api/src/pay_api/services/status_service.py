@@ -23,8 +23,8 @@ from flask import current_app
 class StatusService:
     """Service to check status of service(s)."""
 
-    def schedule_status(self, service_name: str, check_date: datetime = datetime.utcnow()):
-        """Check service scheduled status . The check date should be UTC datetime format. """
+    def schedule_status(self, service_name: str, check_date: datetime):  # pylint: disable=too-many-locals
+        """Check service scheduled status . The check date should be UTC datetime format."""
         current_status: str = 'None'
         up_dates: list = list()
         down_dates: list = list()
@@ -101,7 +101,7 @@ class StatusService:
 
     @staticmethod
     def get_nearest_datetime(dates: list, check_date):
-        """get a closest date from giving date in a date list."""
+        """Get a closest date from giving date in a date list."""
         closest_datetime: datetime = 0
         if dates and check_date:
             closest_date: datetime = min(dates, key=lambda x: abs(x - check_date))

@@ -27,6 +27,7 @@ from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
 from pay_api.services.payment_service import PaymentService
 from pay_api.utils.enums import Status
+from tests.utilities.base_test import get_payment_request
 
 
 def factory_payment_account(corp_number: str = 'CP1234', corp_type_code: str = 'CP',
@@ -101,69 +102,32 @@ def factory_payment_transaction(
 
 def test_create_payment_record(session):
     """Assert that the payment records are created."""
-    payment_request = {
-        'payment_info': {'method_of_payment': 'CC'},
-        'business_info': {
-            'business_identifier': 'CP1234',
-            'corp_type': 'CP',
-            'business_name': 'ABC Corp',
-            'contact_info': {
-                'city': 'Victoria',
-                'postal_code': 'V8P2P2',
-                'province': 'BC',
-                'address_line_1': '100 Douglas Street',
-                'country': 'CA',
-            },
-        },
-        'filing_info': {
-            'filing_types': [{'filing_type_code': 'OTADD', 'filing_description': 'TEST'}, {'filing_type_code': 'OTANN'}]
-        },
-    }
-    payment_response = PaymentService.create_payment(payment_request, 'test')
+    payment_response = PaymentService.create_payment(get_payment_request(), 'test')
     account_model = PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP1234', 'CP', 'PAYBC')
     account_id = account_model.id
     assert account_id is not None
     assert payment_response.get('id') is not None
     # Create another payment with same request, the account should be the same
-    PaymentService.create_payment(payment_request, 'test')
+    PaymentService.create_payment(get_payment_request(), 'test')
     account_model = PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP1234', 'CP', 'PAYBC')
     assert account_id == account_model.id
 
 
 def test_create_payment_record_rollback(session):
     """Assert that the payment records are created."""
-    payment_request = {
-        'payment_info': {'method_of_payment': 'CC'},
-        'business_info': {
-            'business_identifier': 'CP1234',
-            'corp_type': 'CP',
-            'business_name': 'ABC Corp',
-            'contact_info': {
-                'city': 'Victoria',
-                'postal_code': 'V8P2P2',
-                'province': 'BC',
-                'address_line_1': '100 Douglas Street',
-                'country': 'CA',
-            },
-        },
-        'filing_info': {
-            'filing_types': [{'filing_type_code': 'OTADD', 'filing_description': 'TEST'}, {'filing_type_code': 'OTANN'}]
-        },
-    }
-
     # Mock here that the invoice update fails here to test the rollback scenario
     with patch('pay_api.services.invoice.Invoice.save', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.create_payment(payment_request, 'test')
+            PaymentService.create_payment(get_payment_request(), 'test')
         assert excinfo.type == Exception
 
     with patch('pay_api.services.payment.Payment.create', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.create_payment(payment_request, 'test')
+            PaymentService.create_payment(get_payment_request(), 'test')
         assert excinfo.type == Exception
     with patch('pay_api.services.paybc_service.PaybcService.create_invoice', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.create_payment(payment_request, 'test')
+            PaymentService.create_payment(get_payment_request(), 'test')
         assert excinfo.type == Exception
 
 
@@ -181,26 +145,7 @@ def test_update_payment_record(session):
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
 
-    payment_request = {
-        'payment_info': {'method_of_payment': 'CC'},
-        'business_info': {
-            'business_identifier': 'CP1234',
-            'corp_type': 'CP',
-            'business_name': 'ABC Corp',
-            'contact_info': {
-                'city': 'Victoria',
-                'postal_code': 'V8P2P2',
-                'province': 'BC',
-                'address_line_1': '100 Douglas Street',
-                'country': 'CA',
-            },
-        },
-        'filing_info': {
-            'filing_types': [{'filing_type_code': 'OTADD', 'filing_description': 'TEST'}, {'filing_type_code': 'OTANN'}]
-        },
-    }
-
-    payment_response = PaymentService.update_payment(payment.id, payment_request, 'test')
+    payment_response = PaymentService.update_payment(payment.id, get_payment_request(), 'test')
     assert payment_response.get('id') is not None
 
 
@@ -218,26 +163,7 @@ def test_update_payment_record_transaction_invalid(session):
     transaction = factory_payment_transaction(payment.id, Status.COMPLETED.value)
     transaction.save()
 
-    payment_request = {
-        'payment_info': {'method_of_payment': 'CC'},
-        'business_info': {
-            'business_identifier': 'CP1234',
-            'corp_type': 'CP',
-            'business_name': 'ABC Corp',
-            'contact_info': {
-                'city': 'Victoria',
-                'postal_code': 'V8P2P2',
-                'province': 'BC',
-                'address_line_1': '100 Douglas Street',
-                'country': 'CA',
-            },
-        },
-        'filing_info': {
-            'filing_types': [{'filing_type_code': 'OTADD', 'filing_description': 'TEST'}, {'filing_type_code': 'OTANN'}]
-        },
-    }
-
-    payment_response = PaymentService.update_payment(payment.id, payment_request, 'test')
+    payment_response = PaymentService.update_payment(payment.id, get_payment_request(), 'test')
     assert payment_response.get('id') is not None
 
 
@@ -256,27 +182,8 @@ def test_update_payment_completed_invalid(session):
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
 
-    payment_request = {
-        'payment_info': {'method_of_payment': 'CC'},
-        'business_info': {
-            'business_identifier': 'CP1234',
-            'corp_type': 'CP',
-            'business_name': 'ABC Corp',
-            'contact_info': {
-                'city': 'Victoria',
-                'postal_code': 'V8P2P2',
-                'province': 'BC',
-                'address_line_1': '100 Douglas Street',
-                'country': 'CA',
-            },
-        },
-        'filing_info': {
-            'filing_types': [{'filing_type_code': 'OTADD', 'filing_description': 'TEST'}, {'filing_type_code': 'OTANN'}]
-        },
-    }
-
     with pytest.raises(BusinessException) as excinfo:
-        PaymentService.update_payment(payment.id, payment_request, 'test')
+        PaymentService.update_payment(payment.id, get_payment_request(), 'test')
     assert excinfo.type == BusinessException
 
 
@@ -295,27 +202,8 @@ def test_update_payment_cancel_invalid(session):
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
 
-    payment_request = {
-        'payment_info': {'method_of_payment': 'CC'},
-        'business_info': {
-            'business_identifier': 'CP1234',
-            'corp_type': 'CP',
-            'business_name': 'ABC Corp',
-            'contact_info': {
-                'city': 'Victoria',
-                'postal_code': 'V8P2P2',
-                'province': 'BC',
-                'address_line_1': '100 Douglas Street',
-                'country': 'CA',
-            },
-        },
-        'filing_info': {
-            'filing_types': [{'filing_type_code': 'OTADD', 'filing_description': 'TEST'}, {'filing_type_code': 'OTANN'}]
-        },
-    }
-
     with pytest.raises(BusinessException) as excinfo:
-        PaymentService.update_payment(payment.id, payment_request, 'test')
+        PaymentService.update_payment(payment.id, get_payment_request(), 'test')
     assert excinfo.type == BusinessException
 
 
@@ -334,26 +222,7 @@ def test_update_payment_invoice_cancel_invalid(session):
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
 
-    payment_request = {
-        'payment_info': {'method_of_payment': 'CC'},
-        'business_info': {
-            'business_identifier': 'CP1234',
-            'corp_type': 'CP',
-            'business_name': 'ABC Corp',
-            'contact_info': {
-                'city': 'Victoria',
-                'postal_code': 'V8P2P2',
-                'province': 'BC',
-                'address_line_1': '100 Douglas Street',
-                'country': 'CA',
-            },
-        },
-        'filing_info': {
-            'filing_types': [{'filing_type_code': 'OTADD', 'filing_description': 'TEST'}, {'filing_type_code': 'OTANN'}]
-        },
-    }
-
-    payment_response = PaymentService.update_payment(payment.id, payment_request, 'test')
+    payment_response = PaymentService.update_payment(payment.id, get_payment_request(), 'test')
     assert payment_response.get('id') is not None
 
 
@@ -371,32 +240,13 @@ def test_update_payment_record_rollback(session):
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
 
-    payment_request = {
-        'payment_info': {'method_of_payment': 'CC'},
-        'business_info': {
-            'business_identifier': 'CP1234',
-            'corp_type': 'CP',
-            'business_name': 'ABC Corp',
-            'contact_info': {
-                'city': 'Victoria',
-                'postal_code': 'V8P2P2',
-                'province': 'BC',
-                'address_line_1': '100 Douglas Street',
-                'country': 'CA',
-            },
-        },
-        'filing_info': {
-            'filing_types': [{'filing_type_code': 'OTADD', 'filing_description': 'TEST'}, {'filing_type_code': 'OTANN'}]
-        },
-    }
-
     # Mock here that the invoice update fails here to test the rollback scenario
     with patch(
             'pay_api.services.payment_transaction.PaymentTransaction.find_active_by_payment_id',
             side_effect=Exception('mocked error'),
     ):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.update_payment(payment.id, payment_request, 'test')
+            PaymentService.update_payment(payment.id, get_payment_request(), 'test')
         assert excinfo.type == Exception
 
     with patch(
@@ -404,17 +254,17 @@ def test_update_payment_record_rollback(session):
             side_effect=Exception('mocked error'),
     ):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.update_payment(payment.id, payment_request, 'test')
+            PaymentService.update_payment(payment.id, get_payment_request(), 'test')
         assert excinfo.type == Exception
 
     with patch('pay_api.services.payment.Payment.find_by_id', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.update_payment(payment.id, payment_request, 'test')
+            PaymentService.update_payment(payment.id, get_payment_request(), 'test')
         assert excinfo.type == Exception
 
     with patch('pay_api.services.payment_line_item.PaymentLineItem.create', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.update_payment(payment.id, payment_request, 'test')
+            PaymentService.update_payment(payment.id, get_payment_request(), 'test')
         assert excinfo.type == Exception
 
     # reset transaction
@@ -423,7 +273,7 @@ def test_update_payment_record_rollback(session):
 
     with patch('pay_api.services.paybc_service.PaybcService.update_invoice', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.update_payment(payment.id, payment_request, 'test')
+            PaymentService.update_payment(payment.id, get_payment_request(), 'test')
         assert excinfo.type == Exception
 
     # reset transaction
@@ -432,7 +282,7 @@ def test_update_payment_record_rollback(session):
 
     with patch('pay_api.services.invoice.Invoice.find_by_id', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.update_payment(payment.id, payment_request, 'test')
+            PaymentService.update_payment(payment.id, get_payment_request(), 'test')
         assert excinfo.type == Exception
 
     # reset transaction
@@ -441,7 +291,7 @@ def test_update_payment_record_rollback(session):
 
     with patch('pay_api.services.invoice.Invoice.save', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.update_payment(payment.id, payment_request, 'test')
+            PaymentService.update_payment(payment.id, get_payment_request(), 'test')
         assert excinfo.type == Exception
 
     # reset transaction
@@ -450,39 +300,21 @@ def test_update_payment_record_rollback(session):
 
     with patch('pay_api.services.payment.Payment.save', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.update_payment(payment.id, payment_request, 'test')
+            PaymentService.update_payment(payment.id, get_payment_request(), 'test')
         assert excinfo.type == Exception
 
 
 def test_create_payment_record_rollback_on_paybc_connection_error(session):
     """Assert that the payment records are not created."""
-    payment_request = {
-        'payment_info': {'method_of_payment': 'CC'},
-        'business_info': {
-            'business_identifier': 'CP1234',
-            'corp_type': 'CP',
-            'business_name': 'ABC Corp',
-            'contact_info': {
-                'city': 'Victoria',
-                'postal_code': 'V8P2P2',
-                'province': 'BC',
-                'address_line_1': '100 Douglas Street',
-                'country': 'CA',
-            },
-        },
-        'filing_info': {
-            'filing_types': [{'filing_type_code': 'OTADD', 'filing_description': 'TEST'}, {'filing_type_code': 'OTANN'}]
-        },
-    }
     from unittest.mock import Mock
     # Mock here that the invoice update fails here to test the rollback scenario
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
         with pytest.raises(ServiceUnavailableException) as excinfo:
-            PaymentService.create_payment(payment_request, 'test')
+            PaymentService.create_payment(get_payment_request(), 'test')
         assert excinfo.type == ServiceUnavailableException
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectTimeout('mocked error')):
         with pytest.raises(ServiceUnavailableException) as excinfo:
-            PaymentService.create_payment(payment_request, 'test')
+            PaymentService.create_payment(get_payment_request(), 'test')
         assert excinfo.type == ServiceUnavailableException
 
     mock_create_site = patch('pay_api.services.oauth_service.requests.post')
@@ -493,5 +325,5 @@ def test_create_payment_record_rollback_on_paybc_connection_error(session):
     with patch('pay_api.services.oauth_service.requests.post', side_effect=HTTPError('mocked error')) as post_mock:
         post_mock.status_Code = 503
         with pytest.raises(HTTPError) as excinfo:
-            PaymentService.create_payment(payment_request, 'test')
+            PaymentService.create_payment(get_payment_request(), 'test')
         assert excinfo.type == HTTPError

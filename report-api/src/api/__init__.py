@@ -16,13 +16,13 @@
 import os
 
 from flask import Flask
+from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
 
 import config
 from api import models
 from api.utils.auth import jwt
 from api.utils.logging import setup_logging
 from api.utils.run_version import get_run_version
-
 
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
@@ -39,6 +39,8 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
 
     setup_jwt_manager(app, jwt)
 
+    ExceptionHandler(app)
+
     @app.after_request
     def add_version(response):  # pylint:  disable=unused-variable
         version = get_run_version()
@@ -52,6 +54,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
 
 def setup_jwt_manager(app, jwt_manager):
     """Use flask app to configure the JWTManager to work for a particular Realm."""
+
     def get_roles(a_dict):
         return a_dict['realm_access']['roles']  # pragma: no cover
 
@@ -62,6 +65,7 @@ def setup_jwt_manager(app, jwt_manager):
 
 def register_shellcontext(app):
     """Register shell context objects."""
+
     def shell_context():
         """Shell context objects."""
         return {'app': app, 'models': models}  # pragma: no cover

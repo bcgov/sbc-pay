@@ -26,6 +26,7 @@ from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, Paymen
 from pay_api.services.payment_service import PaymentService
 from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.utils.enums import Status
+from tests.utilities.base_test import get_payment_request
 
 
 def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
@@ -139,26 +140,7 @@ def test_create_receipt_without_invoice(session):
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
 
-    payment_request = {
-        'payment_info': {'method_of_payment': 'CC'},
-        'business_info': {
-            'business_identifier': 'CP1234',
-            'corp_type': 'CP',
-            'business_name': 'ABC Corp',
-            'contact_info': {
-                'city': 'Victoria',
-                'postal_code': 'V8P2P2',
-                'province': 'BC',
-                'address_line_1': '100 Douglas Street',
-                'country': 'CA',
-            },
-        },
-        'filing_info': {
-            'filing_types': [{'filing_type_code': 'OTADD', 'filing_description': 'TEST'}, {'filing_type_code': 'OTANN'}]
-        },
-    }
-
-    PaymentService.update_payment(payment.id, payment_request, 'test')
+    PaymentService.update_payment(payment.id, get_payment_request(), 'test')
     input_data = {
         'corpName': 'Pennsular Coop ',
         'filingDateTime': '1999',
@@ -182,26 +164,7 @@ def test_create_receipt_with_invoice(session):
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
 
-    payment_request = {
-        'payment_info': {'method_of_payment': 'CC'},
-        'business_info': {
-            'business_identifier': 'CP1234',
-            'corp_type': 'CP',
-            'business_name': 'ABC Corp',
-            'contact_info': {
-                'city': 'Victoria',
-                'postal_code': 'V8P2P2',
-                'province': 'BC',
-                'address_line_1': '100 Douglas Street',
-                'country': 'CA',
-            },
-        },
-        'filing_info': {
-            'filing_types': [{'filing_type_code': 'OTADD', 'filing_description': 'TEST'}, {'filing_type_code': 'OTANN'}]
-        },
-    }
-
-    PaymentService.update_payment(payment.id, payment_request, 'test')
+    PaymentService.update_payment(payment.id, get_payment_request(), 'test')
     input_data = {
         'corpName': 'Pennsular Coop ',
         'filingDateTime': '1999',
@@ -223,26 +186,7 @@ def test_create_receipt_with_no_receipt(session):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    payment_request = {
-        'payment_info': {'method_of_payment': 'CC'},
-        'business_info': {
-            'business_identifier': 'CP1234',
-            'corp_type': 'CP',
-            'business_name': 'ABC Corp',
-            'contact_info': {
-                'city': 'Victoria',
-                'postal_code': 'V8P2P2',
-                'province': 'BC',
-                'address_line_1': '100 Douglas Street',
-                'country': 'CA',
-            },
-        },
-        'filing_info': {
-            'filing_types': [{'filing_type_code': 'OTADD', 'filing_description': 'TEST'}, {'filing_type_code': 'OTANN'}]
-        },
-    }
-
-    PaymentService.update_payment(payment.id, payment_request, 'test')
+    PaymentService.update_payment(payment.id, get_payment_request(), 'test')
     input_data = {
         'corpName': 'Pennsular Coop ',
         'filingDateTime': '1999',

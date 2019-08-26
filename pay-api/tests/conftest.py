@@ -21,9 +21,9 @@ import time
 
 import pytest
 from flask_migrate import Migrate, upgrade
+from nats.aio.client import Client as Nats
 from sqlalchemy import event, text
 from sqlalchemy.schema import DropConstraint, MetaData
-from nats.aio.client import Client as Nats
 from stan.aio.client import Client as Stan
 
 from pay_api import create_app
