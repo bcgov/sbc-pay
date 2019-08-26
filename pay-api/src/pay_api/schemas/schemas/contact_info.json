@@ -5,9 +5,9 @@
   "title": "Contact Info",
   "required": [
     "city",
-    "postal_code",
+    "postalCode",
     "province",
-    "address_line_1",
+    "addressLine1",
     "country"
   ],
   "properties": {
@@ -22,8 +22,8 @@
       ],
       "pattern": "^(.*)$"
     },
-    "postal_code": {
-      "$id": "#/properties/postal_code",
+    "postalCode": {
+      "$id": "#/properties/postalCode",
       "type": "string",
       "title": "Postal Code",
       "default": "",
@@ -42,8 +42,8 @@
       ],
       "pattern": "^(.*)$"
     },
-    "address_line_1": {
-      "$id": "#/properties/address_line_1",
+    "addressLine1": {
+      "$id": "#/properties/addressLine1",
       "type": "string",
       "title": "Address line 1",
       "default": "",

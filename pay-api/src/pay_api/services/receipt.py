@@ -141,39 +141,39 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         """Create receipt."""
         current_app.logger.debug('<create receipt initiated', payment_identifier, invoice_identifier)
         receipt_dict = {
-            'template_vars': {
-                'line_items': [],
+            'templateVars': {
+                'lineItems': [],
             },
-            'template_name': 'payment_receipt_coops',
-            'report_name': 'payment_receipt_coops'
+            'templateName': 'payment_receipt_coops',
+            'reportName': 'payment_receipt_coops'
         }
-        template_vars = receipt_dict['template_vars']
-        template_vars['coops_name'] = filing_data.get('corpName')
-        template_vars['filing_date_time'] = filing_data.get('filingDateTime')
+        template_vars = receipt_dict['templateVars']
+        template_vars['coopsName'] = filing_data.get('corpName')
+        template_vars['filingDateTime'] = filing_data.get('filingDateTime')
         # inovice number not mandatory ;since only one invoice exist for a payment now
         if not invoice_identifier:
             invoice_data = Invoice.find_by_payment_identifier(payment_identifier).asdict()
         else:
             invoice_data = Invoice.find_by_id(invoice_identifier, payment_identifier).asdict()
 
-        template_vars['incorporation_number'] = invoice_data['created_by']
-        template_vars['payment_invoice_number'] = invoice_data['invoice_number']
+        template_vars['incorporationNumber'] = invoice_data['created_by']
+        template_vars['paymentInvoiceNumber'] = invoice_data['invoice_number']
         if 'receipts' not in invoice_data:
             raise BusinessException(Error.PAY999)
 
-        template_vars['receipt_number'] = invoice_data['receipts'][0]['receipt_number']
+        template_vars['receiptNumber'] = invoice_data['receipts'][0]['receipt_number']
         for line_item in invoice_data['line_items']:
-            template_vars['line_items'].append(
+            template_vars['lineItems'].append(
                 {
                     'description': line_item['description'],
-                    'filing_fees': line_item['total']
+                    'filingFees': '{:.2f}'.format(line_item['total'])
                 }
             )
 
-        template_vars['line_items'].append(
+        template_vars['lineItems'].append(
             {
                 'description': 'Total',
-                'filing_fees': invoice_data['total']
+                'filingFees': '{:.2f}'.format(invoice_data['total'])
             }
         )
         current_app.logger.debug('<OAuthService invoked from receipt.py', current_app.config.get('REPORT_API_BASE_URL'))

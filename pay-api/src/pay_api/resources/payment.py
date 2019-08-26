@@ -25,7 +25,6 @@ from pay_api.utils.enums import Role
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
 
-
 API = Namespace('payments', description='Payment System - Payments')
 
 
@@ -42,8 +41,10 @@ class Payment(Resource):
         """Create the payment records."""
         current_app.logger.info('<Payment.post')
         request_json = request.get_json()
+
         # Validate the input request
         valid_format, errors = schema_utils.validate(request_json, 'payment_request')
+
         if not valid_format:
             return jsonify({'code': 'PAY999', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
 

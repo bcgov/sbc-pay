@@ -17,7 +17,8 @@ import json
 import requests
 from flask import current_app
 from requests.adapters import HTTPAdapter  # pylint:disable=ungrouped-imports
-from requests.exceptions import ConnectTimeout, HTTPError, ConnectionError as ReqConnectionError  # pylint:disable=ungrouped-imports
+# pylint:disable=ungrouped-imports
+from requests.exceptions import ConnectTimeout, HTTPError, ConnectionError as ReqConnectionError
 from urllib3.util.retry import Retry
 
 from pay_api.exceptions import ServiceUnavailableException

@@ -39,13 +39,13 @@ class Report(Resource):
     def post():
         """Create a report."""
         request_json = request.get_json()
-        template_vars = request_json['template_vars']
-        report_name = request_json['report_name']
-        populate_page_number = bool(request_json.get('populate_page_number', None))
+        template_vars = request_json['templateVars']
+        report_name = request_json['reportName']
+        populate_page_number = bool(request_json.get('populatePageNumber', None))
 
         pdf = None
-        if 'template_name' in request_json:  # Ignore template if template_name is present
-            template_name = request_json['template_name']
+        if 'templateName' in request_json:  # Ignore template if template_name is present
+            template_name = request_json['templateName']
             try:
                 pdf = ReportService.create_report_from_stored_template(template_name, template_vars,
                                                                        populate_page_number)

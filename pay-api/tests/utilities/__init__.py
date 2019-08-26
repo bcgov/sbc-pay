@@ -11,10 +11,5 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Exposes all of the Services used in the API."""
 
-from .fee_schedule import FeeSchedule
-from .invoice import Invoice as InvoiceService
-from .payment_service import PaymentService
-from .payment_transaction import PaymentTransaction as TransactionService
-from .receipt import Receipt as ReceiptService
+"""Test utils."""

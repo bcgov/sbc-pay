@@ -5,12 +5,12 @@
   "title": "Invoice",
   "required": [
     "_links",
-    "created_by",
-    "created_on",
+    "createdBy",
+    "createdOn",
     "id",
-    "invoice_number",
-    "reference_number",
-      "status_code",
+    "invoiceNumber",
+    "referenceNumber",
+    "statusCode",
     "total"
   ],
   "properties": {
@@ -21,8 +21,8 @@
         }
       ]
     },
-    "created_by": {
-      "$id": "#/properties/created_by",
+    "createdBy": {
+      "$id": "#/properties/createdBy",
       "type": "string",
       "title": "Created By",
       "default": "",
@@ -31,8 +31,8 @@
       ],
       "pattern": "^(.*)$"
     },
-    "created_on": {
-      "$id": "#/properties/created_on",
+    "createdOn": {
+      "$id": "#/properties/createdOn",
       "type": "string",
       "title": "Created On",
       "default": "",
@@ -50,8 +50,8 @@
         1
       ]
     },
-    "invoice_number": {
-      "$id": "#/properties/invoice_number",
+    "invoiceNumber": {
+      "$id": "#/properties/invoiceNumber",
       "type": "string",
       "title": "Invoice Number",
       "default": "",
@@ -60,8 +60,8 @@
       ],
       "pattern": "^(.*)$"
     },
-    "reference_number": {
-      "$id": "#/properties/reference_number",
+    "referenceNumber": {
+      "$id": "#/properties/referenceNumber",
       "type": "string",
       "title": "Reference Number",
       "default": "",
@@ -70,8 +70,8 @@
       ],
       "pattern": "^(.*)$"
     },
-    "status_code": {
-      "$id": "#/properties/status_code",
+    "statusCode": {
+      "$id": "#/properties/statusCode",
       "type": "string",
       "title": "Invoice status code",
       "default": "",
@@ -89,8 +89,8 @@
         50
       ]
     },
-    "payment_date": {
-      "$id": "#/properties/payment_date",
+    "paymentDate": {
+      "$id": "#/properties/paymentDate",
       "type": "string",
       "title": "Payment Date",
       "default": 0
@@ -101,19 +101,19 @@
       "title": "Refund Amount",
       "default": 0
     },
-    "updated_by": {
-      "$id": "#/properties/updated_by",
+    "updatedBy": {
+      "$id": "#/properties/updatedBy",
       "type": "string",
       "title": "Updated By",
       "default": 0
     },
-    "updated_on": {
-      "$id": "#/properties/updated_on",
+    "updatedOn": {
+      "$id": "#/properties/updatedOn",
       "type": "string",
       "title": "Updated On",
       "default": 0
     },
-    "line_items": {
+    "lineItems": {
       "type": "array",
       "items": {
         "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/line_item"

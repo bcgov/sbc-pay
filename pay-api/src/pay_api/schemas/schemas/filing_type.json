@@ -4,11 +4,11 @@
   "type": "object",
   "title": "Filing Type",
   "required": [
-    "filing_type_code"
+    "filingTypeCode"
   ],
   "properties": {
-    "filing_type_code": {
-      "$id": "#/properties/filing_types/items/properties/filing_type_code",
+    "filingTypeCode": {
+      "$id": "#/properties/filing_types/items/properties/filingTypeCode",
       "type": "string",
       "title": "Filing type code",
       "default": "",
@@ -26,8 +26,8 @@
         true
       ]
     },
-    "filing_description": {
-      "$id": "#/properties/filing_types/items/properties/filing_description",
+    "filingDescription": {
+      "$id": "#/properties/filing_types/items/properties/filingDescription",
       "type": "string",
       "title": "Filing description",
       "default": "",

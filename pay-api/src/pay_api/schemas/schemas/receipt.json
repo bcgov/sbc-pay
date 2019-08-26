@@ -5,9 +5,9 @@
   "title": "Receipt",
   "required": [
     "id",
-    "receipt_amount",
-    "receipt_date",
-    "receipt_number"
+    "receiptAmount",
+    "receiptDate",
+    "receiptNumber"
   ],
   "properties": {
     "id": {
@@ -19,8 +19,8 @@
         1
       ]
     },
-    "receipt_amount": {
-      "$id": "#/properties/receipts/items/properties/receipt_amount",
+    "receiptAmount": {
+      "$id": "#/properties/receipts/items/properties/receiptAmount",
       "type": "integer",
       "title": "Amount",
       "default": 0,
@@ -28,8 +28,8 @@
         0
       ]
     },
-    "receipt_date": {
-      "$id": "#/properties/receipts/items/properties/receipt_date",
+    "receiptDate": {
+      "$id": "#/properties/receipts/items/properties/receiptDate",
       "type": "string",
       "title": "Receipt Date",
       "default": "",
@@ -38,8 +38,8 @@
       ],
       "pattern": "^(.*)$"
     },
-    "receipt_number": {
-      "$id": "#/properties/receipts/items/properties/receipt_number",
+    "receiptNumber": {
+      "$id": "#/properties/receipts/items/properties/receiptNumber",
       "type": "string",
       "title": "Receipt number",
       "default": "",
