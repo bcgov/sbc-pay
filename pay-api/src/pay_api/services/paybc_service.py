@@ -15,6 +15,7 @@
 
 import base64
 import datetime
+import re
 import urllib.parse
 from typing import Any, Dict, Tuple
 
@@ -28,7 +29,6 @@ from pay_api.utils.constants import (
     DEFAULT_COUNTRY, DEFAULT_JURISDICTION, PAYBC_ADJ_ACTIVITY_NAME, PAYBC_BATCH_SOURCE, PAYBC_CUST_TRX_TYPE,
     PAYBC_LINE_TYPE, PAYBC_TERM_NAME)
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem
-
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -54,6 +54,8 @@ class PaybcService(PaymentSystemService, OAuthService):
 
     def create_account(self, name: str, account_info: Dict[str, Any]):
         """Create account in PayBC."""
+        # Strip all special characters from name
+        name = re.sub(r'[^a-zA-Z0-9]+', ' ', name)
         access_token = self.__get_token().json().get('access_token')
         party = self.__create_party(access_token, name)
         account = self.__create_paybc_account(access_token, party)
