@@ -206,7 +206,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         site: Dict[str, Any] = {
             'party_number': account.get('party_number', None),
             'account_number': account.get('account_number', None),
-            'site_name': party.get('customer_name')[:32],
+            'site_name': party.get('customer_name')[:25],
             'city': account_info.get('city', None),
             'address_line_1': account_info.get('addressLine1', None),
             'postal_code': account_info.get('postalCode', None).replace(' ', ''),
