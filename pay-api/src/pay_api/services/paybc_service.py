@@ -200,15 +200,16 @@ class PaybcService(PaymentSystemService, OAuthService):
     def __create_site(self, access_token, party, account, account_info):
         """Create site in PayBC."""
         current_app.logger.debug('<Creating site ')
+
         site_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/' \
             .format(account.get('party_number', None), account.get('account_number', None))
         site: Dict[str, Any] = {
             'party_number': account.get('party_number', None),
             'account_number': account.get('account_number', None),
-            'site_name': party.get('customer_name') + ' Site',
+            'site_name': party.get('customer_name')[:32],
             'city': account_info.get('city', None),
             'address_line_1': account_info.get('addressLine1', None),
-            'postal_code': account_info.get('postalCode', None),
+            'postal_code': account_info.get('postalCode', None).replace(' ', ''),
             'province': account_info.get('province', DEFAULT_JURISDICTION),
             'country': account_info.get('country', DEFAULT_COUNTRY),
             'customer_site_id': '1'
