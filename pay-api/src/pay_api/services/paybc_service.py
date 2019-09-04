@@ -79,9 +79,7 @@ class PaybcService(PaymentSystemService, OAuthService):
             comments='',
             lines=[]
         )
-        print('SKIP----> {}'.format(current_app.config.get('SKIP_INVOICE_NUMBER_GENERATION')))
         if not current_app.config.get('SKIP_INVOICE_NUMBER_GENERATION'):
-            print('Generating transaction number')
             invoice['transaction_number'] = f'{invoice_number}-{payment_account.corp_number}'
 
         index: int = 0
