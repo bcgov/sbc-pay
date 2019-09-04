@@ -74,14 +74,12 @@ class PaybcService(PaymentSystemService, OAuthService):
             batch_source=PAYBC_BATCH_SOURCE,
             cust_trx_type=PAYBC_CUST_TRX_TYPE,
             transaction_date=curr_time,
+            transaction_number=f'{invoice_number}-{payment_account.corp_number}',
             gl_date=curr_time,
             term_name=PAYBC_TERM_NAME,
             comments='',
             lines=[]
         )
-        if not current_app.config.get('SKIP_INVOICE_NUMBER_GENERATION'):
-            invoice['transaction_number'] = f'{invoice_number}-{payment_account.corp_number}'
-
         index: int = 0
         for line_item in line_items:
             index = index + 1
