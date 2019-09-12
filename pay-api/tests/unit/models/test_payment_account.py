@@ -20,7 +20,7 @@ Test-Suite to ensure that the CorpType Class is working as expected.
 from pay_api.models import PaymentAccount
 
 
-def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
+def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code='CP', payment_system_code='PAYBC'):
     """Factory."""
     return PaymentAccount(corp_number=corp_number, corp_type_code=corp_type_code,
                           payment_system_code=payment_system_code)
@@ -44,7 +44,7 @@ def test_find_by_corp_number_and_corp_type_and_system(session):
     """
     payment_account = factory_payment_account()
     payment_account.save()
-    assert PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP1234', 'CP', 'PAYBC') is not None
+    assert PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'PAYBC') is not None
 
 
 def test_find_by_invalid_corp_number_and_corp_type_and_system(session):
@@ -54,7 +54,7 @@ def test_find_by_invalid_corp_number_and_corp_type_and_system(session):
     """
     payment_account = factory_payment_account()
     payment_account.save()
-    assert PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP1234', 'CP', 'BCOL') is None
+    assert PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'BCOL') is None
     assert PaymentAccount.find_by_corp_number_and_corp_type_and_system(None, None, None) is None
 
 
@@ -65,9 +65,9 @@ def test_flush(session):
     """
     payment_account = factory_payment_account()
     payment_account.flush()
-    assert PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP1234', 'CP', 'PAYBC') is not None
+    assert PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'PAYBC') is not None
     payment_account.commit()
-    assert PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP1234', 'CP', 'PAYBC') is not None
+    assert PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'PAYBC') is not None
 
 
 def test_rollback(session):
@@ -77,6 +77,6 @@ def test_rollback(session):
     """
     payment_account = factory_payment_account()
     payment_account.flush()
-    assert PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP1234', 'CP', 'PAYBC') is not None
+    assert PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'PAYBC') is not None
     payment_account.rollback()
-    assert PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP1234', 'CP', 'PAYBC') is None
+    assert PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'PAYBC') is None

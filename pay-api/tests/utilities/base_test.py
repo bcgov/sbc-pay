@@ -19,7 +19,6 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 
 from pay_api.utils.enums import Role
 
-
 token_header = {
     'alg': 'RS256',
     'typ': 'JWT',
@@ -27,7 +26,7 @@ token_header = {
 }
 
 
-def get_claims(app_request=None, role: str = Role.BASIC.value):
+def get_claims(app_request=None, role: str = Role.EDITOR.value, username: str = 'CP0001234', login_source: str = None):
     """Return the claim with the role param."""
     claim = {
         'jti': 'a50fafa4-c4d6-4a9b-9e51-1e5e0d102878',
@@ -45,19 +44,21 @@ def get_claims(app_request=None, role: str = Role.BASIC.value):
                         '{}'.format(role)
                     ]
             },
-        'preferred_username': 'test'
+        'preferred_username': username,
+        'username': username,
+        'loginSource': login_source
     }
     return claim
 
 
-def get_payment_request():
+def get_payment_request(business_identifier: str = 'CP0001234'):
     """Return a payment request object."""
     return {
         'paymentInfo': {
             'methodOfPayment': 'CC'
         },
         'businessInfo': {
-            'businessIdentifier': 'CP1234',
+            'businessIdentifier': business_identifier,
             'corpType': 'CP',
             'businessName': 'ABC Corp',
             'contactInfo': {

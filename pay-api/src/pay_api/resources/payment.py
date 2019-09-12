@@ -20,10 +20,12 @@ from flask_restplus import Namespace, Resource, cors
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import PaymentService
+from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
-from pay_api.utils.enums import Role
+from pay_api.utils.constants import CLIENT_AUTH_ROLES
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
+
 
 API = Namespace('payments', description='Payment System - Payments')
 
@@ -35,7 +37,7 @@ class Payment(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
+    @_jwt.requires_auth
     @_tracing.trace()
     def post():
         """Create the payment records."""
@@ -47,6 +49,9 @@ class Payment(Resource):
 
         if not valid_format:
             return jsonify({'code': 'PAY999', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
+
+        # Check if user is authorized to perform this action
+        check_auth(request_json.get('businessInfo').get('businessIdentifier'), _jwt, one_of_roles=CLIENT_AUTH_ROLES)
 
         try:
             response, status = PaymentService.create_payment(request_json,
@@ -67,19 +72,19 @@ class Payments(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
+    @_jwt.requires_auth
     @_tracing.trace()
     def get(payment_id):
         """Get the payment records."""
         try:
-            response, status = PaymentService.get_payment(payment_id), HTTPStatus.OK
+            response, status = PaymentService.get_payment(payment_id, _jwt), HTTPStatus.OK
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         return jsonify(response), status
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
+    @_jwt.requires_auth
     @_tracing.trace()
     def put(payment_id):
         """Update the payment records."""
@@ -90,10 +95,13 @@ class Payments(Resource):
         if not valid_format:
             return jsonify({'code': 'PAY003', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
 
+        # Check if user is authorized to perform this action
+        check_auth(request_json.get('businessInfo').get('businessIdentifier'), _jwt, one_of_roles=CLIENT_AUTH_ROLES)
+
         try:
             response, status = (
                 PaymentService.update_payment(
-                    payment_id, request_json, g.jwt_oidc_token_info.get('preferred_username', None)
+                    payment_id, request_json, g.jwt_oidc_token_info.get('username', None)
                 ),
                 HTTPStatus.OK,
             )

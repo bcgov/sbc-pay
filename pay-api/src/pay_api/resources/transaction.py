@@ -21,7 +21,6 @@ from flask_restplus import Namespace, Resource, cors
 from pay_api.exceptions import BusinessException
 from pay_api.services import TransactionService
 from pay_api.utils.auth import jwt as _jwt
-from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
@@ -37,7 +36,7 @@ class Transaction(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
+    @_jwt.requires_auth
     @_tracing.trace()
     def post(payment_id):
         """Create the Transaction records."""
@@ -47,7 +46,8 @@ class Transaction(Resource):
             if not redirect_uri:
                 raise BusinessException(Error.PAY007)
 
-            response, status = TransactionService.create(payment_id, redirect_uri).asdict(), HTTPStatus.CREATED
+            response, status = TransactionService.create(payment_id, redirect_uri,
+                                                         jwt=_jwt).asdict(), HTTPStatus.CREATED
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         current_app.logger.debug('>Transaction.post')
@@ -55,7 +55,7 @@ class Transaction(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
+    @_jwt.requires_auth
     @_tracing.trace()
     def get(payment_id):
         """Get all transaction records for a payment."""
@@ -72,7 +72,7 @@ class Transactions(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
+    @_jwt.requires_auth
     @_tracing.trace()
     def get(payment_id, transaction_id):
         """Get the Transaction record."""
@@ -88,7 +88,7 @@ class Transactions(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
+    @_jwt.requires_auth
     @_tracing.trace()
     def patch(payment_id, transaction_id):
         """Update the transaction record by querying payment system."""
@@ -97,7 +97,7 @@ class Transactions(Resource):
         receipt_number = flask.request.args.get('receipt_number')
         try:
             response, status = TransactionService.update_transaction(payment_id, transaction_id,
-                                                                     receipt_number).asdict(), HTTPStatus.OK
+                                                                     receipt_number, _jwt).asdict(), HTTPStatus.OK
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         current_app.logger.debug('>Transaction.post')

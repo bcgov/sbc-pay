@@ -22,7 +22,6 @@ from pay_api.exceptions import BusinessException
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import ReceiptService
 from pay_api.utils.auth import jwt as _jwt
-from pay_api.utils.enums import Role
 from pay_api.utils.util import cors_preflight
 
 
@@ -37,7 +36,7 @@ class InvoiceReceipt(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
+    @_jwt.requires_auth
     def post(payment_id, invoice_id=''):
         """Create the Receipt for the Payment."""
         request_json = request.get_json()
@@ -47,7 +46,7 @@ class InvoiceReceipt(Resource):
             if not valid_format:
                 return jsonify({'code': 'PAY999', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
 
-            pdf = ReceiptService.create_receipt(payment_id, invoice_id, request_json, _jwt.get_token_auth_header())
+            pdf = ReceiptService.create_receipt(payment_id, invoice_id, request_json, _jwt)
             current_app.logger.info('<InvoiceReceipt received pdf')
             response = Response(pdf, 201)
             file_name = request_json.get('fileName')
