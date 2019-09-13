@@ -27,7 +27,7 @@ def check_auth(business_identifier: str, jwt: JwtManager, **kwargs):
     auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON)
     is_authorized: bool = False
     if auth_response:
-        role: str = auth_response.json().get('role', None)
+        role: str = auth_response.json().get('orgMembership', None)
         if kwargs.get('one_of_roles', None):
             is_authorized = role in kwargs.get('one_of_roles')
         if kwargs.get('disabled_roles', None):
