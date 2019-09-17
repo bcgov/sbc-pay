@@ -114,13 +114,13 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             current_app.logger.debug('Handing off to payment system to create invoice')
             pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice.id)
             current_app.logger.debug('Updating invoice record')
-            invoice = Invoice.find_by_id(invoice.id)
+            invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
             invoice.invoice_status_code = Status.CREATED.value
             invoice.reference_number = pay_system_invoice.get('reference_number', None)
             invoice.invoice_number = pay_system_invoice.get('invoice_number', None)
             invoice.save()
             payment.commit()
-            payment = Payment.find_by_id(payment.id)
+            payment = Payment.find_by_id(payment.id, skip_auth_check=True)
         except Exception as e:
             current_app.logger.error('Rolling back as error occured!')
             current_app.logger.error(e)
@@ -138,12 +138,13 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         return payment.asdict()
 
     @classmethod
-    def get_payment(cls, payment_id):
+    def get_payment(cls, payment_id, jwt):
         """Get payment related records."""
         try:
-            payment: Payment = Payment.find_by_id(payment_id)
+            payment: Payment = Payment.find_by_id(payment_id, jwt=jwt)
             if not payment.id:
                 raise BusinessException(Error.PAY005)
+
             return payment.asdict()
         except Exception as e:
             current_app.logger.debug('Error on get payment {}', e)
@@ -207,10 +208,10 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             current_app.logger.debug(transaction)
             if transaction:
                 # check existing payment status in PayBC;
-                PaymentTransaction.update_transaction(payment_id, transaction.id, None)
+                PaymentTransaction.update_transaction(payment_id, transaction.id, None, skip_auth_check=True)
 
             # update transaction function will update the status from PayBC
-            payment: Payment = Payment.find_by_id(payment_id)
+            payment: Payment = Payment.find_by_id(payment_id, skip_auth_check=True)
             current_app.logger.debug(payment)
             if payment.payment_status_code == Status.COMPLETED.value:
                 raise BusinessException(Error.PAY010)
@@ -245,7 +246,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                         invoice.invoice_number,
                     )
                     current_app.logger.debug('Updating invoice record')
-                    invoice = Invoice.find_by_id(invoice.id)
+                    invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
                     invoice.updated_on = datetime.now()
                     invoice.updated_by = current_user
                     invoice.total = sum(fee.total for fee in fees)
@@ -257,7 +258,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             payment.commit()
 
             # return payment with updated contents
-            payment = Payment.find_by_id(payment.id)
+            payment = Payment.find_by_id(payment.id, skip_auth_check=True)
         except Exception as e:
             current_app.logger.error('Rolling back as error occurred!')
             current_app.logger.error(e)

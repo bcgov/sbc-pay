@@ -86,7 +86,7 @@ def run():
     for transaction in stale_transactions:
         try:
             application.logger.debug('Job found records.Payment Id: {}, Transaction Id : {}'.format(transaction.payment_id, transaction.id))
-            TransactionService.update_transaction(transaction.payment_id, transaction.id, '')
+            TransactionService.update_transaction(transaction.payment_id, transaction.id, '', skip_auth_check=True)
             application.logger.debug(
                 'Job Updated records.Payment Id: {}, Transaction Id : {}'.format(transaction.payment_id, transaction.id))
         except BusinessException as err:  # just catch and continue .Don't stop

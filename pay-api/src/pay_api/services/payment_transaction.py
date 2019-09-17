@@ -18,6 +18,7 @@ from datetime import datetime
 from typing import Dict
 
 from flask import current_app
+from flask_jwt_oidc import JwtManager
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
@@ -27,6 +28,7 @@ from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
+from pay_api.utils.constants import CLIENT_AUTH_ROLES
 from pay_api.utils.enums import Status
 from pay_api.utils.errors import Error
 
@@ -179,11 +181,12 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         return self._dao.flush()
 
     @staticmethod
-    def create(payment_identifier: str, redirect_uri: str):
+    def create(payment_identifier: str, redirect_uri: str, jwt: JwtManager = None, skip_auth_check: bool = False):
         """Create transaction record."""
         current_app.logger.debug('<create transaction')
         # Lookup payment record
-        payment: Payment = Payment.find_by_id(payment_identifier)
+        payment: Payment = Payment.find_by_id(payment_identifier, jwt=jwt, one_of_roles=CLIENT_AUTH_ROLES,
+                                              skip_auth_check=skip_auth_check)
 
         if not payment.id:
             raise BusinessException(Error.PAY005)
@@ -255,7 +258,9 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         return transaction
 
     @staticmethod
-    def update_transaction(payment_identifier: int, transaction_id: uuid, receipt_number: str):
+    def update_transaction(payment_identifier: int, transaction_id: uuid,  # pylint: disable=too-many-locals
+                           receipt_number: str, jwt: JwtManager = None,
+                           skip_auth_check: bool = False):
         """Update transaction record.
 
         Does the following:
@@ -275,13 +280,14 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         if transaction_dao.status_code == Status.COMPLETED.value:
             raise BusinessException(Error.PAY006)
 
-        payment: Payment = Payment.find_by_id(payment_identifier)
+        payment: Payment = Payment.find_by_id(payment_identifier, jwt=jwt, one_of_roles=CLIENT_AUTH_ROLES,
+                                              skip_auth_check=skip_auth_check)
 
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create(
             payment_system=payment.payment_system_code
         )
 
-        invoice = Invoice.find_by_payment_identifier(payment_identifier)
+        invoice = Invoice.find_by_payment_identifier(payment_identifier, jwt=jwt, skip_auth_check=True)
 
         payment_account = PaymentAccount.find_by_id(invoice.account_id)
 

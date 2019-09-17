@@ -17,11 +17,10 @@
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
 
-from datetime import datetime
-from unittest.mock import patch
-
 import pytest
+from datetime import datetime
 from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
+from unittest.mock import patch
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
@@ -30,7 +29,7 @@ from pay_api.utils.enums import Status
 from tests.utilities.base_test import get_payment_request
 
 
-def factory_payment_account(corp_number: str = 'CP1234', corp_type_code: str = 'CP',
+def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code: str = 'CP',
                             payment_system_code: str = 'PAYBC'):
     """Factory."""
     return PaymentAccount(
@@ -103,13 +102,13 @@ def factory_payment_transaction(
 def test_create_payment_record(session):
     """Assert that the payment records are created."""
     payment_response = PaymentService.create_payment(get_payment_request(), 'test')
-    account_model = PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP1234', 'CP', 'PAYBC')
+    account_model = PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'PAYBC')
     account_id = account_model.id
     assert account_id is not None
     assert payment_response.get('id') is not None
     # Create another payment with same request, the account should be the same
     PaymentService.create_payment(get_payment_request(), 'test')
-    account_model = PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP1234', 'CP', 'PAYBC')
+    account_model = PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'PAYBC')
     assert account_id == account_model.id
 
 

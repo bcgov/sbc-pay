@@ -18,10 +18,10 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 """
 
 import json
-from datetime import datetime
-from unittest.mock import patch
 
+from datetime import datetime
 from requests.exceptions import ConnectionError
+from unittest.mock import patch
 
 from pay_api.models import PaymentTransaction
 from pay_api.schemas import utils as schema_utils
@@ -52,11 +52,22 @@ def test_payment_creation(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+                     headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
 
     assert schema_utils.validate(rv.json, 'payment_response')[0]
+
+
+def test_payment_creation_for_unauthorized_user(session, client, jwt, app):
+    """Assert that the endpoint returns 403."""
+    token = jwt.create_jwt(get_claims(username='TEST', login_source='PASSCODE'), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0000000')),
+                     headers=headers)
+    assert rv.status_code == 403
 
 
 def test_payment_incomplete_input(session, client, jwt, app):
@@ -68,7 +79,7 @@ def test_payment_incomplete_input(session, client, jwt, app):
             'methodOfPayment': 'CC'
         },
         'businessInfo': {
-            'businessIdentifier': 'CP1234',
+            'businessIdentifier': 'CP0001234',
             'corpType': 'CP',
             'businessName': 'ABC Corp',
             'contactInfo': {
@@ -93,7 +104,7 @@ def test_payment_invalid_corp_type(session, client, jwt, app):
             'methodOfPayment': 'CC'
         },
         'businessInfo': {
-            'businessIdentifier': 'CP1234',
+            'businessIdentifier': 'CP0001234',
             'corpType': 'PC',
             'businessName': 'ABC Corp',
             'contactInfo': {
@@ -179,7 +190,7 @@ def test_payment_put_incomplete_input(session, client, jwt, app):
             'methodOfPayment': 'CC'
         },
         'businessInfo': {
-            'businessIdentifier': 'CP1234',
+            'businessIdentifier': 'CP0001234',
             'corpType': 'CP',
             'businessName': 'ABC Corp',
             'contactInfo': {
@@ -211,7 +222,7 @@ def test_payment_put_invalid_corp_type(session, client, jwt, app):
             'methodOfPayment': 'CC'
         },
         'businessInfo': {
-            'businessIdentifier': 'CP1234',
+            'businessIdentifier': 'CP0001234',
             'corpType': 'PC',
             'businessName': 'ABC Corp',
             'contactInfo': {

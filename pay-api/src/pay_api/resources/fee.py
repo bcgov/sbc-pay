@@ -38,7 +38,7 @@ class Fee(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_tracing.trace()
-    @_jwt.has_one_of_roles([Role.BASIC.value, Role.PREMIUM.value])
+    @_jwt.has_one_of_roles([Role.VIEWER.value, Role.EDITOR.value, Role.STAFF.value])
     def get(corp_type, filing_type_code):
         """Calculate the fee for the filing using the corp type/filing type and return fee."""
         date = request.args.get('date', datetime.today().strftime('%Y-%m-%d'))

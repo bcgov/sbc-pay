@@ -27,7 +27,7 @@ from pay_api.services.invoice import Invoice as Invoice_service
 from pay_api.utils.enums import Status
 
 
-def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
+def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code='CP', payment_system_code='PAYBC'):
     """Factory."""
     return PaymentAccount(
         corp_number=corp_number, corp_type_code=corp_type_code, payment_system_code=payment_system_code
@@ -80,7 +80,7 @@ def test_invoice_saved_from_new(session):
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(i.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
-    invoice = Invoice_service.find_by_id(i.id)
+    invoice = Invoice_service.find_by_id(i.id, skip_auth_check=True)
 
     assert invoice is not None
     assert invoice.id is not None
@@ -103,7 +103,7 @@ def test_invoice_saved_from_new(session):
 def test_invoice_invalid_lookup(session):
     """Test invalid lookup."""
     with pytest.raises(BusinessException) as excinfo:
-        Invoice_service.find_by_id(999)
+        Invoice_service.find_by_id(999, skip_auth_check=True)
     assert excinfo.type == BusinessException
 
 
@@ -116,7 +116,7 @@ def test_invoice_find_by_valid_payment_id(session):
     i = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
     i.save()
 
-    invoice = Invoice_service.find_by_payment_identifier(payment.id)
+    invoice = Invoice_service.find_by_payment_identifier(payment.id, skip_auth_check=True)
 
     assert invoice is not None
     assert invoice.id is not None
@@ -145,7 +145,7 @@ def test_invoice_get_invoices(session):
     i = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
     i.save()
 
-    invoices = Invoice_service.get_invoices(payment.id)
+    invoices = Invoice_service.get_invoices(payment.id, skip_auth_check=True)
 
     assert invoices is not None
     assert len(invoices.get('items')) == 1
@@ -159,7 +159,7 @@ def test_invoice_get_invoices_with_no_invoice(session):
     payment_account.save()
     payment.save()
 
-    invoices = Invoice_service.get_invoices(payment.id)
+    invoices = Invoice_service.get_invoices(payment.id,  skip_auth_check=True)
 
     assert invoices is not None
     assert len(invoices.get('items')) == 0
@@ -167,7 +167,7 @@ def test_invoice_get_invoices_with_no_invoice(session):
 
 def test_invoice_find_by_invalid_payment_id(session):
     """Test invalid lookup."""
-    invoice = Invoice_service.find_by_payment_identifier(999)
+    invoice = Invoice_service.find_by_payment_identifier(999, skip_auth_check=True)
 
     assert invoice is not None
     assert invoice.id is None

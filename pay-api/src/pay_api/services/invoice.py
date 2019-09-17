@@ -16,12 +16,15 @@
 from datetime import datetime
 
 from flask import current_app
+from flask_jwt_oidc import JwtManager
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceSchema
+from pay_api.services.auth import check_auth
 from pay_api.services.fee_schedule import FeeSchedule
 from pay_api.services.payment_account import PaymentAccount
+from pay_api.utils.constants import ALL_ALLOWED_ROLES
 from pay_api.utils.enums import Status
 from pay_api.utils.errors import Error
 
@@ -280,7 +283,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return i
 
     @staticmethod
-    def find_by_id(identifier: int, pay_id: int = None):
+    def find_by_id(identifier: int, pay_id: int = None, jwt: JwtManager = None, skip_auth_check: bool = False):
         """Find invoice by id."""
         invoice_dao = InvoiceModel.find_by_id(identifier) if not pay_id else InvoiceModel.find_by_id_and_payment_id(
             identifier, pay_id)
@@ -288,6 +291,9 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         if not invoice_dao:
             raise BusinessException(Error.PAY012)
 
+        if not skip_auth_check:
+            Invoice._check_for_auth(jwt, invoice_dao)
+
         invoice = Invoice()
         invoice._dao = invoice_dao  # pylint: disable=protected-access
 
@@ -295,10 +301,13 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoice
 
     @staticmethod
-    def find_by_payment_identifier(identifier: int):
+    def find_by_payment_identifier(identifier: int, jwt: JwtManager = None, skip_auth_check: bool = False):
         """Find invoice by payment identifier."""
         invoice_dao = InvoiceModel.find_by_payment_id(identifier)
 
+        if not skip_auth_check:
+            Invoice._check_for_auth(jwt, invoice_dao)
+
         invoice = Invoice()
         invoice._dao = invoice_dao  # pylint: disable=protected-access
 
@@ -306,7 +315,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoice
 
     @staticmethod
-    def get_invoices(payment_identifier):
+    def get_invoices(payment_identifier: str, jwt: JwtManager = None, skip_auth_check: bool = False):
         """Find invoices."""
         current_app.logger.debug('<get_invoices')
 
@@ -314,7 +323,14 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         daos = [InvoiceModel.find_by_payment_id(payment_identifier)]  # Treating as a set to avoid re-work in future
         for dao in daos:
             if dao:
+                if not skip_auth_check:
+                    Invoice._check_for_auth(jwt, dao)
                 data['items'].append(Invoice.populate(dao).asdict())
 
         current_app.logger.debug('>get_invoices')
         return data
+
+    @staticmethod
+    def _check_for_auth(jwt, dao):
+        # Check if user is authorized to perform this action
+        check_auth(dao.account.corp_number, jwt, one_of_roles=ALL_ALLOWED_ROLES)

@@ -30,7 +30,7 @@ token_header = {
 }
 
 
-def get_claims(role: str = Role.BASIC.value):
+def get_claims(role: str = Role.EDITOR.value):
     """Return the claim with the role param."""
     claim = {
         'jti': 'a50fafa4-c4d6-4a9b-9e51-1e5e0d102878',

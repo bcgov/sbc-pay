@@ -53,7 +53,7 @@ def test_receipt_creation(session, client, jwt, app):
                       data=None, headers=headers)
 
     filing_data = {
-        'corpName': 'CP1234',
+        'corpName': 'CP0001234',
         'filingDateTime': 'June 27, 2019',
         'fileName': 'director-change'
     }
@@ -78,7 +78,7 @@ def test_receipt_creation_with_invoice(session, client, jwt, app):
     client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}',
                  data=None, headers=headers)
     filing_data = {
-        'corpName': 'CP1234',
+        'corpName': 'CP0001234',
         'filingDateTime': 'June 27, 2019',
         'fileName': 'director-change'
     }
@@ -104,7 +104,7 @@ def test_receipt_creation_with_invalid_request(session, client, jwt, app):
     client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}',
                  data=None, headers=headers)
     filing_data = {
-        'corpName': 'CP1234'
+        'corpName': 'CP0001234'
     }
     rv = client.post(f'/api/v1/payment-requests/{pay_id}/invoices/{inovice_id}/receipts', data=json.dumps(filing_data),
                      headers=headers)
@@ -120,10 +120,11 @@ def test_receipt_creation_with_invalid_identifiers(session, client, jwt, app):
     payment_id = 1111
     inovice_id = 2222
     filing_data = {
-        'corpName': 'CP1234',
+        'corpName': 'CP0001234',
         'filingDateTime': 'June 27, 2019',
         'fileName': 'director-change'
     }
-    rv = client.post(f'/api/v1/payment-requests/{payment_id}/invoices/{inovice_id}/receipts', data=json.dumps(filing_data),
+    rv = client.post(f'/api/v1/payment-requests/{payment_id}/invoices/{inovice_id}/receipts',
+                     data=json.dumps(filing_data),
                      headers=headers)
     assert rv.status_code == 400

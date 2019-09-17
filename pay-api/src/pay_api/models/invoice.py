@@ -46,6 +46,7 @@ class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
 
     payment_line_items = relationship('PaymentLineItem')
     receipts = relationship('Receipt')
+    account = relationship('PaymentAccount')
 
     @classmethod
     def find_by_id(cls, identifier: int):
@@ -70,6 +71,7 @@ class InvoiceSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Invoice
+        exclude = ['account']
 
     invoice_status_code = fields.String(data_key='status_code')
     # pylint: disable=no-member
