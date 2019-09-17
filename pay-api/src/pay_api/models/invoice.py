@@ -23,7 +23,6 @@ from .audit import Audit
 from .base_model import BaseModel
 from .base_schema import BaseSchema
 from .db import db, ma
-from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItemSchema
 from .receipt import ReceiptSchema
 
@@ -47,7 +46,7 @@ class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
 
     payment_line_items = relationship('PaymentLineItem')
     receipts = relationship('Receipt')
-    account = relationship(PaymentAccount)
+    account = relationship('PaymentAccount')
 
     @classmethod
     def find_by_id(cls, identifier: int):
