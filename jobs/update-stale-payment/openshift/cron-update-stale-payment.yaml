@@ -239,6 +239,12 @@ objects:
                         configMapKeyRef:
                           name: "${NATS}-${TAG_NAME}-config"
                           key: NATS_QUEUE
+                    -
+                      name: AUTH_API_ENDPOINT
+                      valueFrom:
+                        configMapKeyRef:
+                          name: '${NAME}-${TAG_NAME}-config'
+                          key: AUTH_API_ENDPOINT
               restartPolicy: Never
               concurrencyPolicy: Forbid
 parameters:
