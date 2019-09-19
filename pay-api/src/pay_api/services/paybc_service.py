@@ -32,6 +32,7 @@ from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem
 
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
+import uuid
 
 
 class PaybcService(PaymentSystemService, OAuthService):
@@ -71,11 +72,16 @@ class PaybcService(PaymentSystemService, OAuthService):
         invoice_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/' \
             .format(payment_account.party_number, payment_account.account_number, payment_account.site_number)
 
+        # Check if random invoice number needs to be generated
+        transaction_number = str(uuid.uuid4()) \
+            if current_app.config.get('GENERATE_RANDOM_INVOICE_NUMBER', False) \
+            else f'{invoice_number}-{payment_account.corp_number}'
+
         invoice = dict(
             batch_source=PAYBC_BATCH_SOURCE,
             cust_trx_type=PAYBC_CUST_TRX_TYPE,
             transaction_date=curr_time,
-            transaction_number=f'{invoice_number}-{payment_account.corp_number}',
+            transaction_number=transaction_number,
             gl_date=curr_time,
             term_name=PAYBC_TERM_NAME,
             comments='',

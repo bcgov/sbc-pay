@@ -21,27 +21,21 @@ import pytest
 from werkzeug.exceptions import HTTPException
 
 from pay_api.services.auth import check_auth
-from pay_api.utils.constants import OWNER_ROLE, STAFF_ROLE
+from pay_api.utils.constants import EDIT_ROLE, VIEW_ROLE
 
 
 def test_auth_for_roles(session):
     """Assert that the auth is working as expected."""
     # Test one of roles
-    check_auth('CP0001234', None, one_of_roles=[OWNER_ROLE])
-    # Test disabled roles
-    check_auth('CP0001234', None, disabled_roles=[STAFF_ROLE])
+    check_auth('CP0001234', None, one_of_roles=[EDIT_ROLE])
     # Test contains roles
-    check_auth('CP0001234', None, contains_role=OWNER_ROLE)
+    check_auth('CP0001234', None, contains_role=EDIT_ROLE)
 
     # Test for exception
     with pytest.raises(HTTPException) as excinfo:
-        check_auth('CP0001234', None, contains_role=STAFF_ROLE)
+        check_auth('CP0000000', None, contains_role=VIEW_ROLE)
         assert excinfo.exception.code == 403
 
     with pytest.raises(HTTPException) as excinfo:
-        check_auth('CP0001234', None, one_of_roles=[STAFF_ROLE])
-        assert excinfo.exception.code == 403
-
-    with pytest.raises(HTTPException) as excinfo:
-        check_auth('CP0001234', None, contains_role=STAFF_ROLE)
+        check_auth('CP0000000', None, one_of_roles=[EDIT_ROLE])
         assert excinfo.exception.code == 403

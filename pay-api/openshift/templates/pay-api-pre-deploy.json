@@ -47,7 +47,8 @@
         "PAYBC_CLIENT_SECRET": "${PAYBC_CLIENT_SECRET}",
         "PAYBC_MEMO_LINE_NAME": "${PAYBC_MEMO_LINE_NAME}",
         "PAYBC_PORTAL_URL": "${PAYBC_PORTAL_URL}",
-        "PAYBC_CONNECT_TIMEOUT": "${PAYBC_CONNECT_TIMEOUT}"
+        "PAYBC_CONNECT_TIMEOUT": "${PAYBC_CONNECT_TIMEOUT}",
+        "PAYBC_GENERATE_RANDOM_INVOICE_NUMBER": "${PAYBC_GENERATE_RANDOM_INVOICE_NUMBER}"
       },
       "type": "Opaque"
     },
@@ -239,6 +240,12 @@
       "required": true,
       "generate": "expression",
       "from": "[0-9]{16}"
+    },
+    {
+      "name": "PAYBC_GENERATE_RANDOM_INVOICE_NUMBER",
+      "required": true,
+      "value": "False",
+      "description": "Flag to generate a unique random invoice number than using the usual format"
     },
     {
       "name": "BCOL_DEBIT_ACCOUNT_VERSION",

@@ -150,11 +150,19 @@ objects:
                         secretKeyRef:
                           name: '${PAYBC_NAME}-${TAG_NAME}-secret'
                           key: PAYBC_PORTAL_URL
-                    - name: PAYBC_CONNECT_TIMEOUT
+                    -
+                      name: PAYBC_CONNECT_TIMEOUT
                       valueFrom:
                         secretKeyRef:
                           name: '${PAYBC_NAME}-${TAG_NAME}-secret'
                           key: PAYBC_CONNECT_TIMEOUT
+
+                    -
+                      name: PAYBC_GENERATE_RANDOM_INVOICE_NUMBER
+                      valueFrom:
+                        secretKeyRef:
+                          name: '${PAYBC_NAME}-${TAG_NAME}-secret'
+                          key: PAYBC_GENERATE_RANDOM_INVOICE_NUMBER
                     -
                       name: BCOL_DEBIT_ACCOUNT_VERSION
                       valueFrom:
