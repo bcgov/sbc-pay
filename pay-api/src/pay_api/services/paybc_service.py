@@ -14,15 +14,14 @@
 """Service to manage PayBC interaction."""
 
 import base64
-import json
 import urllib.parse
 
 import datetime
 import re
 import uuid
+from typing import Any, Dict, Tuple
 from dateutil import parser
 from flask import current_app
-from typing import Any, Dict, Tuple
 
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
@@ -103,8 +102,7 @@ class PaybcService(PaymentSystemService, OAuthService):
             )
 
         access_token = self.__get_token().json().get('access_token')
-        invoice_response = self.post(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
-                                     json.dumps(invoice))
+        invoice_response = self.post(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, invoice)
 
         invoice = {
             'invoice_number': invoice_response.json().get('invoice_number', None),
@@ -187,7 +185,7 @@ class PaybcService(PaymentSystemService, OAuthService):
             'customer_name': party_name
         }
 
-        party_response = self.post(party_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, json.dumps(party))
+        party_response = self.post(party_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, party)
         current_app.logger.debug('>Creating party Record')
         return party_response.json()
 
@@ -201,8 +199,7 @@ class PaybcService(PaymentSystemService, OAuthService):
             'account_description': party.get('customer_name')[:30]
         }
 
-        account_response = self.post(account_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
-                                     json.dumps(account))
+        account_response = self.post(account_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, account)
         current_app.logger.debug('>Creating account')
         return account_response.json()
 
@@ -224,7 +221,7 @@ class PaybcService(PaymentSystemService, OAuthService):
             'customer_site_id': '1'
         }
 
-        site_response = self.post(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, json.dumps(site))
+        site_response = self.post(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, site)
 
         current_app.logger.debug('>Creating site ')
         return site_response.json()
@@ -262,7 +259,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         )
 
         adjustment_response = self.post(adjustment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
-                                        json.dumps(adjustment))
+                                        adjustment)
 
         current_app.logger.debug('>Created PayBC Invoice Adjustment')
         return adjustment_response.json()
