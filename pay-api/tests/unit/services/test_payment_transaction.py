@@ -17,10 +17,9 @@
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
 
+import pytest
 import uuid
 from datetime import datetime
-
-import pytest
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
@@ -30,7 +29,7 @@ from pay_api.utils.errors import Error
 from tests import skip_in_pod
 
 
-def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
+def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code='CP', payment_system_code='PAYBC'):
     """Factory."""
     return PaymentAccount(
         corp_number=corp_number,
@@ -140,7 +139,7 @@ def test_transaction_create_from_new(session):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    transaction = PaymentTransactionService.create(payment.id, 'http://google.com/')
+    transaction = PaymentTransactionService.create(payment.id, 'http://google.com/', skip_auth_check=True)
 
     assert transaction is not None
     assert transaction.id is not None
@@ -165,7 +164,7 @@ def test_transaction_create_from_invalid_payment(session):
     line.save()
 
     with pytest.raises(BusinessException) as excinfo:
-        PaymentTransactionService.create(999, 'http://google.com/')
+        PaymentTransactionService.create(999, 'http://google.com/', skip_auth_check=True)
     assert excinfo.value.status == Error.PAY005.status
     assert excinfo.value.message == Error.PAY005.message
     assert excinfo.value.code == Error.PAY005.name
@@ -184,8 +183,9 @@ def test_transaction_update(session, stan_server):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    transaction = PaymentTransactionService.create(payment.id, 'http://google.com/')
-    transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451')
+    transaction = PaymentTransactionService.create(payment.id, 'http://google.com/', skip_auth_check=True)
+    transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451',
+                                                               skip_auth_check=True)
 
     assert transaction is not None
     assert transaction.id is not None
@@ -211,8 +211,8 @@ def test_transaction_update_with_no_receipt(session, stan_server):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    transaction = PaymentTransactionService.create(payment.id, 'http://google.com/')
-    transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, None)
+    transaction = PaymentTransactionService.create(payment.id, 'http://google.com/', skip_auth_check=True)
+    transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, None, skip_auth_check=True)
 
     assert transaction is not None
     assert transaction.id is not None
@@ -239,11 +239,12 @@ def test_transaction_update_completed(session, stan_server):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    transaction = PaymentTransactionService.create(payment.id, 'http://google.com/')
-    transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451')
+    transaction = PaymentTransactionService.create(payment.id, 'http://google.com/', skip_auth_check=True)
+    transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451',
+                                                               skip_auth_check=True)
 
     with pytest.raises(BusinessException) as excinfo:
-        PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451')
+        PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451', skip_auth_check=True)
     assert excinfo.value.status == Error.PAY006.status
     assert excinfo.value.message == Error.PAY006.message
     assert excinfo.value.code == Error.PAY006.name
@@ -261,11 +262,11 @@ def test_transaction_create_new_on_completed_payment(session):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    transaction = PaymentTransactionService.create(payment.id, 'http://google.com/')
-    PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451')
+    transaction = PaymentTransactionService.create(payment.id, 'http://google.com/', skip_auth_check=True)
+    PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451', skip_auth_check=True)
 
     with pytest.raises(BusinessException) as excinfo:
-        PaymentTransactionService.create(payment.id, 'http://google.com/')
+        PaymentTransactionService.create(payment.id, 'http://google.com/', skip_auth_check=True)
     assert excinfo.value.status == Error.PAY006.status
     assert excinfo.value.message == Error.PAY006.message
     assert excinfo.value.code == Error.PAY006.name
@@ -283,9 +284,9 @@ def test_multiple_transactions_for_single_payment(session):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    PaymentTransactionService.create(payment.id, 'http://google.com/')
-    PaymentTransactionService.create(payment.id, 'http://google.com/')
-    transaction = PaymentTransactionService.create(payment.id, 'http://google.com/')
+    PaymentTransactionService.create(payment.id, 'http://google.com/', skip_auth_check=True)
+    PaymentTransactionService.create(payment.id, 'http://google.com/', skip_auth_check=True)
+    transaction = PaymentTransactionService.create(payment.id, 'http://google.com/', skip_auth_check=True)
 
     assert transaction is not None
     assert transaction.id is not None
@@ -309,7 +310,7 @@ def test_transaction_invalid_lookup(session):
 def test_transaction_invalid_update(session):
     """Invalid update.."""
     with pytest.raises(BusinessException) as excinfo:
-        PaymentTransactionService.update_transaction(1, uuid.uuid4(), None)
+        PaymentTransactionService.update_transaction(1, uuid.uuid4(), None, skip_auth_check=True)
     assert excinfo.value.status == Error.PAY008.status
     assert excinfo.value.message == Error.PAY008.message
     assert excinfo.value.code == Error.PAY008.name
@@ -408,17 +409,19 @@ def test_transaction_update_on_paybc_connection_error(session, stan_server):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    transaction = PaymentTransactionService.create(payment.id, 'http://google.com/')
+    transaction = PaymentTransactionService.create(payment.id, 'http://google.com/', skip_auth_check=True)
 
     from unittest.mock import patch
     from requests.exceptions import ConnectTimeout, ConnectionError
 
     # Mock here that the invoice update fails here to test the rollback scenario
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
-        transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451')
+        transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451',
+                                                                   skip_auth_check=True)
         assert transaction.pay_system_reason_code == 'SERVICE_UNAVAILABLE'
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectTimeout('mocked error')):
-        transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451')
+        transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451',
+                                                                   skip_auth_check=True)
         assert transaction.pay_system_reason_code == 'SERVICE_UNAVAILABLE'
 
     assert transaction is not None

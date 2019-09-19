@@ -452,6 +452,15 @@
                         "key": "NATS_QUEUE"
                       }
                     }
+                  },
+                  {
+                    "name": "AUTH_API_ENDPOINT",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "${NAME}-${TAG_NAME}-config",
+                        "key": "AUTH_API_ENDPOINT"
+                      }
+                    }
                   }
                 ],
                 "resources": {

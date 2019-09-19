@@ -14,12 +14,15 @@
 """Service to manage Payment model related operations."""
 
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from flask import current_app
+from flask_jwt_oidc import JwtManager
 
 from pay_api.models import Payment as PaymentModel
 from pay_api.models.payment import PaymentSchema
+from pay_api.services.auth import check_auth
+from pay_api.utils.constants import ALL_ALLOWED_ROLES
 from pay_api.utils.enums import Status
 
 
@@ -196,9 +199,15 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         return p
 
     @staticmethod
-    def find_by_id(identifier: int):
+    def find_by_id(identifier: int, jwt: JwtManager = None, skip_auth_check: bool = False,
+                   one_of_roles: Tuple = ALL_ALLOWED_ROLES):
         """Find payment by id."""
         payment_dao = PaymentModel.find_by_id(identifier)
+
+        # Check if user is authorized to view the payment
+        if not skip_auth_check and payment_dao:
+            for invoice in payment_dao.invoices:
+                check_auth(invoice.account.corp_number, jwt, one_of_roles=one_of_roles)
 
         payment = Payment()
         payment._dao = payment_dao  # pylint: disable=protected-access

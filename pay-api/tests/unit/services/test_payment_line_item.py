@@ -24,7 +24,7 @@ from pay_api.services.payment_line_item import PaymentLineItem as PaymentLineSer
 from pay_api.utils.enums import Status
 
 
-def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
+def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code='CP', payment_system_code='PAYBC'):
     """Factory."""
     return PaymentAccount(corp_number=corp_number, corp_type_code=corp_type_code,
                           payment_system_code=payment_system_code)

@@ -17,9 +17,8 @@
 Test-Suite to ensure that the Receipt Service is working as expected.
 """
 
-from datetime import datetime
-
 import pytest
+from datetime import datetime
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
@@ -29,7 +28,7 @@ from pay_api.utils.enums import Status
 from tests.utilities.base_test import get_payment_request
 
 
-def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
+def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code='CP', payment_system_code='PAYBC'):
     """Factory."""
     return PaymentAccount(
         corp_number=corp_number,
@@ -146,11 +145,11 @@ def test_create_receipt_without_invoice(session):
         'filingDateTime': '1999',
         'fileName': 'coopser'
     }
-    response = ReceiptService.create_receipt(payment.id, '', input_data, None)
+    response = ReceiptService.create_receipt(payment.id, '', input_data, skip_auth_check=True)
     assert response is not None
 
 
-def test_create_receipt_with_invoice(session):
+def test_create_receipt_with_invoice(session, app, client):
     """Try creating a receipt with invoice number."""
     payment_account = factory_payment_account()
     payment = factory_payment()
@@ -170,7 +169,7 @@ def test_create_receipt_with_invoice(session):
         'filingDateTime': '1999',
         'fileName': 'coopser'
     }
-    response = ReceiptService.create_receipt(payment.id, invoice.id, input_data, None)
+    response = ReceiptService.create_receipt(payment.id, invoice.id, input_data, skip_auth_check=True)
     assert response is not None
 
 
@@ -194,5 +193,5 @@ def test_create_receipt_with_no_receipt(session):
     }
 
     with pytest.raises(BusinessException) as excinfo:
-        ReceiptService.create_receipt(payment.id, '', input_data, None)
+        ReceiptService.create_receipt(payment.id, '', input_data, skip_auth_check=True)
     assert excinfo.type == BusinessException

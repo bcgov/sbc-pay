@@ -17,6 +17,7 @@ from datetime import datetime
 from typing import Any, Dict, Tuple
 
 from flask import current_app
+from flask_jwt_oidc import JwtManager
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import Receipt as ReceiptModel
@@ -137,9 +138,10 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def create_receipt(payment_identifier: str, invoice_identifier: str, filing_data: Tuple[Dict[str, Any]],
-                       user_jwt: str):
+                       jwt: JwtManager = None, skip_auth_check: bool = False):
         """Create receipt."""
         current_app.logger.debug('<create receipt initiated', payment_identifier, invoice_identifier)
+        bearer_token = jwt.get_token_auth_header() if jwt else None
         receipt_dict = {
             'templateVars': {
                 'lineItems': [],
@@ -152,9 +154,11 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         template_vars['filingDateTime'] = filing_data.get('filingDateTime')
         # inovice number not mandatory ;since only one invoice exist for a payment now
         if not invoice_identifier:
-            invoice_data = Invoice.find_by_payment_identifier(payment_identifier).asdict()
+            invoice_data = Invoice.find_by_payment_identifier(payment_identifier, jwt=jwt,
+                                                              skip_auth_check=skip_auth_check).asdict()
         else:
-            invoice_data = Invoice.find_by_id(invoice_identifier, payment_identifier).asdict()
+            invoice_data = Invoice.find_by_id(invoice_identifier, payment_identifier, jwt=jwt,
+                                              skip_auth_check=skip_auth_check).asdict()
 
         template_vars['incorporationNumber'] = invoice_data['created_by']
         template_vars['paymentInvoiceNumber'] = invoice_data['invoice_number']
@@ -179,7 +183,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('<OAuthService invoked from receipt.py', current_app.config.get('REPORT_API_BASE_URL'))
 
         pdf_response = OAuthService.post(current_app.config.get('REPORT_API_BASE_URL'),
-                                         user_jwt, AuthHeaderType.BEARER,
+                                         bearer_token, AuthHeaderType.BEARER,
                                          ContentType.JSON, receipt_dict)
         current_app.logger.debug('<OAuthService responded to receipt.py')
 

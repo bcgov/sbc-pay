@@ -24,7 +24,7 @@ from pay_api.services.payment import Payment as Payment_service
 from pay_api.utils.enums import Status
 
 
-def factory_payment_account(corp_number: str = 'CP1234', corp_type_code='CP', payment_system_code='PAYBC'):
+def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code='CP', payment_system_code='PAYBC'):
     """Factory."""
     return PaymentAccount(corp_number=corp_number, corp_type_code=corp_type_code,
                           payment_system_code=payment_system_code)
@@ -57,7 +57,7 @@ def test_payment_saved_from_new(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
-    p = Payment_service.find_by_id(payment.id)
+    p = Payment_service.find_by_id(payment.id, skip_auth_check=True)
 
     assert p is not None
     assert p.id is not None
@@ -73,7 +73,7 @@ def test_payment_saved_from_new(session):
 
 def test_payment_invalid_lookup(session):
     """Test invalid lookup."""
-    p = Payment_service.find_by_id(999)
+    p = Payment_service.find_by_id(999, skip_auth_check=True)
 
     assert p is not None
     assert p.id is None
@@ -87,7 +87,7 @@ def test_payment_with_no_active_invoice(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id, Status.CANCELLED.value)
     invoice.save()
-    p = Payment_service.find_by_id(payment.id)
+    p = Payment_service.find_by_id(payment.id, skip_auth_check=True)
 
     assert p is not None
     assert p.id is not None

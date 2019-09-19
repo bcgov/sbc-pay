@@ -111,6 +111,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # SERVICE Status Settings
     SERVICE_SCHEDULE = os.getenv('SERVICE_SCHEDULE')
 
+    # Auth API Endpoint
+    AUTH_API_ENDPOINT = os.getenv('AUTH_API_ENDPOINT')
+
     TESTING = False
     DEBUG = True
 
@@ -220,6 +223,8 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     REPORT_API_BASE_URL = "https://mock-lear-tools.pathfinder.gov.bc.ca/rest/PayBC+API+Reference/1.0.0/cfs/parties/"
 
     SERVICE_SCHEDULE = json.dumps(schedule_json)
+
+    AUTH_API_ENDPOINT = "https://mock-lear-tools.pathfinder.gov.bc.ca/rest/Auth+API/1.0.0/"
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

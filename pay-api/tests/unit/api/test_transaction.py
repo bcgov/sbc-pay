@@ -19,10 +19,9 @@ Test-Suite to ensure that the /transactions endpoint is working as expected.
 
 import json
 import uuid
-from unittest.mock import patch
 
 from requests.exceptions import ConnectionError
-
+from unittest.mock import patch
 from pay_api.schemas import utils as schema_utils
 from tests import skip_in_pod
 from tests.utilities.base_test import get_claims, get_payment_request, token_header
@@ -123,8 +122,8 @@ def test_transaction_put(session, client, jwt, app):
     rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions?redirect_uri={redirect_uri}', data=None,
                      headers=headers)
     txn_id = rv.json.get('id')
-    rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}', data=None,
-                      headers=headers)
+    rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}',
+                      data=None, headers=headers)
     assert rv.status_code == 200
 
 
@@ -235,8 +234,9 @@ def test_transaction_patch_when_paybc_down(session, client, jwt, app):
                      headers=headers)
     txn_id = rv.json.get('id')
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
-        rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}',
-                          data=None,
-                          headers=headers)
+        rv = client.patch(
+            f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}',
+            data=None,
+            headers=headers)
         assert rv.status_code == 200
         assert rv.json.get('paySystemReasonCode') == 'SERVICE_UNAVAILABLE'
