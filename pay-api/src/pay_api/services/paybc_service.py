@@ -73,7 +73,7 @@ class PaybcService(PaymentSystemService, OAuthService):
 
         # Check if random invoice number needs to be generated
         transaction_number = str(uuid.uuid4()) \
-            if current_app.config.get('GENERATE_RANDOM_INVOICE_NUMBER', False) \
+            if current_app.config.get('GENERATE_RANDOM_INVOICE_NUMBER', 'False').lower() == 'true' \
             else f'{invoice_number}-{payment_account.corp_number}'
 
         invoice = dict(
