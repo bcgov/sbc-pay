@@ -356,7 +356,11 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         """Publish payment/transaction status to the Queue."""
         current_app.logger.debug('<publish_status')
         if transaction_dao.status_code == Status.COMPLETED.value:
-            status_code = payment.payment_status_code
+            if payment.payment_status_code == Status.COMPLETED.value:
+                status_code = Status.COMPLETED.value
+            else:
+                current_app.logger.info(f'Status {payment.payment_status_code} received for payment {payment.id}')
+                return
         else:
             status_code = 'TRANSACTION_FAILED'
 
