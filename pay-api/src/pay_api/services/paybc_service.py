@@ -14,11 +14,12 @@
 """Service to manage PayBC interaction."""
 
 import base64
+import urllib.parse
+
 import datetime
 import re
-import urllib.parse
+import uuid
 from typing import Any, Dict, Tuple
-
 from dateutil import parser
 from flask import current_app
 
@@ -29,10 +30,8 @@ from pay_api.utils.constants import (
     DEFAULT_COUNTRY, DEFAULT_JURISDICTION, PAYBC_ADJ_ACTIVITY_NAME, PAYBC_BATCH_SOURCE, PAYBC_CUST_TRX_TYPE,
     PAYBC_LINE_TYPE, PAYBC_TERM_NAME)
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem
-
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
-import uuid
 
 
 class PaybcService(PaymentSystemService, OAuthService):

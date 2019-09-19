@@ -28,7 +28,7 @@ from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
-from pay_api.utils.constants import EDIT_ROLE, VIEW_ROLE
+from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.enums import Status
 from pay_api.utils.errors import Error
 

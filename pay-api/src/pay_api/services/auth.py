@@ -30,7 +30,7 @@ def check_auth(business_identifier: str, jwt: JwtManager, **kwargs):
     if auth_response:
         roles: list = auth_response.json().get('roles', [])
         if kwargs.get('one_of_roles', None):
-            is_authorized = len(list(set(kwargs.get('one_of_roles')) & set(roles))) > 0
+            is_authorized = list(set(kwargs.get('one_of_roles')) & set(roles)) != []
         if kwargs.get('contains_role', None):
             is_authorized = kwargs.get('contains_role') in roles
 
