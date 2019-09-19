@@ -354,9 +354,6 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def publish_status(transaction_dao: PaymentTransactionModel, payment: Payment):
         """Publish payment/transaction status to the Queue."""
-        print('PUBLISH')
-        print(payment.payment_status_code)
-
         current_app.logger.debug('<publish_status')
         if transaction_dao.status_code == Status.COMPLETED.value:
             status_code = payment.payment_status_code
