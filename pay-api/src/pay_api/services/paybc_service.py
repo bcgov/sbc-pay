@@ -18,7 +18,7 @@ import urllib.parse
 
 import datetime
 import re
-import uuid
+import secrets
 from typing import Any, Dict, Tuple
 from dateutil import parser
 from flask import current_app
@@ -72,7 +72,7 @@ class PaybcService(PaymentSystemService, OAuthService):
             .format(payment_account.party_number, payment_account.account_number, payment_account.site_number)
 
         # Check if random invoice number needs to be generated
-        transaction_number = str(uuid.uuid4()) \
+        transaction_number = secrets.token_hex(20) \
             if current_app.config.get('GENERATE_RANDOM_INVOICE_NUMBER', 'False').lower() == 'true' \
             else f'{invoice_number}-{payment_account.corp_number}'
 
