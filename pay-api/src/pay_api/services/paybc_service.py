@@ -72,9 +72,10 @@ class PaybcService(PaymentSystemService, OAuthService):
             .format(payment_account.party_number, payment_account.account_number, payment_account.site_number)
 
         # Check if random invoice number needs to be generated
-        transaction_number = secrets.token_hex(10) \
+        transaction_num_suffix = secrets.token_hex(10) \
             if current_app.config.get('GENERATE_RANDOM_INVOICE_NUMBER', 'False').lower() == 'true' \
-            else f'{invoice_number}-{payment_account.corp_number}'
+            else payment_account.corp_number
+        transaction_number = f'{invoice_number}-{transaction_num_suffix}'
 
         invoice = dict(
             batch_source=PAYBC_BATCH_SOURCE,
