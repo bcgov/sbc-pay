@@ -90,6 +90,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     AUTH_WEB_PAY_TRANSACTION_URL = os.getenv('AUTH_WEB_PAY_TRANSACTION_URL')
     PAYBC_MEMO_LINE_NAME = os.getenv('PAYBC_MEMO_LINE_NAME')
     CONNECT_TIMEOUT = int(os.getenv('PAYBC_CONNECT_TIMEOUT', 10))
+    GENERATE_RANDOM_INVOICE_NUMBER = os.getenv('PAYBC_GENERATE_RANDOM_INVOICE_NUMBER', 'False')
 
     # BCOL
     BCOL_VERIFY_USER_WSDL_URL = os.getenv('BCOL_VERIFY_USER_WSDL_URL')

@@ -28,7 +28,7 @@ from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
-from pay_api.utils.constants import CLIENT_AUTH_ROLES
+from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.enums import Status
 from pay_api.utils.errors import Error
 
@@ -185,7 +185,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         """Create transaction record."""
         current_app.logger.debug('<create transaction')
         # Lookup payment record
-        payment: Payment = Payment.find_by_id(payment_identifier, jwt=jwt, one_of_roles=CLIENT_AUTH_ROLES,
+        payment: Payment = Payment.find_by_id(payment_identifier, jwt=jwt, one_of_roles=[EDIT_ROLE],
                                               skip_auth_check=skip_auth_check)
 
         if not payment.id:
@@ -280,7 +280,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         if transaction_dao.status_code == Status.COMPLETED.value:
             raise BusinessException(Error.PAY006)
 
-        payment: Payment = Payment.find_by_id(payment_identifier, jwt=jwt, one_of_roles=CLIENT_AUTH_ROLES,
+        payment: Payment = Payment.find_by_id(payment_identifier, jwt=jwt, one_of_roles=[EDIT_ROLE],
                                               skip_auth_check=skip_auth_check)
 
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create(
@@ -356,7 +356,11 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         """Publish payment/transaction status to the Queue."""
         current_app.logger.debug('<publish_status')
         if transaction_dao.status_code == Status.COMPLETED.value:
-            status_code = payment.payment_status_code
+            if payment.payment_status_code == Status.COMPLETED.value:
+                status_code = Status.COMPLETED.value
+            else:
+                current_app.logger.info(f'Status {payment.payment_status_code} received for payment {payment.id}')
+                return
         else:
             status_code = 'TRANSACTION_FAILED'
 
