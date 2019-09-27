@@ -479,6 +479,15 @@
                         "key": "AUTH_API_ENDPOINT"
                       }
                     }
+                  },
+                  {
+                    "name": "SENTRY_DSN",
+                    "valueFrom": {
+                        "configMapKeyRef": {
+                            "name": "${NAME}-${TAG_NAME}-config",
+                            "key": "SENTRY_DSN"
+                        }
+                    }
                   }
                 ],
                 "resources": {

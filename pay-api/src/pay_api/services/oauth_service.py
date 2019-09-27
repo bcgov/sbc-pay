@@ -57,14 +57,14 @@ class OAuthService:
             current_app.logger.error(exc)
             raise ServiceUnavailableException(exc)
         except HTTPError as exc:
-            current_app.logger.debug(response.headers if response else '')
             current_app.logger.error(
                 'HTTPError on POST with status code {}'.format(response.status_code if response else ''))
             if response and response.status_code >= 500:
                 raise ServiceUnavailableException(exc)
             raise exc
-
-        current_app.logger.info('response : {}'.format(response.text if response else ''))
+        finally:
+            current_app.logger.debug(response.headers)
+            current_app.logger.info('response : {}'.format(response.text if response else ''))
 
         current_app.logger.debug('>post')
         return response
