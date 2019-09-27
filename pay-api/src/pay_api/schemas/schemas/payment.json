@@ -86,7 +86,7 @@
       "title": "Payment System",
       "default": "",
       "examples": [
-        "PAYBC"
+        "PAYBC", "INTERNAL"
       ],
       "pattern": "^(.*)$"
     },
@@ -96,7 +96,7 @@
       "title": "Payment Status",
       "default": "",
       "examples": [
-        "CREATED"
+        "CREATED", "COMPLETED"
       ],
       "pattern": "^(.*)$"
     },

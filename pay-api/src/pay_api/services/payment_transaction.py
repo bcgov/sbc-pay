@@ -221,7 +221,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
     def build_pay_system_url(payment: Payment, transaction_id: uuid):
         """Build pay system url which will be used to redirect to the payment system."""
         current_app.logger.debug('<build_pay_system_url')
-        pay_system_service: PaymentSystemService = PaymentSystemFactory.create(
+        pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_system_code(
             payment_system=payment.payment_system_code
         )
         invoice = InvoiceModel.find_by_payment_id(payment.id)
@@ -283,7 +283,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         payment: Payment = Payment.find_by_id(payment_identifier, jwt=jwt, one_of_roles=[EDIT_ROLE],
                                               skip_auth_check=skip_auth_check)
 
-        pay_system_service: PaymentSystemService = PaymentSystemFactory.create(
+        pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_system_code(
             payment_system=payment.payment_system_code
         )
 

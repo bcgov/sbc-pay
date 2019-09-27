@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service to manage Payment Account model related operations."""
 
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 
 from flask import current_app
 
@@ -148,16 +148,16 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         return d
 
     @staticmethod
-    def create(business_info: Dict[str, Any], account_details: Tuple[str],
+    def create(business_info: Dict[str, Any], account_details: Dict[str, str],
                payment_system: str = None):
         """Create Payment account record."""
         current_app.logger.debug('<create')
         p = PaymentAccount()
         p.corp_number = business_info.get('businessIdentifier', None)
         p.corp_type_code = business_info.get('corpType', None)
-        p.account_number = account_details[0]
-        p.party_number = account_details[1]
-        p.site_number = account_details[2]
+        p.account_number = account_details.get('account_number', None)
+        p.party_number = account_details.get('party_number', None)
+        p.site_number = account_details.get('site_number', None)
         p.payment_system_code = payment_system
 
         account_dao = p.save()

@@ -21,14 +21,38 @@ import pytest
 
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.paybc_service import PaybcService
+from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.utils.errors import Error
+from pay_api.utils.enums import Role, PaymentSystem
 
 
 def test_paybc_system_factory(session):
     """Assert a paybc service is returned."""
-    instance = PaymentSystemFactory.create('CC', 'CP')
+    # Test for CC and CP
+    instance = PaymentSystemFactory.create(payment_method='CC', corp_type='CP')
     assert isinstance(instance, PaybcService)
+    assert isinstance(instance, PaymentSystemService)
+
+    # Test for CC and CP with staff role
+    token_info = {'realm_access': {'roles': [Role.STAFF.value]}}
+    instance = PaymentSystemFactory.create(token_info, payment_method='CC', corp_type='CP')
+    assert isinstance(instance, InternalPayService)
+    assert isinstance(instance, PaymentSystemService)
+
+    # Test for CC and CP with zero fees role
+    instance = PaymentSystemFactory.create(fees=0, payment_method='CC', corp_type='CP')
+    assert isinstance(instance, InternalPayService)
+    assert isinstance(instance, PaymentSystemService)
+
+    # Test for PAYBC Service
+    instance = PaymentSystemFactory.create_from_system_code(PaymentSystem.PAYBC.value)
+    assert isinstance(instance, PaybcService)
+    assert isinstance(instance, PaymentSystemService)
+
+    # Test for Internal Service
+    instance = PaymentSystemFactory.create_from_system_code(PaymentSystem.INTERNAL.value)
+    assert isinstance(instance, InternalPayService)
     assert isinstance(instance, PaymentSystemService)
 
 
@@ -37,13 +61,20 @@ def test_invalid_pay_system(session):
     from pay_api.exceptions import BusinessException
 
     with pytest.raises(BusinessException) as excinfo:
-        PaymentSystemFactory.create(None, None)
+        PaymentSystemFactory.create(payment_method=None, corp_type=None)
     assert excinfo.value.status == Error.PAY003.status
     assert excinfo.value.message == Error.PAY003.message
     assert excinfo.value.code == Error.PAY003.name
 
     with pytest.raises(BusinessException) as excinfo:
-        PaymentSystemFactory.create('XXX', 'XXX')
+        PaymentSystemFactory.create(payment_method='XXX', corp_type='XXX')
     assert excinfo.value.status == Error.PAY003.status
     assert excinfo.value.message == Error.PAY003.message
     assert excinfo.value.code == Error.PAY003.name
+
+    with pytest.raises(BusinessException) as excinfo:
+        PaymentSystemFactory.create_from_system_code('XXX')
+    assert excinfo.value.status == Error.PAY003.status
+    assert excinfo.value.message == Error.PAY003.message
+    assert excinfo.value.code == Error.PAY003.name
+
