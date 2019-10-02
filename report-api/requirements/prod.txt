@@ -20,3 +20,6 @@ flask-jwt-oidc>=0.1.5
 #For report generation
 WeasyPrint==47
 Flask-WeasyPrint
+
+#Sentry
+sentry-sdk[flask]

@@ -25,15 +25,14 @@ def check_auth(business_identifier: str, jwt: JwtManager, **kwargs):
     bearer_token = jwt.get_token_auth_header() if jwt else None
     auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'entities/{business_identifier}/authorizations'
     auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON)
+
     is_authorized: bool = False
     if auth_response:
-        role: str = auth_response.json().get('orgMembership', None)
+        roles: list = auth_response.json().get('roles', [])
         if kwargs.get('one_of_roles', None):
-            is_authorized = role in kwargs.get('one_of_roles')
-        if kwargs.get('disabled_roles', None):
-            is_authorized = role not in kwargs.get('disabled_roles')
+            is_authorized = list(set(kwargs.get('one_of_roles')) & set(roles)) != []
         if kwargs.get('contains_role', None):
-            is_authorized = role == kwargs.get('contains_role')
+            is_authorized = kwargs.get('contains_role') in roles
 
     if not is_authorized:
         abort(403)

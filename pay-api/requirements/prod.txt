@@ -18,3 +18,4 @@ zeep
 asyncio-nats-client
 asyncio-nats-streaming
 croniter
+sentry-sdk[flask]

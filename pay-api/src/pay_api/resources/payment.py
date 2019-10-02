@@ -22,7 +22,7 @@ from pay_api.schemas import utils as schema_utils
 from pay_api.services import PaymentService
 from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
-from pay_api.utils.constants import CLIENT_AUTH_ROLES
+from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
 
@@ -51,7 +51,7 @@ class Payment(Resource):
             return jsonify({'code': 'PAY999', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
 
         # Check if user is authorized to perform this action
-        check_auth(request_json.get('businessInfo').get('businessIdentifier'), _jwt, one_of_roles=CLIENT_AUTH_ROLES)
+        check_auth(request_json.get('businessInfo').get('businessIdentifier'), _jwt, contains_role=EDIT_ROLE)
 
         try:
             response, status = PaymentService.create_payment(request_json,
@@ -96,7 +96,7 @@ class Payments(Resource):
             return jsonify({'code': 'PAY003', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
 
         # Check if user is authorized to perform this action
-        check_auth(request_json.get('businessInfo').get('businessIdentifier'), _jwt, one_of_roles=CLIENT_AUTH_ROLES)
+        check_auth(request_json.get('businessInfo').get('businessIdentifier'), _jwt, one_of_roles=[EDIT_ROLE])
 
         try:
             response, status = (

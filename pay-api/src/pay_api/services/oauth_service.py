@@ -62,9 +62,9 @@ class OAuthService:
             if response and response.status_code >= 500:
                 raise ServiceUnavailableException(exc)
             raise exc
-
-        current_app.logger.debug(response.headers if response else '')
-        current_app.logger.info('response : {}'.format(response.text if response else ''))
+        finally:
+            current_app.logger.debug(response.headers)
+            current_app.logger.info('response : {}'.format(response.text if response else ''))
 
         current_app.logger.debug('>post')
         return response

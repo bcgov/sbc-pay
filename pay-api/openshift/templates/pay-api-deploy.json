@@ -328,6 +328,15 @@
                     }
                   },
                   {
+                    "name": "PAYBC_GENERATE_RANDOM_INVOICE_NUMBER",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "${PAYBC_NAME}-${TAG_NAME}-secret",
+                        "key": "PAYBC_GENERATE_RANDOM_INVOICE_NUMBER"
+                      }
+                    }
+                  },
+                  {
                     "name": "BCOL_DEBIT_ACCOUNT_VERSION",
                     "valueFrom": {
                       "secretKeyRef": {
@@ -469,6 +478,15 @@
                         "name": "${NAME}-${TAG_NAME}-config",
                         "key": "AUTH_API_ENDPOINT"
                       }
+                    }
+                  },
+                  {
+                    "name": "SENTRY_DSN",
+                    "valueFrom": {
+                        "configMapKeyRef": {
+                            "name": "${NAME}-${TAG_NAME}-config",
+                            "key": "SENTRY_DSN"
+                        }
                     }
                   }
                 ],

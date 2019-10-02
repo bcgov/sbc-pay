@@ -1,8 +1,8 @@
-CairoSVG==2.4.1
+CairoSVG==2.4.2
 Click==7.0
 Flask-Migrate==2.5.2
 Flask-Moment==0.9.0
-Flask-SQLAlchemy==2.4.0
+Flask-SQLAlchemy==2.4.1
 Flask-Script==2.0.6
 Flask-WeasyPrint==0.6
 Flask==1.1.1
@@ -13,15 +13,16 @@ Pillow==6.1.0
 Pyphen==0.9.5
 SQLAlchemy==1.3.8
 WeasyPrint==47
-Werkzeug==0.15.5
-alembic==1.1.0
-aniso8601==7.0.0
+Werkzeug==0.16.0
+alembic==1.2.1
+aniso8601==8.0.0
 attrs==19.1.0
-cairocffi==1.0.2
-certifi==2019.6.16
+blinker==1.4
+cairocffi==1.1.0
+certifi==2019.9.11
 cffi==1.12.3
 chardet==3.0.4
-cssselect2==0.2.1
+cssselect2==0.2.2
 defusedxml==0.6.0
 ecdsa==0.13.2
 flask-jwt-oidc==0.1.5
@@ -33,8 +34,8 @@ html5lib==1.0.1
 idna==2.8
 itsdangerous==1.1.0
 jsonschema==3.0.2
-marshmallow-sqlalchemy==0.17.2
-marshmallow==3.0.2
+marshmallow-sqlalchemy==0.19.0
+marshmallow==3.2.0
 psycopg2-binary==2.8.3
 pyasn1==0.4.7
 pycparser==2.19
@@ -46,9 +47,10 @@ python-jose==3.0.1
 pytz==2019.2
 requests==2.22.0
 rsa==4.0
+sentry-sdk==0.12.2
 six==1.12.0
 tinycss2==1.0.2
-urllib3==1.25.3
+urllib3==1.25.6
 webencodings==0.5.1
 -e git://github.com/pwei1018/jaeger-client-python.git@186f14e14758273ed108508c0d388a4f4de5c75b#egg=jaeger-client
 -e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components-1.0.0&subdirectory=python
