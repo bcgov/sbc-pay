@@ -63,6 +63,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     except:
         JWT_OIDC_JWKS_CACHE_TIMEOUT = 300
 
+    SENTRY_DSN = os.getenv('SENTRY_DSN')
+
     TESTING = False
     DEBUG = True
 

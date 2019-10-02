@@ -18,9 +18,11 @@ This module is the API for the Legal Entity system.
 
 import os
 
+import sentry_sdk  # noqa: I001; pylint: disable=ungrouped-imports; conflicts with Flake8
 from flask import Flask
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
 from sbc_common_components.utils.camel_case_response import convert_to_camel
+from sentry_sdk.integrations.flask import FlaskIntegration  # noqa: I001
 
 import config
 from config import _Config
@@ -29,7 +31,6 @@ from pay_api.utils.auth import jwt
 from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
 
-
 setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))  # important to do this first
 
 
@@ -37,6 +38,13 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     """Return a configured Flask App using the Factory method."""
     app = Flask(__name__)
     app.config.from_object(config.CONFIGURATION[run_mode])
+
+    # Configure Sentry
+    if app.config.get('SENTRY_DSN', None):
+        sentry_sdk.init(
+            dsn=app.config.get('SENTRY_DSN'),
+            integrations=[FlaskIntegration()]
+        )
 
     from pay_api.resources import API_BLUEPRINT, OPS_BLUEPRINT
 
@@ -64,6 +72,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
 
 def setup_jwt_manager(app, jwt_manager):
     """Use flask app to configure the JWTManager to work for a particular Realm."""
+
     def get_roles(a_dict):
         return a_dict['realm_access']['roles']  # pragma: no cover
 

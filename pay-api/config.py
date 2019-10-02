@@ -115,6 +115,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # Auth API Endpoint
     AUTH_API_ENDPOINT = os.getenv('AUTH_API_ENDPOINT')
 
+    # Sentry Config
+    SENTRY_DSN = os.getenv('SENTRY_DSN', None)
+
     TESTING = False
     DEBUG = True
 

@@ -15,6 +15,7 @@ appdirs==1.4.3
 asyncio-nats-client==0.9.2
 asyncio-nats-streaming==0.4.0
 attrs==19.1.0
+blinker==1.4
 cached-property==1.5.1
 certifi==2019.9.11
 chardet==3.0.4
@@ -45,6 +46,7 @@ pytz==2019.2
 requests-toolbelt==0.9.1
 requests==2.22.0
 rsa==4.0
+sentry-sdk==0.12.2
 six==1.12.0
 urllib3==1.25.6
 zeep==3.4.0

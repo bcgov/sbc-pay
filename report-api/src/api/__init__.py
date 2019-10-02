@@ -15,8 +15,10 @@
 
 import os
 
+import sentry_sdk  # noqa: I001; pylint: disable=ungrouped-imports; conflicts with Flake8
 from flask import Flask
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
+from sentry_sdk.integrations.flask import FlaskIntegration  # noqa: I001
 
 import config
 from api import models
@@ -31,6 +33,13 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     """Return a configured Flask App using the Factory method."""
     app = Flask(__name__)
     app.config.from_object(config.CONFIGURATION[run_mode])
+
+    # Configure Sentry
+    if app.config.get('SENTRY_DSN', None):
+        sentry_sdk.init(
+            dsn=app.config.get('SENTRY_DSN'),
+            integrations=[FlaskIntegration()]
+        )
 
     from api.resources import API_BLUEPRINT, OPS_BLUEPRINT
 
