@@ -41,13 +41,62 @@
 			"response": []
 		}
 	],
+	"auth": {
+		"type": "oauth2",
+		"oauth2": [
+			{
+				"key": "accessToken",
+				"value": "{{accessToken}}",
+				"type": "string"
+			},
+			{
+				"key": "addTokenTo",
+				"value": "header",
+				"type": "string"
+			}
+		]
+	},
 	"event": [
 		{
 			"listen": "prerequest",
 			"script": {
-				"id": "9ec28d1b-bef9-4f79-a975-5c966a283b99",
+				"id": "dca1bb4a-f917-43e2-ae5d-3cd3c52d1daf",
 				"type": "text/javascript",
 				"exec": [
+					"function getvar(variableName) {",
+					"    let value = pm.variables.get(variableName);",
+					"    if (!value) throw new Error(",
+					"        `Variable '${variableName}' is not defined.`);",
+					"    return value;",
+					"}",
+					"",
+					"let tokenUrl = getvar('tokenUrl');",
+					"let userName = getvar('userName');",
+					"let passCode = getvar('passCode');",
+					"",
+					"let getTokenRequest = {",
+					"    method: 'POST',",
+					"    url: tokenUrl,",
+					"    header: {",
+					"        'content-type': 'application/json'",
+					"    },",
+					" ",
+					"    body: {",
+					"        mode: 'raw',",
+					"        raw: JSON.stringify({ \"username\": userName, \"password\": passCode })",
+					"    }",
+					"    ",
+					"};",
+					"",
+					"pm.sendRequest(getTokenRequest, (err, response) => {",
+					"    let jsonResponse = response.json(),",
+					"        newAccessToken = jsonResponse.access_token;",
+					"",
+					"    console.log({ err, jsonResponse, newAccessToken })",
+					"",
+					"    pm.environment.set('accessToken', newAccessToken);",
+					"    pm.variables.set('accessToken', newAccessToken);",
+					"});",
 					""
 				]
 			}
@@ -55,7 +104,7 @@
 		{
 			"listen": "test",
 			"script": {
-				"id": "64c84eb3-d8c1-4963-9ee0-f8c88fc33e6b",
+				"id": "c078047b-a96e-41ad-8b31-a89c2528dd8e",
 				"type": "text/javascript",
 				"exec": [
 					""
