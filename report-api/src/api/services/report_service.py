@@ -21,10 +21,11 @@ from jinja2 import Environment, FileSystemLoader, Template
 from weasyprint import HTML
 from weasyprint.formatting_structure.boxes import InlineBox
 
+from api.utils.constants import JINJA_AUTO_ESCAPE
 from api.utils.util import TEMPLATE_FOLDER_PATH
 
 
-ENV = Environment(loader=FileSystemLoader('.'))
+ENV = Environment(loader=FileSystemLoader('.'), autoescape=JINJA_AUTO_ESCAPE)
 
 
 class ReportService:
@@ -45,7 +46,7 @@ class ReportService:
                                     generate_page_number: bool = False):
         """Create a report from a json template."""
         template_decoded = base64.b64decode(template_string).decode('utf-8')
-        template_ = Template(template_decoded)
+        template_ = Template(template_decoded, autoescape=JINJA_AUTO_ESCAPE)
         html_out = template_.render(template_args)
         return ReportService.generate_pdf(html_out, generate_page_number)
 
