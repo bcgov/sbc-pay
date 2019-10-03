@@ -13,4 +13,3 @@
 # limitations under the License.
 """Constants."""
 
-JINJA_AUTO_ESCAPE = True
