@@ -21,7 +21,6 @@ from jinja2 import Environment, FileSystemLoader, Template
 from weasyprint import HTML
 from weasyprint.formatting_structure.boxes import InlineBox
 
-from api.utils.constants import JINJA_AUTO_ESCAPE
 from api.utils.util import TEMPLATE_FOLDER_PATH
 
 
