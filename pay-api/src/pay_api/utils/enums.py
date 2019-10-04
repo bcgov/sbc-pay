@@ -49,6 +49,7 @@ class PaymentSystem(Enum):
 
     PAYBC = 'PAYBC'
     BCOL = 'BCOL'
+    INTERNAL = 'INTERNAL'
 
 
 class Role(Enum):

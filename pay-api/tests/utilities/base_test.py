@@ -19,6 +19,7 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 
 from pay_api.utils.enums import Role
 
+
 token_header = {
     'alg': 'RS256',
     'typ': 'JWT',
@@ -77,6 +78,37 @@ def get_payment_request(business_identifier: str = 'CP0001234'):
                 },
                 {
                     'filingTypeCode': 'OTANN'
+                }
+            ]
+        }
+    }
+
+
+def get_zero_dollar_payment_request(business_identifier: str = 'CP0001234'):
+    """Return a payment request object."""
+    return {
+        'paymentInfo': {
+            'methodOfPayment': 'CC'
+        },
+        'businessInfo': {
+            'businessIdentifier': business_identifier,
+            'corpType': 'CP',
+            'businessName': 'ABC Corp',
+            'contactInfo': {
+                'city': 'Victoria',
+                'postalCode': 'V8P2P2',
+                'province': 'BC',
+                'addressLine1': '100 Douglas Street',
+                'country': 'CA'
+            }
+        },
+        'filingInfo': {
+            'filingTypes': [
+                {
+                    'filingTypeCode': 'OTFDR'
+                },
+                {
+                    'filingTypeCode': 'OTFDR'
                 }
             ]
         }

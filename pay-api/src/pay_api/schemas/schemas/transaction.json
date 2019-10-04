@@ -5,10 +5,8 @@
   "title": "Transaction",
   "required": [
     "_links",
-    "clientSystemUrl",
     "endTime",
     "id",
-    "paySystemUrl",
     "paymentId",
     "startTime",
     "statusCode"

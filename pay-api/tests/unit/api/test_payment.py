@@ -18,14 +18,14 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 """
 
 import json
-
 from datetime import datetime
-from requests.exceptions import ConnectionError
 from unittest.mock import patch
+
+from requests.exceptions import ConnectionError
+from tests.utilities.base_test import get_claims, get_payment_request, get_zero_dollar_payment_request, token_header
 
 from pay_api.models import PaymentTransaction
 from pay_api.schemas import utils as schema_utils
-from tests.utilities.base_test import get_claims, get_payment_request, token_header
 
 
 def factory_payment_transaction(
@@ -272,3 +272,17 @@ def test_payment_put_when_paybc_down(session, client, jwt, app):
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
         rv = client.put(f'/api/v1/payment-requests/{pay_id}', data=json.dumps(get_payment_request()), headers=headers)
         assert rv.status_code == 400
+
+
+def test_zero_dollar_payment_creation(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(role='staff'), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_zero_dollar_payment_request()),
+                     headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
+    assert rv.json.get('statusCode', None) == 'COMPLETED'
+
+    assert schema_utils.validate(rv.json, 'payment_response')[0]

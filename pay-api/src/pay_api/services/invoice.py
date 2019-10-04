@@ -273,7 +273,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         i.payment_id = payment_id
         i.invoice_status_code = Status.DRAFT.value
         i.account_id = account.id
-        i.total = sum(fee.total for fee in fees)
+        i.total = sum(fee.total for fee in fees) if fees else 0
         i.paid = 0
         i.payment_date = None  # TODO
         i.refund = 0
@@ -312,6 +312,17 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         invoice._dao = invoice_dao  # pylint: disable=protected-access
 
         current_app.logger.debug('>find_by_id')
+        return invoice
+
+    @staticmethod
+    def find_by_invoice_number(invoice_number: str):
+        """Find invoice by invoice number."""
+        invoice_dao = InvoiceModel.find_by_invoice_number(invoice_number)
+
+        invoice = Invoice()
+        invoice._dao = invoice_dao  # pylint: disable=protected-access
+
+        current_app.logger.debug('>find_by_invoice_number')
         return invoice
 
     @staticmethod

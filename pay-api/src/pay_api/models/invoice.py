@@ -35,7 +35,7 @@ class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     payment_id = db.Column(db.Integer, ForeignKey('payment.id'), nullable=False)
 
-    invoice_number = db.Column(db.String(50), nullable=True)
+    invoice_number = db.Column(db.String(50), nullable=True, index=True)
     reference_number = db.Column(db.String(50), nullable=True)
     invoice_status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
     account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=False)
@@ -57,6 +57,11 @@ class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
     def find_by_payment_id(cls, identifier: int):
         """Return a Invoice by id."""
         return cls.query.filter_by(payment_id=identifier).one_or_none()
+
+    @classmethod
+    def find_by_invoice_number(cls, invoice_number: str):
+        """Return a Invoice by invoice number."""
+        return cls.query.filter_by(invoice_number=invoice_number).one_or_none()
 
     @classmethod
     def find_by_id_and_payment_id(cls, identifier: int, pay_id: int):
