@@ -63,8 +63,8 @@ class Payment(Resource):
         return jsonify(response), status
 
 
-@cors_preflight(['GET', 'PUT'])
-@API.route('/<int:payment_id>', methods=['GET', 'PUT', 'OPTIONS'])
+@cors_preflight(['GET', 'PUT', 'DELETE'])
+@API.route('/<int:payment_id>', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
 class Payments(Resource):
     """Endpoint resource to create payment."""
 
@@ -108,4 +108,24 @@ class Payments(Resource):
         except ServiceUnavailableException as exception:
             response, status = {'code': exception.status_code}, HTTPStatus.BAD_REQUEST
         current_app.logger.debug('>Payment.put')
+        return jsonify(response), status
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.requires_auth
+    @_tracing.trace()
+    def delete(payment_id):
+        """Soft delete the payment records."""
+        current_app.logger.info('<Payment.delete')
+
+        try:
+            PaymentService.delete_payment(payment_id, _jwt, g.jwt_oidc_token_info)
+
+            response, status = None, HTTPStatus.NO_CONTENT
+
+        except BusinessException as exception:
+            response, status = {'code': exception.code, 'message': exception.message}, exception.status
+        except ServiceUnavailableException as exception:
+            response, status = {'code': exception.status_code}, HTTPStatus.BAD_REQUEST
+        current_app.logger.debug('>Payment.delete')
         return jsonify(response), status

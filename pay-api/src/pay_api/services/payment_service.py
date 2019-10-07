@@ -29,6 +29,8 @@ from .payment import Payment
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
 from .payment_transaction import PaymentTransaction
+from flask_jwt_oidc import JwtManager
+from pay_api.utils.constants import EDIT_ROLE
 
 
 class PaymentService:  # pylint: disable=too-few-public-methods
@@ -179,21 +181,11 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         payment: Payment = None
 
         try:
-            # get existing payment transaction
-            transaction: PaymentTransaction = PaymentTransaction.find_active_by_payment_id(payment_id)
-            current_app.logger.debug(transaction)
-            if transaction:
-                # check existing payment status in PayBC;
-                PaymentTransaction.update_transaction(payment_id, transaction.id, None, skip_auth_check=True)
-
             # update transaction function will update the status from PayBC
-            payment: Payment = Payment.find_by_id(payment_id, skip_auth_check=True)
-            current_app.logger.debug(payment)
-            if payment.payment_status_code == Status.COMPLETED.value:
-                raise BusinessException(Error.PAY010)
+            _update_active_transactions(payment_id)
 
-            if payment.payment_status_code == Status.CANCELLED.value:
-                raise BusinessException(Error.PAY011)
+            payment: Payment = Payment.find_by_id(payment_id, skip_auth_check=True)
+            _check_if_payment_is_completed(payment)
 
             current_app.logger.debug('Updating Invoice record for payment {}'.format(payment.id))
             invoices = payment.invoices
@@ -203,8 +195,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
                     # Invalidate active payment line items
                     for payment_line_item in payment_line_items:
-                        if payment_line_item.line_item_status_code != Status.CANCELLED.value:
-                            payment_line_item.line_item_status_code = Status.CANCELLED.value
+                        if payment_line_item.line_item_status_code != Status.DELETED.value:
+                            payment_line_item.line_item_status_code = Status.DELETED.value
                             payment_line_item.save()
 
                     # add new payment line item(s)
@@ -245,6 +237,49 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         current_app.logger.debug('>update_payment')
 
         return payment.asdict()
+
+    @classmethod
+    def delete_payment(cls, payment_id: int, jwt: JwtManager, token_info: Dict):
+        # pylint: disable=too-many-locals,too-many-statements
+        """Delete payment related records.
+
+        Does the following;
+        1. Check if payment is eligible to be deleted.
+        2. Mark the payment and invoices records as deleted.
+        3. Publish message to queue
+        """
+
+        current_app.logger.debug('<delete_payment')
+
+        # update transaction function will update the status from PayBC
+        _update_active_transactions(payment_id)
+
+        payment: Payment = Payment.find_by_id(payment_id, jwt=jwt, one_of_roles=[EDIT_ROLE])
+        _check_if_payment_is_completed(payment)
+
+        # Create the payment system implementation
+        pay_service: PaymentSystemService = PaymentSystemFactory.create_from_system_code(payment.payment_system_code)
+
+        # Cancel all invoices
+        for invoice in payment.invoices:
+            pay_service.cancel_invoice(account_details=(invoice.account.party_number,
+                                                        invoice.account.account_number,
+                                                        invoice.account.site_number),
+                                       inv_number=invoice.invoice_number)
+            invoice.updated_by = token_info.get('username')
+            invoice.updated_on = datetime.now()
+            invoice.invoice_status_code = Status.DELETED.value
+            for line in invoice.payment_line_items:
+                line.line_item_status_code = Status.DELETED.value
+            invoice.save()
+        payment.updated_by = token_info.get('username')
+        payment.updated_on = datetime.now()
+        payment.payment_status_code = Status.DELETED.value
+        payment.save()
+
+        current_app.logger.debug('>delete_payment')
+
+        return None
 
 
 def _calculate_fees(corp_type, filing_info):
@@ -296,3 +331,17 @@ def _complete_post_payment(pay_service: PaymentSystemService, payment: Payment):
         transaction: PaymentTransaction = PaymentTransaction.create(payment.id, redirect_uri=None,
                                                                     skip_auth_check=True)
         transaction.update_transaction(payment.id, transaction.id, receipt_number=None, skip_auth_check=True)
+
+
+def _update_active_transactions(payment_id):
+    # get existing payment transaction
+    transaction: PaymentTransaction = PaymentTransaction.find_active_by_payment_id(payment_id)
+    current_app.logger.debug(transaction)
+    if transaction:
+        # check existing payment status in PayBC;
+        PaymentTransaction.update_transaction(payment_id, transaction.id, None, skip_auth_check=True)
+
+
+def _check_if_payment_is_completed(payment):
+    if payment.payment_status_code in (Status.COMPLETED.value, Status.DELETED.value):
+        raise BusinessException(Error.PAY010)

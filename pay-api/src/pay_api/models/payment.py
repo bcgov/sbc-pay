@@ -71,13 +71,3 @@ class PaymentSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         'invoices': ma.URLFor('API.invoices_invoices', payment_id='<id>'),
         'transactions': ma.URLFor('API.transactions_transaction', payment_id='<id>')
     })
-
-    @post_dump
-    def _remove_cancelled_invoices(self, data, many):  # pylint: disable=unused-argument,no-self-use
-        for inv in list(data.get('invoices')):
-            if inv.get('status_code') == Status.CANCELLED.value:
-                data.get('invoices').remove(inv)
-        if 'invoices' in data and not data.get('invoices'):
-            data.pop('invoices')
-
-        return data

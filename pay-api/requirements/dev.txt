@@ -4,8 +4,9 @@
 # Testing
 pytest<4.1
 pytest-mock
-pytest-cov
+requests
 pyhamcrest
+pytest-cov
 
 # Lint and code style
 flake8
@@ -14,7 +15,6 @@ flake8-debugger
 flake8-docstrings
 flake8-isort
 flake8-quotes
-flake8-print
 pep8-naming
 autopep8
 coverage

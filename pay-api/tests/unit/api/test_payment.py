@@ -286,3 +286,43 @@ def test_zero_dollar_payment_creation(session, client, jwt, app):
     assert rv.json.get('statusCode', None) == 'COMPLETED'
 
     assert schema_utils.validate(rv.json, 'payment_response')[0]
+
+
+def test_delete_payment(session, client, jwt, app):
+    """Assert that the endpoint returns 204."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    pay_id = rv.json.get('id')
+    rv = client.delete(f'/api/v1/payment-requests/{pay_id}', headers=headers)
+    assert rv.status_code == 204
+
+
+def test_delete_completed_payment(session, client, jwt, app):
+    """Assert that the endpoint returns 400."""
+    token = jwt.create_jwt(get_claims(role='staff'), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_zero_dollar_payment_request()),
+                     headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
+    assert rv.json.get('statusCode', None) == 'COMPLETED'
+
+    pay_id = rv.json.get('id')
+    rv = client.delete(f'/api/v1/payment-requests/{pay_id}', headers=headers)
+    assert rv.status_code == 400
+
+
+def test_payment_delete_when_paybc_is_down(session, client, jwt, app):
+    """Assert that the endpoint returns 400."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    pay_id = rv.json.get('id')
+
+    with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
+        rv = client.delete(f'/api/v1/payment-requests/{pay_id}', headers=headers)
+        assert rv.status_code == 400

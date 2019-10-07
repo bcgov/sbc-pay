@@ -85,12 +85,9 @@ def test_payment_with_no_active_invoice(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment.id, payment_account.id, Status.CANCELLED.value)
+    invoice = factory_invoice(payment.id, payment_account.id, Status.DELETED.value)
     invoice.save()
     p = Payment_service.find_by_id(payment.id, skip_auth_check=True)
 
     assert p is not None
     assert p.id is not None
-
-    json = p.asdict()
-    assert json.get('invoices', None) is None

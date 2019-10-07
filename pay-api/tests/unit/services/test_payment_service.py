@@ -190,12 +190,12 @@ def test_update_payment_completed_invalid(session):
     assert excinfo.type == BusinessException
 
 
-def test_update_payment_cancel_invalid(session):
-    """Assert that the payment records are updated."""
+def test_update_payment_deleted_invalid(session):
+    """Assert that the payment records are not updated."""
     payment_account = factory_payment_account()
     payment = factory_payment()
     payment_account.save()
-    payment.payment_status_code = Status.CANCELLED.value
+    payment.payment_status_code = Status.DELETED.value
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
@@ -210,14 +210,14 @@ def test_update_payment_cancel_invalid(session):
     assert excinfo.type == BusinessException
 
 
-def test_update_payment_invoice_cancel_invalid(session):
-    """Assert that the payment records are updated."""
+def test_update_payment_invoice_deleted_invalid(session):
+    """Assert that the payment records are not updated."""
     payment_account = factory_payment_account()
     payment = factory_payment()
     payment_account.save()
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
-    invoice.invoice_status_code = Status.CANCELLED.value
+    invoice.invoice_status_code = Status.DELETED.value
     invoice.save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
@@ -345,3 +345,44 @@ def test_create_zero_dollar_payment_record(session):
     account_model = PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'INTERNAL')
     assert account_id == account_model.id
     assert payment_response.get('status_code') == 'COMPLETED'
+
+
+def test_delete_payment(session, auth_mock):
+    """Assert that the payment records are soft deleted."""
+    payment_account = factory_payment_account()
+    payment = factory_payment()
+    payment_account.save()
+    payment.save()
+    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice.save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+    transaction = factory_payment_transaction(payment.id)
+    transaction.save()
+
+    PaymentService.delete_payment(payment.id, jwt=None, token_info={})
+    payment = Payment.find_by_id(payment.id)
+    assert payment.payment_status_code == Status.DELETED.value
+    assert payment.invoices[0].invoice_status_code == Status.DELETED.value
+
+
+def test_delete_completed_payment(session, auth_mock):
+    """Assert that the payment records are soft deleted."""
+    payment_account = factory_payment_account()
+    payment = factory_payment(payment_status_code=Status.COMPLETED.value)
+    payment_account.save()
+    payment.save()
+    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice.save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+    transaction = factory_payment_transaction(payment.id)
+    transaction.save()
+
+    with pytest.raises(Exception) as excinfo:
+        PaymentService.delete_payment(payment.id, jwt=None, token_info={})
+    assert excinfo.type == BusinessException
+
+

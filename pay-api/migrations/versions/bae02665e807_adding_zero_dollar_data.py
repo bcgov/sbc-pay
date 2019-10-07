@@ -66,9 +66,9 @@ def upgrade():
 
 
 def downgrade():
-    op.execute('DELETE FROM fee_schedule WHERE filing_type_code = \'OTFDR\';')
-    op.execute('DELETE FROM filing_type WHERE code = \'OTFDR\';')
-    op.execute('DELETE FROM payment_system WHERE code = \'INTERNAL\';')
+    op.execute('DELETE FROM fee_schedule WHERE filing_type_code = \'OTFDR\' CASCADE;')
+    op.execute('DELETE FROM filing_type WHERE code = \'OTFDR\' CASCADE;')
+    op.execute('DELETE FROM payment_system WHERE code = \'INTERNAL\' CASCADE;')
 
     op.alter_column('payment_transaction', 'client_system_url',
                     existing_type=sa.VARCHAR(length=500),
