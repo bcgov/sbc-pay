@@ -13,11 +13,9 @@
 # limitations under the License.
 """Model to handle all operations related to Payment data."""
 
-from marshmallow import fields, post_dump
+from marshmallow import fields
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
-
-from pay_api.utils.enums import Status
 
 from .audit import Audit
 from .base_model import BaseModel

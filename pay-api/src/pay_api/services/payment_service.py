@@ -16,9 +16,11 @@ from datetime import datetime
 from typing import Any, Dict, Tuple
 
 from flask import current_app
+from flask_jwt_oidc import JwtManager
 
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
+from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.enums import PaymentSystem, Status
 from pay_api.utils.errors import Error
 
@@ -29,8 +31,6 @@ from .payment import Payment
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
 from .payment_transaction import PaymentTransaction
-from flask_jwt_oidc import JwtManager
-from pay_api.utils.constants import EDIT_ROLE
 
 
 class PaymentService:  # pylint: disable=too-few-public-methods
@@ -239,8 +239,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         return payment.asdict()
 
     @classmethod
-    def delete_payment(cls, payment_id: int, jwt: JwtManager, token_info: Dict):
-        # pylint: disable=too-many-locals,too-many-statements
+    def delete_payment(cls, payment_id: int, jwt: JwtManager,
+                       token_info: Dict):  # pylint: disable=too-many-locals,too-many-statements
         """Delete payment related records.
 
         Does the following;
@@ -278,8 +278,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         payment.save()
 
         current_app.logger.debug('>delete_payment')
-
-        return None
 
 
 def _calculate_fees(corp_type, filing_info):

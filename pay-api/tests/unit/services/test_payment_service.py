@@ -384,5 +384,3 @@ def test_delete_completed_payment(session, auth_mock):
     with pytest.raises(Exception) as excinfo:
         PaymentService.delete_payment(payment.id, jwt=None, token_info={})
     assert excinfo.type == BusinessException
-
-
