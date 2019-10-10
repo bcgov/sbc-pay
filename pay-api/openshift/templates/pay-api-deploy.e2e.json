@@ -144,7 +144,7 @@
                 "envFrom": [
                   {
                     "configMapRef": {
-                      "name": "${NAME}-${TAG_NAME}-config"
+                      "name": "api-${TAG_NAME}-config"
                     }
                   }
                 ],
