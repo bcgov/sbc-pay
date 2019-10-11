@@ -50,6 +50,8 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._created_on: datetime = None
         self._updated_by: str = None
         self._updated_on: datetime = None
+        self._payment_account = None
+        self._receipts = None
 
     @property
     def _dao(self):
@@ -75,6 +77,8 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.updated_by: str = self._dao.updated_by
         self.updated_on: datetime = self._dao.updated_on
         self.payment_line_items = self._dao.payment_line_items
+        self.payment_account = self._dao.account
+        self.receipts = self._dao.receipts
 
     @property
     def id(self):
@@ -240,6 +244,28 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         """Set the updated_on."""
         self._updated_on = value
         self._dao.updated_on = value
+
+    @property
+    def payment_account(self):
+        """Return the payment_account."""
+        return self._payment_account
+
+    @payment_account.setter
+    def payment_account(self, value):
+        """Set the payment_account."""
+        self._payment_account = value
+        self._dao.payment_account = value
+
+    @property
+    def receipts(self):
+        """Return the receipts."""
+        return self._receipts
+
+    @receipts.setter
+    def receipts(self, value):
+        """Set the receipts."""
+        self._receipts = value
+        self._dao.receipts = value
 
     def save(self):
         """Save the information to the DB."""
