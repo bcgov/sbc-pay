@@ -89,10 +89,10 @@ class InvoiceSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     })
 
     @post_dump
-    def _remove_cancelled_lines(self, data, many):  # pylint: disable=unused-argument,no-self-use
+    def _remove_deleted_lines(self, data, many):  # pylint: disable=unused-argument,no-self-use
         if data.get('line_items'):
             for line in list(data.get('line_items')):
-                if line.get('status_code') == Status.CANCELLED.value:
+                if line.get('status_code') == Status.DELETED.value:
                     data.get('line_items').remove(line)
 
         if 'line_items' in data and not data.get('line_items'):

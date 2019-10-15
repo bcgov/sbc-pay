@@ -19,3 +19,4 @@ asyncio-nats-client
 asyncio-nats-streaming
 croniter
 sentry-sdk[flask]
+attrs<=19.1.0
