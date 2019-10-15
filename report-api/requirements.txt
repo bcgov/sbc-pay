@@ -24,7 +24,7 @@ cffi==1.12.3
 chardet==3.0.4
 cssselect2==0.2.2
 defusedxml==0.6.0
-ecdsa==0.13.2
+ecdsa==0.13.3
 flask-jwt-oidc==0.1.5
 flask-marshmallow==0.10.1
 flask-restplus==0.13.0
