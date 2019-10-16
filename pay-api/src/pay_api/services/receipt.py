@@ -25,6 +25,7 @@ from pay_api.utils.enums import AuthHeaderType, ContentType
 from pay_api.utils.errors import Error
 
 from .invoice import Invoice
+from .payment import Payment
 from .oauth_service import OAuthService
 
 
@@ -155,32 +156,33 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         # inovice number not mandatory ;since only one invoice exist for a payment now
         if not invoice_identifier:
             invoice_data = Invoice.find_by_payment_identifier(payment_identifier, jwt=jwt,
-                                                              skip_auth_check=skip_auth_check).asdict()
+                                                              skip_auth_check=skip_auth_check)
         else:
             invoice_data = Invoice.find_by_id(invoice_identifier, payment_identifier, jwt=jwt,
-                                              skip_auth_check=skip_auth_check).asdict()
+                                              skip_auth_check=skip_auth_check)
+        payment_account = invoice_data.payment_account
 
-        template_vars['incorporationNumber'] = invoice_data['created_by']
-        template_vars['paymentInvoiceNumber'] = invoice_data['invoice_number']
-        if 'receipts' not in invoice_data:
+        template_vars['incorporationNumber'] = payment_account.corp_number
+        template_vars['paymentInvoiceNumber'] = invoice_data.invoice_number
+        if not invoice_data.receipts:
             raise BusinessException(Error.PAY999)
 
-        template_vars['receiptNumber'] = invoice_data['receipts'][0]['receipt_number']
-        for line_item in invoice_data['line_items']:
+        template_vars['receiptNumber'] = invoice_data.receipts[0].receipt_number
+        for line_item in invoice_data.payment_line_items:
             template_vars['lineItems'].append(
                 {
-                    'description': line_item['description'],
-                    'filingFees': '{:.2f}'.format(line_item['total'])
+                    'description': line_item.description,
+                    'filingFees': '{:.2f}'.format(line_item.total)
                 }
             )
 
         template_vars['lineItems'].append(
             {
                 'description': 'Total',
-                'filingFees': '{:.2f}'.format(invoice_data['total'])
+                'filingFees': '{:.2f}'.format(invoice_data.total)
             }
         )
-        current_app.logger.debug('<OAuthService invoked from receipt.py', current_app.config.get('REPORT_API_BASE_URL'))
+        current_app.logger.debug('<OAuthService invoked from receipt.py {}'.format(current_app.config.get('REPORT_API_BASE_URL')))
 
         pdf_response = OAuthService.post(current_app.config.get('REPORT_API_BASE_URL'),
                                          bearer_token, AuthHeaderType.BEARER,
