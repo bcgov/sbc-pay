@@ -25,7 +25,6 @@ from pay_api.utils.enums import AuthHeaderType, ContentType
 from pay_api.utils.errors import Error
 
 from .invoice import Invoice
-from .payment import Payment
 from .oauth_service import OAuthService
 
 

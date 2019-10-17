@@ -43,6 +43,7 @@ class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
     paid = db.Column(db.Float, nullable=True)
     payment_date = db.Column(db.DateTime, nullable=True)
     refund = db.Column(db.Float, nullable=True)
+    routing_slip = db.Column(db.String(50), nullable=True)
 
     payment_line_items = relationship('PaymentLineItem')
     receipts = relationship('Receipt')

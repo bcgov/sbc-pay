@@ -60,6 +60,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         business_info = payment_request.get('businessInfo')
         contact_info = business_info.get('contactInfo')
         filing_info = payment_request.get('filingInfo')
+        account_info = payment_request.get('accountInfo', None)
+        routing_slip_number = account_info.get('routingSlip', None) if account_info else None
 
         corp_type = business_info.get('corpType', None)
         payment_method = payment_info.get('methodOfPayment', None)
@@ -86,7 +88,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             current_app.logger.debug(payment)
 
             current_app.logger.debug('Creating Invoice record for payment {}'.format(payment.id))
-            invoice = Invoice.create(payment_account, payment.id, fees, current_user)
+            invoice = Invoice.create(payment_account, payment.id, fees, current_user, routing_slip_number)
 
             line_items = []
             for fee in fees:
