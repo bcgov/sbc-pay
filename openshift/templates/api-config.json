@@ -3,76 +3,12 @@
   "apiVersion": "v1",
   "metadata": {
     "annotations": {
-      "description": "Pre deployment template for a pay api service. This template may not include real value of secrets; you need to manually replace the value in Openshift.",
+      "description": "Configmap template for the api service. This template may not include real value of secrets; you need to manually replace the value in Openshift.",
       "tags": "${NAME}-${TAG_NAME}"
     },
-    "name": "${NAME}-pre-deploy"
+    "name": "${NAME}-config"
   },
   "objects": [
-    {
-      "kind": "Secret",
-      "apiVersion": "v1",
-      "metadata": {
-        "name": "${KEYCLOAK_NAME}-${TAG_NAME}-secret",
-        "labels": {
-          "app": "${NAME}-${TAG_NAME}",
-          "app-group": "${APP_GROUP}",
-          "template": "${NAME}-pre-deploy"
-        }
-      },
-      "stringData": {
-        "JWT_OIDC_ALGORITHMS": "${JWT_OIDC_ALGORITHMS}",
-        "JWT_OIDC_AUDIENCE": "${JWT_OIDC_AUDIENCE}",
-        "JWT_OIDC_CLIENT_SECRET": "${JWT_OIDC_CLIENT_SECRET}",
-        "JWT_OIDC_ISSUER": "${JWT_OIDC_ISSUER}",
-        "JWT_OIDC_JWKS_CACHE_TIMEOUT": "${JWT_OIDC_JWKS_CACHE_TIMEOUT}",
-        "JWT_OIDC_WELL_KNOWN_CONFIG": "${JWT_OIDC_WELL_KNOWN_CONFIG}"
-      },
-      "type": "Opaque"
-    },
-    {
-      "kind": "Secret",
-      "apiVersion": "v1",
-      "metadata": {
-        "name": "${PAYBC_NAME}-${TAG_NAME}-secret",
-        "labels": {
-          "app": "${NAME}-${TAG_NAME}",
-          "app-group": "${APP_GROUP}",
-          "template": "${NAME}-pre-deploy"
-        }
-      },
-      "stringData": {
-        "PAYBC_BASE_URL": "${PAYBC_BASE_URL}",
-        "PAYBC_CLIENT_ID": "${PAYBC_CLIENT_ID}",
-        "PAYBC_CLIENT_SECRET": "${PAYBC_CLIENT_SECRET}",
-        "PAYBC_MEMO_LINE_NAME": "${PAYBC_MEMO_LINE_NAME}",
-        "PAYBC_PORTAL_URL": "${PAYBC_PORTAL_URL}",
-        "PAYBC_CONNECT_TIMEOUT": "${PAYBC_CONNECT_TIMEOUT}",
-        "PAYBC_GENERATE_RANDOM_INVOICE_NUMBER": "${PAYBC_GENERATE_RANDOM_INVOICE_NUMBER}"
-      },
-      "type": "Opaque"
-    },
-    {
-      "kind": "Secret",
-      "apiVersion": "v1",
-      "metadata": {
-        "name": "${BCOL_NAME}-${TAG_NAME}-secret",
-        "labels": {
-          "app": "${NAME}-${TAG_NAME}",
-          "app-group": "${APP_GROUP}",
-          "template": "${NAME}-pre-deploy"
-        }
-      },
-      "stringData": {
-        "BCOL_DEBIT_ACCOUNT_VERSION": "${BCOL_DEBIT_ACCOUNT_VERSION}",
-        "BCOL_LDAP_SERVER": "${BCOL_LDAP_SERVER}",
-        "BCOL_LDAP_USER_DN_PATTERN": "${BCOL_LDAP_USER_DN_PATTERN}",
-        "BCOL_LINK_CODE": "${BCOL_LINK_CODE}",
-        "BCOL_QUERY_PROFILE_WSDL_URL": "${BCOL_QUERY_PROFILE_WSDL_URL}",
-        "BCOL_VERIFY_USER_WSDL_URL": "${BCOL_VERIFY_USER_WSDL_URL}"
-      },
-      "type": "Opaque"
-    },
     {
       "kind": "ConfigMap",
       "apiVersion": "v1",
@@ -81,30 +17,35 @@
         "labels": {
           "app": "${NAME}-${TAG_NAME}",
           "app-group": "${APP_GROUP}",
-          "template": "${NAME}-pre-deploy"
+          "template": "${NAME}-config"
         }
       },
       "data": {
+        "JWT_OIDC_ALGORITHMS": "${JWT_OIDC_ALGORITHMS}",
+        "JWT_OIDC_AUDIENCE": "${JWT_OIDC_AUDIENCE}",
+        "JWT_OIDC_CLIENT_SECRET": "${JWT_OIDC_CLIENT_SECRET}",
+        "JWT_OIDC_ISSUER": "${JWT_OIDC_ISSUER}",
+        "JWT_OIDC_JWKS_CACHE_TIMEOUT": "${JWT_OIDC_JWKS_CACHE_TIMEOUT}",
+        "JWT_OIDC_WELL_KNOWN_CONFIG": "${JWT_OIDC_WELL_KNOWN_CONFIG}",
+        "PAYBC_BASE_URL": "${PAYBC_BASE_URL}",
+        "PAYBC_CLIENT_ID": "${PAYBC_CLIENT_ID}",
+        "PAYBC_CLIENT_SECRET": "${PAYBC_CLIENT_SECRET}",
+        "PAYBC_MEMO_LINE_NAME": "${PAYBC_MEMO_LINE_NAME}",
+        "PAYBC_PORTAL_URL": "${PAYBC_PORTAL_URL}",
+        "PAYBC_CONNECT_TIMEOUT": "${PAYBC_CONNECT_TIMEOUT}",
+        "PAYBC_GENERATE_RANDOM_INVOICE_NUMBER": "${PAYBC_GENERATE_RANDOM_INVOICE_NUMBER}",
+        "BCOL_DEBIT_ACCOUNT_VERSION": "${BCOL_DEBIT_ACCOUNT_VERSION}",
+        "BCOL_LDAP_SERVER": "${BCOL_LDAP_SERVER}",
+        "BCOL_LDAP_USER_DN_PATTERN": "${BCOL_LDAP_USER_DN_PATTERN}",
+        "BCOL_LINK_CODE": "${BCOL_LINK_CODE}",
+        "BCOL_QUERY_PROFILE_WSDL_URL": "${BCOL_QUERY_PROFILE_WSDL_URL}",
+        "BCOL_VERIFY_USER_WSDL_URL": "${BCOL_VERIFY_USER_WSDL_URL}",
         "REPORT_API_BASE_URL": "https://${REPORT_API_NAME}-${TAG_NAME}.pathfinder.gov.bc.ca/api/v1/reports",
         "AUTH_WEB_PAY_TRANSACTION_URL": "https://${AUTH_WEB_NAME}-${TAG_NAME}.pathfinder.gov.bc.ca",
         "POD_TESTING": "true",
         "SERVICE_SCHEDULE": "[\r\n        {\r\n            \"service_name\": \"PAYBC\",\r\n            \"schedules\": [\r\n                {\"up\": \"30 6 * * 1-2\", \"down\": \"19 10 * * 1-2\"},\r\n                {\"up\": \"30 6 * * 3\", \"down\": \"30 10 * * 3\"},\r\n                {\"up\": \"30 14 * * 4\"},\r\n                {\"down\": \"30 9 * * 5\"},\r\n                {\"up\": \"30 6 * * 7\", \"down\": \"30 21 * * 7\"}\r\n            ]\r\n        },\r\n        {\r\n            \"service_name\": \"BCOL\",\r\n            \"schedules\": [\r\n                {\"up\": \"30 06 * * 1-3\", \"down\": \"30 22 * * 1-3\"},\r\n                {\"up\": \"30 06 * * 6-7\", \"down\": \"30 20 * * 6-7\"}\r\n            ]\r\n        },\r\n    ]",
         "AUTH_API_ENDPOINT": "https://${AUTH_API_NAME}-${TAG_NAME}.pathfinder.gov.bc.ca/api/v1/",
-        "SENTRY_DSN":  "https://<account>@sentry.io/<project>"
-      }
-    },
-    {
-      "kind": "ConfigMap",
-      "apiVersion": "v1",
-      "metadata": {
-        "name": "${NATS}-${TAG_NAME}-config",
-        "labels": {
-          "app": "${NAME}-${TAG_NAME}",
-          "app-group": "${APP_GROUP}",
-          "template": "${NAME}-pre-deploy"
-        }
-      },
-      "data": {
+        "SENTRY_DSN": "https://<account>@sentry.io/<project>",
         "NATS_SERVERS": "nats://nats-streaming.hak2zo-dev.svc:4222",
         "NATS_CLIENT_NAME": "entity.filing.payment.worker",
         "NATS_CLUSTER_ID": "test-cluster",
@@ -119,7 +60,7 @@
       "displayName": "Name",
       "description": "The name assigned to all of the OpenShift resources associated to the server instance.",
       "required": true,
-      "value": "pay-api"
+      "value": "api"
     },
     {
       "name": "APP_GROUP",
@@ -134,27 +75,6 @@
       "description": "The TAG name for this environment, e.g., dev, test, prod",
       "required": true,
       "value": "dev"
-    },
-    {
-      "name": "KEYCLOAK_NAME",
-      "displayName": "Name",
-      "description": "The name assigned to all of the OpenShift resources associated to the server instance.",
-      "required": true,
-      "value": "keycloak"
-    },
-    {
-      "name": "PAYBC_NAME",
-      "displayName": "Name",
-      "description": "The name assigned to all of the OpenShift resources associated to the server instance.",
-      "required": true,
-      "value": "paybc"
-    },
-    {
-      "name": "BCOL_NAME",
-      "displayName": "BC Online Service Name",
-      "description": "The name assigned to all of the OpenShift resources associated to the server instance.",
-      "required": true,
-      "value": "bcol"
     },
     {
       "name": "REPORT_API_NAME",
