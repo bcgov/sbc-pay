@@ -22,13 +22,12 @@ from unittest.mock import patch
 
 import pytest
 from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
-from tests.utilities.base_test import get_payment_request, get_zero_dollar_payment_request
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
 from pay_api.services.payment_service import PaymentService
 from pay_api.utils.enums import Status
-
+from tests.utilities.base_test import get_payment_request, get_zero_dollar_payment_request
 
 test_user_token = {'preferred_username': 'test'}
 

@@ -326,7 +326,11 @@ def _complete_post_payment(pay_service: PaymentSystemService, payment: Payment):
     For internal payments, create and complete the transactions and receipt.
     """
     if pay_service.get_payment_system_code() == PaymentSystem.INTERNAL.value:
-        transaction: PaymentTransaction = PaymentTransaction.create(payment.id, redirect_uri=None,
+        transaction: PaymentTransaction = PaymentTransaction.create(payment.id,
+                                                                    {
+                                                                        'clientSystemUrl': '',
+                                                                        'payReturnUrl': ''
+                                                                    },
                                                                     skip_auth_check=True)
         transaction.update_transaction(payment.id, transaction.id, receipt_number=None, skip_auth_check=True)
 

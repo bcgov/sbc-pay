@@ -15,13 +15,13 @@
 from http import HTTPStatus
 
 import flask
-from flask import current_app, jsonify
+from flask import current_app, jsonify, request
 from flask_restplus import Namespace, Resource, cors
 
 from pay_api.exceptions import BusinessException
+from pay_api.schemas import utils as schema_utils
 from pay_api.services import TransactionService
 from pay_api.utils.auth import jwt as _jwt
-from pay_api.utils.errors import Error
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
 
@@ -41,12 +41,16 @@ class Transaction(Resource):
     def post(payment_id):
         """Create the Transaction records."""
         current_app.logger.info('<Transaction.post')
-        redirect_uri = flask.request.args.get('redirect_uri')
-        try:
-            if not redirect_uri:
-                raise BusinessException(Error.PAY007)
+        request_json = request.get_json()
 
-            response, status = TransactionService.create(payment_id, redirect_uri,
+        # Validate the input request
+        valid_format, errors = schema_utils.validate(request_json, 'transaction_request')
+
+        if not valid_format:
+            return jsonify({'code': 'PAY007', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
+
+        try:
+            response, status = TransactionService.create(payment_id, request_json,
                                                          jwt=_jwt).asdict(), HTTPStatus.CREATED
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status

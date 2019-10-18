@@ -25,7 +25,6 @@ from pay_api.utils.enums import AuthHeaderType, ContentType
 from pay_api.utils.errors import Error
 
 from .invoice import Invoice
-from .payment import Payment
 from .oauth_service import OAuthService
 
 
@@ -182,7 +181,8 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
                 'filingFees': '{:.2f}'.format(invoice_data.total)
             }
         )
-        current_app.logger.debug('<OAuthService invoked from receipt.py {}'.format(current_app.config.get('REPORT_API_BASE_URL')))
+        current_app.logger.debug(
+            '<OAuthService invoked from receipt.py {}'.format(current_app.config.get('REPORT_API_BASE_URL')))
 
         pdf_response = OAuthService.post(current_app.config.get('REPORT_API_BASE_URL'),
                                          bearer_token, AuthHeaderType.BEARER,

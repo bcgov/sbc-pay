@@ -20,7 +20,6 @@ Test-Suite to ensure that the /receipt endpoint is working as expected.
 import json
 
 import pytest
-
 from tests.utilities.base_test import get_claims, get_payment_request, token_header
 
 
@@ -44,9 +43,12 @@ def test_receipt_creation(session, client, jwt, app):
     pay_id = rv.json.get('id')
 
     payment_id = rv.json.get('id')
-    redirect_uri = 'http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd'
+    data = {
+        'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
+        'payReturnUrl': 'http://localhost:8080/pay-web'
+    }
     receipt_number = '123451'
-    rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions?redirect_uri={redirect_uri}', data=None,
+    rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
                      headers=headers)
     txn_id = rv.json.get('id')
     rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}',
@@ -70,9 +72,12 @@ def test_receipt_creation_with_invoice(session, client, jwt, app):
     pay_id = rv.json.get('id')
     inovice_id = rv.json.get('invoices')[0].get('id')
     payment_id = rv.json.get('id')
-    redirect_uri = 'http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd'
+    data = {
+        'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
+        'payReturnUrl': 'http://localhost:8080/pay-web'
+    }
     receipt_number = '123451'
-    rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions?redirect_uri={redirect_uri}', data=None,
+    rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
                      headers=headers)
     txn_id = rv.json.get('id')
     client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}',
