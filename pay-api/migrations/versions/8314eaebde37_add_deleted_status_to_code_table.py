@@ -34,5 +34,5 @@ def upgrade():
 
 
 def downgrade():
-    op.execute('DELETE FROM status_code WHERE status_code = \'DELETED\' CASCADE;')
+    op.execute('DELETE FROM status_code WHERE status_code = \'DELETED\';')
 

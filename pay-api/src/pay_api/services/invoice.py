@@ -52,6 +52,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._updated_on: datetime = None
         self._payment_account = None
         self._receipts = None
+        self._routing_slip: str = None
 
     @property
     def _dao(self):
@@ -79,6 +80,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.payment_line_items = self._dao.payment_line_items
         self.payment_account = self._dao.account
         self.receipts = self._dao.receipts
+        self.routing_slip: str = self._dao.routing_slip
 
     @property
     def id(self):
@@ -267,6 +269,17 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._receipts = value
         self._dao.receipts = value
 
+    @property
+    def routing_slip(self):
+        """Return the routing_slip."""
+        return self._routing_slip
+
+    @routing_slip.setter
+    def routing_slip(self, value: str):
+        """Set the routing_slip."""
+        self._routing_slip = value
+        self._dao.routing_slip = value
+
     def save(self):
         """Save the information to the DB."""
         return self._dao.save()
@@ -290,7 +303,8 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoice
 
     @staticmethod
-    def create(account: PaymentAccount, payment_id: int, fees: [FeeSchedule], current_user: str):
+    def create(account: PaymentAccount, payment_id: int, fees: [FeeSchedule], current_user: str,
+               routing_slip: str = None):
         """Create invoice record."""
         current_app.logger.debug('<create')
         i = Invoice()
@@ -303,6 +317,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         i.paid = 0
         i.payment_date = None  # TODO
         i.refund = 0
+        i.routing_slip = routing_slip
 
         i._dao = i.flush()  # pylint: disable=protected-access
         current_app.logger.debug('>create')

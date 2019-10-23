@@ -326,3 +326,17 @@ def test_payment_delete_when_paybc_is_down(session, client, jwt, app):
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
         rv = client.delete(f'/api/v1/payment-requests/{pay_id}', headers=headers)
         assert rv.status_code == 400
+
+def test_payment_creation_with_routing_slip(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    data = get_payment_request()
+    data['accountInfo'] = {'routingSlip': 'TEST_ROUTE_SLIP'}
+
+    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(data), headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
+    assert rv.json.get('invoices')[0].get('routingSlip') == 'TEST_ROUTE_SLIP'
+
+    assert schema_utils.validate(rv.json, 'payment_response')[0]
