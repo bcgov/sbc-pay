@@ -15,7 +15,8 @@
       "examples": [
         "OTADD"
       ],
-      "pattern": "^(.*)$"
+      "pattern": "^(.*)$",
+      "minLength":1
     },
     "priority": {
       "$id": "#/properties/filing_types/items/properties/priority",

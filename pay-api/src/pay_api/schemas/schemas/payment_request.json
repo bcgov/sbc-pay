@@ -29,6 +29,13 @@
           "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/filing_info"
         }
       ]
+    },
+    "accountInfo": {
+      "oneOf": [
+        {
+          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/account_info"
+        }
+      ]
     }
   }
 }

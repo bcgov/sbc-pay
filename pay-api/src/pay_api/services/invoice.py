@@ -50,6 +50,9 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._created_on: datetime = None
         self._updated_by: str = None
         self._updated_on: datetime = None
+        self._payment_account = None
+        self._receipts = None
+        self._routing_slip: str = None
 
     @property
     def _dao(self):
@@ -75,6 +78,9 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.updated_by: str = self._dao.updated_by
         self.updated_on: datetime = self._dao.updated_on
         self.payment_line_items = self._dao.payment_line_items
+        self.payment_account = self._dao.account
+        self.receipts = self._dao.receipts
+        self.routing_slip: str = self._dao.routing_slip
 
     @property
     def id(self):
@@ -241,6 +247,39 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._updated_on = value
         self._dao.updated_on = value
 
+    @property
+    def payment_account(self):
+        """Return the payment_account."""
+        return self._payment_account
+
+    @payment_account.setter
+    def payment_account(self, value):
+        """Set the payment_account."""
+        self._payment_account = value
+        self._dao.payment_account = value
+
+    @property
+    def receipts(self):
+        """Return the receipts."""
+        return self._receipts
+
+    @receipts.setter
+    def receipts(self, value):
+        """Set the receipts."""
+        self._receipts = value
+        self._dao.receipts = value
+
+    @property
+    def routing_slip(self):
+        """Return the routing_slip."""
+        return self._routing_slip
+
+    @routing_slip.setter
+    def routing_slip(self, value: str):
+        """Set the routing_slip."""
+        self._routing_slip = value
+        self._dao.routing_slip = value
+
     def save(self):
         """Save the information to the DB."""
         return self._dao.save()
@@ -264,7 +303,8 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoice
 
     @staticmethod
-    def create(account: PaymentAccount, payment_id: int, fees: [FeeSchedule], current_user: str):
+    def create(account: PaymentAccount, payment_id: int, fees: [FeeSchedule], current_user: str,
+               routing_slip: str = None):
         """Create invoice record."""
         current_app.logger.debug('<create')
         i = Invoice()
@@ -273,10 +313,11 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         i.payment_id = payment_id
         i.invoice_status_code = Status.DRAFT.value
         i.account_id = account.id
-        i.total = sum(fee.total for fee in fees)
+        i.total = sum(fee.total for fee in fees) if fees else 0
         i.paid = 0
         i.payment_date = None  # TODO
         i.refund = 0
+        i.routing_slip = routing_slip
 
         i._dao = i.flush()  # pylint: disable=protected-access
         current_app.logger.debug('>create')
@@ -312,6 +353,17 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         invoice._dao = invoice_dao  # pylint: disable=protected-access
 
         current_app.logger.debug('>find_by_id')
+        return invoice
+
+    @staticmethod
+    def find_by_invoice_number(invoice_number: str):
+        """Find invoice by invoice number."""
+        invoice_dao = InvoiceModel.find_by_invoice_number(invoice_number)
+
+        invoice = Invoice()
+        invoice._dao = invoice_dao  # pylint: disable=protected-access
+
+        current_app.logger.debug('>find_by_invoice_number')
         return invoice
 
     @staticmethod

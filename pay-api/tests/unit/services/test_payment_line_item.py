@@ -66,7 +66,7 @@ def test_line_saved_from_new(session):
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
-    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, status='CANCELLED')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, status='DELETED')
     line.save()
 
     p = PaymentLineService.find_by_id(line.id)

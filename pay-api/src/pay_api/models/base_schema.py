@@ -27,10 +27,11 @@ class BaseSchema(ma.ModelSchema):
         if not many:
             return {
                 key: value for key, value in data.items()
-                if value
+                if value or isinstance(value, float)
             }
         for item in data:
             for key in list(item):
-                if not item[key]:
+                value = item[key]
+                if not value and not isinstance(value, float):
                     item.pop(key)
         return data

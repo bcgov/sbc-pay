@@ -17,7 +17,8 @@
       "examples": [
         "CP1000"
       ],
-      "pattern": "^(.*)$"
+      "pattern": "^(.*)$",
+      "minLength": 9
     },
     "corpType": {
       "$id": "#/properties/corpType",
@@ -27,7 +28,8 @@
       "examples": [
         "CP"
       ],
-      "pattern": "^(.*)$"
+      "pattern": "^(.*)$",
+      "minLength": 2
     },
     "businessName": {
       "$id": "#/properties/businessName",
@@ -37,7 +39,8 @@
       "examples": [
         "XYZ Corp"
       ],
-      "pattern": "^(.*)$"
+      "pattern": "^(.*)$",
+      "minLength": 1
     },
     "contactInfo": {
       "oneOf": [

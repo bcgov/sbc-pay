@@ -181,7 +181,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         return self._dao.flush()
 
     @staticmethod
-    def create(payment_identifier: str, redirect_uri: str, jwt: JwtManager = None, skip_auth_check: bool = False):
+    def create(payment_identifier: str, request_json: Dict, jwt: JwtManager = None, skip_auth_check: bool = False):
         """Create transaction record."""
         current_app.logger.debug('<create transaction')
         # Lookup payment record
@@ -204,11 +204,12 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
 
         transaction = PaymentTransaction()
         transaction.payment_id = payment.id
-        transaction.client_system_url = redirect_uri
+        transaction.client_system_url = request_json.get('clientSystemUrl')
         transaction.status_code = Status.CREATED.value
         transaction_dao = transaction.flush()
         transaction._dao = transaction_dao  # pylint: disable=protected-access
-        transaction.pay_system_url = transaction.build_pay_system_url(payment, transaction.id)
+        transaction.pay_system_url = transaction.build_pay_system_url(payment, transaction.id,
+                                                                      request_json.get('payReturnUrl'))
         transaction_dao = transaction.save()
 
         transaction = PaymentTransaction()
@@ -218,15 +219,14 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         return transaction
 
     @staticmethod
-    def build_pay_system_url(payment: Payment, transaction_id: uuid):
+    def build_pay_system_url(payment: Payment, transaction_id: uuid, pay_return_url: str):
         """Build pay system url which will be used to redirect to the payment system."""
         current_app.logger.debug('<build_pay_system_url')
-        pay_system_service: PaymentSystemService = PaymentSystemFactory.create(
+        pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_system_code(
             payment_system=payment.payment_system_code
         )
         invoice = InvoiceModel.find_by_payment_id(payment.id)
-        pay_web_transaction_url = current_app.config.get('AUTH_WEB_PAY_TRANSACTION_URL')
-        return_url = f'{pay_web_transaction_url}/returnpayment/{payment.id}/transaction/{transaction_id}'
+        return_url = f'{pay_return_url}/{payment.id}/transaction/{transaction_id}'
 
         current_app.logger.debug('>build_pay_system_url')
         return pay_system_service.get_payment_system_url(Invoice.populate(invoice), return_url)
@@ -283,7 +283,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         payment: Payment = Payment.find_by_id(payment_identifier, jwt=jwt, one_of_roles=[EDIT_ROLE],
                                               skip_auth_check=skip_auth_check)
 
-        pay_system_service: PaymentSystemService = PaymentSystemFactory.create(
+        pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_system_code(
             payment_system=payment.payment_system_code
         )
 

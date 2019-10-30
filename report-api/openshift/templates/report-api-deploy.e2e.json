@@ -79,7 +79,7 @@
                 "envFrom": [
                   {
                     "configMapRef": {
-                      "name": "api-${TAG_NAME}-config"
+                      "name": "pay-api-${TAG_NAME}-config"
                     }
                   }
                 ],

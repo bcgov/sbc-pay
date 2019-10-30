@@ -17,15 +17,16 @@
 Test-Suite to ensure that the Receipt Service is working as expected.
 """
 
-import pytest
 from datetime import datetime
+
+import pytest
+from tests.utilities.base_test import get_payment_request
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
 from pay_api.services.payment_service import PaymentService
 from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.utils.enums import Status
-from tests.utilities.base_test import get_payment_request
 
 
 def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code='CP', payment_system_code='PAYBC'):
@@ -139,7 +140,7 @@ def test_create_receipt_without_invoice(session):
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
 
-    PaymentService.update_payment(payment.id, get_payment_request(), 'test')
+    PaymentService.update_payment(payment.id, get_payment_request(), {})
     input_data = {
         'corpName': 'Pennsular Coop ',
         'filingDateTime': '1999',
@@ -163,7 +164,7 @@ def test_create_receipt_with_invoice(session, app, client):
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
 
-    PaymentService.update_payment(payment.id, get_payment_request(), 'test')
+    PaymentService.update_payment(payment.id, get_payment_request(), {})
     input_data = {
         'corpName': 'Pennsular Coop ',
         'filingDateTime': '1999',
@@ -185,7 +186,7 @@ def test_create_receipt_with_no_receipt(session):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    PaymentService.update_payment(payment.id, get_payment_request(), 'test')
+    PaymentService.update_payment(payment.id, get_payment_request(), {'preferred_username': 'test'})
     input_data = {
         'corpName': 'Pennsular Coop ',
         'filingDateTime': '1999',

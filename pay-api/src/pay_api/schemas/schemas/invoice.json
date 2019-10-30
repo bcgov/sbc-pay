@@ -9,7 +9,6 @@
     "createdOn",
     "id",
     "invoiceNumber",
-    "referenceNumber",
     "statusCode",
     "total"
   ],

@@ -54,9 +54,7 @@ class Payment(Resource):
         check_auth(request_json.get('businessInfo').get('businessIdentifier'), _jwt, contains_role=EDIT_ROLE)
 
         try:
-            response, status = PaymentService.create_payment(request_json,
-                                                             g.jwt_oidc_token_info.get('preferred_username',
-                                                                                       None)), HTTPStatus.CREATED
+            response, status = PaymentService.create_payment(request_json, g.jwt_oidc_token_info), HTTPStatus.CREATED
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         except ServiceUnavailableException as exception:
@@ -65,8 +63,8 @@ class Payment(Resource):
         return jsonify(response), status
 
 
-@cors_preflight(['GET', 'PUT'])
-@API.route('/<int:payment_id>', methods=['GET', 'PUT', 'OPTIONS'])
+@cors_preflight(['GET', 'PUT', 'DELETE'])
+@API.route('/<int:payment_id>', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
 class Payments(Resource):
     """Endpoint resource to create payment."""
 
@@ -101,7 +99,7 @@ class Payments(Resource):
         try:
             response, status = (
                 PaymentService.update_payment(
-                    payment_id, request_json, g.jwt_oidc_token_info.get('username', None)
+                    payment_id, request_json, g.jwt_oidc_token_info
                 ),
                 HTTPStatus.OK,
             )
@@ -110,4 +108,24 @@ class Payments(Resource):
         except ServiceUnavailableException as exception:
             response, status = {'code': exception.status_code}, HTTPStatus.BAD_REQUEST
         current_app.logger.debug('>Payment.put')
+        return jsonify(response), status
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.requires_auth
+    @_tracing.trace()
+    def delete(payment_id):
+        """Soft delete the payment records."""
+        current_app.logger.info('<Payment.delete')
+
+        try:
+            PaymentService.delete_payment(payment_id, _jwt, g.jwt_oidc_token_info)
+
+            response, status = None, HTTPStatus.NO_CONTENT
+
+        except BusinessException as exception:
+            response, status = {'code': exception.code, 'message': exception.message}, exception.status
+        except ServiceUnavailableException as exception:
+            response, status = {'code': exception.status_code}, HTTPStatus.BAD_REQUEST
+        current_app.logger.debug('>Payment.delete')
         return jsonify(response), status

@@ -14,12 +14,12 @@
 """Service to manage PayBC interaction."""
 
 import base64
-import urllib.parse
-
 import datetime
 import re
 import secrets
+import urllib.parse
 from typing import Any, Dict, Tuple
+
 from dateutil import parser
 from flask import current_app
 
@@ -30,6 +30,7 @@ from pay_api.utils.constants import (
     DEFAULT_COUNTRY, DEFAULT_JURISDICTION, PAYBC_ADJ_ACTIVITY_NAME, PAYBC_BATCH_SOURCE, PAYBC_CUST_TRX_TYPE,
     PAYBC_LINE_TYPE, PAYBC_TERM_NAME)
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem
+
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -61,7 +62,11 @@ class PaybcService(PaymentSystemService, OAuthService):
         party = self.__create_party(access_token, name)
         account = self.__create_paybc_account(access_token, party)
         site = self.__create_site(access_token, party, account, account_info)
-        return party.get('party_number'), account.get('account_number'), site.get('site_number')
+        return {
+            'party_number': party.get('party_number'),
+            'account_number': account.get('account_number'),
+            'site_number': site.get('site_number')
+        }
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_number: int):
         """Create Invoice in PayBC."""
@@ -127,7 +132,7 @@ class PaybcService(PaymentSystemService, OAuthService):
                 account_details,
                 inv_number,
                 'Updating Invoice',
-                amount,
+                -amount,
                 line=line.get('line_number'),
                 access_token=access_token
             )

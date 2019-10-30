@@ -16,10 +16,12 @@ from datetime import datetime
 from typing import Any, Dict, Tuple
 
 from flask import current_app
+from flask_jwt_oidc import JwtManager
 
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
-from pay_api.utils.enums import Status
+from pay_api.utils.constants import EDIT_ROLE
+from pay_api.utils.enums import PaymentSystem, Status
 from pay_api.utils.errors import Error
 
 from .base_payment_system import PaymentSystemService
@@ -35,7 +37,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
     """Service to manage Payment related operations."""
 
     @classmethod
-    def create_payment(cls, payment_request: Tuple[Dict[str, Any]], current_user: str = None):
+    def create_payment(cls, payment_request: Tuple[Dict[str, Any]], token_info: Dict):
         # pylint: disable=too-many-locals, too-many-statements
         """Create payment related records.
 
@@ -53,49 +55,30 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             6.2 If fails rollback the transaction
         """
         current_app.logger.debug('<create_payment')
+        current_user = token_info.get('preferred_username', None)
         payment_info = payment_request.get('paymentInfo')
         business_info = payment_request.get('businessInfo')
         contact_info = business_info.get('contactInfo')
         filing_info = payment_request.get('filingInfo')
+        account_info = payment_request.get('accountInfo', None)
+        routing_slip_number = account_info.get('routingSlip', None) if account_info else None
 
-        current_app.logger.debug('Creating PaymentSystemService impl')
-        pay_service: PaymentSystemService = PaymentSystemFactory.create(
-            payment_info.get('methodOfPayment', None), business_info.get('corpType', None)
-        )
+        corp_type = business_info.get('corpType', None)
+        payment_method = payment_info.get('methodOfPayment', None)
 
         current_app.logger.debug('Calculate the fees')
         # Calculate the fees
-        fees = []
-        for filing_type_info in filing_info.get('filingTypes'):
-            current_app.logger.debug('Getting fees for {} '.format(filing_type_info.get('filingTypeCode')))
-            fee: FeeSchedule = FeeSchedule.find_by_corp_type_and_filing_type(
-                corp_type=business_info.get('corpType', None),
-                filing_type_code=filing_type_info.get('filingTypeCode', None),
-                valid_date=filing_info.get('date', None),
-                jurisdiction=None,
-                priority=filing_info.get('priority', None),
-            )
-            if filing_type_info.get('filingDescription'):
-                fee.description = filing_type_info.get('filingDescription')
+        fees = _calculate_fees(corp_type, filing_info)
 
-            fees.append(fee)
-
-        current_app.logger.debug('Check if payment account exists')
-        payment_account: PaymentAccount = PaymentAccount.find_account(
-            business_info.get('businessIdentifier', None),
-            business_info.get('corpType', None),
-            pay_service.get_payment_system_code(),
+        current_app.logger.debug('Creating PaymentSystemService impl')
+        pay_service: PaymentSystemService = PaymentSystemFactory.create(
+            token_info,
+            payment_method=payment_method,
+            corp_type=corp_type,
+            fees=sum(fee.total for fee in fees)
         )
-        if not payment_account.id:
-            current_app.logger.debug('No payment account, creating new')
-            party_number, account_number, site_number = pay_service.create_account(
-                business_info.get('businessName'), contact_info
-            )
-            payment_account = PaymentAccount.create(
-                business_info, (account_number, party_number, site_number), pay_service.get_payment_system_code()
-            )
 
-        current_app.logger.debug('Creating payment record for account : {}'.format(payment_account.id))
+        payment_account = _create_account(pay_service, business_info, contact_info)
 
         payment: Payment = None
         pay_system_invoice: Dict[str, any] = None
@@ -105,7 +88,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             current_app.logger.debug(payment)
 
             current_app.logger.debug('Creating Invoice record for payment {}'.format(payment.id))
-            invoice = Invoice.create(payment_account, payment.id, fees, current_user)
+            invoice = Invoice.create(payment_account, payment.id, fees, current_user, routing_slip_number)
 
             line_items = []
             for fee in fees:
@@ -120,7 +103,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice.invoice_number = pay_system_invoice.get('invoice_number', None)
             invoice.save()
             payment.commit()
+            _complete_post_payment(pay_service, payment)
             payment = Payment.find_by_id(payment.id, skip_auth_check=True)
+
         except Exception as e:
             current_app.logger.error('Rolling back as error occured!')
             current_app.logger.error(e)
@@ -151,7 +136,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             raise
 
     @classmethod
-    def update_payment(cls, payment_id: int, payment_request: Tuple[Dict[str, Any]], current_user: str = None):
+    def update_payment(cls, payment_id: int, payment_request: Tuple[Dict[str, Any]], token_info: Dict):
         # pylint: disable=too-many-locals,too-many-statements
         """Update payment related records.
 
@@ -172,52 +157,37 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         7. Update payment record in database and flush.
         """
         current_app.logger.debug('<update_payment')
+        current_user = token_info.get('preferred_username', None)
         payment_info = payment_request.get('paymentInfo')
         business_info = payment_request.get('businessInfo')
         filing_info = payment_request.get('filingInfo')
 
-        current_app.logger.debug('Creating PaymentSystemService impl')
-        pay_service: PaymentSystemService = PaymentSystemFactory.create(
-            payment_info.get('methodOfPayment', None), business_info.get('corpType', None)
-        )
+        corp_type = business_info.get('corpType', None)
+        payment_method = payment_info.get('methodOfPayment', None)
 
         current_app.logger.debug('Calculate the fees')
         # Calculate the fees
-        fees = []
-        for filing_type_info in filing_info.get('filingTypes'):
-            current_app.logger.debug('Getting fees for {} '.format(filing_type_info.get('filingTypeCode')))
-            fee: FeeSchedule = FeeSchedule.find_by_corp_type_and_filing_type(
-                corp_type=business_info.get('corpType', None),
-                filing_type_code=filing_type_info.get('filingTypeCode', None),
-                valid_date=filing_info.get('date', None),
-                jurisdiction=None,
-                priority=filing_info.get('priority', None),
-            )
-            if filing_type_info.get('filingDescription'):
-                fee.description = filing_type_info.get('filingDescription')
+        fees = _calculate_fees(business_info.get('corpType'), filing_info)
 
-            fees.append(fee)
+        current_app.logger.debug('Creating PaymentSystemService impl')
+
+        pay_service: PaymentSystemService = PaymentSystemFactory.create(
+            token_info,
+            payment_method=payment_method,
+            corp_type=corp_type,
+            fees=sum(fee.total for fee in fees)
+        )
 
         current_app.logger.debug('Check if payment account exists')
 
         payment: Payment = None
 
         try:
-            # get existing payment transaction
-            transaction: PaymentTransaction = PaymentTransaction.find_active_by_payment_id(payment_id)
-            current_app.logger.debug(transaction)
-            if transaction:
-                # check existing payment status in PayBC;
-                PaymentTransaction.update_transaction(payment_id, transaction.id, None, skip_auth_check=True)
-
             # update transaction function will update the status from PayBC
-            payment: Payment = Payment.find_by_id(payment_id, skip_auth_check=True)
-            current_app.logger.debug(payment)
-            if payment.payment_status_code == Status.COMPLETED.value:
-                raise BusinessException(Error.PAY010)
+            _update_active_transactions(payment_id)
 
-            if payment.payment_status_code == Status.CANCELLED.value:
-                raise BusinessException(Error.PAY011)
+            payment: Payment = Payment.find_by_id(payment_id, skip_auth_check=True)
+            _check_if_payment_is_completed(payment)
 
             current_app.logger.debug('Updating Invoice record for payment {}'.format(payment.id))
             invoices = payment.invoices
@@ -227,8 +197,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
                     # Invalidate active payment line items
                     for payment_line_item in payment_line_items:
-                        if payment_line_item.line_item_status_code != Status.CANCELLED.value:
-                            payment_line_item.line_item_status_code = Status.CANCELLED.value
+                        if payment_line_item.line_item_status_code != Status.DELETED.value:
+                            payment_line_item.line_item_status_code = Status.DELETED.value
                             payment_line_item.save()
 
                     # add new payment line item(s)
@@ -243,7 +213,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                     # update invoice
                     pay_service.update_invoice(
                         (payment_account.party_number, payment_account.account_number, payment_account.site_number),
-                        invoice.invoice_number,
+                        invoice.invoice_number
                     )
                     current_app.logger.debug('Updating invoice record')
                     invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
@@ -256,7 +226,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             payment.updated_by = current_user
             payment.save()
             payment.commit()
-
+            _complete_post_payment(pay_service, payment)
             # return payment with updated contents
             payment = Payment.find_by_id(payment.id, skip_auth_check=True)
         except Exception as e:
@@ -269,3 +239,113 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         current_app.logger.debug('>update_payment')
 
         return payment.asdict()
+
+    @classmethod
+    def delete_payment(cls, payment_id: int, jwt: JwtManager,
+                       token_info: Dict):  # pylint: disable=too-many-locals,too-many-statements
+        """Delete payment related records.
+
+        Does the following;
+        1. Check if payment is eligible to be deleted.
+        2. Mark the payment and invoices records as deleted.
+        3. Publish message to queue
+        """
+
+        current_app.logger.debug('<delete_payment')
+
+        # update transaction function will update the status from PayBC
+        _update_active_transactions(payment_id)
+
+        payment: Payment = Payment.find_by_id(payment_id, jwt=jwt, one_of_roles=[EDIT_ROLE])
+        _check_if_payment_is_completed(payment)
+
+        # Create the payment system implementation
+        pay_service: PaymentSystemService = PaymentSystemFactory.create_from_system_code(payment.payment_system_code)
+
+        # Cancel all invoices
+        for invoice in payment.invoices:
+            pay_service.cancel_invoice(account_details=(invoice.account.party_number,
+                                                        invoice.account.account_number,
+                                                        invoice.account.site_number),
+                                       inv_number=invoice.invoice_number)
+            invoice.updated_by = token_info.get('username')
+            invoice.updated_on = datetime.now()
+            invoice.invoice_status_code = Status.DELETED.value
+            for line in invoice.payment_line_items:
+                line.line_item_status_code = Status.DELETED.value
+            invoice.save()
+        payment.updated_by = token_info.get('username')
+        payment.updated_on = datetime.now()
+        payment.payment_status_code = Status.DELETED.value
+        payment.save()
+
+        current_app.logger.debug('>delete_payment')
+
+
+def _calculate_fees(corp_type, filing_info):
+    """Calculate and return the fees based on the filing type codes."""
+    fees = []
+    for filing_type_info in filing_info.get('filingTypes'):
+        current_app.logger.debug('Getting fees for {} '.format(filing_type_info.get('filingTypeCode')))
+        fee: FeeSchedule = FeeSchedule.find_by_corp_type_and_filing_type(
+            corp_type=corp_type,
+            filing_type_code=filing_type_info.get('filingTypeCode', None),
+            valid_date=filing_info.get('date', None),
+            jurisdiction=None,
+            priority=filing_info.get('priority', None),
+        )
+        if filing_type_info.get('filingDescription'):
+            fee.description = filing_type_info.get('filingDescription')
+
+        fees.append(fee)
+    return fees
+
+
+def _create_account(pay_service, business_info, contact_info):
+    """Create account in pay system and save it in pay db."""
+    current_app.logger.debug('Check if payment account exists')
+    payment_account: PaymentAccount = PaymentAccount.find_account(
+        business_info.get('businessIdentifier'),
+        business_info.get('corpType'),
+        pay_service.get_payment_system_code(),
+    )
+    if not payment_account.id:
+        current_app.logger.debug('No payment account, creating new')
+        pay_system_account = pay_service.create_account(
+            business_info.get('businessName'), contact_info
+        )
+
+        current_app.logger.debug('Creating payment record for account : {}'.format(payment_account.id))
+        payment_account = PaymentAccount.create(
+            business_info, pay_system_account, pay_service.get_payment_system_code()
+        )
+    return payment_account
+
+
+def _complete_post_payment(pay_service: PaymentSystemService, payment: Payment):
+    """Complete the post payment actions.
+
+    For internal payments, create and complete the transactions and receipt.
+    """
+    if pay_service.get_payment_system_code() == PaymentSystem.INTERNAL.value:
+        transaction: PaymentTransaction = PaymentTransaction.create(payment.id,
+                                                                    {
+                                                                        'clientSystemUrl': '',
+                                                                        'payReturnUrl': ''
+                                                                    },
+                                                                    skip_auth_check=True)
+        transaction.update_transaction(payment.id, transaction.id, receipt_number=None, skip_auth_check=True)
+
+
+def _update_active_transactions(payment_id):
+    # get existing payment transaction
+    transaction: PaymentTransaction = PaymentTransaction.find_active_by_payment_id(payment_id)
+    current_app.logger.debug(transaction)
+    if transaction:
+        # check existing payment status in PayBC;
+        PaymentTransaction.update_transaction(payment_id, transaction.id, None, skip_auth_check=True)
+
+
+def _check_if_payment_is_completed(payment):
+    if payment.payment_status_code in (Status.COMPLETED.value, Status.DELETED.value):
+        raise BusinessException(Error.PAY010)
