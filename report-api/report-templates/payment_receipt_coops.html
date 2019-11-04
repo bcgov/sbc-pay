@@ -75,6 +75,7 @@
       border: none;
       border-collapse: collapse;
       table-layout: fixed;
+      font-size: 14px;
     }
 
     .receipt-details td {
@@ -195,6 +196,10 @@
             <tr>
               <td><strong>Receipt Number:</strong></td>
               <td>{{ receiptNumber }}</td>
+            </tr>
+            <tr style="display: {{ displayRoutingSlip }}">
+              <td><strong>Routing Slip Number:</strong></td>
+              <td>{{ routingSlipNumber }}</td>
             </tr>
             <tr>
               <td colspan="2" class="watermark-cell">
