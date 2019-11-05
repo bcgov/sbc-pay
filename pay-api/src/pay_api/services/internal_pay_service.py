@@ -50,7 +50,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         current_app.logger.debug('<create_invoice')
 
         invoice = {
-            'invoice_number': f'INT_INV_{invoice_number}'
+            'invoice_number': f'{invoice_number}-{payment_account.corp_number}'
         }
 
         current_app.logger.debug('>create_invoice')
