@@ -26,6 +26,7 @@ def test_bcol_soap(app):
         bcol_soap = BcolSoap()
         assert bcol_soap is not None
         assert bcol_soap.get_profile_client() is not None
+        assert bcol_soap.get_payment_client() is not None
 
 
 def test_bcol_soap_multiple_instances(app):

@@ -25,7 +25,7 @@ def test_post_accounts(client, jwt, app, ldap_mock, query_profile_mock):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(), get_token_header())
     headers = {'content-type': 'application/json', 'Authorization': f'Bearer {token}'}
-    rv = client.post('/api/v1/accounts', data=json.dumps({'userId': 'TEST', 'password': 'TEST'}), headers=headers)
+    rv = client.post('/api/v1/profiles', data=json.dumps({'userId': 'TEST', 'password': 'TEST'}), headers=headers)
     assert rv.status_code == 200
 
 
@@ -33,7 +33,7 @@ def test_post_accounts_invalid_request(client, jwt, app, ldap_mock, query_profil
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(), get_token_header())
     headers = {'content-type': 'application/json', 'Authorization': f'Bearer {token}'}
-    rv = client.post('/api/v1/accounts', data=json.dumps({'user': 'TEST', 'password': 'TEST'}), headers=headers)
+    rv = client.post('/api/v1/profiles', data=json.dumps({'user': 'TEST', 'password': 'TEST'}), headers=headers)
     assert rv.status_code == 400
 
 
@@ -41,7 +41,7 @@ def test_post_accounts_auth_error(client, jwt, app, ldap_mock_error, query_profi
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(), get_token_header())
     headers = {'content-type': 'application/json', 'Authorization': f'Bearer {token}'}
-    rv = client.post('/api/v1/accounts', data=json.dumps({'userId': 'TEST', 'password': 'TEST'}), headers=headers)
+    rv = client.post('/api/v1/profiles', data=json.dumps({'userId': 'TEST', 'password': 'TEST'}), headers=headers)
     assert rv.status_code == 400
 
 
@@ -49,5 +49,5 @@ def test_post_accounts_query_error(client, jwt, app, ldap_mock, query_profile_mo
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(), get_token_header())
     headers = {'content-type': 'application/json', 'Authorization': f'Bearer {token}'}
-    rv = client.post('/api/v1/accounts', data=json.dumps({'userId': 'TEST', 'password': 'TEST'}), headers=headers)
+    rv = client.post('/api/v1/profiles', data=json.dumps({'userId': 'TEST', 'password': 'TEST'}), headers=headers)
     assert rv.status_code == 400

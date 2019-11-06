@@ -53,6 +53,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._payment_account = None
         self._receipts = None
         self._routing_slip: str = None
+        self._filing_id: str = None
 
     @property
     def _dao(self):
@@ -81,6 +82,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.payment_account = self._dao.account
         self.receipts = self._dao.receipts
         self.routing_slip: str = self._dao.routing_slip
+        self.filing_id: str = self._dao.filing_id
 
     @property
     def id(self):
@@ -280,6 +282,17 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._routing_slip = value
         self._dao.routing_slip = value
 
+    @property
+    def filing_id(self):
+        """Return the filing_id."""
+        return self._filing_id
+
+    @filing_id.setter
+    def filing_id(self, value: str):
+        """Set the filing_id."""
+        self._filing_id = value
+        self._dao.filing_id = value
+
     def save(self):
         """Save the information to the DB."""
         return self._dao.save()
@@ -303,8 +316,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoice
 
     @staticmethod
-    def create(account: PaymentAccount, payment_id: int, fees: [FeeSchedule], current_user: str,
-               routing_slip: str = None):
+    def create(account: PaymentAccount, payment_id: int, fees: [FeeSchedule], current_user: str, **kwargs):
         """Create invoice record."""
         current_app.logger.debug('<create')
         i = Invoice()
@@ -315,9 +327,9 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         i.account_id = account.id
         i.total = sum(fee.total for fee in fees) if fees else 0
         i.paid = 0
-        i.payment_date = None  # TODO
         i.refund = 0
-        i.routing_slip = routing_slip
+        i.routing_slip = kwargs.get('routing_slip', None)
+        i.filing_id = kwargs.get('filing_id', None)
 
         i._dao = i.flush()  # pylint: disable=protected-access
         current_app.logger.debug('>create')

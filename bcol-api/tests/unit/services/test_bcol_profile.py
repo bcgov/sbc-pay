@@ -12,18 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests to assure the version utilities.
+"""Tests to assure the BCOL service layer.
 
-Test-Suite to ensure that the version utilities are working as expected.
+Test-Suite to ensure that the BCOL Service layer is working as expected.
 """
-from tests import skip_in_pod
 
-from bcol_api import utils
-from bcol_api.version import __version__
+from bcol_api.services.bcol_profile import BcolProfile
 
 
-@skip_in_pod
-def test_get_version():
-    """Assert thatThe version is returned correctly."""
-    rv = utils.run_version.get_run_version()
-    assert rv == __version__
+def test_query_profile(app, ldap_mock, query_profile_mock):
+    """Test query profile service."""
+    with app.app_context():
+        query_profile_response = BcolProfile().query_profile('TEST', 'TEST')
+        assert query_profile_response.get('userId') == 'PB25020'

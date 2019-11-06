@@ -328,7 +328,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         transaction_dao.transaction_end_time = datetime.now()
 
         # Publish status to Queue
-        PaymentTransaction.publish_status(transaction_dao, payment)
+        PaymentTransaction.publish_status(transaction_dao, payment, invoice.filing_id)
 
         transaction_dao = transaction_dao.save()
 
@@ -352,7 +352,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         return data
 
     @staticmethod
-    def publish_status(transaction_dao: PaymentTransactionModel, payment: Payment):
+    def publish_status(transaction_dao: PaymentTransactionModel, payment: Payment, filing_id: str = None):
         """Publish payment/transaction status to the Queue."""
         current_app.logger.debug('<publish_status')
         if transaction_dao.status_code == Status.COMPLETED.value:
@@ -367,7 +367,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         payload = {
             'paymentToken': {
                 'id': payment.id,
-                'statusCode': status_code
+                'statusCode': status_code,
+                'filingIdentifier': filing_id
             }
         }
 
