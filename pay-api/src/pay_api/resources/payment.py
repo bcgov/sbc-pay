@@ -43,7 +43,7 @@ class Payment(Resource):
         """Create the payment records."""
         current_app.logger.info('<Payment.post')
         request_json = request.get_json()
-
+        current_app.logger.debug(request_json)
         # Validate the input request
         valid_format, errors = schema_utils.validate(request_json, 'payment_request')
 
@@ -88,6 +88,7 @@ class Payments(Resource):
         """Update the payment records."""
         current_app.logger.info('<Payment.put')
         request_json = request.get_json()
+        current_app.logger.debug(request_json)
         # Validate the input request
         valid_format, errors = schema_utils.validate(request_json, 'payment_request')
         if not valid_format:

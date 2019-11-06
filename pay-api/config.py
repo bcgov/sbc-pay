@@ -67,7 +67,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     SQLALCHEMY_DATABASE_URI = 'postgresql://{user}:{password}@{host}:{port}/{name}'.format(
         user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=int(DB_PORT), name=DB_NAME
     )
-    SQLALCHEMY_ECHO = True
+    SQLALCHEMY_ECHO = False
 
     # JWT_OIDC Settings
     JWT_OIDC_WELL_KNOWN_CONFIG = os.getenv('JWT_OIDC_WELL_KNOWN_CONFIG')
