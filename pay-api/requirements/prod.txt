@@ -13,8 +13,6 @@ marshmallow==3.0.0.rc7
 marshmallow-sqlalchemy
 jsonschema
 requests
-zeep
-# python-ldap
 asyncio-nats-client
 asyncio-nats-streaming
 croniter

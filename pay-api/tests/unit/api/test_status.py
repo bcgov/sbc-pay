@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests to assure the bcol accounts end-point.
+"""Tests to assure the status end-point.
 
-Test-Suite to ensure that the /accounts/<id>/users/<user_id> endpoint is working as expected.
+Test-Suite to ensure that the /status/<service_name> endpoint is working as expected.
 """
 
 
