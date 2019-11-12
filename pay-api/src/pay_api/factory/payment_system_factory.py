@@ -64,7 +64,7 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
                 and Role.STAFF.value in token_info['realm_access']['roles']):
             _instance = InternalPayService()
         else:
-            if payment_method == 'CC' and corp_type == 'CP':
+            if payment_method == 'CC':
                 _instance = PaybcService()
 
         if not _instance:

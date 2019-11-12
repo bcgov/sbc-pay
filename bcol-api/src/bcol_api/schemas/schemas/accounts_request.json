@@ -1,0 +1,23 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/accounts_request",
+    "type": "object",
+    "title": "Accounts Request",
+    "required": [
+      "userId",
+      "password"
+    ],
+    "properties": {
+      "userId": {
+        "$id": "#/properties/transactions/items/properties/userId",
+        "type": "string",
+        "title": "BCOL User ID",
+        "default": ""
+      },
+      "password": {
+        "$id": "#/properties/transactions/items/properties/password",
+        "type": "string",
+        "title": "BCOL Password"
+      }
+    }
+  }

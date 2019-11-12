@@ -21,7 +21,7 @@ from flask_jwt_oidc import JwtManager
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import AuthHeaderType, ContentType
+from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem
 from pay_api.utils.errors import Error
 
 from .invoice import Invoice
@@ -163,6 +163,12 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
 
         template_vars['incorporationNumber'] = payment_account.corp_number
         template_vars['paymentInvoiceNumber'] = invoice_data.invoice_number
+
+        if payment_account.payment_system_code == PaymentSystem.INTERNAL.value and invoice_data.routing_slip:
+            template_vars['routingSlipNumber'] = invoice_data.routing_slip
+        else:
+            template_vars['displayRoutingSlip'] = 'none'
+
         if not invoice_data.receipts:
             raise BusinessException(Error.PAY999)
 

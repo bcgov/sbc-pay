@@ -20,7 +20,8 @@ Test-Suite to ensure that the /receipt endpoint is working as expected.
 import json
 
 import pytest
-from tests.utilities.base_test import get_claims, get_payment_request, token_header
+
+from tests.utilities.base_test import get_claims, get_payment_request, token_header, get_zero_dollar_payment_request
 
 
 @pytest.fixture
@@ -133,3 +134,20 @@ def test_receipt_creation_with_invalid_identifiers(session, client, jwt, app):
                      data=json.dumps(filing_data),
                      headers=headers)
     assert rv.status_code == 400
+
+
+def test_receipt_creation_for_internal_payments(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(app_request=app), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_zero_dollar_payment_request()), headers=headers)
+    pay_id = rv.json.get('id')
+
+    filing_data = {
+        'corpName': 'CP0001234',
+        'filingDateTime': 'June 27, 2019',
+        'fileName': 'director-change'
+    }
+    rv = client.post(f'/api/v1/payment-requests/{pay_id}/receipts', data=json.dumps(filing_data), headers=headers)
+    assert rv.status_code == 201
