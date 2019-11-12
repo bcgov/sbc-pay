@@ -24,7 +24,6 @@ from flask import Blueprint
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
 
 from .apihelper import Api
-from .bcol_profile import API as BCOL_API
 from .fee import API as FEE_API
 from .invoice import API as INVOICE_API
 from .invoice_receipt import API as INVOICE_RECEIPT_API
@@ -74,7 +73,5 @@ API.add_namespace(TRANSACTION_API, path='/payment-requests/<int:payment_id>/tran
 API.add_namespace(INVOICE_API, path='/payment-requests/<int:payment_id>/invoices')
 
 API.add_namespace(INVOICE_RECEIPT_API, path='/payment-requests/<int:payment_id>')
-
-API.add_namespace(BCOL_API, path='/bcol/accounts/<string:account_id>/users/<string:user_id>')
 
 API.add_namespace(SERVICE_STATUS_API, path='/status/<string:service_name>')
