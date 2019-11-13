@@ -24,10 +24,10 @@ from flask import Blueprint
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
 
 from .apihelper import Api
-from .bcol_profile import API as BCOL_API
+from .bcol_payment import API as BCOL_PAYMENTS_API
+from .bcol_profile import API as BCOL_PROFILE_API
 from .meta import API as META_API
 from .ops import API as OPS_API
-
 
 __all__ = ('API_BLUEPRINT', 'OPS_BLUEPRINT')
 
@@ -63,4 +63,5 @@ HANDLER = ExceptionHandler(API)
 
 API.add_namespace(META_API, path='/meta')
 
-API.add_namespace(BCOL_API, path='/accounts')
+API.add_namespace(BCOL_PROFILE_API, path='/profiles')
+API.add_namespace(BCOL_PAYMENTS_API, path='/payments')

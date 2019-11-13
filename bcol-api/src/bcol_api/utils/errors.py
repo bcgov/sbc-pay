@@ -21,6 +21,7 @@ class Error(Enum):
 
     BCOL001 = 'Invalid User Id or Password', HTTPStatus.BAD_REQUEST
     BCOL002 = 'Cannot retrieve user profile', HTTPStatus.BAD_REQUEST
+    BCOL003 = 'Cannot create payment', HTTPStatus.BAD_REQUEST
 
     def __new__(cls, message, status):
         """Attributes for the enum."""

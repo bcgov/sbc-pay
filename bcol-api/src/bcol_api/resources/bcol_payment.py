@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Resource for Invoice related endpoints."""
+"""Resource for BCOL accounts related operations."""
 
 from http import HTTPStatus
 
@@ -20,33 +20,33 @@ from flask_restplus import Namespace, Resource
 
 from bcol_api.exceptions import BusinessException
 from bcol_api.schemas import utils as schema_utils
-from bcol_api.services.bcol_profile import BcolProfile as BcolProfileService
+from bcol_api.services.bcol_payment import BcolPayment
 from bcol_api.utils.auth import jwt as _jwt
 from bcol_api.utils.trace import tracing as _tracing
 from bcol_api.utils.util import cors_preflight
 
-API = Namespace('bcol profile', description='Payment System - BCOL Profiles')
+API = Namespace('bcol accounts', description='Payment System - BCOL Accounts')
 
 
 @cors_preflight(['POST', 'OPTIONS'])
 @API.route('', methods=['POST', 'OPTIONS'])
-class BcolProfile(Resource):
-    """Endpoint resource to manage BCOL Accounts."""
+class AccountPayment(Resource):
+    """Endpoint resource to manage BCOL Payments."""
 
     @staticmethod
     @_tracing.trace()
     @_jwt.requires_auth
     def post():
-        """Return the account details."""
+        """Create a payment record in BCOL."""
         try:
             req_json = request.get_json()
             # Validate the input request
-            valid_format = schema_utils.validate(req_json, 'accounts_request')
+            valid_format = schema_utils.validate(req_json, 'payment_request')
+            print(valid_format)
             if not valid_format[0]:
                 response, status = {'code': 'BCOL999', 'message': 'Invalid Request'}, HTTPStatus.BAD_REQUEST
             else:
-                response, status = BcolProfileService().query_profile(req_json.get('userId'),
-                                                                      req_json.get('password')), HTTPStatus.OK
+                response, status = BcolPayment().create_payment(req_json), HTTPStatus.OK
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         return response, status

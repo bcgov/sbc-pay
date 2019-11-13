@@ -25,7 +25,7 @@ from bcol_api.utils.constants import account_type_mapping, auth_code_mapping, ta
 from bcol_api.utils.errors import Error
 
 
-class BcolService:  # pylint:disable=too-few-public-methods
+class BcolProfile:  # pylint:disable=too-few-public-methods
     """Service to manage BCOL integration."""
 
     def query_profile(self, bcol_user_id: str, password: str):

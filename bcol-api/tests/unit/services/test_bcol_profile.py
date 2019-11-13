@@ -17,11 +17,11 @@
 Test-Suite to ensure that the BCOL Service layer is working as expected.
 """
 
-from bcol_api.services.bcol_service import BcolService
+from bcol_api.services.bcol_profile import BcolProfile
 
 
 def test_query_profile(app, ldap_mock, query_profile_mock):
     """Test query profile service."""
     with app.app_context():
-        query_profile_response = BcolService().query_profile('TEST', 'TEST')
+        query_profile_response = BcolProfile().query_profile('TEST', 'TEST')
         assert query_profile_response.get('userId') == 'PB25020'
