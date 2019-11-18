@@ -22,29 +22,12 @@ from datetime import datetime
 from unittest.mock import patch
 
 from requests.exceptions import ConnectionError
-from tests.utilities.base_test import get_claims, get_payment_request, get_zero_dollar_payment_request, token_header
+from tests.utilities.base_test import (
+    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
+    factory_payment_transaction, get_claims, get_payment_request, get_zero_dollar_payment_request, token_header)
 
 from pay_api.models import PaymentTransaction
 from pay_api.schemas import utils as schema_utils
-
-
-def factory_payment_transaction(
-        payment_id: str,
-        status_code: str = 'DRAFT',
-        client_system_url: str = 'http://google.com/',
-        pay_system_url: str = 'http://google.com',
-        transaction_start_time: datetime = datetime.now(),
-        transaction_end_time: datetime = datetime.now(),
-):
-    """Factory."""
-    return PaymentTransaction(
-        payment_id=payment_id,
-        status_code=status_code,
-        client_system_url=client_system_url,
-        pay_system_url=pay_system_url,
-        transaction_start_time=transaction_start_time,
-        transaction_end_time=transaction_end_time,
-    )
 
 
 def test_payment_creation(session, client, jwt, app):
@@ -281,6 +264,7 @@ def test_zero_dollar_payment_creation(session, client, jwt, app):
 
     rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_zero_dollar_payment_request()),
                      headers=headers)
+
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
     assert rv.json.get('statusCode', None) == 'COMPLETED'

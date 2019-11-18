@@ -30,4 +30,5 @@ class Audit:  # pylint: disable=too-few-public-methods
     def convert_upper(self, key, value):  # pylint: disable=no-self-use
         """Convert the annotated columns to upper case on save."""
         current_app.logger.debug(f'Converting to upper for Key {key} and value {value}')
+
         return value.upper() if value else value

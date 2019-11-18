@@ -26,12 +26,12 @@ from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import PaymentTransactionSchema
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
+from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
 from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.enums import Status
 from pay_api.utils.errors import Error
-
 from .invoice import InvoiceModel
 from .payment import Payment
 from .queue_publisher import publish_response
@@ -226,10 +226,11 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
             payment_system=payment.payment_system_code
         )
         invoice = InvoiceModel.find_by_payment_id(payment.id)
+        invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
         return_url = f'{pay_return_url}/{payment.id}/transaction/{transaction_id}'
 
         current_app.logger.debug('>build_pay_system_url')
-        return pay_system_service.get_payment_system_url(Invoice.populate(invoice), return_url)
+        return pay_system_service.get_payment_system_url(Invoice.populate(invoice), invoice_reference, return_url)
 
     @staticmethod
     def find_by_id(payment_identifier: int, transaction_id: uuid):
@@ -283,16 +284,19 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         payment: Payment = Payment.find_by_id(payment_identifier, jwt=jwt, one_of_roles=[EDIT_ROLE],
                                               skip_auth_check=skip_auth_check)
 
+        if payment.payment_status_code == Status.COMPLETED.value:
+            raise BusinessException(Error.PAY010)
+
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_system_code(
             payment_system=payment.payment_system_code
         )
 
         invoice = Invoice.find_by_payment_identifier(payment_identifier, jwt=jwt, skip_auth_check=True)
-
+        invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
         payment_account = PaymentAccount.find_by_id(invoice.account_id)
 
         try:
-            receipt_details = pay_system_service.get_receipt(payment_account, receipt_number, invoice.invoice_number)
+            receipt_details = pay_system_service.get_receipt(payment_account, receipt_number, invoice_reference)
             txn_reason_code = None
         except ServiceUnavailableException as exc:
             txn_reason_code = exc.status_code
@@ -314,13 +318,19 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
             receipt.save()
 
             invoice.paid = receipt.receipt_amount
+
             if invoice.paid == invoice.total:
                 invoice.invoice_status_code = Status.COMPLETED.value
                 payment.payment_status_code = Status.COMPLETED.value
                 payment.save()
+
+                invoice_reference.status_code = Status.COMPLETED.value
+                invoice_reference.save()
+
             elif 0 < invoice.paid < invoice.total:
                 invoice.invoice_status_code = Status.PARTIAL.value
             invoice.save()
+
             transaction_dao.status_code = Status.COMPLETED.value
         else:
             transaction_dao.status_code = Status.FAILED.value

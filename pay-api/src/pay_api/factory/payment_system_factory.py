@@ -20,6 +20,7 @@ from flask import current_app
 from pay_api.exceptions import BusinessException
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.internal_pay_service import InternalPayService
+from pay_api.services.bcol_service import BcolService
 from pay_api.services.paybc_service import PaybcService
 from pay_api.utils.enums import Role, PaymentSystem
 from pay_api.utils.errors import Error
@@ -38,6 +39,8 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         _instance: PaymentSystemService = None
         if payment_system == PaymentSystem.PAYBC.value:
             _instance = PaybcService()
+        elif payment_system == PaymentSystem.BCOL.value:
+            _instance = BcolService()
         elif payment_system == PaymentSystem.INTERNAL.value:
             _instance = InternalPayService()
         if not _instance:

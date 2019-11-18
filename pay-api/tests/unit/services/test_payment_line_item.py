@@ -19,40 +19,12 @@ Test-Suite to ensure that the FeeSchedule Service is working as expected.
 
 from datetime import datetime
 
+from tests.utilities.base_test import (
+    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item)
+
 from pay_api.models import FeeSchedule, Invoice, InvoiceSchema, Payment, PaymentAccount, PaymentLineItem
 from pay_api.services.payment_line_item import PaymentLineItem as PaymentLineService
 from pay_api.utils.enums import Status
-
-
-def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code='CP', payment_system_code='PAYBC'):
-    """Factory."""
-    return PaymentAccount(corp_number=corp_number, corp_type_code=corp_type_code,
-                          payment_system_code=payment_system_code)
-
-
-def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC',
-                    payment_status_code=Status.DRAFT.value):
-    """Factory."""
-    return Payment(payment_system_code=payment_system_code, payment_method_code=payment_method_code,
-                   payment_status_code=payment_status_code, created_by='test', created_on=datetime.now())
-
-
-def factory_invoice(payment_id: str, account_id: str):
-    """Factory."""
-    return Invoice(payment_id=payment_id,
-                   invoice_status_code=Status.DRAFT.value,
-                   account_id=account_id,
-                   total=0, created_by='test', created_on=datetime.now())
-
-
-def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees: int = 10, total: int = 10,
-                              status='CREATED'):
-    """Factory."""
-    return PaymentLineItem(invoice_id=invoice_id,
-                           fee_schedule_id=fee_schedule_id,
-                           filing_fees=filing_fees,
-                           total=total,
-                           line_item_status_code=status)
 
 
 def test_line_saved_from_new(session):
@@ -63,6 +35,7 @@ def test_line_saved_from_new(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()

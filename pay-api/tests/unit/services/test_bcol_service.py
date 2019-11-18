@@ -68,7 +68,7 @@ def test_service_methods(app):
         bcol_service = BcolService()
         assert bcol_service.create_account(None, None) is None
         assert bcol_service.create_invoice(None, None, None) is None
-        assert bcol_service.get_payment_system_url(None, None) is None
+        assert bcol_service.get_payment_system_url(None, None, None) is None
         assert bcol_service.get_payment_system_code() == 'BCOL'
         assert bcol_service.update_invoice(None, None) is None
         assert bcol_service.cancel_invoice(None, None) is None

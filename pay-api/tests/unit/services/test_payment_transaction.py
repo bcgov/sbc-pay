@@ -21,78 +21,16 @@ import uuid
 from datetime import datetime
 
 import pytest
+from tests import skip_in_pod
+from tests.utilities.base_test import (
+    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
+    factory_payment_transaction, get_payment_request, get_zero_dollar_payment_request)
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.utils.enums import Status
 from pay_api.utils.errors import Error
-from tests import skip_in_pod
-
-
-def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code='CP', payment_system_code='PAYBC'):
-    """Factory."""
-    return PaymentAccount(
-        corp_number=corp_number,
-        corp_type_code=corp_type_code,
-        payment_system_code=payment_system_code,
-        party_number='11111',
-        account_number='4101',
-        site_number='29921',
-    )
-
-
-def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC', payment_status_code='DRAFT'):
-    """Factory."""
-    return Payment(
-        payment_system_code=payment_system_code,
-        payment_method_code=payment_method_code,
-        payment_status_code=payment_status_code,
-        created_by='test',
-        created_on=datetime.now(),
-    )
-
-
-def factory_invoice(payment_id: str, account_id: str):
-    """Factory."""
-    return Invoice(
-        payment_id=payment_id,
-        invoice_status_code='DRAFT',
-        account_id=account_id,
-        total=0,
-        created_by='test',
-        created_on=datetime.now(),
-    )
-
-
-def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees: int = 10, total: int = 10):
-    """Factory."""
-    return PaymentLineItem(
-        invoice_id=invoice_id,
-        fee_schedule_id=fee_schedule_id,
-        filing_fees=filing_fees,
-        total=total,
-        line_item_status_code='CREATED',
-    )
-
-
-def factory_payment_transaction(
-        payment_id: str,
-        status_code: str = 'DRAFT',
-        client_system_url: str = 'http://google.com/',
-        pay_system_url: str = 'http://google.com',
-        transaction_start_time: datetime = datetime.now(),
-        transaction_end_time: datetime = datetime.now(),
-):
-    """Factory."""
-    return PaymentTransaction(
-        payment_id=payment_id,
-        status_code=status_code,
-        client_system_url=client_system_url,
-        pay_system_url=pay_system_url,
-        transaction_start_time=transaction_start_time,
-        transaction_end_time=transaction_end_time,
-    )
 
 
 def test_transaction_saved_from_new(session):
@@ -103,6 +41,7 @@ def test_transaction_saved_from_new(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
@@ -136,6 +75,7 @@ def test_transaction_create_from_new(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
@@ -163,6 +103,7 @@ def test_transaction_create_from_invalid_payment(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
@@ -186,6 +127,7 @@ def test_transaction_update(session, stan_server):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
@@ -217,6 +159,7 @@ def test_transaction_update_with_no_receipt(session, stan_server):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id, invoice_number= '').save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
@@ -248,6 +191,7 @@ def test_transaction_update_completed(session, stan_server):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
@@ -269,20 +213,15 @@ def test_transaction_update_completed(session, stan_server):
 def test_transaction_create_new_on_completed_payment(session):
     """Assert that the payment is saved to the table."""
     payment_account = factory_payment_account()
-    payment = factory_payment()
+    payment = factory_payment(payment_status_code= Status.COMPLETED.value)
     payment_account.save()
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
-
-    transaction = PaymentTransactionService.create(payment.id, {
-        'clientSystemUrl': '',
-        'payReturnUrl': ''
-    }, skip_auth_check=True)
-    PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451', skip_auth_check=True)
 
     with pytest.raises(BusinessException) as excinfo:
         PaymentTransactionService.create(payment.id, {
@@ -302,6 +241,7 @@ def test_multiple_transactions_for_single_payment(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
@@ -355,6 +295,7 @@ def test_transaction_find_active_lookup(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
@@ -380,6 +321,7 @@ def test_transaction_find_active_none_lookup(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
@@ -398,6 +340,7 @@ def test_transaction_find_by_payment_id(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
@@ -418,6 +361,7 @@ def test_no_existing_transaction(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
@@ -436,6 +380,7 @@ def test_transaction_update_on_paybc_connection_error(session, stan_server):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()

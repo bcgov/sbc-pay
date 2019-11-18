@@ -20,8 +20,7 @@ Test-Suite to ensure that the /receipt endpoint is working as expected.
 import json
 
 import pytest
-
-from tests.utilities.base_test import get_claims, get_payment_request, token_header, get_zero_dollar_payment_request
+from tests.utilities.base_test import get_claims, get_payment_request, get_zero_dollar_payment_request, token_header
 
 
 @pytest.fixture
