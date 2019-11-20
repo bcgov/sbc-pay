@@ -300,7 +300,7 @@ def test_delete_payment(session, auth_mock):
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
 
-    PaymentService.delete_payment(payment.id, jwt=None, token_info={})
+    PaymentService.delete_payment(payment.id)
     payment = Payment.find_by_id(payment.id)
     assert payment.payment_status_code == Status.DELETED.value
     assert payment.invoices[0].invoice_status_code == Status.DELETED.value
@@ -323,5 +323,5 @@ def test_delete_completed_payment(session, auth_mock):
     transaction.save()
 
     with pytest.raises(Exception) as excinfo:
-        PaymentService.delete_payment(payment.id, jwt=None, token_info={})
+        PaymentService.delete_payment(payment.id)
     assert excinfo.type == BusinessException

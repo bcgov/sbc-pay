@@ -20,7 +20,7 @@ This module is a wrapper for the Flask JwtManager
 class JWTWrapper:  # pylint: disable=too-few-public-methods
     """Singleton wrapper for Flask JwtManager."""
 
-    from flask_jwt_oidc import JwtManager
+    from flask_jwt_oidc import JwtManager  # pylint: disable=import-outside-toplevel
     __instance = None
 
     @staticmethod
@@ -32,7 +32,7 @@ class JWTWrapper:  # pylint: disable=too-few-public-methods
 
     def __init__(self):
         """Virtually private constructor."""
-        if JWTWrapper.__instance is not None:
+        if JWTWrapper.__instance is not None:  # pragma: no cover
             raise Exception('Attempt made to create multiple JWTWrappers')
 
         JWTWrapper.__instance = JWTWrapper.JwtManager()

@@ -280,7 +280,7 @@ def test_delete_payment(session, client, jwt, app):
     rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     pay_id = rv.json.get('id')
     rv = client.delete(f'/api/v1/payment-requests/{pay_id}', headers=headers)
-    assert rv.status_code == 204
+    assert rv.status_code == 202
 
 
 def test_delete_completed_payment(session, client, jwt, app):
@@ -300,7 +300,7 @@ def test_delete_completed_payment(session, client, jwt, app):
 
 
 def test_payment_delete_when_paybc_is_down(session, client, jwt, app):
-    """Assert that the endpoint returns 400."""
+    """Assert that the endpoint returns 202. The payment will be acceoted to delete."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
@@ -309,7 +309,7 @@ def test_payment_delete_when_paybc_is_down(session, client, jwt, app):
 
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
         rv = client.delete(f'/api/v1/payment-requests/{pay_id}', headers=headers)
-        assert rv.status_code == 400
+        assert rv.status_code == 202
 
 def test_payment_creation_with_routing_slip(session, client, jwt, app):
     """Assert that the endpoint returns 201."""

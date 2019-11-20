@@ -341,17 +341,6 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoice
 
     @staticmethod
-    def find_by_invoice_number(invoice_number: str):
-        """Find invoice by invoice number."""
-        invoice_dao = InvoiceModel.find_by_invoice_number(invoice_number)
-
-        invoice = Invoice()
-        invoice._dao = invoice_dao  # pylint: disable=protected-access
-
-        current_app.logger.debug('>find_by_invoice_number')
-        return invoice
-
-    @staticmethod
     def get_invoices(payment_identifier: str, jwt: JwtManager = None, skip_auth_check: bool = False):
         """Find invoices."""
         current_app.logger.debug('<get_invoices')

@@ -36,7 +36,7 @@ class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     payment_id = db.Column(db.Integer, ForeignKey('payment.id'), nullable=False)
 
-    invoice_status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
+    invoice_status_code = db.Column(db.String(20), ForeignKey('status_code.code'), nullable=False)
     account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=False)
     total = db.Column(db.Float, nullable=False)
     paid = db.Column(db.Float, nullable=True)

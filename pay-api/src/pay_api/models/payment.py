@@ -17,6 +17,8 @@ from marshmallow import fields
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
+from pay_api.utils.enums import Status
+
 from .audit import Audit
 from .base_model import BaseModel
 from .base_schema import BaseSchema
@@ -34,7 +36,7 @@ class Payment(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     payment_system_code = db.Column(db.String(10), ForeignKey('payment_system.code'), nullable=False)
     payment_method_code = db.Column(db.String(10), ForeignKey('payment_method.code'), nullable=False)
-    payment_status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
+    payment_status_code = db.Column(db.String(20), ForeignKey('status_code.code'), nullable=False)
 
     payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='select', innerjoin=True)
     invoices = relationship('Invoice')
@@ -44,6 +46,11 @@ class Payment(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
     def find_by_id(cls, identifier: int):
         """Return a Payment by id."""
         return cls.query.get(identifier)
+
+    @classmethod
+    def find_payments_marked_for_delete(cls):
+        """Return a Payment by id."""
+        return cls.query.filter_by(payment_status_code=Status.DELETE_ACCEPTED.value).all()
 
 
 class PaymentSchema(BaseSchema):  # pylint: disable=too-many-ancestors
