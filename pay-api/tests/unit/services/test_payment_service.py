@@ -22,84 +22,17 @@ from unittest.mock import patch
 
 import pytest
 from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
+from tests.utilities.base_test import (
+    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
+    factory_payment_transaction, get_payment_request, get_zero_dollar_payment_request)
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
 from pay_api.services.payment_service import PaymentService
 from pay_api.utils.enums import Status
-from tests.utilities.base_test import get_payment_request, get_zero_dollar_payment_request
+
 
 test_user_token = {'preferred_username': 'test'}
-
-
-def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code: str = 'CP',
-                            payment_system_code: str = 'PAYBC'):
-    """Factory."""
-    return PaymentAccount(
-        corp_number=corp_number,
-        corp_type_code=corp_type_code,
-        payment_system_code=payment_system_code,
-        party_number='11111',
-        account_number='4101',
-        site_number='29921',
-    )
-
-
-def factory_payment(
-        payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC',
-        payment_status_code: str = Status.DRAFT.value
-):
-    """Factory."""
-    return Payment(
-        payment_system_code=payment_system_code,
-        payment_method_code=payment_method_code,
-        payment_status_code=payment_status_code,
-        created_by='test',
-        created_on=datetime.now(),
-    )
-
-
-def factory_invoice(payment_id: str, account_id: str):
-    """Factory."""
-    return Invoice(
-        payment_id=payment_id,
-        invoice_status_code=Status.DRAFT.value,
-        account_id=account_id,
-        invoice_number=10021,
-        total=0,
-        created_by='test',
-        created_on=datetime.now(),
-    )
-
-
-def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees: int = 10, total: int = 10):
-    """Factory."""
-    return PaymentLineItem(
-        invoice_id=invoice_id,
-        fee_schedule_id=fee_schedule_id,
-        filing_fees=filing_fees,
-        total=total,
-        line_item_status_code=Status.CREATED.value,
-    )
-
-
-def factory_payment_transaction(
-        payment_id: str,
-        status_code: str = Status.DRAFT.value,
-        client_system_url: str = 'http://google.com/',
-        pay_system_url: str = 'http://google.com',
-        transaction_start_time: datetime = datetime.now(),
-        transaction_end_time: datetime = datetime.now(),
-):
-    """Factory."""
-    return PaymentTransaction(
-        payment_id=payment_id,
-        status_code=status_code,
-        client_system_url=client_system_url,
-        pay_system_url=pay_system_url,
-        transaction_start_time=transaction_start_time,
-        transaction_end_time=transaction_end_time,
-    )
 
 
 def test_create_payment_record(session):
@@ -141,6 +74,7 @@ def test_update_payment_record(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
@@ -159,6 +93,7 @@ def test_update_payment_record_transaction_invalid(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
@@ -178,6 +113,8 @@ def test_update_payment_completed_invalid(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
+
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
@@ -198,6 +135,8 @@ def test_update_payment_deleted_invalid(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
+
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
@@ -218,6 +157,8 @@ def test_update_payment_invoice_deleted_invalid(session):
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.invoice_status_code = Status.DELETED.value
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
+
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
@@ -236,6 +177,8 @@ def test_update_payment_record_rollback(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
+
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
@@ -308,21 +251,16 @@ def test_update_payment_record_rollback(session):
 
 def test_create_payment_record_rollback_on_paybc_connection_error(session):
     """Assert that the payment records are not created."""
-    from unittest.mock import Mock
     # Mock here that the invoice update fails here to test the rollback scenario
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
         with pytest.raises(ServiceUnavailableException) as excinfo:
             PaymentService.create_payment(get_payment_request(), test_user_token)
         assert excinfo.type == ServiceUnavailableException
+
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectTimeout('mocked error')):
         with pytest.raises(ServiceUnavailableException) as excinfo:
             PaymentService.create_payment(get_payment_request(), test_user_token)
         assert excinfo.type == ServiceUnavailableException
-
-    mock_create_site = patch('pay_api.services.oauth_service.requests.post')
-
-    mock_post = mock_create_site.start()
-    mock_post.return_value = Mock(status_code=503)
 
     with patch('pay_api.services.oauth_service.requests.post', side_effect=HTTPError('mocked error')) as post_mock:
         post_mock.status_Code = 503
@@ -354,6 +292,8 @@ def test_delete_payment(session, auth_mock):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
+
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
@@ -374,6 +314,8 @@ def test_delete_completed_payment(session, auth_mock):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
+
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()

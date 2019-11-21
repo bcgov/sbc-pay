@@ -23,6 +23,7 @@ from .audit import Audit
 from .base_model import BaseModel
 from .base_schema import BaseSchema
 from .db import db, ma
+from .invoice_reference import InvoiceReferenceSchema
 from .payment_line_item import PaymentLineItemSchema
 from .receipt import ReceiptSchema
 
@@ -35,8 +36,6 @@ class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     payment_id = db.Column(db.Integer, ForeignKey('payment.id'), nullable=False)
 
-    invoice_number = db.Column(db.String(50), nullable=True, index=True)
-    reference_number = db.Column(db.String(50), nullable=True)
     invoice_status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
     account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=False)
     total = db.Column(db.Float, nullable=False)
@@ -49,6 +48,7 @@ class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
     payment_line_items = relationship('PaymentLineItem')
     receipts = relationship('Receipt')
     account = relationship('PaymentAccount')
+    references = relationship('InvoiceReference')
 
     @classmethod
     def find_by_id(cls, identifier: int):
@@ -59,11 +59,6 @@ class Invoice(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-
     def find_by_payment_id(cls, identifier: int):
         """Return a Invoice by id."""
         return cls.query.filter_by(payment_id=identifier).one_or_none()
-
-    @classmethod
-    def find_by_invoice_number(cls, invoice_number: str):
-        """Return a Invoice by invoice number."""
-        return cls.query.filter_by(invoice_number=invoice_number).one_or_none()
 
     @classmethod
     def find_by_id_and_payment_id(cls, identifier: int, pay_id: int):
@@ -84,6 +79,7 @@ class InvoiceSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     # pylint: disable=no-member
     payment_line_items = ma.Nested(PaymentLineItemSchema, many=True, data_key='line_items')
     receipts = ma.Nested(ReceiptSchema, many=True, data_key='receipts')
+    references = ma.Nested(InvoiceReferenceSchema, many=True, data_key='references')
 
     _links = ma.Hyperlinks({
         'self': ma.URLFor('API.invoices_invoice', payment_id='<payment_id>', invoice_id='<id>'),

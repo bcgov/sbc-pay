@@ -23,9 +23,9 @@ from flask import current_app
 
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
+from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import PaymentSystem
-
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -33,7 +33,7 @@ from .payment_line_item import PaymentLineItem
 class InternalPayService(PaymentSystemService, OAuthService):
     """Service to manage internal payment."""
 
-    def get_payment_system_url(self, invoice: Invoice, return_url: str):
+    def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
         return None
 
@@ -62,8 +62,8 @@ class InternalPayService(PaymentSystemService, OAuthService):
     def cancel_invoice(self, account_details: Tuple[str], inv_number: str):
         """Adjust the invoice to zero."""
 
-    def get_receipt(self, payment_account: PaymentAccount, receipt_number: str, invoice_number: str):
+    def get_receipt(self, payment_account: PaymentAccount, receipt_number: str, invoice_reference: InvoiceReference):
         """Create a static receipt."""
         # Find the invoice using the invoice_number
-        invoice: Invoice = Invoice.find_by_invoice_number(invoice_number)
-        return f'RCPT_{invoice_number}', datetime.now(), invoice.total
+        invoice = Invoice.find_by_id(invoice_reference.invoice_id, skip_auth_check=True)
+        return f'RCPT_{invoice_reference.invoice_number}', datetime.now(), invoice.total

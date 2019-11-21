@@ -20,6 +20,7 @@ from flask import current_app
 from pay_api.exceptions import BusinessException
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
+from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import PaymentSystem
 from pay_api.utils.errors import Error
@@ -35,7 +36,7 @@ class BcolService(PaymentSystemService, OAuthService):
         """Create account."""
         current_app.logger.debug('<create_account')
 
-    def get_payment_system_url(self, invoice: Invoice, return_url: str):
+    def get_payment_system_url(self, invoice: Invoice, inv_reference : InvoiceReference, return_url: str):
         """Return the payment system url."""
         current_app.logger.debug('<get_payment_system_url')
 
