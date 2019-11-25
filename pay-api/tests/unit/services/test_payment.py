@@ -17,14 +17,10 @@
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
 
-from datetime import datetime
-
-from tests.utilities.base_test import (
-    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account)
-
-from pay_api.models import Invoice, Payment, PaymentAccount
 from pay_api.services.payment import Payment as Payment_service
 from pay_api.utils.enums import Status
+from tests.utilities.base_test import (
+    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account)
 
 
 def test_payment_saved_from_new(session):

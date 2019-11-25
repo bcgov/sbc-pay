@@ -50,7 +50,8 @@
         "NATS_CLUSTER_ID": "test-cluster",
         "NATS_SUBJECT": "entity.filing.payment",
         "NATS_QUEUE": "filing-worker",
-        "BCOL_PAYMENTS_WSDL_URL": "${BCOL_PAYMENTS_WSDL_URL}"
+        "BCOL_PAYMENTS_WSDL_URL": "${BCOL_PAYMENTS_WSDL_URL}",
+        "BCOL_API_ENDPOINT": "https://${BCOL_API_NAME}-${TAG_NAME}.pathfinder.gov.bc.ca/api/v1/reports"
       }
     }
   ],
@@ -218,6 +219,13 @@
       "description": "Sentry DSN URL to initialize the Sentry SDK",
       "required": true,
       "value": "https://account.sentry.ioo/project/id"
-    }
+    },
+    {
+      "name": "BCOL_API_NAME",
+      "displayName": "BCOL API Name",
+      "description": "The name assigned to all of the OpenShift resources associated to the server instance.",
+      "required": true,
+      "value": "bcol-api"
+    },
   ]
 }

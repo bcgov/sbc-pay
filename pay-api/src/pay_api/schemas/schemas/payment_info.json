@@ -10,7 +10,7 @@
       "$id": "#/properties/methodOfPayment",
       "type": "string",
       "title": "Method of payment",
-      "enum": ["CC"],
+      "enum": ["CC", "PREMIUM"],
       "examples": [
         "CC"
       ],

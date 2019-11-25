@@ -14,9 +14,9 @@
 """All of the configuration for the service is captured here. All items are loaded, or have Constants defined here that are loaded into the Flask configuration. All modules and lookups get their configuration from the Flask config, rather than reading environment variables directly or by accessing this configuration directly.
 """
 
+import json
 import os
 import sys
-import json
 
 from dotenv import find_dotenv, load_dotenv
 
@@ -47,6 +47,16 @@ def get_named_config(config_name: str = 'production'):
     return config
 
 
+def _get_config(config_key: str, **kwargs):
+    """Get the config from environment, and throw error if there are no default values and if the value is None."""
+    if 'default' in kwargs:
+        value = os.getenv(config_key, kwargs.get('default'))
+    else:
+        value = os.getenv(config_key)
+        assert value
+    return value
+
+
 class _Config(object):  # pylint: disable=too-few-public-methods
     """Base class configuration that should set reasonable defaults for all the other configurations. """
 
@@ -59,64 +69,54 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     ALEMBIC_INI = 'migrations/alembic.ini'
 
     # POSTGRESQL
-    DB_USER = os.getenv('DATABASE_USERNAME', '')
-    DB_PASSWORD = os.getenv('DATABASE_PASSWORD', '')
-    DB_NAME = os.getenv('DATABASE_NAME', '')
-    DB_HOST = os.getenv('DATABASE_HOST', '')
-    DB_PORT = os.getenv('DATABASE_PORT', '5432')
+    DB_USER = _get_config('DATABASE_USERNAME')
+    DB_PASSWORD = _get_config('DATABASE_PASSWORD')
+    DB_NAME = _get_config('DATABASE_NAME')
+    DB_HOST = _get_config('DATABASE_HOST')
+    DB_PORT = _get_config('DATABASE_PORT')
     SQLALCHEMY_DATABASE_URI = 'postgresql://{user}:{password}@{host}:{port}/{name}'.format(
         user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=int(DB_PORT), name=DB_NAME
     )
     SQLALCHEMY_ECHO = False
 
     # JWT_OIDC Settings
-    JWT_OIDC_WELL_KNOWN_CONFIG = os.getenv('JWT_OIDC_WELL_KNOWN_CONFIG')
-    JWT_OIDC_ALGORITHMS = os.getenv('JWT_OIDC_ALGORITHMS')
-    JWT_OIDC_JWKS_URI = os.getenv('JWT_OIDC_JWKS_URI')
-    JWT_OIDC_ISSUER = os.getenv('JWT_OIDC_ISSUER')
-    JWT_OIDC_AUDIENCE = os.getenv('JWT_OIDC_AUDIENCE')
-    JWT_OIDC_CLIENT_SECRET = os.getenv('JWT_OIDC_CLIENT_SECRET')
-    JWT_OIDC_CACHING_ENABLED = os.getenv('JWT_OIDC_CACHING_ENABLED')
-    try:
-        JWT_OIDC_JWKS_CACHE_TIMEOUT = int(os.getenv('JWT_OIDC_JWKS_CACHE_TIMEOUT'))
-    except:
-        JWT_OIDC_JWKS_CACHE_TIMEOUT = 300
+    JWT_OIDC_WELL_KNOWN_CONFIG = _get_config('JWT_OIDC_WELL_KNOWN_CONFIG')
+    JWT_OIDC_ALGORITHMS = _get_config('JWT_OIDC_ALGORITHMS')
+    JWT_OIDC_JWKS_URI = _get_config('JWT_OIDC_JWKS_URI', default=None)
+    JWT_OIDC_ISSUER = _get_config('JWT_OIDC_ISSUER')
+    JWT_OIDC_AUDIENCE = _get_config('JWT_OIDC_AUDIENCE')
+    JWT_OIDC_CLIENT_SECRET = _get_config('JWT_OIDC_CLIENT_SECRET')
+    JWT_OIDC_CACHING_ENABLED = _get_config('JWT_OIDC_CACHING_ENABLED', default=False)
+    JWT_OIDC_JWKS_CACHE_TIMEOUT = int(_get_config('JWT_OIDC_JWKS_CACHE_TIMEOUT', default=300))
 
     # PAYBC API Settings
-    PAYBC_BASE_URL = os.getenv('PAYBC_BASE_URL')
-    PAYBC_CLIENT_ID = os.getenv('PAYBC_CLIENT_ID')
-    PAYBC_CLIENT_SECRET = os.getenv('PAYBC_CLIENT_SECRET')
-    PAYBC_PORTAL_URL = os.getenv('PAYBC_PORTAL_URL')
-    AUTH_WEB_PAY_TRANSACTION_URL = os.getenv('AUTH_WEB_PAY_TRANSACTION_URL')
-    PAYBC_MEMO_LINE_NAME = os.getenv('PAYBC_MEMO_LINE_NAME')
-    CONNECT_TIMEOUT = int(os.getenv('PAYBC_CONNECT_TIMEOUT', 10))
-    GENERATE_RANDOM_INVOICE_NUMBER = os.getenv('PAYBC_GENERATE_RANDOM_INVOICE_NUMBER', 'False')
-
-    # BCOL
-    BCOL_VERIFY_USER_WSDL_URL = os.getenv('BCOL_VERIFY_USER_WSDL_URL')
-    BCOL_QUERY_PROFILE_WSDL_URL = os.getenv('BCOL_QUERY_PROFILE_WSDL_URL')
-    BCOL_LDAP_SERVER = os.getenv('BCOL_LDAP_SERVER')
-    BCOL_LDAP_USER_DN_PATTERN = os.getenv('BCOL_LDAP_USER_DN_PATTERN')
-    BCOL_DEBIT_ACCOUNT_VERSION = os.getenv('BCOL_DEBIT_ACCOUNT_VERSION')
-    BCOL_LINK_CODE = os.getenv('BCOL_LINK_CODE')
+    PAYBC_BASE_URL = _get_config('PAYBC_BASE_URL')
+    PAYBC_CLIENT_ID = _get_config('PAYBC_CLIENT_ID')
+    PAYBC_CLIENT_SECRET = _get_config('PAYBC_CLIENT_SECRET')
+    PAYBC_PORTAL_URL = _get_config('PAYBC_PORTAL_URL')
+    AUTH_WEB_PAY_TRANSACTION_URL = _get_config('AUTH_WEB_PAY_TRANSACTION_URL')
+    PAYBC_MEMO_LINE_NAME = _get_config('PAYBC_MEMO_LINE_NAME')
+    CONNECT_TIMEOUT = int(_get_config('PAYBC_CONNECT_TIMEOUT', default=10))
+    GENERATE_RANDOM_INVOICE_NUMBER = _get_config('PAYBC_GENERATE_RANDOM_INVOICE_NUMBER', default='False')
 
     # REPORT API Settings
-    REPORT_API_BASE_URL = os.getenv('REPORT_API_BASE_URL')
+    REPORT_API_BASE_URL = _get_config('REPORT_API_BASE_URL')
 
     # NATS Config
-    NATS_SERVERS = os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(',')
-    NATS_CLIENT_NAME = os.getenv('NATS_CLIENT_NAME', 'entity.filing.worker')
-    NATS_CLUSTER_ID = os.getenv('NATS_CLUSTER_ID', 'test-cluster')
-    NATS_SUBJECT = os.getenv('NATS_SUBJECT', 'entity.filings')
-    NATS_QUEUE = os.getenv('NATS_QUEUE', 'filing-worker')
-    # SERVICE Status Settings
-    SERVICE_SCHEDULE = os.getenv('SERVICE_SCHEDULE')
+    NATS_SERVERS = _get_config('NATS_SERVERS', default='nats://127.0.0.1:4222').split(',')
+    NATS_CLIENT_NAME = _get_config('NATS_CLIENT_NAME', default='entity.filing.worker')
+    NATS_CLUSTER_ID = _get_config('NATS_CLUSTER_ID', default='test-cluster')
+    NATS_SUBJECT = _get_config('NATS_SUBJECT', default='entity.filings')
+    NATS_QUEUE = _get_config('NATS_QUEUE', default='filing-worker')
 
     # Auth API Endpoint
-    AUTH_API_ENDPOINT = os.getenv('AUTH_API_ENDPOINT')
+    AUTH_API_ENDPOINT = _get_config('AUTH_API_ENDPOINT')
 
     # Sentry Config
-    SENTRY_DSN = os.getenv('SENTRY_DSN', None)
+    SENTRY_DSN = _get_config('SENTRY_DSN', default=None)
+
+    # BCOL Service
+    BCOL_API_ENDPOINT = _get_config('BCOL_API_ENDPOINT')
 
     TESTING = False
     DEBUG = True
@@ -132,23 +132,24 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
 
     DEBUG = True
     TESTING = True
+
     # POSTGRESQL
-    DB_USER = os.getenv('DATABASE_TEST_USERNAME', '')
-    DB_PASSWORD = os.getenv('DATABASE_TEST_PASSWORD', '')
-    DB_NAME = os.getenv('DATABASE_TEST_NAME', '')
-    DB_HOST = os.getenv('DATABASE_TEST_HOST', '')
-    DB_PORT = os.getenv('DATABASE_TEST_PORT', '5432')
-    SQLALCHEMY_DATABASE_URI = os.getenv(
+    DB_USER = _get_config('DATABASE_TEST_USERNAME')
+    DB_PASSWORD = _get_config('DATABASE_TEST_PASSWORD')
+    DB_NAME = _get_config('DATABASE_TEST_NAME')
+    DB_HOST = _get_config('DATABASE_TEST_HOST')
+    DB_PORT = _get_config('DATABASE_TEST_PORT')
+    SQLALCHEMY_DATABASE_URI = _get_config(
         'DATABASE_TEST_URL',
-        'postgresql://{user}:{password}@{host}:{port}/{name}'.format(
+        default='postgresql://{user}:{password}@{host}:{port}/{name}'.format(
             user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=int(DB_PORT), name=DB_NAME
         ),
     )
 
     JWT_OIDC_TEST_MODE = True
-    JWT_OIDC_TEST_AUDIENCE = os.getenv('JWT_OIDC_AUDIENCE')
-    JWT_OIDC_TEST_CLIENT_SECRET = os.getenv('JWT_OIDC_CLIENT_SECRET')
-    JWT_OIDC_TEST_ISSUER = os.getenv('JWT_OIDC_ISSUER')
+    JWT_OIDC_TEST_AUDIENCE = _get_config('JWT_OIDC_AUDIENCE')
+    JWT_OIDC_TEST_CLIENT_SECRET = _get_config('JWT_OIDC_CLIENT_SECRET')
+    JWT_OIDC_TEST_ISSUER = _get_config('JWT_OIDC_ISSUER')
     JWT_OIDC_TEST_KEYS = {
         'keys': [
             {
@@ -232,11 +233,13 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
 
     NATS_SUBJECT = 'entity.filing.test'
 
+    BCOL_API_ENDPOINT = 'https://mock-lear-tools.pathfinder.gov.bc.ca/rest/bcol-api-1.0.0.yaml/1.0'
+
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
     """Production environment configuration."""
 
-    SECRET_KEY = os.getenv('SECRET_KEY', None)
+    SECRET_KEY = _get_config('SECRET_KEY', default=None)
 
     if not SECRET_KEY:
         SECRET_KEY = os.urandom(24)

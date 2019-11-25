@@ -17,16 +17,13 @@
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
 
-from datetime import datetime
-
 import pytest
-from tests.utilities.base_test import (
-    factory_invoice, factory_payment, factory_payment_account, factory_payment_line_item)
 
 from pay_api.exceptions import BusinessException
-from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem
+from pay_api.models import FeeSchedule
 from pay_api.services.invoice import Invoice as Invoice_service
-from pay_api.utils.enums import Status
+from tests.utilities.base_test import (
+    factory_invoice, factory_payment, factory_payment_account, factory_payment_line_item)
 
 
 def test_invoice_saved_from_new(session):
@@ -115,7 +112,7 @@ def test_invoice_get_invoices_with_no_invoice(session):
     payment_account.save()
     payment.save()
 
-    invoices = Invoice_service.get_invoices(payment.id,  skip_auth_check=True)
+    invoices = Invoice_service.get_invoices(payment.id, skip_auth_check=True)
 
     assert invoices is not None
     assert len(invoices.get('items')) == 0

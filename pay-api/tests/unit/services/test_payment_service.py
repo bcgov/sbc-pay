@@ -17,20 +17,18 @@
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
 
-from datetime import datetime
 from unittest.mock import patch
 
 import pytest
 from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
+
+from pay_api.exceptions import BusinessException, ServiceUnavailableException
+from pay_api.models import FeeSchedule, Payment, PaymentAccount
+from pay_api.services.payment_service import PaymentService
+from pay_api.utils.enums import Status
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
     factory_payment_transaction, get_payment_request, get_zero_dollar_payment_request)
-
-from pay_api.exceptions import BusinessException, ServiceUnavailableException
-from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
-from pay_api.services.payment_service import PaymentService
-from pay_api.utils.enums import Status
-
 
 test_user_token = {'preferred_username': 'test'}
 
