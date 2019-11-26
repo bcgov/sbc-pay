@@ -120,6 +120,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         return invoice
 
     def update_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem],
+                       # pylint: disable=too-many-arguments
                        invoice_id: int, paybc_inv_number: str, reference_count: int = 0):
         """Update the invoice.
         1. Adjust the existing invoice to zero
@@ -242,7 +243,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         current_app.logger.debug('>Creating PayBC Adjustment  For Invoice: ', inv_number)
         adjustment_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/adjs/' \
             .format(account_details[0], account_details[1], account_details[2], inv_number)
-        current_app.logger.debug('>Creating PayBC Adjustment URL', adjustment_url)
+        current_app.logger.debug('>Creating PayBC Adjustment URL {}', adjustment_url)
 
         adjustment = dict(
             comment=comment,

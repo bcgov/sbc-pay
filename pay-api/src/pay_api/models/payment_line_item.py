@@ -38,7 +38,7 @@ class PaymentLineItem(db.Model, BaseModel):
     gst = db.Column(db.Float, nullable=True)
     pst = db.Column(db.Float, nullable=True)
     total = db.Column(db.Float, nullable=False)
-    line_item_status_code = db.Column(db.String(10), ForeignKey('status_code.code'), nullable=False)
+    line_item_status_code = db.Column(db.String(20), ForeignKey('status_code.code'), nullable=False)
 
     fee_schedule = relationship(FeeSchedule, foreign_keys=[fee_schedule_id], lazy='joined', innerjoin=True)
 

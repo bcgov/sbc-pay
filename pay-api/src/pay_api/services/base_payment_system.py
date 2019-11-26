@@ -39,7 +39,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Create account in payment system."""
 
     @abstractmethod
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_number: str):
+    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str):
         """Create invoice in payment system."""
 
     @abstractmethod

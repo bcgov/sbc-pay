@@ -32,6 +32,7 @@ from pay_api.services.receipt import Receipt
 from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.enums import Status
 from pay_api.utils.errors import Error
+
 from .invoice import InvoiceModel
 from .payment import Payment
 from .queue_publisher import publish_response
@@ -190,7 +191,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
 
         if not payment.id:
             raise BusinessException(Error.PAY005)
-        if payment.payment_status_code == Status.COMPLETED.value:  # Cannot start transaction on completed payment
+        # Cannot start transaction on completed payment
+        if payment.payment_status_code in (Status.COMPLETED.value, Status.DELETED.value, Status.DELETE_ACCEPTED.value):
             raise BusinessException(Error.PAY006)
 
         # If there are active transactions (status=CREATED), then invalidate all of them and create a new one.
@@ -304,18 +306,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
 
         if receipt_details:
             # Find if a receipt exists with same receipt_number for the invoice
-            receipt: Receipt = Receipt.find_by_invoice_id_and_receipt_number(invoice.id, receipt_details[0])
-            if not receipt.id:
-                receipt: Receipt = Receipt()
-                receipt.receipt_number = receipt_details[0]
-                receipt.receipt_date = receipt_details[1]
-                receipt.receipt_amount = receipt_details[2]
-                receipt.invoice_id = invoice.id
-            else:
-                receipt.receipt_date = receipt_details[1]
-                receipt.receipt_amount = receipt_details[2]
-            # Save receipt details to DB.
-            receipt.save()
+            receipt = PaymentTransaction.__save_receipt(invoice, receipt_details)
 
             invoice.paid = receipt.receipt_amount
 
@@ -348,6 +339,22 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
 
         current_app.logger.debug('>update_transaction')
         return transaction
+
+    @staticmethod
+    def __save_receipt(invoice, receipt_details):
+        receipt: Receipt = Receipt.find_by_invoice_id_and_receipt_number(invoice.id, receipt_details[0])
+        if not receipt.id:
+            receipt: Receipt = Receipt()
+            receipt.receipt_number = receipt_details[0]
+            receipt.receipt_date = receipt_details[1]
+            receipt.receipt_amount = receipt_details[2]
+            receipt.invoice_id = invoice.id
+        else:
+            receipt.receipt_date = receipt_details[1]
+            receipt.receipt_amount = receipt_details[2]
+        # Save receipt details to DB.
+        receipt.save()
+        return receipt
 
     @staticmethod
     def find_by_payment_id(payment_identifier: int):

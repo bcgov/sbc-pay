@@ -259,8 +259,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         return payment.asdict()
 
     @classmethod
-    def delete_payment(cls, payment_id: int, jwt: JwtManager,
-                       token_info: Dict):  # pylint: disable=too-many-locals,too-many-statements
+    def delete_payment(cls, payment_id: int):  # pylint: disable=too-many-locals,too-many-statements
         """Delete payment related records.
 
         Does the following;
@@ -268,13 +267,12 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         2. Mark the payment and invoices records as deleted.
         3. Publish message to queue
         """
-
         current_app.logger.debug('<delete_payment')
 
         # update transaction function will update the status from PayBC
         _update_active_transactions(payment_id)
 
-        payment: Payment = Payment.find_by_id(payment_id, jwt=jwt, one_of_roles=[EDIT_ROLE])
+        payment: Payment = Payment.find_by_id(payment_id, skip_auth_check=True)
         _check_if_payment_is_completed(payment)
 
         # Create the payment system implementation
@@ -287,7 +285,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                                                         invoice.account.account_number,
                                                         invoice.account.site_number),
                                        inv_number=invoice_reference.invoice_number)
-            invoice.updated_by = token_info.get('username')
+            invoice.updated_by = payment.updated_by
             invoice.updated_on = datetime.now()
             invoice.invoice_status_code = Status.DELETED.value
             for line in invoice.payment_line_items:
@@ -296,11 +294,22 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice_reference.status_code = Status.DELETED.value
             invoice_reference.save()
 
-        payment.updated_by = token_info.get('username')
-        payment.updated_on = datetime.now()
         payment.payment_status_code = Status.DELETED.value
         payment.save()
 
+        current_app.logger.debug('>delete_payment')
+
+    @classmethod
+    def accept_delete(cls, payment_id: int, jwt: JwtManager,
+                      token_info: Dict):  # pylint: disable=too-many-locals,too-many-statements
+        """Mark payment related records to be deleted."""
+        current_app.logger.debug('<accept_delete')
+        payment: Payment = Payment.find_by_id(payment_id, jwt=jwt, one_of_roles=[EDIT_ROLE])
+        _check_if_payment_is_completed(payment)
+        payment.payment_status_code = Status.DELETE_ACCEPTED.value
+        payment.updated_by = token_info.get('username')
+        payment.updated_on = datetime.now()
+        payment.save()
         current_app.logger.debug('>delete_payment')
 
 
