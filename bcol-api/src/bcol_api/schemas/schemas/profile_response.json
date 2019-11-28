@@ -1,0 +1,54 @@
+{
+    "title": "profile_response.json",
+    "type": "object",
+    "properties": {
+      "userId": {
+        "type": "string"
+      },
+      "accountNumber": {
+        "type": "string"
+      },
+      "authCode": {
+        "type": "string"
+      },
+      "authCodeDesc": {
+        "type": "string"
+      },
+      "accountType": {
+        "type": "string"
+      },
+      "accountTypeDesc": {
+        "type": "string"
+      },
+      "gstStatus": {
+        "type": "string"
+      },
+      "gstStatusDesc": {
+        "type": "string"
+      },
+      "pstStatus": {
+        "type": "string"
+      },
+      "pstStatusDesc": {
+        "type": "string"
+      },
+      "userName": {
+        "type": "string"
+      },
+      "orgName": {
+        "type": "string"
+      },
+      "orgType": {
+        "type": "string"
+      },
+      "phone": {
+        "type": "string"
+      },
+      "fax": {
+        "type": "string"
+      },
+      "address": {
+        "$ref": "./adress.json"
+      }
+    }
+  }

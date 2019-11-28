@@ -17,59 +17,73 @@
 Test-Suite to ensure that the BCOL Service layer is working as expected.
 """
 
+from pay_api.models.fee_schedule import FeeSchedule
 from pay_api.services.bcol_service import BcolService
+from tests.utilities.base_test import factory_payment_account, factory_payment_line_item, factory_payment, \
+    factory_invoice, factory_invoice_reference
+
+bcol_service = BcolService()
 
 
-QUERY_PROFILE_RESPONSE = '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/ " ' \
-                         'xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/ " ' \
-                         'xmlns:xsd="http://www.w3.org/2001/XMLSchema "' \
-                         ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><soapenv:Header/>' \
-                         '<soapenv:Body><p32:queryProfileResponse ' \
-                         'xmlns:p32="http://queryprofile.webservices.bconline.gov.bc.ca"><p32:queryProfileReturn>' \
-                         '<p32:Userid>PB25020</p32:Userid><p32:Date xsi:nil="true"/><p32:Time xsi:nil="true"/>' \
-                         '<p32:AccountNumber>1234567890</p32:AccountNumber><p32:AuthCode>M</p32:AuthCode>' \
-                         '<p32:AuthDate>' \
-                         '</p32:AuthDate><p32:AccountType>B</p32:AccountType><p32:GSTStatus></p32:GSTStatus>' \
-                         '<p32:PSTStatus></p32:PSTStatus><p32:UserName>Test, Test</p32:UserName><p32:Address>' \
-                         '<p32:AddressA>#400A - 4000 SEYMOUR PLACE</p32:AddressA><p32:AddressB>PENTHOUSE' \
-                         '</p32:AddressB>' \
-                         '<p32:City>AB1</p32:City><p32:Prov>BC</p32:Prov><p32:Country>CANADA</p32:Country>' \
-                         '<p32:PostalCode>V8X 5J8</p32:PostalCode></p32:Address>' \
-                         '<p32:UserPhone>(250)953-8271 EX1999</p32:UserPhone><p32:UserFax>(250)953-8212' \
-                         '</p32:UserFax>' \
-                         '<p32:Status>Y</p32:Status><p32:org-name>BC ONLINE TECHNICAL TEAM DEVL</p32:org-name>' \
-                         '<p32:org-type>LAW</p32:org-type><p32:originator xsi:nil="true"/>' \
-                         '<p32:queryProfileFlag name="OSBR"></p32:queryProfileFlag>' \
-                         '<p32:queryProfileFlag name="ADS">' \
-                         '</p32:queryProfileFlag><p32:queryProfileFlag name="COLIN_TYPE"></p32:queryProfileFlag>' \
-                         '<p32:queryProfileFlag name="COMP"></p32:queryProfileFlag></p32:queryProfileReturn>' \
-                         '</p32:queryProfileResponse></soapenv:Body></soapenv:Envelope>'
+def test_create_account(session):
+    """Test create_account."""
+    account = bcol_service.create_account(None, None)
+    assert account is not None
 
 
-# def test_query_profile(app):
-#    """Test query profile service."""
-#    with app.app_context():
-#        mock_query_profile = patch('pay_api.services.bcol_service.BcolService._invoke_bcol_query_profile')
-#        response = QUERY_PROFILE_RESPONSE
-#        mock_get = mock_query_profile.start()
-#        mock_get.return_value = Mock(status_code=200)
-#        mock_get.return_value.json.return_value = response
-
-#        query_profile_response = BcolService().query_profile('TEST', 'TEST')
-
-#        mock_query_profile.stop()
-
-#        assert query_profile_response.json().get('userId') == 'PB25020'
+def test_get_payment_system_url(session):
+    """Test get_payment_system_url."""
+    url = bcol_service.get_payment_system_url(None, None, None)
+    assert url is None
 
 
-def test_service_methods(app):
-    """Test service methods."""
-    with app.app_context():
-        bcol_service = BcolService()
-        assert bcol_service.create_account(None, None) is None
-        assert bcol_service.create_invoice(None, None, None) is None
-        assert bcol_service.get_payment_system_url(None, None, None) is None
-        assert bcol_service.get_payment_system_code() == 'BCOL'
-        assert bcol_service.update_invoice(None, None, None, None) is None
-        assert bcol_service.cancel_invoice(None, None) is None
-        assert bcol_service.get_receipt(None, None, None) is None
+def test_get_payment_system_code(session):
+    """Test get_payment_system_code."""
+    code = bcol_service.get_payment_system_code()
+    assert code == 'BCOL'
+
+
+def test_create_invoice(session):
+    """Test create_invoice."""
+    pay_account = factory_payment_account(payment_system_code='BCOL', account_number='BCOL_ACC_1', user_id='test')
+    pay_account.save()
+    payment = factory_payment()
+    payment.save()
+    i = factory_invoice(payment_id=payment.id, account_id=pay_account.id)
+    i.save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(i.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+    # payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str, **kwargs
+    inv = bcol_service.create_invoice(pay_account, [line], i.id, filing_info={'folioNumber': '1234567890'})
+    assert inv is not None
+    assert inv.get('invoice_number') == 'TEST'
+
+
+def test_update_invoice(session):
+    """Test update_invoice."""
+    bcol_service.update_invoice(None, None, None, None)
+    assert True
+
+
+def test_cancel_invoice(session):
+    """Test cancel_invoice."""
+    bcol_service.cancel_invoice(None, None)
+    assert True
+
+
+def test_get_receipt(session):
+    """Test cancel_invoice."""
+    pay_account = factory_payment_account(payment_system_code='BCOL', account_number='BCOL_ACC_1', user_id='test')
+    pay_account.save()
+    payment = factory_payment()
+    payment.save()
+    i = factory_invoice(payment_id=payment.id, account_id=pay_account.id)
+    i.save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(i.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+    inv_ref = factory_invoice_reference(i.id).save()
+
+    receipt = bcol_service.get_receipt(pay_account, None, inv_ref)
+    assert receipt is not None

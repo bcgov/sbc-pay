@@ -38,7 +38,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
     """Service to manage Payment related operations."""
 
     @classmethod
-    def create_payment(cls, payment_request: Tuple[Dict[str, Any]], token_info: Dict):
+    def create_payment(cls, payment_request: Tuple[Dict[str, Any]], token_info: Dict, **kwargs):
         # pylint: disable=too-many-locals, too-many-statements
         """Create payment related records.
 
@@ -98,7 +98,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 current_app.logger.debug('Creating line items')
                 line_items.append(PaymentLineItem.create(invoice.id, fee))
             current_app.logger.debug('Handing off to payment system to create invoice')
-            pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice.id)
+            pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice.id,
+                                                            jwt=kwargs.get('jwt'), filing_info=filing_info)
             current_app.logger.debug('Updating invoice record')
             invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
             invoice.invoice_status_code = Status.CREATED.value

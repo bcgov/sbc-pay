@@ -1,0 +1,24 @@
+{
+    "title": "adress",
+    "type": "object",
+    "properties": {
+      "line1": {
+        "type": "string"
+      },
+      "line2": {
+        "type": "string"
+      },
+      "city": {
+        "type": "string"
+      },
+      "province": {
+        "type": "string"
+      },
+      "country": {
+        "type": "string"
+      },
+      "postalCode": {
+        "type": "string"
+      }
+    }
+  }

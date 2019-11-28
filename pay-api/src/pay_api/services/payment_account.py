@@ -35,6 +35,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         self._account_number: str = None
         self._party_number: str = None
         self._site_number: str = None
+        self._user_id: str = None
 
     @property
     def _dao(self):
@@ -52,6 +53,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         self.account_number: str = self._dao.account_number
         self.party_number: str = self._dao.party_number
         self.site_number: str = self._dao.site_number
+        self.user_id: str = self._dao.user_id
 
     @property
     def id(self):
@@ -130,6 +132,17 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         self._site_number = value
         self._dao.site_number = value
 
+    @property
+    def user_id(self):
+        """Return the user_id."""
+        return self._user_id
+
+    @user_id.setter
+    def user_id(self, value: str):
+        """Set the user_id."""
+        self._user_id = value
+        self._dao.user_id = value
+
     def save(self):
         """Save the information to the DB."""
         return self._dao.save()
@@ -158,6 +171,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         p.account_number = account_details.get('account_number', None)
         p.party_number = account_details.get('party_number', None)
         p.site_number = account_details.get('site_number', None)
+        p.user_id = account_details.get('user_id', None)
         p.payment_system_code = payment_system
 
         account_dao = p.save()

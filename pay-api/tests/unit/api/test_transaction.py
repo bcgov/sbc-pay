@@ -22,6 +22,7 @@ import uuid
 from unittest.mock import patch
 
 from requests.exceptions import ConnectionError
+
 from tests import skip_in_pod
 from tests.utilities.base_test import get_claims, get_payment_request, token_header
 

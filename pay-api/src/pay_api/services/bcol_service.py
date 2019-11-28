@@ -13,15 +13,19 @@
 # limitations under the License.
 """Service to manage PayBC interaction."""
 
+from datetime import datetime
 from typing import Any, Dict, Tuple
 
 from flask import current_app
 
+from pay_api.exceptions import BusinessException
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
+from pay_api.utils.enums import AuthHeaderType, ContentType
 from pay_api.utils.enums import PaymentSystem as PaySystemCode
+from pay_api.utils.errors import Error
 
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
@@ -33,22 +37,45 @@ class BcolService(PaymentSystemService, OAuthService):
     def create_account(self, name: str, account_info: Dict[str, Any]):
         """Create account."""
         current_app.logger.debug('<create_account')
+        bcol_user_id = ''  # TODO Get BCOL User ID from auth when it's ready
+        bcol_account_number = ''  # TODO Get BCOL Account Number from auth when it's ready
+        return {
+            'account_number': bcol_account_number,
+            'user_id': bcol_user_id
+        }
 
-    def get_payment_system_url(self, invoice: Invoice, invoice_ref: InvoiceReference, return_url: str):
+    def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
-        current_app.logger.debug('<get_payment_system_url')
-
-        current_app.logger.debug('>get_payment_system_url')
+        return None
 
     def get_payment_system_code(self):
         """Return PAYBC as the system code."""
         return PaySystemCode.BCOL.value
 
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str):
+    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str, **kwargs):
         """Create Invoice in PayBC."""
         current_app.logger.debug('<create_invoice')
+        pay_endpoint = current_app.config.get('BCOL_API_ENDPOINT') + '/payments'
+        invoice_number = f'{invoice_id}-{payment_account.corp_number}'
+        amount_excluding_txn_fees = sum(line.filing_fees for line in line_items)
+        payload: Dict = {
+            'userId': payment_account.user_id,
+            'invoiceNumber': invoice_number,
+            'folioNumber': kwargs.get('filing_info').get('folioNumber'),
+            'amount': amount_excluding_txn_fees
+        }
+        pay_response = self.post(pay_endpoint, kwargs.get('jwt'), AuthHeaderType.BEARER, ContentType.JSON,
+                                 payload).json()
+        if int(pay_response.get('totalAmount', 0)) == 0:
+            raise BusinessException(Error.PAY021)
 
+        invoice = {
+            'invoice_number': pay_response.get('key'),
+            'reference_number': pay_response.get('sequenceNo'),
+            'totalAmount': int(pay_response.get('totalAmount', 0))
+        }
         current_app.logger.debug('>create_invoice')
+        return invoice
 
     def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
                        line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0):
@@ -62,3 +89,5 @@ class BcolService(PaymentSystemService, OAuthService):
     def get_receipt(self, payment_account: PaymentAccount, receipt_number: str, invoice_reference: InvoiceReference):
         """Get receipt from bcol for the receipt number or get receipt against invoice number."""
         current_app.logger.debug('<get_receipt')
+        invoice = Invoice.find_by_id(invoice_reference.invoice_id, skip_auth_check=True)
+        return f'RCPT_{invoice_reference.invoice_number}', datetime.now(), invoice.total

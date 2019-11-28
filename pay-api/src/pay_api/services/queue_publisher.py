@@ -18,6 +18,7 @@ import json
 import random
 
 from flask import current_app
+
 from nats.aio.client import Client as NATS  # noqa N814; by convention the name is NATS
 from stan.aio.client import Client as STAN  # noqa N814; by convention the name is STAN
 

@@ -22,7 +22,6 @@ from datetime import datetime
 from pay_api.models import Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
 from pay_api.utils.enums import Role, Status
 
-
 token_header = {
     'alg': 'RS256',
     'typ': 'JWT',
@@ -119,15 +118,16 @@ def get_zero_dollar_payment_request(business_identifier: str = 'CP0001234'):
 
 
 def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code: str = 'CP',
-                            payment_system_code: str = 'PAYBC'):
+                            payment_system_code: str = 'PAYBC', account_number='4101', user_id='test'):
     """Factory."""
     return PaymentAccount(
         corp_number=corp_number,
         corp_type_code=corp_type_code,
         payment_system_code=payment_system_code,
         party_number='11111',
-        account_number='4101',
+        account_number=account_number,
         site_number='29921',
+        user_id=user_id
     )
 
 
@@ -157,7 +157,8 @@ def factory_invoice(payment_id: str, account_id: str, status_code: str = Status.
     )
 
 
-def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees: int = 10, total: int = 10, status:str=Status.CREATED.value):
+def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees: int = 10, total: int = 10,
+                              status: str = Status.CREATED.value):
     """Factory."""
     return PaymentLineItem(
         invoice_id=invoice_id,

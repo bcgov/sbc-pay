@@ -39,7 +39,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Create account in payment system."""
 
     @abstractmethod
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str):
+    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str, **kwargs):
         """Create invoice in payment system."""
 
     @abstractmethod
@@ -56,7 +56,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Get receipt from payment system."""
 
     @abstractmethod
-    def get_payment_system_url(self, invoice: Invoice, invoice_ref: InvoiceReference, return_url: str):
+    def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system portal URL for payment."""
 
     @abstractmethod

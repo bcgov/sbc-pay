@@ -39,12 +39,11 @@ from .payment_line_item import PaymentLineItem
 class PaybcService(PaymentSystemService, OAuthService):
     """Service to manage PayBC integration."""
 
-    def get_payment_system_url(self, invoice: Invoice, invoice_ref: InvoiceReference, return_url: str):
+    def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
         current_app.logger.debug('<get_payment_system_url')
-
-        pay_system_url = current_app.config.get(
-            'PAYBC_PORTAL_URL') + f'?inv_number={invoice_ref.invoice_number}&pbc_ref_number={invoice_ref.reference_number}'
+        paybc_url = current_app.config.get('PAYBC_PORTAL_URL')
+        pay_system_url = f'{paybc_url}?inv_number={inv_ref.invoice_number}&pbc_ref_number={inv_ref.reference_number}'
         encoded_return_url = urllib.parse.quote(return_url, '')
         pay_system_url += f'&redirect_uri={encoded_return_url}'
 
@@ -69,7 +68,7 @@ class PaybcService(PaymentSystemService, OAuthService):
             'site_number': site.get('site_number')
         }
 
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str):
+    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str, **kwargs):
         """Create Invoice in PayBC."""
         current_app.logger.debug('<create_invoice')
         now = datetime.datetime.now()
@@ -119,10 +118,14 @@ class PaybcService(PaymentSystemService, OAuthService):
         current_app.logger.debug('>create_invoice')
         return invoice
 
-    def update_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem],
-                       # pylint: disable=too-many-arguments
-                       invoice_id: int, paybc_inv_number: str, reference_count: int = 0):
+    def update_invoice(self,  # pylint: disable=too-many-arguments
+                       payment_account: PaymentAccount,
+                       line_items: [PaymentLineItem],
+                       invoice_id: int,
+                       paybc_inv_number: str,
+                       reference_count: int = 0):
         """Update the invoice.
+
         1. Adjust the existing invoice to zero
         2. Create a new invoice
         """

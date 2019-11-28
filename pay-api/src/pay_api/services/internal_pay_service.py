@@ -34,7 +34,7 @@ from .payment_line_item import PaymentLineItem
 class InternalPayService(PaymentSystemService, OAuthService):
     """Service to manage internal payment."""
 
-    def get_payment_system_url(self, invoice: Invoice, invoice_ref: InvoiceReference, return_url: str):
+    def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
         return None
 
@@ -46,7 +46,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         """Create account internal."""
         return {}
 
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str):
+    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str, **kwargs):
         """Return a static invoice number."""
         current_app.logger.debug('<create_invoice')
 

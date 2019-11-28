@@ -69,6 +69,8 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         else:
             if payment_method == 'CC':
                 _instance = PaybcService()
+            elif payment_method == 'PREMIUM':
+                _instance = BcolService()
 
         if not _instance:
             raise BusinessException(Error.PAY003)

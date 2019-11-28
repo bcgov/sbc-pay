@@ -52,6 +52,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._receipts = None
         self._routing_slip: str = None
         self._filing_id: str = None
+        self._folio_number: str = None
 
     @property
     def _dao(self):
@@ -79,6 +80,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.receipts = self._dao.receipts
         self.routing_slip: str = self._dao.routing_slip
         self.filing_id: str = self._dao.filing_id
+        self.folio_number: str = self._dao.folio_number
 
     @property
     def id(self):
@@ -266,6 +268,17 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         """Set the filing_id."""
         self._filing_id = value
         self._dao.filing_id = value
+
+    @property
+    def folio_number(self):
+        """Return the folio_number."""
+        return self._folio_number
+
+    @folio_number.setter
+    def folio_number(self, value: str):
+        """Set the folio_number."""
+        self._folio_number = value
+        self._dao.folio_number = value
 
     def save(self):
         """Save the information to the DB."""

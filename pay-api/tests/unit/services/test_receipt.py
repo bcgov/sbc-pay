@@ -20,16 +20,15 @@ Test-Suite to ensure that the Receipt Service is working as expected.
 from datetime import datetime
 
 import pytest
-from tests.utilities.base_test import (
-    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
-    factory_payment_transaction, get_payment_request)
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import (
-    FeeSchedule, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction)
+    FeeSchedule)
 from pay_api.services.payment_service import PaymentService
 from pay_api.services.receipt import Receipt as ReceiptService
-from pay_api.utils.enums import Status
+from tests.utilities.base_test import (
+    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
+    factory_payment_transaction, get_payment_request)
 
 
 def test_receipt_saved_from_new(session):
