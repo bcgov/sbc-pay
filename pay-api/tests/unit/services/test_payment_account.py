@@ -17,14 +17,8 @@
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
 
-from pay_api.models import PaymentAccount
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
-
-
-def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code='CP', payment_system_code='PAYBC'):
-    """Factory."""
-    return PaymentAccount(corp_number=corp_number, corp_type_code=corp_type_code,
-                          payment_system_code=payment_system_code)
+from tests.utilities.base_test import factory_payment_account
 
 
 def test_account_saved_from_new(session):

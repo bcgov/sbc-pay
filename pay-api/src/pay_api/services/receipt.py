@@ -25,6 +25,7 @@ from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem
 from pay_api.utils.errors import Error
 
 from .invoice import Invoice
+from .invoice_reference import InvoiceReference
 from .oauth_service import OAuthService
 
 
@@ -140,7 +141,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
     def create_receipt(payment_identifier: str, invoice_identifier: str, filing_data: Tuple[Dict[str, Any]],
                        jwt: JwtManager = None, skip_auth_check: bool = False):
         """Create receipt."""
-        current_app.logger.debug('<create receipt initiated', payment_identifier, invoice_identifier)
+        current_app.logger.debug('<create receipt initiated')
         bearer_token = jwt.get_token_auth_header() if jwt else None
         receipt_dict = {
             'templateVars': {
@@ -160,9 +161,10 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
             invoice_data = Invoice.find_by_id(invoice_identifier, payment_identifier, jwt=jwt,
                                               skip_auth_check=skip_auth_check)
         payment_account = invoice_data.payment_account
+        invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(invoice_data.id)
 
         template_vars['incorporationNumber'] = payment_account.corp_number
-        template_vars['paymentInvoiceNumber'] = invoice_data.invoice_number
+        template_vars['paymentInvoiceNumber'] = invoice_reference.invoice_number
 
         if payment_account.payment_system_code == PaymentSystem.INTERNAL.value and invoice_data.routing_slip:
             template_vars['routingSlipNumber'] = invoice_data.routing_slip

@@ -1,0 +1,63 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/payment_request",
+    "type": "object",
+    "title": "Payment Request",
+    "required": [
+      "userId",
+      "invoiceNumber",
+      "folioNumber"
+    ],
+    "properties": {
+      "feeCode": {
+        "$id": "#/properties/transactions/items/properties/feeCode",
+        "type": "string",
+        "title": "BCOL Fee Code"
+      },
+      "userId": {
+        "$id": "#/properties/transactions/items/properties/userId",
+        "type": "string",
+        "title": "BCOL User ID"
+      },
+      "invoiceNumber": {
+        "$id": "#/properties/transactions/items/properties/invoiceNumber",
+        "type": "string",
+        "title": "Client System Invoice Number"
+      },
+      "folioNumber": {
+        "$id": "#/properties/transactions/items/properties/folioNumber",
+        "type": "string",
+        "title": "Client Folio Number"
+      },
+      "formNumber": {
+        "$id": "#/properties/transactions/items/properties/formNumber",
+        "type": "string",
+        "title": "Form Number"
+      },
+      "quantity": {
+        "$id": "#/properties/transactions/items/properties/quantity",
+        "type": "string",
+        "title": "Quantity"
+      },
+      "rate": {
+        "$id": "#/properties/transactions/items/properties/rate",
+        "type": "string",
+        "title": "Rate"
+      },
+      "amount": {
+        "$id": "#/properties/transactions/items/properties/amount",
+        "type": "string",
+        "title": "Amount"
+      },
+      "remarks": {
+        "$id": "#/properties/transactions/items/properties/remarks",
+        "type": "string",
+        "title": "Remarks"
+      },
+      "reduntantFlag": {
+        "$id": "#/properties/transactions/items/properties/reduntantFlag",
+        "type": "string",
+        "title": "Reduntant Payment Flag"
+      }
+    }
+  }

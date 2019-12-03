@@ -23,6 +23,7 @@ from flask import current_app
 
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
+from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import PaymentSystem
 
@@ -33,7 +34,7 @@ from .payment_line_item import PaymentLineItem
 class InternalPayService(PaymentSystemService, OAuthService):
     """Service to manage internal payment."""
 
-    def get_payment_system_url(self, invoice: Invoice, return_url: str):
+    def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
         return None
 
@@ -45,25 +46,26 @@ class InternalPayService(PaymentSystemService, OAuthService):
         """Create account internal."""
         return {}
 
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_number: int):
+    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str, **kwargs):
         """Return a static invoice number."""
         current_app.logger.debug('<create_invoice')
 
         invoice = {
-            'invoice_number': f'{invoice_number}-{payment_account.corp_number}'
+            'invoice_number': f'{invoice_id}-{payment_account.corp_number}'
         }
 
         current_app.logger.debug('>create_invoice')
         return invoice
 
-    def update_invoice(self, account_details: Tuple[str], inv_number: str):
+    def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
+                       line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0):
         """Do nothing as internal payments cannot be updated as it will be completed on creation."""
 
     def cancel_invoice(self, account_details: Tuple[str], inv_number: str):
         """Adjust the invoice to zero."""
 
-    def get_receipt(self, payment_account: PaymentAccount, receipt_number: str, invoice_number: str):
+    def get_receipt(self, payment_account: PaymentAccount, receipt_number: str, invoice_reference: InvoiceReference):
         """Create a static receipt."""
         # Find the invoice using the invoice_number
-        invoice: Invoice = Invoice.find_by_invoice_number(invoice_number)
-        return f'RCPT_{invoice_number}', datetime.now(), invoice.total
+        invoice = Invoice.find_by_id(invoice_reference.invoice_id, skip_auth_check=True)
+        return f'RCPT_{invoice_reference.invoice_number}', datetime.now(), invoice.total

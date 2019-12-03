@@ -17,6 +17,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Tuple
 
 from pay_api.services.invoice import Invoice
+from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 
 from .payment_line_item import PaymentLineItem
@@ -38,11 +39,12 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Create account in payment system."""
 
     @abstractmethod
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_number: int):
+    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str, **kwargs):
         """Create invoice in payment system."""
 
     @abstractmethod
-    def update_invoice(self, account_details: Tuple[str], inv_number: str):
+    def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
+                       line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0):
         """Update invoice in payment system."""
 
     @abstractmethod
@@ -50,11 +52,11 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Cancel invoice in payment system."""
 
     @abstractmethod
-    def get_receipt(self, payment_account: PaymentAccount, receipt_number: str, invoice_number: str):
+    def get_receipt(self, payment_account: PaymentAccount, receipt_number: str, invoice_reference: InvoiceReference):
         """Get receipt from payment system."""
 
     @abstractmethod
-    def get_payment_system_url(self, invoice: Invoice, return_url: str):
+    def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system portal URL for payment."""
 
     @abstractmethod

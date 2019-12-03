@@ -27,6 +27,7 @@ from pay_api.utils.errors import Error
 from .base_payment_system import PaymentSystemService
 from .fee_schedule import FeeSchedule
 from .invoice import Invoice
+from .invoice_reference import InvoiceReference
 from .payment import Payment
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
@@ -37,7 +38,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
     """Service to manage Payment related operations."""
 
     @classmethod
-    def create_payment(cls, payment_request: Tuple[Dict[str, Any]], token_info: Dict):
+    def create_payment(cls, payment_request: Tuple[Dict[str, Any]], token_info: Dict, **kwargs):
         # pylint: disable=too-many-locals, too-many-statements
         """Create payment related records.
 
@@ -97,13 +98,15 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 current_app.logger.debug('Creating line items')
                 line_items.append(PaymentLineItem.create(invoice.id, fee))
             current_app.logger.debug('Handing off to payment system to create invoice')
-            pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice.id)
+            pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice.id,
+                                                            jwt=kwargs.get('jwt'), filing_info=filing_info)
             current_app.logger.debug('Updating invoice record')
             invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
             invoice.invoice_status_code = Status.CREATED.value
-            invoice.reference_number = pay_system_invoice.get('reference_number', None)
-            invoice.invoice_number = pay_system_invoice.get('invoice_number', None)
             invoice.save()
+            InvoiceReference.create(invoice.id, pay_system_invoice.get('invoice_number', None),
+                                    pay_system_invoice.get('reference_number', None))
+
             payment.commit()
             _complete_post_payment(pay_service, payment)
             payment = Payment.find_by_id(payment.id, skip_auth_check=True)
@@ -210,12 +213,23 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                         line_items.append(PaymentLineItem.create(invoice.id, fee))
                     current_app.logger.debug('Handing off to payment system to update invoice')
 
-                    payment_account: PaymentAccount = PaymentAccount.find_by_id(invoice.account_id)
+                    # Mark the current active invoice reference as CANCELLED
+                    inv_number: str = None
+                    for reference in invoice.references:
+                        if reference.status_code == Status.CREATED.value:
+                            inv_number = reference.invoice_number
+                            reference.status_code = Status.CANCELLED.value
+                            reference.flush()
 
                     # update invoice
-                    pay_service.update_invoice(
-                        (payment_account.party_number, payment_account.account_number, payment_account.site_number),
-                        invoice.invoice_number
+                    payment_account: PaymentAccount = PaymentAccount.find_by_id(invoice.account_id)
+
+                    pay_system_invoice = pay_service.update_invoice(
+                        payment_account,
+                        line_items,
+                        invoice.id,
+                        inv_number,
+                        len(invoice.references)
                     )
                     current_app.logger.debug('Updating invoice record')
                     invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
@@ -223,6 +237,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                     invoice.updated_by = current_user
                     invoice.total = sum(fee.total for fee in fees)
                     invoice.save()
+
+                    InvoiceReference.create(invoice.id, pay_system_invoice.get('invoice_number', None),
+                                            pay_system_invoice.get('reference_number', None))
 
             payment.updated_on = datetime.now()
             payment.updated_by = current_user
@@ -243,8 +260,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         return payment.asdict()
 
     @classmethod
-    def delete_payment(cls, payment_id: int, jwt: JwtManager,
-                       token_info: Dict):  # pylint: disable=too-many-locals,too-many-statements
+    def delete_payment(cls, payment_id: int):  # pylint: disable=too-many-locals,too-many-statements
         """Delete payment related records.
 
         Does the following;
@@ -252,13 +268,12 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         2. Mark the payment and invoices records as deleted.
         3. Publish message to queue
         """
-
         current_app.logger.debug('<delete_payment')
 
         # update transaction function will update the status from PayBC
         _update_active_transactions(payment_id)
 
-        payment: Payment = Payment.find_by_id(payment_id, jwt=jwt, one_of_roles=[EDIT_ROLE])
+        payment: Payment = Payment.find_by_id(payment_id, skip_auth_check=True)
         _check_if_payment_is_completed(payment)
 
         # Create the payment system implementation
@@ -266,21 +281,36 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
         # Cancel all invoices
         for invoice in payment.invoices:
+            invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
             pay_service.cancel_invoice(account_details=(invoice.account.party_number,
                                                         invoice.account.account_number,
                                                         invoice.account.site_number),
-                                       inv_number=invoice.invoice_number)
-            invoice.updated_by = token_info.get('username')
+                                       inv_number=invoice_reference.invoice_number)
+            invoice.updated_by = payment.updated_by
             invoice.updated_on = datetime.now()
             invoice.invoice_status_code = Status.DELETED.value
             for line in invoice.payment_line_items:
                 line.line_item_status_code = Status.DELETED.value
             invoice.save()
-        payment.updated_by = token_info.get('username')
-        payment.updated_on = datetime.now()
+            invoice_reference.status_code = Status.DELETED.value
+            invoice_reference.save()
+
         payment.payment_status_code = Status.DELETED.value
         payment.save()
 
+        current_app.logger.debug('>delete_payment')
+
+    @classmethod
+    def accept_delete(cls, payment_id: int, jwt: JwtManager,
+                      token_info: Dict):  # pylint: disable=too-many-locals,too-many-statements
+        """Mark payment related records to be deleted."""
+        current_app.logger.debug('<accept_delete')
+        payment: Payment = Payment.find_by_id(payment_id, jwt=jwt, one_of_roles=[EDIT_ROLE])
+        _check_if_payment_is_completed(payment)
+        payment.payment_status_code = Status.DELETE_ACCEPTED.value
+        payment.updated_by = token_info.get('username')
+        payment.updated_on = datetime.now()
+        payment.save()
         current_app.logger.debug('>delete_payment')
 
 

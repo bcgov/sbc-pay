@@ -20,11 +20,10 @@ from flask_restplus import Namespace, Resource
 
 from bcol_api.exceptions import BusinessException
 from bcol_api.schemas import utils as schema_utils
-from bcol_api.services.bcol_service import BcolService
+from bcol_api.services.bcol_profile import BcolProfile as BcolProfileService
 from bcol_api.utils.auth import jwt as _jwt
 from bcol_api.utils.trace import tracing as _tracing
 from bcol_api.utils.util import cors_preflight
-
 
 API = Namespace('bcol profile', description='Payment System - BCOL Profiles')
 
@@ -35,7 +34,6 @@ class BcolProfile(Resource):
     """Endpoint resource to manage BCOL Accounts."""
 
     @staticmethod
-    @API.response(200, 'OK')
     @_tracing.trace()
     @_jwt.requires_auth
     def post():
@@ -47,8 +45,8 @@ class BcolProfile(Resource):
             if not valid_format[0]:
                 response, status = {'code': 'BCOL999', 'message': 'Invalid Request'}, HTTPStatus.BAD_REQUEST
             else:
-                response, status = BcolService().query_profile(req_json.get('userId'),
-                                                               req_json.get('password')), HTTPStatus.OK
+                response, status = BcolProfileService().query_profile(req_json.get('userId'),
+                                                                      req_json.get('password')), HTTPStatus.OK
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         return response, status

@@ -12,6 +12,11 @@
           "type": "string",
           "title": "Filing identifier from the filing system"
         },
+        "folioNumber": {
+          "$id": "#/properties/folioNumber",
+          "type": "string",
+          "title": "Folio Number"
+        },
         "date": {
           "$id": "#/properties/date",
           "type": "string",

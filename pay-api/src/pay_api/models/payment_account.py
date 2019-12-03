@@ -27,9 +27,10 @@ class PaymentAccount(db.Model, BaseModel):
     corp_number = db.Column(db.String(20), nullable=False)
     corp_type_code = db.Column(db.String(10), ForeignKey('corp_type.code'), nullable=False)
     payment_system_code = db.Column(db.String(10), ForeignKey('payment_system.code'), nullable=False)
-    account_number = db.Column(db.String(50), nullable=True)
+    account_number = db.Column(db.String(50), nullable=True, index=True)
     party_number = db.Column(db.String(50), nullable=True)
     site_number = db.Column(db.String(50), nullable=True)
+    user_id = db.Column(db.String(50), nullable=True, index=True)
 
     @classmethod
     def find_by_corp_number_and_corp_type_and_system(cls, corp_number: str,

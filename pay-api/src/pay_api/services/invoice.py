@@ -37,8 +37,6 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.__dao = None
         self._id: int = None
         self._payment_id: int = None
-        self._invoice_number: str = None
-        self._reference_number: str = None
         self._invoice_status_code: str = None
         self._account_id: str = None
         self._total: float = None
@@ -54,6 +52,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._receipts = None
         self._routing_slip: str = None
         self._filing_id: str = None
+        self._folio_number: str = None
 
     @property
     def _dao(self):
@@ -66,8 +65,6 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.__dao = value
         self.id: int = self._dao.id
         self.payment_id: int = self._dao.payment_id
-        self.invoice_number: str = self._dao.invoice_number
-        self.reference_number: str = self._dao.reference_number
         self.invoice_status_code: str = self._dao.invoice_status_code
         self.account_id: str = self._dao.account_id
         self.refund: float = self._dao.refund
@@ -83,6 +80,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.receipts = self._dao.receipts
         self.routing_slip: str = self._dao.routing_slip
         self.filing_id: str = self._dao.filing_id
+        self.folio_number: str = self._dao.folio_number
 
     @property
     def id(self):
@@ -105,28 +103,6 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         """Set the payment_id."""
         self._payment_id = value
         self._dao.payment_id = value
-
-    @property
-    def invoice_number(self):
-        """Return the payment_method_code."""
-        return self._invoice_number
-
-    @invoice_number.setter
-    def invoice_number(self, value: str):
-        """Set the invoice_number."""
-        self._invoice_number = value
-        self._dao.invoice_number = value
-
-    @property
-    def reference_number(self):
-        """Return the reference_number."""
-        return self._reference_number
-
-    @reference_number.setter
-    def reference_number(self, value: str):
-        """Set the reference_number."""
-        self._reference_number = value
-        self._dao.reference_number = value
 
     @property
     def invoice_status_code(self):
@@ -293,6 +269,17 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._filing_id = value
         self._dao.filing_id = value
 
+    @property
+    def folio_number(self):
+        """Return the folio_number."""
+        return self._folio_number
+
+    @folio_number.setter
+    def folio_number(self, value: str):
+        """Set the folio_number."""
+        self._folio_number = value
+        self._dao.folio_number = value
+
     def save(self):
         """Save the information to the DB."""
         return self._dao.save()
@@ -340,7 +327,6 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         """Find invoice by id."""
         invoice_dao = InvoiceModel.find_by_id(identifier) if not pay_id else InvoiceModel.find_by_id_and_payment_id(
             identifier, pay_id)
-
         if not invoice_dao:
             raise BusinessException(Error.PAY012)
 
@@ -365,17 +351,6 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         invoice._dao = invoice_dao  # pylint: disable=protected-access
 
         current_app.logger.debug('>find_by_id')
-        return invoice
-
-    @staticmethod
-    def find_by_invoice_number(invoice_number: str):
-        """Find invoice by invoice number."""
-        invoice_dao = InvoiceModel.find_by_invoice_number(invoice_number)
-
-        invoice = Invoice()
-        invoice._dao = invoice_dao  # pylint: disable=protected-access
-
-        current_app.logger.debug('>find_by_invoice_number')
         return invoice
 
     @staticmethod

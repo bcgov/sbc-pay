@@ -18,33 +18,14 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 """
 
 import json
-from datetime import datetime
 from unittest.mock import patch
+from copy import deepcopy
 
 from requests.exceptions import ConnectionError
-from tests.utilities.base_test import get_claims, get_payment_request, get_zero_dollar_payment_request, token_header
 
-from pay_api.models import PaymentTransaction
 from pay_api.schemas import utils as schema_utils
-
-
-def factory_payment_transaction(
-        payment_id: str,
-        status_code: str = 'DRAFT',
-        client_system_url: str = 'http://google.com/',
-        pay_system_url: str = 'http://google.com',
-        transaction_start_time: datetime = datetime.now(),
-        transaction_end_time: datetime = datetime.now(),
-):
-    """Factory."""
-    return PaymentTransaction(
-        payment_id=payment_id,
-        status_code=status_code,
-        client_system_url=client_system_url,
-        pay_system_url=pay_system_url,
-        transaction_start_time=transaction_start_time,
-        transaction_end_time=transaction_end_time,
-    )
+from tests.utilities.base_test import (
+    factory_payment_transaction, get_claims, get_payment_request, get_zero_dollar_payment_request, token_header)
 
 
 def test_payment_creation(session, client, jwt, app):
@@ -281,6 +262,7 @@ def test_zero_dollar_payment_creation(session, client, jwt, app):
 
     rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_zero_dollar_payment_request()),
                      headers=headers)
+
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
     assert rv.json.get('statusCode', None) == 'COMPLETED'
@@ -296,7 +278,7 @@ def test_delete_payment(session, client, jwt, app):
     rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     pay_id = rv.json.get('id')
     rv = client.delete(f'/api/v1/payment-requests/{pay_id}', headers=headers)
-    assert rv.status_code == 204
+    assert rv.status_code == 202
 
 
 def test_delete_completed_payment(session, client, jwt, app):
@@ -316,7 +298,7 @@ def test_delete_completed_payment(session, client, jwt, app):
 
 
 def test_payment_delete_when_paybc_is_down(session, client, jwt, app):
-    """Assert that the endpoint returns 400."""
+    """Assert that the endpoint returns 202. The payment will be acceoted to delete."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
@@ -325,7 +307,8 @@ def test_payment_delete_when_paybc_is_down(session, client, jwt, app):
 
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
         rv = client.delete(f'/api/v1/payment-requests/{pay_id}', headers=headers)
-        assert rv.status_code == 400
+        assert rv.status_code == 202
+
 
 def test_payment_creation_with_routing_slip(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
@@ -338,5 +321,47 @@ def test_payment_creation_with_routing_slip(session, client, jwt, app):
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
     assert rv.json.get('invoices')[0].get('routingSlip') == 'TEST_ROUTE_SLIP'
+
+    assert schema_utils.validate(rv.json, 'payment_response')[0]
+
+
+def test_bcol_payment_creation(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    payload = {
+        'paymentInfo': {
+            'methodOfPayment': 'PREMIUM'
+        },
+        'businessInfo': {
+            'businessIdentifier': 'CP0001234',
+            'corpType': 'CP',
+            'businessName': 'ABC Corp',
+            'contactInfo': {
+                'city': 'Victoria',
+                'postalCode': 'V8P2P2',
+                'province': 'BC',
+                'addressLine1': '100 Douglas Street',
+                'country': 'CA'
+            }
+        },
+        'filingInfo': {
+            'filingTypes': [
+                {
+                    'filingTypeCode': 'OTADD',
+                    'filingDescription': 'TEST'
+                },
+                {
+                    'filingTypeCode': 'OTANN'
+                }
+            ],
+            'folioNumber': 'TEST'
+        }
+    }
+
+    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(payload), headers=headers)
+    print(rv.json)
+    assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
 
     assert schema_utils.validate(rv.json, 'payment_response')[0]

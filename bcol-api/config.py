@@ -75,13 +75,16 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     JWT_OIDC_CACHING_ENABLED = _get_config('JWT_OIDC_CACHING_ENABLED', default=False)
     JWT_OIDC_JWKS_CACHE_TIMEOUT = int(_get_config('JWT_OIDC_JWKS_CACHE_TIMEOUT', default=300))
 
-    # BCOL
-    BCOL_VERIFY_USER_WSDL_URL = _get_config('BCOL_VERIFY_USER_WSDL_URL')
+    # BCOL PROFILE
     BCOL_QUERY_PROFILE_WSDL_URL = _get_config('BCOL_QUERY_PROFILE_WSDL_URL')
     BCOL_LDAP_SERVER = _get_config('BCOL_LDAP_SERVER')
     BCOL_LDAP_USER_DN_PATTERN = _get_config('BCOL_LDAP_USER_DN_PATTERN')
     BCOL_DEBIT_ACCOUNT_VERSION = _get_config('BCOL_DEBIT_ACCOUNT_VERSION')
     BCOL_LINK_CODE = _get_config('BCOL_LINK_CODE')
+
+    # BCOL PAYMENT
+    BCOL_PAYMENTS_WSDL_URL = _get_config('BCOL_PAYMENTS_WSDL_URL')
+
     # Sentry Config
     SENTRY_DSN = _get_config('SENTRY_DSN', default=None)
 

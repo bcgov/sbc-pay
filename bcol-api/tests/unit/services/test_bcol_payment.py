@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests to assure the bcol accounts end-point.
+"""Tests to assure the BCOL payment servcie layer.
 
-Test-Suite to ensure that the /accounts/<id>/users/<user_id> endpoint is working as expected.
+Test-Suite to ensure that the BCOL Service layer is working as expected.
 """
 
+from bcol_api.services.bcol_payment import BcolPayment
 
-def test_get_account_profile(session, client, jwt, app):
-    """Assert that the endpoint returns 200."""
-    rv = client.get(f'/api/v1/bcol/accounts/123456789/users/123456', headers={})
-    assert rv.status_code == 400
+
+def test_payment(app, payment_mock):
+    """Test payment service."""
+    with app.app_context():
+        payment_response = BcolPayment().create_payment({})
+        assert payment_response.get('userId') == 'PB25020'

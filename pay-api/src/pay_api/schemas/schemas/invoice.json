@@ -8,9 +8,9 @@
     "createdBy",
     "createdOn",
     "id",
-    "invoiceNumber",
     "statusCode",
-    "total"
+    "total",
+    "references"
   ],
   "properties": {
     "_links": {
@@ -48,26 +48,6 @@
       "examples": [
         1
       ]
-    },
-    "invoiceNumber": {
-      "$id": "#/properties/invoiceNumber",
-      "type": "string",
-      "title": "Invoice Number",
-      "default": "",
-      "examples": [
-        "10020"
-      ],
-      "pattern": "^(.*)$"
-    },
-    "referenceNumber": {
-      "$id": "#/properties/referenceNumber",
-      "type": "string",
-      "title": "Reference Number",
-      "default": "",
-      "examples": [
-        "10005"
-      ],
-      "pattern": "^(.*)$"
     },
     "statusCode": {
       "$id": "#/properties/statusCode",
@@ -122,6 +102,12 @@
       "type": "array",
       "items": {
         "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/receipt"
+      }
+    },
+    "references": {
+      "type": "array",
+      "items": {
+        "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/invoice_reference"
       }
     }
   }

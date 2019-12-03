@@ -17,36 +17,10 @@
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
 
-from datetime import datetime
-
-from pay_api.models import Invoice, Payment, PaymentAccount
 from pay_api.services.payment import Payment as Payment_service
 from pay_api.utils.enums import Status
-
-
-def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code='CP', payment_system_code='PAYBC'):
-    """Factory."""
-    return PaymentAccount(corp_number=corp_number, corp_type_code=corp_type_code,
-                          payment_system_code=payment_system_code)
-
-
-def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC',
-                    payment_status_code=Status.DRAFT.value):
-    """Factory."""
-    return Payment(payment_system_code=payment_system_code, payment_method_code=payment_method_code,
-                   payment_status_code=payment_status_code, created_by='test', created_on=datetime.now())
-
-
-def factory_invoice(payment_id: str, account_id: str, invoice_status_code: str = Status.DRAFT.value):
-    """Factory."""
-    return Invoice(
-        payment_id=payment_id,
-        invoice_status_code=invoice_status_code,
-        account_id=account_id,
-        total=0,
-        created_by='test',
-        created_on=datetime.now(),
-    )
+from tests.utilities.base_test import (
+    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account)
 
 
 def test_payment_saved_from_new(session):
@@ -57,6 +31,7 @@ def test_payment_saved_from_new(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     p = Payment_service.find_by_id(payment.id, skip_auth_check=True)
 
     assert p is not None
@@ -87,6 +62,7 @@ def test_payment_with_no_active_invoice(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id, Status.DELETED.value)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     p = Payment_service.find_by_id(payment.id, skip_auth_check=True)
 
     assert p is not None

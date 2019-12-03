@@ -39,7 +39,6 @@
         "BCOL_LDAP_USER_DN_PATTERN": "${BCOL_LDAP_USER_DN_PATTERN}",
         "BCOL_LINK_CODE": "${BCOL_LINK_CODE}",
         "BCOL_QUERY_PROFILE_WSDL_URL": "${BCOL_QUERY_PROFILE_WSDL_URL}",
-        "BCOL_VERIFY_USER_WSDL_URL": "${BCOL_VERIFY_USER_WSDL_URL}",
         "REPORT_API_BASE_URL": "https://${REPORT_API_NAME}-${TAG_NAME}.pathfinder.gov.bc.ca/api/v1/reports",
         "AUTH_WEB_PAY_TRANSACTION_URL": "https://${AUTH_WEB_NAME}-${TAG_NAME}.pathfinder.gov.bc.ca",
         "POD_TESTING": "true",
@@ -50,7 +49,9 @@
         "NATS_CLIENT_NAME": "entity.filing.payment.worker",
         "NATS_CLUSTER_ID": "test-cluster",
         "NATS_SUBJECT": "entity.filing.payment",
-        "NATS_QUEUE": "filing-worker"
+        "NATS_QUEUE": "filing-worker",
+        "BCOL_PAYMENTS_WSDL_URL": "${BCOL_PAYMENTS_WSDL_URL}",
+        "BCOL_API_ENDPOINT": "https://${BCOL_API_NAME}-${TAG_NAME}.pathfinder.gov.bc.ca/api/v1/reports"
       }
     }
   ],
@@ -193,7 +194,7 @@
       "from": "[a-zA-Z0-9]{16}"
     },
     {
-      "name": "BCOL_VERIFY_USER_WSDL_URL",
+      "name": "BCOL_PAYMENTS_WSDL_URL",
       "required": true,
       "generate": "expression",
       "from": "[a-zA-Z0-9]{16}"
@@ -218,6 +219,13 @@
       "description": "Sentry DSN URL to initialize the Sentry SDK",
       "required": true,
       "value": "https://account.sentry.ioo/project/id"
-    }
+    },
+    {
+      "name": "BCOL_API_NAME",
+      "displayName": "BCOL API Name",
+      "description": "The name assigned to all of the OpenShift resources associated to the server instance.",
+      "required": true,
+      "value": "bcol-api"
+    },
   ]
 }

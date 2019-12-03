@@ -20,69 +20,15 @@ Test-Suite to ensure that the Receipt Service is working as expected.
 from datetime import datetime
 
 import pytest
-from tests.utilities.base_test import get_payment_request
 
 from pay_api.exceptions import BusinessException
-from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
+from pay_api.models import (
+    FeeSchedule)
 from pay_api.services.payment_service import PaymentService
 from pay_api.services.receipt import Receipt as ReceiptService
-from pay_api.utils.enums import Status
-
-
-def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code='CP', payment_system_code='PAYBC'):
-    """Factory."""
-    return PaymentAccount(
-        corp_number=corp_number,
-        corp_type_code=corp_type_code,
-        payment_system_code=payment_system_code,
-        party_number='11111',
-        account_number='4101',
-        site_number='29921',
-    )
-
-
-def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC', payment_status_code='DRAFT'):
-    """Factory."""
-    return Payment(payment_system_code=payment_system_code, payment_method_code=payment_method_code,
-                   payment_status_code=payment_status_code, created_by='test', created_on=datetime.now())
-
-
-def factory_invoice(payment_id: str, account_id: str):
-    """Factory."""
-    return Invoice(payment_id=payment_id,
-                   invoice_status_code='DRAFT',
-                   account_id=account_id,
-                   total=0, created_by='test', created_on=datetime.now(), invoice_number='10021')
-
-
-def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees: int = 10, total: int = 10):
-    """Factory."""
-    return PaymentLineItem(
-        invoice_id=invoice_id,
-        fee_schedule_id=fee_schedule_id,
-        filing_fees=filing_fees,
-        total=total,
-        line_item_status_code=Status.CREATED.value,
-    )
-
-
-def factory_payment_transaction(
-        payment_id: str,
-        status_code: str = Status.DRAFT.value,
-        client_system_url: str = 'http://google.com/',
-        pay_system_url: str = 'http://google.com',
-        transaction_start_time: datetime = datetime.now(),
-        transaction_end_time: datetime = datetime.now(),
-):
-    """Factory."""
-    return PaymentTransaction(
-        payment_id=payment_id,
-        status_code=status_code,
-        client_system_url=client_system_url,
-        pay_system_url=pay_system_url,
-        transaction_start_time=transaction_start_time,
-        transaction_end_time=transaction_end_time,
-    )
+from tests.utilities.base_test import (
+    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
+    factory_payment_transaction, get_payment_request)
 
 
 def test_receipt_saved_from_new(session):
@@ -93,6 +39,8 @@ def test_receipt_saved_from_new(session):
     payment.save()
     i = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
     i.save()
+    factory_invoice_reference(i.id).save()
+
     receipt_service = ReceiptService()
     receipt_service.receipt_number = '1234567890'
     receipt_service.invoice_id = i.id
@@ -134,13 +82,14 @@ def test_create_receipt_without_invoice(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
 
-    PaymentService.update_payment(payment.id, get_payment_request(), {})
+    PaymentService.update_payment(payment.id, get_payment_request(), {'preferred_username': 'test'})
     input_data = {
         'corpName': 'Pennsular Coop ',
         'filingDateTime': '1999',
@@ -158,13 +107,14 @@ def test_create_receipt_with_invoice(session, app, client):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
 
-    PaymentService.update_payment(payment.id, get_payment_request(), {})
+    PaymentService.update_payment(payment.id, get_payment_request(), {'preferred_username': 'test'})
     input_data = {
         'corpName': 'Pennsular Coop ',
         'filingDateTime': '1999',
@@ -182,6 +132,7 @@ def test_create_receipt_with_no_receipt(session):
     payment.save()
     invoice = factory_invoice(payment.id, payment_account.id)
     invoice.save()
+    factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()

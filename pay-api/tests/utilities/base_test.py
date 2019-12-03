@@ -17,8 +17,10 @@
 Test-Suite to ensure that the /payments endpoint is working as expected.
 """
 
-from pay_api.utils.enums import Role
+from datetime import datetime
 
+from pay_api.models import Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
+from pay_api.utils.enums import Role, Status
 
 token_header = {
     'alg': 'RS256',
@@ -113,3 +115,81 @@ def get_zero_dollar_payment_request(business_identifier: str = 'CP0001234'):
             ]
         }
     }
+
+
+def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code: str = 'CP',
+                            payment_system_code: str = 'PAYBC', account_number='4101', user_id='test'):
+    """Factory."""
+    return PaymentAccount(
+        corp_number=corp_number,
+        corp_type_code=corp_type_code,
+        payment_system_code=payment_system_code,
+        party_number='11111',
+        account_number=account_number,
+        site_number='29921',
+        user_id=user_id
+    )
+
+
+def factory_payment(
+        payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC',
+        payment_status_code: str = Status.DRAFT.value
+):
+    """Factory."""
+    return Payment(
+        payment_system_code=payment_system_code,
+        payment_method_code=payment_method_code,
+        payment_status_code=payment_status_code,
+        created_by='test',
+        created_on=datetime.now(),
+    )
+
+
+def factory_invoice(payment_id: str, account_id: str, status_code: str = Status.DRAFT.value):
+    """Factory."""
+    return Invoice(
+        payment_id=payment_id,
+        invoice_status_code=status_code,
+        account_id=account_id,
+        total=0,
+        created_by='test',
+        created_on=datetime.now(),
+    )
+
+
+def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees: int = 10, total: int = 10,
+                              status: str = Status.CREATED.value):
+    """Factory."""
+    return PaymentLineItem(
+        invoice_id=invoice_id,
+        fee_schedule_id=fee_schedule_id,
+        filing_fees=filing_fees,
+        total=total,
+        line_item_status_code=status,
+    )
+
+
+def factory_payment_transaction(
+        payment_id: str,
+        status_code: str = 'DRAFT',
+        client_system_url: str = 'http://google.com/',
+        pay_system_url: str = 'http://google.com',
+        transaction_start_time: datetime = datetime.now(),
+        transaction_end_time: datetime = datetime.now(),
+):
+    """Factory."""
+    return PaymentTransaction(
+        payment_id=payment_id,
+        status_code=status_code,
+        client_system_url=client_system_url,
+        pay_system_url=pay_system_url,
+        transaction_start_time=transaction_start_time,
+        transaction_end_time=transaction_end_time,
+    )
+
+
+def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021'):
+    """Factory."""
+    return InvoiceReference(invoice_id=invoice_id,
+                            status_code='CREATED',
+                            invoice_number=invoice_number)

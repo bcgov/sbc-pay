@@ -24,6 +24,7 @@ from .fee_schedule import FeeSchedule, FeeScheduleSchema
 from .filing_type import FilingType, FilingTypeSchema
 from .payment_account import PaymentAccount, PaymentAccountSchema
 from .invoice import Invoice, InvoiceSchema
+from .invoice_reference import InvoiceReference, InvoiceReferenceSchema
 from .payment import Payment, PaymentSchema
 from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from .payment_method import PaymentMethod, PaymentMethodSchema

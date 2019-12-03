@@ -54,7 +54,8 @@ class Payment(Resource):
         check_auth(request_json.get('businessInfo').get('businessIdentifier'), _jwt, contains_role=EDIT_ROLE)
 
         try:
-            response, status = PaymentService.create_payment(request_json, g.jwt_oidc_token_info), HTTPStatus.CREATED
+            response, status = PaymentService.create_payment(request_json, g.jwt_oidc_token_info,
+                                                             jwt=_jwt), HTTPStatus.CREATED
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         except ServiceUnavailableException as exception:
@@ -120,9 +121,9 @@ class Payments(Resource):
         current_app.logger.info('<Payment.delete')
 
         try:
-            PaymentService.delete_payment(payment_id, _jwt, g.jwt_oidc_token_info)
+            PaymentService.accept_delete(payment_id, _jwt, g.jwt_oidc_token_info)
 
-            response, status = None, HTTPStatus.NO_CONTENT
+            response, status = None, HTTPStatus.ACCEPTED
 
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
