@@ -30,6 +30,7 @@ from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
     factory_payment_transaction, get_payment_request, get_zero_dollar_payment_request)
 
+
 test_user_token = {'preferred_username': 'test'}
 
 

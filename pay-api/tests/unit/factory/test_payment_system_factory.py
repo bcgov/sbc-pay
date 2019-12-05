@@ -20,15 +20,16 @@ Test-Suite to ensure that the CorpType Class is working as expected.
 import pytest
 
 from pay_api.services.base_payment_system import PaymentSystemService
-from pay_api.services.paybc_service import PaybcService
 from pay_api.services.internal_pay_service import InternalPayService
-from pay_api.factory.payment_system_factory import PaymentSystemFactory
+from pay_api.services.paybc_service import PaybcService
+from pay_api.utils.enums import PaymentSystem, Role
 from pay_api.utils.errors import Error
-from pay_api.utils.enums import Role, PaymentSystem
 
 
 def test_paybc_system_factory(session):
     """Assert a paybc service is returned."""
+    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
+
     # Test for CC and CP
     instance = PaymentSystemFactory.create(payment_method='CC', corp_type='CP')
     assert isinstance(instance, PaybcService)
@@ -58,6 +59,8 @@ def test_paybc_system_factory(session):
 
 def test_invalid_pay_system(session):
     """Test invalid data."""
+    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
+
     from pay_api.exceptions import BusinessException
 
     with pytest.raises(BusinessException) as excinfo:
@@ -77,4 +80,3 @@ def test_invalid_pay_system(session):
     assert excinfo.value.status == Error.PAY003.status
     assert excinfo.value.message == Error.PAY003.message
     assert excinfo.value.code == Error.PAY003.name
-

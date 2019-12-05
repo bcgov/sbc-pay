@@ -16,6 +16,7 @@
 
 A simple decorator to add the options method to a Request Class.
 """
+from flask import current_app
 
 
 def cors_preflight(methods: str = 'GET'):
@@ -31,3 +32,14 @@ def cors_preflight(methods: str = 'GET'):
         return f
 
     return wrapper
+
+
+def is_valid_redirect_url(url: str):
+    """Validate if the url is valid based on the VALID Redirect Url."""
+    valid_urls: list = current_app.config.get('VALID_REDIRECT_URLS')
+    is_valid = False
+    for valid_url in valid_urls:
+        is_valid = url.startswith(valid_url[:-1]) if valid_url.endswith('*') else valid_url == url
+        if is_valid:
+            break
+    return is_valid

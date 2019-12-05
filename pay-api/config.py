@@ -53,7 +53,7 @@ def _get_config(config_key: str, **kwargs):
         value = os.getenv(config_key, kwargs.get('default'))
     else:
         value = os.getenv(config_key)
-        assert value
+        # assert value TODO Un-comment once we find a solution to run pre-hook without initializing app
     return value
 
 
@@ -117,6 +117,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
 
     # BCOL Service
     BCOL_API_ENDPOINT = _get_config('BCOL_API_ENDPOINT')
+
+    # Valid Payment redirect URLs
+    VALID_REDIRECT_URLS = [(val.strip() if val != '' else None) for val in _get_config('VALID_REDIRECT_URLS', default='').split(',')]
 
     TESTING = False
     DEBUG = True
@@ -234,6 +237,8 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     NATS_SUBJECT = 'entity.filing.test'
 
     BCOL_API_ENDPOINT = 'https://mock-lear-tools.pathfinder.gov.bc.ca/rest/bcol-api-1.0.0.yaml/1.0'
+
+    VALID_REDIRECT_URLS = ['http://localhost:8080/*']
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

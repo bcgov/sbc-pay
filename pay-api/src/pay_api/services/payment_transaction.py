@@ -18,7 +18,6 @@ from datetime import datetime
 from typing import Dict
 
 from flask import current_app
-from flask_jwt_oidc import JwtManager
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
@@ -29,9 +28,9 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
-from pay_api.utils.constants import EDIT_ROLE
-from pay_api.utils.enums import Status
+from pay_api.utils.enums import PaymentSystem, Status
 from pay_api.utils.errors import Error
+from pay_api.utils.util import is_valid_redirect_url
 
 from .invoice import InvoiceModel
 from .payment import Payment
@@ -182,12 +181,16 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         return self._dao.flush()
 
     @staticmethod
-    def create(payment_identifier: str, request_json: Dict, jwt: JwtManager = None, skip_auth_check: bool = False):
+    def create(payment_identifier: str, request_json: Dict):
         """Create transaction record."""
         current_app.logger.debug('<create transaction')
         # Lookup payment record
-        payment: Payment = Payment.find_by_id(payment_identifier, jwt=jwt, one_of_roles=[EDIT_ROLE],
-                                              skip_auth_check=skip_auth_check)
+        payment: Payment = Payment.find_by_id(payment_identifier, skip_auth_check=True)
+
+        # Check if return url is valid
+        return_url = request_json.get('clientSystemUrl')
+        if payment.payment_system_code == PaymentSystem.PAYBC.value and not is_valid_redirect_url(return_url):
+            raise BusinessException(Error.PAY013)
 
         if not payment.id:
             raise BusinessException(Error.PAY005)
@@ -206,7 +209,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
 
         transaction = PaymentTransaction()
         transaction.payment_id = payment.id
-        transaction.client_system_url = request_json.get('clientSystemUrl')
+        transaction.client_system_url = return_url
         transaction.status_code = Status.CREATED.value
         transaction_dao = transaction.flush()
         transaction._dao = transaction_dao  # pylint: disable=protected-access
@@ -262,8 +265,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def update_transaction(payment_identifier: int, transaction_id: uuid,  # pylint: disable=too-many-locals
-                           receipt_number: str, jwt: JwtManager = None,
-                           skip_auth_check: bool = False):
+                           receipt_number: str):
         """Update transaction record.
 
         Does the following:
@@ -283,8 +285,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         if transaction_dao.status_code == Status.COMPLETED.value:
             raise BusinessException(Error.PAY006)
 
-        payment: Payment = Payment.find_by_id(payment_identifier, jwt=jwt, one_of_roles=[EDIT_ROLE],
-                                              skip_auth_check=skip_auth_check)
+        payment: Payment = Payment.find_by_id(payment_identifier, skip_auth_check=True)
 
         if payment.payment_status_code == Status.COMPLETED.value:
             raise BusinessException(Error.PAY010)
@@ -293,7 +294,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
             payment_system=payment.payment_system_code
         )
 
-        invoice = Invoice.find_by_payment_identifier(payment_identifier, jwt=jwt, skip_auth_check=True)
+        invoice = Invoice.find_by_payment_identifier(payment_identifier, skip_auth_check=True)
         invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
         payment_account = PaymentAccount.find_by_id(invoice.account_id)
 

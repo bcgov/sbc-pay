@@ -19,8 +19,9 @@ Test-Suite to ensure that the BCOL Service layer is working as expected.
 
 from pay_api.models.fee_schedule import FeeSchedule
 from pay_api.services.bcol_service import BcolService
-from tests.utilities.base_test import factory_payment_account, factory_payment_line_item, factory_payment, \
-    factory_invoice, factory_invoice_reference
+from tests.utilities.base_test import (
+    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item)
+
 
 bcol_service = BcolService()
 

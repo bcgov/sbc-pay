@@ -14,7 +14,6 @@
 """Resource for Transaction endpoints."""
 from http import HTTPStatus
 
-import flask
 from flask import current_app, jsonify, request
 from flask_restplus import Namespace, Resource, cors
 
@@ -36,7 +35,6 @@ class Transaction(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.requires_auth
     @_tracing.trace()
     def post(payment_id):
         """Create the Transaction records."""
@@ -50,8 +48,7 @@ class Transaction(Resource):
             return jsonify({'code': 'PAY007', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
 
         try:
-            response, status = TransactionService.create(payment_id, request_json,
-                                                         jwt=_jwt).asdict(), HTTPStatus.CREATED
+            response, status = TransactionService.create(payment_id, request_json).asdict(), HTTPStatus.CREATED
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         current_app.logger.debug('>Transaction.post')
@@ -92,16 +89,15 @@ class Transactions(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.requires_auth
     @_tracing.trace()
     def patch(payment_id, transaction_id):
         """Update the transaction record by querying payment system."""
         current_app.logger.info(
             f'<Transaction.post for payment : {payment_id}, and transaction {transaction_id}')
-        receipt_number = flask.request.args.get('receipt_number')
+        receipt_number = request.get_json().get('receipt_number', None)
         try:
             response, status = TransactionService.update_transaction(payment_id, transaction_id,
-                                                                     receipt_number, _jwt).asdict(), HTTPStatus.OK
+                                                                     receipt_number).asdict(), HTTPStatus.OK
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         current_app.logger.debug('>Transaction.post')
