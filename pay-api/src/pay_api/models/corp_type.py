@@ -15,6 +15,8 @@
 
 from .code_table import CodeTable
 from .db import db, ma
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import relationship
 
 
 class CorpType(db.Model, CodeTable):
@@ -27,6 +29,7 @@ class CorpType(db.Model, CodeTable):
 
     code = db.Column('code', db.String(10), primary_key=True)
     description = db.Column('description', db.String(200), nullable=False)
+    transaction_fee_code = db.Column(db.String(10), ForeignKey('fee_code.code'), nullable=True)
 
     def save(self):
         """Save corp type."""

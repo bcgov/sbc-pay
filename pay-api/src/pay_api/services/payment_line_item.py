@@ -30,8 +30,8 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         self._invoice_id: int = None
         self._filing_fees: float = None
         self._fee_schedule_id: int = None
-        self._processing_fees: float = None
-        self._service_fees: float = None
+        # self._processing_fees: float = None
+        # self._service_fees: float = None
         self._description: str = None
         self._gst: float = None
         self._pst: float = None
@@ -52,8 +52,8 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         self.invoice_id: int = self._dao.invoice_id
         self.filing_fees: float = self._dao.filing_fees
         self.fee_schedule_id: int = self._dao.fee_schedule_id
-        self.processing_fees: float = self._dao.processing_fees
-        self.service_fees: float = self._dao.service_fees
+        # self.processing_fees: float = self._dao.processing_fees
+        # self.service_fees: float = self._dao.service_fees
         self.description: str = self._dao.description
         self.gst: float = self._dao.gst
         self.pst: float = self._dao.pst
@@ -99,10 +99,10 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         """Return the _fee_schedule_id."""
         return self._fee_schedule_id
 
-    @property
-    def processing_fees(self):
-        """Return the _processing_fees."""
-        return self._processing_fees
+    # @property
+    # def processing_fees(self):
+    #     """Return the _processing_fees."""
+    #     return self._processing_fees
 
     @fee_schedule_id.setter
     def fee_schedule_id(self, value: int):
@@ -110,22 +110,22 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         self._fee_schedule_id = value
         self._dao.fee_schedule_id = value
 
-    @processing_fees.setter
-    def processing_fees(self, value: float):
-        """Set the processing_fees."""
-        self._processing_fees = value
-        self._dao.processing_fees = value
+    # @processing_fees.setter
+    # def processing_fees(self, value: float):
+    #     """Set the processing_fees."""
+    #     self._processing_fees = value
+    #     self._dao.processing_fees = value
 
-    @property
-    def service_fees(self):
-        """Return the _service_fees."""
-        return self._service_fees
+    # @property
+    # def service_fees(self):
+    #     """Return the _service_fees."""
+    #     return self._service_fees
 
-    @service_fees.setter
-    def service_fees(self, value: float):
-        """Set the service_fees."""
-        self._service_fees = value
-        self._dao.service_fees = value
+    # @service_fees.setter
+    # def service_fees(self, value: float):
+    #     """Set the service_fees."""
+    #     self._service_fees = value
+    #     self._dao.service_fees = value
 
     @property
     def description(self):

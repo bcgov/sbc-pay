@@ -53,6 +53,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._routing_slip: str = None
         self._filing_id: str = None
         self._folio_number: str = None
+        self._transaction_fees: float = None
 
     @property
     def _dao(self):
@@ -81,6 +82,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.routing_slip: str = self._dao.routing_slip
         self.filing_id: str = self._dao.filing_id
         self.folio_number: str = self._dao.folio_number
+        self.transaction_fees: float = self._dao.transaction_fees
 
     @property
     def id(self):
@@ -280,6 +282,17 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._folio_number = value
         self._dao.folio_number = value
 
+    @property
+    def transaction_fees(self):
+        """Return the transaction_fees."""
+        return self._transaction_fees
+
+    @transaction_fees.setter
+    def transaction_fees(self, value: float):
+        """Set the transaction_fees."""
+        self._transaction_fees = value
+        self._dao.transaction_fees = value
+
     def save(self):
         """Save the information to the DB."""
         return self._dao.save()
@@ -317,6 +330,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         i.refund = 0
         i.routing_slip = kwargs.get('routing_slip', None)
         i.filing_id = kwargs.get('filing_id', None)
+        i.transaction_fees = kwargs.get('transaction_fees', None)
 
         i._dao = i.flush()  # pylint: disable=protected-access
         current_app.logger.debug('>create')

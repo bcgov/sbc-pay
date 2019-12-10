@@ -87,11 +87,11 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
         try:
             payment: Payment = Payment.create(payment_info, current_user, pay_service.get_payment_system_code())
-            current_app.logger.debug(payment)
-
+            # If it's a premium user payment using non-CC add transaction fees
+            transaction_fees = __calculate_transaction_fees(payment)
             current_app.logger.debug('Creating Invoice record for payment {}'.format(payment.id))
             invoice = Invoice.create(payment_account, payment.id, fees, current_user, routing_slip=routing_slip_number,
-                                     filing_id=filing_id)
+                                     filing_id=filing_id, transaction_fees=transaction_fees)
 
             line_items = []
             for fee in fees:
