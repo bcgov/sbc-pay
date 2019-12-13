@@ -243,7 +243,7 @@ class PaybcService(PaymentSystemService, OAuthService):
     def __add_adjustment(self, account_details: Tuple[str],  # pylint: disable=too-many-arguments
                          inv_number: str, comment: str, amount: float, line: int = 0, access_token: str = None):
         """Add adjustment to the invoice."""
-        current_app.logger.debug('>Creating PayBC Adjustment  For Invoice: ', inv_number)
+        current_app.logger.debug(f'>Creating PayBC Adjustment  For Invoice: {inv_number}')
         adjustment_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/adjs/' \
             .format(account_details[0], account_details[1], account_details[2], inv_number)
         current_app.logger.debug('>Creating PayBC Adjustment URL {}', adjustment_url)

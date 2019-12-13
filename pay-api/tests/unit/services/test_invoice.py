@@ -47,10 +47,6 @@ def test_invoice_saved_from_new(session):
     assert invoice.payment_date is None
     assert invoice.total is not None
     assert invoice.paid is None
-    assert invoice.created_on is not None
-    assert invoice.created_by is not None
-    assert invoice.updated_by is None
-    assert invoice.updated_on is None
     assert invoice.account_id is not None
     assert invoice.payment_line_items is not None
 
@@ -81,10 +77,6 @@ def test_invoice_find_by_valid_payment_id(session):
     assert invoice.payment_date is None
     assert invoice.total is not None
     assert invoice.paid is None
-    assert invoice.created_on is not None
-    assert invoice.created_by is not None
-    assert invoice.updated_by is None
-    assert invoice.updated_on is None
     assert invoice.account_id is not None
     assert not invoice.payment_line_items
 

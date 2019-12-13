@@ -14,19 +14,21 @@
 
 """This manages all of the authorization service."""
 from flask import abort, current_app
-from flask_jwt_oidc import JwtManager
 
 from pay_api.services.oauth_service import OAuthService as RestService
 from pay_api.utils.enums import AuthHeaderType, ContentType, Role
+from pay_api.utils.user_context import UserContext, user_context
 
 
-def check_auth(business_identifier: str, jwt: JwtManager, **kwargs):
+@user_context
+def check_auth(business_identifier: str, **kwargs):
     """Authorize the user for the business entity."""
+    user: UserContext = kwargs['user']
     is_authorized: bool = False
-    if jwt.validate_roles([Role.SYSTEM.value]):
-        is_authorized = bool(jwt.validate_roles([Role.EDITOR.value]))
+    if Role.SYSTEM.value in user.roles:
+        is_authorized = bool(Role.EDITOR.value in user.roles)
     else:
-        bearer_token = jwt.get_token_auth_header() if jwt else None
+        bearer_token = user.bearer_token
         auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'entities/{business_identifier}/authorizations'
         auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON)
 

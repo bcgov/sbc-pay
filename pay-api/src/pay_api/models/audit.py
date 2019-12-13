@@ -12,23 +12,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Base class for audit model."""
-from flask import current_app
-from sqlalchemy.orm import validates
+from datetime import datetime
 
+from sqlalchemy.ext.declarative import declared_attr
+
+from pay_api.utils.user_context import user_context
+
+from .base_model import BaseModel
 from .db import db
 
 
-class Audit:  # pylint: disable=too-few-public-methods
+class Audit(BaseModel):  # pylint: disable=too-few-public-methods
     """This class provides base methods for Auditable Table."""
 
-    created_by = db.Column('created_by', db.String(50), nullable=False)
-    created_on = db.Column('created_on', db.DateTime, nullable=False)
-    updated_by = db.Column('updated_by', db.String(50), nullable=True)
-    updated_on = db.Column('updated_on', db.DateTime, nullable=True)
+    __abstract__ = True
 
-    @validates('created_by', 'updated_by')
-    def convert_upper(self, key, value):  # pylint: disable=no-self-use
-        """Convert the annotated columns to upper case on save."""
-        current_app.logger.debug(f'Converting to upper for Key {key} and value {value}')
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
+    updated_on = db.Column('updated_on', db.DateTime, default=None, onupdate=datetime.now)
 
-        return value.upper() if value else value
+    @declared_attr
+    def created_by(cls):  # pylint:disable=no-self-argument, # noqa: N805
+        """Return created by."""
+        return db.Column('created_by', db.String(50), nullable=False, default=cls._get_user_name)
+
+    @declared_attr
+    def updated_by(cls):  # pylint:disable=no-self-argument, # noqa: N805
+        """Return updated by."""
+        return db.Column('updated_by', db.String(50), nullable=True, default=None, onupdate=cls._get_user_name)
+
+    @staticmethod
+    @user_context
+    def _get_user_name(**kwargs):
+        """Return current user name."""
+        return kwargs['user'].user_name.upper()

@@ -26,7 +26,7 @@ from .base_schema import BaseSchema
 from .db import db, ma
 
 
-class PaymentTransaction(db.Model, BaseModel):  # pylint: disable=too-few-public-methods
+class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods
     """This class manages all of the base data about Payment Transaction."""
 
     __tablename__ = 'payment_transaction'

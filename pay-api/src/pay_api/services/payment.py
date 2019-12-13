@@ -13,11 +13,9 @@
 # limitations under the License.
 """Service to manage Payment model related operations."""
 
-from datetime import datetime
 from typing import Any, Dict, Tuple
 
 from flask import current_app
-from flask_jwt_oidc import JwtManager
 
 from pay_api.models import Payment as PaymentModel
 from pay_api.models.payment import PaymentSchema
@@ -36,10 +34,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         self._payment_system_code: str = None
         self._payment_method_code: str = None
         self._payment_status_code: str = None
-        self._created_by: str = None
-        self._created_on: datetime = datetime.now()
-        self._updated_by: str = None
-        self._updated_on: datetime = None
         self._invoices = None
 
     @property
@@ -55,10 +49,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         self.payment_system_code: str = self._dao.payment_system_code
         self.payment_method_code: str = self._dao.payment_method_code
         self.payment_status_code: str = self._dao.payment_status_code
-        self.created_by: str = self._dao.created_by
-        self.created_on: datetime = self._dao.created_on
-        self.updated_by: str = self._dao.updated_by
-        self.updated_on: datetime = self._dao.updated_on
         self.invoices = self._dao.invoices
 
     @property
@@ -106,50 +96,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         self._dao.payment_status_code = value
 
     @property
-    def created_by(self):
-        """Return the created_by."""
-        return self._created_by
-
-    @created_by.setter
-    def created_by(self, value: str):
-        """Set the created_by."""
-        self._created_by = value
-        self._dao.created_by = value
-
-    @property
-    def created_on(self):
-        """Return the created_on."""
-        return self._created_on if self._created_on is not None else datetime.now()
-
-    @created_on.setter
-    def created_on(self, value: datetime):
-        """Set the created_on."""
-        self._created_on = value
-        self._dao.created_on = value
-
-    @property
-    def updated_by(self):
-        """Return the updated_by."""
-        return self._updated_by
-
-    @updated_by.setter
-    def updated_by(self, value: str):
-        """Set the created_by."""
-        self._updated_by = value
-        self._dao.updated_by = value
-
-    @property
-    def updated_on(self):
-        """Return the updated_on."""
-        return self._updated_on
-
-    @updated_on.setter
-    def updated_on(self, value: datetime):
-        """Set the updated_on."""
-        self._updated_on = value
-        self._dao.updated_on = value
-
-    @property
     def invoices(self):
         """Return the payment invoices."""
         return self._invoices
@@ -183,15 +129,13 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         return d
 
     @staticmethod
-    def create(payment_info: Dict[str, Any], current_user: str = None, payment_system: str = 'CC'):
+    def create(payment_info: Dict[str, Any], payment_system: str = 'CC'):
         """Create payment record."""
         current_app.logger.debug('<create_payment')
         p = Payment()
         p.payment_method_code = payment_info.get('methodOfPayment', None)
         p.payment_status_code = Status.CREATED.value
         p.payment_system_code = payment_system
-        p.created_by = current_user
-        p.created_on = datetime.now()
         pay_dao = p.flush()
         p = Payment()
         p._dao = pay_dao  # pylint: disable=protected-access
@@ -199,7 +143,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         return p
 
     @staticmethod
-    def find_by_id(identifier: int, jwt: JwtManager = None, skip_auth_check: bool = False,
+    def find_by_id(identifier: int, skip_auth_check: bool = False,
                    one_of_roles: Tuple = ALL_ALLOWED_ROLES):
         """Find payment by id."""
         payment_dao = PaymentModel.find_by_id(identifier)
@@ -207,7 +151,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         # Check if user is authorized to view the payment
         if not skip_auth_check and payment_dao:
             for invoice in payment_dao.invoices:
-                check_auth(invoice.account.corp_number, jwt, one_of_roles=one_of_roles)
+                check_auth(invoice.account.corp_number, one_of_roles=one_of_roles)
 
         payment = Payment()
         payment._dao = payment_dao  # pylint: disable=protected-access
