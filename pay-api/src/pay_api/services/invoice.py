@@ -16,7 +16,6 @@
 from datetime import datetime
 
 from flask import current_app
-from flask_jwt_oidc import JwtManager
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import Invoice as InvoiceModel
@@ -44,10 +43,6 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._refund: float = None
         self._payment_date: datetime = None
         self._payment_line_items = None
-        self._created_by: str = None
-        self._created_on: datetime = None
-        self._updated_by: str = None
-        self._updated_on: datetime = None
         self._payment_account = None
         self._receipts = None
         self._routing_slip: str = None
@@ -71,10 +66,6 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.payment_date: datetime = self._dao.payment_date
         self.total: float = self._dao.total
         self.paid: float = self._dao.paid
-        self.created_by: str = self._dao.created_by
-        self.created_on: datetime = self._dao.created_on
-        self.updated_by: str = self._dao.updated_by
-        self.updated_on: datetime = self._dao.updated_on
         self.payment_line_items = self._dao.payment_line_items
         self.payment_account = self._dao.account
         self.receipts = self._dao.receipts
@@ -182,50 +173,6 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._dao.payment_line_items = value
 
     @property
-    def created_by(self):
-        """Return the created_by."""
-        return self._created_by
-
-    @property
-    def created_on(self):
-        """Return the created_on."""
-        return self._created_on if self._created_on is not None else datetime.now()
-
-    @property
-    def updated_on(self):
-        """Return the updated_on."""
-        return self._updated_on
-
-    @property
-    def updated_by(self):
-        """Return the updated_by."""
-        return self._updated_by
-
-    @created_by.setter
-    def created_by(self, value: str):
-        """Set the created_by."""
-        self._created_by = value
-        self._dao.created_by = value
-
-    @created_on.setter
-    def created_on(self, value: datetime):
-        """Set the created_on."""
-        self._created_on = value
-        self._dao.created_on = value
-
-    @updated_by.setter
-    def updated_by(self, value: str):
-        """Set the created_by."""
-        self._updated_by = value
-        self._dao.updated_by = value
-
-    @updated_on.setter
-    def updated_on(self, value: datetime):
-        """Set the updated_on."""
-        self._updated_on = value
-        self._dao.updated_on = value
-
-    @property
     def payment_account(self):
         """Return the payment_account."""
         return self._payment_account
@@ -303,12 +250,10 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoice
 
     @staticmethod
-    def create(account: PaymentAccount, payment_id: int, fees: [FeeSchedule], current_user: str, **kwargs):
+    def create(account: PaymentAccount, payment_id: int, fees: [FeeSchedule], **kwargs):
         """Create invoice record."""
         current_app.logger.debug('<create')
         i = Invoice()
-        i.created_on = datetime.now()
-        i.created_by = current_user
         i.payment_id = payment_id
         i.invoice_status_code = Status.DRAFT.value
         i.account_id = account.id
@@ -323,7 +268,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return i
 
     @staticmethod
-    def find_by_id(identifier: int, pay_id: int = None, jwt: JwtManager = None, skip_auth_check: bool = False):
+    def find_by_id(identifier: int, pay_id: int = None, skip_auth_check: bool = False):
         """Find invoice by id."""
         invoice_dao = InvoiceModel.find_by_id(identifier) if not pay_id else InvoiceModel.find_by_id_and_payment_id(
             identifier, pay_id)
@@ -331,7 +276,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
             raise BusinessException(Error.PAY012)
 
         if not skip_auth_check:
-            Invoice._check_for_auth(jwt, invoice_dao)
+            Invoice._check_for_auth(invoice_dao)
 
         invoice = Invoice()
         invoice._dao = invoice_dao  # pylint: disable=protected-access
@@ -340,12 +285,12 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoice
 
     @staticmethod
-    def find_by_payment_identifier(identifier: int, jwt: JwtManager = None, skip_auth_check: bool = False):
+    def find_by_payment_identifier(identifier: int, skip_auth_check: bool = False):
         """Find invoice by payment identifier."""
         invoice_dao = InvoiceModel.find_by_payment_id(identifier)
 
         if not skip_auth_check:
-            Invoice._check_for_auth(jwt, invoice_dao)
+            Invoice._check_for_auth(invoice_dao)
 
         invoice = Invoice()
         invoice._dao = invoice_dao  # pylint: disable=protected-access
@@ -354,7 +299,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoice
 
     @staticmethod
-    def get_invoices(payment_identifier: str, jwt: JwtManager = None, skip_auth_check: bool = False):
+    def get_invoices(payment_identifier: str, skip_auth_check: bool = False):
         """Find invoices."""
         current_app.logger.debug('<get_invoices')
 
@@ -363,13 +308,13 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         for dao in daos:
             if dao:
                 if not skip_auth_check:
-                    Invoice._check_for_auth(jwt, dao)
+                    Invoice._check_for_auth(dao)
                 data['items'].append(Invoice.populate(dao).asdict())
 
         current_app.logger.debug('>get_invoices')
         return data
 
     @staticmethod
-    def _check_for_auth(jwt, dao):
+    def _check_for_auth(dao):
         # Check if user is authorized to perform this action
-        check_auth(dao.account.corp_number, jwt, one_of_roles=ALL_ALLOWED_ROLES)
+        check_auth(dao.account.corp_number, one_of_roles=ALL_ALLOWED_ROLES)

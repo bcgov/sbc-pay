@@ -73,7 +73,7 @@ def test_receipt_invalid_lookup(session):
     assert receipt.id is None
 
 
-def test_create_receipt_without_invoice(session):
+def test_create_receipt_without_invoice(session, public_user_mock):
     """Try creating a receipt without invoice number."""
     payment_account = factory_payment_account()
     payment = factory_payment()
@@ -88,7 +88,7 @@ def test_create_receipt_without_invoice(session):
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
 
-    PaymentService.update_payment(payment.id, get_payment_request(), {'preferred_username': 'test'})
+    PaymentService.update_payment(payment.id, get_payment_request())
     input_data = {
         'corpName': 'Pennsular Coop ',
         'filingDateTime': '1999',
@@ -98,7 +98,7 @@ def test_create_receipt_without_invoice(session):
     assert response is not None
 
 
-def test_create_receipt_with_invoice(session, app, client):
+def test_create_receipt_with_invoice(session, public_user_mock):
     """Try creating a receipt with invoice number."""
     payment_account = factory_payment_account()
     payment = factory_payment()
@@ -113,7 +113,7 @@ def test_create_receipt_with_invoice(session, app, client):
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
 
-    PaymentService.update_payment(payment.id, get_payment_request(), {'preferred_username': 'test'})
+    PaymentService.update_payment(payment.id, get_payment_request())
     input_data = {
         'corpName': 'Pennsular Coop ',
         'filingDateTime': '1999',
@@ -123,7 +123,7 @@ def test_create_receipt_with_invoice(session, app, client):
     assert response is not None
 
 
-def test_create_receipt_with_no_receipt(session):
+def test_create_receipt_with_no_receipt(session, public_user_mock):
     """Try creating a receipt with invoice number."""
     payment_account = factory_payment_account()
     payment = factory_payment()
@@ -136,7 +136,7 @@ def test_create_receipt_with_no_receipt(session):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    PaymentService.update_payment(payment.id, get_payment_request(), {'preferred_username': 'test'})
+    PaymentService.update_payment(payment.id, get_payment_request())
     input_data = {
         'corpName': 'Pennsular Coop ',
         'filingDateTime': '1999',

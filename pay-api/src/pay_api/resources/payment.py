@@ -14,7 +14,7 @@
 """Resource for Payment endpoints."""
 from http import HTTPStatus
 
-from flask import current_app, g, jsonify, request
+from flask import current_app, jsonify, request
 from flask_restplus import Namespace, Resource, cors
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
@@ -51,11 +51,10 @@ class Payment(Resource):
             return jsonify({'code': 'PAY999', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
 
         # Check if user is authorized to perform this action
-        check_auth(request_json.get('businessInfo').get('businessIdentifier'), _jwt, contains_role=EDIT_ROLE)
+        check_auth(request_json.get('businessInfo').get('businessIdentifier'), contains_role=EDIT_ROLE)
 
         try:
-            response, status = PaymentService.create_payment(request_json, g.jwt_oidc_token_info,
-                                                             jwt=_jwt), HTTPStatus.CREATED
+            response, status = PaymentService.create_payment(request_json), HTTPStatus.CREATED
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         except ServiceUnavailableException as exception:
@@ -76,7 +75,7 @@ class Payments(Resource):
     def get(payment_id):
         """Get the payment records."""
         try:
-            response, status = PaymentService.get_payment(payment_id, _jwt), HTTPStatus.OK
+            response, status = PaymentService.get_payment(payment_id), HTTPStatus.OK
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         return jsonify(response), status
@@ -96,12 +95,12 @@ class Payments(Resource):
             return jsonify({'code': 'PAY003', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
 
         # Check if user is authorized to perform this action
-        check_auth(request_json.get('businessInfo').get('businessIdentifier'), _jwt, one_of_roles=[EDIT_ROLE])
+        check_auth(request_json.get('businessInfo').get('businessIdentifier'), one_of_roles=[EDIT_ROLE])
 
         try:
             response, status = (
                 PaymentService.update_payment(
-                    payment_id, request_json, g.jwt_oidc_token_info
+                    payment_id, request_json
                 ),
                 HTTPStatus.OK,
             )
@@ -121,7 +120,7 @@ class Payments(Resource):
         current_app.logger.info('<Payment.delete')
 
         try:
-            PaymentService.accept_delete(payment_id, _jwt, g.jwt_oidc_token_info)
+            PaymentService.accept_delete(payment_id)
 
             response, status = None, HTTPStatus.ACCEPTED
 

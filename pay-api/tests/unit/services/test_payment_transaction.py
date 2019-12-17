@@ -113,7 +113,7 @@ def test_transaction_create_from_invalid_payment(session):
 
 
 @skip_in_pod
-def test_transaction_update(session, stan_server):
+def test_transaction_update(session, stan_server, public_user_mock):
     """Assert that the payment is saved to the table."""
     payment_account = factory_payment_account()
     payment = factory_payment()
@@ -170,7 +170,7 @@ def test_transaction_update_with_no_receipt(session, stan_server):
 
 
 @skip_in_pod
-def test_transaction_update_completed(session, stan_server):
+def test_transaction_update_completed(session, stan_server, public_user_mock):
     """Assert that the payment is saved to the table."""
     payment_account = factory_payment_account()
     payment = factory_payment()

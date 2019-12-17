@@ -39,10 +39,6 @@ def test_payment_saved_from_new(session):
     assert p.payment_system_code is not None
     assert p.payment_method_code is not None
     assert p.payment_status_code is not None
-    assert p.created_by is not None
-    assert p.created_on is not None
-    assert p.updated_on is None
-    assert p.updated_by is None
     assert p.invoices is not None
 
 
