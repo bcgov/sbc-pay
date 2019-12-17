@@ -23,10 +23,9 @@ from unittest.mock import patch
 
 from requests.exceptions import ConnectionError
 
+from pay_api.schemas import utils as schema_utils
 from tests import skip_in_pod
 from tests.utilities.base_test import get_claims, get_payment_request, token_header
-
-from pay_api.schemas import utils as schema_utils
 
 
 def test_transaction_post(session, client, jwt, app):
@@ -42,10 +41,27 @@ def test_transaction_post(session, client, jwt, app):
         'payReturnUrl': 'http://localhost:8080/pay-web'
     }
     rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
-                     headers=headers)
+                     headers={'content-type': 'application/json'})
     assert rv.status_code == 201
     assert rv.json.get('paymentId') == payment_id
     assert schema_utils.validate(rv.json, 'transaction')[0]
+
+
+def test_transaction_post_with_invalid_return_url(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    # Create a payment first
+    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    payment_id = rv.json.get('id')
+    data = {
+        'clientSystemUrl': 'http://google.com/coops-web/transactions/transaction_id=abcd',
+        'payReturnUrl': 'http://localhost:8080/pay-web'
+    }
+    rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
+                     headers={'content-type': 'application/json'})
+    assert rv.status_code == 401
 
 
 def test_transaction_post_no_redirect_uri(session, client, jwt, app):
@@ -57,17 +73,15 @@ def test_transaction_post_no_redirect_uri(session, client, jwt, app):
     rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     payment_id = rv.json.get('id')
     rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps({}),
-                     headers=headers)
+                     headers={'content-type': 'application/json'})
     assert rv.status_code == 400
 
 
 def test_transactions_post_invalid_payment(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
-    token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     payment_id = 9999
     rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps({}),
-                     headers=headers)
+                     headers={'content-type': 'application/json'})
     assert rv.status_code == 400
 
 
@@ -84,7 +98,7 @@ def test_transaction_get(session, client, jwt, app):
         'payReturnUrl': 'http://localhost:8080/pay-web'
     }
     rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
-                     headers=headers)
+                     headers={'content-type': 'application/json'})
     txn_id = rv.json.get('id')
     rv = client.get(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}', headers=headers)
     assert rv.status_code == 200
@@ -106,7 +120,7 @@ def test_transaction_get_invalid_payment_and_transaction(session, client, jwt, a
         'payReturnUrl': 'http://localhost:8080/pay-web'
     }
     rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
-                     headers=headers)
+                     headers={'content-type': 'application/json'})
     txn_id = rv.json.get('id')
     invalid_payment_id = 999
     rv = client.get(f'/api/v1/payment-requests/{invalid_payment_id}/transactions/{txn_id}', headers=headers)
@@ -132,10 +146,11 @@ def test_transaction_put(session, client, jwt, app):
     }
     receipt_number = '123451'
     rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
-                     headers=headers)
+                     headers={'content-type': 'application/json'})
     txn_id = rv.json.get('id')
-    rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}',
-                      data=None, headers=headers)
+    rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}',
+                      data=json.dumps({'receipt_number': receipt_number}),
+                      headers={'content-type': 'application/json'})
     assert rv.status_code == 200
 
 
@@ -152,10 +167,10 @@ def test_transaction_put_with_no_receipt(session, client, jwt, app):
         'payReturnUrl': 'http://localhost:8080/pay-web'
     }
     rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
-                     headers=headers)
+                     headers={'content-type': 'application/json'})
     txn_id = rv.json.get('id')
-    rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}', data=None,
-                      headers=headers)
+    rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}', data=json.dumps({}),
+                      headers={'content-type': 'application/json'})
     assert rv.status_code == 200
 
 
@@ -173,14 +188,14 @@ def test_transaction_put_completed_payment(session, client, jwt, app, stan_serve
         'payReturnUrl': 'http://localhost:8080/pay-web'
     }
     rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
-                     headers=headers)
+                     headers={'content-type': 'application/json'})
 
     txn_id = rv.json.get('id')
-    rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}', data=None,
-                      headers=headers)
+    rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}', data=json.dumps({}),
+                      headers={'content-type': 'application/json'})
 
-    rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}', data=None,
-                      headers=headers)
+    rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}', data=json.dumps({}),
+                      headers={'content-type': 'application/json'})
 
     assert rv.status_code == 400
     assert rv.json.get('code') == 'PAY006'
@@ -205,7 +220,7 @@ def test_transactions_get(session, client, jwt, app):
         'payReturnUrl': 'http://localhost:8080/pay-web'
     }
     rv = client.post(f'{transactions_link}', data=json.dumps(data),
-                     headers=headers)
+                     headers={'content-type': 'application/json'})
     txn_id = rv.json.get('id')
     rv = client.get(f'{transactions_link}/{txn_id}', headers=headers)
     assert rv.status_code == 200
@@ -233,11 +248,11 @@ def test_transaction_patch_completed_payment_and_transaction_status(session, cli
         'payReturnUrl': 'http://localhost:8080/pay-web'
     }
     rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
-                     headers=headers)
+                     headers={'content-type': 'application/json'})
 
     txn_id = rv.json.get('id')
-    rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}', data=None,
-                      headers=headers)
+    rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}', data=json.dumps({}),
+                      headers={'content-type': 'application/json'})
 
     assert rv.status_code == 200
     assert rv.json.get('statusCode') == 'COMPLETED'
@@ -258,12 +273,12 @@ def test_transaction_patch_when_paybc_down(session, client, jwt, app):
     }
     receipt_number = '123451'
     rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
-                     headers=headers)
+                     headers={'content-type': 'application/json'})
     txn_id = rv.json.get('id')
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
         rv = client.patch(
-            f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}',
-            data=None,
-            headers=headers)
+            f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}',
+            data=json.dumps({'receipt_number': receipt_number}),
+            headers={'content-type': 'application/json'})
         assert rv.status_code == 200
         assert rv.json.get('paySystemReasonCode') == 'SERVICE_UNAVAILABLE'

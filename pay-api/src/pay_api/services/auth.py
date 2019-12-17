@@ -17,22 +17,25 @@ from flask import abort, current_app
 from flask_jwt_oidc import JwtManager
 
 from pay_api.services.oauth_service import OAuthService as RestService
-from pay_api.utils.enums import AuthHeaderType, ContentType
+from pay_api.utils.enums import AuthHeaderType, ContentType, Role
 
 
 def check_auth(business_identifier: str, jwt: JwtManager, **kwargs):
     """Authorize the user for the business entity."""
-    bearer_token = jwt.get_token_auth_header() if jwt else None
-    auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'entities/{business_identifier}/authorizations'
-    auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON)
-
     is_authorized: bool = False
-    if auth_response:
-        roles: list = auth_response.json().get('roles', [])
-        if kwargs.get('one_of_roles', None):
-            is_authorized = list(set(kwargs.get('one_of_roles')) & set(roles)) != []
-        if kwargs.get('contains_role', None):
-            is_authorized = kwargs.get('contains_role') in roles
+    if jwt.validate_roles([Role.SYSTEM.value]):
+        is_authorized = bool(jwt.validate_roles([Role.EDITOR.value]))
+    else:
+        bearer_token = jwt.get_token_auth_header() if jwt else None
+        auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'entities/{business_identifier}/authorizations'
+        auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON)
+
+        if auth_response:
+            roles: list = auth_response.json().get('roles', [])
+            if kwargs.get('one_of_roles', None):
+                is_authorized = list(set(kwargs.get('one_of_roles')) & set(roles)) != []
+            if kwargs.get('contains_role', None):
+                is_authorized = kwargs.get('contains_role') in roles
 
     if not is_authorized:
         abort(403)

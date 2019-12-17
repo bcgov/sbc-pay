@@ -31,6 +31,8 @@ class Error(Enum):
     PAY010 = 'Payment is already completed', HTTPStatus.BAD_REQUEST
     PAY011 = 'Payment is already cancelled', HTTPStatus.BAD_REQUEST
     PAY012 = 'Invalid invoice identifier', HTTPStatus.BAD_REQUEST
+    PAY013 = 'Invalid redirect url', HTTPStatus.UNAUTHORIZED
+
     PAY020 = 'Invalid Account Number for the User', HTTPStatus.BAD_REQUEST
     PAY021 = 'Zero dollars deducted from BCOL', HTTPStatus.BAD_REQUEST
 

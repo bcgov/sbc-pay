@@ -22,6 +22,7 @@ from datetime import datetime
 from pay_api.models import Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction
 from pay_api.utils.enums import Role, Status
 
+
 token_header = {
     'alg': 'RS256',
     'typ': 'JWT',
@@ -29,7 +30,8 @@ token_header = {
 }
 
 
-def get_claims(app_request=None, role: str = Role.EDITOR.value, username: str = 'CP0001234', login_source: str = None):
+def get_claims(app_request=None, role: str = Role.EDITOR.value, username: str = 'CP0001234', login_source: str = None,
+               roles: list = []):
     """Return the claim with the role param."""
     claim = {
         'jti': 'a50fafa4-c4d6-4a9b-9e51-1e5e0d102878',
@@ -44,7 +46,8 @@ def get_claims(app_request=None, role: str = Role.EDITOR.value, username: str = 
             {
                 'roles':
                     [
-                        '{}'.format(role)
+                        '{}'.format(role),
+                        *roles
                     ]
             },
         'preferred_username': username,
@@ -193,3 +196,11 @@ def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021'):
     return InvoiceReference(invoice_id=invoice_id,
                             status_code='CREATED',
                             invoice_number=invoice_number)
+
+
+def get_paybc_transaction_request():
+    """Return a stub payment transaction request."""
+    return {
+        'clientSystemUrl': 'http://localhost:8080/abcd',
+        'payReturnUrl': 'http://localhost:8081/xyz'
+    }

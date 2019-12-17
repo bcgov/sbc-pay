@@ -20,6 +20,7 @@ Test-Suite to ensure that the /receipt endpoint is working as expected.
 import json
 
 import pytest
+
 from tests.utilities.base_test import get_claims, get_payment_request, get_zero_dollar_payment_request, token_header
 
 
@@ -51,8 +52,8 @@ def test_receipt_creation(session, client, jwt, app):
     rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
                      headers=headers)
     txn_id = rv.json.get('id')
-    rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}',
-                      data=None, headers=headers)
+    rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}',
+                      data=json.dumps({'receipt_number': receipt_number}), headers=headers)
 
     filing_data = {
         'corpName': 'CP0001234',
@@ -80,8 +81,8 @@ def test_receipt_creation_with_invoice(session, client, jwt, app):
     rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
                      headers=headers)
     txn_id = rv.json.get('id')
-    client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}',
-                 data=None, headers=headers)
+    client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}',
+                 data=json.dumps({'receipt_number': receipt_number}), headers=headers)
     filing_data = {
         'corpName': 'CP0001234',
         'filingDateTime': 'June 27, 2019',
@@ -106,8 +107,8 @@ def test_receipt_creation_with_invalid_request(session, client, jwt, app):
     rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions?redirect_uri={redirect_uri}', data=None,
                      headers=headers)
     txn_id = rv.json.get('id')
-    client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}?receipt_number={receipt_number}',
-                 data=None, headers=headers)
+    client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}',
+                 data=json.dumps({'receipt_number': receipt_number}), headers=headers)
     filing_data = {
         'corpName': 'CP0001234'
     }
