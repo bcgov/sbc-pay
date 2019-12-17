@@ -5,7 +5,6 @@
   "title": "Transaction",
   "required": [
     "_links",
-    "endTime",
     "id",
     "paymentId",
     "startTime",
