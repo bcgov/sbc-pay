@@ -38,7 +38,7 @@ class Invoices(Resource):
     @_tracing.trace()
     def get(payment_id):
         """Get the Invoice records."""
-        response, status = InvoiceService.get_invoices(payment_id, _jwt), HTTPStatus.OK
+        response, status = InvoiceService.get_invoices(payment_id), HTTPStatus.OK
         return jsonify(response), status
 
 
@@ -54,7 +54,7 @@ class Invoice(Resource):
     def get(payment_id, invoice_id):
         """Get the Invoice records."""
         try:
-            response, status = InvoiceService.find_by_id(invoice_id, payment_id, jwt=_jwt).asdict(), HTTPStatus.OK
+            response, status = InvoiceService.find_by_id(invoice_id, payment_id).asdict(), HTTPStatus.OK
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         return jsonify(response), status

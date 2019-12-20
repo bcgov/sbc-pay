@@ -34,38 +34,38 @@ from tests.utilities.base_test import (
 test_user_token = {'preferred_username': 'test'}
 
 
-def test_create_payment_record(session):
+def test_create_payment_record(session, public_user_mock):
     """Assert that the payment records are created."""
-    payment_response = PaymentService.create_payment(get_payment_request(), test_user_token)
+    payment_response = PaymentService.create_payment(get_payment_request())
     account_model = PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'PAYBC')
     account_id = account_model.id
     assert account_id is not None
     assert payment_response.get('id') is not None
     # Create another payment with same request, the account should be the same
-    PaymentService.create_payment(get_payment_request(), test_user_token)
+    PaymentService.create_payment(get_payment_request())
     account_model = PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'PAYBC')
     assert account_id == account_model.id
 
 
-def test_create_payment_record_rollback(session):
+def test_create_payment_record_rollback(session, public_user_mock):
     """Assert that the payment records are created."""
     # Mock here that the invoice update fails here to test the rollback scenario
     with patch('pay_api.services.invoice.Invoice.save', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.create_payment(get_payment_request(), test_user_token)
+            PaymentService.create_payment(get_payment_request())
         assert excinfo.type == Exception
 
     with patch('pay_api.services.payment.Payment.create', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.create_payment(get_payment_request(), test_user_token)
+            PaymentService.create_payment(get_payment_request())
         assert excinfo.type == Exception
     with patch('pay_api.services.paybc_service.PaybcService.create_invoice', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.create_payment(get_payment_request(), test_user_token)
+            PaymentService.create_payment(get_payment_request())
         assert excinfo.type == Exception
 
 
-def test_update_payment_record(session):
+def test_update_payment_record(session, public_user_mock):
     """Assert that the payment records are updated."""
     payment_account = factory_payment_account()
     payment = factory_payment()
@@ -80,11 +80,11 @@ def test_update_payment_record(session):
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
 
-    payment_response = PaymentService.update_payment(payment.id, get_payment_request(), {})
+    payment_response = PaymentService.update_payment(payment.id, get_payment_request())
     assert payment_response.get('id') is not None
 
 
-def test_update_payment_record_transaction_invalid(session):
+def test_update_payment_record_transaction_invalid(session, public_user_mock):
     """Assert that the payment records are updated."""
     payment_account = factory_payment_account()
     payment = factory_payment()
@@ -99,11 +99,11 @@ def test_update_payment_record_transaction_invalid(session):
     transaction = factory_payment_transaction(payment.id, Status.COMPLETED.value)
     transaction.save()
 
-    payment_response = PaymentService.update_payment(payment.id, get_payment_request(), {})
+    payment_response = PaymentService.update_payment(payment.id, get_payment_request())
     assert payment_response.get('id') is not None
 
 
-def test_update_payment_completed_invalid(session):
+def test_update_payment_completed_invalid(session, public_user_mock):
     """Assert that the payment records are updated."""
     payment_account = factory_payment_account()
     payment = factory_payment()
@@ -121,11 +121,11 @@ def test_update_payment_completed_invalid(session):
     transaction.save()
 
     with pytest.raises(BusinessException) as excinfo:
-        PaymentService.update_payment(payment.id, get_payment_request(), {})
+        PaymentService.update_payment(payment.id, get_payment_request())
     assert excinfo.type == BusinessException
 
 
-def test_update_payment_deleted_invalid(session):
+def test_update_payment_deleted_invalid(session, public_user_mock):
     """Assert that the payment records are not updated."""
     payment_account = factory_payment_account()
     payment = factory_payment()
@@ -143,11 +143,11 @@ def test_update_payment_deleted_invalid(session):
     transaction.save()
 
     with pytest.raises(BusinessException) as excinfo:
-        PaymentService.update_payment(payment.id, get_payment_request(), {})
+        PaymentService.update_payment(payment.id, get_payment_request())
     assert excinfo.type == BusinessException
 
 
-def test_update_payment_invoice_deleted_invalid(session):
+def test_update_payment_invoice_deleted_invalid(session, public_user_mock):
     """Assert that the payment records are not updated."""
     payment_account = factory_payment_account()
     payment = factory_payment()
@@ -164,11 +164,11 @@ def test_update_payment_invoice_deleted_invalid(session):
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
 
-    payment_response = PaymentService.update_payment(payment.id, get_payment_request(), {})
+    payment_response = PaymentService.update_payment(payment.id, get_payment_request())
     assert payment_response.get('id') is not None
 
 
-def test_update_payment_record_rollback(session):
+def test_update_payment_record_rollback(session, public_user_mock):
     """Assert that the payment records are updated."""
     payment_account = factory_payment_account()
     payment = factory_payment()
@@ -190,7 +190,7 @@ def test_update_payment_record_rollback(session):
             side_effect=Exception('mocked error'),
     ):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.update_payment(payment.id, get_payment_request(), {})
+            PaymentService.update_payment(payment.id, get_payment_request())
         assert excinfo.type == Exception
 
     with patch(
@@ -198,17 +198,17 @@ def test_update_payment_record_rollback(session):
             side_effect=Exception('mocked error'),
     ):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.update_payment(payment.id, get_payment_request(), {})
+            PaymentService.update_payment(payment.id, get_payment_request())
         assert excinfo.type == Exception
 
     with patch('pay_api.services.payment.Payment.find_by_id', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.update_payment(payment.id, get_payment_request(), {})
+            PaymentService.update_payment(payment.id, get_payment_request())
         assert excinfo.type == Exception
 
     with patch('pay_api.services.payment_line_item.PaymentLineItem.create', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.update_payment(payment.id, get_payment_request(), {})
+            PaymentService.update_payment(payment.id, get_payment_request())
         assert excinfo.type == Exception
 
     # reset transaction
@@ -217,7 +217,7 @@ def test_update_payment_record_rollback(session):
 
     with patch('pay_api.services.paybc_service.PaybcService.update_invoice', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.update_payment(payment.id, get_payment_request(), {})
+            PaymentService.update_payment(payment.id, get_payment_request())
         assert excinfo.type == Exception
 
     # reset transaction
@@ -226,7 +226,7 @@ def test_update_payment_record_rollback(session):
 
     with patch('pay_api.services.invoice.Invoice.find_by_id', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.update_payment(payment.id, get_payment_request(), {})
+            PaymentService.update_payment(payment.id, get_payment_request())
         assert excinfo.type == Exception
 
     # reset transaction
@@ -235,7 +235,7 @@ def test_update_payment_record_rollback(session):
 
     with patch('pay_api.services.invoice.Invoice.save', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.update_payment(payment.id, get_payment_request(), {})
+            PaymentService.update_payment(payment.id, get_payment_request())
         assert excinfo.type == Exception
 
     # reset transaction
@@ -244,46 +244,46 @@ def test_update_payment_record_rollback(session):
 
     with patch('pay_api.services.payment.Payment.save', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
-            PaymentService.update_payment(payment.id, get_payment_request(), {})
+            PaymentService.update_payment(payment.id, get_payment_request())
         assert excinfo.type == Exception
 
 
-def test_create_payment_record_rollback_on_paybc_connection_error(session):
+def test_create_payment_record_rollback_on_paybc_connection_error(session, public_user_mock):
     """Assert that the payment records are not created."""
     # Mock here that the invoice update fails here to test the rollback scenario
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
         with pytest.raises(ServiceUnavailableException) as excinfo:
-            PaymentService.create_payment(get_payment_request(), test_user_token)
+            PaymentService.create_payment(get_payment_request())
         assert excinfo.type == ServiceUnavailableException
 
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectTimeout('mocked error')):
         with pytest.raises(ServiceUnavailableException) as excinfo:
-            PaymentService.create_payment(get_payment_request(), test_user_token)
+            PaymentService.create_payment(get_payment_request())
         assert excinfo.type == ServiceUnavailableException
 
     with patch('pay_api.services.oauth_service.requests.post', side_effect=HTTPError('mocked error')) as post_mock:
         post_mock.status_Code = 503
         with pytest.raises(HTTPError) as excinfo:
-            PaymentService.create_payment(get_payment_request(), test_user_token)
+            PaymentService.create_payment(get_payment_request())
         assert excinfo.type == HTTPError
 
 
-def test_create_zero_dollar_payment_record(session):
+def test_create_zero_dollar_payment_record(session, public_user_mock):
     """Assert that the payment records are created and completed."""
-    payment_response = PaymentService.create_payment(get_zero_dollar_payment_request(), test_user_token)
+    payment_response = PaymentService.create_payment(get_zero_dollar_payment_request())
     account_model = PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'INTERNAL')
     account_id = account_model.id
     assert account_id is not None
     assert payment_response.get('id') is not None
     assert payment_response.get('status_code') == 'COMPLETED'
     # Create another payment with same request, the account should be the same
-    PaymentService.create_payment(get_zero_dollar_payment_request(), test_user_token)
+    PaymentService.create_payment(get_zero_dollar_payment_request())
     account_model = PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'INTERNAL')
     assert account_id == account_model.id
     assert payment_response.get('status_code') == 'COMPLETED'
 
 
-def test_delete_payment(session, auth_mock):
+def test_delete_payment(session, auth_mock, public_user_mock):
     """Assert that the payment records are soft deleted."""
     payment_account = factory_payment_account()
     payment = factory_payment()

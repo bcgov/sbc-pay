@@ -13,17 +13,16 @@
 # limitations under the License.
 """Factory to manage creation of pay system service."""
 
-from typing import Dict
-
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.services.base_payment_system import PaymentSystemService
-from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.services.bcol_service import BcolService  # noqa: I001
+from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.services.paybc_service import PaybcService
-from pay_api.utils.enums import Role, PaymentSystem  # noqa: I001
+from pay_api.utils.enums import PaymentSystem, Role  # noqa: I001
 from pay_api.utils.errors import Error
+from pay_api.utils.user_context import UserContext, user_context
 
 
 class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
@@ -48,10 +47,11 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         return _instance
 
     @staticmethod
-    def create(token_info: Dict = None, **kwargs):
+    @user_context
+    def create(**kwargs):
         """Create a subclass of PaymentSystemService based on input params."""
         current_app.logger.debug('<create')
-
+        user: UserContext = kwargs['user']
         total_fees: int = kwargs.get('fees', None)
         payment_method = kwargs.get('payment_method', 'CC')
         corp_type = kwargs.get('corp_type', None)
@@ -62,9 +62,7 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         if not payment_method and not corp_type:
             raise BusinessException(Error.PAY003)
 
-        if total_fees == 0 or (
-                token_info and token_info.get('realm_access', None)
-                and Role.STAFF.value in token_info['realm_access']['roles']):
+        if total_fees == 0 or (Role.STAFF.value in user.roles):
             _instance = InternalPayService()
         else:
             if payment_method == 'CC':

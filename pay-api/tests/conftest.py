@@ -238,3 +238,45 @@ def create_mock_coro(mocker, monkeypatch):
 def auth_mock(monkeypatch):
     """Mock check_auth."""
     monkeypatch.setattr('pay_api.services.auth.check_auth', lambda *args, **kwargs: None)
+
+
+@pytest.fixture()
+def public_user_mock(monkeypatch):
+    """Mock user_context."""
+    def token_info():  # pylint: disable=unused-argument; mocks of library methods
+        return {
+            'username': 'public user',
+            'realm_access': {
+                'roles': [
+                    'public_user',
+                    'edit'
+                ]
+            }
+        }
+
+    def mock_auth():  # pylint: disable=unused-argument; mocks of library methods
+        return 'test'
+
+    monkeypatch.setattr('pay_api.utils.user_context._get_token', mock_auth)
+    monkeypatch.setattr('pay_api.utils.user_context._get_token_info', token_info)
+
+
+@pytest.fixture()
+def staff_user_mock(monkeypatch):
+    """Mock user_context."""
+    def token_info():  # pylint: disable=unused-argument; mocks of library methods
+        return {
+            'username': 'staff user',
+            'realm_access': {
+                'roles': [
+                    'staff',
+                    'edit'
+                ]
+            }
+        }
+
+    def mock_auth():  # pylint: disable=unused-argument; mocks of library methods
+        return 'test'
+
+    monkeypatch.setattr('pay_api.utils.user_context._get_token', mock_auth)
+    monkeypatch.setattr('pay_api.utils.user_context._get_token_info', token_info)
