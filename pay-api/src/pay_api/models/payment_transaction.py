@@ -37,8 +37,8 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods
     client_system_url = db.Column(db.String(500), nullable=True)
     pay_system_url = db.Column(db.String(500), nullable=True)
 
-    transaction_start_time = db.Column(db.DateTime, default=datetime.today(), nullable=False)
-    transaction_end_time = db.Column(db.DateTime, default=datetime.today(), nullable=True)
+    transaction_start_time = db.Column(db.DateTime, default=datetime.now, nullable=False)
+    transaction_end_time = db.Column(db.DateTime, nullable=True)
 
     @classmethod
     def find_by_payment_id(cls, payment_id: int):

@@ -63,11 +63,16 @@ class OAuthService:
                 raise ServiceUnavailableException(exc)
             raise exc
         finally:
-            current_app.logger.debug(response.headers if response else 'Empty Response Headers')
-            current_app.logger.info('response : {}'.format(response.text if response else ''))
+            OAuthService.__log_response(response)
 
         current_app.logger.debug('>post')
         return response
+
+    @staticmethod
+    def __log_response(response):
+        if response is not None:
+            current_app.logger.debug(response.headers)
+            current_app.logger.info('response : {}'.format(response.text if response else ''))
 
     @staticmethod
     def get(endpoint, token, auth_header_type: AuthHeaderType, content_type: ContentType,
@@ -100,8 +105,7 @@ class OAuthService:
                 raise ServiceUnavailableException(exc)
             raise exc
         finally:
-            current_app.logger.debug(response.headers if response else 'Empty Response Headers')
-            current_app.logger.info('response : {}'.format(response.text if response else ''))
+            OAuthService.__log_response(response)
 
         current_app.logger.debug('>GET')
         return response

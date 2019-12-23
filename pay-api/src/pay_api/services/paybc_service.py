@@ -22,6 +22,7 @@ from typing import Any, Dict, Tuple
 
 from dateutil import parser
 from flask import current_app
+from requests import HTTPError
 
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
@@ -222,10 +223,17 @@ class PaybcService(PaymentSystemService, OAuthService):
             'customer_site_id': '1'
         }
 
-        site_response = self.post(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, site)
-
+        try:
+            site_response = self.post(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, site).json()
+        except HTTPError as e:
+            # If the site creation fails with 400, query and return site
+            if e.response.status_code == 400:
+                site_response = \
+                    self.get(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json().get('items')[0]
+            else:
+                raise e
         current_app.logger.debug('>Creating site ')
-        return site_response.json()
+        return site_response
 
     def __get_token(self):
         """Generate oauth token from payBC which will be used for all communication."""
