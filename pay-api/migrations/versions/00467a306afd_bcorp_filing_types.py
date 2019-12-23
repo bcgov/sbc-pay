@@ -30,7 +30,7 @@ def upgrade():
     # ### end Alembic commands ###
 
     # Delete existing BCORP fee codes
-    op.execute('DELETE FROM fee_schedule where corp_type_code=\'BC\'')
+    # op.execute('DELETE FROM fee_schedule where corp_type_code=\'BC\'')
 
     op.execute("update corp_type set description='BC Company' where code='BC'")
 
