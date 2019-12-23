@@ -18,13 +18,14 @@ from datetime import datetime
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
+from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceSchema
 from pay_api.services.auth import check_auth
 from pay_api.services.fee_schedule import FeeSchedule
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import ALL_ALLOWED_ROLES
-from pay_api.utils.enums import Status
+from pay_api.utils.enums import PaymentSystem, Status
 from pay_api.utils.errors import Error
 
 
@@ -270,12 +271,13 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         i.payment_id = payment_id
         i.invoice_status_code = Status.DRAFT.value
         i.account_id = account.id
-        i.total = sum(fee.total for fee in fees) if fees else 0
+        i.transaction_fees = Invoice.calculate_transaction_fees(account.payment_system_code, account.corp_type_code)
+
+        i.total = i.transaction_fees + sum(fee.total for fee in fees) if fees else 0
         i.paid = 0
         i.refund = 0
         i.routing_slip = kwargs.get('routing_slip', None)
         i.filing_id = kwargs.get('filing_id', None)
-        i.transaction_fees = kwargs.get('transaction_fees', None)
 
         i._dao = i.flush()  # pylint: disable=protected-access
         current_app.logger.debug('>create')
@@ -332,3 +334,13 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
     def _check_for_auth(dao):
         # Check if user is authorized to perform this action
         check_auth(dao.account.corp_number, one_of_roles=ALL_ALLOWED_ROLES)
+
+    @staticmethod
+    def calculate_transaction_fees(payment_system_code: str, corp_type_code: str):
+        """Calculate transaction fees."""
+        transaction_fees: float = 0
+
+        if payment_system_code == PaymentSystem.BCOL.value:
+            transaction_fees = CorpTypeModel.find_by_code(corp_type_code).transaction_fee.amount
+
+        return transaction_fees

@@ -46,7 +46,6 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     folio_number = db.Column(db.String(50), nullable=True, index=True)
     transaction_fees = db.Column(db.Float, nullable=True)
 
-
     payment_line_items = relationship('PaymentLineItem')
     receipts = relationship('Receipt')
     account = relationship('PaymentAccount')

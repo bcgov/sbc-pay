@@ -44,13 +44,17 @@ def factory_fee_schedule(filing_type_code: str,
                          corp_type_code: str,
                          fee_code: str,
                          fee_start_date: date,
-                         fee_end_date: date):
+                         fee_end_date: date,
+                         priority_fee_code: str = None,
+                         future_effective_fee_code: str = None):
     """Return a valid FeeSchedule object."""
     return FeeSchedule(filing_type_code=filing_type_code,
                        corp_type_code=corp_type_code,
                        fee_code=fee_code,
                        fee_start_date=fee_start_date,
-                       fee_end_date=fee_end_date)
+                       fee_end_date=fee_end_date,
+                       priority_fee_code=priority_fee_code,
+                       future_effective_fee_code=future_effective_fee_code)
 
 
 def test_fee_schedule(session):

@@ -61,7 +61,7 @@
     },
     "total": {
       "$id": "#/properties/total",
-      "type": "integer",
+      "type": "number",
       "title": "Total amount",
       "default": 0,
       "examples": [

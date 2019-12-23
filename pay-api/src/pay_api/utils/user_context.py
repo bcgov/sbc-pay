@@ -72,7 +72,7 @@ def user_context(function):
 
 
 def _get_token_info() -> Dict:
-    return g.jwt_oidc_token_info
+    return g.jwt_oidc_token_info if g else None
 
 
 def _get_token() -> str:

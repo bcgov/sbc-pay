@@ -13,10 +13,11 @@
 # limitations under the License.
 """Model to handle all operations related to Corp type master data."""
 
-from .code_table import CodeTable
-from .db import db, ma
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
+
+from .code_table import CodeTable
+from .db import db, ma
 
 
 class CorpType(db.Model, CodeTable):
@@ -30,6 +31,8 @@ class CorpType(db.Model, CodeTable):
     code = db.Column('code', db.String(10), primary_key=True)
     description = db.Column('description', db.String(200), nullable=False)
     transaction_fee_code = db.Column(db.String(10), ForeignKey('fee_code.code'), nullable=True)
+
+    transaction_fee = relationship('FeeCode', foreign_keys=[transaction_fee_code], lazy='joined', innerjoin=False)
 
     def save(self):
         """Save corp type."""
