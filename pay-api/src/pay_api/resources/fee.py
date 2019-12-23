@@ -42,10 +42,12 @@ class Fee(Resource):
     def get(corp_type, filing_type_code):
         """Calculate the fee for the filing using the corp type/filing type and return fee."""
         date = request.args.get('date', datetime.today().strftime('%Y-%m-%d'))
+        is_priority = request.args.get('priority', False)
+        is_future_effective = request.args.get('futureEffective', False)
         jurisdiction = request.args.get('jurisdiction', DEFAULT_JURISDICTION)
         priority = request.args.get('priority', False)
+        
         try:
-
             response, status = (
                 FeeSchedule.find_by_corp_type_and_filing_type(
                     corp_type=corp_type,
@@ -53,6 +55,8 @@ class Fee(Resource):
                     valid_date=date,
                     jurisdiction=jurisdiction,
                     priority=priority,
+                    is_priority=is_priority,
+                    is_future_effective=is_future_effective
                 ).asdict(),
                 HTTPStatus.OK,
             )
