@@ -44,4 +44,4 @@ class Audit(BaseModel):  # pylint: disable=too-few-public-methods
     @user_context
     def _get_user_name(**kwargs):
         """Return current user name."""
-        return kwargs['user'].user_name.upper()
+        return kwargs['user'].user_name

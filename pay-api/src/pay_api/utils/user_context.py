@@ -32,13 +32,13 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
         token_info: Dict = _get_token_info()
         self._user_name: str = token_info.get('username', None)
         self._bearer_token: str = _get_token()
-        self._roles: list = token_info.get('realm_access', None).get('roles', None)
+        self._roles: list = token_info.get('realm_access', None).get('roles', None) if 'realm_access' in token_info else None
         self._sub: str = token_info.get('sub', None)
 
     @property
     def user_name(self) -> str:
         """Return the user_name."""
-        return self._user_name
+        return self._user_name.upper() if self._user_name else None
 
     @property
     def bearer_token(self) -> str:
@@ -72,7 +72,7 @@ def user_context(function):
 
 
 def _get_token_info() -> Dict:
-    return g.jwt_oidc_token_info if g else None
+    return g.jwt_oidc_token_info if 'jwt_oidc_token_info' in g else {}
 
 
 def _get_token() -> str:
