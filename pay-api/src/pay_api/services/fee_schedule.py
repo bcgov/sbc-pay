@@ -38,6 +38,8 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         self._fee_end_date: date = None
         self._fee_amount: float = None
         self._filing_type: str = None
+        self._priority_fee: float = 0
+        self._future_effective_fee: float = 0
 
     @property
     def _dao(self):
@@ -131,7 +133,7 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
     @property
     def total(self):
         """Return the total fees calculated."""
-        return self._fee_amount + self.pst + self.gst
+        return self._fee_amount + self.pst + self.gst + self.priority_fee + self.future_effective_fee
 
     @property
     def fee_amount(self):
@@ -139,9 +141,24 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         return self._fee_amount
 
     @property
-    def service_fees(self):
-        """Return the fee amount."""
-        return 0  # TODO
+    def priority_fee(self):
+        """Return the priority fee."""
+        return self._priority_fee
+
+    @priority_fee.setter
+    def priority_fee(self, value: float):
+        """Set the priority fee."""
+        self._priority_fee = value
+
+    @property
+    def future_effective_fee(self):
+        """Return the future_effective_fee."""
+        return self._future_effective_fee
+
+    @future_effective_fee.setter
+    def future_effective_fee(self, value: float):
+        """Set the future_effective_fee."""
+        self._future_effective_fee = value
 
     @property
     def gst(self):
@@ -150,11 +167,6 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
 
     @property
     def pst(self):
-        """Return the fee amount."""
-        return 0  # TODO
-
-    @property
-    def processing_fees(self):
         """Return the fee amount."""
         return 0  # TODO
 
@@ -175,16 +187,16 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
             'filing_type': self._filing_type,
             'filing_type_code': self.filing_type_code,
             'filing_fees': self.fee_amount,
-            'service_fees': self.service_fees,
-            'processing_fees': self.processing_fees,
+            'priority_fees': self.priority_fee,
+            'future_effective_fees': self.future_effective_fee,
             'tax': {
                 'gst': self.gst,
                 'pst': self.pst
             },
-            'total': self.total
+            'total': self.total,
+            'service_fees': 0,  # TODO Remove
+            'processing_fees': 0  # TODO Remove
         }
-        # if self.description:
-        #   d['description'] = self.description
         return d
 
     def save(self):
@@ -197,21 +209,26 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
             corp_type: str,
             filing_type_code: str,
             valid_date: date,
-            jurisdiction: str,
-            priority: bool,
+            **kwargs
     ):
         """Calculate fees for the filing by using the arguments."""
         current_app.logger.debug('<get_fees_by_corp_type_and_filing_type')
         if not corp_type and not filing_type_code:
             raise BusinessException(Error.PAY001)
-        if jurisdiction or priority:
-            current_app.logger.warn('Not using Jurisdiction and priority now!!!')
+        if kwargs.get('jurisdiction'):
+            current_app.logger.warn('Not using Jurisdiction now!!!')
+
         fee_schedule_dao = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type, filing_type_code, valid_date)
 
         if not fee_schedule_dao:
             raise BusinessException(Error.PAY002)
         fee_schedule = FeeSchedule()
         fee_schedule._dao = fee_schedule_dao  # pylint: disable=protected-access
+
+        if kwargs.get('is_priority') and fee_schedule_dao.priority_fee:
+            fee_schedule.priority_fee = fee_schedule_dao.priority_fee.amount
+        if kwargs.get('is_future_effective') and fee_schedule_dao.future_effective_fee:
+            fee_schedule.future_effective_fee = fee_schedule_dao.future_effective_fee.amount
 
         current_app.logger.debug('>get_fees_by_corp_type_and_filing_type')
         return fee_schedule

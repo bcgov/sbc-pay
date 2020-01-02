@@ -11,7 +11,7 @@
   "properties": {
     "filingFees": {
       "$id": "#/properties/filingFees",
-      "type": "integer",
+      "type": "number",
       "title": "Fees for filing",
       "default": 0,
       "examples": [
@@ -38,18 +38,18 @@
       ],
       "pattern": "^(.*)$"
     },
-    "processingFees": {
-      "$id": "#/properties/processingFees",
-      "type": "integer",
-      "title": "Processing fees",
+    "priorityFees": {
+      "$id": "#/properties/priorityFees",
+      "type": "number",
+      "title": "Priority fees",
       "examples": [
         10
       ]
     },
-    "serviceFees": {
-      "$id": "#/properties/serviceFees",
-      "type": "integer",
-      "title": "Applicable service fees",
+    "futureEffectiveFees": {
+      "$id": "#/properties/futureEffectiveFees",
+      "type": "number",
+      "title": "Future Effective fees",
       "examples": [
         10
       ]
@@ -65,7 +65,7 @@
       "properties": {
         "gst": {
           "$id": "#/properties/tax/properties/gst",
-          "type": "integer",
+          "type": "number",
           "title": "GST",
           "examples": [
             10
@@ -73,7 +73,7 @@
         },
         "pst": {
           "$id": "#/properties/tax/properties/pst",
-          "type": "integer",
+          "type": "number",
           "title": "PST",
           "default": 0,
           "examples": [

@@ -42,8 +42,7 @@ def test_fee_schedule_saved_from_new(session):
     fee_schedule.fee_start_date = date.today()
     fee_schedule.save()
 
-    fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE,
-                                                                          None, None, None)
+    fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE, None)
 
     assert fee_schedule is not None
 
@@ -58,8 +57,7 @@ def test_find_by_corp_type_and_filing_type_from_new(session):
     fee_schedule.fee_start_date = date.today()
     fee_schedule.save()
 
-    fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE,
-                                                                          None, None, None)
+    fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE, None)
 
     assert fee_schedule.fee_schedule_id is not None
     assert fee_schedule.fee_start_date == date.today()
@@ -79,7 +77,9 @@ def test_find_by_corp_type_and_filing_type_from_new(session):
             {
                 'gst': 0,
                 'pst': 0
-            }
+            },
+        'priority_fees': 0,
+        'future_effective_fees': 0,
     }
 
 
@@ -88,7 +88,7 @@ def test_find_by_corp_type_and_filing_type_from_none(session):
     from pay_api.exceptions import BusinessException
 
     with pytest.raises(BusinessException) as excinfo:
-        services.FeeSchedule.find_by_corp_type_and_filing_type(None, None, None, None, None)
+        services.FeeSchedule.find_by_corp_type_and_filing_type(None, None, None)
     assert excinfo.value.status == Error.PAY001.status
     assert excinfo.value.message == Error.PAY001.message
     assert excinfo.value.code == Error.PAY001.name
@@ -99,7 +99,7 @@ def test_find_by_corp_type_and_filing_type_invalid(session):
     from pay_api.exceptions import BusinessException
 
     with pytest.raises(BusinessException) as excinfo:
-        services.FeeSchedule.find_by_corp_type_and_filing_type('XX', 'XXXX', None, None, None)
+        services.FeeSchedule.find_by_corp_type_and_filing_type('XX', 'XXXX', None)
     assert excinfo.value.status == Error.PAY002.status
     assert excinfo.value.message == Error.PAY002.message
     assert excinfo.value.code == Error.PAY002.name
@@ -116,7 +116,7 @@ def test_find_by_corp_type_and_filing_type_and_valid_date(session):
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE,
-                                                                          date.today(), None, None)
+                                                                          date.today())
 
     assert fee_schedule.fee_schedule_id is not None
 
@@ -134,7 +134,7 @@ def test_find_by_corp_type_and_filing_type_and_invalid_date(session):
 
     with pytest.raises(BusinessException) as excinfo:
         fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE,
-                                                                              date.today() - timedelta(1), None, None)
+                                                                              date.today() - timedelta(1))
 
     assert excinfo.value.status == Error.PAY002.status
 
@@ -142,7 +142,9 @@ def test_find_by_corp_type_and_filing_type_and_invalid_date(session):
 def create_linked_data(
         filing_type_code: str,
         corp_type_code: str,
-        fee_code: str):
+        fee_code: str,
+        priority_fee: str = None,
+        future_effective_fee: str = None):
     """Return a valid fee schedule object, creates the related objects first."""
     corp_type = CorpType(code=corp_type_code,
                          description='TEST')
@@ -151,6 +153,15 @@ def create_linked_data(
     fee_code_master = FeeCode(code=fee_code,
                               amount=100)
     fee_code_master.save()
+
+    if priority_fee:
+        priority_fee_code = FeeCode(code=priority_fee,
+                                    amount=10)
+        priority_fee_code.save()
+    if future_effective_fee:
+        future_effective_fee_code = FeeCode(code=future_effective_fee,
+                                            amount=20)
+        future_effective_fee_code.save()
 
     filing_type = FilingType(code=filing_type_code,
                              description='TEST')

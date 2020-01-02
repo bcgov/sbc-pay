@@ -309,7 +309,8 @@ def _calculate_fees(corp_type, filing_info):
             filing_type_code=filing_type_info.get('filingTypeCode', None),
             valid_date=filing_info.get('date', None),
             jurisdiction=None,
-            priority=filing_info.get('priority', None),
+            is_priority=filing_type_info.get('priority'),
+            is_future_effective=filing_type_info.get('futureEffective')
         )
         if filing_type_info.get('filingDescription'):
             fee.description = filing_type_info.get('filingDescription')

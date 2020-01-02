@@ -18,13 +18,14 @@ from datetime import datetime
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
+from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceSchema
 from pay_api.services.auth import check_auth
 from pay_api.services.fee_schedule import FeeSchedule
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import ALL_ALLOWED_ROLES
-from pay_api.utils.enums import Status
+from pay_api.utils.enums import PaymentSystem, Status
 from pay_api.utils.errors import Error
 
 
@@ -48,6 +49,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._routing_slip: str = None
         self._filing_id: str = None
         self._folio_number: str = None
+        self._transaction_fees: float = None
 
     @property
     def _dao(self):
@@ -72,6 +74,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.routing_slip: str = self._dao.routing_slip
         self.filing_id: str = self._dao.filing_id
         self.folio_number: str = self._dao.folio_number
+        self.transaction_fees: float = self._dao.transaction_fees
 
     @property
     def id(self):
@@ -227,6 +230,17 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._folio_number = value
         self._dao.folio_number = value
 
+    @property
+    def transaction_fees(self):
+        """Return the transaction_fees."""
+        return self._transaction_fees
+
+    @transaction_fees.setter
+    def transaction_fees(self, value: float):
+        """Set the transaction_fees."""
+        self._transaction_fees = value
+        self._dao.transaction_fees = value
+
     def save(self):
         """Save the information to the DB."""
         return self._dao.save()
@@ -257,7 +271,9 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         i.payment_id = payment_id
         i.invoice_status_code = Status.DRAFT.value
         i.account_id = account.id
-        i.total = sum(fee.total for fee in fees) if fees else 0
+        i.transaction_fees = Invoice.calculate_transaction_fees(account.payment_system_code, account.corp_type_code)
+
+        i.total = i.transaction_fees + sum(fee.total for fee in fees) if fees else 0
         i.paid = 0
         i.refund = 0
         i.routing_slip = kwargs.get('routing_slip', None)
@@ -318,3 +334,13 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
     def _check_for_auth(dao):
         # Check if user is authorized to perform this action
         check_auth(dao.account.corp_number, one_of_roles=ALL_ALLOWED_ROLES)
+
+    @staticmethod
+    def calculate_transaction_fees(payment_system_code: str, corp_type_code: str):
+        """Calculate transaction fees."""
+        transaction_fees: float = 0
+
+        if payment_system_code == PaymentSystem.BCOL.value:
+            transaction_fees = CorpTypeModel.find_by_code(corp_type_code).transaction_fee.amount
+
+        return transaction_fees

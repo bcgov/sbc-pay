@@ -27,6 +27,15 @@
         true
       ]
     },
+    "futureEffective": {
+      "$id": "#/properties/filing_types/items/properties/futureEffective",
+      "type": "boolean",
+      "title": "Filing Future Effective flag",
+      "default": false,
+      "examples": [
+        true
+      ]
+    },
     "filingDescription": {
       "$id": "#/properties/filing_types/items/properties/filingDescription",
       "type": "string",
