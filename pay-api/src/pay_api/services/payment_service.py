@@ -356,8 +356,8 @@ def _complete_post_payment(pay_service: PaymentSystemService, payment: Payment):
 
 def _update_active_transactions(payment_id):
     # get existing payment transaction
+    current_app.logger.debug('<_update_active_transactions')
     transaction: PaymentTransaction = PaymentTransaction.find_active_by_payment_id(payment_id)
-    current_app.logger.debug(transaction)
     if transaction:
         # check existing payment status in PayBC;
         PaymentTransaction.update_transaction(payment_id, transaction.id, None)

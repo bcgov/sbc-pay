@@ -36,6 +36,7 @@ def test_invoice_saved_from_new(session):
     assert invoice_reference is not None
     assert invoice_reference.id is not None
     assert invoice_reference.invoice_id == i.id
+    assert invoice_reference.status_code == Status.CREATED.value
 
 
 def test_invoice_invalid_lookup(session):

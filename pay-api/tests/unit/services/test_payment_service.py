@@ -238,10 +238,6 @@ def test_update_payment_record_rollback(session, public_user_mock):
             PaymentService.update_payment(payment.id, get_payment_request())
         assert excinfo.type == Exception
 
-    # reset transaction
-    transaction = factory_payment_transaction(payment.id)
-    transaction.save()
-
     with patch('pay_api.services.payment.Payment.save', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
             PaymentService.update_payment(payment.id, get_payment_request())
