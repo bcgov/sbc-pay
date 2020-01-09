@@ -72,9 +72,9 @@ def user_context(function):
 
 
 def _get_token_info() -> Dict:
-    return g.jwt_oidc_token_info if 'jwt_oidc_token_info' in g else {}
+    return g.jwt_oidc_token_info if g and 'jwt_oidc_token_info' in g else {}
 
 
 def _get_token() -> str:
-    token: str = request.headers['Authorization'] if 'Authorization' in request.headers else None
+    token: str = request.headers['Authorization'] if request and 'Authorization' in request.headers else None
     return token.replace('Bearer ', '') if token else None
