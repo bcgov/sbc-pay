@@ -66,8 +66,6 @@ class BcolService(PaymentSystemService, OAuthService):
         }
         pay_response = self.post(pay_endpoint, kwargs.get('jwt'), AuthHeaderType.BEARER, ContentType.JSON,
                                  payload).json()
-        if int(pay_response.get('totalAmount', 0)) == 0:
-            raise BusinessException(Error.PAY021)
 
         invoice = {
             'invoice_number': pay_response.get('key'),

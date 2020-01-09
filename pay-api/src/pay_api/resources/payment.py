@@ -126,7 +126,5 @@ class Payments(Resource):
 
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
-        except ServiceUnavailableException as exception:
-            response, status = {'code': exception.status_code}, HTTPStatus.BAD_REQUEST
         current_app.logger.debug('>Payment.delete')
         return jsonify(response), status

@@ -48,6 +48,8 @@ def test_line_saved_from_new(session):
     assert p.gst is None
     assert p.pst is None
     assert p.line_item_status_code is not None
+    assert p.priority_fees is None
+    assert p.future_effective_fees is None
     invoice = Invoice.find_by_id(invoice.id)
     schema = InvoiceSchema()
     d = schema.dump(invoice)

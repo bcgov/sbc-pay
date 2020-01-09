@@ -168,6 +168,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def populate(value):
         """Pouplate the service."""
+        if not value:
+            return None
         transaction: PaymentTransaction = PaymentTransaction()
         transaction._dao = value  # pylint: disable=protected-access
         return transaction
@@ -253,15 +255,9 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def find_active_by_payment_id(payment_identifier: int):
         """Find active transaction by id."""
-        existing_transactions = PaymentTransactionModel.find_by_payment_id(payment_identifier)
-        transaction: PaymentTransaction = None
-        if existing_transactions:
-            for existing_transaction in existing_transactions:
-                if existing_transaction.status_code not in (Status.COMPLETED.value, Status.CANCELLED.value):
-                    transaction = existing_transaction
-
         current_app.logger.debug('>find_active_by_payment_id')
-        return transaction
+        active_transaction = PaymentTransactionModel.find_active_by_payment_id(payment_identifier)
+        return PaymentTransaction.populate(active_transaction)
 
     @staticmethod
     def update_transaction(payment_identifier: int, transaction_id: uuid,  # pylint: disable=too-many-locals

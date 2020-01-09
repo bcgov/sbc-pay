@@ -21,6 +21,7 @@ import pytest
 
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.internal_pay_service import InternalPayService
+from pay_api.services.bcol_service import BcolService
 from pay_api.services.paybc_service import PaybcService
 from pay_api.utils.enums import PaymentSystem
 from pay_api.utils.errors import Error
@@ -48,6 +49,11 @@ def test_paybc_system_factory(session, public_user_mock):
     # Test for Internal Service
     instance = PaymentSystemFactory.create_from_system_code(PaymentSystem.INTERNAL.value)
     assert isinstance(instance, InternalPayService)
+    assert isinstance(instance, PaymentSystemService)
+
+    # Test for BCOL Service
+    instance = PaymentSystemFactory.create_from_system_code(PaymentSystem.BCOL.value)
+    assert isinstance(instance, BcolService)
     assert isinstance(instance, PaymentSystemService)
 
 

@@ -32,12 +32,11 @@ def check_auth(business_identifier: str, **kwargs):
         auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'entities/{business_identifier}/authorizations'
         auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON)
 
-        if auth_response:
-            roles: list = auth_response.json().get('roles', [])
-            if kwargs.get('one_of_roles', None):
-                is_authorized = list(set(kwargs.get('one_of_roles')) & set(roles)) != []
-            if kwargs.get('contains_role', None):
-                is_authorized = kwargs.get('contains_role') in roles
+        roles: list = auth_response.json().get('roles', [])
+        if kwargs.get('one_of_roles', None):
+            is_authorized = list(set(kwargs.get('one_of_roles')) & set(roles)) != []
+        if kwargs.get('contains_role', None):
+            is_authorized = kwargs.get('contains_role') in roles
 
     if not is_authorized:
         abort(403)

@@ -174,7 +174,7 @@ def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees
 
 def factory_payment_transaction(
         payment_id: str,
-        status_code: str = 'DRAFT',
+        status_code: str = 'CREATED',
         client_system_url: str = 'http://google.com/',
         pay_system_url: str = 'http://google.com',
         transaction_start_time: datetime = datetime.now(),
