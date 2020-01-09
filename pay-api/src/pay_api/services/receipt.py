@@ -17,12 +17,12 @@ from datetime import datetime
 from typing import Any, Dict, Tuple
 
 from flask import current_app
-from flask_jwt_oidc import JwtManager
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem
 from pay_api.utils.errors import Error
+from pay_api.utils.user_context import user_context
 
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
@@ -138,11 +138,11 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         return receipt
 
     @staticmethod
+    @user_context
     def create_receipt(payment_identifier: str, invoice_identifier: str, filing_data: Tuple[Dict[str, Any]],
-                       jwt: JwtManager = None, skip_auth_check: bool = False):
+                       skip_auth_check: bool = False, **kwargs):
         """Create receipt."""
         current_app.logger.debug('<create receipt initiated')
-        bearer_token = jwt.get_token_auth_header() if jwt else None
         receipt_dict = {
             'templateVars': {
                 'lineItems': [],
@@ -155,10 +155,10 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         template_vars['filingDateTime'] = filing_data.get('filingDateTime')
         # inovice number not mandatory ;since only one invoice exist for a payment now
         if not invoice_identifier:
-            invoice_data = Invoice.find_by_payment_identifier(payment_identifier, jwt=jwt,
+            invoice_data = Invoice.find_by_payment_identifier(payment_identifier,
                                                               skip_auth_check=skip_auth_check)
         else:
-            invoice_data = Invoice.find_by_id(invoice_identifier, payment_identifier, jwt=jwt,
+            invoice_data = Invoice.find_by_id(invoice_identifier, payment_identifier,
                                               skip_auth_check=skip_auth_check)
         payment_account = invoice_data.payment_account
         invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(invoice_data.id)
@@ -193,7 +193,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
             '<OAuthService invoked from receipt.py {}'.format(current_app.config.get('REPORT_API_BASE_URL')))
 
         pdf_response = OAuthService.post(current_app.config.get('REPORT_API_BASE_URL'),
-                                         bearer_token, AuthHeaderType.BEARER,
+                                         kwargs['user'].bearer_token, AuthHeaderType.BEARER,
                                          ContentType.JSON, receipt_dict)
         current_app.logger.debug('<OAuthService responded to receipt.py')
 

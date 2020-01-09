@@ -30,8 +30,8 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         self._invoice_id: int = None
         self._filing_fees: float = None
         self._fee_schedule_id: int = None
-        self._processing_fees: float = None
-        self._service_fees: float = None
+        self._priority_fees: float = None
+        self._future_effective_fees: float = None
         self._description: str = None
         self._gst: float = None
         self._pst: float = None
@@ -52,8 +52,8 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         self.invoice_id: int = self._dao.invoice_id
         self.filing_fees: float = self._dao.filing_fees
         self.fee_schedule_id: int = self._dao.fee_schedule_id
-        self.processing_fees: float = self._dao.processing_fees
-        self.service_fees: float = self._dao.service_fees
+        self.priority_fees: float = self._dao.priority_fees
+        self.future_effective_fees: float = self._dao.future_effective_fees
         self.description: str = self._dao.description
         self.gst: float = self._dao.gst
         self.pst: float = self._dao.pst
@@ -100,9 +100,9 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         return self._fee_schedule_id
 
     @property
-    def processing_fees(self):
-        """Return the _processing_fees."""
-        return self._processing_fees
+    def priority_fees(self):
+        """Return the _priority_fees."""
+        return self._priority_fees
 
     @fee_schedule_id.setter
     def fee_schedule_id(self, value: int):
@@ -110,22 +110,22 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         self._fee_schedule_id = value
         self._dao.fee_schedule_id = value
 
-    @processing_fees.setter
-    def processing_fees(self, value: float):
-        """Set the processing_fees."""
-        self._processing_fees = value
-        self._dao.processing_fees = value
+    @priority_fees.setter
+    def priority_fees(self, value: float):
+        """Set the priority_fees."""
+        self._priority_fees = value
+        self._dao.priority_fees = value
 
     @property
-    def service_fees(self):
-        """Return the _service_fees."""
-        return self._service_fees
+    def future_effective_fees(self):
+        """Return the _future_effective_fees."""
+        return self._future_effective_fees
 
-    @service_fees.setter
-    def service_fees(self, value: float):
-        """Set the service_fees."""
-        self._service_fees = value
-        self._dao.service_fees = value
+    @future_effective_fees.setter
+    def future_effective_fees(self, value: float):
+        """Set the future_effective_fees."""
+        self._future_effective_fees = value
+        self._dao.future_effective_fees = value
 
     @property
     def description(self):
@@ -208,9 +208,9 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         p.description = fee.description
         p.filing_fees = fee.fee_amount
         p.gst = fee.gst
-        p.processing_fees = fee.processing_fees
+        p.priority_fees = fee.priority_fee
         p.pst = fee.pst
-        p.service_fees = fee.service_fees
+        p.future_effective_fees = fee.future_effective_fee
         p.quantity = fee.quantity
         p.line_item_status_code = Status.CREATED.value
 

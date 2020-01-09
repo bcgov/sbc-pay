@@ -43,3 +43,8 @@ def is_valid_redirect_url(url: str):
         if is_valid:
             break
     return is_valid
+
+
+def convert_to_bool(value: str):
+    """Convert string to boolean."""
+    return value.lower() == 'true'

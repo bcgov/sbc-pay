@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to Payment."""
-from datetime import datetime
 from typing import Any, Dict, Tuple
 
 from flask import current_app
-from flask_jwt_oidc import JwtManager
 
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
@@ -38,7 +36,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
     """Service to manage Payment related operations."""
 
     @classmethod
-    def create_payment(cls, payment_request: Tuple[Dict[str, Any]], token_info: Dict, **kwargs):
+    def create_payment(cls, payment_request: Tuple[Dict[str, Any]]):
         # pylint: disable=too-many-locals, too-many-statements
         """Create payment related records.
 
@@ -56,7 +54,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             6.2 If fails rollback the transaction
         """
         current_app.logger.debug('<create_payment')
-        current_user = token_info.get('preferred_username', None)
         payment_info = payment_request.get('paymentInfo')
         business_info = payment_request.get('businessInfo')
         contact_info = business_info.get('contactInfo')
@@ -74,7 +71,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
         current_app.logger.debug('Creating PaymentSystemService impl')
         pay_service: PaymentSystemService = PaymentSystemFactory.create(
-            token_info,
             payment_method=payment_method,
             corp_type=corp_type,
             fees=sum(fee.total for fee in fees)
@@ -86,11 +82,11 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         pay_system_invoice: Dict[str, any] = None
 
         try:
-            payment: Payment = Payment.create(payment_info, current_user, pay_service.get_payment_system_code())
+            payment: Payment = Payment.create(payment_info, pay_service.get_payment_system_code())
             current_app.logger.debug(payment)
 
             current_app.logger.debug('Creating Invoice record for payment {}'.format(payment.id))
-            invoice = Invoice.create(payment_account, payment.id, fees, current_user, routing_slip=routing_slip_number,
+            invoice = Invoice.create(payment_account, payment.id, fees, routing_slip=routing_slip_number,
                                      filing_id=filing_id)
 
             line_items = []
@@ -99,7 +95,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 line_items.append(PaymentLineItem.create(invoice.id, fee))
             current_app.logger.debug('Handing off to payment system to create invoice')
             pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice.id,
-                                                            jwt=kwargs.get('jwt'), filing_info=filing_info)
+                                                            filing_info=filing_info)
             current_app.logger.debug('Updating invoice record')
             invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
             invoice.invoice_status_code = Status.CREATED.value
@@ -128,10 +124,10 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         return payment.asdict()
 
     @classmethod
-    def get_payment(cls, payment_id, jwt):
+    def get_payment(cls, payment_id):
         """Get payment related records."""
         try:
-            payment: Payment = Payment.find_by_id(payment_id, jwt=jwt)
+            payment: Payment = Payment.find_by_id(payment_id)
             if not payment.id:
                 raise BusinessException(Error.PAY005)
 
@@ -141,7 +137,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             raise
 
     @classmethod
-    def update_payment(cls, payment_id: int, payment_request: Tuple[Dict[str, Any]], token_info: Dict):
+    def update_payment(cls, payment_id: int, payment_request: Tuple[Dict[str, Any]]):
         # pylint: disable=too-many-locals,too-many-statements
         """Update payment related records.
 
@@ -162,7 +158,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         7. Update payment record in database and flush.
         """
         current_app.logger.debug('<update_payment')
-        current_user = token_info.get('preferred_username', None)
         payment_info = payment_request.get('paymentInfo')
         business_info = payment_request.get('businessInfo')
         filing_info = payment_request.get('filingInfo')
@@ -177,7 +172,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         current_app.logger.debug('Creating PaymentSystemService impl')
 
         pay_service: PaymentSystemService = PaymentSystemFactory.create(
-            token_info,
             payment_method=payment_method,
             corp_type=corp_type,
             fees=sum(fee.total for fee in fees)
@@ -233,16 +227,12 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                     )
                     current_app.logger.debug('Updating invoice record')
                     invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
-                    invoice.updated_on = datetime.now()
-                    invoice.updated_by = current_user
                     invoice.total = sum(fee.total for fee in fees)
                     invoice.save()
 
                     InvoiceReference.create(invoice.id, pay_system_invoice.get('invoice_number', None),
                                             pay_system_invoice.get('reference_number', None))
 
-            payment.updated_on = datetime.now()
-            payment.updated_by = current_user
             payment.save()
             payment.commit()
             _complete_post_payment(pay_service, payment)
@@ -286,8 +276,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                                                         invoice.account.account_number,
                                                         invoice.account.site_number),
                                        inv_number=invoice_reference.invoice_number)
-            invoice.updated_by = payment.updated_by
-            invoice.updated_on = datetime.now()
             invoice.invoice_status_code = Status.DELETED.value
             for line in invoice.payment_line_items:
                 line.line_item_status_code = Status.DELETED.value
@@ -301,15 +289,12 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         current_app.logger.debug('>delete_payment')
 
     @classmethod
-    def accept_delete(cls, payment_id: int, jwt: JwtManager,
-                      token_info: Dict):  # pylint: disable=too-many-locals,too-many-statements
+    def accept_delete(cls, payment_id: int):  # pylint: disable=too-many-locals,too-many-statements
         """Mark payment related records to be deleted."""
         current_app.logger.debug('<accept_delete')
-        payment: Payment = Payment.find_by_id(payment_id, jwt=jwt, one_of_roles=[EDIT_ROLE])
+        payment: Payment = Payment.find_by_id(payment_id, one_of_roles=[EDIT_ROLE])
         _check_if_payment_is_completed(payment)
         payment.payment_status_code = Status.DELETE_ACCEPTED.value
-        payment.updated_by = token_info.get('username')
-        payment.updated_on = datetime.now()
         payment.save()
         current_app.logger.debug('>delete_payment')
 
@@ -324,7 +309,8 @@ def _calculate_fees(corp_type, filing_info):
             filing_type_code=filing_type_info.get('filingTypeCode', None),
             valid_date=filing_info.get('date', None),
             jurisdiction=None,
-            priority=filing_info.get('priority', None),
+            is_priority=filing_type_info.get('priority'),
+            is_future_effective=filing_type_info.get('futureEffective')
         )
         if filing_type_info.get('filingDescription'):
             fee.description = filing_type_info.get('filingDescription')

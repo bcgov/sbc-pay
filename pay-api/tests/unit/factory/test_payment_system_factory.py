@@ -22,11 +22,11 @@ import pytest
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.services.paybc_service import PaybcService
-from pay_api.utils.enums import PaymentSystem, Role
+from pay_api.utils.enums import PaymentSystem
 from pay_api.utils.errors import Error
 
 
-def test_paybc_system_factory(session):
+def test_paybc_system_factory(session, public_user_mock):
     """Assert a paybc service is returned."""
     from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
 
@@ -35,13 +35,7 @@ def test_paybc_system_factory(session):
     assert isinstance(instance, PaybcService)
     assert isinstance(instance, PaymentSystemService)
 
-    # Test for CC and CP with staff role
-    token_info = {'realm_access': {'roles': [Role.STAFF.value]}}
-    instance = PaymentSystemFactory.create(token_info, payment_method='CC', corp_type='CP')
-    assert isinstance(instance, InternalPayService)
-    assert isinstance(instance, PaymentSystemService)
-
-    # Test for CC and CP with zero fees role
+    # Test for CC and CP with zero fees
     instance = PaymentSystemFactory.create(fees=0, payment_method='CC', corp_type='CP')
     assert isinstance(instance, InternalPayService)
     assert isinstance(instance, PaymentSystemService)
@@ -57,7 +51,17 @@ def test_paybc_system_factory(session):
     assert isinstance(instance, PaymentSystemService)
 
 
-def test_invalid_pay_system(session):
+def test_internal_staff_factory(session, staff_user_mock):
+    """Test payment system creation for staff users."""
+    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
+
+    # Test for CC and CP with staff role
+    instance = PaymentSystemFactory.create(payment_method='CC', corp_type='CP')
+    assert isinstance(instance, InternalPayService)
+    assert isinstance(instance, PaymentSystemService)
+
+
+def test_invalid_pay_system(session, public_user_mock):
     """Test invalid data."""
     from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
 

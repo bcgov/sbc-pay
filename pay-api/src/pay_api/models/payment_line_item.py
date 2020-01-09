@@ -22,7 +22,7 @@ from .db import db, ma
 from .fee_schedule import FeeSchedule
 
 
-class PaymentLineItem(db.Model, BaseModel):
+class PaymentLineItem(BaseModel):
     """This class manages all of the base data about Payment Line Item."""
 
     __tablename__ = 'payment_line_item'
@@ -32,8 +32,8 @@ class PaymentLineItem(db.Model, BaseModel):
     filing_fees = db.Column(db.Integer, nullable=False)
     fee_schedule_id = db.Column(db.Integer, ForeignKey('fee_schedule.fee_schedule_id'), nullable=False)
     quantity = db.Column(db.Integer, nullable=True)
-    processing_fees = db.Column(db.Float, nullable=True)
-    service_fees = db.Column(db.Float, nullable=True)
+    priority_fees = db.Column(db.Float, nullable=True)
+    future_effective_fees = db.Column(db.Float, nullable=True)
     description = db.Column(db.String(200), nullable=True)
     gst = db.Column(db.Float, nullable=True)
     pst = db.Column(db.Float, nullable=True)

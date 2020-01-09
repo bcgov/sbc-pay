@@ -17,9 +17,9 @@ from sbc_common_components.tracing.db_tracing import DBTracing
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
 
+from .fee_code import FeeCode, FeeCodeSchema  # noqa: I001
 from .corp_type import CorpType, CorpTypeSchema
 from .db import db, ma
-from .fee_code import FeeCode, FeeCodeSchema
 from .fee_schedule import FeeSchedule, FeeScheduleSchema
 from .filing_type import FilingType, FilingTypeSchema
 from .payment_account import PaymentAccount, PaymentAccountSchema  # noqa: I001

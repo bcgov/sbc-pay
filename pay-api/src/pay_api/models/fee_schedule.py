@@ -41,10 +41,15 @@ class FeeSchedule(db.Model):
     fee_code = db.Column(db.String(10), ForeignKey('fee_code.code'), nullable=False)
     fee_start_date = db.Column('fee_start_date', db.Date, default=date.today(), nullable=False)
     fee_end_date = db.Column('fee_end_date', db.Date, default=None, nullable=True)
+    future_effective_fee_code = db.Column(db.String(10), ForeignKey('fee_code.code'), nullable=True)
+    priority_fee_code = db.Column(db.String(10), ForeignKey('fee_code.code'), nullable=True)
 
     filing_type = relationship(FilingType, foreign_keys=[filing_type_code], lazy='joined', innerjoin=True)
     corp_type = relationship(CorpType, foreign_keys=[corp_type_code], lazy='joined', innerjoin=True)
     fee = relationship(FeeCode, foreign_keys=[fee_code], lazy='joined', innerjoin=True)
+    future_effective_fee = relationship(FeeCode, foreign_keys=[future_effective_fee_code], lazy='joined',
+                                        innerjoin=False)
+    priority_fee = relationship(FeeCode, foreign_keys=[priority_fee_code], lazy='joined', innerjoin=False)
 
     @classmethod
     def find_by_filing_type_and_corp_type(cls, corp_type_code: str,

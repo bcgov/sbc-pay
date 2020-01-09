@@ -20,7 +20,6 @@ from sqlalchemy.orm import relationship
 from pay_api.utils.enums import Status
 
 from .audit import Audit
-from .base_model import BaseModel
 from .base_schema import BaseSchema
 from .db import db, ma
 from .invoice import InvoiceSchema
@@ -28,7 +27,7 @@ from .payment_system import PaymentSystem
 from .payment_transaction import PaymentTransactionSchema
 
 
-class Payment(db.Model, Audit, BaseModel):  # pylint: disable=too-many-instance-attributes
+class Payment(Audit):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Payment ."""
 
     __tablename__ = 'payment'

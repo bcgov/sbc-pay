@@ -18,7 +18,7 @@ from .base_model import BaseModel
 from .db import db, ma
 
 
-class PaymentAccount(db.Model, BaseModel):
+class PaymentAccount(BaseModel):
     """This class manages all of the base data about Payment Account."""
 
     __tablename__ = 'payment_account'

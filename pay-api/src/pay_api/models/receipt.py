@@ -19,7 +19,7 @@ from .base_model import BaseModel
 from .db import db, ma
 
 
-class Receipt(db.Model, BaseModel):
+class Receipt(BaseModel):
     """This class manages all of the base data about Receipt."""
 
     __tablename__ = 'receipt'

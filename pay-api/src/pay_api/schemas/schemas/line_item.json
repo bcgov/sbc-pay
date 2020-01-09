@@ -8,10 +8,10 @@
     "filingFees",
     "gst",
     "id",
-    "processingFees",
+    "priorityFees",
     "pst",
     "quantity",
-    "serviceFees",
+    "futureEffectiveFees",
     "statusCode",
     "total"
   ],
@@ -53,10 +53,10 @@
         1
       ]
     },
-    "processingFees": {
-      "$id": "#/properties/line_items/items/properties/processingFees",
+    "priorityFees": {
+      "$id": "#/properties/line_items/items/properties/priorityFees",
       "type": "integer",
-      "title": "Processing fees",
+      "title": "Priority fees",
       "default": 0,
       "examples": [
         0
@@ -80,10 +80,10 @@
         1
       ]
     },
-    "serviceFees": {
-      "$id": "#/properties/line_items/items/properties/serviceFees",
+    "futureEffectiveFees": {
+      "$id": "#/properties/line_items/items/properties/futureEffectiveFees",
       "type": "integer",
-      "title": "Service Fees",
+      "title": "Fees for future effective filing",
       "default": 0,
       "examples": [
         0

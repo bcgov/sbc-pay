@@ -21,7 +21,7 @@ from .base_schema import BaseSchema
 from .db import db
 
 
-class InvoiceReference(db.Model, BaseModel):  # pylint: disable=too-many-instance-attributes
+class InvoiceReference(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Invoice."""
 
     __tablename__ = 'invoice_reference'
