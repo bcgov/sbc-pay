@@ -97,7 +97,7 @@ def update_stale_payments(app):
             app.logger.info(
                 'Stale Transaction Job found records.Payment Id: {}, Transaction Id : {}'.format(transaction.payment_id,
                                                                                                  transaction.id))
-            TransactionService.update_transaction(transaction.payment_id, transaction.id, '', skip_auth_check=True)
+            TransactionService.update_transaction(transaction.payment_id, transaction.id, '')
             app.logger.info(
                 'Stale Transaction Job Updated records.Payment Id: {}, Transaction Id : {}'.format(
                     transaction.payment_id, transaction.id))
