@@ -1,0 +1,58 @@
+openapi: 3.0.0
+info:
+  title: report-api-1.0.0.yaml
+  version: '1.0'
+  description: Report API
+paths:
+  /reports:
+    post:
+      summary: Create pdf report.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/pdf:
+              schema:
+                type: object
+                properties: {}
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: string
+                  message:
+                    type: string
+        '':
+          content:
+            application/pdf:
+              schema:
+                type: object
+                properties: {}
+              examples: {}
+      description: Create pdf report.
+      operationId: post_report
+      requestBody:
+        description: ''
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                reportName:
+                  type: string
+                templateVars:
+                  type: string
+                populatePageNumber:
+                  type: boolean
+                templateName:
+                  type: string
+                template:
+                  type: string
+            examples: {}
+    parameters: []
+components:
+  schemas: {}
