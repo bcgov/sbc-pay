@@ -46,6 +46,11 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods
         return cls.query.filter_by(payment_id=payment_id).all()
 
     @classmethod
+    def find_active_by_payment_id(cls, payment_id: int):
+        """Return Active Payment Transactions by payment identifier."""
+        return cls.query.filter_by(payment_id=payment_id).filter_by(status_code=Status.CREATED.value).one_or_none()
+
+    @classmethod
     def find_by_id_and_payment_id(cls, identifier: uuid, payment_id: int):
         """Return Payment Transactions by payment identifier."""
         return cls.query.filter_by(payment_id=payment_id).filter_by(id=identifier).one_or_none()

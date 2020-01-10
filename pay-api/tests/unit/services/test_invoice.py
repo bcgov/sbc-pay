@@ -49,6 +49,7 @@ def test_invoice_saved_from_new(session):
     assert invoice.paid is None
     assert invoice.account_id is not None
     assert invoice.payment_line_items is not None
+    assert invoice.folio_number is None
 
 
 def test_invoice_invalid_lookup(session):

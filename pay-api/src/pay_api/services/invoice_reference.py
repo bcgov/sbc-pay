@@ -105,10 +105,6 @@ class InvoiceReference:  # pylint: disable=too-many-instance-attributes,too-many
         """Save the information to the DB."""
         return self._dao.save()
 
-    def flush(self):
-        """Save the information to the DB."""
-        return self._dao.flush()
-
     @staticmethod
     def create(invoice_id: int, invoice_number: str, reference_number: str):
         """Create invoice reference record."""
