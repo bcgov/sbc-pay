@@ -30,6 +30,8 @@ from .payment import Payment
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
 from .payment_transaction import PaymentTransaction
+from threading import Thread
+from flask import copy_current_request_context
 
 
 class PaymentService:  # pylint: disable=too-few-public-methods
@@ -296,6 +298,13 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         _check_if_payment_is_completed(payment)
         payment.payment_status_code = Status.DELETE_ACCEPTED.value
         payment.save()
+        @copy_current_request_context
+        def run_delete():
+            """Calls delete payment."""
+            PaymentService.delete_payment(payment_id)
+        current_app.logger.debug('Starting thread to delete payment.')
+        thread = Thread(target=run_delete)
+        thread.start()
         current_app.logger.debug('>delete_payment')
 
 
