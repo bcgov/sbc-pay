@@ -29,7 +29,7 @@ def check_auth(business_identifier: str, **kwargs):
         is_authorized = bool(Role.EDITOR.value in user.roles)
     else:
         bearer_token = user.bearer_token
-        auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'entities/{business_identifier}/authorizations'
+        auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'entities/{business_identifier}/authorizations?expanded=true'
         auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON)
 
         roles: list = auth_response.json().get('roles', [])

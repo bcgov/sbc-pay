@@ -38,7 +38,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
     """Service to manage Payment related operations."""
 
     @classmethod
-    def create_payment(cls, payment_request: Tuple[Dict[str, Any]]):
+    def create_payment(cls, payment_request: Tuple[Dict[str, Any]], authorization: Tuple[Dict[str, Any]]):
         # pylint: disable=too-many-locals, too-many-statements
         """Create payment related records.
 
@@ -65,7 +65,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         filing_id = filing_info.get('filingIdentifier', None)
 
         corp_type = business_info.get('corpType', None)
-        payment_method = payment_info.get('methodOfPayment', None)
+        payment_method = payment_info.get('methodOfPayment', authorization.get('account').get('paymentPreference').get('methodOfPayment'))
 
         current_app.logger.debug('Calculate the fees')
         # Calculate the fees
