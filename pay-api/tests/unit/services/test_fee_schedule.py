@@ -22,7 +22,9 @@ from datetime import date, timedelta
 import pytest
 
 from pay_api import services
-from pay_api.models import CorpType, FeeCode, FilingType, FeeSchedule as FeesScheduleModel
+from pay_api.models import CorpType, FeeCode
+from pay_api.models import FeeSchedule as FeesScheduleModel
+from pay_api.models import FilingType
 from pay_api.utils.errors import Error
 
 
@@ -138,18 +140,37 @@ def test_find_by_corp_type_and_filing_type_and_invalid_date(session):
 
     assert excinfo.value.status == Error.PAY002.status
 
+
 def test_fee_schedule_with_priority_and_future_effective_filing_rates(session):
     """Assert that the fee schedule is saved to the table."""
     create_linked_data(FILING_TYPE_CODE, CORP_TYPE_CODE, FEE_CODE, priority_fee='PR001', future_effective_fee='FU001')
-    FeesScheduleModel(filing_type_code = FILING_TYPE_CODE,
-    corp_type_code = CORP_TYPE_CODE,
-    fee_code = FEE_CODE,
-    future_effective_fee_code = 'FU001',
-    priority_fee_code = 'PR001').save()
+    FeesScheduleModel(filing_type_code=FILING_TYPE_CODE,
+                      corp_type_code=CORP_TYPE_CODE,
+                      fee_code=FEE_CODE,
+                      future_effective_fee_code='FU001',
+                      priority_fee_code='PR001').save()
 
-    fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE, None, is_priority=True, is_future_effective=True)
+    fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE, None,
+                                                                          is_priority=True, is_future_effective=True)
 
     assert fee_schedule is not None
+
+
+def test_fee_schedule_with_waive_fees(session):
+    """Assert that the fee schedule is saved to the table."""
+    create_linked_data(FILING_TYPE_CODE, CORP_TYPE_CODE, FEE_CODE)
+    fee_schedule = services.FeeSchedule()
+    fee_schedule.filing_type_code = FILING_TYPE_CODE
+    fee_schedule.corp_type_code = CORP_TYPE_CODE
+    fee_schedule.fee_code = FEE_CODE
+    fee_schedule.fee_start_date = date.today()
+    fee_schedule.save()
+
+    fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(CORP_TYPE_CODE, FILING_TYPE_CODE,
+                                                                          date.today(), waive_fees=True)
+
+    assert fee_schedule is not None
+    assert fee_schedule.fee_amount == 0
 
 
 def create_linked_data(

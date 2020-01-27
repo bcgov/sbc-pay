@@ -120,6 +120,39 @@ def get_zero_dollar_payment_request(business_identifier: str = 'CP0001234'):
     }
 
 
+def get_waive_fees_payment_request(business_identifier: str = 'CP0001234'):
+    """Return a payment request object."""
+    return {
+        'paymentInfo': {
+            'methodOfPayment': 'CC'
+        },
+        'businessInfo': {
+            'businessIdentifier': business_identifier,
+            'corpType': 'CP',
+            'businessName': 'ABC Corp',
+            'contactInfo': {
+                'city': 'Victoria',
+                'postalCode': 'V8P2P2',
+                'province': 'BC',
+                'addressLine1': '100 Douglas Street',
+                'country': 'CA'
+            }
+        },
+        'filingInfo': {
+            'filingTypes': [
+                {
+                    'filingTypeCode': 'OTANN',
+                    'waiveFees': True
+                },
+                {
+                    'filingTypeCode': 'OTCDR',
+                    'waiveFees': True
+                }
+            ]
+        }
+    }
+
+
 def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code: str = 'CP',
                             payment_system_code: str = 'PAYBC', account_number='4101', user_id='test'):
     """Factory."""

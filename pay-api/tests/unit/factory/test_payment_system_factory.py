@@ -20,8 +20,8 @@ Test-Suite to ensure that the CorpType Class is working as expected.
 import pytest
 
 from pay_api.services.base_payment_system import PaymentSystemService
-from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.services.bcol_service import BcolService
+from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.services.paybc_service import PaybcService
 from pay_api.utils.enums import PaymentSystem
 from pay_api.utils.errors import Error
