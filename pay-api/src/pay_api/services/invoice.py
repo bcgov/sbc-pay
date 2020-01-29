@@ -278,6 +278,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         i.refund = 0
         i.routing_slip = kwargs.get('routing_slip', None)
         i.filing_id = kwargs.get('filing_id', None)
+        i.folio_number = kwargs.get('folio_number', None)
 
         i._dao = i.flush()  # pylint: disable=protected-access
         current_app.logger.debug('>create')

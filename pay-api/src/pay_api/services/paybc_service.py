@@ -55,7 +55,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         """Return PAYBC as the system code."""
         return PaymentSystem.PAYBC.value
 
-    def create_account(self, name: str, account_info: Dict[str, Any]):
+    def create_account(self, name: str, account_info: Dict[str, Any], authorization: Dict[str, Any]):
         """Create account in PayBC."""
         # Strip all special characters from name
         name = re.sub(r'[^a-zA-Z0-9]+', ' ', name)

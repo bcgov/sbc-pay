@@ -232,7 +232,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
 
     SERVICE_SCHEDULE = json.dumps(schedule_json)
 
-    AUTH_API_ENDPOINT = "https://mock-lear-tools.pathfinder.gov.bc.ca/rest/Auth+API/1.0.0/"
+    AUTH_API_ENDPOINT = "https://mock-lear-tools.pathfinder.gov.bc.ca/rest/SBC+Auth+API+Reference/1.0.0/"
 
     NATS_SUBJECT = 'entity.filing.test'
 

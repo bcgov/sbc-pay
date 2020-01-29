@@ -161,10 +161,6 @@ def stan_server(docker_services):
     if os.getenv('TEST_NATS_DOCKER'):
         docker_services.start('nats')
         time.sleep(2)
-    # TODO get the wait part working, as opposed to sleeping for 2s
-    # public_port = docker_services.wait_for_service("nats", 4222)
-    # dsn = "{docker_services.docker_ip}:{public_port}".format(**locals())
-    # return dsn
 
 
 @pytest.fixture(scope='function')

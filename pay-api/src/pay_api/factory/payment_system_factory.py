@@ -54,12 +54,11 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         user: UserContext = kwargs['user']
         total_fees: int = kwargs.get('fees', None)
         payment_method = kwargs.get('payment_method', 'CC')
-        corp_type = kwargs.get('corp_type', None)
 
         _instance: PaymentSystemService = None
-        current_app.logger.debug('payment_method: {}, corp_type : {}'.format(payment_method, corp_type))
+        current_app.logger.debug('payment_method: {}'.format(payment_method))
 
-        if not payment_method and not corp_type:
+        if not payment_method:
             raise BusinessException(Error.PAY003)
 
         if total_fees == 0 or (Role.STAFF.value in user.roles):

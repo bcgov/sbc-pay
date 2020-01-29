@@ -17,6 +17,8 @@
 A simple decorator to add the options method to a Request Class.
 """
 from flask import current_app
+from typing import Dict
+from dpath import util as dpath_util
 
 
 def cors_preflight(methods: str = 'GET'):
@@ -34,7 +36,7 @@ def cors_preflight(methods: str = 'GET'):
     return wrapper
 
 
-def is_valid_redirect_url(url: str):
+def is_valid_redirect_url(url: str) -> bool:
     """Validate if the url is valid based on the VALID Redirect Url."""
     valid_urls: list = current_app.config.get('VALID_REDIRECT_URLS')
     is_valid = False
@@ -45,6 +47,15 @@ def is_valid_redirect_url(url: str):
     return is_valid
 
 
-def convert_to_bool(value: str):
+def convert_to_bool(value: str) -> bool:
     """Convert string to boolean."""
     return value.lower() == 'true'
+
+
+def get_str_by_path(payload: Dict, path: str) -> str:
+    """Return the string value from the dict for the path using dpath library."""
+    try:
+        raw = dpath_util.get(payload, path)
+        return str(raw)
+    except (IndexError, KeyError, TypeError):
+        return None

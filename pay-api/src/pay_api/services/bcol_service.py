@@ -18,14 +18,13 @@ from typing import Any, Dict, Tuple
 
 from flask import current_app
 
-from pay_api.exceptions import BusinessException
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import AuthHeaderType, ContentType
 from pay_api.utils.enums import PaymentSystem as PaySystemCode
-from pay_api.utils.errors import Error
+from pay_api.utils.util import get_str_by_path
 
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
@@ -34,14 +33,14 @@ from .payment_line_item import PaymentLineItem
 class BcolService(PaymentSystemService, OAuthService):
     """Service to manage BCOL integration."""
 
-    def create_account(self, name: str, account_info: Dict[str, Any]):
+    def create_account(self, name: str, account_info: Dict[str, Any], authorization: Dict[str, Any]):
         """Create account."""
         current_app.logger.debug('<create_account')
-        bcol_user_id = ''  # TODO Get BCOL User ID from auth when it's ready
-        bcol_account_number = ''  # TODO Get BCOL Account Number from auth when it's ready
+        bcol_user_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineUserId')
+        bcol_account_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineAccountId')
         return {
-            'account_number': bcol_account_number,
-            'user_id': bcol_user_id
+            'bcol_account_id': bcol_account_id,
+            'bcol_user_id': bcol_user_id
         }
 
     def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
@@ -59,9 +58,9 @@ class BcolService(PaymentSystemService, OAuthService):
         invoice_number = f'{invoice_id}-{payment_account.corp_number}'
         amount_excluding_txn_fees = sum(line.filing_fees for line in line_items)
         payload: Dict = {
-            'userId': payment_account.user_id,
+            'userId': payment_account.bcol_user_id,
             'invoiceNumber': invoice_number,
-            'folioNumber': kwargs.get('filing_info').get('folioNumber'),
+            'folioNumber': kwargs.get('folio_number'),
             'amount': amount_excluding_txn_fees
         }
         pay_response = self.post(pay_endpoint, kwargs.get('jwt'), AuthHeaderType.BEARER, ContentType.JSON,

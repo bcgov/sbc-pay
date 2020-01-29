@@ -20,7 +20,8 @@ from flask import current_app
 from pay_api.exceptions import BusinessException
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.utils.errors import Error
-
+from pay_api.utils.enums import PaymentSystem
+from pay_api.utils.util import get_str_by_path
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes
     """Service to manage Payment Account model related operations."""
@@ -35,7 +36,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         self._account_number: str = None
         self._party_number: str = None
         self._site_number: str = None
-        self._user_id: str = None
+        self._bcol_user_id: str = None
+        self._bcol_account_id: str = None
+        self._auth_account_id: str = None
 
     @property
     def _dao(self):
@@ -53,7 +56,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         self.account_number: str = self._dao.account_number
         self.party_number: str = self._dao.party_number
         self.site_number: str = self._dao.site_number
-        self.user_id: str = self._dao.user_id
+        self.bcol_user_id: str = self._dao.bcol_user_id
+        self.bcol_account_id: str = self._dao.bcol_account_id
+        self.auth_account_id: str = self._dao.auth_account_id
 
     @property
     def id(self):
@@ -133,36 +138,45 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         self._dao.site_number = value
 
     @property
-    def user_id(self):
-        """Return the user_id."""
-        return self._user_id
+    def bcol_user_id(self):
+        """Return the bcol_user_id."""
+        return self._bcol_user_id
 
-    @user_id.setter
-    def user_id(self, value: str):
-        """Set the user_id."""
-        self._user_id = value
-        self._dao.user_id = value
+    @bcol_user_id.setter
+    def bcol_user_id(self, value: str):
+        """Set the bcol_user_id."""
+        self._bcol_user_id = value
+        self._dao.bcol_user_id = value
+    
+    @property
+    def bcol_account_id(self):
+        """Return the bcol_account_id."""
+        return self._bcol_account_id
+
+    @bcol_account_id.setter
+    def bcol_account_id(self, value: str):
+        """Set the bcol_account_id."""
+        self._bcol_account_id = value
+        self._dao.bcol_account_id = value
+
+    @property
+    def auth_account_id(self):
+        """Return the auth_account_id."""
+        return self._auth_account_id
+
+    @auth_account_id.setter
+    def auth_account_id(self, value: str):
+        """Set the auth_account_id."""
+        self._auth_account_id = value
+        self._dao.auth_account_id = value
 
     def save(self):
         """Save the information to the DB."""
         return self._dao.save()
 
-    def asdict(self):
-        """Return the Payment Account as a python dict."""
-        d = {
-            'id': self._id,
-            'corp_number': self._corp_number,
-            'corp_type_code': self._corp_type_code,
-            'payment_system_code': self._payment_system_code,
-            'account_number': self._account_number,
-            'party_number': self._party_number,
-            'site_number': self._site_number
-        }
-        return d
-
     @staticmethod
     def create(business_info: Dict[str, Any], account_details: Dict[str, str],
-               payment_system: str = None):
+               payment_system: str, authorization: Dict[str, Any]):
         """Create Payment account record."""
         current_app.logger.debug('<create')
         p = PaymentAccount()
@@ -171,7 +185,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         p.account_number = account_details.get('account_number', None)
         p.party_number = account_details.get('party_number', None)
         p.site_number = account_details.get('site_number', None)
-        p.user_id = account_details.get('user_id', None)
+        p.bcol_user_id = account_details.get('bcol_user_id', None)
+        p.bcol_account_id = account_details.get('bcol_account_id', None)
+        p.auth_account_id = get_str_by_path(authorization, 'account/id')
         p.payment_system_code = payment_system
 
         account_dao = p.save()
@@ -182,18 +198,33 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         return p
 
     @classmethod
-    def find_account(cls, corp_number: str,
-                     corp_type: str, payment_system: str):
+    def find_account(cls, business_info: Dict[str, Any],
+                     authorization: Dict[str, Any], payment_system: str):
         """Find payment account by corp number, corp type and payment system code."""
         current_app.logger.debug('<find_payment_account')
-        if not corp_number and not corp_type and not payment_system:
-            raise BusinessException(Error.PAY004)
+        auth_account_id: str = get_str_by_path(authorization, 'account/id')
+        bcol_user_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineUserId')
+        bcol_account_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineAccountId')
+        corp_number:str = business_info.get('businessIdentifier')
+        corp_type: str = business_info.get('corpType')
+        account_dao = None
+        if payment_system == PaymentSystem.BCOL.value:
+            if not bcol_user_id:
+                raise BusinessException(Error.PAY015)
+            account_dao = PaymentAccountModel.find_by_corp_number_and_corp_type_and_system(
+                corp_number,
+                corp_type,
+                payment_system
+            )
+        elif payment_system == PaymentSystem.PAYBC.value:
+            if not corp_number and not corp_type:
+                raise BusinessException(Error.PAY004)
 
-        account_dao = PaymentAccountModel.find_by_corp_number_and_corp_type_and_system(
-            corp_number,
-            corp_type,
-            payment_system
-        )
+            account_dao = PaymentAccountModel.find_by_bcol_user_id_and_account(
+                auth_account_id=auth_account_id,
+                bcol_user_id=bcol_user_id,
+                bcol_account_id=bcol_account_id
+            )
         payment_account = PaymentAccount()
         payment_account._dao = account_dao  # pylint: disable=protected-access
 

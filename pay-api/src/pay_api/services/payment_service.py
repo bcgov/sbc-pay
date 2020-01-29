@@ -12,15 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to Payment."""
+
+from threading import Thread
 from typing import Any, Dict, Tuple
 
-from flask import current_app
+from flask import copy_current_request_context, current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.enums import PaymentSystem, Status
 from pay_api.utils.errors import Error
+from pay_api.utils.util import get_str_by_path
 
 from .base_payment_system import PaymentSystemService
 from .fee_schedule import FeeSchedule
@@ -30,8 +33,6 @@ from .payment import Payment
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
 from .payment_transaction import PaymentTransaction
-from threading import Thread
-from flask import copy_current_request_context
 
 
 class PaymentService:  # pylint: disable=too-few-public-methods
@@ -60,12 +61,12 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         business_info = payment_request.get('businessInfo')
         contact_info = business_info.get('contactInfo')
         filing_info = payment_request.get('filingInfo')
-        account_info = payment_request.get('accountInfo', None)
-        routing_slip_number = account_info.get('routingSlip', None) if account_info else None
+        routing_slip_number = get_str_by_path(payment_request, 'accountInfo/routingSlip')
         filing_id = filing_info.get('filingIdentifier', None)
+        folio_number = filing_info.get('folioNumber', get_str_by_path(authorization, 'business/folioNumber'))
 
         corp_type = business_info.get('corpType', None)
-        payment_method = payment_info.get('methodOfPayment', authorization.get('account').get('paymentPreference').get('methodOfPayment'))
+        payment_method = payment_info.get('methodOfPayment', get_str_by_path(authorization, 'account/paymentPreference/methodOfPayment'))
 
         current_app.logger.debug('Calculate the fees')
         # Calculate the fees
@@ -78,7 +79,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             fees=sum(fee.total for fee in fees)
         )
 
-        payment_account = _create_account(pay_service, business_info, contact_info)
+        payment_account = _create_account(pay_service, business_info, contact_info, authorization)
 
         payment: Payment = None
         pay_system_invoice: Dict[str, any] = None
@@ -89,7 +90,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
             current_app.logger.debug('Creating Invoice record for payment {}'.format(payment.id))
             invoice = Invoice.create(payment_account, payment.id, fees, routing_slip=routing_slip_number,
-                                     filing_id=filing_id)
+                                     filing_id=filing_id, folio_number=folio_number)
 
             line_items = []
             for fee in fees:
@@ -97,7 +98,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 line_items.append(PaymentLineItem.create(invoice.id, fee))
             current_app.logger.debug('Handing off to payment system to create invoice')
             pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice.id,
-                                                            filing_info=filing_info)
+                                                            folio_number=folio_number)
             current_app.logger.debug('Updating invoice record')
             invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
             invoice.invoice_status_code = Status.CREATED.value
@@ -139,7 +140,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             raise
 
     @classmethod
-    def update_payment(cls, payment_id: int, payment_request: Tuple[Dict[str, Any]]):
+    def update_payment(cls, payment_id: int, payment_request: Tuple[Dict[str, Any]], authorization: Tuple[Dict[str, Any]]):
         # pylint: disable=too-many-locals,too-many-statements
         """Update payment related records.
 
@@ -165,7 +166,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         filing_info = payment_request.get('filingInfo')
 
         corp_type = business_info.get('corpType', None)
-        payment_method = payment_info.get('methodOfPayment', None)
+        payment_method = payment_info.get('methodOfPayment', get_str_by_path(authorization, 'account/paymentPreference/methodOfPayment'))
 
         current_app.logger.debug('Calculate the fees')
         # Calculate the fees
@@ -298,10 +299,12 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         _check_if_payment_is_completed(payment)
         payment.payment_status_code = Status.DELETE_ACCEPTED.value
         payment.save()
+
         @copy_current_request_context
         def run_delete():
-            """Calls delete payment."""
+            """Call delete payment."""
             PaymentService.delete_payment(payment_id)
+
         current_app.logger.debug('Starting thread to delete payment.')
         thread = Thread(target=run_delete)
         thread.start()
@@ -319,7 +322,8 @@ def _calculate_fees(corp_type, filing_info):
             valid_date=filing_info.get('date', None),
             jurisdiction=None,
             is_priority=filing_type_info.get('priority'),
-            is_future_effective=filing_type_info.get('futureEffective')
+            is_future_effective=filing_type_info.get('futureEffective'),
+            waive_fees=filing_type_info.get('waiveFees')
         )
         if filing_type_info.get('filingDescription'):
             fee.description = filing_type_info.get('filingDescription')
@@ -328,23 +332,27 @@ def _calculate_fees(corp_type, filing_info):
     return fees
 
 
-def _create_account(pay_service, business_info, contact_info):
+def _create_account(pay_service, business_info, contact_info, authorization):
     """Create account in pay system and save it in pay db."""
+    #TODO Create account for CC payment and account for premium based on authorizations
     current_app.logger.debug('Check if payment account exists')
     payment_account: PaymentAccount = PaymentAccount.find_account(
-        business_info.get('businessIdentifier'),
-        business_info.get('corpType'),
+        business_info,
+        authorization,
         pay_service.get_payment_system_code(),
     )
     if not payment_account.id:
         current_app.logger.debug('No payment account, creating new')
         pay_system_account = pay_service.create_account(
-            business_info.get('businessName'), contact_info
+            business_info.get('businessName'), contact_info, authorization
         )
 
         current_app.logger.debug('Creating payment record for account : {}'.format(payment_account.id))
         payment_account = PaymentAccount.create(
-            business_info, pay_system_account, pay_service.get_payment_system_code()
+            business_info = business_info, 
+            pay_system_account = pay_system_account, 
+            payment_system = pay_service.get_payment_system_code(), 
+            authorization = authorization
         )
     return payment_account
 
