@@ -25,7 +25,8 @@ from requests.exceptions import ConnectionError
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import Role
 from tests.utilities.base_test import (
-    factory_payment_transaction, get_claims, get_payment_request, get_zero_dollar_payment_request, token_header)
+    factory_payment_transaction, get_claims, get_payment_request, get_waive_fees_payment_request,
+    get_zero_dollar_payment_request, token_header)
 
 
 def test_payment_creation(session, client, jwt, app):
@@ -387,3 +388,32 @@ def test_bcol_payment_creation(session, client, jwt, app):
     assert rv.json.get('_links') is not None
 
     assert schema_utils.validate(rv.json, 'payment_response')[0]
+
+
+def test_zero_dollar_payment_creation_with_waive_fees(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(role='staff'), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_waive_fees_payment_request()),
+                     headers=headers)
+
+    assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
+    assert rv.json.get('statusCode', None) == 'COMPLETED'
+    assert rv.json.get('paymentSystem', None) == 'INTERNAL'
+    assert rv.json.get('invoices')[0].get('total') == 0
+    assert rv.json.get('invoices')[0].get('total') == 0
+
+    assert schema_utils.validate(rv.json, 'payment_response')[0]
+
+
+def test_zero_dollar_payment_creation_with_waive_fees_unauthorized(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_waive_fees_payment_request()),
+                     headers=headers)
+
+    assert rv.status_code == 400

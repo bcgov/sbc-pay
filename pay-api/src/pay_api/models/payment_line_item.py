@@ -29,7 +29,7 @@ class PaymentLineItem(BaseModel):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     invoice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
-    filing_fees = db.Column(db.Integer, nullable=False)
+    filing_fees = db.Column(db.Float, nullable=False)
     fee_schedule_id = db.Column(db.Integer, ForeignKey('fee_schedule.fee_schedule_id'), nullable=False)
     quantity = db.Column(db.Integer, nullable=True)
     priority_fees = db.Column(db.Float, nullable=True)
@@ -39,6 +39,8 @@ class PaymentLineItem(BaseModel):
     pst = db.Column(db.Float, nullable=True)
     total = db.Column(db.Float, nullable=False)
     line_item_status_code = db.Column(db.String(20), ForeignKey('status_code.code'), nullable=False)
+    waived_fees = db.Column(db.Float, nullable=True)
+    waived_by = db.Column(db.String(50), nullable=True, default=None)
 
     fee_schedule = relationship(FeeSchedule, foreign_keys=[fee_schedule_id], lazy='joined', innerjoin=True)
 

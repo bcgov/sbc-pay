@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to Payment."""
+
+from threading import Thread
 from typing import Any, Dict, Tuple
 
-from flask import current_app
+from flask import copy_current_request_context, current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
@@ -30,8 +32,6 @@ from .payment import Payment
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
 from .payment_transaction import PaymentTransaction
-from threading import Thread
-from flask import copy_current_request_context
 
 
 class PaymentService:  # pylint: disable=too-few-public-methods
@@ -298,10 +298,12 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         _check_if_payment_is_completed(payment)
         payment.payment_status_code = Status.DELETE_ACCEPTED.value
         payment.save()
+
         @copy_current_request_context
         def run_delete():
-            """Calls delete payment."""
+            """Call delete payment."""
             PaymentService.delete_payment(payment_id)
+
         current_app.logger.debug('Starting thread to delete payment.')
         thread = Thread(target=run_delete)
         thread.start()
@@ -319,7 +321,8 @@ def _calculate_fees(corp_type, filing_info):
             valid_date=filing_info.get('date', None),
             jurisdiction=None,
             is_priority=filing_type_info.get('priority'),
-            is_future_effective=filing_type_info.get('futureEffective')
+            is_future_effective=filing_type_info.get('futureEffective'),
+            waive_fees=filing_type_info.get('waiveFees')
         )
         if filing_type_info.get('filingDescription'):
             fee.description = filing_type_info.get('filingDescription')

@@ -36,6 +36,15 @@
         true
       ]
     },
+    "waiveFees": {
+      "$id": "#/properties/filing_types/items/properties/futureEffective",
+      "type": "boolean",
+      "title": "Override fees to zero. Only for staff users.",
+      "default": false,
+      "examples": [
+        true
+      ]
+    },
     "filingDescription": {
       "$id": "#/properties/filing_types/items/properties/filingDescription",
       "type": "string",
