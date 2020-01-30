@@ -19,9 +19,10 @@ from flask import current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.utils.errors import Error
 from pay_api.utils.enums import PaymentSystem
+from pay_api.utils.errors import Error
 from pay_api.utils.util import get_str_by_path
+
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes
     """Service to manage Payment Account model related operations."""
@@ -147,7 +148,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         """Set the bcol_user_id."""
         self._bcol_user_id = value
         self._dao.bcol_user_id = value
-    
+
     @property
     def bcol_account_id(self):
         """Return the bcol_account_id."""
@@ -205,25 +206,25 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         auth_account_id: str = get_str_by_path(authorization, 'account/id')
         bcol_user_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineUserId')
         bcol_account_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineAccountId')
-        corp_number:str = business_info.get('businessIdentifier')
+        corp_number: str = business_info.get('businessIdentifier')
         corp_type: str = business_info.get('corpType')
         account_dao = None
         if payment_system == PaymentSystem.BCOL.value:
             if not bcol_user_id:
                 raise BusinessException(Error.PAY015)
-            account_dao = PaymentAccountModel.find_by_corp_number_and_corp_type_and_system(
-                corp_number,
-                corp_type,
-                payment_system
-            )
-        elif payment_system == PaymentSystem.PAYBC.value:
-            if not corp_number and not corp_type:
-                raise BusinessException(Error.PAY004)
-
             account_dao = PaymentAccountModel.find_by_bcol_user_id_and_account(
                 auth_account_id=auth_account_id,
                 bcol_user_id=bcol_user_id,
                 bcol_account_id=bcol_account_id
+            )
+        else:
+            if not corp_number and not corp_type:
+                raise BusinessException(Error.PAY004)
+
+            account_dao = PaymentAccountModel.find_by_corp_number_and_corp_type_and_system(
+                corp_number,
+                corp_type,
+                payment_system
             )
         payment_account = PaymentAccount()
         payment_account._dao = account_dao  # pylint: disable=protected-access

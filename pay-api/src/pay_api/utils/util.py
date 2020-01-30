@@ -16,9 +16,10 @@
 
 A simple decorator to add the options method to a Request Class.
 """
-from flask import current_app
 from typing import Dict
+
 from dpath import util as dpath_util
+from flask import current_app
 
 
 def cors_preflight(methods: str = 'GET'):

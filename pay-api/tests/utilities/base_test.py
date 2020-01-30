@@ -60,6 +60,35 @@ def get_claims(app_request=None, role: str = Role.EDITOR.value, username: str = 
 def get_payment_request(business_identifier: str = 'CP0001234'):
     """Return a payment request object."""
     return {
+        'businessInfo': {
+            'businessIdentifier': business_identifier,
+            'corpType': 'CP',
+            'businessName': 'ABC Corp',
+            'contactInfo': {
+                'city': 'Victoria',
+                'postalCode': 'V8P2P2',
+                'province': 'BC',
+                'addressLine1': '100 Douglas Street',
+                'country': 'CA'
+            }
+        },
+        'filingInfo': {
+            'filingTypes': [
+                {
+                    'filingTypeCode': 'OTADD',
+                    'filingDescription': 'TEST'
+                },
+                {
+                    'filingTypeCode': 'OTANN'
+                }
+            ]
+        }
+    }
+
+
+def get_payment_request_with_payment_method(business_identifier: str = 'CP0001234'):
+    """Return a payment request object."""
+    return {
         'paymentInfo': {
             'methodOfPayment': 'CC'
         },
@@ -92,9 +121,6 @@ def get_payment_request(business_identifier: str = 'CP0001234'):
 def get_zero_dollar_payment_request(business_identifier: str = 'CP0001234'):
     """Return a payment request object."""
     return {
-        'paymentInfo': {
-            'methodOfPayment': 'CC'
-        },
         'businessInfo': {
             'businessIdentifier': business_identifier,
             'corpType': 'CP',
@@ -123,9 +149,6 @@ def get_zero_dollar_payment_request(business_identifier: str = 'CP0001234'):
 def get_waive_fees_payment_request(business_identifier: str = 'CP0001234'):
     """Return a payment request object."""
     return {
-        'paymentInfo': {
-            'methodOfPayment': 'CC'
-        },
         'businessInfo': {
             'businessIdentifier': business_identifier,
             'corpType': 'CP',
@@ -154,7 +177,7 @@ def get_waive_fees_payment_request(business_identifier: str = 'CP0001234'):
 
 
 def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code: str = 'CP',
-                            payment_system_code: str = 'PAYBC', account_number='4101', user_id='test'):
+                            payment_system_code: str = 'PAYBC', account_number='4101', bcol_user_id='test'):
     """Factory."""
     return PaymentAccount(
         corp_number=corp_number,
@@ -163,7 +186,21 @@ def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code: str 
         party_number='11111',
         account_number=account_number,
         site_number='29921',
-        user_id=user_id
+        bcol_user_id=bcol_user_id
+    )
+
+
+def factory_premium_payment_account(corp_number: str = 'CP0001234', corp_type_code: str = 'CP',
+                                    payment_system_code: str = 'BCOL',
+                                    bcol_user_id='MOCK1234', bcol_account_id='1234567890', auth_account_id='1234'):
+    """Factory."""
+    return PaymentAccount(
+        corp_number=corp_number,
+        corp_type_code=corp_type_code,
+        payment_system_code=payment_system_code,
+        bcol_user_id=bcol_user_id,
+        bcol_account_id=bcol_account_id,
+        auth_account_id=auth_account_id
     )
 
 
@@ -236,4 +273,52 @@ def get_paybc_transaction_request():
     return {
         'clientSystemUrl': 'http://localhost:8080/abcd',
         'payReturnUrl': 'http://localhost:8081/xyz'
+    }
+
+
+def get_auth_basic_user():
+    """Return authorization response for basic users."""
+    return {
+        'orgMembership': 'OWNER',
+        'roles': [
+            'view',
+            'edit'
+        ],
+        'business': {
+            'folioNumber': 'MOCK1234',
+            'name': 'Mock Business'
+        },
+        'account': {
+            'id': '1234',
+            'name': 'Mock Account',
+            'paymentPreference': {
+                'methodOfPayment': 'CC',
+                'bcOnlineUserId': '',
+                'bcOnlineAccountId': ''
+            }
+        }
+    }
+
+
+def get_auth_premium_user():
+    """Return authorization response for basic users."""
+    return {
+        'orgMembership': 'OWNER',
+        'roles': [
+            'view',
+            'edit'
+        ],
+        'business': {
+            'folioNumber': 'MOCK1234',
+            'name': 'Mock Business'
+        },
+        'account': {
+            'id': '1234',
+            'name': 'Mock Account',
+            'paymentPreference': {
+                'methodOfPayment': 'PREMIUM',
+                'bcOnlineUserId': 'MOCK1234',
+                'bcOnlineAccountId': '1234567890'
+            }
+        }
     }

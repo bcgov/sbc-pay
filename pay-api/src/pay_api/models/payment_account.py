@@ -14,9 +14,11 @@
 """Model to handle all operations related to Payment Account data."""
 from sqlalchemy import ForeignKey
 
+from pay_api.utils.enums import PaymentSystem
+
 from .base_model import BaseModel
 from .db import db, ma
-from pay_api.utils.enums import PaymentSystem
+
 
 class PaymentAccount(BaseModel):
     """This class manages all of the base data about Payment Account."""
