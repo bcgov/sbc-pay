@@ -15,9 +15,12 @@
 
 from flask import current_app
 
+from pay_api.exceptions import BusinessException
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.fee_schedule import FeeSchedule
-from pay_api.utils.enums import Status
+from pay_api.utils.enums import Role, Status
+from pay_api.utils.errors import Error
+from pay_api.utils.user_context import UserContext, user_context
 
 
 class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
@@ -38,6 +41,8 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         self._total: float = None
         self._quantity: int = None
         self._line_item_status_code: str = None
+        self._waived_fees: float = None
+        self._waived_by: str = None
 
     @property
     def _dao(self):
@@ -60,6 +65,8 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         self.total: float = self._dao.total
         self.quantity: int = self._dao.quantity
         self.line_item_status_code: str = self._dao.line_item_status_code
+        self.waived_fees: float = self._dao.waived_fees
+        self.waived_by: str = self._dao.waived_by
 
     @property
     def id(self):
@@ -193,14 +200,38 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         self._line_item_status_code = value
         self._dao.line_item_status_code = value
 
+    @property
+    def waived_fees(self):
+        """Return the waived_fees."""
+        return self._waived_fees
+
+    @waived_fees.setter
+    def waived_fees(self, value: float):
+        """Set the waived_fees."""
+        self._waived_fees = value
+        self._dao.waived_fees = value
+
+    @property
+    def waived_by(self):
+        """Return the waived_by."""
+        return self._waived_by
+
+    @waived_by.setter
+    def waived_by(self, value: str):
+        """Set the waived_by."""
+        self._waived_by = value
+        self._dao.waived_by = value
+
     def flush(self):
         """Save the information to the DB."""
         return self._dao.flush()
 
     @staticmethod
-    def create(invoice_id: int, fee: FeeSchedule):
+    @user_context
+    def create(invoice_id: int, fee: FeeSchedule, **kwargs):
         """Create Payment Line Item record."""
         current_app.logger.debug('<create')
+        user: UserContext = kwargs['user']
         p = PaymentLineItem()
         p.invoice_id = invoice_id
         p.total = fee.total
@@ -213,7 +244,12 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         p.future_effective_fees = fee.future_effective_fee
         p.quantity = fee.quantity
         p.line_item_status_code = Status.CREATED.value
-
+        if fee.waived_fee_amount > 0:
+            if user.has_role(Role.STAFF.value):
+                p.waived_fees = fee.waived_fee_amount
+                p.waived_by = user.user_name
+            else:
+                raise BusinessException(Error.PAY003)
         p_dao = p.flush()
 
         p = PaymentLineItem()

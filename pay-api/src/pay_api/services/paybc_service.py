@@ -254,7 +254,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         current_app.logger.debug(f'>Creating PayBC Adjustment  For Invoice: {inv_number}')
         adjustment_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/adjs/' \
             .format(account_details[0], account_details[1], account_details[2], inv_number)
-        current_app.logger.debug('>Creating PayBC Adjustment URL {}', adjustment_url)
+        current_app.logger.debug(f'>Creating PayBC Adjustment URL {adjustment_url}')
 
         adjustment = dict(
             comment=comment,

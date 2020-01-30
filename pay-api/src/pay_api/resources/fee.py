@@ -45,6 +45,9 @@ class Fee(Resource):
         is_priority = convert_to_bool(request.args.get('priority', 'False'))
         is_future_effective = convert_to_bool(request.args.get('futureEffective', 'False'))
         jurisdiction = request.args.get('jurisdiction', DEFAULT_JURISDICTION)
+        waive_fees = False
+        if _jwt.validate_roles([Role.STAFF.value]):
+            waive_fees = convert_to_bool(request.args.get('waiveFees', 'False'))
 
         try:
             response, status = (
@@ -54,7 +57,8 @@ class Fee(Resource):
                     valid_date=date,
                     jurisdiction=jurisdiction,
                     is_priority=is_priority,
-                    is_future_effective=is_future_effective
+                    is_future_effective=is_future_effective,
+                    waive_fees=waive_fees
                 ).asdict(),
                 HTTPStatus.OK,
             )

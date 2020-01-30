@@ -26,7 +26,7 @@ class JWTWrapper:  # pylint: disable=too-few-public-methods
     @staticmethod
     def get_instance():
         """Retrieve singleton JwtManager."""
-        if JWTWrapper.__instance is None: # pragma: no cover
+        if JWTWrapper.__instance is None:  # pragma: no cover
             JWTWrapper()
         return JWTWrapper.__instance
 

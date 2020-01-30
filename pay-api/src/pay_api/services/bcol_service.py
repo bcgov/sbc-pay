@@ -18,14 +18,12 @@ from typing import Any, Dict, Tuple
 
 from flask import current_app
 
-from pay_api.exceptions import BusinessException
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import AuthHeaderType, ContentType
 from pay_api.utils.enums import PaymentSystem as PaySystemCode
-from pay_api.utils.errors import Error
 
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem

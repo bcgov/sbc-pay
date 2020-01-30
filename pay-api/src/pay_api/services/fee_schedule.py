@@ -40,6 +40,7 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         self._filing_type: str = None
         self._priority_fee: float = 0
         self._future_effective_fee: float = 0
+        self._waived_fee_amount: float = 0
 
     @property
     def _dao(self):
@@ -140,6 +141,19 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         """Return the fee amount."""
         return self._fee_amount
 
+    @fee_amount.setter
+    def fee_amount(self, fee_amount):
+        """Override the fee amount."""
+        # set waived fees attribute to original fee amount
+        self._waived_fee_amount = self._fee_amount
+        # Override the fee amount
+        self._fee_amount = fee_amount
+
+    @property
+    def waived_fee_amount(self):
+        """Return waived fee amount."""
+        return self._waived_fee_amount
+
     @property
     def priority_fee(self):
         """Return the priority fee."""
@@ -229,6 +243,8 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
             fee_schedule.priority_fee = fee_schedule_dao.priority_fee.amount
         if kwargs.get('is_future_effective') and fee_schedule_dao.future_effective_fee:
             fee_schedule.future_effective_fee = fee_schedule_dao.future_effective_fee.amount
+        if kwargs.get('waive_fees'):
+            fee_schedule.fee_amount = 0
 
         current_app.logger.debug('>get_fees_by_corp_type_and_filing_type')
         return fee_schedule
