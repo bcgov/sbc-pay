@@ -1,0 +1,46 @@
+#
+# This file contains the environment-specific settings that are read by python-dotenv. Place it somewhere above your
+# source code and it will be used.
+#
+
+# ===== bcol-api ======================================================================================================
+
+# Flask settings
+PYTHONWARNINGS="once"
+FLASK_APP=wsgi.py
+FLASK_ENV="development"
+FLASK_DEBUG=True
+POD_TESTING=True
+SQLALCHEMY_ECHO=False
+
+# The sentry.io Data Source Name for the project. For local development this should always be blank, to prevent the
+# logging (and emailing) of errors. However it can be temporarily set when working with sentry itself.
+#
+SENTRY_DSN=
+
+# keycloak settings
+JWT_OIDC_ISSUER=
+JWT_OIDC_WELL_KNOWN_CONFIG=
+JWT_OIDC_ALGORITHMS=
+JWT_OIDC_AUDIENCE=
+JWT_OIDC_CLIENT_SECRET=
+JWT_OIDC_JWKS_CACHE_TIMEOUT=
+
+KEYCLOAK_ADMIN_CLIENTID='
+KEYCLOAK_ADMIN_SECRET=
+KEYCLOAK_AUTH_AUDIENCE=
+KEYCLOAK_AUTH_CLIENT_SECRET=
+KEYCLOAK_BASE_URL=
+KEYCLOAK_REALMNAME=
+
+#application settings
+BCOL_VERIFY_USER_WSDL_URL=
+BCOL_QUERY_PROFILE_WSDL_URL=
+BCOL_DEBIT_ACCOUNT_VERSION=
+BCOL_LINK_CODE=
+BCOL_LDAP_USER_DN_PATTERN=
+BCOL_LDAP_SERVER=
+BCOL_PAYMENTS_WSDL_URL=
+
+
+
