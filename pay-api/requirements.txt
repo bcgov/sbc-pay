@@ -18,6 +18,7 @@ blinker==1.4
 certifi==2019.11.28
 chardet==3.0.4
 croniter==0.3.31
+dpath==2.0.1
 ecdsa==0.15
 flask-jwt-oidc==0.1.5
 flask-marshmallow==0.10.1

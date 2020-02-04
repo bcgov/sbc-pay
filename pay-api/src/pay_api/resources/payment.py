@@ -51,10 +51,9 @@ class Payment(Resource):
             return jsonify({'code': 'PAY999', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
 
         # Check if user is authorized to perform this action
-        check_auth(request_json.get('businessInfo').get('businessIdentifier'), contains_role=EDIT_ROLE)
-
+        authorization = check_auth(request_json.get('businessInfo').get('businessIdentifier'), contains_role=EDIT_ROLE)
         try:
-            response, status = PaymentService.create_payment(request_json), HTTPStatus.CREATED
+            response, status = PaymentService.create_payment(request_json, authorization), HTTPStatus.CREATED
         except BusinessException as exception:
             response, status = {'code': exception.code, 'message': exception.message}, exception.status
         except ServiceUnavailableException as exception:
@@ -95,12 +94,12 @@ class Payments(Resource):
             return jsonify({'code': 'PAY003', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
 
         # Check if user is authorized to perform this action
-        check_auth(request_json.get('businessInfo').get('businessIdentifier'), one_of_roles=[EDIT_ROLE])
+        authorization = check_auth(request_json.get('businessInfo').get('businessIdentifier'), one_of_roles=[EDIT_ROLE])
 
         try:
             response, status = (
                 PaymentService.update_payment(
-                    payment_id, request_json
+                    payment_id, request_json, authorization
                 ),
                 HTTPStatus.OK,
             )

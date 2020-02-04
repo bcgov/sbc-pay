@@ -20,7 +20,8 @@ Test-Suite to ensure that the BCOL Service layer is working as expected.
 from pay_api.models.fee_schedule import FeeSchedule
 from pay_api.services.bcol_service import BcolService
 from tests.utilities.base_test import (
-    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item)
+    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
+    get_auth_premium_user)
 
 
 bcol_service = BcolService()
@@ -28,7 +29,7 @@ bcol_service = BcolService()
 
 def test_create_account(session):
     """Test create_account."""
-    account = bcol_service.create_account(None, None)
+    account = bcol_service.create_account(None, None, get_auth_premium_user())
     assert account is not None
 
 
@@ -46,7 +47,7 @@ def test_get_payment_system_code(session):
 
 def test_create_invoice(session):
     """Test create_invoice."""
-    pay_account = factory_payment_account(payment_system_code='BCOL', account_number='BCOL_ACC_1', user_id='test')
+    pay_account = factory_payment_account(payment_system_code='BCOL', account_number='BCOL_ACC_1', bcol_user_id='test')
     pay_account.save()
     payment = factory_payment()
     payment.save()
@@ -75,7 +76,7 @@ def test_cancel_invoice(session):
 
 def test_get_receipt(session):
     """Test cancel_invoice."""
-    pay_account = factory_payment_account(payment_system_code='BCOL', account_number='BCOL_ACC_1', user_id='test')
+    pay_account = factory_payment_account(payment_system_code='BCOL', account_number='BCOL_ACC_1', bcol_user_id='test')
     pay_account.save()
     payment = factory_payment()
     payment.save()

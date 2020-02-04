@@ -42,7 +42,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         """Return INTERNAL as the system code."""
         return PaymentSystem.INTERNAL.value
 
-    def create_account(self, name: str, account_info: Dict[str, Any]):
+    def create_account(self, name: str, account_info: Dict[str, Any], authorization: Dict[str, Any]):
         """Create account internal."""
         return {}
 

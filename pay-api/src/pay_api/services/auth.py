@@ -22,21 +22,23 @@ from pay_api.utils.user_context import UserContext, user_context
 
 @user_context
 def check_auth(business_identifier: str, **kwargs):
-    """Authorize the user for the business entity."""
+    """Authorize the user for the business entity and return authorization response."""
     user: UserContext = kwargs['user']
     is_authorized: bool = False
+    auth_response = None
     if Role.SYSTEM.value in user.roles:
         is_authorized = bool(Role.EDITOR.value in user.roles)
     else:
         bearer_token = user.bearer_token
-        auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'entities/{business_identifier}/authorizations'
-        auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON)
+        auth_url = current_app.config.get(
+            'AUTH_API_ENDPOINT') + f'entities/{business_identifier}/authorizations?expanded=true'
+        auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
 
-        roles: list = auth_response.json().get('roles', [])
+        roles: list = auth_response.get('roles', [])
         if kwargs.get('one_of_roles', None):
             is_authorized = list(set(kwargs.get('one_of_roles')) & set(roles)) != []
         if kwargs.get('contains_role', None):
             is_authorized = kwargs.get('contains_role') in roles
-
     if not is_authorized:
         abort(403)
+    return auth_response
