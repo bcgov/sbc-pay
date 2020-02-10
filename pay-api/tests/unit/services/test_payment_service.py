@@ -28,7 +28,8 @@ from pay_api.services.payment_service import PaymentService
 from pay_api.utils.enums import Status
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
-    factory_payment_transaction, get_auth_basic_user, get_payment_request, get_zero_dollar_payment_request)
+    factory_payment_transaction, get_auth_basic_user, get_auth_premium_user, get_payment_request,
+    get_payment_request_with_payment_method, get_zero_dollar_payment_request)
 
 
 test_user_token = {'preferred_username': 'test'}
@@ -319,4 +320,23 @@ def test_delete_completed_payment(session, auth_mock):
 
     with pytest.raises(Exception) as excinfo:
         PaymentService.delete_payment(payment.id)
+    assert excinfo.type == BusinessException
+
+
+def test_create_bcol_payment(session, public_user_mock):
+    """Assert that the payment records are created."""
+    payment_response = PaymentService.create_payment(
+        get_payment_request_with_payment_method(payment_method='PREMIUM', business_identifier='CP0002000'),
+        get_auth_premium_user())
+    assert payment_response is not None
+    assert payment_response.get('payment_system') == 'BCOL'
+    assert payment_response.get('status_code') == 'COMPLETED'
+
+
+def test_create_bcol_payment_for_basic_user(session, public_user_mock):
+    """Assert that the payment records are created."""
+    with pytest.raises(Exception) as excinfo:
+        PaymentService.create_payment(
+            get_payment_request_with_payment_method(payment_method='PREMIUM', business_identifier='CP0001238'),
+            get_auth_basic_user())
     assert excinfo.type == BusinessException

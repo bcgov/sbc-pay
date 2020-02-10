@@ -18,10 +18,10 @@ import random
 from unittest.mock import patch
 
 import pytest
-from tests.utilities.ldap_mock import MockLDAP
 
 from bcol_api import create_app
 from bcol_api import jwt as _jwt
+from tests.utilities.ldap_mock import MockLDAP
 
 
 @pytest.fixture(scope='session')
@@ -137,7 +137,6 @@ def query_profile_mock_error():
     mock_query_profile_patcher.stop()
 
 
-
 @pytest.fixture()
 def payment_mock():
     """Mock Query Profile SOAP."""
@@ -146,28 +145,29 @@ def payment_mock():
     )
     mock_payment = mock_payment_patcher.start()
     mock_payment.return_value = {
-    'RespType': 'RESPONSE',
-    'ReturnCode': '0000',
-    'ReturnMsg': 'LOOKS OK TO ME',
-    'Uniqueid': '',
-    'StatFee': '-700', 
-    'Totamt': '-850', 
-    'TSFee': '-150',
-    'Totgst': '+00',
-    'Totpst': '+00',
-    'TranID': {
-        'Account': '180670',
-        'UserID': 'PB25020 ',
-        'AppliedDate': '20191108',
-        'AppliedTime': '113405428',
-        'FeeCode': 'BSH105  ',
-        'Key': 'TEST12345678901',
-        'SequenceNo': '0001'
-    } 
-}
+        'RespType': 'RESPONSE',
+        'ReturnCode': '0000',
+        'ReturnMsg': 'LOOKS OK TO ME',
+        'Uniqueid': '',
+        'StatFee': '-700',
+        'Totamt': '-850',
+        'TSFee': '-150',
+        'Totgst': '+00',
+        'Totpst': '+00',
+        'TranID': {
+            'Account': '180670',
+            'UserID': 'PB25020 ',
+            'AppliedDate': '20191108',
+            'AppliedTime': '113405428',
+            'FeeCode': 'BSH105  ',
+            'Key': 'TEST12345678901',
+            'SequenceNo': '0001'
+        }
+    }
 
     yield
     mock_payment_patcher.stop()
+
 
 @pytest.fixture()
 def payment_mock_error():

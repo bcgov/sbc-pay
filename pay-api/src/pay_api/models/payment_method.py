@@ -31,7 +31,7 @@ class PaymentMethod(db.Model, CodeTable):
         db.session.commit()
 
 
-class PaymentMethodSchema(ma.ModelSchema):
+class PaymentMethodSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the System Code."""
 
     class Meta:  # pylint: disable=too-few-public-methods

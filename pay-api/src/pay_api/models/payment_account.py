@@ -72,7 +72,7 @@ class PaymentAccount(BaseModel):
         return cls.query.get(identifier)
 
 
-class PaymentAccountSchema(ma.ModelSchema):
+class PaymentAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Payment Account."""
 
     class Meta:  # pylint: disable=too-few-public-methods

@@ -86,11 +86,11 @@ def get_payment_request(business_identifier: str = 'CP0001234'):
     }
 
 
-def get_payment_request_with_payment_method(business_identifier: str = 'CP0001234'):
+def get_payment_request_with_payment_method(business_identifier: str = 'CP0001234', payment_method: str = 'CC'):
     """Return a payment request object."""
     return {
         'paymentInfo': {
-            'methodOfPayment': 'CC'
+            'methodOfPayment': payment_method
         },
         'businessInfo': {
             'businessIdentifier': business_identifier,
@@ -192,7 +192,7 @@ def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code: str 
 
 def factory_premium_payment_account(corp_number: str = 'CP0001234', corp_type_code: str = 'CP',
                                     payment_system_code: str = 'BCOL',
-                                    bcol_user_id='MOCK1234', bcol_account_id='1234567890', auth_account_id='1234'):
+                                    bcol_user_id='PB25020', bcol_account_id='1234567890', auth_account_id='1234'):
     """Factory."""
     return PaymentAccount(
         corp_number=corp_number,
@@ -317,7 +317,7 @@ def get_auth_premium_user():
             'name': 'Mock Account',
             'paymentPreference': {
                 'methodOfPayment': 'PREMIUM',
-                'bcOnlineUserId': 'MOCK1234',
+                'bcOnlineUserId': 'PB25020',
                 'bcOnlineAccountId': '1234567890'
             }
         }

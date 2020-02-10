@@ -405,3 +405,41 @@ def test_zero_dollar_payment_creation_with_waive_fees_unauthorized(session, clie
                      headers=headers)
 
     assert rv.status_code == 400
+
+
+def test_premium_payment_creation(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
+                     headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
+    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert rv.json.get('paymentSystem') == 'BCOL'
+
+
+def test_premium_payment_creation_with_payment_method(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(
+        get_payment_request_with_payment_method(business_identifier='CP0002000', payment_method='PREMIUM')),
+                     headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
+    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert rv.json.get('paymentSystem') == 'BCOL'
+
+
+def test_unauthorized_payment_creation(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(
+        get_payment_request_with_payment_method(business_identifier='CP0001238', payment_method='PREMIUM')),
+                     headers=headers)
+    assert rv.status_code == 401

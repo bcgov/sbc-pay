@@ -91,3 +91,11 @@ def validate(json_data: json,
     except SchemaError as error:
         # handle schema error
         return False, error
+
+
+def serialize(errors):
+    """Serialize errors."""
+    error_message = []
+    for error in errors:
+        error_message.append(error.message)
+    return error_message

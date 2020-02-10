@@ -31,7 +31,7 @@ class StatusCode(db.Model, CodeTable):
         db.session.commit()
 
 
-class StatusCodeSchema(ma.ModelSchema):
+class StatusCodeSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Status Code."""
 
     class Meta:  # pylint: disable=too-few-public-methods

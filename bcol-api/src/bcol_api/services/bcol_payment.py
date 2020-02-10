@@ -30,6 +30,7 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
         """Create payment record in BCOL."""
         current_app.logger.debug('<create_payment')
         pay_response = None
+        padded_amount = self._pad_zeros(pay_request.get('amount', '0'))
         # Call the query profile service to fetch profile
         data = {
             'Version': current_app.config.get('BCOL_DEBIT_ACCOUNT_VERSION'),
@@ -41,8 +42,8 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
             'Folio': pay_request.get('folioNumber'),
             'FormNumber': pay_request.get('formNumber', ''),
             'Quantity': pay_request.get('quantity', ''),
-            'Rate': pay_request.get('rate', ''),
-            'Amount': pay_request.get('amount', ''),
+            'Rate': padded_amount,
+            'Amount': padded_amount,
             'Remarks': pay_request.get('remarks', 'BCOL Payment from BCROS'),
             'RedundantFlag': pay_request.get('reduntantFlag', ' '),
             'linkcode': current_app.config.get('BCOL_LINK_CODE')
@@ -86,3 +87,10 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
         """Debit BCOL account."""
         client = BcolSoap().get_payment_client()
         return zeep.helpers.serialize_object(client.service.debitAccount(req=data))
+
+    def _pad_zeros(self, amount: str = '0'):  # pylint: disable=no-self-use
+        """Pad the amount with Zeroes to make sure the string is 10 chars."""
+        if not amount:
+            return None
+        amount = int(float(amount) * 100)  # Multiply with 100, as for e.g, 50.00 needs to be 5000
+        return str(amount).zfill(10)
