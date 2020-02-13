@@ -18,15 +18,17 @@ from typing import Any, Dict, Tuple
 
 from flask import current_app
 
-from pay_api.services.base_payment_system import PaymentSystemService
-from pay_api.services.invoice import Invoice
-from pay_api.services.invoice_reference import InvoiceReference
-from pay_api.services.payment_account import PaymentAccount
+from pay_api.models.corp_type import CorpType
 from pay_api.utils.enums import AuthHeaderType, ContentType
 from pay_api.utils.enums import PaymentSystem as PaySystemCode
+from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_str_by_path
 
+from .base_payment_system import PaymentSystemService
+from .invoice import Invoice
+from .invoice_reference import InvoiceReference
 from .oauth_service import OAuthService
+from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
 
 
@@ -51,25 +53,33 @@ class BcolService(PaymentSystemService, OAuthService):
         """Return PAYBC as the system code."""
         return PaySystemCode.BCOL.value
 
+    @user_context
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str, **kwargs):
         """Create Invoice in PayBC."""
         current_app.logger.debug('<create_invoice')
+        user: UserContext = kwargs['user']
         pay_endpoint = current_app.config.get('BCOL_API_ENDPOINT') + '/payments'
-        invoice_number = f'{invoice_id}-{payment_account.corp_number}'
+        corp_number = payment_account.corp_number
         amount_excluding_txn_fees = sum(line.filing_fees for line in line_items)
+        filing_types = ','.join([item.filing_type_code for item in line_items])
+        remarks = f'{corp_number}({filing_types})-{user.first_name}'
         payload: Dict = {
+            # 'userId': payment_account.bcol_user_id if payment_account.bcol_user_id else 'PE25020',
             'userId': payment_account.bcol_user_id,
-            'invoiceNumber': invoice_number,
+            'invoiceNumber': str(invoice_id),
             'folioNumber': kwargs.get('folio_number'),
-            'amount': amount_excluding_txn_fees
+            'amount': str(amount_excluding_txn_fees),
+            'rate': str(amount_excluding_txn_fees),
+            'remarks': remarks[:50],
+            'feeCode': self._get_fee_code(payment_account.corp_type_code)
         }
-        pay_response = self.post(pay_endpoint, kwargs.get('jwt'), AuthHeaderType.BEARER, ContentType.JSON,
+        pay_response = self.post(pay_endpoint, user.bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
                                  payload).json()
 
         invoice = {
             'invoice_number': pay_response.get('key'),
             'reference_number': pay_response.get('sequenceNo'),
-            'totalAmount': int(pay_response.get('totalAmount', 0))
+            'totalAmount': -(int(pay_response.get('totalAmount', 0)) / 100)
         }
         current_app.logger.debug('>create_invoice')
         return invoice
@@ -88,3 +98,7 @@ class BcolService(PaymentSystemService, OAuthService):
         current_app.logger.debug('<get_receipt')
         invoice = Invoice.find_by_id(invoice_reference.invoice_id, skip_auth_check=True)
         return f'RCPT_{invoice_reference.invoice_number}', datetime.now(), invoice.total
+
+    def _get_fee_code(self, corp_type: str):  # pylint: disable=no-self-use
+        """Return BCOL fee code."""
+        return CorpType.find_by_code(code=corp_type).bcol_fee_code

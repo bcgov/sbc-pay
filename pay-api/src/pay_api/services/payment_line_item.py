@@ -222,6 +222,11 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         self._waived_by = value
         self._dao.waived_by = value
 
+    @property
+    def filing_type_code(self):
+        """Return the filing_type_code."""
+        return self._dao.fee_schedule.filing_type_code
+
     def flush(self):
         """Save the information to the DB."""
         return self._dao.flush()

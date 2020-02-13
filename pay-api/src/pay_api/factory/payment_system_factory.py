@@ -61,7 +61,7 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         if not payment_method:
             raise BusinessException(Error.PAY003)
 
-        if total_fees == 0 or (Role.STAFF.value in user.roles):
+        if total_fees == 0 or (Role.STAFF.value in user.roles and payment_method != 'PREMIUM'):
             _instance = InternalPayService()
         else:
             if payment_method == 'CC':

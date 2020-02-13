@@ -31,6 +31,7 @@ class CorpType(db.Model, CodeTable):
     code = db.Column('code', db.String(10), primary_key=True)
     description = db.Column('description', db.String(200), nullable=False)
     transaction_fee_code = db.Column(db.String(10), ForeignKey('fee_code.code'), nullable=True)
+    bcol_fee_code = db.Column(db.String(20), nullable=True)
 
     transaction_fee = relationship('FeeCode', foreign_keys=[transaction_fee_code], lazy='joined', innerjoin=False)
 
@@ -40,7 +41,7 @@ class CorpType(db.Model, CodeTable):
         db.session.commit()
 
 
-class CorpTypeSchema(ma.ModelSchema):
+class CorpTypeSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Business."""
 
     class Meta:  # pylint: disable=too-few-public-methods

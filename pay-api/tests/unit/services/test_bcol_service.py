@@ -19,6 +19,7 @@ Test-Suite to ensure that the BCOL Service layer is working as expected.
 
 from pay_api.models.fee_schedule import FeeSchedule
 from pay_api.services.bcol_service import BcolService
+from pay_api.services.payment_line_item import PaymentLineItem
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
     get_auth_premium_user)
@@ -56,6 +57,7 @@ def test_create_invoice(session):
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(i.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
+    line = PaymentLineItem.find_by_id(line.id)
     # payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str, **kwargs
     inv = bcol_service.create_invoice(pay_account, [line], i.id, filing_info={'folioNumber': '1234567890'})
     assert inv is not None

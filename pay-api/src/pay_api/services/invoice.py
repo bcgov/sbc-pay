@@ -342,6 +342,8 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         transaction_fees: float = 0
 
         if payment_system_code == PaymentSystem.BCOL.value:
-            transaction_fees = CorpTypeModel.find_by_code(corp_type_code).transaction_fee.amount
+            corp_type = CorpTypeModel.find_by_code(corp_type_code)
+            if corp_type.transaction_fee:
+                transaction_fees = corp_type.transaction_fee.amount
 
         return transaction_fees

@@ -356,7 +356,7 @@ def _complete_post_payment(pay_service: PaymentSystemService, payment: Payment):
 
     For internal payments, create and complete the transactions and receipt.
     """
-    if pay_service.get_payment_system_code() == PaymentSystem.INTERNAL.value:
+    if pay_service.get_payment_system_code() in (PaymentSystem.INTERNAL.value, PaymentSystem.BCOL.value):
         transaction: PaymentTransaction = PaymentTransaction.create(payment.id,
                                                                     {
                                                                         'clientSystemUrl': '',

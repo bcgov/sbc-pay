@@ -46,10 +46,10 @@ def test_account_saved_from_new(session):
 def test_premium_account_saved_from_new(session):
     """Assert that the payment is saved to the table."""
     payment_account = factory_premium_payment_account()
-    payment_account.save()
+    payment_account = payment_account.save()
 
     pa = PaymentAccountService.find_account({}, get_auth_premium_user(),
-                                            payment_account.payment_system_code)
+                                            payment_system=payment_account.payment_system_code)
 
     assert pa is not None
     assert pa.id is not None

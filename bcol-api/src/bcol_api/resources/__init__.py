@@ -29,6 +29,7 @@ from .bcol_profile import API as BCOL_PROFILE_API
 from .meta import API as META_API
 from .ops import API as OPS_API
 
+
 __all__ = ('API_BLUEPRINT', 'OPS_BLUEPRINT')
 
 # This will add the Authorize button to the swagger docs
