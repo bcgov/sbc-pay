@@ -27,7 +27,7 @@ from pay_api.services.payment_service import PaymentService
 from pay_api.services.receipt import Receipt as ReceiptService
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
-    factory_payment_transaction, get_payment_request)
+    factory_payment_transaction, get_auth_basic_user, get_payment_request)
 
 
 def test_receipt_saved_from_new(session):
@@ -88,7 +88,7 @@ def test_create_receipt_without_invoice(session, public_user_mock):
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
 
-    PaymentService.update_payment(payment.id, get_payment_request())
+    PaymentService.update_payment(payment.id, get_payment_request(), get_auth_basic_user())
     input_data = {
         'corpName': 'Pennsular Coop ',
         'filingDateTime': '1999',
@@ -113,7 +113,7 @@ def test_create_receipt_with_invoice(session, public_user_mock):
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
 
-    PaymentService.update_payment(payment.id, get_payment_request())
+    PaymentService.update_payment(payment.id, get_payment_request(), get_auth_basic_user())
     input_data = {
         'corpName': 'Pennsular Coop ',
         'filingDateTime': '1999',
@@ -136,7 +136,7 @@ def test_create_receipt_with_no_receipt(session, public_user_mock):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    PaymentService.update_payment(payment.id, get_payment_request())
+    PaymentService.update_payment(payment.id, get_payment_request(), get_auth_basic_user())
     input_data = {
         'corpName': 'Pennsular Coop ',
         'filingDateTime': '1999',

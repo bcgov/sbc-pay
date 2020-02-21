@@ -145,7 +145,8 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
     def fee_amount(self, fee_amount):
         """Override the fee amount."""
         # set waived fees attribute to original fee amount
-        self._waived_fee_amount = self._fee_amount
+        if fee_amount == 0:
+            self._waived_fee_amount = self._fee_amount + self._priority_fee + self._future_effective_fee
         # Override the fee amount
         self._fee_amount = fee_amount
 
@@ -245,6 +246,8 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
             fee_schedule.future_effective_fee = fee_schedule_dao.future_effective_fee.amount
         if kwargs.get('waive_fees'):
             fee_schedule.fee_amount = 0
+            fee_schedule.priority_fee = 0
+            fee_schedule.future_effective_fee = 0
 
         current_app.logger.debug('>get_fees_by_corp_type_and_filing_type')
         return fee_schedule

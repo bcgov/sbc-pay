@@ -33,6 +33,7 @@ class Error(Enum):
     PAY012 = 'Invalid invoice identifier', HTTPStatus.BAD_REQUEST
     PAY013 = 'Invalid redirect url', HTTPStatus.UNAUTHORIZED
     PAY014 = 'Fee override is not allowed', HTTPStatus.UNAUTHORIZED
+    PAY015 = 'Premium account setup is incomplete', HTTPStatus.UNAUTHORIZED
 
     PAY020 = 'Invalid Account Number for the User', HTTPStatus.BAD_REQUEST
     PAY021 = 'Zero dollars deducted from BCOL', HTTPStatus.BAD_REQUEST

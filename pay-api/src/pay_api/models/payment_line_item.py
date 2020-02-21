@@ -50,7 +50,7 @@ class PaymentLineItem(BaseModel):
         return cls.query.get(identifier)
 
 
-class PaymentLineItemSchema(ma.ModelSchema):
+class PaymentLineItemSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Payment line item."""
 
     class Meta:  # pylint: disable=too-few-public-methods

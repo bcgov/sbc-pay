@@ -15,7 +15,7 @@
 
 from http import HTTPStatus
 
-from flask import request
+from flask import current_app, request
 from flask_restplus import Namespace, Resource
 
 from bcol_api.exceptions import BusinessException
@@ -24,6 +24,7 @@ from bcol_api.services.bcol_payment import BcolPayment
 from bcol_api.utils.auth import jwt as _jwt
 from bcol_api.utils.trace import tracing as _tracing
 from bcol_api.utils.util import cors_preflight
+
 
 API = Namespace('bcol accounts', description='Payment System - BCOL Accounts')
 
@@ -40,10 +41,12 @@ class AccountPayment(Resource):
         """Create a payment record in BCOL."""
         try:
             req_json = request.get_json()
+            current_app.logger.debug(req_json)
             # Validate the input request
             valid_format = schema_utils.validate(req_json, 'payment_request')
-            print(valid_format)
             if not valid_format[0]:
+                current_app.logger.info('Validation Error with incoming request',
+                                        schema_utils.serialize(valid_format[1]))
                 response, status = {'code': 'BCOL999', 'message': 'Invalid Request'}, HTTPStatus.BAD_REQUEST
             else:
                 response, status = BcolPayment().create_payment(req_json), HTTPStatus.OK

@@ -18,7 +18,7 @@ from marshmallow import post_dump
 from .db import ma
 
 
-class BaseSchema(ma.ModelSchema):
+class BaseSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Base Schema."""
 
     @post_dump(pass_many=True)

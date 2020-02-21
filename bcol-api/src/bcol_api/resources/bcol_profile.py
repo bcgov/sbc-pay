@@ -25,6 +25,7 @@ from bcol_api.utils.auth import jwt as _jwt
 from bcol_api.utils.trace import tracing as _tracing
 from bcol_api.utils.util import cors_preflight
 
+
 API = Namespace('bcol profile', description='Payment System - BCOL Profiles')
 
 

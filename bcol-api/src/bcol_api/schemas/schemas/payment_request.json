@@ -5,6 +5,7 @@
     "title": "Payment Request",
     "required": [
       "userId",
+      "feeCode",
       "invoiceNumber",
       "folioNumber"
     ],

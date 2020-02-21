@@ -19,3 +19,5 @@ croniter
 sentry-sdk[flask]
 attrs<=19.1.0
 jaeger-client
+dpath
+Werkzeug==0.16.1
