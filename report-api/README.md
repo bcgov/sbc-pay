@@ -1,89 +1,46 @@
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](../LICENSE)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=bcgov_sbc-pay&metric=alert_status)](https://sonarcloud.io/code?id=bcgov_sbc-pay&selected=bcgov_sbc-pay%3Areport-api)
+[![codecov](https://codecov.io/gh/bcgov/sbc-pay/branch/master/graph/badge.svg)](https://codecov.io/gh/bcgov/sbc-pay)
 
-[![Bugs](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/api/badges/measure?key=BCRegistriesPayment&metric=bugs&template=FLAT)](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/dashboard?id=BCRegistriesPayment) [![Vulnerabilities](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/api/badges/measure?key=BCRegistriesPayment&metric=vulnerabilities&template=FLAT)](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/dashboard?id=BCRegistriesPayment) [![Code smells](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/api/badges/measure?key=BCRegistriesPayment&metric=code_smells&template=FLAT)](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/dashboard?id=BCRegistriesPayment) [![Coverage](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/api/badges/measure?key=BCRegistriesPayment&metric=coverage&template=FLAT)](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/dashboard?id=BCRegistriesPayment) [![Duplication](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/api/badges/measure?key=BCRegistriesPayment&metric=duplicated_lines_density&template=FLAT)](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/dashboard?id=BCRegistriesPayment) [![Lines of code](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/api/badges/measure?key=BCRegistriesPayment&metric=lines&template=FLAT)](https://sonarqube-l4ygcl-tools.pathfinder.gov.bc.ca/dashboard?id=BCRegistriesPayment)
+# REPORT API
 
-# BC Registries Payment System
-
-## Technology Stack Used
-* Python, Flask
-* Postgres -  SQLAlchemy, psycopg2-binary & alembic 
-
-## Third-Party Products/Libraries used and the the License they are covert by
-
-## Project Status
-
-## Documentation
-
-GitHub Pages (https://guides.github.com/features/pages/) are a neat way to document you application/project.
-
-## Security
-
-Future - BCGov Keycloak
-
-Current - JWT hack
-
-## Files in this repository
-
-```
-docs/           - Project Documentation
-└── images        
-└── icons         
-
-openshift/      - OpenShift-specific files
-├── scripts     - helper scripts
-└── templates   - application templates
-```
-
-## Deployment (Local Development)
-
-* Developer Workstation Requirements/Setup
-* Application Specific Setup
-
-###Running in Docker in Local
-
-go to where Dockerfile exits
-
-```
-docker build --tag reportservice .     \\build
-
-docker run -p 5011:5011 reportservice     \\run
- 
-docker run -it  reportservice sh  \\getting into docker
-
-```
-## Deployment (OpenShift)
-
-See (openshift/Readme.md)
-
-## Getting Help or Reporting an Issue
-
-To report bugs/issues/feature requests, please file an [issue](../../issues).
+BC Registries report service.
 
 
-## Code standards 
+## Development Environment
 
-Refer [checklist](https://github.com/bcgov/sbc-auth/wiki/API-code-review-checklist)
+Follow the instructions of the [Development Readme](https://github.com/bcgov/entity/blob/master/docs/development.md)
+to setup your local development environment.
 
-## How to Contribute
+## Development Setup
 
-If you would like to contribute, please see our [CONTRIBUTING](./CONTRIBUTING.md) guidelines.
+1. Follow the [instructions](https://github.com/bcgov/entity/blob/master/docs/setup-forking-workflow.md) to checkout the project from GitHub.
+2. Open the pay-api directory in VS Code to treat it as a project (or WSL projec). To prevent version clashes, set up a
+virtual environment to install the Python packages used by this project.
+3. Run `make setup` to set up the virtual environment and install libraries.
+4. Next run `pip install .` to set up the environment for running tests.
 
-Please note that this project is released with a [Contributor Code of Conduct](./CODE_OF_CONDUCT.md). 
-By participating in this project you agree to abide by its terms.
+You also need to set up the variables used for environment-specific settings:
+1. Copy the [dotenv template file](./docs/dotenv_template) to somewhere above the source code and rename to `.env`. You will need to fill in missing values.
 
-## License
+## Running REPORT-API
 
-    Copyright 2018 Province of British Columbia
+1. Build the service by `docker build --tag reportservice`.
+2. Run the docker `docker run -p 5000:5000 reportservice`.
+3. Get into the docker `docker run -it  reportservice sh`.
+4. View the [OpenAPI Docs](http://127.0.0.1:5000/api/v1).
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
+## Running Liniting
 
-       http://www.apache.org/licenses/LICENSE-2.0
+1. Run `make flake8` or `flake8 src/report_api tests`.
+2. Run `make pylint` or `pylint --rcfile=setup.cfg --disable=C0301,W0511 src/report_api test`
 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
+## Running Unit Tests
+
+1. Tests are run from the Status bar at the bottom of the workbench in VS Code or `pytest` command.
+2. Next run `make coverage` to generate the coverage report, which appears in the *htmlcov* directory.
+
+## Openshift Environment
+
+View the [document](https://github.com/bcgov/sbc-auth/blob/development/docs/build-deploy.md).
