@@ -121,6 +121,11 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # Valid Payment redirect URLs
     VALID_REDIRECT_URLS = [(val.strip() if val != '' else None) for val in _get_config('VALID_REDIRECT_URLS', default='').split(',')]
 
+    # Service account details
+    KEYCLOAK_SERVICE_ACCOUNT_ID = _get_config('KEYCLOAK_SERVICE_ACCOUNT_ID')
+    KEYCLOAK_SERVICE_ACCOUNT_SECRET = _get_config('KEYCLOAK_SERVICE_ACCOUNT_SECRET')
+
+
     TESTING = False
     DEBUG = True
 

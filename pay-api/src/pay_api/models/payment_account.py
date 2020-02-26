@@ -26,15 +26,9 @@ class PaymentAccount(BaseModel):
     __tablename__ = 'payment_account'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    corp_number = db.Column(db.String(20), nullable=True)
-    corp_type_code = db.Column(db.String(10), ForeignKey('corp_type.code'), nullable=True)
-    payment_system_code = db.Column(db.String(10), ForeignKey('payment_system.code'), nullable=False)
-    account_number = db.Column(db.String(50), nullable=True, index=True)
-    party_number = db.Column(db.String(50), nullable=True)
-    site_number = db.Column(db.String(50), nullable=True)
-    bcol_user_id = db.Column(db.String(50), nullable=True, index=True)
-    bcol_account_id = db.Column(db.String(50), nullable=True, index=True)
+
     auth_account_id = db.Column(db.String(50), nullable=True, index=True)
+    # More columns to come to handle account transactions for PAD transactions
 
     @classmethod
     def find_by_corp_number_and_corp_type_and_system(cls, corp_number: str,

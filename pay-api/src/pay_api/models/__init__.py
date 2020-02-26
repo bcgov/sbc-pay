@@ -23,6 +23,10 @@ from .db import db, ma
 from .fee_schedule import FeeSchedule, FeeScheduleSchema
 from .filing_type import FilingType, FilingTypeSchema
 from .payment_account import PaymentAccount, PaymentAccountSchema  # noqa: I001
+
+from .bcol_payment_account import BcolPaymentAccount, BcolPaymentAccountSchema
+from .credit_payment_account import CreditPaymentAccount, CreditPaymentAccountSchema
+from .internal_payment_account import InternalPaymentAccount, InternalPaymentAccountSchema
 from .invoice import Invoice, InvoiceSchema
 from .invoice_reference import InvoiceReference, InvoiceReferenceSchema
 from .payment import Payment, PaymentSchema

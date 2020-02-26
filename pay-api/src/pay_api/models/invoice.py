@@ -36,7 +36,11 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     payment_id = db.Column(db.Integer, ForeignKey('payment.id'), nullable=False)
 
     invoice_status_code = db.Column(db.String(20), ForeignKey('status_code.code'), nullable=False)
-    account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=False)
+    # account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=False)
+    bcol_account_id = db.Column(db.Integer, ForeignKey('bcol_payment_account.id'), nullable=True)
+    internal_account_id = db.Column(db.Integer, ForeignKey('internal_payment_account.id'), nullable=True)
+    credit_account_id = db.Column(db.Integer, ForeignKey('credit_payment_account.id'), nullable=True)
+
     total = db.Column(db.Float, nullable=False)
     paid = db.Column(db.Float, nullable=True)
     payment_date = db.Column(db.DateTime, nullable=True)
@@ -48,7 +52,12 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
 
     payment_line_items = relationship('PaymentLineItem')
     receipts = relationship('Receipt')
-    account = relationship('PaymentAccount')
+    # account = relationship('PaymentAccount')
+
+    bcol_account = relationship('BcolPaymentAccount')
+    internal_account = relationship('InternalPaymentAccount')
+    credit_account = relationship('CreditPaymentAccount')
+
     references = relationship('InvoiceReference')
 
     @classmethod
