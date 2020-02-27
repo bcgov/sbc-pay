@@ -1,0 +1,52 @@
+name: Pay API CHECK CI
+
+on:
+  pull_request:
+    branches:
+      - development
+    paths:
+      - "pay-api/**"
+
+jobs:
+  pay-api-check:
+    runs-on: ubuntu-latest
+
+    env:
+      FLASK_ENV: "testing"
+      DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+
+    strategy:
+      matrix:
+        python-version: [3.7]
+    services:
+      postgres:
+        image: postgres:11
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        # needed because the postgres container does not provide a healthcheck
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        working-directory: ./pay-api
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements/dev.txt
+      - name: Lint with pylint
+        working-directory: ./pay-api
+        run: |
+          pylint --rcfile=setup.cfg --load-plugins=pylint_flask --disable=C0301,W0511 src/pay_api
+      - name: Lint with flake8
+        working-directory: ./pay-api
+        run: |
+          flake8 src/pay_api tests
