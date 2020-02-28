@@ -34,7 +34,9 @@ jobs:
       - name: Push image
         working-directory: ./pay-api
         run: |
-          docker push ${{ secrets.OPENSHIFT_REGISTRY }}/${{ secrets.OPENSHIFT_REPOSITORY }}/$IMAGE_NAME:$TAG_NAME
+          IMAGE_ID=${{ secrets.OPENSHIFT_REGISTRY }}/${{ secrets.OPENSHIFT_REPOSITORY }}/$IMAGE_NAME
+          docker image tag $IMAGE_ID:latest $IMAGE_ID:$TAG_NAME
+          docker push $IMAGE_ID:$TAG_NAME
       - name: Install openshift cli
         working-directory: ./pay-api
         run: |
