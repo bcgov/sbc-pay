@@ -73,7 +73,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     DB_PASSWORD = _get_config('DATABASE_PASSWORD')
     DB_NAME = _get_config('DATABASE_NAME')
     DB_HOST = _get_config('DATABASE_HOST')
-    DB_PORT = _get_config('DATABASE_PORT')
+    DB_PORT = _get_config('DATABASE_PORT', default='5432')
     SQLALCHEMY_DATABASE_URI = 'postgresql://{user}:{password}@{host}:{port}/{name}'.format(
         user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=int(DB_PORT), name=DB_NAME
     )
@@ -119,7 +119,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     BCOL_API_ENDPOINT = _get_config('BCOL_API_ENDPOINT')
 
     # Valid Payment redirect URLs
-    VALID_REDIRECT_URLS = [(val.strip() if val != '' else None) for val in _get_config('VALID_REDIRECT_URLS', default='').split(',')]
+    VALID_REDIRECT_URLS = [(val.strip() if val != '' else None)
+                           for val in _get_config('VALID_REDIRECT_URLS', default='').split(',')]
 
     TESTING = False
     DEBUG = True
@@ -137,11 +138,11 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     TESTING = True
 
     # POSTGRESQL
-    DB_USER = _get_config('DATABASE_TEST_USERNAME')
-    DB_PASSWORD = _get_config('DATABASE_TEST_PASSWORD')
-    DB_NAME = _get_config('DATABASE_TEST_NAME')
-    DB_HOST = _get_config('DATABASE_TEST_HOST')
-    DB_PORT = _get_config('DATABASE_TEST_PORT')
+    DB_USER = _get_config('DATABASE_TEST_USERNAME', default='postgres')
+    DB_PASSWORD = _get_config('DATABASE_TEST_PASSWORD', default='postgres')
+    DB_NAME = _get_config('DATABASE_TEST_NAME', default='paytestdb')
+    DB_HOST = _get_config('DATABASE_TEST_HOST', default='localhost')
+    DB_PORT = _get_config('DATABASE_TEST_PORT', default='5432')
     SQLALCHEMY_DATABASE_URI = _get_config(
         'DATABASE_TEST_URL',
         default='postgresql://{user}:{password}@{host}:{port}/{name}'.format(
