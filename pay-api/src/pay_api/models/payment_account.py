@@ -31,40 +31,14 @@ class PaymentAccount(BaseModel):
     # More columns to come to handle account transactions for PAD transactions
 
     @classmethod
-    def find_by_corp_number_and_corp_type_and_system(cls, corp_number: str,
-                                                     corp_type: str,
-                                                     payment_system: str
-                                                     ):
-        """Given a corp_number, corp_type and payment_system, this will return payment account."""
-        account = None
-        if corp_number and corp_type and payment_system:
-            query = cls.query.filter_by(corp_number=corp_number). \
-                filter_by(corp_type_code=corp_type). \
-                filter_by(payment_system_code=payment_system)
-
-            account = query.one_or_none()
-
-        return account
-
-    @classmethod
-    def find_by_bcol_user_id_and_account(cls, bcol_user_id: str, bcol_account_id: str, auth_account_id: str):
-        """Given a bcol user id, bcol account id and auth account id, this will return payment account."""
-        account = None
-        if bcol_user_id and bcol_account_id and auth_account_id:
-            query = cls.query.filter_by(bcol_user_id=bcol_user_id). \
-                filter_by(bcol_account_id=bcol_account_id). \
-                filter_by(auth_account_id=auth_account_id). \
-                filter_by(payment_system_code=PaymentSystem.BCOL.value)
-
-            account = query.one_or_none()
-
-        return account
-
-    @classmethod
     def find_by_id(cls, identifier: int):
         """Return a Account by id."""
         return cls.query.get(identifier)
 
+    @classmethod
+    def find_by_auth_account_id(cls, auth_account_id: str):
+        """Return a Account by id."""
+        return cls.query.filter_by(auth_account_id=auth_account_id).one_or_none()
 
 class PaymentAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Payment Account."""

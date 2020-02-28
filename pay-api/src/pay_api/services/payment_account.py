@@ -23,43 +23,55 @@ from pay_api.utils.enums import PaymentSystem
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_str_by_path
 
+from pay_api.models.bcol_payment_account import BcolPaymentAccount
+from pay_api.models.internal_payment_account import InternalPaymentAccount
+from pay_api.models.credit_payment_account import CreditPaymentAccount
+
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes
     """Service to manage Payment Account model related operations."""
 
     def __init__(self):
         """Initialize service."""
-        self.__dao = None
         self._id: int = None
         self._corp_number: str = None
         self._corp_type_code: str = None
         self._payment_system_code: str = None
-        self._account_number: str = None
-        self._party_number: str = None
-        self._site_number: str = None
+        self._paybc_account: str = None
+        self._paybc_party: str = None
+        self._paybc_site: str = None
         self._bcol_user_id: str = None
         self._bcol_account_id: str = None
-        self._auth_account_id: str = None
+        self._account_id: str = None
 
-    @property
-    def _dao(self):
-        if not self.__dao:
-            self.__dao = PaymentAccountModel()
-        return self.__dao
+    # @property
+    # def _dao(self):
+    #     if not self.__dao:
+    #         self.__dao = PaymentAccountModel()
+    #     return self.__dao
 
-    @_dao.setter
-    def _dao(self, value):
-        self.__dao = value
-        self.id: int = self._dao.id
-        self.corp_number: str = self._dao.corp_number
-        self.corp_type_code: str = self._dao.corp_type_code
-        self.payment_system_code: str = self._dao.payment_system_code
-        self.account_number: str = self._dao.account_number
-        self.party_number: str = self._dao.party_number
-        self.site_number: str = self._dao.site_number
-        self.bcol_user_id: str = self._dao.bcol_user_id
-        self.bcol_account_id: str = self._dao.bcol_account_id
-        self.auth_account_id: str = self._dao.auth_account_id
+    # @_dao.setter
+    def populate(self, value):
+        if value:
+            self._id: int = value.id
+            if isinstance(value, BcolPaymentAccount):
+                self._payment_system_code = PaymentSystem.BCOL.value
+                self._bcol_account_id = value.bcol_account_id
+                self._bcol_user_id = value.bcol_user_id
+                self._account_id = value.account_id
+            elif isinstance(value, InternalPaymentAccount):
+                self._payment_system_code = PaymentSystem.INTERNAL.value
+                self._corp_number = value.corp_number
+                self._corp_type_code = value.corp_type_code
+                self._account_id = value.account_id
+            elif isinstance(value, CreditPaymentAccount):
+                self._payment_system_code = PaymentSystem.PAYBC.value
+                self._paybc_account = value.paybc_account
+                self._paybc_party = value.paybc_party
+                self._paybc_site = value.paybc_site
+                self._corp_number = value.corp_number
+                self._corp_type_code = value.corp_type_code
+                self._account_id = value.account_id
 
     @property
     def id(self):
@@ -81,120 +93,136 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         """Return the payment_system_code."""
         return self._payment_system_code
 
-    @id.setter
-    def id(self, value: int):
-        """Set the id."""
-        self._id = value
-        self._dao.id = value
+    # @id.setter
+    # def id(self, value: int):
+    #     """Set the id."""
+    #     self._id = value
+    #     # self._dao.id = value
 
-    @corp_number.setter
-    def corp_number(self, value: str):
-        """Set the payment_id."""
-        self._corp_number = value
-        self._dao.corp_number = value
+    # @corp_number.setter
+    # def corp_number(self, value: str):
+    #     """Set the payment_id."""
+    #     self._corp_number = value
+    #     # self._dao.corp_number = value
 
-    @corp_type_code.setter
-    def corp_type_code(self, value: str):
-        """Set the corp_type_code."""
-        self._corp_type_code = value
-        self._dao.corp_type_code = value
+    # @corp_type_code.setter
+    # def corp_type_code(self, value: str):
+    #     """Set the corp_type_code."""
+    #     self._corp_type_code = value
+    #     # self._dao.corp_type_code = value
 
-    @payment_system_code.setter
-    def payment_system_code(self, value: str):
-        """Set the payment_system_code."""
-        self._payment_system_code = value
-        self._dao.payment_system_code = value
+    # @payment_system_code.setter
+    # def payment_system_code(self, value: str):
+    #     """Set the payment_system_code."""
+    #     self._payment_system_code = value
+    #     # self._dao.payment_system_code = value
 
     @property
-    def account_number(self):
+    def paybc_account(self):
         """Return the account_number."""
-        return self._account_number
+        return self._paybc_account
 
-    @account_number.setter
-    def account_number(self, value: str):
-        """Set the account_number."""
-        self._account_number = value
-        self._dao.account_number = value
-
-    @property
-    def party_number(self):
-        """Return the party_number."""
-        return self._party_number
-
-    @party_number.setter
-    def party_number(self, value: str):
-        """Set the party_number."""
-        self._party_number = value
-        self._dao.party_number = value
+    # @paybc_account.setter
+    # def paybc_account(self, value: str):
+    #     """Set the account_number."""
+    #     self._paybc_account = value
+    #     # self._dao.account_number = value
 
     @property
-    def site_number(self):
-        """Return the site_number."""
-        return self._site_number
+    def paybc_party(self):
+        """Return the paybc_party."""
+        return self._paybc_party
 
-    @site_number.setter
-    def site_number(self, value: str):
-        """Set the site_number."""
-        self._site_number = value
-        self._dao.site_number = value
+    # @paybc_party.setter
+    # def paybc_party(self, value: str):
+    #     """Set the paybc_party."""
+    #     self._paybc_party = value
+    #     # self._dao.party_number = value
+
+    @property
+    def paybc_site(self):
+        """Return the paybc_site."""
+        return self._paybc_site
+
+    # @paybc_site.setter
+    # def paybc_site(self, value: str):
+    #     """Set the paybc_site."""
+    #     self._paybc_site = value
+    #     # self._dao.site_number = value
 
     @property
     def bcol_user_id(self):
         """Return the bcol_user_id."""
         return self._bcol_user_id
 
-    @bcol_user_id.setter
-    def bcol_user_id(self, value: str):
-        """Set the bcol_user_id."""
-        self._bcol_user_id = value
-        self._dao.bcol_user_id = value
+    # @bcol_user_id.setter
+    # def bcol_user_id(self, value: str):
+    #     """Set the bcol_user_id."""
+    #     self._bcol_user_id = value
+    #     # self._dao.bcol_user_id = value
 
     @property
     def bcol_account_id(self):
         """Return the bcol_account_id."""
         return self._bcol_account_id
 
-    @bcol_account_id.setter
-    def bcol_account_id(self, value: str):
-        """Set the bcol_account_id."""
-        self._bcol_account_id = value
-        self._dao.bcol_account_id = value
+    # @bcol_account_id.setter
+    # def bcol_account_id(self, value: str):
+    #     """Set the bcol_account_id."""
+    #     self._bcol_account_id = value
+    #     # self._dao.bcol_account_id = value
 
     @property
-    def auth_account_id(self):
-        """Return the auth_account_id."""
-        return self._auth_account_id
+    def account_id(self):
+        """Return the account_id."""
+        return self._account_id
 
-    @auth_account_id.setter
-    def auth_account_id(self, value: str):
-        """Set the auth_account_id."""
-        self._auth_account_id = value
-        self._dao.auth_account_id = value
+    # @account_id.setter
+    # def account_id(self, value: str):
+    #     """Set the account_id."""
+    #     self._account_id = value
+    #     # self._dao.auth_account_id = value
 
-    def save(self):
-        """Save the information to the DB."""
-        return self._dao.save()
+    # def save(self):
+    #     """Save the information to the DB."""
+    #     return self._dao.save()
 
     @staticmethod
     def create(business_info: Dict[str, Any], account_details: Dict[str, str],
                payment_system: str, authorization: Dict[str, Any]):
         """Create Payment account record."""
         current_app.logger.debug('<create')
-        p = PaymentAccount()
-        p.corp_number = business_info.get('businessIdentifier', None)
-        p.corp_type_code = business_info.get('corpType', None)
-        p.account_number = account_details.get('account_number', None)
-        p.party_number = account_details.get('party_number', None)
-        p.site_number = account_details.get('site_number', None)
-        p.bcol_user_id = account_details.get('bcol_user_id', None)
-        p.bcol_account_id = account_details.get('bcol_account_id', None)
-        p.auth_account_id = get_str_by_path(authorization, 'account/id')
-        p.payment_system_code = payment_system
+        auth_account_id = get_str_by_path(authorization, 'account/id')
+        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        if not payment_account:
+            payment_account = PaymentAccountModel()
+            payment_account.auth_account_id = auth_account_id
+            payment_account = payment_account.save()
 
-        account_dao = p.save()
+        dao = None
+        if payment_system == PaymentSystem.BCOL.value:
+            dao = BcolPaymentAccount()
+            dao.account_id = payment_account.id
+            dao.bcol_account_id = account_details.get('bcol_account_id', None)
+            dao.bcol_user_id = account_details.get('bcol_user_id', None)
+        elif payment_system == PaymentSystem.INTERNAL.value:
+            dao = InternalPaymentAccount()
+            dao.corp_number = business_info.get('businessIdentifier', None)
+            dao.corp_type_code = business_info.get('corpType', None)
+            dao.account_id = payment_account.id
+        elif payment_system == PaymentSystem.PAYBC.value:
+            dao = CreditPaymentAccount()
+            dao.corp_number = business_info.get('businessIdentifier', None)
+            dao.corp_type_code = business_info.get('corpType', None)
+            dao.paybc_account = account_details.get('account_number', None)
+            dao.paybc_party = account_details.get('party_number', None)
+            dao.paybc_site = account_details.get('site_number', None)
+            dao.account_id = payment_account.id
+
+        dao = dao.save()
 
         p = PaymentAccount()
-        p._dao = account_dao  # pylint: disable=protected-access
+        p.populate(dao)  # pylint: disable=protected-access
         current_app.logger.debug('>create')
         return p
 
@@ -208,39 +236,53 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         bcol_account_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineAccountId')
         corp_number: str = business_info.get('businessIdentifier')
         corp_type: str = business_info.get('corpType')
+
         account_dao = None
+        
         if payment_system == PaymentSystem.BCOL.value:
             if not bcol_user_id:
                 raise BusinessException(Error.PAY015)
-            account_dao = PaymentAccountModel.find_by_bcol_user_id_and_account(
+
+            account_dao:BcolPaymentAccount = BcolPaymentAccount.find_by_bcol_user_id_and_account(
                 auth_account_id=auth_account_id,
                 bcol_user_id=bcol_user_id,
                 bcol_account_id=bcol_account_id
             )
-        else:
+        elif payment_system == PaymentSystem.INTERNAL.value:
+            account_dao:InternalPaymentAccount = InternalPaymentAccount.find_by_corp_number_and_corp_type_and_account_id(
+                corp_number = corp_number,
+                corp_type = corp_type,
+                account_id = auth_account_id
+            )
+        elif payment_system == PaymentSystem.PAYBC.value:
             if not corp_number and not corp_type:
                 raise BusinessException(Error.PAY004)
-
-            account_dao = PaymentAccountModel.find_by_corp_number_and_corp_type_and_system(
-                corp_number,
-                corp_type,
-                payment_system
+            account_dao = CreditPaymentAccount.find_by_corp_number_and_corp_type_and_auth_account_id(
+                corp_number = corp_number,
+                corp_type = corp_type,
+                auth_account_id = auth_account_id
             )
         payment_account = PaymentAccount()
-        payment_account._dao = account_dao  # pylint: disable=protected-access
-
+        payment_account.populate(account_dao) # pylint: disable=protected-access
+        
         current_app.logger.debug('>find_payment_account')
         return payment_account
 
     @staticmethod
-    def find_by_id(account_id: int):
-        """Find account by id."""
-        account_dao = PaymentAccountModel.find_by_id(account_id)
+    def find_by_pay_system_id(**kwargs):
+        """Find pay system account by id."""
+        current_app.logger.debug('<find_by_pay_system_id', kwargs)
+        if kwargs.get('credit_account_id'):
+            account_dao = CreditPaymentAccount.find_by_id(kwargs.get('credit_account_id'))
+        elif kwargs.get('internal_account_id'):
+            account_dao = InternalPaymentAccount.find_by_id(kwargs.get('internal_account_id'))
+        elif kwargs.get('bcol_account_id'):
+            account_dao = BcolPaymentAccount.find_by_id(kwargs.get('bcol_account_id'))
         if not account_dao:
             raise BusinessException(Error.PAY009)
 
         account = PaymentAccount()
-        account._dao = account_dao  # pylint: disable=protected-access
+        account.populate(account_dao)  # pylint: disable=protected-access
 
-        current_app.logger.debug('>find_by_id')
+        current_app.logger.debug('>find_by_pay_system_id')
         return account

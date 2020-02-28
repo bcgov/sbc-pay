@@ -19,6 +19,7 @@ from pay_api.utils.enums import PaymentSystem
 
 from .base_model import BaseModel
 from .db import db, ma
+from .payment_account import PaymentAccount
 
 
 class BcolPaymentAccount(BaseModel):
@@ -37,6 +38,19 @@ class BcolPaymentAccount(BaseModel):
     def find_by_id(cls, identifier: int):
         """Return a Account by id."""
         return cls.query.get(identifier)
+
+    @classmethod
+    def find_by_bcol_user_id_and_account(cls, bcol_user_id: str, bcol_account_id: str, auth_account_id: str):
+        """Given a bcol user id, bcol account id and auth account id, this will return payment account."""
+        account = None
+        if bcol_user_id and bcol_account_id and auth_account_id:
+            query = cls.query.filter_by(bcol_user_id=bcol_user_id). \
+                filter_by(bcol_account_id=bcol_account_id). \
+                join(PaymentAccount).filter(PaymentAccount.auth_account_id == auth_account_id)
+
+            account = query.one_or_none()
+
+        return account
 
 
 class BcolPaymentAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors

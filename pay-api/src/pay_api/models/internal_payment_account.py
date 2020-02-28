@@ -19,6 +19,7 @@ from pay_api.utils.enums import PaymentSystem
 
 from .base_model import BaseModel
 from .db import db, ma
+from .payment_account import PaymentAccount
 
 
 class InternalPaymentAccount(BaseModel):
@@ -38,6 +39,20 @@ class InternalPaymentAccount(BaseModel):
         """Return a Account by id."""
         return cls.query.get(identifier)
 
+    @classmethod
+    def find_by_corp_number_and_corp_type_and_account_id(cls, corp_number: str, corp_type: str, account_id):
+        """Given a corp_number and corp_type, this will return payment account."""
+        account = None
+        if corp_number and corp_type:
+            query = cls.query.filter_by(corp_number=corp_number). \
+                filter_by(corp_type_code=corp_type). \
+                join(PaymentAccount).filter(PaymentAccount.auth_account_id == account_id)
+
+                # filter_by(account_id=account_id)
+
+            account = query.one_or_none()
+
+        return account
 
 class InternalPaymentAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Internal Payment System Account."""

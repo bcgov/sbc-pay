@@ -18,41 +18,13 @@ Test-Suite to ensure that the CorpType Class is working as expected.
 """
 from datetime import datetime, timedelta
 
-from pay_api.models import Invoice, Payment, PaymentAccount
+from pay_api.models import Invoice, Payment, PaymentAccount, CreditPaymentAccount, InternalPaymentAccount, BcolPaymentAccount
 from pay_api.models.payment_transaction import PaymentTransaction
 
-
-def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code='CP', payment_system_code='PAYBC'):
-    """Factory."""
-    return PaymentAccount(corp_number=corp_number, corp_type_code=corp_type_code,
-                          payment_system_code=payment_system_code)
-
-
-def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC', payment_status_code='DRAFT'):
-    """Factory."""
-    return Payment(payment_system_code=payment_system_code, payment_method_code=payment_method_code,
-                   payment_status_code=payment_status_code, created_by='test', created_on=datetime.now())
-
-
-def factory_invoice(payment_id: str, account_id: str):
-    """Factory."""
-    return Invoice(payment_id=payment_id,
-                   invoice_status_code='DRAFT',
-                   account_id=account_id,
-                   total=0, created_by='test', created_on=datetime.now())
-
-
-def factory_payment_transaction(payment_id: str, status_code: str = 'DRAFT', redirect_url: str = 'http://google.com/',
-                                pay_system_url: str = 'http://google.com',
-                                transaction_start_time: datetime = datetime.now(),
-                                transaction_end_time: datetime = datetime.now()):
-    """Factory."""
-    return PaymentTransaction(payment_id=payment_id,
-                              status_code=status_code,
-                              client_system_url=redirect_url,
-                              pay_system_url=pay_system_url,
-                              transaction_start_time=transaction_start_time,
-                              transaction_end_time=transaction_end_time)
+from tests.utilities.base_test import factory_payment_account
+from tests.utilities.base_test import (
+    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
+    factory_payment_transaction, get_paybc_transaction_request)
 
 
 def test_payment_transaction(session):
@@ -64,7 +36,7 @@ def test_payment_transaction(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
+    invoice = factory_invoice(payment=payment, payment_account=payment_account)
     invoice.save()
     payment_transaction = factory_payment_transaction(payment_id=payment.id)
     payment_transaction.save()
@@ -80,7 +52,7 @@ def test_find_older_records(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
+    invoice = factory_invoice(payment=payment, payment_account=payment_account)
     invoice.save()
 
     payment_transaction_now = factory_payment_transaction(payment_id=payment.id)
@@ -126,7 +98,7 @@ def test_find_older_records_invalid_status(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
+    invoice = factory_invoice(payment=payment, payment_account=payment_account)
     invoice.save()
 
     payment_transaction_now = factory_payment_transaction(payment_id=payment.id, status_code='COMPLETED')

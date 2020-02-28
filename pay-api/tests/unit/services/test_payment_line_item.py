@@ -29,7 +29,7 @@ def test_line_saved_from_new(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice = factory_invoice(payment, payment_account)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')

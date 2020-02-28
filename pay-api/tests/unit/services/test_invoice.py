@@ -32,7 +32,7 @@ def test_invoice_saved_from_new(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    i = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
+    i = factory_invoice(payment=payment, payment_account=payment_account)
     i.save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(i.id, fee_schedule_id=fee_schedule.fee_schedule_id)
@@ -47,7 +47,6 @@ def test_invoice_saved_from_new(session):
     assert invoice.payment_date is None
     assert invoice.total is not None
     assert invoice.paid is None
-    assert invoice.account_id is not None
     assert invoice.payment_line_items is not None
     assert invoice.folio_number is None
 
@@ -65,7 +64,7 @@ def test_invoice_find_by_valid_payment_id(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    i = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
+    i = factory_invoice(payment=payment, payment_account=payment_account)
     i.save()
 
     invoice = Invoice_service.find_by_payment_identifier(payment.id, skip_auth_check=True)
@@ -78,7 +77,6 @@ def test_invoice_find_by_valid_payment_id(session):
     assert invoice.payment_date is None
     assert invoice.total is not None
     assert invoice.paid is None
-    assert invoice.account_id is not None
     assert not invoice.payment_line_items
 
 
@@ -88,7 +86,7 @@ def test_invoice_get_invoices(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    i = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
+    i = factory_invoice(payment=payment, payment_account=payment_account)
     i.save()
 
     invoices = Invoice_service.get_invoices(payment.id, skip_auth_check=True)

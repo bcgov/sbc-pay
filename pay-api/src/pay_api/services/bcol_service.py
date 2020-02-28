@@ -59,7 +59,7 @@ class BcolService(PaymentSystemService, OAuthService):
         current_app.logger.debug('<create_invoice')
         user: UserContext = kwargs['user']
         pay_endpoint = current_app.config.get('BCOL_API_ENDPOINT') + '/payments'
-        corp_number = payment_account.corp_number
+        corp_number = kwargs.get('business_identifier', None)
         amount_excluding_txn_fees = sum(line.filing_fees for line in line_items)
         filing_types = ','.join([item.filing_type_code for item in line_items])
         remarks = f'{corp_number}({filing_types})-{user.first_name}'
@@ -71,7 +71,7 @@ class BcolService(PaymentSystemService, OAuthService):
             'amount': str(amount_excluding_txn_fees),
             'rate': str(amount_excluding_txn_fees),
             'remarks': remarks[:50],
-            'feeCode': self._get_fee_code(payment_account.corp_type_code)
+            'feeCode': self._get_fee_code(kwargs.get('corp_type_code'))
         }
         pay_response = self.post(pay_endpoint, user.bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
                                  payload).json()

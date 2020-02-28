@@ -75,7 +75,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         now = datetime.datetime.now()
         curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
         invoice_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/' \
-            .format(payment_account.party_number, payment_account.account_number, payment_account.site_number)
+            .format(payment_account.paybc_party, payment_account.paybc_account, payment_account.paybc_site)
 
         # Check if random invoice number needs to be generated
         transaction_num_suffix = secrets.token_hex(10) \
@@ -130,20 +130,20 @@ class PaybcService(PaymentSystemService, OAuthService):
         1. Adjust the existing invoice to zero
         2. Create a new invoice
         """
-        self.cancel_invoice((payment_account.party_number, payment_account.account_number, payment_account.site_number),
+        self.cancel_invoice(payment_account,
                             paybc_inv_number)
         return self.create_invoice(payment_account, line_items, f'{invoice_id}-{reference_count}')
 
-    def cancel_invoice(self, account_details: Tuple[str], inv_number: str):
+    def cancel_invoice(self, payment_account:PaymentAccount, inv_number: str):
         """Adjust the invoice to zero."""
         access_token: str = self.__get_token().json().get('access_token')
-        invoice = self.__get_invoice(account_details, inv_number, access_token)
+        invoice = self.__get_invoice(payment_account, inv_number, access_token)
         for line in invoice.get('lines'):
             amount: float = line.get('unit_price') * line.get('quantity')
 
             current_app.logger.debug('Adding asjustment for line item : {} -- {}'
                                      .format(line.get('line_number'), amount))
-            self.__add_adjustment(account_details, inv_number, 'Cancelling Invoice',
+            self.__add_adjustment(payment_account, inv_number, 'Cancelling Invoice',
                                   0 - amount, line=line.get('line_number'), access_token=access_token)
 
     def get_receipt(self, payment_account: PaymentAccount, receipt_number: str, invoice_reference: InvoiceReference):
@@ -151,7 +151,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         access_token: str = self.__get_token().json().get('access_token')
         current_app.logger.debug('<Getting receipt')
         receipt_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/rcpts/'.format(
-            payment_account.party_number, payment_account.account_number, payment_account.site_number)
+            payment_account.paybc_party, payment_account.paybc_account, payment_account.paybc_site)
         if not receipt_number:  # Find all receipts for the site and then match with invoice number
             receipts_response = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
             for receipt in receipts_response.get('items'):
@@ -248,12 +248,12 @@ class PaybcService(PaymentSystemService, OAuthService):
         current_app.logger.debug('>Getting token')
         return token_response
 
-    def __add_adjustment(self, account_details: Tuple[str],  # pylint: disable=too-many-arguments
+    def __add_adjustment(self, payment_account: PaymentAccount,  # pylint: disable=too-many-arguments
                          inv_number: str, comment: str, amount: float, line: int = 0, access_token: str = None):
         """Add adjustment to the invoice."""
         current_app.logger.debug(f'>Creating PayBC Adjustment  For Invoice: {inv_number}')
         adjustment_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/adjs/' \
-            .format(account_details[0], account_details[1], account_details[2], inv_number)
+            .format(payment_account.paybc_party, payment_account.paybc_account, payment_account.paybc_site, inv_number)
         current_app.logger.debug(f'>Creating PayBC Adjustment URL {adjustment_url}')
 
         adjustment = dict(
@@ -273,11 +273,11 @@ class PaybcService(PaymentSystemService, OAuthService):
         current_app.logger.debug('>Created PayBC Invoice Adjustment')
         return adjustment_response.json()
 
-    def __get_invoice(self, account_details: Tuple[str], inv_number: str, access_token: str):
+    def __get_invoice(self, payment_account:PaymentAccount, inv_number: str, access_token: str):
         """Get invoice from PayBC."""
         current_app.logger.debug('<__get_invoice')
         invoice_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/' \
-            .format(account_details[0], account_details[1], account_details[2], inv_number)
+            .format(payment_account.paybc_party, payment_account.paybc_account, payment_account.paybc_site, inv_number)
 
         invoice_response = self.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
         current_app.logger.debug('>__get_invoice')

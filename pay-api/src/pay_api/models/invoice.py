@@ -41,6 +41,9 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     internal_account_id = db.Column(db.Integer, ForeignKey('internal_payment_account.id'), nullable=True)
     credit_account_id = db.Column(db.Integer, ForeignKey('credit_payment_account.id'), nullable=True)
 
+    corp_type_code = db.Column(db.String(10), ForeignKey('corp_type.code'), nullable=True)
+    business_identifier = db.Column(db.String(20), nullable=True)
+
     total = db.Column(db.Float, nullable=False)
     paid = db.Column(db.Float, nullable=True)
     payment_date = db.Column(db.DateTime, nullable=True)
@@ -83,7 +86,7 @@ class InvoiceSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Invoice
-        exclude = ['account']
+        exclude = ['bcol_account', 'internal_account', 'credit_account']
 
     invoice_status_code = fields.String(data_key='status_code')
     # pylint: disable=no-member
