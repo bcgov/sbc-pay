@@ -15,7 +15,11 @@ env:
 jobs:
   pay-api-test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7]
     steps:
+      - uses: actions/checkout@v2
       - name: Log into registry
         run: echo "${{ secrets.OPENSHIFT_TOKEN }}" | docker login ${{ secrets.OPENSHIFT_REGISTRY }} -u ${{ secrets.OPENSHIFT_SA_NAME}} --password-stdin
       - name: Pull base image
@@ -56,8 +60,8 @@ jobs:
       - name: Set Deployment Environement Variables
         working-directory: .
         run: |
-          vaults='[{ "vault": "shared", "application": ["keycloak"]}, {"vault": "relationship","application": ["postgres-pay", "pay-api", "bcol-api", "sentry"]}]'
-          ./scripts/1pass_secret.sh ${{ secrets.op_parameters }} -e "test" -v "${vaults}" -a "${IMAGE_NAME}-${TAG_NAME}"
+          vaults='[{ "vault": "shared", "application": ["jwt", "nats"]}, {"vault": "relationship","application": ["postgres-pay", "pay-api", "sentry"]}]'
+          ./scripts/1pass_secret.sh ${{ secrets.op_parameters }} -e "${TAG_NAME}" -v "${vaults}" -a "${IMAGE_NAME}-${TAG_NAME}"
       - name: Rollout new deployment
         working-directory: ./pay-api
         run: |
@@ -71,5 +75,4 @@ jobs:
           job_name: "*Pay API Build and Deploy to ${{env.IMAGE_NAME}}*"
           channel: "#relationship-developers"
           url: ${{ secrets.ROCKETCHAT_WEBHOOK }}
-          commit: true
           token: ${{ secrets.GITHUB_TOKEN }}
