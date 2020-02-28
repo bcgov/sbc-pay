@@ -20,7 +20,7 @@ from .base_model import BaseModel
 from .db import db, ma
 
 
-class PaymentAccount(BaseModel):
+class PaymentAccount(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Payment Account."""
 
     __tablename__ = 'payment_account'

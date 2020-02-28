@@ -22,7 +22,7 @@ from .db import db, ma
 from .fee_schedule import FeeSchedule
 
 
-class PaymentLineItem(BaseModel):
+class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Payment Line Item."""
 
     __tablename__ = 'payment_line_item'
