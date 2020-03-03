@@ -163,9 +163,9 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
                                               skip_auth_check=skip_auth_check)
 
         payment_account = PaymentAccount.find_by_pay_system_id(
-                        credit_account_id = invoice_data.credit_account_id,
-                        internal_account_id = invoice_data.internal_account_id,
-                        bcol_account_id = invoice_data.bcol_account_id)
+            credit_account_id=invoice_data.credit_account_id,
+            internal_account_id=invoice_data.internal_account_id,
+            bcol_account_id=invoice_data.bcol_account_id)
         invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(invoice_data.id)
 
         template_vars['incorporationNumber'] = payment_account.corp_number

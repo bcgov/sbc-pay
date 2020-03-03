@@ -17,7 +17,7 @@ There are conditions where the payment will be handled internally. For e.g, zero
 """
 
 from datetime import datetime
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 
 from flask import current_app
 
@@ -61,7 +61,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
                        line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0):
         """Do nothing as internal payments cannot be updated as it will be completed on creation."""
 
-    def cancel_invoice(self, payment_account:PaymentAccount, inv_number: str):
+    def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
         """Adjust the invoice to zero."""
 
     def get_receipt(self, payment_account: PaymentAccount, receipt_number: str, invoice_reference: InvoiceReference):

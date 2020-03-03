@@ -14,7 +14,7 @@
 """Service to manage PayBC interaction."""
 
 from datetime import datetime
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 
 from flask import current_app
 
@@ -89,7 +89,7 @@ class BcolService(PaymentSystemService, OAuthService):
         """Adjust the invoice."""
         current_app.logger.debug('<update_invoice')
 
-    def cancel_invoice(self, account_details: Tuple[str], inv_number: str):
+    def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
         """Adjust the invoice to zero."""
         current_app.logger.debug('<cancel_invoice')
 

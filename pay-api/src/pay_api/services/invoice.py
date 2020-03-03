@@ -82,7 +82,6 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.transaction_fees: float = self._dao.transaction_fees
         self.business_identifier: str = self._dao.business_identifier
 
-
     @property
     def id(self):
         """Return the _id."""
@@ -304,7 +303,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoice
 
     @staticmethod
-    def create(account: PaymentAccount, payment_id: int, fees: [FeeSchedule], corp_type:str, **kwargs):
+    def create(account: PaymentAccount, payment_id: int, fees: [FeeSchedule], corp_type: str, **kwargs):
         """Create invoice record."""
         current_app.logger.debug('<create')
         i = Invoice()

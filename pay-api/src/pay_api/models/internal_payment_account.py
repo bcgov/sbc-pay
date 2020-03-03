@@ -14,9 +14,6 @@
 """Model to handle all operations related to PayBC Account data."""
 from sqlalchemy import ForeignKey
 
-
-from pay_api.utils.enums import PaymentSystem
-
 from .base_model import BaseModel
 from .db import db, ma
 from .payment_account import PaymentAccount
@@ -48,11 +45,10 @@ class InternalPaymentAccount(BaseModel):
                 filter_by(corp_type_code=corp_type). \
                 join(PaymentAccount).filter(PaymentAccount.auth_account_id == account_id)
 
-                # filter_by(account_id=account_id)
-
             account = query.one_or_none()
 
         return account
+
 
 class InternalPaymentAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Internal Payment System Account."""

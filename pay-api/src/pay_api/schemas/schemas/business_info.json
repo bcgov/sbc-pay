@@ -3,10 +3,7 @@
   "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/business_info",
   "type": "object",
   "required": [
-    "businessIdentifier",
-    "corpType",
-    "businessName",
-    "contactInfo"
+    "corpType"
   ],
   "properties": {
     "businessIdentifier": {
@@ -26,7 +23,7 @@
       "title": "Corp Type",
       "default": "",
       "examples": [
-        "CP"
+        "CP,PPR"
       ],
       "pattern": "^(.*)$",
       "minLength": 2

@@ -18,7 +18,7 @@ import datetime
 import re
 import secrets
 import urllib.parse
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 
 from dateutil import parser
 from flask import current_app
@@ -29,8 +29,8 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import (
-    DEFAULT_COUNTRY, DEFAULT_JURISDICTION, PAYBC_ADJ_ACTIVITY_NAME, PAYBC_BATCH_SOURCE, PAYBC_CUST_TRX_TYPE,
-    PAYBC_LINE_TYPE, PAYBC_TERM_NAME)
+    DEFAULT_ADDRESS_LINE_1, DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
+    PAYBC_ADJ_ACTIVITY_NAME, PAYBC_BATCH_SOURCE, PAYBC_CUST_TRX_TYPE, PAYBC_LINE_TYPE, PAYBC_TERM_NAME)
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem
 
 from .oauth_service import OAuthService
@@ -134,7 +134,7 @@ class PaybcService(PaymentSystemService, OAuthService):
                             paybc_inv_number)
         return self.create_invoice(payment_account, line_items, f'{invoice_id}-{reference_count}')
 
-    def cancel_invoice(self, payment_account:PaymentAccount, inv_number: str):
+    def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
         """Adjust the invoice to zero."""
         access_token: str = self.__get_token().json().get('access_token')
         invoice = self.__get_invoice(payment_account, inv_number, access_token)
@@ -208,16 +208,17 @@ class PaybcService(PaymentSystemService, OAuthService):
     def __create_site(self, access_token, party, account, account_info):
         """Create site in PayBC."""
         current_app.logger.debug('<Creating site ')
-
+        if not account_info:
+            account_info = {}
         site_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/' \
             .format(account.get('party_number', None), account.get('account_number', None))
         site: Dict[str, Any] = {
             'party_number': account.get('party_number', None),
             'account_number': account.get('account_number', None),
             'site_name': party.get('customer_name') + ' Site',
-            'city': account_info.get('city', None),
-            'address_line_1': account_info.get('addressLine1', None),
-            'postal_code': account_info.get('postalCode', None).replace(' ', ''),
+            'city': account_info.get('city', DEFAULT_CITY),
+            'address_line_1': account_info.get('addressLine1', DEFAULT_ADDRESS_LINE_1),
+            'postal_code': account_info.get('postalCode', DEFAULT_POSTAL_CODE).replace(' ', ''),
             'province': account_info.get('province', DEFAULT_JURISDICTION),
             'country': account_info.get('country', DEFAULT_COUNTRY),
             'customer_site_id': '1'
@@ -273,7 +274,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         current_app.logger.debug('>Created PayBC Invoice Adjustment')
         return adjustment_response.json()
 
-    def __get_invoice(self, payment_account:PaymentAccount, inv_number: str, access_token: str):
+    def __get_invoice(self, payment_account: PaymentAccount, inv_number: str, access_token: str):
         """Get invoice from PayBC."""
         current_app.logger.debug('<__get_invoice')
         invoice_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/' \

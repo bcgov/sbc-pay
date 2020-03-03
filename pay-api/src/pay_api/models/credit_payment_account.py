@@ -14,9 +14,6 @@
 """Model to handle all operations related to PayBC Account data."""
 from sqlalchemy import ForeignKey
 
-
-from pay_api.utils.enums import PaymentSystem
-
 from .base_model import BaseModel
 from .db import db, ma
 from .payment_account import PaymentAccount
@@ -45,16 +42,15 @@ class CreditPaymentAccount(BaseModel):
 
     @classmethod
     def find_by_corp_number_and_corp_type_and_auth_account_id(cls, corp_number: str,
-                                                     corp_type: str,
-                                                     auth_account_id: str
-                                                     ):
+                                                              corp_type: str,
+                                                              auth_account_id: str
+                                                              ):
         """Given a corp_number, corp_type and payment_system, this will return payment account."""
         query = cls.query.filter_by(corp_type_code=corp_type)
         if corp_number:
             query = query.filter_by(corp_number=corp_number)
 
         return query.join(PaymentAccount).filter(PaymentAccount.auth_account_id == str(auth_account_id)).one_or_none()
-
 
 
 class CreditPaymentAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors

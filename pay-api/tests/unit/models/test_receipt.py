@@ -19,10 +19,9 @@ Test-Suite to ensure that the Receipt Class is working as expected.
 
 from datetime import datetime
 
-from pay_api.models import Invoice, Payment, PaymentAccount, Receipt
-from tests.utilities.base_test import (
-    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
-    factory_payment_transaction, get_paybc_transaction_request)
+from pay_api.models import Receipt
+from tests.utilities.base_test import factory_invoice, factory_payment, factory_payment_account
+
 
 def test_receipt(session):
     """Assert a receipt is stored.

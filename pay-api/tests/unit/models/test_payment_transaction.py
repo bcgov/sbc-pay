@@ -18,13 +18,8 @@ Test-Suite to ensure that the CorpType Class is working as expected.
 """
 from datetime import datetime, timedelta
 
-from pay_api.models import Invoice, Payment, PaymentAccount, CreditPaymentAccount, InternalPaymentAccount, BcolPaymentAccount
-from pay_api.models.payment_transaction import PaymentTransaction
-
-from tests.utilities.base_test import factory_payment_account
 from tests.utilities.base_test import (
-    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
-    factory_payment_transaction, get_paybc_transaction_request)
+    factory_invoice, factory_payment, factory_payment_account, factory_payment_transaction)
 
 
 def test_payment_transaction(session):

@@ -44,13 +44,14 @@ def test_account_saved_from_new(session):
 def test_premium_account_saved_from_new(session):
     """Assert that the payment is saved to the table."""
     payment_account = factory_premium_payment_account()
-    payment_account = payment_account.save()
+    payment_account.save()
 
     pa = PaymentAccountService.find_account({}, get_auth_premium_user(),
                                             payment_system='BCOL')
 
     assert pa is not None
     assert pa.id is not None
+
 
 def test_account_invalid_lookup(session):
     """Invalid account test."""
@@ -86,4 +87,3 @@ def test_account_invalid_premium_account_lookup(session):
     with pytest.raises(BusinessException) as excinfo:
         PaymentAccountService.find_account(business_info, {}, 'BCOL')
     assert excinfo.value.status == Error.PAY015.status
-

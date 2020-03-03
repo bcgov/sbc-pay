@@ -25,8 +25,9 @@ from requests.exceptions import ConnectionError
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import Role
 from tests.utilities.base_test import (
-    factory_payment_transaction, get_claims, get_payment_request, get_payment_request_with_payment_method,
-    get_waive_fees_payment_request, get_zero_dollar_payment_request, token_header)
+    factory_payment_transaction, get_claims, get_payment_request, get_payment_request_with_no_contact_info,
+    get_payment_request_with_payment_method, get_waive_fees_payment_request, get_zero_dollar_payment_request,
+    token_header)
 
 
 def test_payment_creation(session, client, jwt, app):
@@ -434,12 +435,29 @@ def test_premium_payment_creation_with_payment_method(session, client, jwt, app)
     assert rv.json.get('paymentSystem') == 'BCOL'
 
 
-def test_unauthorized_payment_creation(session, client, jwt, app):
+def test_cc_payment_with_no_contact_info(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': '1234'}
 
     rv = client.post(f'/api/v1/payment-requests', data=json.dumps(
-        get_payment_request_with_payment_method(business_identifier='CP0001238', payment_method='PREMIUM')),
+        get_payment_request_with_no_contact_info(payment_method='CC', corp_type='PPR')),
                      headers=headers)
-    assert rv.status_code == 401
+    assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
+    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert rv.json.get('paymentSystem') == 'PAYBC'
+
+
+def test_premium_payment_with_no_contact_info(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': '1234'}
+
+    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(
+        get_payment_request_with_no_contact_info(payment_method='PREMIUM', corp_type='PPR')),
+                     headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
+    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert rv.json.get('paymentSystem') == 'BCOL'

@@ -12,10 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Payment Account data."""
-from sqlalchemy import ForeignKey
-
-from pay_api.utils.enums import PaymentSystem
-
 from .base_model import BaseModel
 from .db import db, ma
 
@@ -39,6 +35,7 @@ class PaymentAccount(BaseModel):
     def find_by_auth_account_id(cls, auth_account_id: str):
         """Return a Account by id."""
         return cls.query.filter_by(auth_account_id=auth_account_id).one_or_none()
+
 
 class PaymentAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Payment Account."""

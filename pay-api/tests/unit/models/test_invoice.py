@@ -16,13 +16,9 @@
 
 Test-Suite to ensure that the CorpType Class is working as expected.
 """
+from pay_api.models import InvoiceSchema
+from tests.utilities.base_test import factory_invoice, factory_payment, factory_payment_account
 
-from datetime import datetime
-
-from pay_api.models import Invoice, InvoiceSchema, Payment, PaymentAccount
-from tests.utilities.base_test import (
-    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
-    factory_payment_transaction, get_paybc_transaction_request)
 
 def test_invoice(session):
     """Assert a invoice is stored.

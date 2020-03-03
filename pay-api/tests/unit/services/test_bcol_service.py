@@ -59,8 +59,9 @@ def test_create_invoice(session):
     line.save()
     line = PaymentLineItem.find_by_id(line.id)
     # payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str, **kwargs
-    inv = bcol_service.create_invoice(pay_account, [line], i.id, filing_info={'folioNumber': '1234567890'}, corp_type_code = i.corp_type_code, 
-                                                            business_identifier = i.business_identifier)
+    inv = bcol_service.create_invoice(pay_account, [line], i.id, filing_info={'folioNumber': '1234567890'},
+                                      corp_type_code=i.corp_type_code,
+                                      business_identifier=i.business_identifier)
     assert inv is not None
     assert inv.get('invoice_number') == 'TEST'
 

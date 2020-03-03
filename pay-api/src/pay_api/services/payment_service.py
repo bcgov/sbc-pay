@@ -87,7 +87,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
             current_app.logger.debug('Creating Invoice record for payment {}'.format(payment.id))
             invoice = Invoice.create(payment_account, payment.id, fees, corp_type, routing_slip=routing_slip_number,
-                                     filing_id=filing_id, folio_number=folio_number, business_identifier=business_info.get('businessIdentifier'))
+                                     filing_id=filing_id, folio_number=folio_number,
+                                     business_identifier=business_info.get('businessIdentifier'))
 
             line_items = []
             for fee in fees:
@@ -96,8 +97,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             current_app.logger.debug('Handing off to payment system to create invoice')
 
             pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice.id,
-                                                            folio_number=folio_number, corp_type_code = invoice.corp_type_code, 
-                                                            business_identifier = invoice.business_identifier)
+                                                            folio_number=folio_number,
+                                                            corp_type_code=invoice.corp_type_code,
+                                                            business_identifier=invoice.business_identifier)
             current_app.logger.debug('Updating invoice record')
             invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
             invoice.invoice_status_code = Status.CREATED.value
@@ -219,9 +221,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
                     # update invoice
                     payment_account: PaymentAccount = PaymentAccount.find_by_pay_system_id(
-                        credit_account_id = invoice.credit_account_id,
-                        internal_account_id = invoice.internal_account_id,
-                        bcol_account_id = invoice.bcol_account_id)
+                        credit_account_id=invoice.credit_account_id,
+                        internal_account_id=invoice.internal_account_id,
+                        bcol_account_id=invoice.bcol_account_id)
 
                     pay_system_invoice = pay_service.update_invoice(
                         payment_account,
@@ -278,9 +280,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         for invoice in payment.invoices:
             invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
             payment_account = PaymentAccount.find_by_pay_system_id(
-                credit_account_id = invoice.credit_account_id,
-                internal_account_id = invoice.internal_account_id,
-                bcol_account_id = invoice.bcol_account_id)
+                credit_account_id=invoice.credit_account_id,
+                internal_account_id=invoice.internal_account_id,
+                bcol_account_id=invoice.bcol_account_id)
             pay_service.cancel_invoice(payment_account=payment_account,
                                        inv_number=invoice_reference.invoice_number)
             invoice.invoice_status_code = Status.DELETED.value
@@ -347,8 +349,9 @@ def _create_account(pay_service, business_info, contact_info, authorization):
     )
     if not payment_account.id:
         current_app.logger.debug('No payment account, creating new')
+        name = business_info.get('businessName', get_str_by_path(authorization, 'account/name'))
         pay_system_account = pay_service.create_account(
-            business_info.get('businessName'), contact_info, authorization
+            name, contact_info, authorization
         )
 
         current_app.logger.debug('Creating payment record for account : {}'.format(payment_account.id))
