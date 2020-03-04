@@ -52,7 +52,9 @@
         "NATS_QUEUE": "filing-worker",
         "BCOL_PAYMENTS_WSDL_URL": "${BCOL_PAYMENTS_WSDL_URL}",
         "BCOL_API_ENDPOINT": "https://${BCOL_API_NAME}-${TAG_NAME}.pathfinder.gov.bc.ca/api/v1/reports",
-        "VALID_REDIRECT_URLS": "https://${AUTH_WEB_NAME}-${TAG_NAME}.pathfinder.gov.bc.ca/cooperatives/*"
+        "VALID_REDIRECT_URLS": "https://${AUTH_WEB_NAME}-${TAG_NAME}.pathfinder.gov.bc.ca/cooperatives/*",
+        "KEYCLOAK_SERVICE_ACCOUNT_ID": "sbc-auth-admin",
+        "KEYCLOAK_SERVICE_ACCOUNT_SECRET": "${KEYCLOAK_SERVICE_ACCOUNT_SECRET}"
       }
     }
   ],
@@ -196,6 +198,12 @@
     },
     {
       "name": "BCOL_PAYMENTS_WSDL_URL",
+      "required": true,
+      "generate": "expression",
+      "from": "[a-zA-Z0-9]{16}"
+    },
+    {
+      "name": "KEYCLOAK_SERVICE_ACCOUNT_SECRET",
       "required": true,
       "generate": "expression",
       "from": "[a-zA-Z0-9]{16}"
