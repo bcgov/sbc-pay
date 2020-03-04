@@ -26,7 +26,7 @@ from sqlalchemy import event, text
 from sqlalchemy.schema import DropConstraint, MetaData
 from stan.aio.client import Client as Stan
 
-from pay_api import create_app
+from pay_api import create_app, setup_jwt_manager
 from pay_api import jwt as _jwt
 from pay_api.models import db as _db
 
@@ -276,3 +276,22 @@ def staff_user_mock(monkeypatch):
 
     monkeypatch.setattr('pay_api.utils.user_context._get_token', mock_auth)
     monkeypatch.setattr('pay_api.utils.user_context._get_token_info', token_info)
+
+
+@pytest.fixture(scope='session', autouse=True)
+def keycloak(docker_services, app):
+    """Spin up a keycloak instance and initialize jwt."""
+    if app.config['USE_TEST_KEYCLOAK_DOCKER']:
+        docker_services.start('keycloak')
+        docker_services.wait_for_service('keycloak', 8081)
+
+    setup_jwt_manager(app, _jwt)
+
+
+@pytest.fixture(scope='session')
+def docker_compose_files(pytestconfig):
+    """Get the docker-compose.yml absolute path."""
+    import os
+    return [
+        os.path.join(str(pytestconfig.rootdir), 'tests/docker', 'docker-compose.yml')
+    ]

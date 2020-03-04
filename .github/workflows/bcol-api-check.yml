@@ -1,22 +1,18 @@
-name: Pay API CHECK CI
+name: BCOL API CHECK CI
 
 on:
   pull_request:
     branches:
       - development
     paths:
-      - "pay-api/**"
+      - "bcol-api/**"
 
 jobs:
-  pay-api-check:
+  bcol-api-check:
     runs-on: ubuntu-latest
 
     env:
       FLASK_ENV: "testing"
-      DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
-      TEST_NATS_DOCKER: YES
-      USE_TEST_KEYCLOAK_DOCKER: YES
-
       JWT_OIDC_ISSUER: "http://localhost:8081/auth/realms/demo"
       JWT_OIDC_WELL_KNOWN_CONFIG: "http://localhost:8081/auth/realms/demo/.well-known/openid-configuration"
       JWT_OIDC_ALGORITHMS: "RS256"
@@ -24,24 +20,16 @@ jobs:
       JWT_OIDC_CLIENT_SECRET: "1111111111"
       JWT_OIDC_JWKS_CACHE_TIMEOUT: "6000"
 
-      NATS_QUEUE: "test-worker"
-      NATS_SUBJECT: "entity.payment.test"
+      BCOL_QUERY_PROFILE_WSDL_URL: "https://appsd1.bconline.gov.bc.ca/access/services/QueryProfile/wsdl/QueryProfile.wsdl"
+      BCOL_PAYMENTS_WSDL_URL: "https://appsd1.bconline.gov.bc.ca/account/services/DebitAccount/wsdl/DebitAccount.wsdl"
+      BCOL_LDAP_SERVER: "fake"
+      BCOL_LDAP_USER_DN_PATTERN: "fake"
+      BCOL_DEBIT_ACCOUNT_VERSION: "fake"
+      BCOL_LINK_CODE: "000"
 
     strategy:
       matrix:
         python-version: [3.7]
-    services:
-      postgres:
-        image: postgres:11
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
-        ports:
-          - 5432:5432
-        # needed because the postgres container does not provide a healthcheck
-        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
-
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -49,21 +37,22 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        working-directory: ./pay-api
+        working-directory: ./bcol-api
         run: |
+          sudo apt install libsasl2-dev libldap2-dev libssl-dev --yes
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r requirements/dev.txt
       - name: Lint with pylint
-        working-directory: ./pay-api
+        working-directory: ./bcol-api
         run: |
-          pylint --rcfile=setup.cfg --load-plugins=pylint_flask --disable=C0301,W0511 src/pay_api
+          pylint --rcfile=setup.cfg --load-plugins=pylint_flask --disable=C0301,W0511 src/bcol_api
       - name: Lint with flake8
-        working-directory: ./pay-api
+        working-directory: ./bcol-api
         run: |
-          flake8 src/pay_api tests
+          flake8 src/bcol_api tests
       - name: Test with pytest
-        working-directory: ./pay-api
+        working-directory: ./bcol-api
         run: |
           pip install .
           export PYTHONPATH=./src/

@@ -21,3 +21,4 @@ coverage
 pylint
 pylint-flask
 pydocstyle<4
+lovely-pytest-docker

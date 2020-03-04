@@ -23,3 +23,6 @@ Flask-WeasyPrint
 
 #Sentry
 sentry-sdk[flask]
+jaeger-client
+
+werkzeug==0.16.1
