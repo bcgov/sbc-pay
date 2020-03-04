@@ -16,7 +16,7 @@
 
 import pytest
 
-from api import create_app
+from api import create_app, setup_jwt_manager
 from api import jwt as _jwt
 
 
@@ -53,3 +53,22 @@ def client_ctx(app):
     """Return session-wide Flask test client."""
     with app.test_client() as _client:
         yield _client
+
+
+@pytest.fixture(scope='session', autouse=True)
+def keycloak(docker_services, app):
+    """Spin up a keycloak instance and initialize jwt."""
+    if app.config['USE_TEST_KEYCLOAK_DOCKER']:
+        docker_services.start('keycloak')
+        docker_services.wait_for_service('keycloak', 8081)
+
+    setup_jwt_manager(app, _jwt)
+
+
+@pytest.fixture(scope='session')
+def docker_compose_files(pytestconfig):
+    """Get the docker-compose.yml absolute path."""
+    import os
+    return [
+        os.path.join(str(pytestconfig.rootdir), 'tests/docker', 'docker-compose.yml')
+    ]

@@ -15,16 +15,17 @@
 
 import os
 
-import sentry_sdk  # noqa: I001; pylint: disable=ungrouped-imports; conflicts with Flake8
 from flask import Flask
-from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
 from sentry_sdk.integrations.flask import FlaskIntegration  # noqa: I001
+from sbc_common_components.exception_handling.exception_handler import ExceptionHandler  # noqa: I001
 
 import config
 from api import models
 from api.utils.auth import jwt
 from api.utils.logging import setup_logging
 from api.utils.run_version import get_run_version
+
+import sentry_sdk  # noqa: I001; pylint: disable=ungrouped-imports,wrong-import-order; conflicts with Flake8
 
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
@@ -41,7 +42,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
             integrations=[FlaskIntegration()]
         )
 
-    from api.resources import API_BLUEPRINT, OPS_BLUEPRINT
+    from api.resources import API_BLUEPRINT, OPS_BLUEPRINT  # pylint: disable=import-outside-toplevel
 
     app.register_blueprint(API_BLUEPRINT)
     app.register_blueprint(OPS_BLUEPRINT)

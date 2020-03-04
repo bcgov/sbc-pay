@@ -77,6 +77,8 @@ class DevConfig(_Config):  # pylint: disable=too-few-public-methods
 class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     """In support of testing only used by the py.test suite."""
 
+    USE_TEST_KEYCLOAK_DOCKER='YES'
+
     JWT_OIDC_TEST_MODE = True
     JWT_OIDC_TEST_AUDIENCE = os.getenv('JWT_OIDC_AUDIENCE')
     JWT_OIDC_TEST_CLIENT_SECRET = os.getenv('JWT_OIDC_CLIENT_SECRET')

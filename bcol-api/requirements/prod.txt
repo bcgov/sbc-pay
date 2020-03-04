@@ -17,3 +17,4 @@ python-ldap
 sentry-sdk[flask]
 attrs<=19.1.0
 Werkzeug==0.16.1
+jaeger-client

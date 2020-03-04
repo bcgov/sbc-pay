@@ -73,7 +73,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     DB_PASSWORD = _get_config('DATABASE_PASSWORD')
     DB_NAME = _get_config('DATABASE_NAME')
     DB_HOST = _get_config('DATABASE_HOST')
-    DB_PORT = _get_config('DATABASE_PORT')
+    DB_PORT = _get_config('DATABASE_PORT', default='5432')
     SQLALCHEMY_DATABASE_URI = 'postgresql://{user}:{password}@{host}:{port}/{name}'.format(
         user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=int(DB_PORT), name=DB_NAME
     )
@@ -119,7 +119,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     BCOL_API_ENDPOINT = _get_config('BCOL_API_ENDPOINT')
 
     # Valid Payment redirect URLs
-    VALID_REDIRECT_URLS = [(val.strip() if val != '' else None) for val in _get_config('VALID_REDIRECT_URLS', default='').split(',')]
+    VALID_REDIRECT_URLS = [(val.strip() if val != '' else None)
+                           for val in _get_config('VALID_REDIRECT_URLS', default='').split(',')]
 
     # Service account details
     KEYCLOAK_SERVICE_ACCOUNT_ID = _get_config('KEYCLOAK_SERVICE_ACCOUNT_ID')
@@ -141,12 +142,14 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     DEBUG = True
     TESTING = True
 
+    USE_TEST_KEYCLOAK_DOCKER = 'YES'
+
     # POSTGRESQL
-    DB_USER = _get_config('DATABASE_TEST_USERNAME')
-    DB_PASSWORD = _get_config('DATABASE_TEST_PASSWORD')
-    DB_NAME = _get_config('DATABASE_TEST_NAME')
-    DB_HOST = _get_config('DATABASE_TEST_HOST')
-    DB_PORT = _get_config('DATABASE_TEST_PORT')
+    DB_USER = _get_config('DATABASE_TEST_USERNAME', default='postgres')
+    DB_PASSWORD = _get_config('DATABASE_TEST_PASSWORD', default='postgres')
+    DB_NAME = _get_config('DATABASE_TEST_NAME', default='paytestdb')
+    DB_HOST = _get_config('DATABASE_TEST_HOST', default='localhost')
+    DB_PORT = _get_config('DATABASE_TEST_PORT', default='5432')
     SQLALCHEMY_DATABASE_URI = _get_config(
         'DATABASE_TEST_URL',
         default='postgresql://{user}:{password}@{host}:{port}/{name}'.format(
@@ -213,29 +216,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     PAYBC_PORTAL_URL = ''
     SERVER_NAME = 'auth-web.dev.com'
 
-    schedule_json = [
-        {
-            "service_name": "PAYBC",
-            "schedules": [
-                {"up": "30 6 * * 1-2", "down": "19 10 * * 1-2"},
-                {"up": "30 6 * * 3", "down": "30 10 * * 3"},
-                {"up": "30 14 * * 4"},
-                {"down": "30 9 * * 5"},
-                {"up": "30 6 * * 7", "down": "30 21 * * 7"},
-            ],
-        },
-        {
-            "service_name": "BCOL",
-            "schedules": [
-                {"up": "30 06 * * 1-3", "down": "30 22 * * 1-3"},
-                {"up": "30 06 * * 6-7", "down": "30 20 * * 6-7"},
-            ],
-        },
-    ]
-
     REPORT_API_BASE_URL = "https://mock-lear-tools.pathfinder.gov.bc.ca/rest/PayBC+API+Reference/1.0.0/cfs/parties/"
-
-    SERVICE_SCHEDULE = json.dumps(schedule_json)
 
     AUTH_API_ENDPOINT = "https://mock-lear-tools.pathfinder.gov.bc.ca/rest/SBC+Auth+API+Reference/1.0.0/"
 

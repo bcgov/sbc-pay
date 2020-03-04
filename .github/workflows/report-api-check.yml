@@ -1,0 +1,52 @@
+name: Report API CHECK CI
+
+on:
+  pull_request:
+    branches:
+      - development
+    paths:
+      - "report-api/**"
+
+jobs:
+  report-api-check:
+    runs-on: ubuntu-latest
+
+    env:
+      FLASK_ENV: "testing"
+      JWT_OIDC_ISSUER: "http://localhost:8081/auth/realms/demo"
+      JWT_OIDC_WELL_KNOWN_CONFIG: "http://localhost:8081/auth/realms/demo/.well-known/openid-configuration"
+      JWT_OIDC_ALGORITHMS: "RS256"
+      JWT_OIDC_AUDIENCE: "sbc-auth-web"
+      JWT_OIDC_CLIENT_SECRET: "1111111111"
+      JWT_OIDC_JWKS_CACHE_TIMEOUT: "6000"
+
+    strategy:
+      matrix:
+        python-version: [3.7]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        working-directory: ./report-api
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements/dev.txt
+      - name: Lint with pylint
+        working-directory: ./report-api
+        run: |
+          pylint --rcfile=setup.cfg --load-plugins=pylint_flask --disable=C0301,W0511 src/api
+      - name: Lint with flake8
+        working-directory: ./report-api
+        run: |
+          flake8 src/api tests
+      - name: Test with pytest
+        working-directory: ./report-api
+        run: |
+          pip install .
+          export PYTHONPATH=./src/
+          pytest

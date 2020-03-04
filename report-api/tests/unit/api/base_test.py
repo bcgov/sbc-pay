@@ -41,7 +41,7 @@ def get_claims(app_request, role: str = 'basic'):
                     [
                         '{}'.format(role)
                     ]
-            },
+        },
         'preferred_username': 'test'
     }
     return claim

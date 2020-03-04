@@ -2,7 +2,7 @@
 -r prod.txt
 
 # Testing
-pytest<4.1
+pytest
 pytest-mock
 pytest-cov
 pyhamcrest
@@ -19,4 +19,4 @@ autopep8
 coverage
 pylint
 pylint-flask
-
+lovely-pytest-docker
