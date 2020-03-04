@@ -63,19 +63,27 @@ def upgrade():
     op.bulk_insert(
         fee_code_table,
         [
-            {'code': 'EN110', 'amount': 7}
+            {'code': 'EN110', 'amount': 7},
+            {'code': 'EN111', 'amount': 5},
+            {'code': 'EN112', 'amount': 500}
         ]
     )
     op.bulk_insert(
         filing_type_table,
         [
-            {'code': 'SERCH', 'description': 'Search'}
+            {'code': 'SERCH', 'description': 'Search'},
+            {'code': 'FSREG', 'description': 'Yearly Financing Statement Registration'},
+            {'code': 'INFRG', 'description': 'Infinite Financing Statement Registration'}
         ]
     )
     op.bulk_insert(
         fee_schedule_table,
         [
             {'filing_type_code': 'SERCH', 'corp_type_code': 'PPR', 'fee_code': 'EN110', 'fee_start_date': date.today(),
+             'fee_end_date': None},
+            {'filing_type_code': 'FSREG', 'corp_type_code': 'PPR', 'fee_code': 'EN111', 'fee_start_date': date.today(),
+             'fee_end_date': None},
+            {'filing_type_code': 'INFRG', 'corp_type_code': 'PPR', 'fee_code': 'EN112', 'fee_start_date': date.today(),
              'fee_end_date': None}
         ]
     )
