@@ -31,6 +31,7 @@ def upgrade():
             {'code': 'DRAWDOWN', 'description': 'Drawdown Payment'}
         ]
     )
+    op.execute('update payment set payment_method_code = \'DRAWDOWN\' where payment_method_code=\'PREMIUM\'')
     op.execute('DELETE from payment_method where code=\'PREMIUM\'')
 
     corp_type_table = table('corp_type',
