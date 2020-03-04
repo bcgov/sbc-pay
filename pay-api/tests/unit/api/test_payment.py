@@ -427,7 +427,7 @@ def test_premium_payment_creation_with_payment_method(session, client, jwt, app)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.post(f'/api/v1/payment-requests', data=json.dumps(
-        get_payment_request_with_payment_method(business_identifier='CP0002000', payment_method='PREMIUM')),
+        get_payment_request_with_payment_method(business_identifier='CP0002000', payment_method='DRAWDOWN')),
                      headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
@@ -455,7 +455,7 @@ def test_premium_payment_with_no_contact_info(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': '1234'}
 
     rv = client.post(f'/api/v1/payment-requests', data=json.dumps(
-        get_payment_request_with_no_contact_info(payment_method='PREMIUM', corp_type='PPR')),
+        get_payment_request_with_no_contact_info(payment_method='DRAWDOWN', corp_type='PPR')),
                      headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None

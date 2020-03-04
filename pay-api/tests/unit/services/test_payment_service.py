@@ -334,7 +334,7 @@ def test_delete_completed_payment(session, auth_mock):
 def test_create_bcol_payment(session, public_user_mock):
     """Assert that the payment records are created."""
     payment_response = PaymentService.create_payment(
-        get_payment_request_with_payment_method(payment_method='PREMIUM', business_identifier='CP0002000'),
+        get_payment_request_with_payment_method(payment_method='DRAWDOWN', business_identifier='CP0002000'),
         get_auth_premium_user())
     assert payment_response is not None
     assert payment_response.get('payment_system') == 'BCOL'
@@ -345,6 +345,6 @@ def test_create_bcol_payment_for_basic_user(session, public_user_mock):
     """Assert that the payment records are created."""
     with pytest.raises(Exception) as excinfo:
         PaymentService.create_payment(
-            get_payment_request_with_payment_method(payment_method='PREMIUM', business_identifier='CP0002000'),
+            get_payment_request_with_payment_method(payment_method='DRAWDOWN', business_identifier='CP0002000'),
             get_auth_basic_user())
     assert excinfo.type == BusinessException

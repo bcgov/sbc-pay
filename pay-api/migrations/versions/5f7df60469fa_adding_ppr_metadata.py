@@ -20,6 +20,19 @@ depends_on = None
 
 
 def upgrade():
+    payment_method_table = table('payment_method',
+                                 column('code', String),
+                                 column('description', String)
+                                 )
+
+    op.bulk_insert(
+        payment_method_table,
+        [
+            {'code': 'DRAWDOWN', 'description': 'Drawdown Payment'}
+        ]
+    )
+    op.execute('DELETE from payment_method where code=\'PREMIUM\'')
+
     corp_type_table = table('corp_type',
                             column('code', String),
                             column('description', String)

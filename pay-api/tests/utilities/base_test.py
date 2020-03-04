@@ -367,7 +367,7 @@ def get_auth_premium_user():
             'id': '1234',
             'name': 'Mock Account',
             'paymentPreference': {
-                'methodOfPayment': 'PREMIUM',
+                'methodOfPayment': 'DRAWDOWN',
                 'bcOnlineUserId': 'PB25020',
                 'bcOnlineAccountId': '1234567890'
             }
