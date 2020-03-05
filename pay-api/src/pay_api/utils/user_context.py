@@ -30,7 +30,7 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
     def __init__(self):
         """Return a User Context object."""
         token_info: Dict = _get_token_info()
-        self._user_name: str = token_info.get('username', None)
+        self._user_name: str = token_info.get('username', token_info.get('preferred_username', None))
         self._first_name: str = token_info.get('firstname', None)
         self._bearer_token: str = _get_token()
         self._roles: list = token_info.get('realm_access', None).get('roles', None) if 'realm_access' in token_info \
