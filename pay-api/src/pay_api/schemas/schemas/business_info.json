@@ -23,7 +23,7 @@
       "title": "Corp Type",
       "default": "",
       "examples": [
-        "CP,PPR", "BC"
+        "CP,PPR","BC"
       ],
       "pattern": "^(.*)$",
       "minLength": 2
