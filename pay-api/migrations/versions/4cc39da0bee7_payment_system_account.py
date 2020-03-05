@@ -153,8 +153,13 @@ def upgrade():
             # Call Auth-API to get the auth_account id
             auth_search_url = config.get(
                 'AUTH_API_ENDPOINT') + 'orgs?affiliation=' + corp_number.upper()
-            orgs_response = OAuthService.get(auth_search_url, token, AuthHeaderType.BEARER,
-                                             ContentType.JSON).json().get('orgs')
+            orgs_response = None
+            try:
+                orgs_response = OAuthService.get(auth_search_url, token, AuthHeaderType.BEARER,
+                                                ContentType.JSON).json().get('orgs')
+            except Exception as e:
+                print(f'--- Error Occured while getting org for affiliation {corp_number}')
+
             if orgs_response and orgs_response[0]:
                 auth_account_id = str(orgs_response[0].get('id'))
             else:
