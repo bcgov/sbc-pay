@@ -24,7 +24,7 @@ from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.trace import tracing as _tracing
-from pay_api.utils.util import cors_preflight
+from pay_api.utils.util import cors_preflight, get_str_by_path
 
 
 API = Namespace('payments', description='Payment System - Payments')
@@ -51,7 +51,11 @@ class Payment(Resource):
             return jsonify({'code': 'PAY999', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
 
         # Check if user is authorized to perform this action
-        authorization = check_auth(request_json.get('businessInfo').get('businessIdentifier'), contains_role=EDIT_ROLE)
+        business_identifier = get_str_by_path(request_json, 'businessInfo/businessIdentifier')
+        corp_type_code = get_str_by_path(request_json, 'businessInfo/corpType')
+
+        authorization = check_auth(business_identifier=business_identifier, corp_type_code=corp_type_code,
+                                   contains_role=EDIT_ROLE)
         try:
             response, status = PaymentService.create_payment(request_json, authorization), HTTPStatus.CREATED
         except BusinessException as exception:

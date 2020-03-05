@@ -36,6 +36,7 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
         self._roles: list = token_info.get('realm_access', None).get('roles', None) if 'realm_access' in token_info \
             else None
         self._sub: str = token_info.get('sub', None)
+        self._account_id: str = _get_auth_account_id()
 
     @property
     def user_name(self) -> str:
@@ -62,6 +63,11 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
         """Return the subject."""
         return self._sub
 
+    @property
+    def account_id(self) -> str:
+        """Return the account_id."""
+        return self._account_id
+
     def has_role(self, role_name: str) -> bool:
         """Return True if the user has the role."""
         return role_name in self._roles
@@ -85,3 +91,7 @@ def _get_token_info() -> Dict:
 def _get_token() -> str:
     token: str = request.headers['Authorization'] if request and 'Authorization' in request.headers else None
     return token.replace('Bearer ', '') if token else None
+
+
+def _get_auth_account_id() -> str:
+    return request.headers['Account-Id'] if request and 'Account-Id' in request.headers else None

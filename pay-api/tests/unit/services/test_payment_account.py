@@ -33,43 +33,24 @@ def test_account_saved_from_new(session):
         'corpType': payment_account.corp_type_code
     }
 
-    pa = PaymentAccountService.find_account(business_info, get_auth_basic_user(),
-                                            payment_account.payment_system_code)
+    pa = PaymentAccountService.find_account(business_info, get_auth_basic_user(), 'PAYBC')
 
     assert pa is not None
     assert pa.id is not None
     assert pa.corp_number is not None
     assert pa.corp_type_code is not None
-    assert pa.payment_system_code is not None
 
 
 def test_premium_account_saved_from_new(session):
     """Assert that the payment is saved to the table."""
     payment_account = factory_premium_payment_account()
-    payment_account = payment_account.save()
-
-    pa = PaymentAccountService.find_account({}, get_auth_premium_user(),
-                                            payment_system=payment_account.payment_system_code)
-
-    assert pa is not None
-    assert pa.id is not None
-    assert pa.corp_number is not None
-    assert pa.corp_type_code is not None
-    assert pa.payment_system_code is not None
-
-
-def test_account_find_by_id(session):
-    """Assert that the payment is saved to the table."""
-    payment_account = factory_payment_account()
     payment_account.save()
 
-    pa = PaymentAccountService.find_by_id(payment_account.id)
+    pa = PaymentAccountService.find_account({}, get_auth_premium_user(),
+                                            payment_system='BCOL')
 
     assert pa is not None
     assert pa.id is not None
-    assert pa.corp_number is not None
-    assert pa.corp_type_code is not None
-    assert pa.payment_system_code is not None
 
 
 def test_account_invalid_lookup(session):
@@ -106,13 +87,3 @@ def test_account_invalid_premium_account_lookup(session):
     with pytest.raises(BusinessException) as excinfo:
         PaymentAccountService.find_account(business_info, {}, 'BCOL')
     assert excinfo.value.status == Error.PAY015.status
-
-
-def test_account_find_by_invalid_id(session):
-    """Invalid account test."""
-    import pytest
-    from pay_api.exceptions import BusinessException
-    from pay_api.utils.errors import Error
-    with pytest.raises(BusinessException) as excinfo:
-        PaymentAccountService.find_by_id(999)
-    assert excinfo.value.status == Error.PAY009.status

@@ -21,24 +21,69 @@ from pay_api.utils.user_context import UserContext, user_context
 
 
 @user_context
-def check_auth(business_identifier: str, **kwargs):
+def check_auth(business_identifier: str, account_id: str = None, corp_type_code: str = None,
+               **kwargs):  # pylint: disable=unused-argument
     """Authorize the user for the business entity and return authorization response."""
     user: UserContext = kwargs['user']
     is_authorized: bool = False
     auth_response = None
+    is_business_auth = True
+    is_service_account = False
+    if not account_id:
+        account_id = user.account_id
     if Role.SYSTEM.value in user.roles:
         is_authorized = bool(Role.EDITOR.value in user.roles)
+        is_service_account = True
     else:
         bearer_token = user.bearer_token
-        auth_url = current_app.config.get(
-            'AUTH_API_ENDPOINT') + f'entities/{business_identifier}/authorizations?expanded=true'
-        auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+        if business_identifier:
+            auth_url = current_app.config.get(
+                'AUTH_API_ENDPOINT') + f'entities/{business_identifier}/authorizations?expanded=true'
+            auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
 
-        roles: list = auth_response.get('roles', [])
-        if kwargs.get('one_of_roles', None):
-            is_authorized = list(set(kwargs.get('one_of_roles')) & set(roles)) != []
-        if kwargs.get('contains_role', None):
-            is_authorized = kwargs.get('contains_role') in roles
+            roles: list = auth_response.get('roles', [])
+            if kwargs.get('one_of_roles', None):
+                is_authorized = list(set(kwargs.get('one_of_roles')) & set(roles)) != []
+            if kwargs.get('contains_role', None):
+                is_authorized = kwargs.get('contains_role') in roles
+
+        elif account_id:
+            is_business_auth = False
+            # TODO For now, just make a call to /orgs/<id> to see if the user has access to the account
+            # When product level subscription is in place, use the below commented code.
+            # auth_url = current_app.config.get(
+            #     'AUTH_API_ENDPOINT') + f'accounts/{account_id}/products/{corp_type_code}/authorizations?expanded=true'
+            # auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+            # roles: list = auth_response.get('roles', [])
+            # if roles:
+            #     is_authorized = True
+
+            # TODO Remove the below call and uncomment the above code once product subscription is in place.
+            account_url = current_app.config.get(
+                'AUTH_API_ENDPOINT') + f'orgs/{account_id}'
+            account_response = RestService.get(account_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                               retry_on_failure=True).json()
+            auth_response = {}
+            is_authorized = True
+
     if not is_authorized:
         abort(403)
+    # TODO Remove this code once the authorizations endpoint returns the account details
+    if not is_service_account:
+        if is_business_auth:
+            account_url = current_app.config.get(
+                'AUTH_API_ENDPOINT') + f'orgs?affiliation={business_identifier}'
+            account_response = RestService.get(account_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                               retry_on_failure=True).json().get('orgs')[0]
+        # else:
+        #     account_url = current_app.config.get(
+        #         'AUTH_API_ENDPOINT') + f'orgs/{account_id}'
+        #     account_response = RestService.get(account_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
+        #                                        retry_on_failure=True).json()
+        auth_response['account'] = {'paymentPreference': {}}
+        auth_response['account']['id'] = account_response['id']
+        auth_response['account']['name'] = account_response['name']
+        auth_response['account']['paymentPreference']['methodOfPayment'] = account_response['preferred_payment']
+        auth_response['account']['paymentPreference']['bcOnlineUserId'] = account_response.get('bc_online_user_id',
+                                                                                               None)
     return auth_response
