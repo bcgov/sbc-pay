@@ -98,41 +98,36 @@ paths:
                 $ref: '#/components/schemas/Fee'
               examples:
                 fee_1:
-                  value: '{
-                    "filingType":"Annual Report",
-                    "filingTypeCode":"OTANN",
-                    "filingFees":40,
-                    "serviceFees":0,
-                    "processingFees":0,
-                    "tax": {
-                      "gst":17.7,
-                      "pst":0
-                    }
-                  }'
+                  value:
+                    filingType: Annual Report
+                    filingTypeCode: OTANN
+                    filingFees: 40
+                    serviceFees: 0
+                    processingFees: 0
+                    tax:
+                      gst: 17.7
+                      pst: 0
                 fee_2:
-                  value: '{
-                    "filingType":"Change of Registered Office Address",
-                    "filingTypeCode":"OTCDR",
-                    "filingFees":20,
-                    "serviceFees":10,
-                    "processingFees":5,
-                    "tax": {
-                      "gst":0,
-                      "pst":0
-                    }
-                  }'
+                  value: 
+                    filingType: Change of Registered Office Address
+                    filingTypeCode: OTCDR
+                    filingFees: 20
+                    serviceFees: 10
+                    processingFees: 5
+                    tax:
+                      gst: 0
+                      pst: 0
                 fee_3:
-                  value: '{
-                    "filingType":"Change of Director",
-                    "filingTypeCode":"OTADD",
-                    "filingFees":55,
-                    "serviceFees":0,
-                    "processingFees":0,
-                    "tax": {
-                      "gst":0,
-                      "pst":0
-                    }
-                  }'
+                  value: 
+                    filingType: Change of Director
+                    filingTypeCode: OTADD
+                    filingFees: 55
+                    serviceFees: 0
+                    processingFees: 0
+                    tax:
+                      gst: 0
+                      pst: 0
+
 
         '400':
           description: BadRequest
@@ -286,34 +281,25 @@ paths:
               $ref: '#/components/schemas/PaymentRequest'
             examples:
               payment_1:
-                value : '{
-                  "paymentInfo": {
-                    "methodOfPayment": "CC"
-                  },
-                  "businessInfo": {
-                    "businessIdentifier": "CP1234567",
-                    "corpType": "CP",
-                    "businessName": "ABC Corp",
-                    "contactInfo": {
-                      "city": "Victoria",
-                      "postalCode": "V8P2P2",
-                      "province": "BC",
-                      "addressLine1": "100 Douglas Street",
-                      "country": "CA"
-                    }
-                  },
-                  "filingInfo": {
-                    "filingTypes": [
-                      {
-                        "filingTypeCode": "OTADD",
-                        "filingDescription":"TEST"
-                      },
-                      {
-                        "filingTypeCode": "OTANN"
-                      }
-                    ]
-                  }
-                }'
+                value :
+                  paymentInfo:
+                    methodOfPayment: CC
+                  businessInfo:
+                    businessIdentifier: CP1234567
+                    corpType: CP
+                    businessName: ABC Corp
+                    contactInfo:
+                      city: Victoria
+                      postalCode: V8P2P2
+                      province: BC
+                      addressLine1: 100 Douglas Street
+                      country: CA
+                  filingInfo:
+                    filingTypes:
+                    - filingTypeCode: OTADD
+                      filingDescription: TEST
+                    - filingTypeCode: OTANN
+
         required: true
       responses:
         '201':
@@ -324,43 +310,38 @@ paths:
                 $ref: '#/components/schemas/Payment'
               examples:
                 payment_1:
-                  value : '{
-                      "_links": {
-                          "collection": "/api/v1/payment-requests",
-                          "invoices": "/api/v1/payment-requests/153/invoices",
-                          "self": "/api/v1/payment-requests/153",
-                          "transactions": "/api/v1/payment-requests/153/transactions"
-                      },
-                      "createdBy": "CP1234567",
-                      "createdOn": "2019-06-18T11:10:00.965101+00:00",
-                      "id": 153,
-                      "invoices": [
-                          {
-                              "_links": {
-                                  "collection": "/api/v1/payment-requests/153/invoices",
-                                  "self": "/api/v1/payment-requests/153/invoices/152"
-                              },
-                              "createdBy": "CP1234567",
-                              "createdOn": "2019-06-18T11:10:00.982551+00:00",
-                              "id": 152,
-                              "invoiceNumber": "10021",
-                              "paid": 0,
-                              "paymentDate": null,
-                              "referenceNumber": "10005",
-                              "refund": 0,
-                              "statusCode": "CREATED",
-                              "total": 50,
-                              "updatedBy": null,
-                              "updatedOn": null
-                          }
-                      ],
-                      "paid": 0,
-                      "paymentMethod": "CC",
-                      "paymentSystem": "PAYBC",
-                      "statusCode": "CREATED",
-                      "updatedBy": null,
-                      "updatedOn": null
-                  }'
+                  value : 
+                    _links:
+                      collection: "/api/v1/payment-requests"
+                      invoices: "/api/v1/payment-requests/153/invoices"
+                      self: "/api/v1/payment-requests/153"
+                      transactions: "/api/v1/payment-requests/153/transactions"
+                    createdBy: CP1234567
+                    createdOn: '2019-06-18T11:10:00.965101+00:00'
+                    id: 153
+                    invoices:
+                    - _links:
+                        collection: "/api/v1/payment-requests/153/invoices"
+                        self: "/api/v1/payment-requests/153/invoices/152"
+                      createdBy: CP1234567
+                      createdOn: '2019-06-18T11:10:00.982551+00:00'
+                      id: 152
+                      invoiceNumber: '10021'
+                      paid: 0
+                      paymentDate: 
+                      referenceNumber: '10005'
+                      refund: 0
+                      statusCode: CREATED
+                      total: 50
+                      updatedBy: 
+                      updatedOn: 
+                    paid: 0
+                    paymentMethod: CC
+                    paymentSystem: PAYBC
+                    statusCode: CREATED
+                    updatedBy: 
+                    updatedOn: 
+
 
         '400':
           description: BadRequest
@@ -419,39 +400,34 @@ paths:
                 $ref: '#/components/schemas/Payment'
               examples:
                 payment_1:
-                  value: '{
-                            "_links": {
-                                "collection": "/api/v1/payment-requests",
-                                "invoices": "/api/v1/payment-requests/153/invoices",
-                                "self": "/api/v1/payment-requests/153",
-                                "transactions": "/api/v1/payment-requests/153/transactions"
-                            },
-                            "createdBy": "CP1234567",
-                            "createdOn": "2019-06-18T11:10:00.965101+00:00",
-                            "id": 153,
-                            "invoices": [
-                                {
-                                    "_links": {
-                                        "collection": "/api/v1/payment-requests/153/invoices",
-                                        "self": "/api/v1/payment-requests/153/invoices/152"
-                                    },
-                                    "createdBy": "CP1234567",
-                                    "createdOn": "2019-06-18T11:10:00.982551+00:00",
-                                    "id": 152,
-                                    "invoiceNumber": "10021",
-                                    "referenceNumber": "10005",
-                                    "statusCode": "CREATED",
-                                    "total": 50,
-                                    "updatedBy": "CP1234567",
-                                    "updatedOn": "2019-06-20T16:30:04.441211+00:00"
-                                }
-                            ],
-                            "paymentMethod": "CC",
-                            "paymentSystem": "PAYBC",
-                            "statusCode": "CREATED",
-                            "updatedBy": "CP1234567",
-                            "updatedOn": "2019-06-20T16:30:04.451576+00:00"
-                        }'
+                  value: 
+                    _links:
+                      collection: "/api/v1/payment-requests"
+                      invoices: "/api/v1/payment-requests/153/invoices"
+                      self: "/api/v1/payment-requests/153"
+                      transactions: "/api/v1/payment-requests/153/transactions"
+                    createdBy: CP1234567
+                    createdOn: '2019-06-18T11:10:00.965101+00:00'
+                    id: 153
+                    invoices:
+                    - _links:
+                        collection: "/api/v1/payment-requests/153/invoices"
+                        self: "/api/v1/payment-requests/153/invoices/152"
+                      createdBy: CP1234567
+                      createdOn: '2019-06-18T11:10:00.982551+00:00'
+                      id: 152
+                      invoiceNumber: '10021'
+                      referenceNumber: '10005'
+                      statusCode: CREATED
+                      total: 50
+                      updatedBy: CP1234567
+                      updatedOn: '2019-06-20T16:30:04.441211+00:00'
+                    paymentMethod: CC
+                    paymentSystem: PAYBC
+                    statusCode: CREATED
+                    updatedBy: CP1234567
+                    updatedOn: '2019-06-20T16:30:04.451576+00:00'
+
         '400':
           description: BadRequest
           content:
@@ -494,19 +470,18 @@ paths:
                 $ref: '#/components/schemas/Transaction'
               examples:
                 payment_1:
-                  value: '{
-                            "_links": {
-                                "collection": "/api/v1/payment-requests/153/transactions",
-                                "self": "/api/v1/payment-requests/153/transactions/3378001e-cfd5-479b-84a2-bfd4e7eb804d"
-                            },
-                            "clientCystemUrl": "http://localhost:8080/coops-web/transactions?transaction_id=abcd",
-                            "endTime": "2019-06-20 14:55:41.309606",
-                            "id": "3378001e-cfd5-479b-84a2-bfd4e7eb804d",
-                            "paySystemUrl": "http://localhost:8080/Payment?inv_number=10021&pbc_ref_number=10005&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Freturnpayment%2F153%2Ftransaction%2F3378001e-cfd5-479b-84a2-bfd4e7eb804d",
-                            "paymentId": 153,
-                            "startTime": "2019-06-20 14:55:41.309574",
-                            "statusCode": "CREATED"
-                        }'
+                  value:
+                    _links:
+                      collection: "/api/v1/payment-requests/153/transactions"
+                      self: "/api/v1/payment-requests/153/transactions/3378001e-cfd5-479b-84a2-bfd4e7eb804d"
+                    clientCystemUrl: http://localhost:8080/coops-web/transactions?transaction_id=abcd
+                    endTime: '2019-06-20 14:55:41.309606'
+                    id: 3378001e-cfd5-479b-84a2-bfd4e7eb804d
+                    paySystemUrl: http://localhost:8080/Payment?inv_number=10021&pbc_ref_number=10005&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Freturnpayment%2F153%2Ftransaction%2F3378001e-cfd5-479b-84a2-bfd4e7eb804d
+                    paymentId: 153
+                    startTime: '2019-06-20 14:55:41.309574'
+                    statusCode: CREATED
+
         '400':
           description: BadRequest
           content:
@@ -564,36 +539,29 @@ paths:
                 $ref: '#/components/schemas/Transactions'
               examples:
                 payment_1:
-                  value: '{
-                            "items": [
-                                {
-                                    "_links": {
-                                        "collection": "/api/v1/payment-requests/153/transactions",
-                                        "self": "/api/v1/payment-requests/153/transactions/3378001e-cfd5-479b-84a2-bfd4e7eb804d"
-                                    },
-                                    "clientSystemUrl": "http://localhost:8080/coops-web/transactions?transaction_id=abcd",
-                                    "endTime": "2019-06-20 14:55:41.309606",
-                                    "id": "3378001e-cfd5-479b-84a2-bfd4e7eb804d",
-                                    "paySystemUrl": "http://localhost:8080/Payment?inv_number=10021&pbc_ref_number=10005&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Freturnpayment%2F153%2Ftransaction%2F3378001e-cfd5-479b-84a2-bfd4e7eb804d",
-                                    "paymentId": 153,
-                                    "startTime": "2019-06-20 14:55:41.309574",
-                                    "statusCode": "CREATED"
-                                },
-                                {
-                                    "_links": {
-                                        "collection": "/api/v1/payment-requests/153/transactions",
-                                        "self": "/api/v1/payment-requests/153/transactions/227ea487-8f89-4897-849a-ae65febf91fe"
-                                    },
-                                    "clientSystemUrl": "http://localhost:8080/coops-web/transactions?transaction_id=abcd",
-                                    "endTime": "2019-06-20 16:32:15.271165",
-                                    "id": "227ea487-8f89-4897-849a-ae65febf91fe",
-                                    "paySystemUrl": "http://localhost:8080/Payment?inv_number=10021&pbc_ref_number=10005&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Freturnpayment%2F153%2Ftransaction%2F227ea487-8f89-4897-849a-ae65febf91fe",
-                                    "paymentId": 153,
-                                    "startTime": "2019-06-20 14:55:41.309574",
-                                    "statusCode": "CANCELLED"
-                                }
-                            ]
-                        }'
+                  value: 
+                    items:
+                    - _links:
+                        collection: "/api/v1/payment-requests/153/transactions"
+                        self: "/api/v1/payment-requests/153/transactions/3378001e-cfd5-479b-84a2-bfd4e7eb804d"
+                      clientSystemUrl: http://localhost:8080/coops-web/transactions?transaction_id=abcd
+                      endTime: '2019-06-20 14:55:41.309606'
+                      id: 3378001e-cfd5-479b-84a2-bfd4e7eb804d
+                      paySystemUrl: http://localhost:8080/Payment?inv_number=10021&pbc_ref_number=10005&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Freturnpayment%2F153%2Ftransaction%2F3378001e-cfd5-479b-84a2-bfd4e7eb804d
+                      paymentId: 153
+                      startTime: '2019-06-20 14:55:41.309574'
+                      statusCode: CREATED
+                    - _links:
+                        collection: "/api/v1/payment-requests/153/transactions"
+                        self: "/api/v1/payment-requests/153/transactions/227ea487-8f89-4897-849a-ae65febf91fe"
+                      clientSystemUrl: http://localhost:8080/coops-web/transactions?transaction_id=abcd
+                      endTime: '2019-06-20 16:32:15.271165'
+                      id: 227ea487-8f89-4897-849a-ae65febf91fe
+                      paySystemUrl: http://localhost:8080/Payment?inv_number=10021&pbc_ref_number=10005&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Freturnpayment%2F153%2Ftransaction%2F227ea487-8f89-4897-849a-ae65febf91fe
+                      paymentId: 153
+                      startTime: '2019-06-20 14:55:41.309574'
+                      statusCode: CANCELLED
+
         '400':
           description: BadRequest
           content:
@@ -647,19 +615,18 @@ paths:
                 $ref: '#/components/schemas/Transaction'
               examples:
                 payment_1:
-                  value: '{
-                            "_links": {
-                                "collection": "/api/v1/payment-requests/153/transactions",
-                                "self": "/api/v1/payment-requests/153/transactions/3378001e-cfd5-479b-84a2-bfd4e7eb804d"
-                            },
-                            "clientSystemUrl": "http://localhost:8080/coops-web/transactions?transaction_id=abcd",
-                            "endTime": "2019-06-20 14:55:41.309606",
-                            "id": "3378001e-cfd5-479b-84a2-bfd4e7eb804d",
-                            "paySystemUrl": "http://localhost:8080/Payment?inv_number=10021&pbc_ref_number=10005&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Freturnpayment%2F153%2Ftransaction%2F3378001e-cfd5-479b-84a2-bfd4e7eb804d",
-                            "paymentId": 153,
-                            "startTime": "2019-06-20 14:55:41.309574",
-                            "statusCode": "COMPLETED"
-                        }'
+                  value: 
+                    _links:
+                      collection: "/api/v1/payment-requests/153/transactions"
+                      self: "/api/v1/payment-requests/153/transactions/3378001e-cfd5-479b-84a2-bfd4e7eb804d"
+                    clientSystemUrl: http://localhost:8080/coops-web/transactions?transaction_id=abcd
+                    endTime: '2019-06-20 14:55:41.309606'
+                    id: 3378001e-cfd5-479b-84a2-bfd4e7eb804d
+                    paySystemUrl: http://localhost:8080/Payment?inv_number=10021&pbc_ref_number=10005&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Freturnpayment%2F153%2Ftransaction%2F3378001e-cfd5-479b-84a2-bfd4e7eb804d
+                    paymentId: 153
+                    startTime: '2019-06-20 14:55:41.309574'
+                    statusCode: COMPLETED
+
         '400':
           description: BadRequest
           content:
@@ -723,19 +690,18 @@ paths:
                 $ref: '#/components/schemas/Transactions'
               examples:
                 payment_1:
-                  value: '{
-                            "_links": {
-                                "collection": "/api/v1/payment-requests/153/transactions",
-                                "self": "/api/v1/payment-requests/153/transactions/3378001e-cfd5-479b-84a2-bfd4e7eb804d"
-                            },
-                            "clientSystemUrl": "http://localhost:8080/coops-web/transactions?transaction_id=abcd",
-                            "endTime": "2019-06-20 14:55:41.309606",
-                            "id": "3378001e-cfd5-479b-84a2-bfd4e7eb804d",
-                            "paySystemUrl": "http://localhost:8080/Payment?inv_number=10021&pbc_ref_number=10005&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Freturnpayment%2F153%2Ftransaction%2F3378001e-cfd5-479b-84a2-bfd4e7eb804d",
-                            "paymentId": 153,
-                            "startTime": "2019-06-20 14:55:41.309574",
-                            "statusCode": "CREATED"
-                        }'
+                  value: 
+                    _links:
+                      collection: "/api/v1/payment-requests/153/transactions"
+                      self: "/api/v1/payment-requests/153/transactions/3378001e-cfd5-479b-84a2-bfd4e7eb804d"
+                    clientSystemUrl: http://localhost:8080/coops-web/transactions?transaction_id=abcd
+                    endTime: '2019-06-20 14:55:41.309606'
+                    id: 3378001e-cfd5-479b-84a2-bfd4e7eb804d
+                    paySystemUrl: http://localhost:8080/Payment?inv_number=10021&pbc_ref_number=10005&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Freturnpayment%2F153%2Ftransaction%2F3378001e-cfd5-479b-84a2-bfd4e7eb804d
+                    paymentId: 153
+                    startTime: '2019-06-20 14:55:41.309574'
+                    statusCode: CREATED
+
 
         '400':
           description: BadRequest
@@ -823,51 +789,42 @@ paths:
                 $ref: '#/components/schemas/Invoices'
               examples:
                 payment_1:
-                  value: '{
-                            "items": [
-                                {
-                                    "_links": {
-                                        "collection": "/api/v1/payment-requests/153/invoices",
-                                        "self": "/api/v1/payment-requests/153/invoices/152"
-                                    },
-                                    "createdBy": "CP1234567",
-                                    "createdOn": "2019-06-18T11:10:00.982551+00:00",
-                                    "id": 152,
-                                    "invoiceNumber": "10021",
-                                    "lineItems": [
-                                        {
-                                            "description": "Change of Directors - Director A",
-                                            "filingFees": 20,
-                                            "gst": 0,
-                                            "id": 371,
-                                            "processingFees": 0,
-                                            "pst": 0,
-                                            "quantity": 1,
-                                            "serviceFees": 0,
-                                            "statusCode": "CREATED",
-                                            "total": 20
-                                        },
-                                        {
-                                            "description": "Annual Report",
-                                            "filingFees": 30,
-                                            "gst": 0,
-                                            "id": 372,
-                                            "processingFees": 0,
-                                            "pst": 0,
-                                            "quantity": 1,
-                                            "serviceFees": 0,
-                                            "statusCode": "CREATED",
-                                            "total": 30
-                                        }
-                                    ],
-                                    "referenceNumber": "10005",
-                                    "statusCode": "CREATED",
-                                    "total": 50,
-                                    "updatedBy": "CP1234567",
-                                    "updatedOn": "2019-06-20T16:30:04.441211+00:00"
-                                }
-                            ]
-                        }'
+                  value: 
+                    items:
+                    - _links:
+                        collection: "/api/v1/payment-requests/153/invoices"
+                        self: "/api/v1/payment-requests/153/invoices/152"
+                      createdBy: CP1234567
+                      createdOn: '2019-06-18T11:10:00.982551+00:00'
+                      id: 152
+                      invoiceNumber: '10021'
+                      lineItems:
+                      - description: Change of Directors - Director A
+                        filingFees: 20
+                        gst: 0
+                        id: 371
+                        processingFees: 0
+                        pst: 0
+                        quantity: 1
+                        serviceFees: 0
+                        statusCode: CREATED
+                        total: 20
+                      - description: Annual Report
+                        filingFees: 30
+                        gst: 0
+                        id: 372
+                        processingFees: 0
+                        pst: 0
+                        quantity: 1
+                        serviceFees: 0
+                        statusCode: CREATED
+                        total: 30
+                      referenceNumber: '10005'
+                      statusCode: CREATED
+                      total: 50
+                      updatedBy: CP1234567
+                      updatedOn: '2019-06-20T16:30:04.441211+00:00'
+
         '400':
           description: BadRequest
           content:
@@ -943,47 +900,41 @@ paths:
                 $ref: '#/components/schemas/Invoice'
               examples:
                 payment_1:
-                  value: '{
-                            "_links": {
-                                "collection": "/api/v1/payment-requests/153/invoices",
-                                "self": "/api/v1/payment-requests/153/invoices/152"
-                            },
-                            "createdBy": "CP1234567",
-                            "createdOn": "2019-06-18T11:10:00.982551+00:00",
-                            "id": 152,
-                            "invoiceNumber": "10021",
-                            "lineItems": [
-                                {
-                                    "description": "Change of Directors - Director A",
-                                    "filingFees": 20,
-                                    "gst": 0,
-                                    "id": 371,
-                                    "processingFees": 0,
-                                    "pst": 0,
-                                    "quantity": 1,
-                                    "serviceFees": 0,
-                                    "statusCode": "CREATED",
-                                    "total": 20
-                                },
-                                {
-                                    "description": "Annual Report",
-                                    "filingFees": 30,
-                                    "gst": 0,
-                                    "id": 372,
-                                    "processingFees": 0,
-                                    "pst": 0,
-                                    "quantity": 1,
-                                    "serviceFees": 0,
-                                    "statusCode": "CREATED",
-                                    "total": 30
-                                }
-                            ],
-                            "referenceNumber": "10005",
-                            "statusCode": "CREATED",
-                            "total": 50,
-                            "updatedBy": "CP1234567",
-                            "updatedOn": "2019-06-20T16:30:04.441211+00:00"
-                        }'
+                  value: 
+                    _links:
+                      collection: "/api/v1/payment-requests/153/invoices"
+                      self: "/api/v1/payment-requests/153/invoices/152"
+                    createdBy: CP1234567
+                    createdOn: '2019-06-18T11:10:00.982551+00:00'
+                    id: 152
+                    invoiceNumber: '10021'
+                    lineItems:
+                    - description: Change of Directors - Director A
+                      filingFees: 20
+                      gst: 0
+                      id: 371
+                      processingFees: 0
+                      pst: 0
+                      quantity: 1
+                      serviceFees: 0
+                      statusCode: CREATED
+                      total: 20
+                    - description: Annual Report
+                      filingFees: 30
+                      gst: 0
+                      id: 372
+                      processingFees: 0
+                      pst: 0
+                      quantity: 1
+                      serviceFees: 0
+                      statusCode: CREATED
+                      total: 30
+                    referenceNumber: '10005'
+                    statusCode: CREATED
+                    total: 50
+                    updatedBy: CP1234567
+                    updatedOn: '2019-06-20T16:30:04.441211+00:00'
+
 
         '400':
           description: BadRequest
