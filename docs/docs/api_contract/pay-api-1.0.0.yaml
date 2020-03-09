@@ -5,7 +5,7 @@ info:
   description: BC Registries Pay API reference documentation
   version: 1.0.1
 paths:
-  /api/v1/fees/{corp_type}/{filing_type_code}:
+  /api/v1/fees/:corp_type/:filing_type_code:
     get:
       tags:
         - Fees
@@ -98,18 +98,19 @@ paths:
                 $ref: '#/components/schemas/Fee'
               examples:
                 fee_1:
-                  value: 
-                    filingType: Annual Report
-                    filingTypeCode: OTANN
-                    filingFees: 40
-                    serviceFees: 0
-                    processingFees: 0
-                    tax:
-                      gst: 17.7
-                      pst: 0
-
+                  value: '{
+                    "filingType":"Annual Report",
+                    "filingTypeCode":"OTANN",
+                    "filingFees":40,
+                    "serviceFees":0,
+                    "processingFees":0,
+                    "tax": {
+                      "gst":17.7,
+                      "pst":0
+                    }
+                  }'
                 fee_2:
-                  value: {
+                  value: '{
                     "filingType":"Change of Registered Office Address",
                     "filingTypeCode":"OTCDR",
                     "filingFees":20,
@@ -119,9 +120,9 @@ paths:
                       "gst":0,
                       "pst":0
                     }
-                  }
+                  }'
                 fee_3:
-                  value: {
+                  value: '{
                     "filingType":"Change of Director",
                     "filingTypeCode":"OTADD",
                     "filingFees":55,
@@ -131,7 +132,7 @@ paths:
                       "gst":0,
                       "pst":0
                     }
-                  }
+                  }'
 
         '400':
           description: BadRequest
@@ -202,34 +203,25 @@ paths:
               $ref: '#/components/schemas/PaymentRequest'
             examples:
                 payment_post_1:
-                  value : '{
-                    "paymentInfo": {
-                      "methodOfPayment": "CC"
-                    },
-                    "businessInfo": {
-                      "businessIdentifier": "CP1234567",
-                      "corpType": "CP",
-                      "businessName": "ABC Corp",
-                      "contactInfo": {
-                        "city": "Victoria",
-                        "postal_code": "V8P2P2",
-                        "province": "BC",
-                        "addressLine1": "100 Douglas Street",
-                        "country": "CA"
-                      }
-                    },
-                    "filingInfo": {
-                      "filingTypes": [
-                        {
-                          "filingTypeCode": "OTADD",
-                          "filingDescription":"TEST"
-                        },
-                        {
-                          "filingTypeCode": "OTANN"
-                        }
-                      ]
-                    }
-                  }'
+                  value : 
+                    paymentInfo:
+                      methodOfPayment: CC
+                    businessInfo:
+                      businessIdentifier: CP1234567
+                      corpType: CP
+                      businessName: ABC Corp
+                      contactInfo:
+                        city: Victoria
+                        postal_code: V8P2P2
+                        province: BC
+                        addressLine1: 100 Douglas Street
+                        country: CA
+                    filingInfo:
+                      filingTypes:
+                      - filingTypeCode: OTADD
+                        filingDescription: TEST
+                      - filingTypeCode: OTANN
+
         required: true
       responses:
         '201':
@@ -240,43 +232,37 @@ paths:
                 $ref: '#/components/schemas/Payment'
               examples:
                 payment_post_1:
-                  value : '{
-                      "_links": {
-                          "collection": "/api/v1/payment-requests",
-                          "invoices": "/api/v1/payment-requests/153/invoices",
-                          "self": "/api/v1/payment-requests/153",
-                          "transactions": "/api/v1/payment-requests/153/transactions"
-                      },
-                      "createdBy": "CP1234567",
-                      "createdOn": "2019-06-18T11:10:00.965101+00:00",
-                      "id": 153,
-                      "invoices": [
-                          {
-                              "_links": {
-                                  "collection": "/api/v1/payment-requests/153/invoices",
-                                  "self": "/api/v1/payment-requests/153/invoices/152"
-                              },
-                              "createdBy": "CP1234567",
-                              "createdOn": "2019-06-18T11:10:00.982551+00:00",
-                              "id": 152,
-                              "invoiceNumber": "10021",
-                              "paid": 0,
-                              "paymentDate": null,
-                              "referenceNumber": "10005",
-                              "refund": 0,
-                              "statusCode": "CREATED",
-                              "total": 50,
-                              "updatedBy": null,
-                              "updatedOn": null
-                          }
-                      ],
-                      "paid": 0,
-                      "paymentMethod": "CC",
-                      "paymentSystem": "PAYBC",
-                      "statusCode": "CREATED",
-                      "updatedBy": null,
-                      "updatedOn": null
-                  }'
+                  value : 
+                    _links:
+                      collection: "/api/v1/payment-requests"
+                      invoices: "/api/v1/payment-requests/153/invoices"
+                      self: "/api/v1/payment-requests/153"
+                      transactions: "/api/v1/payment-requests/153/transactions"
+                    createdBy: CP1234567
+                    createdOn: '2019-06-18T11:10:00.965101+00:00'
+                    id: 153
+                    invoices:
+                    - _links:
+                        collection: "/api/v1/payment-requests/153/invoices"
+                        self: "/api/v1/payment-requests/153/invoices/152"
+                      createdBy: CP1234567
+                      createdOn: '2019-06-18T11:10:00.982551+00:00'
+                      id: 152
+                      invoiceNumber: '10021'
+                      paid: 0
+                      paymentDate: 
+                      referenceNumber: '10005'
+                      refund: 0
+                      statusCode: CREATED
+                      total: 50
+                      updatedBy: 
+                      updatedOn: 
+                    paid: 0
+                    paymentMethod: CC
+                    paymentSystem: PAYBC
+                    statusCode: CREATED
+                    updatedBy: 
+                    updatedOn: 
 
         '400':
           description: BadRequest
