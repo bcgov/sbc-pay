@@ -98,17 +98,16 @@ paths:
                 $ref: '#/components/schemas/Fee'
               examples:
                 fee_1:
-                  value: {
-                    "filingType":"Annual Report",
-                    "filingTypeCode":"OTANN",
-                    "filingFees":40,
-                    "serviceFees":0,
-                    "processingFees":0,
-                    "tax": {
-                      "gst":17.7,
-                      "pst":0
-                    }
-                  }
+                  value: 
+                    filingType: Annual Report
+                    filingTypeCode: OTANN
+                    filingFees: 40
+                    serviceFees: 0
+                    processingFees: 0
+                    tax:
+                      gst: 17.7
+                      pst: 0
+
                 fee_2:
                   value: {
                     "filingType":"Change of Registered Office Address",
