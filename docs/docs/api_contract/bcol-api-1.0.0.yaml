@@ -19,49 +19,45 @@ paths:
               examples:
                 example-1:
                   value:
-                    '{
-                      "userId": "PB25020",
-                      "accountNumber": "180670",
-                      "authCode": "M",
-                      "authCodeDesc": "Master",
-                      "accountType": "B",
-                      "accountTypeDesc": "Billable",
-                      "gstStatus": "",
-                      "gstStatusDesc": "Must-Pay",
-                      "pstStatus": "",
-                      "pstStatusDesc": "Must-Pay",
-                      "userName": "BRIDGER, JULIE",
-                      "orgName": "BC ONLINE TECHNICAL TEAM DEVL",
-                      "orgType": "LAW",
-                      "phone": "(250)953-8271 EX1999",
-                      "fax": "(250)953-8212",
-                      "address": {
-                          "line1": "#400A - 4000 SEYMOUR PLACE",
-                          "line2": "PENTHOUSE",
-                          "city": "AB1",
-                          "province": "BC",
-                          "country": "CANADA",
-                          "postalCode": "V8X 5J8"
-                      },
-                      "profileFlags": [
-                          "OSBR",
-                          "ADS",
-                          "COLIN_TYPE",
-                          "COMP",
-                          "ICBC",
-                          "MH",
-                          "LTO",
-                          "SES",
-                          "PPR",
-                          "VS",
-                          "CCREF",
-                          "CCREL",
-                          "ATSOURCE",
-                          "COURT_SERVICES",
-                          "EMERGIS",
-                          "LOCATION_CODE"
-                      ]
-                  }'
+                    userId: PB25020
+                    accountNumber: '180670'
+                    authCode: M
+                    authCodeDesc: Master
+                    accountType: B
+                    accountTypeDesc: Billable
+                    gstStatus: ''
+                    gstStatusDesc: Must-Pay
+                    pstStatus: ''
+                    pstStatusDesc: Must-Pay
+                    userName: 'BRIDGER, JULIE'
+                    orgName: BC ONLINE TECHNICAL TEAM DEVL
+                    orgType: LAW
+                    phone: (250)953-8271 EX1999
+                    fax: (250)953-8212
+                    address:
+                      line1: '#400A - 4000 SEYMOUR PLACE'
+                      line2: PENTHOUSE
+                      city: AB1
+                      province: BC
+                      country: CANADA
+                      postalCode: V8X 5J8
+                    profileFlags:
+                      - OSBR
+                      - ADS
+                      - COLIN_TYPE
+                      - COMP
+                      - ICBC
+                      - MH
+                      - LTO
+                      - SES
+                      - PPR
+                      - VS
+                      - CCREF
+                      - CCREL
+                      - ATSOURCE
+                      - COURT_SERVICES
+                      - EMERGIS
+                      - LOCATION_CODE
       description: Verify User Profile
       operationId: verify_profile
       requestBody:
@@ -72,11 +68,7 @@ paths:
               $ref: ../../../bcol-api/src/bcol_api/schemas/schemas/accounts_request.json
             examples:
               example-1:
-                value:
-                  '{
-                      "userId": "test",
-                      "password": "password"
-                  }'
+                value: '{ "userId": "test", "password": "password" }'
   /payments:
     post:
       summary: ''
@@ -90,19 +82,17 @@ paths:
               examples:
                 example-1:
                   value:
-                    '{
-                        "statutoryFee": "-700",
-                        "totalAmount": "-850",
-                        "tsFee": "-150",
-                        "gst": "+00",
-                        "pst": "+00",
-                        "accountNumber": "180670",
-                        "userId": "PB25020",
-                        "date": "20191125:125330505",
-                        "feeCode": "BSH105",
-                        "key": "TEST",
-                        "sequenceNo": "0001"
-                    }'
+                    statutoryFee: '-700'
+                    totalAmount: '-850'
+                    tsFee: '-150'
+                    gst: '+00'
+                    pst: '+00'
+                    accountNumber: '180670'
+                    userId: PB25020
+                    date: '20191125:125330505'
+                    feeCode: BSH105
+                    key: TEST
+                    sequenceNo: '0001'
       description: Post payment to BC Online
       requestBody:
         content:
