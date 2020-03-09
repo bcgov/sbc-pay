@@ -5,7 +5,7 @@ info:
   description: BC Registries Pay API reference documentation
   version: 1.0.1
 paths:
-  /api/v1/fees/:corp_type/:filing_type_code:
+  /api/v1/fees/{corp_type}/{filing_type_code}:
     get:
       tags:
         - Fees
