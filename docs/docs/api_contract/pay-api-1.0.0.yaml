@@ -97,7 +97,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Fee'
               examples:
-                fee_1:
+                OTANN:
                   value:
                     filingType: Annual Report
                     filingTypeCode: OTANN
@@ -107,7 +107,7 @@ paths:
                     tax:
                       gst: 17.7
                       pst: 0
-                fee_2:
+                OTCDR:
                   value: 
                     filingType: Change of Registered Office Address
                     filingTypeCode: OTCDR
@@ -117,7 +117,7 @@ paths:
                     tax:
                       gst: 0
                       pst: 0
-                fee_3:
+                OTADD:
                   value: 
                     filingType: Change of Director
                     filingTypeCode: OTADD
