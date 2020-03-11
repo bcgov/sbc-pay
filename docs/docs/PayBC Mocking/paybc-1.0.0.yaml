@@ -266,7 +266,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Inv'
               examples:
-                inv_info:
+                adjs:
                   value:
                     invoice_number: '10021'
                     pbc_ref_number: '10005'
@@ -390,213 +390,6 @@ paths:
         examples:
           inv_info:
             value: 10021
-  '/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/rcpts/{receipt_number}/':
-    put:
-      tags:
-        - Rcpts
-      summary: Update Rcpt
-      description: Updates an receipt.
-      operationId: Rcpts_PUT
-      parameters:
-        - name: party_number
-          in: path
-          description: Party Number.
-          required: true
-          schema:
-            type: string
-        - name: account_number
-          in: path
-          description: Account Number.
-          required: true
-          schema:
-            type: string
-        - name: site_number
-          in: path
-          description: Site Number.
-          required: true
-          schema:
-            type: string
-        - name: receipt_number
-          in: path
-          description: Receipt Number.
-          required: true
-          schema:
-            type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Rcpt'
-        required: true
-      responses:
-        '200':
-          description: Updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Rcpt'
-              examples:
-                rcpt_info1:
-                  value: '{"receipt_number":"123451","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"invoice_number": "10021","amount_applied": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'
-                rcpt_info2:
-                  value: '{"receipt_number":"123452","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"invoice_number": "10021","amount_applied": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'
-                rcpt_info3:
-                  value: '{"receipt_number":"123453","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"invoice_number": "10021","amount_applied": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'
-        '400':
-          description: BadRequest
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    get:
-      tags:
-        - Rcpts
-      summary: Get Rcpt
-      description: Retrieve receipt.
-      operationId: Rcpt_GET
-      parameters:
-        - name: party_number
-          in: path
-          description: Party Number.
-          required: true
-          schema:
-            type: string
-        - name: account_number
-          in: path
-          description: Account Number.
-          required: true
-          schema:
-            type: string
-        - name: site_number
-          in: path
-          description: Site Number.
-          required: true
-          schema:
-            type: string
-        - name: receipt_number
-          in: path
-          description: Receipt Number.
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Rcpt'
-              examples:
-                rcpt_info1:
-                  value:
-                    receipt_number: '123451'
-                    party_number: '11111'
-                    party_name: receipt
-                    account_number: '4101'
-                    site_number: '29921'
-                    receipt_date: 01-02-2019
-                    receipt_amount: $10.02
-                    payment_method: credit card
-                    comments: This is post
-                    invoices:
-                      - invoice_number: '10021'
-                        amount_applied: '9.85'
-                        lines:
-                          - line_number: '23'
-                            amount_to_apply: $9.5
-                rcpt_info2:
-                  value:
-                    receipt_number: '123452'
-                    party_number: '11111'
-                    party_name: receipt
-                    account_number: '4101'
-                    site_number: '29921'
-                    receipt_date: 01-02-2019
-                    receipt_amount: $10.02
-                    payment_method: credit card
-                    comments: This is post
-                    invoices:
-                      - invoice_number: '10021'
-                        amount_applied: '9.85'
-                        lines:
-                          - line_number: '23'
-                            amount_to_apply: $9.5
-                rcpt_info3:
-                  value:
-                    receipt_number: '123453'
-                    party_number: '11111'
-                    party_name: receipt
-                    account_number: '4101'
-                    site_number: '29921'
-                    receipt_date: 01-02-2019
-                    receipt_amount: $10.02
-                    payment_method: credit card
-                    comments: This is post
-                    invoices:
-                      - invoice_number: '10021'
-                        amount_applied: '9.85'
-                        lines:
-                          - line_number: '23'
-                            amount_to_apply: $9.5
-        '400':
-          description: BadRequest
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    parameters:
-      - name: party_number
-        in: path
-        required: true
-        schema:
-          format: string
-          type: string
-        examples:
-          rcpt_info1:
-            value: 11111
-          rcpt_info2:
-            value: 11111
-          rcpt_info3:
-            value: 11111
-      - name: account_number
-        in: path
-        required: true
-        schema:
-          format: string
-          type: string
-        examples:
-          rcpt_info1:
-            value: 4101
-          rcpt_info2:
-            value: 4101
-          rcpt_info3:
-            value: 4101
-      - name: site_number
-        in: path
-        required: true
-        schema:
-          format: string
-          type: string
-        examples:
-          rcpt_info1:
-            value: 29921
-          rcpt_info2:
-            value: 29921
-          rcpt_info3:
-            value: 29921
-      - name: receipt_number
-        in: path
-        required: true
-        schema:
-          format: string
-          type: string
-        examples:
-          rcpt_info1:
-            value: 123451
-          rcpt_info2:
-            value: 123452
-          rcpt_info3:
-            value: 123453
   '/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/rcpts/':
     post:
       tags:
@@ -640,7 +433,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Rcpt'
               examples:
-                rcpt_info:
+                rcpts:
                   value:
                     items:
                       - receipt_number: '123451'
@@ -789,7 +582,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Inv'
               examples:
-                inv_info1:
+                '10021':
                   value:
                     invoice_number: '10021'
                     pbc_ref_number: '10005'
@@ -870,7 +663,7 @@ paths:
                         href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/'
                       - rel: adjustments
                         href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10021/adjs/ '
-                inv_info2:
+                '10022':
                   value:
                     invoice_number: '10022'
                     pbc_ref_number: '10005'
@@ -951,7 +744,7 @@ paths:
                         href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/'
                       - rel: adjustments
                         href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10022/adjs/ '
-                inv_info3:
+                '10023':
                   value:
                     invoice_number: '10023'
                     pbc_ref_number: '10005'
@@ -1112,7 +905,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Inv'
               examples:
-                inv_info:
+                invs:
                   value:
                     invoice_number: '10021'
                     pbc_ref_number: '10005'
@@ -1387,7 +1180,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Site'
               examples:
-                site_info1:
+                '29921':
                   value:
                     site_number: '29921'
                     party_number: '11111'
@@ -1422,7 +1215,7 @@ paths:
                         href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/'
                       - rel: receipts
                         href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/ '
-                site_info2:
+                '29922':
                   value:
                     site_number: '29922'
                     party_number: '11111'
@@ -1457,7 +1250,7 @@ paths:
                         href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/invs/'
                       - rel: receipts
                         href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29922/rcpts/ '
-                site_info3:
+                '29923':
                   value:
                     site_number: '29923'
                     party_number: '11111'
@@ -1559,7 +1352,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Site'
               examples:
-                site_info:
+                sites:
                   value:
                     site_number: '29921'
                     party_number: '11111'
@@ -1692,7 +1485,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Acc'
               examples:
-                acc_info1:
+                '4101':
                   value:
                     account_number: '4101'
                     party_number: '11111'
@@ -1706,7 +1499,7 @@ paths:
                         href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/'
                       - rel: sites
                         href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/ '
-                acc_info2:
+                '4102':
                   value:
                     account_number: '4102'
                     party_number: '11111'
@@ -1720,7 +1513,7 @@ paths:
                         href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4102/'
                       - rel: sites
                         href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4102/sites/ '
-                acc_info3:
+                '4103':
                   value:
                     account_number: '4103'
                     party_number: '11111'
@@ -1788,7 +1581,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Acc'
               examples:
-                acc_info:
+                accs:
                   value:
                     account_number: '4101'
                     party_number: '11111'
@@ -1879,7 +1672,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Party'
               examples:
-                party_info1:
+                '11111':
                   value:
                     party_number: '11111'
                     business_number: '000000000'
@@ -1891,7 +1684,7 @@ paths:
                         href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/'
                       - rel: accounts
                         href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/ '
-                party_info2:
+                '22222':
                   value:
                     party_number: '22222'
                     business_number: '000000000'
@@ -1903,7 +1696,7 @@ paths:
                         href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/22222/'
                       - rel: accounts
                         href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/22222/accs/ '
-                party_info3:
+                '33333':
                   value:
                     party_number: '33333'
                     business_number: '000000000'
@@ -1956,7 +1749,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Party'
               examples:
-                party_info:
+                parties:
                   value:
                     party_number: '11111'
                     business_number: '000000000'
@@ -1989,7 +1782,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Party'
               examples:
-                party_info:
+                token:
                   value:
                     access_token: '11111'
         '400':
@@ -1998,6 +1791,213 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+  '/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/rcpts/{receipt_number}/':
+    put:
+      tags:
+        - Rcpts
+      summary: Update Rcpt
+      description: Updates an receipt.
+      operationId: Rcpts_PUT
+      parameters:
+        - name: party_number
+          in: path
+          description: Party Number.
+          required: true
+          schema:
+            type: string
+        - name: account_number
+          in: path
+          description: Account Number.
+          required: true
+          schema:
+            type: string
+        - name: site_number
+          in: path
+          description: Site Number.
+          required: true
+          schema:
+            type: string
+        - name: receipt_number
+          in: path
+          description: Receipt Number.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Rcpt'
+        required: true
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rcpt'
+              examples:
+                rcpt_info1:
+                  value: '{"receipt_number":"123451","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"invoice_number": "10021","amount_applied": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'
+                rcpt_info2:
+                  value: '{"receipt_number":"123452","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"invoice_number": "10021","amount_applied": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'
+                rcpt_info3:
+                  value: '{"receipt_number":"123453","party_number":"11111","party_name":"receipt","account_number":"4101","site_number":"29921","receipt_date":"01-02-2019","receipt_amount":"$10.02","payment_method": "credit card","comments": "This is post","invoices": [{"invoice_number": "10021","amount_applied": "9.85","lines": [{"line_number": "23","amount_to_apply": "$9.5" }] }] }'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    get:
+      tags:
+        - Rcpts
+      summary: Get Rcpt
+      description: Retrieve receipt.
+      operationId: Rcpt_GET
+      parameters:
+        - name: party_number
+          in: path
+          description: Party Number.
+          required: true
+          schema:
+            type: string
+        - name: account_number
+          in: path
+          description: Account Number.
+          required: true
+          schema:
+            type: string
+        - name: site_number
+          in: path
+          description: Site Number.
+          required: true
+          schema:
+            type: string
+        - name: receipt_number
+          in: path
+          description: Receipt Number.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rcpt'
+              examples:
+                '123451':
+                  value:
+                    receipt_number: '123451'
+                    party_number: '11111'
+                    party_name: receipt
+                    account_number: '4101'
+                    site_number: '29921'
+                    receipt_date: 01-02-2019
+                    receipt_amount: $10.02
+                    payment_method: credit card
+                    comments: This is post
+                    invoices:
+                      - invoice_number: '10021'
+                        amount_applied: '9.85'
+                        lines:
+                          - line_number: '23'
+                            amount_to_apply: $9.5
+                '123452':
+                  value:
+                    receipt_number: '123452'
+                    party_number: '11111'
+                    party_name: receipt
+                    account_number: '4101'
+                    site_number: '29921'
+                    receipt_date: 01-02-2019
+                    receipt_amount: $10.02
+                    payment_method: credit card
+                    comments: This is post
+                    invoices:
+                      - invoice_number: '10021'
+                        amount_applied: '9.85'
+                        lines:
+                          - line_number: '23'
+                            amount_to_apply: $9.5
+                '123453':
+                  value:
+                    receipt_number: '123453'
+                    party_number: '11111'
+                    party_name: receipt
+                    account_number: '4101'
+                    site_number: '29921'
+                    receipt_date: 01-02-2019
+                    receipt_amount: $10.02
+                    payment_method: credit card
+                    comments: This is post
+                    invoices:
+                      - invoice_number: '10021'
+                        amount_applied: '9.85'
+                        lines:
+                          - line_number: '23'
+                            amount_to_apply: $9.5
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+      - name: party_number
+        in: path
+        required: true
+        schema:
+          format: string
+          type: string
+        examples:
+          rcpt_info1:
+            value: 11111
+          rcpt_info2:
+            value: 11111
+          rcpt_info3:
+            value: 11111
+      - name: account_number
+        in: path
+        required: true
+        schema:
+          format: string
+          type: string
+        examples:
+          rcpt_info1:
+            value: 4101
+          rcpt_info2:
+            value: 4101
+          rcpt_info3:
+            value: 4101
+      - name: site_number
+        in: path
+        required: true
+        schema:
+          format: string
+          type: string
+        examples:
+          rcpt_info1:
+            value: 29921
+          rcpt_info2:
+            value: 29921
+          rcpt_info3:
+            value: 29921
+      - name: receipt_number
+        in: path
+        required: true
+        schema:
+          format: string
+          type: string
+        examples:
+          rcpt_info1:
+            value: 123451
+          rcpt_info2:
+            value: 123452
+          rcpt_info3:
+            value: 123453
 components:
   schemas:
     ErrorResponse:

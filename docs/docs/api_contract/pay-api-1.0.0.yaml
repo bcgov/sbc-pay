@@ -51,61 +51,61 @@ paths:
                 type: string
               description: X-Application-Context
               examples:
-                fee_1:
+                OTANN:
                   value: 'application:prod'
-                fee_2:
+                OTCDR:
                   value: 'application:prod'
-                fee_3:
+                OTADD:
                   value: 'application:prod'
             Access-Control-Allow-Origin:
               schema:
                 type: string
               description: Access-Control-Allow-Origin
               examples:
-                fee_1:
+                OTANN:
                   value: '*'
-                fee_2:
+                OTCDR:
                   value: '*'
-                fee_3:
+                OTADD:
                   value: '*'
             Access-Control-Allow-Methods:
               schema:
                 type: string
               description: Access-Control-Allow-Methods
               examples:
-                fee_1:
+                OTANN:
                   value: 'GET, POST, DELETE, PUT'
-                fee_2:
+                OTCDR:
                   value: 'GET, POST, DELETE, PUT'
-                fee_3:
+                OTADD:
                   value: 'GET, POST, DELETE, PUT'
             Access-Control-Allow-Headers:
               schema:
                 type: string
               description: Access-Control-Allow-Headers
               examples:
-                fee_1:
+                OTANN:
                   value: 'Content-Type, api_key, Authorization'
-                fee_2:
+                OTCDR:
                   value: 'Content-Type, api_key, Authorization'
-                fee_3:
+                OTADD:
                   value: 'Content-Type, api_key, Authorization'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Fee'
               examples:
-                fee_1:
+                OTANN:
                   value:
                     filingType: Annual Report
                     filingTypeCode: OTANN
-                    filingFees: 40
+                    filingFees: 30
                     serviceFees: 0
                     processingFees: 0
                     tax:
-                      gst: 17.7
+                      gst: 0
                       pst: 0
-                fee_2:
+                OTCDR:
                   value:
                     filingType: Change of Registered Office Address
                     filingTypeCode: OTCDR
@@ -115,7 +115,7 @@ paths:
                     tax:
                       gst: 0
                       pst: 0
-                fee_3:
+                OTADD:
                   value:
                     filingType: Change of Director
                     filingTypeCode: OTADD
@@ -243,7 +243,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-  '/api/v1/payment-requests/:payment_identifier':
+  '/api/v1/payment-requests/{payment_identifier}':
     put:
       tags:
         - Payments
@@ -407,16 +407,19 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
-      - name: payment_identifier
+      - schema:
+          type: string
+        name: payment_identifier
         in: path
         required: true
-        schema:
-          format: string
-          type: string
-        examples:
-          payment_1:
-            value: 153
-  '/api/v1/payment-requests/:payment_identifier/transactions':
+    delete:
+      summary: ''
+      operationId: delete-api-v1-payment-requests-payment_identifier
+      responses:
+        '200':
+          description: OK
+      description: DELETE payment request
+  '/api/v1/payment-requests/{payment_identifier}/transactions':
     post:
       tags:
         - Transactions
@@ -536,16 +539,12 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
-      - name: payment_identifier
+      - schema:
+          type: string
+        name: payment_identifier
         in: path
         required: true
-        schema:
-          format: string
-          type: string
-        examples:
-          payment_1:
-            value: 153
-  '/api/v1/payment-requests/:payment_identifier/transactions/:transaction_identifier':
+  '/api/v1/payment-requests/{payment_identifier}/transactions/{transaction_identifier}':
     put:
       tags:
         - Transactions
@@ -699,7 +698,7 @@ paths:
         examples:
           payment_1:
             value: 'http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd'
-  '/api/v1/payment-requests/:payment_identifier/invoices':
+  '/api/v1/payment-requests/{payment_identifier}/invoices':
     get:
       tags:
         - Invoices
@@ -802,7 +801,7 @@ paths:
         examples:
           payment_1:
             value: 153
-  '/api/v1/payment-requests/:payment_identifier/invoices/:invoice_id':
+  '/api/v1/payment-requests/{payment_identifier}/invoices/{invoice_id}':
     get:
       tags:
         - Invoices
@@ -919,7 +918,7 @@ paths:
         examples:
           payment_1:
             value: 152
-  '/api/v1/payment-requests/:payment_identifier/receipts':
+  '/api/v1/payment-requests/{payment_identifier}/receipts':
     get:
       tags:
         - Receipts
@@ -947,6 +946,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+      - schema:
+          type: string
+        name: payment_identifier
+        in: path
+        required: true
 components:
   schemas:
     ErrorResponse:

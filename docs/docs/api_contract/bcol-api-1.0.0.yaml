@@ -94,10 +94,5 @@ paths:
                     key: TEST
                     sequenceNo: '0001'
       description: Post payment to BC Online
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: ../../../bcol-api/src/bcol_api/schemas/schemas/payment_request.json
 components:
   schemas: {}
