@@ -294,7 +294,6 @@ def auto(docker_services, app):
         docker_services.start('proxy')
 
 
-
 @pytest.fixture(scope='session')
 def docker_compose_files(pytestconfig):
     """Get the docker-compose.yml absolute path."""
@@ -303,29 +302,30 @@ def docker_compose_files(pytestconfig):
         os.path.join(str(pytestconfig.rootdir), 'tests/docker', 'docker-compose.yml')
     ]
 
+
 @pytest.fixture()
 def premium_user_mock(monkeypatch):
     """Mock auth."""
     def token_info():  # pylint: disable=unused-argument; mocks of library methods
         return {
             {
-                'orgMembership': 'OWNER', 
-                'roles': ['view', 'edit'], 
+                'orgMembership': 'OWNER',
+                'roles': ['view', 'edit'],
                 'business': {
-                    'folioNumber': 'MOCK1234', 
+                    'folioNumber': 'MOCK1234',
                     'name': 'Mock Business'
-                }, 
+                },
                 'account': {
                     'paymentPreference': {
-                        'methodOfPayment': 'DRAWDOWN', 
-                        'bcOnlineUserId': 'PB25020', 
+                        'methodOfPayment': 'DRAWDOWN',
+                        'bcOnlineUserId': 'PB25020',
                         'bcOnlineAccountId': ''
                     },
-                    'id': '1234', 
+                    'id': '1234',
                     'name': 'Mock Account'
-                }, 
+                },
                 'corp_type_code': ''
             }
         }
-    monkeypatch.setattr('pay_api.services.auth.check_auth', token_info)
 
+    monkeypatch.setattr('pay_api.services.auth.check_auth', token_info)
