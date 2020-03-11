@@ -143,6 +143,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     TESTING = True
 
     USE_TEST_KEYCLOAK_DOCKER = 'YES'
+    USE_DOCKER_MOCK = 'YES'
 
     # POSTGRESQL
     DB_USER = _get_config('DATABASE_TEST_USERNAME', default='postgres')
@@ -210,19 +211,19 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     4H8UZcVFN95vEKxJiLRjAmj6g273pu9kK4ymXNEjWWJn
     -----END RSA PRIVATE KEY-----"""
 
-    PAYBC_BASE_URL = 'https://mock-lear-tools.pathfinder.gov.bc.ca/rest/PayBC+API+Reference/1.0.0'
+    PAYBC_BASE_URL = 'http://localhost:8080/paybc-api'
     PAYBC_CLIENT_ID = 'TEST'
     PAYBC_CLIENT_SECRET = 'TEST'
     PAYBC_PORTAL_URL = ''
     SERVER_NAME = 'auth-web.dev.com'
 
-    REPORT_API_BASE_URL = "https://mock-lear-tools.pathfinder.gov.bc.ca/rest/PayBC+API+Reference/1.0.0/cfs/parties/"
+    REPORT_API_BASE_URL = "http://localhost:8080/paybc-api/cfs/parties/"
 
-    AUTH_API_ENDPOINT = "https://mock-lear-tools.pathfinder.gov.bc.ca/rest/SBC+Auth+API+Reference/1.0.0/"
+    AUTH_API_ENDPOINT = "http://localhost:8080/auth-api/"
 
     NATS_SUBJECT = 'entity.filing.test'
 
-    BCOL_API_ENDPOINT = 'https://mock-lear-tools.pathfinder.gov.bc.ca/rest/bcol-api-1.0.0.yaml/1.0'
+    BCOL_API_ENDPOINT = 'http://localhost:8080/bcol-api'
 
     VALID_REDIRECT_URLS = ['http://localhost:8080/*']
 

@@ -279,13 +279,20 @@ def staff_user_mock(monkeypatch):
 
 
 @pytest.fixture(scope='session', autouse=True)
-def keycloak(docker_services, app):
+def auto(docker_services, app):
     """Spin up a keycloak instance and initialize jwt."""
     if app.config['USE_TEST_KEYCLOAK_DOCKER']:
         docker_services.start('keycloak')
         docker_services.wait_for_service('keycloak', 8081)
 
     setup_jwt_manager(app, _jwt)
+    if app.config['USE_DOCKER_MOCK']:
+        docker_services.start('bcol')
+        docker_services.start('auth')
+        docker_services.start('paybc')
+        docker_services.start('reports')
+        docker_services.start('proxy')
+
 
 
 @pytest.fixture(scope='session')
@@ -295,3 +302,30 @@ def docker_compose_files(pytestconfig):
     return [
         os.path.join(str(pytestconfig.rootdir), 'tests/docker', 'docker-compose.yml')
     ]
+
+@pytest.fixture()
+def premium_user_mock(monkeypatch):
+    """Mock auth."""
+    def token_info():  # pylint: disable=unused-argument; mocks of library methods
+        return {
+            {
+                'orgMembership': 'OWNER', 
+                'roles': ['view', 'edit'], 
+                'business': {
+                    'folioNumber': 'MOCK1234', 
+                    'name': 'Mock Business'
+                }, 
+                'account': {
+                    'paymentPreference': {
+                        'methodOfPayment': 'DRAWDOWN', 
+                        'bcOnlineUserId': 'PB25020', 
+                        'bcOnlineAccountId': ''
+                    },
+                    'id': '1234', 
+                    'name': 'Mock Account'
+                }, 
+                'corp_type_code': ''
+            }
+        }
+    monkeypatch.setattr('pay_api.services.auth.check_auth', token_info)
+
