@@ -14,8 +14,9 @@ jobs:
     env:
       FLASK_ENV: "testing"
       DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
-      TEST_NATS_DOCKER: YES
-      USE_TEST_KEYCLOAK_DOCKER: YES
+      TEST_NATS_DOCKER: "YES"
+      USE_TEST_KEYCLOAK_DOCKER: "YES"
+      USE_DOCKER_MOCK: "YES"
 
       JWT_OIDC_ISSUER: "http://localhost:8081/auth/realms/demo"
       JWT_OIDC_WELL_KNOWN_CONFIG: "http://localhost:8081/auth/realms/demo/.well-known/openid-configuration"
@@ -29,9 +30,6 @@ jobs:
 
       KEYCLOAK_SERVICE_ACCOUNT_ID: "sbc-auth-admin"
       KEYCLOAK_SERVICE_ACCOUNT_SECRET: "2222222222"
-
-      USE_TEST_KEYCLOAK_DOCKER: "YES"
-      USE_DOCKER_MOCK: "YES"
 
     strategy:
       matrix:
