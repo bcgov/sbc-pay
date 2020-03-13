@@ -18,7 +18,7 @@ jobs:
       USE_TEST_KEYCLOAK_DOCKER: "YES"
       USE_DOCKER_MOCK: "YES"
 
-      JWT_OIDC_TEST_ISSUER: "http://localhost:8081/auth/realms/demo"
+      JWT_OIDC_ISSUER: "http://localhost:8081/auth/realms/demo"
       JWT_OIDC_TEST_WELL_KNOWN_CONFIG: "http://localhost:8081/auth/realms/demo/.well-known/openid-configuration"
       JWT_OIDC_TEST_ALGORITHMS: "RS256"
       JWT_OIDC_TEST_AUDIENCE: "sbc-auth-web"
