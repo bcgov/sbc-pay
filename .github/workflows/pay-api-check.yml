@@ -30,6 +30,9 @@ jobs:
       KEYCLOAK_SERVICE_ACCOUNT_ID: "sbc-auth-admin"
       KEYCLOAK_SERVICE_ACCOUNT_SECRET: "2222222222"
 
+      USE_TEST_KEYCLOAK_DOCKER: "YES"
+      USE_DOCKER_MOCK: "YES"
+
     strategy:
       matrix:
         python-version: [3.7]
