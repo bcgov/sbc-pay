@@ -20,11 +20,14 @@ from sqlalchemy.engine import Engine  # noqa: I001, I003, I004
 from sbc_common_components.tracing.db_tracing import DBTracing  # noqa: I001, I004
 
 from .fee_code import FeeCode, FeeCodeSchema  # noqa: I001
-from .corp_type import CorpType, CorpTypeSchema
-from .db import db, ma
+from .corp_type import CorpType, CorpTypeSchema  # noqa: I001
+from .db import db, ma  # noqa: I001
 from .fee_schedule import FeeSchedule, FeeScheduleSchema
 from .filing_type import FilingType, FilingTypeSchema
 from .payment_account import PaymentAccount, PaymentAccountSchema  # noqa: I001
+from .bcol_payment_account import BcolPaymentAccount, BcolPaymentAccountSchema  # noqa: I001
+from .credit_payment_account import CreditPaymentAccount, CreditPaymentAccountSchema  # noqa: I001
+from .internal_payment_account import InternalPaymentAccount, InternalPaymentAccountSchema
 from .invoice import Invoice, InvoiceSchema
 from .invoice_reference import InvoiceReference, InvoiceReferenceSchema
 from .payment import Payment, PaymentSchema

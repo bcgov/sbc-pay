@@ -19,27 +19,8 @@ Test-Suite to ensure that the Receipt Class is working as expected.
 
 from datetime import datetime
 
-from pay_api.models import Invoice, Payment, PaymentAccount, Receipt
-
-
-def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code='CP', payment_system_code='PAYBC'):
-    """Factory."""
-    return PaymentAccount(corp_number=corp_number, corp_type_code=corp_type_code,
-                          payment_system_code=payment_system_code)
-
-
-def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC', payment_status_code='DRAFT'):
-    """Factory."""
-    return Payment(payment_system_code=payment_system_code, payment_method_code=payment_method_code,
-                   payment_status_code=payment_status_code, created_by='test', created_on=datetime.now())
-
-
-def factory_invoice(payment_id: str, account_id: str):
-    """Factory."""
-    return Invoice(payment_id=payment_id,
-                   invoice_status_code='DRAFT',
-                   account_id=account_id,
-                   total=0, created_by='test', created_on=datetime.now())
+from pay_api.models import Receipt
+from tests.utilities.base_test import factory_invoice, factory_payment, factory_payment_account
 
 
 def test_receipt(session):
@@ -51,7 +32,7 @@ def test_receipt(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
+    invoice = factory_invoice(payment=payment, payment_account=payment_account)
     invoice = invoice.save()
     receipt = Receipt()
     receipt.receipt_amount = 100
@@ -71,7 +52,7 @@ def test_receipt_find_by_id(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment_id=payment.id, account_id=payment_account.id)
+    invoice = factory_invoice(payment=payment, payment_account=payment_account)
     invoice = invoice.save()
     receipt = Receipt()
     receipt.receipt_amount = 100

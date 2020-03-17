@@ -27,6 +27,7 @@ from pay_api.utils.user_context import user_context
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
 from .oauth_service import OAuthService
+from .payment_account import PaymentAccount
 
 
 class Receipt():  # pylint: disable=too-many-instance-attributes
@@ -160,7 +161,11 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         else:
             invoice_data = Invoice.find_by_id(invoice_identifier, payment_identifier,
                                               skip_auth_check=skip_auth_check)
-        payment_account = invoice_data.payment_account
+
+        payment_account = PaymentAccount.find_by_pay_system_id(
+            credit_account_id=invoice_data.credit_account_id,
+            internal_account_id=invoice_data.internal_account_id,
+            bcol_account_id=invoice_data.bcol_account_id)
         invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(invoice_data.id)
 
         template_vars['incorporationNumber'] = payment_account.corp_number

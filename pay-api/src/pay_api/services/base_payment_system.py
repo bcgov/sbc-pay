@@ -14,7 +14,7 @@
 """Abstract class for payment system implementation."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
@@ -48,7 +48,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Update invoice in payment system."""
 
     @abstractmethod
-    def cancel_invoice(self, account_details: Tuple[str], inv_number: str):
+    def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
         """Cancel invoice in payment system."""
 
     @abstractmethod

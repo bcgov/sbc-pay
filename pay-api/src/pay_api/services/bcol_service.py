@@ -14,7 +14,7 @@
 """Service to manage PayBC interaction."""
 
 from datetime import datetime
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 
 from flask import current_app
 
@@ -59,7 +59,7 @@ class BcolService(PaymentSystemService, OAuthService):
         current_app.logger.debug('<create_invoice')
         user: UserContext = kwargs['user']
         pay_endpoint = current_app.config.get('BCOL_API_ENDPOINT') + '/payments'
-        corp_number = payment_account.corp_number
+        corp_number = kwargs.get('business_identifier', None)
         amount_excluding_txn_fees = sum(line.filing_fees for line in line_items)
         filing_types = ','.join([item.filing_type_code for item in line_items])
         remarks = f'{corp_number}({filing_types})-{user.first_name}'
@@ -71,7 +71,7 @@ class BcolService(PaymentSystemService, OAuthService):
             'amount': str(amount_excluding_txn_fees),
             'rate': str(amount_excluding_txn_fees),
             'remarks': remarks[:50],
-            'feeCode': self._get_fee_code(payment_account.corp_type_code)
+            'feeCode': self._get_fee_code(kwargs.get('corp_type_code'))
         }
         pay_response = self.post(pay_endpoint, user.bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
                                  payload).json()
@@ -89,7 +89,7 @@ class BcolService(PaymentSystemService, OAuthService):
         """Adjust the invoice."""
         current_app.logger.debug('<update_invoice')
 
-    def cancel_invoice(self, account_details: Tuple[str], inv_number: str):
+    def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
         """Adjust the invoice to zero."""
         current_app.logger.debug('<cancel_invoice')
 

@@ -23,7 +23,7 @@ import pytest
 from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
-from pay_api.models import FeeSchedule, Payment, PaymentAccount
+from pay_api.models import CreditPaymentAccount, FeeSchedule, InternalPaymentAccount, Payment
 from pay_api.services.payment_service import PaymentService
 from pay_api.utils.enums import Status
 from tests.utilities.base_test import (
@@ -38,13 +38,17 @@ test_user_token = {'preferred_username': 'test'}
 def test_create_payment_record(session, public_user_mock):
     """Assert that the payment records are created."""
     payment_response = PaymentService.create_payment(get_payment_request(), get_auth_basic_user())
-    account_model = PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'PAYBC')
+    account_model = CreditPaymentAccount. \
+        find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP',
+                                                              get_auth_basic_user().get('account').get('id'))
     account_id = account_model.id
     assert account_id is not None
     assert payment_response.get('id') is not None
     # Create another payment with same request, the account should be the same
     PaymentService.create_payment(get_payment_request(), get_auth_basic_user())
-    account_model = PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'PAYBC')
+    account_model = CreditPaymentAccount. \
+        find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP',
+                                                              get_auth_basic_user().get('account').get('id'))
     assert account_id == account_model.id
 
 
@@ -72,7 +76,7 @@ def test_update_payment_record(session, public_user_mock):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice = factory_invoice(payment, payment_account)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
@@ -91,7 +95,7 @@ def test_update_payment_record_transaction_invalid(session, public_user_mock):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice = factory_invoice(payment, payment_account)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
@@ -111,7 +115,7 @@ def test_update_payment_completed_invalid(session, public_user_mock):
     payment_account.save()
     payment.payment_status_code = Status.COMPLETED.value
     payment.save()
-    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice = factory_invoice(payment, payment_account)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
 
@@ -133,7 +137,7 @@ def test_update_payment_deleted_invalid(session, public_user_mock):
     payment_account.save()
     payment.payment_status_code = Status.DELETED.value
     payment.save()
-    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice = factory_invoice(payment, payment_account)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
 
@@ -154,7 +158,7 @@ def test_update_payment_invoice_deleted_invalid(session, public_user_mock):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice = factory_invoice(payment, payment_account)
     invoice.invoice_status_code = Status.DELETED.value
     invoice.save()
     factory_invoice_reference(invoice.id).save()
@@ -175,7 +179,7 @@ def test_update_payment_record_rollback(session, public_user_mock):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice = factory_invoice(payment, payment_account)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
 
@@ -268,14 +272,18 @@ def test_create_payment_record_rollback_on_paybc_connection_error(session, publi
 def test_create_zero_dollar_payment_record(session, public_user_mock):
     """Assert that the payment records are created and completed."""
     payment_response = PaymentService.create_payment(get_zero_dollar_payment_request(), get_auth_basic_user())
-    account_model = PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'INTERNAL')
+    account_model = InternalPaymentAccount.find_by_corp_number_and_corp_type_and_account_id('CP0001234', 'CP',
+                                                                                            get_auth_basic_user().get(
+                                                                                                'account').get('id'))
     account_id = account_model.id
     assert account_id is not None
     assert payment_response.get('id') is not None
     assert payment_response.get('status_code') == 'COMPLETED'
     # Create another payment with same request, the account should be the same
     PaymentService.create_payment(get_zero_dollar_payment_request(), get_auth_basic_user())
-    account_model = PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'INTERNAL')
+    account_model = InternalPaymentAccount.find_by_corp_number_and_corp_type_and_account_id('CP0001234', 'CP',
+                                                                                            get_auth_basic_user().get(
+                                                                                                'account').get('id'))
     assert account_id == account_model.id
     assert payment_response.get('status_code') == 'COMPLETED'
 
@@ -286,7 +294,7 @@ def test_delete_payment(session, auth_mock, public_user_mock):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice = factory_invoice(payment, payment_account)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
 
@@ -308,7 +316,7 @@ def test_delete_completed_payment(session, auth_mock):
     payment = factory_payment(payment_status_code=Status.COMPLETED.value)
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment.id, payment_account.id)
+    invoice = factory_invoice(payment, payment_account)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
 
@@ -326,7 +334,7 @@ def test_delete_completed_payment(session, auth_mock):
 def test_create_bcol_payment(session, public_user_mock):
     """Assert that the payment records are created."""
     payment_response = PaymentService.create_payment(
-        get_payment_request_with_payment_method(payment_method='PREMIUM', business_identifier='CP0002000'),
+        get_payment_request_with_payment_method(payment_method='DRAWDOWN', business_identifier='CP0002000'),
         get_auth_premium_user())
     assert payment_response is not None
     assert payment_response.get('payment_system') == 'BCOL'
@@ -337,6 +345,6 @@ def test_create_bcol_payment_for_basic_user(session, public_user_mock):
     """Assert that the payment records are created."""
     with pytest.raises(Exception) as excinfo:
         PaymentService.create_payment(
-            get_payment_request_with_payment_method(payment_method='PREMIUM', business_identifier='CP0001238'),
+            get_payment_request_with_payment_method(payment_method='DRAWDOWN', business_identifier='CP0002000'),
             get_auth_basic_user())
     assert excinfo.type == BusinessException

@@ -17,13 +17,8 @@
 Test-Suite to ensure that the CorpType Class is working as expected.
 """
 
-from pay_api.models import PaymentAccount
-
-
-def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code='CP', payment_system_code='PAYBC'):
-    """Factory."""
-    return PaymentAccount(corp_number=corp_number, corp_type_code=corp_type_code,
-                          payment_system_code=payment_system_code)
+from pay_api.models import CreditPaymentAccount
+from tests.utilities.base_test import factory_payment_account
 
 
 def test_payment_account(session):
@@ -37,14 +32,15 @@ def test_payment_account(session):
     assert payment_account.id is not None
 
 
-def test_find_by_corp_number_and_corp_type_and_system(session):
+def find_by_corp_number_and_corp_type_and_account_id(session):
     """Assert find works.
 
     Start with a blank database.
     """
-    payment_account = factory_payment_account()
+    payment_account = factory_payment_account(auth_account_id='1234')
     payment_account.save()
-    assert PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'PAYBC') is not None
+    assert CreditPaymentAccount.find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP',
+                                                                                      '1234') is not None
 
 
 def test_find_by_invalid_corp_number_and_corp_type_and_system(session):
@@ -52,10 +48,11 @@ def test_find_by_invalid_corp_number_and_corp_type_and_system(session):
 
     Start with a blank database.
     """
-    payment_account = factory_payment_account()
+    payment_account = factory_payment_account(auth_account_id='1234')
     payment_account.save()
-    assert PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'BCOL') is None
-    assert PaymentAccount.find_by_corp_number_and_corp_type_and_system(None, None, None) is None
+    assert CreditPaymentAccount.find_by_corp_number_and_corp_type_and_auth_account_id('CP00012345', 'CP',
+                                                                                      '1234') is None
+    assert CreditPaymentAccount.find_by_corp_number_and_corp_type_and_auth_account_id(None, None, None) is None
 
 
 def test_flush(session):
@@ -63,11 +60,13 @@ def test_flush(session):
 
     Start with a blank database.
     """
-    payment_account = factory_payment_account()
+    payment_account = factory_payment_account(auth_account_id='1234')
     payment_account.flush()
-    assert PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'PAYBC') is not None
+    assert CreditPaymentAccount.find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP',
+                                                                                      '1234') is not None
     payment_account.commit()
-    assert PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'PAYBC') is not None
+    assert CreditPaymentAccount.find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP',
+                                                                                      '1234') is not None
 
 
 def test_rollback(session):
@@ -77,6 +76,7 @@ def test_rollback(session):
     """
     payment_account = factory_payment_account()
     payment_account.flush()
-    assert PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'PAYBC') is not None
+    assert CreditPaymentAccount.find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP',
+                                                                                      '1234') is not None
     payment_account.rollback()
-    assert PaymentAccount.find_by_corp_number_and_corp_type_and_system('CP0001234', 'CP', 'PAYBC') is None
+    assert CreditPaymentAccount.find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP', '1234') is None

@@ -40,7 +40,7 @@ def get_claims(app_request=None, role: str = 'edit', username: str = 'CP0001234'
                     [
                         '{}'.format(role)
                     ]
-            },
+        },
         'preferred_username': username,
         'username': username,
         'loginSource': login_source

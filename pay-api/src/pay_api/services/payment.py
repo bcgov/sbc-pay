@@ -151,7 +151,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         # Check if user is authorized to view the payment
         if not skip_auth_check and payment_dao:
             for invoice in payment_dao.invoices:
-                check_auth(invoice.account.corp_number, one_of_roles=one_of_roles)
+                check_auth(invoice.business_identifier, one_of_roles=one_of_roles)
 
         payment = Payment()
         payment._dao = payment_dao  # pylint: disable=protected-access

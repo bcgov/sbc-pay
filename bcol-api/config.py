@@ -46,6 +46,7 @@ def get_named_config(config_name: str = 'production'):
         raise KeyError(f"Unknown configuration '{config_name}'")
     return config
 
+
 def _get_config(config_key: str, **kwargs):
     """Get the config from environment, and throw error if there are no default values and if the value is None."""
     if 'default' in kwargs:
@@ -54,6 +55,7 @@ def _get_config(config_key: str, **kwargs):
         value = os.getenv(config_key)
         assert value
     return value
+
 
 class _Config(object):  # pylint: disable=too-few-public-methods
     """Base class configuration that should set reasonable defaults for all the other configurations. """
@@ -102,6 +104,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
 
     DEBUG = True
     TESTING = True
+    USE_TEST_KEYCLOAK_DOCKER = 'YES'
 
     JWT_OIDC_TEST_MODE = True
     JWT_OIDC_TEST_AUDIENCE = os.getenv('JWT_OIDC_AUDIENCE')
@@ -155,7 +158,6 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     NrQw+2OdQACBJiEHsdZzAkBcsTk7frTH4yGx0VfHxXDPjfTj4wmD6gZIlcIr9lZg
     4H8UZcVFN95vEKxJiLRjAmj6g273pu9kK4ymXNEjWWJn
     -----END RSA PRIVATE KEY-----"""
-
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
