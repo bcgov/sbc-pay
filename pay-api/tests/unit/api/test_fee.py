@@ -26,7 +26,7 @@ from pay_api.utils.enums import Role
 token_header = {
     'alg': 'RS256',
     'typ': 'JWT',
-    'kid': 'sbc-auth-cron-job'
+    'kid': 'sbc-auth-web'
 }
 
 
@@ -36,7 +36,7 @@ def get_claims(role: str = Role.EDITOR.value):
         'jti': 'a50fafa4-c4d6-4a9b-9e51-1e5e0d102878',
         'exp': 31531718745,
         'iat': 1531718745,
-        'iss': 'https://sso-dev.pathfinder.gov.bc.ca/auth/realms/fcf0kpqr',
+        'iss': 'http://localhost:8081/auth/realms/demo',
         'aud': 'sbc-auth-web',
         'sub': '15099883-3c3f-4b4c-a124-a1824d6cba84',
         'typ': 'Bearer',
