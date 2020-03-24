@@ -64,7 +64,7 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
             account_url = current_app.config.get(
                 'AUTH_API_ENDPOINT') + f'orgs/{account_id}'
             account = RestService.get(account_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
-                                               retry_on_failure=True).json()
+                                      retry_on_failure=True).json()
             auth_response = {}
             is_authorized = True
 
@@ -75,11 +75,12 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
         if is_business_auth:
             account_url = current_app.config.get(
                 'AUTH_API_ENDPOINT') + f'orgs?affiliation={business_identifier}'
-            account_response = RestService.get(account_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON,retry_on_failure=True).json()
+            account_response = RestService.get(account_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                               retry_on_failure=True).json()
             if account_response and len(account_response.get('orgs')) == 1:
                 account = account_response.get('orgs')[0]
             else:
-                #If there is no auth account, then treat it as a passcode account
+                # If there is no auth account, then treat it as a passcode account
                 account = {
                     'id': f'PASSCODE_ACCOUNT_{business_identifier}'
                 }
