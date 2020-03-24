@@ -10,7 +10,7 @@ on:
 jobs:
   bcol-api-check:
     runs-on: ubuntu-latest
-
+    if: github.repository == 'bcgov/sbc-pay'
     env:
       FLASK_ENV: "testing"
       JWT_OIDC_ISSUER: "http://localhost:8081/auth/realms/demo"
