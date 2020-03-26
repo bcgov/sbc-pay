@@ -29,6 +29,8 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
     auth_response = None
     is_business_auth = True
     is_service_account = False
+    account = None
+
     if not account_id:
         account_id = user.account_id
     if Role.SYSTEM.value in user.roles:
@@ -61,8 +63,8 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
             # TODO Remove the below call and uncomment the above code once product subscription is in place.
             account_url = current_app.config.get(
                 'AUTH_API_ENDPOINT') + f'orgs/{account_id}'
-            account_response = RestService.get(account_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
-                                               retry_on_failure=True).json()
+            account = RestService.get(account_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                      retry_on_failure=True).json()
             auth_response = {}
             is_authorized = True
 
@@ -74,16 +76,22 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
             account_url = current_app.config.get(
                 'AUTH_API_ENDPOINT') + f'orgs?affiliation={business_identifier}'
             account_response = RestService.get(account_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
-                                               retry_on_failure=True).json().get('orgs')[0]
+                                               retry_on_failure=True).json()
+            if account_response and len(account_response.get('orgs')) == 1:
+                account = account_response.get('orgs')[0]
+            else:
+                # If there is no auth account, then treat it as a passcode account
+                account = {
+                    'id': f'PASSCODE_ACCOUNT_{business_identifier}'
+                }
         # else:
         #     account_url = current_app.config.get(
         #         'AUTH_API_ENDPOINT') + f'orgs/{account_id}'
         #     account_response = RestService.get(account_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
         #                                        retry_on_failure=True).json()
         auth_response['account'] = {'paymentPreference': {}}
-        auth_response['account']['id'] = account_response['id']
-        auth_response['account']['name'] = account_response['name']
-        auth_response['account']['paymentPreference']['methodOfPayment'] = account_response['preferred_payment']
-        auth_response['account']['paymentPreference']['bcOnlineUserId'] = account_response.get('bc_online_user_id',
-                                                                                               None)
+        auth_response['account']['id'] = account.get('id', None)
+        auth_response['account']['name'] = account.get('name', None)
+        auth_response['account']['paymentPreference']['methodOfPayment'] = account.get('preferred_payment', None)
+        auth_response['account']['paymentPreference']['bcOnlineUserId'] = account.get('bc_online_user_id', None)
     return auth_response
