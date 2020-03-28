@@ -25,9 +25,9 @@ from requests.exceptions import ConnectionError
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import Role
 from tests.utilities.base_test import (
-    factory_payment_transaction, get_claims, get_payment_request, get_payment_request_with_no_contact_info,
-    get_payment_request_with_payment_method, get_waive_fees_payment_request, get_zero_dollar_payment_request,
-    token_header)
+    factory_payment_transaction, get_claims, get_payment_request, get_payment_request_with_folio_number,
+    get_payment_request_with_no_contact_info, get_payment_request_with_payment_method, get_waive_fees_payment_request,
+    get_zero_dollar_payment_request, token_header)
 
 
 def test_payment_creation(session, client, jwt, app):
@@ -286,6 +286,22 @@ def test_zero_dollar_payment_creation(session, client, jwt, app):
     assert schema_utils.validate(rv.json, 'payment_response')[0]
 
 
+def test_zero_dollar_payment_creation_for_unaffiliated_entity(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(role='staff'), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post(f'/api/v1/payment-requests',
+                     data=json.dumps(get_zero_dollar_payment_request(business_identifier='CP0001237')),
+                     headers=headers)
+
+    assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
+    assert rv.json.get('statusCode', None) == 'COMPLETED'
+
+    assert schema_utils.validate(rv.json, 'payment_response')[0]
+
+
 def test_delete_payment(session, client, jwt, app):
     """Assert that the endpoint returns 204."""
     token = jwt.create_jwt(get_claims(), token_header)
@@ -460,3 +476,28 @@ def test_premium_payment_with_no_contact_info(session, client, jwt, app):
     assert rv.json.get('_links') is not None
     assert schema_utils.validate(rv.json, 'payment_response')[0]
     assert rv.json.get('paymentSystem') == 'BCOL'
+
+
+def test_payment_creation_with_folio_number(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    folio_number = '1234567890'
+
+    rv = client.post(f'/api/v1/payment-requests',
+                     data=json.dumps(get_payment_request_with_folio_number(folio_number=folio_number)),
+                     headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
+
+    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert rv.json.get('invoices')[0].get('folioNumber') == folio_number
+
+    rv = client.post(f'/api/v1/payment-requests',
+                     data=json.dumps(get_payment_request()),
+                     headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
+
+    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert rv.json.get('invoices')[0].get('folioNumber') == 'MOCK1234'

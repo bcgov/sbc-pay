@@ -65,6 +65,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         folio_number = filing_info.get('folioNumber', get_str_by_path(authorization, 'business/folioNumber'))
         corp_type = business_info.get('corpType', None)
         payment_method = _get_payment_method(payment_request, authorization)
+
         # Calculate the fees
         current_app.logger.debug('Calculate the fees')
         fees = _calculate_fees(corp_type, filing_info)
@@ -396,4 +397,6 @@ def _get_payment_method(payment_request: Dict, authorization: Dict):
     payment_method = get_str_by_path(payment_request, 'paymentInfo/methodOfPayment')
     if not payment_method:
         payment_method = get_str_by_path(authorization, 'account/paymentPreference/methodOfPayment')
+    if not payment_method:
+        payment_method = 'CC'
     return payment_method
