@@ -41,9 +41,29 @@ class Error(Enum):
     PAY999 = 'Invalid Request', HTTPStatus.BAD_REQUEST
     SERVICE_UNAVAILABLE = 'Service Unavailable', HTTPStatus.BAD_REQUEST
 
+    BCOL_UNAVAILABLE = 'BC Online system is not available', HTTPStatus.BAD_REQUEST
+    BCOL_ACCOUNT_CLOSED = 'BC Online account has been closed', HTTPStatus.BAD_REQUEST
+    BCOL_USER_REVOKED = 'BC Online user has been revoked', HTTPStatus.BAD_REQUEST
+    BCOL_ACCOUNT_REVOKED = 'BC Online account is revoked', HTTPStatus.BAD_REQUEST
+    BCOL_ERROR = 'Error occurred during BC Online transaction. Please contact help desk.', HTTPStatus.BAD_REQUEST
+
     def __new__(cls, message, status):
         """Attributes for the enum."""
         obj = object.__new__(cls)
         obj.message = message
         obj.status = status
         return obj
+
+
+def get_bcol_error(error_code: int):
+    """Return error code corresponding to BC Online error code."""
+    error: Error = Error.BCOL_ERROR
+    if error_code == 7:
+        error = Error.BCOL_UNAVAILABLE
+    elif error_code == 20:
+        error = Error.BCOL_ACCOUNT_CLOSED
+    elif error_code == 21:
+        error = Error.BCOL_USER_REVOKED
+    elif error_code == 48:
+        error = Error.BCOL_ACCOUNT_REVOKED
+    return error

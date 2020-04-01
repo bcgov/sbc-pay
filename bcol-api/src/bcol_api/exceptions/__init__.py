@@ -20,6 +20,8 @@ error - a description of the error {code / description: classname / full text}
 status_code - where possible use HTTP Error Codes
 """
 
+from http import HTTPStatus
+
 from bcol_api.utils.errors import Error
 
 
@@ -32,3 +34,14 @@ class BusinessException(Exception):
         self.message = error.message
         self.code = error.name
         self.status = error.status
+
+
+class PaymentException(Exception):
+    """Exception that adds error code and error name, that can be used for i18n support."""
+
+    def __init__(self, code: str, message: str, *args, **kwargs):
+        """Return a valid BusinessException."""
+        super(PaymentException, self).__init__(*args, **kwargs)
+        self.status = HTTPStatus.BAD_REQUEST
+        self.message = message
+        self.code = str(code)

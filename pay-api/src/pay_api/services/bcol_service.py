@@ -17,10 +17,13 @@ from datetime import datetime
 from typing import Any, Dict
 
 from flask import current_app
+from requests.exceptions import HTTPError
 
+from pay_api.exceptions import BusinessException
 from pay_api.models.corp_type import CorpType
 from pay_api.utils.enums import AuthHeaderType, ContentType
 from pay_api.utils.enums import PaymentSystem as PaySystemCode
+from pay_api.utils.errors import get_bcol_error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_str_by_path
 
@@ -54,7 +57,8 @@ class BcolService(PaymentSystemService, OAuthService):
         return PaySystemCode.BCOL.value
 
     @user_context
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str, **kwargs):
+    def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
+                       line_items: [PaymentLineItem], invoice_id: str, **kwargs):
         """Create Invoice in PayBC."""
         current_app.logger.debug('<create_invoice')
         user: UserContext = kwargs['user']
@@ -73,13 +77,20 @@ class BcolService(PaymentSystemService, OAuthService):
             'remarks': remarks[:50],
             'feeCode': self._get_fee_code(kwargs.get('corp_type_code'))
         }
-        pay_response = self.post(pay_endpoint, user.bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
-                                 payload).json()
+        try:
+            pay_response = self.post(pay_endpoint, user.bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                     payload, raise_for_error=False)
+            response_json = pay_response.json()
+            current_app.logger.debug(response_json)
+            pay_response.raise_for_status()
+        except HTTPError as bol_err:
+            current_app.logger.error(bol_err)
+            raise BusinessException(get_bcol_error(response_json.get('code')))
 
         invoice = {
-            'invoice_number': pay_response.get('key'),
-            'reference_number': pay_response.get('sequenceNo'),
-            'totalAmount': -(int(pay_response.get('totalAmount', 0)) / 100)
+            'invoice_number': response_json.get('key'),
+            'reference_number': response_json.get('sequenceNo'),
+            'totalAmount': -(int(response_json.get('totalAmount', 0)) / 100)
         }
         current_app.logger.debug('>create_invoice')
         return invoice
