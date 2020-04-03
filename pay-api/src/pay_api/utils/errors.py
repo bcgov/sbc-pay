@@ -19,38 +19,42 @@ from http import HTTPStatus
 class Error(Enum):
     """Error Codes."""
 
-    PAY001 = 'Invalid Corp Type or Filing Type', HTTPStatus.BAD_REQUEST
-    PAY002 = 'No matching record found for Corp Type and Filing Type', HTTPStatus.BAD_REQUEST
-    PAY003 = 'Cannot identify payment system, Invalid Corp Type or Payment Method', HTTPStatus.BAD_REQUEST
-    PAY004 = 'Invalid Corp Number or Corp Type or Payment System Code', HTTPStatus.BAD_REQUEST
-    PAY005 = 'Invalid Payment Identifier', HTTPStatus.BAD_REQUEST
-    PAY006 = 'Transaction is already completed', HTTPStatus.BAD_REQUEST
-    PAY007 = 'Invalid redirect uri', HTTPStatus.BAD_REQUEST
-    PAY008 = 'Invalid transaction identifier', HTTPStatus.BAD_REQUEST
-    PAY009 = 'Invalid account identifier', HTTPStatus.BAD_REQUEST
-    PAY010 = 'Payment is already completed', HTTPStatus.BAD_REQUEST
-    PAY011 = 'Payment is already cancelled', HTTPStatus.BAD_REQUEST
-    PAY012 = 'Invalid invoice identifier', HTTPStatus.BAD_REQUEST
-    PAY013 = 'Invalid redirect url', HTTPStatus.UNAUTHORIZED
-    PAY014 = 'Fee override is not allowed', HTTPStatus.UNAUTHORIZED
-    PAY015 = 'Premium account setup is incomplete', HTTPStatus.UNAUTHORIZED
+    PAY001 = 'Invalid Corp Type or Filing Type', '', HTTPStatus.BAD_REQUEST
+    PAY002 = 'No matching record found for Corp Type and Filing Type', '', HTTPStatus.BAD_REQUEST
+    PAY003 = 'Cannot identify payment system, Invalid Corp Type or Payment Method', '', HTTPStatus.BAD_REQUEST
+    PAY004 = 'Invalid Corp Number or Corp Type or Payment System Code', '', HTTPStatus.BAD_REQUEST
+    PAY005 = 'Invalid Payment Identifier', '', HTTPStatus.BAD_REQUEST
+    PAY006 = 'Transaction is already completed', '', HTTPStatus.BAD_REQUEST
+    PAY007 = 'Invalid redirect uri', '', HTTPStatus.BAD_REQUEST
+    PAY008 = 'Invalid transaction identifier', '', HTTPStatus.BAD_REQUEST
+    PAY009 = 'Invalid account identifier', '', HTTPStatus.BAD_REQUEST
+    PAY010 = 'Payment is already completed', '', HTTPStatus.BAD_REQUEST
+    PAY011 = 'Payment is already cancelled', '', HTTPStatus.BAD_REQUEST
+    PAY012 = 'Invalid invoice identifier', '', HTTPStatus.BAD_REQUEST
+    PAY013 = 'Invalid redirect url', '', HTTPStatus.UNAUTHORIZED
+    PAY014 = 'Fee override is not allowed', '', HTTPStatus.UNAUTHORIZED
+    PAY015 = 'Premium account setup is incomplete', '', HTTPStatus.UNAUTHORIZED
 
-    PAY020 = 'Invalid Account Number for the User', HTTPStatus.BAD_REQUEST
-    PAY021 = 'Zero dollars deducted from BCOL', HTTPStatus.BAD_REQUEST
+    PAY020 = 'Invalid Account Number for the User', '', HTTPStatus.BAD_REQUEST
+    PAY021 = 'Zero dollars deducted from BCOL', '', HTTPStatus.BAD_REQUEST
 
-    PAY999 = 'Invalid Request', HTTPStatus.BAD_REQUEST
-    SERVICE_UNAVAILABLE = 'Service Unavailable', HTTPStatus.BAD_REQUEST
+    SERVICE_UNAVAILABLE = 'Service Unavailable', 'Service Unavailable', HTTPStatus.BAD_REQUEST
 
-    BCOL_UNAVAILABLE = 'BC Online system is not available', HTTPStatus.BAD_REQUEST
-    BCOL_ACCOUNT_CLOSED = 'BC Online account has been closed', HTTPStatus.BAD_REQUEST
-    BCOL_USER_REVOKED = 'BC Online user has been revoked', HTTPStatus.BAD_REQUEST
-    BCOL_ACCOUNT_REVOKED = 'BC Online account is revoked', HTTPStatus.BAD_REQUEST
-    BCOL_ERROR = 'Error occurred during BC Online transaction. Please contact help desk.', HTTPStatus.BAD_REQUEST
+    BCOL_UNAVAILABLE = 'BC Online system is not available', 'BC Online system is not available', HTTPStatus.BAD_REQUEST
+    BCOL_ACCOUNT_CLOSED = 'BC Online account has been closed', 'BC Online account has been closed', \
+                          HTTPStatus.BAD_REQUEST
+    BCOL_USER_REVOKED = 'BC Online user has been revoked', 'BC Online user has been revoked', HTTPStatus.BAD_REQUEST
+    BCOL_ACCOUNT_REVOKED = 'BC Online account is revoked', 'BC Online account is revoked', HTTPStatus.BAD_REQUEST
+    BCOL_ERROR = 'Error occurred during BC Online transaction.', 'Error occurred during BC Online transaction. ' \
+                                                                 'Please contact help desk.', HTTPStatus.BAD_REQUEST
 
-    def __new__(cls, message, status):
+    INVALID_REQUEST = 'Invalid Request', 'Invalid Request', HTTPStatus.BAD_REQUEST
+
+    def __new__(cls, message, details, status):
         """Attributes for the enum."""
         obj = object.__new__(cls)
         obj.message = message
+        obj.details = details
         obj.status = status
         return obj
 

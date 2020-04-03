@@ -19,9 +19,9 @@ This module is the API for the Legal Entity system.
 import os
 
 from flask import Flask
+from sentry_sdk.integrations.flask import FlaskIntegration  # noqa: I001
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler  # noqa: I001
 from sbc_common_components.utils.camel_case_response import convert_to_camel
-from sentry_sdk.integrations.flask import FlaskIntegration  # noqa: I001
 
 import config
 from bcol_api.resources import API_BLUEPRINT, OPS_BLUEPRINT

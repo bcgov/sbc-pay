@@ -177,7 +177,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
             template_vars['displayRoutingSlip'] = 'none'
 
         if not invoice_data.receipts:
-            raise BusinessException(Error.PAY999)
+            raise BusinessException(Error.INVALID_REQUEST)
 
         template_vars['receiptNumber'] = invoice_data.receipts[0].receipt_number
         for line_item in invoice_data.payment_line_items:

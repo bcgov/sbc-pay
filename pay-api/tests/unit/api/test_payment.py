@@ -99,6 +99,7 @@ def test_payment_incomplete_input(session, client, jwt, app):
     }
     rv = client.post(f'/api/v1/payment-requests', data=json.dumps(data), headers=headers)
     assert rv.status_code == 400
+    assert schema_utils.validate(rv.json, 'problem')[0]
 
 
 def test_payment_invalid_corp_type(session, client, jwt, app):
@@ -132,6 +133,7 @@ def test_payment_invalid_corp_type(session, client, jwt, app):
     }
     rv = client.post(f'/api/v1/payment-requests', data=json.dumps(data), headers=headers)
     assert rv.status_code == 400
+    assert schema_utils.validate(rv.json, 'problem')[0]
 
 
 def test_payment_get(session, client, jwt, app):
@@ -204,6 +206,7 @@ def test_payment_put_incomplete_input(session, client, jwt, app):
     }
     rv = client.put(f'/api/v1/payment-requests/{pay_id}', data=json.dumps(data), headers=headers)
     assert rv.status_code == 400
+    assert schema_utils.validate(rv.json, 'problem')[0]
 
 
 def test_payment_put_invalid_corp_type(session, client, jwt, app):
@@ -244,6 +247,7 @@ def test_payment_put_invalid_corp_type(session, client, jwt, app):
     }
     rv = client.put(f'/api/v1/payment-requests/{pay_id}', data=json.dumps(data), headers=headers)
     assert rv.status_code == 400
+    assert schema_utils.validate(rv.json, 'problem')[0]
 
 
 def test_payment_creation_when_paybc_down(session, client, jwt, app):
@@ -254,6 +258,7 @@ def test_payment_creation_when_paybc_down(session, client, jwt, app):
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
         rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
         assert rv.status_code == 400
+        assert schema_utils.validate(rv.json, 'problem')[0]
 
 
 def test_payment_put_when_paybc_down(session, client, jwt, app):
@@ -269,6 +274,7 @@ def test_payment_put_when_paybc_down(session, client, jwt, app):
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
         rv = client.put(f'/api/v1/payment-requests/{pay_id}', data=json.dumps(get_payment_request()), headers=headers)
         assert rv.status_code == 400
+        assert schema_utils.validate(rv.json, 'problem')[0]
 
 
 def test_zero_dollar_payment_creation(session, client, jwt, app):
@@ -327,6 +333,7 @@ def test_delete_completed_payment(session, client, jwt, app):
     pay_id = rv.json.get('id')
     rv = client.delete(f'/api/v1/payment-requests/{pay_id}', headers=headers)
     assert rv.status_code == 400
+    assert schema_utils.validate(rv.json, 'problem')[0]
 
 
 def test_payment_delete_when_paybc_is_down(session, client, jwt, app):
@@ -422,6 +429,7 @@ def test_zero_dollar_payment_creation_with_waive_fees_unauthorized(session, clie
                      headers=headers)
 
     assert rv.status_code == 400
+    assert schema_utils.validate(rv.json, 'problem')[0]
 
 
 def test_premium_payment_creation(session, client, jwt, app, premium_user_mock):
