@@ -1,0 +1,53 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/problem",
+  "type": "object",
+  "title": "Error Schema",
+  "description": "Error schema for any error from pay system.",
+  "required": [
+    "type",
+    "title",
+    "detail"
+  ],
+  "properties": {
+    "type": {
+      "$id": "#/properties/type",
+      "type": "string",
+      "title": "error type",
+      "description": "Type of error.",
+      "default": "",
+      "examples": [
+        "https://bcrs.gov.bc.ca/.well_known/schemas/problem#BCOL_ERROR"
+      ]
+    },
+    "title": {
+      "$id": "#/properties/title",
+      "type": "string",
+      "title": "Error title",
+      "description": "short description of the error.",
+      "default": "",
+      "examples": [
+        "Account is revoked"
+      ]
+    },
+    "detail": {
+      "$id": "#/properties/detail",
+      "type": "string",
+      "title": "Error details",
+      "description": "description of the error.",
+      "default": "",
+      "examples": [
+        "Your account is revoked. Please contact BC Online Help Desk."
+      ]
+    },
+    "invalidParams": {
+      "$id": "#/properties/invalidParams",
+      "type": "array",
+      "title": "Invalid Parameters",
+      "description": "invalid parameters in request.",
+      "default": "",
+      "examples": [
+      ]
+    }
+  }
+}

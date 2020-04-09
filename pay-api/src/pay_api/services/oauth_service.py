@@ -25,7 +25,6 @@ from urllib3.util.retry import Retry
 from pay_api.exceptions import ServiceUnavailableException
 from pay_api.utils.enums import AuthHeaderType, ContentType
 
-
 RETRY_ADAPTER = HTTPAdapter(max_retries=Retry(total=5, backoff_factor=1, status_forcelist=[404]))
 
 
@@ -33,7 +32,9 @@ class OAuthService:
     """Service to invoke Rest services which uses OAuth 2.0 implementation."""
 
     @staticmethod
-    def post(endpoint, token, auth_header_type: AuthHeaderType, content_type: ContentType, data):
+    def post(endpoint, token, auth_header_type: AuthHeaderType,  # pylint: disable=too-many-arguments
+             content_type: ContentType, data,
+             raise_for_error: bool = True):
         """POST service."""
         current_app.logger.debug('<post')
 
@@ -51,7 +52,8 @@ class OAuthService:
         try:
             response = requests.post(endpoint, data=data, headers=headers,
                                      timeout=current_app.config.get('CONNECT_TIMEOUT'))
-            response.raise_for_status()
+            if raise_for_error:
+                response.raise_for_status()
         except (ReqConnectionError, ConnectTimeout) as exc:
             current_app.logger.error('---Error on POST---')
             current_app.logger.error(exc)

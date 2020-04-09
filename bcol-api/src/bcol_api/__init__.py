@@ -30,6 +30,7 @@ from bcol_api.utils.logging import setup_logging
 from bcol_api.utils.run_version import get_run_version
 from config import _Config
 
+
 import sentry_sdk  # noqa: I001; pylint: disable=ungrouped-imports,wrong-import-order; conflicts with Flake8
 
 setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))  # important to do this first

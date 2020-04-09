@@ -18,7 +18,7 @@ from typing import Dict
 import zeep
 from flask import current_app
 
-from bcol_api.exceptions import BusinessException
+from bcol_api.exceptions import BusinessException, PaymentException
 from bcol_api.services.bcol_soap import BcolSoap
 from bcol_api.utils.errors import Error
 
@@ -29,7 +29,6 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
     def create_payment(self, pay_request: Dict):
         """Create payment record in BCOL."""
         current_app.logger.debug('<create_payment')
-        pay_response = None
         padded_amount = self._pad_zeros(pay_request.get('amount', '0'))
         # Call the query profile service to fetch profile
         data = {
@@ -70,6 +69,12 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
                 'sequenceNo': self.__get(transaction, 'SequenceNo'),
             }
 
+        except zeep.exceptions.Fault as fault:
+            current_app.logger.error(fault)
+            parsed_fault_detail = BcolSoap().get_payment_client().wsdl.types.deserialize(fault.detail[0])
+            current_app.logger.error(parsed_fault_detail)
+            raise PaymentException(message=self.__get(parsed_fault_detail, 'message'),
+                                   code=self.__get(parsed_fault_detail, 'returnCode'))
         except Exception as e:
             current_app.logger.error(e)
             raise BusinessException(Error.BCOL003)
@@ -80,7 +85,7 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
     def __get(self, value: object, key: object) -> str:  # pragma: no cover # pylint: disable=no-self-use
         """Get the value from dict and strip."""
         if value and value[key]:
-            return value[key].strip()
+            return value[key].strip() if isinstance(value[key], str) else value[key]
         return None
 
     def debit_account(self, data: Dict):  # pragma: no cover # pylint: disable=no-self-use

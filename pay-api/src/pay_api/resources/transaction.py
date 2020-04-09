@@ -50,7 +50,7 @@ class Transaction(Resource):
         try:
             response, status = TransactionService.create(payment_id, request_json).asdict(), HTTPStatus.CREATED
         except BusinessException as exception:
-            response, status = {'code': exception.code, 'message': exception.message}, exception.status
+            response, status = exception.as_json(), exception.status
         current_app.logger.debug('>Transaction.post')
         return jsonify(response), status
 
@@ -83,7 +83,7 @@ class Transactions(Resource):
             response, status = TransactionService.find_by_id(payment_id,
                                                              transaction_id).asdict(), HTTPStatus.OK
         except BusinessException as exception:
-            response, status = {'code': exception.code, 'message': exception.message}, exception.status
+            response, status = exception.as_json(), exception.status
         current_app.logger.debug('>Transaction.get')
         return jsonify(response), status
 
@@ -99,6 +99,6 @@ class Transactions(Resource):
             response, status = TransactionService.update_transaction(payment_id, transaction_id,
                                                                      receipt_number).asdict(), HTTPStatus.OK
         except BusinessException as exception:
-            response, status = {'code': exception.code, 'message': exception.message}, exception.status
+            response, status = exception.as_json(), exception.status
         current_app.logger.debug('>Transaction.post')
         return jsonify(response), status

@@ -19,8 +19,33 @@ BusinessException - error, status_code - Business rules error
 error - a description of the error {code / description: classname / full text}
 status_code - where possible use HTTP Error Codes
 """
+import json
+from http import HTTPStatus
+from typing import Dict
+
+from flask import Response
 
 from pay_api.utils.errors import Error
+
+
+def convert_to_response(body: Dict, status: int = HTTPStatus.BAD_REQUEST):
+    """Convert json error to problem response."""
+    return Response(response=json.dumps(body), mimetype='application/problem+json', status=status)
+
+
+def error_to_response(error: Error, invalid_params=None):
+    """Convert Error enum to response."""
+    return convert_to_response(body={
+        'type': construct_type(error.name),
+        'title': error.message,
+        'detail': error.details,
+        'invalidParams': invalid_params
+    }, status=error.status)
+
+
+def construct_type(code):
+    """Construct type in response."""
+    return 'https://bcrs.gov.bc.ca/.well_known/schemas/problem#{}'.format(code)
 
 
 class BusinessException(Exception):
@@ -30,8 +55,28 @@ class BusinessException(Exception):
         """Return a valid BusinessException."""
         super(BusinessException, self).__init__(*args, **kwargs)
         self.message = error.message
+        self.details = error.details
         self.code = error.name
         self.status = error.status
+
+    def as_json(self):
+        """Return json of error message."""
+        return {
+            'message': self.message,
+            'code': self.code
+        }
+
+    def as_problem_json(self):
+        """Return problem+json of error message."""
+        return {
+            'type': construct_type(self.code),
+            'title': self.message,
+            'detail': self.details
+        }
+
+    def response(self):
+        """Response attributes."""
+        return convert_to_response(body=self.as_problem_json(), status=self.status)
 
 
 class ServiceUnavailableException(Exception):
@@ -41,4 +86,12 @@ class ServiceUnavailableException(Exception):
         """Return a valid BusinessException."""
         super(ServiceUnavailableException, self).__init__(*args, **kwargs)
         self.error = error
-        self.status_code = Error.SERVICE_UNAVAILABLE.name
+        self.status = Error.SERVICE_UNAVAILABLE.name
+
+    def response(self, error: Error = Error.SERVICE_UNAVAILABLE):  # pylint: disable=no-self-use
+        """Response attributes."""
+        return convert_to_response(body={
+            'type': construct_type(error.name),
+            'title': error.message,
+            'detail': error.details
+        }, status=error.status)
