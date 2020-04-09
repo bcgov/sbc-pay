@@ -16,6 +16,8 @@
 
 A simple decorator to add the options method to a Request Class.
 """
+import calendar
+from datetime import datetime, timedelta
 from typing import Dict
 
 from dpath import util as dpath_util
@@ -60,3 +62,19 @@ def get_str_by_path(payload: Dict, path: str) -> str:
         return str(raw)
     except (IndexError, KeyError, TypeError):
         return None
+
+
+def get_week_start_and_end_date(index: int = 0):
+    """Return first and last dates (monday and sunday) for the index."""
+    # index: 0 (current week), 1 (last week) and so on
+    current_date = datetime.now() - timedelta(days=index * 6)
+    start = current_date - timedelta(days=current_date.weekday())
+    end = start + timedelta(days=6)
+    return start, end
+
+
+def get_first_and_last_dates_of_month(month: int, year: int):
+    """Return first and last dates for a given month and year."""
+    start_date = datetime.now().replace(day=1, year=year, month=month)
+    end_date = start_date.replace(day=calendar.monthrange(year=year, month=month)[1])
+    return start_date, end_date

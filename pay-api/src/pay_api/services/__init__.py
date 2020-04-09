@@ -15,6 +15,7 @@
 
 from .fee_schedule import FeeSchedule
 from .invoice import Invoice as InvoiceService
+from .payment import Payment
 from .payment_service import PaymentService
 from .payment_transaction import PaymentTransaction as TransactionService
 from .receipt import Receipt as ReceiptService

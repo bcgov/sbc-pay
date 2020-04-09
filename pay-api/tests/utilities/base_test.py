@@ -237,7 +237,8 @@ def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code: str 
         return BcolPaymentAccount(
             bcol_user_id=bcol_user_id,
             bcol_account_id='TEST',
-            account_id=account.id
+            account_id=account.id,
+
         )
     elif payment_system_code == PaymentSystem.PAYBC.value:
         return CreditPaymentAccount(
@@ -306,7 +307,8 @@ def factory_invoice(payment: Payment, payment_account: str, status_code: str = S
         created_by='test',
         created_on=datetime.now(),
         business_identifier=business_identifier,
-        corp_type_code=corp_type_code
+        corp_type_code=corp_type_code,
+        folio_number='1234567890'
     )
 
 
