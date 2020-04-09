@@ -10,7 +10,7 @@ on:
 jobs:
   report-api-check:
     runs-on: ubuntu-latest
-
+    if: github.repository == 'bcgov/sbc-pay'
     env:
       FLASK_ENV: "testing"
       JWT_OIDC_ISSUER: "http://localhost:8081/auth/realms/demo"
@@ -22,7 +22,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.7]
+        python-version: [3.7, 3.8]
 
     steps:
       - uses: actions/checkout@v2
