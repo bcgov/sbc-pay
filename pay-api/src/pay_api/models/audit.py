@@ -36,12 +36,28 @@ class Audit(BaseModel):  # pylint: disable=too-few-public-methods
         return db.Column('created_by', db.String(50), nullable=False, default=cls._get_user_name)
 
     @declared_attr
+    def created_name(cls):  # pylint:disable=no-self-argument, # noqa: N805
+        """Return created name."""
+        return db.Column('created_name', db.String(100), nullable=True, default=cls._get_name)
+
+    @declared_attr
     def updated_by(cls):  # pylint:disable=no-self-argument, # noqa: N805
         """Return updated by."""
         return db.Column('updated_by', db.String(50), nullable=True, default=None, onupdate=cls._get_user_name)
 
+    @declared_attr
+    def updated_name(cls):  # pylint:disable=no-self-argument, # noqa: N805
+        """Return updated by."""
+        return db.Column('updated_name', db.String(50), nullable=True, default=None, onupdate=cls._get_name)
+
     @staticmethod
     @user_context
     def _get_user_name(**kwargs):
-        """Return current user name."""
+        """Return current user user_name."""
         return kwargs['user'].user_name
+
+    @staticmethod
+    @user_context
+    def _get_name(**kwargs):
+        """Return current user's name."""
+        return kwargs['user'].name

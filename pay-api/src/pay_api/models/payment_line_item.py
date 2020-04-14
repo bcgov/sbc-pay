@@ -49,6 +49,12 @@ class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attribute
         """Return a Line Item by id."""
         return cls.query.get(identifier)
 
+    @classmethod
+    def find_by_invoice_ids(cls, invoice_ids: list):
+        """Return list of line items by list of invoice ids."""
+        return db.session.query(PaymentLineItem).filter(PaymentLineItem.invoice_id.in_(invoice_ids)).order_by(
+            PaymentLineItem.invoice_id.desc()).all()
+
 
 class PaymentLineItemSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Payment line item."""

@@ -13,12 +13,14 @@
 # limitations under the License.
 """Service to manage Payment model related operations."""
 
-from typing import Tuple
+from typing import Tuple, Dict
 
 from flask import current_app
 
 from pay_api.models import Payment as PaymentModel
+from pay_api.models.invoice import InvoiceSchema
 from pay_api.models.payment import PaymentSchema
+from pay_api.models.payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from pay_api.services.auth import check_auth
 from pay_api.utils.constants import ALL_ALLOWED_ROLES
 from pay_api.utils.enums import Status
@@ -125,7 +127,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         """Return the payment as a python dict."""
         payment_schema = PaymentSchema()
         d = payment_schema.dump(self._dao)
-
         return d
 
     @staticmethod
@@ -158,3 +159,50 @@ class Payment:  # pylint: disable=too-many-instance-attributes
 
         current_app.logger.debug('>find_by_id')
         return payment
+
+    @staticmethod
+    def search_all_purchase_history(auth_account_id: str, search_filter: Dict):
+        """Return all results for the purchase history."""
+        return Payment.search_purchase_history(auth_account_id, search_filter, 0, 0, True)
+
+    @staticmethod
+    def search_purchase_history(auth_account_id: str, search_filter: Dict, page: int,  # pylint: disable=too-many-locals
+                                limit: int, return_all: bool = False):
+        """Search purchase history for the account."""
+        current_app.logger.debug(f'<search_purchase_history {auth_account_id}')
+        purchases, total = PaymentModel.search_purchase_history(auth_account_id, search_filter, page, limit, return_all)
+        data = {
+            'total': total,
+            'page': page,
+            'limit': limit,
+            'items': []
+        }
+
+        invoice_ids = []
+        for purchase in purchases:
+            payment_dao = purchase[0]
+            invoice_dao = purchase[1]
+            payment_schema = PaymentSchema(exclude=('invoices', 'transactions', '_links', 'created_by', 'updated_by'))
+            purchase_history = payment_schema.dump(payment_dao)
+            invoice_schema = InvoiceSchema(exclude=('receipts', 'payment_line_items', 'references', '_links',
+                                                    'created_by', 'created_name', 'created_on', 'updated_by',
+                                                    'updated_name', 'updated_on', 'invoice_status_code'))
+            invoice = invoice_schema.dump(invoice_dao)
+            invoice['line_items'] = []
+            purchase_history['invoice'] = invoice
+            data['items'].append(purchase_history)
+
+            invoice_ids.append(invoice_dao.id)
+
+        # Query the payment line item to retrieve more details
+        payment_line_items = PaymentLineItem.find_by_invoice_ids(invoice_ids)
+        for payment_line_item in payment_line_items:
+            for purchase_history in data['items']:
+                if purchase_history.get('invoice').get('id') == payment_line_item.invoice_id:
+                    line_item_schema = PaymentLineItemSchema(many=False, exclude=('id', 'line_item_status_code'))
+                    line_item_dict = line_item_schema.dump(payment_line_item)
+                    line_item_dict['filing_type_code'] = payment_line_item.fee_schedule.filing_type_code
+                    purchase_history.get('invoice').get('line_items').append(line_item_dict)
+
+        current_app.logger.debug('>search_purchase_history')
+        return data

@@ -37,6 +37,7 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
             else None
         self._sub: str = token_info.get('sub', None)
         self._account_id: str = _get_auth_account_id()
+        self._name: str = '{} {}'.format(token_info.get('firstname', None), token_info.get('lastname', None))
 
     @property
     def user_name(self) -> str:
@@ -71,6 +72,11 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
     def has_role(self, role_name: str) -> bool:
         """Return True if the user has the role."""
         return role_name in self._roles
+
+    @property
+    def name(self) -> str:
+        """Return the name."""
+        return self._name
 
 
 def user_context(function):

@@ -23,6 +23,7 @@ That are used to expose operational health information about the service, and me
 from flask import Blueprint
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
 
+from .account import API as ACCOUNTS_API
 from .apihelper import Api
 from .fee import API as FEE_API
 from .invoice import API as INVOICE_API
@@ -71,3 +72,4 @@ API.add_namespace(FEE_API, path='/fees')
 API.add_namespace(TRANSACTION_API, path='/payment-requests/<int:payment_id>/transactions')
 API.add_namespace(INVOICE_API, path='/payment-requests/<int:payment_id>/invoices')
 API.add_namespace(INVOICE_RECEIPT_API, path='/payment-requests/<int:payment_id>')
+API.add_namespace(ACCOUNTS_API, path='/accounts')
