@@ -52,11 +52,17 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
                     'id': f'PASSCODE_ACCOUNT_{business_identifier}'
                 }
         elif account_id:
-            auth_url = current_app.config.get(
-                'AUTH_API_ENDPOINT') + f'accounts/{account_id}/products/{corp_type_code}/authorizations?expanded=true'
-            auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
-            roles: list = auth_response.get('roles', [])
-            if roles:
+            if corp_type_code:
+                auth_url = current_app.config.get(
+                    'AUTH_API_ENDPOINT') + f'accounts/{account_id}/products/{corp_type_code}/authorizations?expanded=true'
+                auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+                roles: list = auth_response.get('roles', [])
+                if roles:
+                    is_authorized = True
+            else:  # For activities not specific to a product
+                auth_url = current_app.config.get(
+                    'AUTH_API_ENDPOINT') + f'orgs/{account_id}'
+                auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
                 is_authorized = True
 
     if not is_authorized:
