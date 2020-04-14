@@ -53,8 +53,8 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
                 }
         elif account_id:
             if corp_type_code:
-                auth_url = current_app.config.get(
-                    'AUTH_API_ENDPOINT') + f'accounts/{account_id}/products/{corp_type_code}/authorizations?expanded=true'
+                auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'accounts/{account_id}/' \
+                    f'products/{corp_type_code}/authorizations?expanded=true'
                 auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
                 roles: list = auth_response.get('roles', [])
                 if roles:
