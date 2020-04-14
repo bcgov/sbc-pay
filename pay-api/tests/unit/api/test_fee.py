@@ -83,7 +83,7 @@ def test_fees_with_corp_type_and_filing_type_with_valid_start_date(session, clie
     rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}', headers=headers)
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, 'fees')[0]
-    assert not schema_utils.validate(rv.json, 'error')[0]
+    assert not schema_utils.validate(rv.json, 'problem')[0]
 
 
 def test_fees_with_corp_type_and_filing_type_with_invalid_start_date(session, client, jwt, app):
@@ -102,7 +102,7 @@ def test_fees_with_corp_type_and_filing_type_with_invalid_start_date(session, cl
         now + timedelta(1))
     rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}', headers=headers)
     assert rv.status_code == 400
-    assert schema_utils.validate(rv.json, 'error')[0]
+    assert schema_utils.validate(rv.json, 'problem')[0]
     assert not schema_utils.validate(rv.json, 'fees')[0]
 
 
@@ -143,7 +143,7 @@ def test_fees_with_corp_type_and_filing_type_with_invalid_end_date(session, clie
         now - timedelta(1))
     rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}?valid_date={now}', headers=headers)
     assert rv.status_code == 400
-    assert schema_utils.validate(rv.json, 'error')[0]
+    assert schema_utils.validate(rv.json, 'problem')[0]
 
 
 def test_calculate_fees_with_waive_fees(session, client, jwt, app):

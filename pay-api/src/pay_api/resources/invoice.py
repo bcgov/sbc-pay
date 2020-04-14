@@ -56,5 +56,5 @@ class Invoice(Resource):
         try:
             response, status = InvoiceService.find_by_id(invoice_id, payment_id).asdict(), HTTPStatus.OK
         except BusinessException as exception:
-            response, status = exception.as_json(), exception.status
+            return exception.response()
         return jsonify(response), status

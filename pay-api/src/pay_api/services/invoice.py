@@ -337,7 +337,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         invoice_dao = InvoiceModel.find_by_id(identifier) if not pay_id else InvoiceModel.find_by_id_and_payment_id(
             identifier, pay_id)
         if not invoice_dao:
-            raise BusinessException(Error.PAY012)
+            raise BusinessException(Error.INVALID_INVOICE_ID)
 
         if not skip_auth_check:
             Invoice._check_for_auth(invoice_dao)

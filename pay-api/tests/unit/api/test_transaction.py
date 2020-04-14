@@ -61,7 +61,7 @@ def test_transaction_post_with_invalid_return_url(session, client, jwt, app):
     }
     rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
                      headers={'content-type': 'application/json'})
-    assert rv.status_code == 401
+    assert rv.status_code == 400
 
 
 def test_transaction_post_no_redirect_uri(session, client, jwt, app):
@@ -125,11 +125,11 @@ def test_transaction_get_invalid_payment_and_transaction(session, client, jwt, a
     invalid_payment_id = 999
     rv = client.get(f'/api/v1/payment-requests/{invalid_payment_id}/transactions/{txn_id}', headers=headers)
     assert rv.status_code == 400
-    assert rv.json.get('code') == 'PAY008'
+    assert rv.json.get('type') == 'INVALID_TRANSACTION_ID'
     invalid_txn_id = uuid.uuid4()
     rv = client.get(f'/api/v1/payment-requests/{payment_id}/transactions/{invalid_txn_id}', headers=headers)
     assert rv.status_code == 400
-    assert rv.json.get('code') == 'PAY008'
+    assert rv.json.get('type') == 'INVALID_TRANSACTION_ID'
 
 
 def test_transaction_put(session, client, jwt, app):
@@ -196,9 +196,8 @@ def test_transaction_put_completed_payment(session, client, jwt, app, stan_serve
 
     rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}', data=json.dumps({}),
                       headers={'content-type': 'application/json'})
-
     assert rv.status_code == 400
-    assert rv.json.get('code') == 'PAY006'
+    assert rv.json.get('type') == 'INVALID_TRANSACTION'
 
 
 def test_transactions_get(session, client, jwt, app):

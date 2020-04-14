@@ -13,8 +13,8 @@
       "type": "string",
       "title": "Error Code",
       "examples": [
-        "PAY002",
-        "PAY001"
+        "INVALID_CORP_OR_FILING_TYPE",
+        "INVALID_CORP_OR_FILING_TYPE"
       ],
       "pattern": "^(.*)$"
     },

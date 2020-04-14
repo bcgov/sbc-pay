@@ -69,7 +69,7 @@ def test_account_invalid_lookup(session):
     from pay_api.utils.errors import Error
     with pytest.raises(BusinessException) as excinfo:
         PaymentAccountService.find_account({}, get_auth_basic_user(), 'PAYBC')
-    assert excinfo.value.status == Error.PAY004.status
+    assert excinfo.value.code == Error.INVALID_CORP_OR_FILING_TYPE.name
 
 
 def test_account_invalid_premium_account_lookup(session):
@@ -86,4 +86,4 @@ def test_account_invalid_premium_account_lookup(session):
     from pay_api.utils.errors import Error
     with pytest.raises(BusinessException) as excinfo:
         PaymentAccountService.find_account(business_info, {}, 'BCOL')
-    assert excinfo.value.status == Error.PAY015.status
+    assert excinfo.value.code == Error.INCOMPLETE_ACCOUNT_SETUP.name
