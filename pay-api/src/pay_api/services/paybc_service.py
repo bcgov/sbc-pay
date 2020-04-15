@@ -81,7 +81,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         transaction_num_suffix = secrets.token_hex(10) \
             if current_app.config.get('GENERATE_RANDOM_INVOICE_NUMBER', 'False').lower() == 'true' \
             else payment_account.corp_number
-        transaction_number = f'{invoice_id}-{transaction_num_suffix}'
+        transaction_number = f'{invoice_id}-{transaction_num_suffix}'.replace(' ', '')
 
         invoice = dict(
             batch_source=PAYBC_BATCH_SOURCE,
