@@ -11,11 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Exposes all of the Services used in the API."""
 
-from .fee_schedule import FeeSchedule
-from .invoice import Invoice as InvoiceService
-from .payment import Payment
-from .payment_service import PaymentService
-from .payment_transaction import PaymentTransaction as TransactionService
-from .receipt import Receipt as ReceiptService
+"""Tests to assure the error utilities.
+
+Test-Suite to ensure that the error is working as expected.
+"""
+
+from pay_api.utils.errors import Error, get_bcol_error
+
+
+def test_get_bcol_error(capsys):
+    """Assert get_bcol_error."""
+    assert get_bcol_error(1) == Error.BCOL_ERROR
+    assert get_bcol_error(7) == Error.BCOL_UNAVAILABLE
+    assert get_bcol_error(20) == Error.BCOL_ACCOUNT_CLOSED
+    assert get_bcol_error(21) == Error.BCOL_USER_REVOKED
+    assert get_bcol_error(48) == Error.BCOL_ACCOUNT_REVOKED

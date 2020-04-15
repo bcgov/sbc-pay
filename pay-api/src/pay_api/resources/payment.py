@@ -17,13 +17,14 @@ from http import HTTPStatus
 from flask import current_app, jsonify, request
 from flask_restplus import Namespace, Resource, cors
 
-from pay_api.exceptions import BusinessException, ServiceUnavailableException
+from pay_api.exceptions import error_to_response, BusinessException, ServiceUnavailableException
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import PaymentService
 from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.trace import tracing as _tracing
+from pay_api.utils.errors import Error
 from pay_api.utils.util import cors_preflight, get_str_by_path
 
 
@@ -48,7 +49,7 @@ class Payment(Resource):
         valid_format, errors = schema_utils.validate(request_json, 'payment_request')
 
         if not valid_format:
-            return jsonify({'code': 'PAY999', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
+            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
         # Check if user is authorized to perform this action
         business_identifier = get_str_by_path(request_json, 'businessInfo/businessIdentifier')
@@ -58,10 +59,8 @@ class Payment(Resource):
                                    contains_role=EDIT_ROLE)
         try:
             response, status = PaymentService.create_payment(request_json, authorization), HTTPStatus.CREATED
-        except BusinessException as exception:
-            response, status = {'code': exception.code, 'message': exception.message}, exception.status
-        except ServiceUnavailableException as exception:
-            response, status = {'code': exception.status_code}, HTTPStatus.BAD_REQUEST
+        except (BusinessException, ServiceUnavailableException) as exception:
+            return exception.response()
         current_app.logger.debug('>Payment.post')
         return jsonify(response), status
 
@@ -80,7 +79,7 @@ class Payments(Resource):
         try:
             response, status = PaymentService.get_payment(payment_id), HTTPStatus.OK
         except BusinessException as exception:
-            response, status = {'code': exception.code, 'message': exception.message}, exception.status
+            response, status = exception.as_json(), exception.status
         return jsonify(response), status
 
     @staticmethod
@@ -95,7 +94,7 @@ class Payments(Resource):
         # Validate the input request
         valid_format, errors = schema_utils.validate(request_json, 'payment_request')
         if not valid_format:
-            return jsonify({'code': 'PAY003', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
+            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
         # Check if user is authorized to perform this action
         authorization = check_auth(request_json.get('businessInfo').get('businessIdentifier'), one_of_roles=[EDIT_ROLE])
@@ -107,10 +106,8 @@ class Payments(Resource):
                 ),
                 HTTPStatus.OK,
             )
-        except BusinessException as exception:
-            response, status = {'code': exception.code, 'message': exception.message}, exception.status
-        except ServiceUnavailableException as exception:
-            response, status = {'code': exception.status_code}, HTTPStatus.BAD_REQUEST
+        except (BusinessException, ServiceUnavailableException) as exception:
+            return exception.response()
         current_app.logger.debug('>Payment.put')
         return jsonify(response), status
 
@@ -128,6 +125,7 @@ class Payments(Resource):
             response, status = None, HTTPStatus.ACCEPTED
 
         except BusinessException as exception:
-            response, status = {'code': exception.code, 'message': exception.message}, exception.status
+            return exception.response()
+
         current_app.logger.debug('>Payment.delete')
         return jsonify(response), status

@@ -30,7 +30,7 @@ def get_claims(app_request=None, role: str = 'edit', username: str = 'CP0001234'
         'exp': 31531718745,
         'iat': 1531718745,
         'iss': app_request.config[
-            'JWT_OIDC_ISSUER'] if app_request else 'https://sso-dev.pathfinder.gov.bc.ca/auth/realms/fcf0kpqr',
+            'JWT_OIDC_ISSUER'] if app_request else 'http://localhost:8081/auth/realms/demo',
         'aud': 'sbc-auth-web',
         'sub': '15099883-3c3f-4b4c-a124-a1824d6cba84',
         'typ': 'Bearer',

@@ -1,0 +1,161 @@
+{
+  "$schema":"http://json-schema.org/draft-07/schema#",
+  "$id":"https://bcrs.gov.bc.ca/.well_known/schemas/purchase_history_request",
+  "type":"object",
+  "title":"Purchase History Request",
+  "required":[
+
+  ],
+  "properties":{
+     "status":{
+        "$id":"#/properties/status",
+        "type":"string",
+        "title":"Payment Status",
+        "description":"Payment Status Filter.",
+        "default":"",
+        "examples":[
+           "COMPLETED"
+        ]
+     },
+     "folioNumber":{
+        "$id":"#/properties/folioNumber",
+        "type":"string",
+        "title":"Folio Number",
+        "description":"Folio Number Filter.",
+        "default":"",
+        "examples":[
+           "1234567890"
+        ]
+     },
+     "businessIdentifier":{
+        "$id":"#/properties/businessIdentifier",
+        "type":"string",
+        "title":"Business Identifier",
+        "description":"Corp Number Filter.",
+        "default":"",
+        "examples":[
+           "CP0001234"
+        ]
+     },
+     "createdBy":{
+        "$id":"#/properties/createdBy",
+        "type":"string",
+        "title":"Created By",
+        "description":"A 'like' filter on created by.",
+        "default":"",
+        "examples":[
+           ""
+        ]
+     },
+     "dateFilter":{
+        "$id":"#/properties/dateFilter",
+        "type":"object",
+        "title":"Date Filter",
+        "description":"Date Filter.",
+        "default":{
+
+        },
+        "examples":[
+           {
+              "startDate":"01/01/2020",
+              "endDate":"04/30/2020"
+           }
+        ],
+        "required":[
+           "startDate",
+           "endDate"
+        ],
+        "properties":{
+           "startDate":{
+              "$id":"#/properties/dateFilter/properties/startDate",
+              "type":"string",
+              "title":"start date",
+              "description":"Start date in MM/DD/YYYY format.",
+              "default":"",
+              "examples":[
+                 "01/01/2020"
+              ]
+           },
+           "endDate":{
+              "$id":"#/properties/dateFilter/properties/endDate",
+              "type":"string",
+              "title":"End Date",
+              "description":"End Date in MM/DD/YYYY format.",
+              "default":"",
+              "examples":[
+                 "04/30/2020"
+              ]
+           }
+        }
+     },
+     "weekFilter":{
+        "$id":"#/properties/weekFilter",
+        "type":"object",
+        "title":"Week Filter",
+        "description":"Week Filter.",
+        "default":{
+
+        },
+        "examples":[
+           {
+              "index":0
+           }
+        ],
+        "required":[
+           "index"
+        ],
+        "properties":{
+           "index":{
+              "$id":"#/properties/weekFilter/properties/index",
+              "type":"integer",
+              "title":"Week index",
+              "description":"Week index. 0 - current week, 1-last week and so on.",
+              "default":0,
+              "examples":[
+                 0
+              ]
+           }
+        }
+     },
+     "monthFilter":{
+        "$id":"#/properties/monthFilter",
+        "type":"object",
+        "title":"Month Filter",
+        "description":"Month filter.",
+        "default":{
+
+        },
+        "examples":[
+           {
+              "year":2020.0,
+              "month":4.0
+           }
+        ],
+        "required":[
+           "month",
+           "year"
+        ],
+        "properties":{
+           "month":{
+              "$id":"#/properties/monthFilter/properties/month",
+              "type":"integer",
+              "title":"Month integer",
+              "description":"Month integer starting from 1-January...",
+              "default":0,
+              "examples":[
+                 1
+              ]
+           },
+           "year":{
+              "$id":"#/properties/monthFilter/properties/year",
+              "type":"integer",
+              "title":"Year",
+              "description":"Year Schema.",
+              "examples":[
+                 2020
+              ]
+           }
+        }
+     }
+  }
+}

@@ -87,6 +87,36 @@ def get_payment_request(business_identifier: str = 'CP0001234'):
     }
 
 
+def get_payment_request_with_folio_number(business_identifier: str = 'CP0001234', folio_number: str = '1234567890'):
+    """Return a payment request object."""
+    return {
+        'businessInfo': {
+            'businessIdentifier': business_identifier,
+            'corpType': 'CP',
+            'businessName': 'ABC Corp',
+            'contactInfo': {
+                'city': 'Victoria',
+                'postalCode': 'V8P2P2',
+                'province': 'BC',
+                'addressLine1': '100 Douglas Street',
+                'country': 'CA'
+            }
+        },
+        'filingInfo': {
+            'folioNumber': folio_number,
+            'filingTypes': [
+                {
+                    'filingTypeCode': 'OTADD',
+                    'filingDescription': 'TEST'
+                },
+                {
+                    'filingTypeCode': 'OTANN'
+                }
+            ]
+        }
+    }
+
+
 def get_payment_request_with_payment_method(business_identifier: str = 'CP0001234', payment_method: str = 'CC'):
     """Return a payment request object."""
     return {
@@ -207,7 +237,8 @@ def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code: str 
         return BcolPaymentAccount(
             bcol_user_id=bcol_user_id,
             bcol_account_id='TEST',
-            account_id=account.id
+            account_id=account.id,
+
         )
     elif payment_system_code == PaymentSystem.PAYBC.value:
         return CreditPaymentAccount(
@@ -276,7 +307,8 @@ def factory_invoice(payment: Payment, payment_account: str, status_code: str = S
         created_by='test',
         created_on=datetime.now(),
         business_identifier=business_identifier,
-        corp_type_code=corp_type_code
+        corp_type_code=corp_type_code,
+        folio_number='1234567890'
     )
 
 

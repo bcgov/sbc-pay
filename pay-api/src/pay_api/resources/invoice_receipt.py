@@ -24,7 +24,6 @@ from pay_api.services import ReceiptService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.util import cors_preflight
 
-
 API = Namespace('invoice-receipts', description='Payment System - Receipts')
 
 
@@ -44,7 +43,8 @@ class InvoiceReceipt(Resource):
         try:
             valid_format, errors = schema_utils.validate(request_json, 'payment_receipt_input')
             if not valid_format:
-                return jsonify({'code': 'PAY999', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
+                return jsonify(
+                    {'code': 'INVALID_REQUEST', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
 
             pdf = ReceiptService.create_receipt(payment_id, invoice_id, request_json)
             current_app.logger.info('<InvoiceReceipt received pdf')
@@ -56,6 +56,6 @@ class InvoiceReceipt(Resource):
             return response
 
         except BusinessException as exception:
-            response, status = {'code': exception.code, 'message': exception.message}, exception.status
+            response, status = exception.as_json(), exception.status
         current_app.logger.debug('>Transaction.post')
         return jsonify(response), status

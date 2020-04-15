@@ -14,8 +14,8 @@ env:
 
 jobs:
   bcol-api-test:
-    if: github.repository == 'bcgov/sbc-pay'
     runs-on: ubuntu-latest
+    if: github.repository == 'bcgov/sbc-pay'
     strategy:
       matrix:
         python-version: [3.7]

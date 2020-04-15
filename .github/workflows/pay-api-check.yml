@@ -10,7 +10,7 @@ on:
 jobs:
   pay-api-check:
     runs-on: ubuntu-latest
-
+    if: github.repository == 'bcgov/sbc-pay'
     env:
       FLASK_ENV: "testing"
       DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
@@ -33,7 +33,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.7]
+        python-version: [3.7, 3.8]
     services:
       postgres:
         image: postgres:11
