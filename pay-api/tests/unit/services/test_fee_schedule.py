@@ -91,8 +91,6 @@ def test_find_by_corp_type_and_filing_type_from_none(session):
 
     with pytest.raises(BusinessException) as excinfo:
         services.FeeSchedule.find_by_corp_type_and_filing_type(None, None, None)
-    # assert excinfo.value.status == Error.INVALID_CORP_OR_FILING_TYPE.status
-    # assert excinfo.value.message == Error.INVALID_CORP_OR_FILING_TYPE.message
     assert excinfo.value.code == Error.INVALID_CORP_OR_FILING_TYPE.name
 
 
@@ -102,8 +100,6 @@ def test_find_by_corp_type_and_filing_type_invalid(session):
 
     with pytest.raises(BusinessException) as excinfo:
         services.FeeSchedule.find_by_corp_type_and_filing_type('XX', 'XXXX', None)
-    # assert excinfo.value.status == Error.PAY002.status
-    # assert excinfo.value.message == Error.PAY002.message
     assert excinfo.value.code == Error.INVALID_CORP_OR_FILING_TYPE.name
 
 

@@ -107,8 +107,6 @@ def test_transaction_create_from_invalid_payment(session):
 
     with pytest.raises(BusinessException) as excinfo:
         PaymentTransactionService.create(999, get_paybc_transaction_request())
-    # assert excinfo.value.status == Error.PAY005.status
-    # assert excinfo.value.message == Error.PAY005.message
     assert excinfo.value.code == Error.INVALID_PAYMENT_ID.name
 
 
@@ -188,8 +186,6 @@ def test_transaction_update_completed(session, stan_server, public_user_mock):
 
     with pytest.raises(BusinessException) as excinfo:
         PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451')
-    # assert excinfo.value.status == Error.PAY006.status
-    # assert excinfo.value.message == Error.PAY006.message
     assert excinfo.value.code == Error.INVALID_TRANSACTION.name
 
 
@@ -242,8 +238,6 @@ def test_transaction_invalid_lookup(session):
     """Invalid lookup.."""
     with pytest.raises(BusinessException) as excinfo:
         PaymentTransactionService.find_by_id(1, uuid.uuid4())
-    # assert excinfo.value.status == Error.PAY008.status
-    # assert excinfo.value.message == Error.PAY008.message
     assert excinfo.value.code == Error.INVALID_TRANSACTION_ID.name
 
 
@@ -251,8 +245,6 @@ def test_transaction_invalid_update(session):
     """Invalid update.."""
     with pytest.raises(BusinessException) as excinfo:
         PaymentTransactionService.update_transaction(1, uuid.uuid4(), None)
-    # assert excinfo.value.status == Error.PAY008.status
-    # assert excinfo.value.message == Error.PAY008.message
     assert excinfo.value.code == Error.INVALID_TRANSACTION_ID.name
 
 

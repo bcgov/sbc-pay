@@ -75,18 +75,12 @@ def test_invalid_pay_system(session, public_user_mock):
 
     with pytest.raises(BusinessException) as excinfo:
         PaymentSystemFactory.create(payment_method=None, corp_type=None)
-    # assert excinfo.value.status == Error.PAY003.status
-    # assert excinfo.value.message == Error.PAY003.message
     assert excinfo.value.code == Error.INVALID_CORP_OR_FILING_TYPE.name
 
     with pytest.raises(BusinessException) as excinfo:
         PaymentSystemFactory.create(payment_method='XXX', corp_type='XXX')
-    # assert excinfo.value.status == Error.PAY003.status
-    # assert excinfo.value.message == Error.PAY003.message
     assert excinfo.value.code == Error.INVALID_CORP_OR_FILING_TYPE.name
 
     with pytest.raises(BusinessException) as excinfo:
         PaymentSystemFactory.create_from_system_code('XXX')
-    # assert excinfo.value.status == Error.PAY003.status
-    # assert excinfo.value.message == Error.PAY003.message
     assert excinfo.value.code == Error.INVALID_CORP_OR_FILING_TYPE.name
