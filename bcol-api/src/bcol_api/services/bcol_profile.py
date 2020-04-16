@@ -44,9 +44,7 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
             profile_resp = self.get_profile_response(data)
             current_app.logger.debug(profile_resp)
             auth_code = self.__get(profile_resp, 'AuthCode')
-            print('auth_code', auth_code)
-            if auth_code != 'P':
-                print('throwing error')
+            if auth_code not in ('P', 'M'):
                 raise BusinessException(Error.NOT_A_PRIME_USER)
 
             response = {

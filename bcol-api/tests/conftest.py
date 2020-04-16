@@ -126,7 +126,7 @@ def query_profile_mock():
 
 
 @pytest.fixture()
-def query_profile_master_mock():
+def query_profile_contact_mock():
     """Mock Query Profile SOAP for Master user."""
     mock_query_profile_patcher = patch(
         'bcol_api.services.bcol_profile.BcolProfile.get_profile_response'
@@ -135,7 +135,7 @@ def query_profile_master_mock():
     mock_query_profile.return_value = {
         'Userid': 'PB25020',
         'AccountNumber': '1234567890',
-        'AuthCode': 'M',
+        'AuthCode': 'C',
         'AccountType': 'B',
         'GSTStatus': ' ',
         'PSTStatus': ' ',

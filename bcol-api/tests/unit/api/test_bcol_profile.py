@@ -54,7 +54,7 @@ def test_post_accounts_query_error(client, jwt, app, ldap_mock, query_profile_mo
     assert rv.status_code == 400
 
 
-def test_post_accounts_not_prime_error(client, jwt, app, ldap_mock, query_profile_master_mock):
+def test_post_accounts_not_prime_error(client, jwt, app, ldap_mock, query_profile_contact_mock):
     """Assert that the endpoint returns 400."""
     token = jwt.create_jwt(get_claims(), get_token_header())
     headers = {'content-type': 'application/json', 'Authorization': f'Bearer {token}'}
