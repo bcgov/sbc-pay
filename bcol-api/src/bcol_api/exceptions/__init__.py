@@ -19,10 +19,28 @@ BusinessException - error, status_code - Business rules error
 error - a description of the error {code / description: classname / full text}
 status_code - where possible use HTTP Error Codes
 """
-
+import json
 from http import HTTPStatus
+from typing import Dict
+
+from flask import Response
 
 from bcol_api.utils.errors import Error
+
+
+def convert_to_response(body: Dict, status: int = HTTPStatus.BAD_REQUEST):
+    """Convert json error to problem response."""
+    return Response(response=json.dumps(body), mimetype='application/problem+json', status=status)
+
+
+def error_to_response(error: Error, invalid_params=None):
+    """Convert Error enum to response."""
+    return convert_to_response(body={
+        'type': error.name,
+        'title': error.title,
+        'detail': error.details,
+        'invalidParams': invalid_params
+    }, status=error.status)
 
 
 class BusinessException(Exception):
@@ -31,9 +49,22 @@ class BusinessException(Exception):
     def __init__(self, error: Error, *args, **kwargs):
         """Return a valid BusinessException."""
         super(BusinessException, self).__init__(*args, **kwargs)
-        self.message = error.message
+        self.message = error.title
+        self.details = error.details
         self.code = error.name
         self.status = error.status
+
+    def as_problem_json(self):
+        """Return problem+json of error message."""
+        return {
+            'type': self.code,
+            'title': self.message,
+            'detail': self.details
+        }
+
+    def response(self):
+        """Response attributes."""
+        return convert_to_response(body=self.as_problem_json(), status=self.status)
 
 
 class PaymentException(Exception):
@@ -44,4 +75,5 @@ class PaymentException(Exception):
         super(PaymentException, self).__init__(*args, **kwargs)
         self.status = HTTPStatus.BAD_REQUEST
         self.message = message
+        self.details = message
         self.code = str(code)

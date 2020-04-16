@@ -42,10 +42,17 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
         }
         try:
             profile_resp = self.get_profile_response(data)
+            current_app.logger.debug(profile_resp)
+            auth_code = self.__get(profile_resp, 'AuthCode')
+            print('auth_code', auth_code)
+            if auth_code != 'P':
+                print('throwing error')
+                raise BusinessException(Error.NOT_A_PRIME_USER)
+
             response = {
                 'userId': self.__get(profile_resp, 'Userid'),
                 'accountNumber': self.__get(profile_resp, 'AccountNumber'),
-                'authCode': self.__get(profile_resp, 'AuthCode'),
+                'authCode': auth_code,
                 'authCodeDesc': auth_code_mapping()[
                     self.__get(profile_resp, 'AuthCode')
                 ],
@@ -83,10 +90,11 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
                 for flag in query_profile_flags:
                     flags.append(flag['name'])
                 response['profile_flags'] = flags
-
+        except BusinessException as e:
+            raise e
         except Exception as e:
             current_app.logger.error(e)
-            raise BusinessException(Error.BCOL002)
+            raise BusinessException(Error.SYSTEM_ERROR)
 
         current_app.logger.debug('>query_profile')
         return response
@@ -112,7 +120,7 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
             ldap_conn.simple_bind_s(username, password)
         except Exception as error:
             current_app.logger.warn(error)
-            raise BusinessException(Error.BCOL001)
+            raise BusinessException(Error.INVALID_CREDENTIALS)
         finally:
             if ldap_conn:
                 ldap_conn.unbind_s()

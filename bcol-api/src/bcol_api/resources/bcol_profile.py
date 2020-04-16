@@ -19,9 +19,11 @@ from flask import request
 from flask_restplus import Namespace, Resource
 
 from bcol_api.exceptions import BusinessException
+from bcol_api.exceptions import error_to_response
 from bcol_api.schemas import utils as schema_utils
 from bcol_api.services.bcol_profile import BcolProfile as BcolProfileService
 from bcol_api.utils.auth import jwt as _jwt
+from bcol_api.utils.errors import Error
 from bcol_api.utils.trace import tracing as _tracing
 from bcol_api.utils.util import cors_preflight
 
@@ -44,10 +46,10 @@ class BcolProfile(Resource):
             # Validate the input request
             valid_format = schema_utils.validate(req_json, 'accounts_request')
             if not valid_format[0]:
-                response, status = {'code': 'BCOL999', 'message': 'Invalid Request'}, HTTPStatus.BAD_REQUEST
-            else:
-                response, status = BcolProfileService().query_profile(req_json.get('userId'),
-                                                                      req_json.get('password')), HTTPStatus.OK
+                return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(valid_format[1]))
+
+            response, status = BcolProfileService().query_profile(req_json.get('userId'),
+                                                                  req_json.get('password')), HTTPStatus.OK
         except BusinessException as exception:
-            response, status = {'code': exception.code, 'message': exception.message}, exception.status
+            return exception.response()
         return response, status
