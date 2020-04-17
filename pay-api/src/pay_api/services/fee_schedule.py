@@ -229,14 +229,14 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         """Calculate fees for the filing by using the arguments."""
         current_app.logger.debug('<get_fees_by_corp_type_and_filing_type')
         if not corp_type and not filing_type_code:
-            raise BusinessException(Error.PAY001)
+            raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
         if kwargs.get('jurisdiction'):
             current_app.logger.warn('Not using Jurisdiction now!!!')
 
         fee_schedule_dao = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type, filing_type_code, valid_date)
 
         if not fee_schedule_dao:
-            raise BusinessException(Error.PAY002)
+            raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
         fee_schedule = FeeSchedule()
         fee_schedule._dao = fee_schedule_dao  # pylint: disable=protected-access
 

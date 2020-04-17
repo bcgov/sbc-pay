@@ -43,7 +43,7 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         elif payment_system == PaymentSystem.INTERNAL.value:
             _instance = InternalPayService()
         if not _instance:
-            raise BusinessException(Error.PAY003)
+            raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
         return _instance
 
     @staticmethod
@@ -59,7 +59,7 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         current_app.logger.debug('payment_method: {}'.format(payment_method))
 
         if not payment_method:
-            raise BusinessException(Error.PAY003)
+            raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
 
         if total_fees == 0 or (Role.STAFF.value in user.roles and payment_method != 'DRAWDOWN'):
             _instance = InternalPayService()
@@ -70,6 +70,6 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
                 _instance = BcolService()
 
         if not _instance:
-            raise BusinessException(Error.PAY003)
+            raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
 
         return _instance

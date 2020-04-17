@@ -192,13 +192,13 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         # Check if return url is valid
         return_url = request_json.get('clientSystemUrl')
         if payment.payment_system_code == PaymentSystem.PAYBC.value and not is_valid_redirect_url(return_url):
-            raise BusinessException(Error.PAY013)
+            raise BusinessException(Error.INVALID_REDIRECT_URI)
 
         if not payment.id:
-            raise BusinessException(Error.PAY005)
+            raise BusinessException(Error.INVALID_PAYMENT_ID)
         # Cannot start transaction on completed payment
         if payment.payment_status_code in (Status.COMPLETED.value, Status.DELETED.value, Status.DELETE_ACCEPTED.value):
-            raise BusinessException(Error.PAY006)
+            raise BusinessException(Error.COMPLETED_PAYMENT)
 
         # If there are active transactions (status=CREATED), then invalidate all of them and create a new one.
         existing_transactions = PaymentTransactionModel.find_by_payment_id(payment.id)
@@ -244,7 +244,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         """Find transaction by id."""
         transaction_dao = PaymentTransactionModel.find_by_id_and_payment_id(transaction_id, payment_identifier)
         if not transaction_dao:
-            raise BusinessException(Error.PAY008)
+            raise BusinessException(Error.INVALID_TRANSACTION_ID)
 
         transaction = PaymentTransaction()
         transaction._dao = transaction_dao  # pylint: disable=protected-access
@@ -277,14 +277,14 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
             transaction_id, payment_identifier
         )
         if not transaction_dao:
-            raise BusinessException(Error.PAY008)
+            raise BusinessException(Error.INVALID_TRANSACTION_ID)
         if transaction_dao.status_code == Status.COMPLETED.value:
-            raise BusinessException(Error.PAY006)
+            raise BusinessException(Error.INVALID_TRANSACTION)
 
         payment: Payment = Payment.find_by_id(payment_identifier, skip_auth_check=True)
 
         if payment.payment_status_code == Status.COMPLETED.value:
-            raise BusinessException(Error.PAY010)
+            raise BusinessException(Error.COMPLETED_PAYMENT)
 
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_system_code(
             payment_system=payment.payment_system_code

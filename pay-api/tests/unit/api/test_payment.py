@@ -258,7 +258,6 @@ def test_payment_creation_when_paybc_down(session, client, jwt, app):
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
         rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
         assert rv.status_code == 400
-        assert schema_utils.validate(rv.json, 'problem')[0]
 
 
 def test_payment_put_when_paybc_down(session, client, jwt, app):
@@ -274,7 +273,6 @@ def test_payment_put_when_paybc_down(session, client, jwt, app):
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
         rv = client.put(f'/api/v1/payment-requests/{pay_id}', data=json.dumps(get_payment_request()), headers=headers)
         assert rv.status_code == 400
-        assert schema_utils.validate(rv.json, 'problem')[0]
 
 
 def test_zero_dollar_payment_creation(session, client, jwt, app):
@@ -428,7 +426,7 @@ def test_zero_dollar_payment_creation_with_waive_fees_unauthorized(session, clie
     rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_waive_fees_payment_request()),
                      headers=headers)
 
-    assert rv.status_code == 400
+    assert rv.status_code == 401
     assert schema_utils.validate(rv.json, 'problem')[0]
 
 

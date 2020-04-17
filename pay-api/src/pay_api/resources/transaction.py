@@ -17,12 +17,13 @@ from http import HTTPStatus
 from flask import current_app, jsonify, request
 from flask_restplus import Namespace, Resource, cors
 
-from pay_api.exceptions import BusinessException
+from pay_api.exceptions import error_to_response, BusinessException
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import TransactionService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
+from pay_api.utils.errors import Error
 
 
 API = Namespace('transactions', description='Payment System - Transactions')
@@ -45,12 +46,12 @@ class Transaction(Resource):
         valid_format, errors = schema_utils.validate(request_json, 'transaction_request')
 
         if not valid_format:
-            return jsonify({'code': 'PAY007', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
+            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
         try:
             response, status = TransactionService.create(payment_id, request_json).asdict(), HTTPStatus.CREATED
         except BusinessException as exception:
-            response, status = exception.as_json(), exception.status
+            return exception.response()
         current_app.logger.debug('>Transaction.post')
         return jsonify(response), status
 
@@ -83,7 +84,7 @@ class Transactions(Resource):
             response, status = TransactionService.find_by_id(payment_id,
                                                              transaction_id).asdict(), HTTPStatus.OK
         except BusinessException as exception:
-            response, status = exception.as_json(), exception.status
+            return exception.response()
         current_app.logger.debug('>Transaction.get')
         return jsonify(response), status
 
@@ -99,6 +100,6 @@ class Transactions(Resource):
             response, status = TransactionService.update_transaction(payment_id, transaction_id,
                                                                      receipt_number).asdict(), HTTPStatus.OK
         except BusinessException as exception:
-            response, status = exception.as_json(), exception.status
+            return exception.response()
         current_app.logger.debug('>Transaction.post')
         return jsonify(response), status

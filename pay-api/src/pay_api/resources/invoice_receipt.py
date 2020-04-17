@@ -13,15 +13,14 @@
 # limitations under the License.
 """Resource for Transaction endpoints."""
 
-from http import HTTPStatus
-
 from flask import Response, current_app, jsonify, request
 from flask_restplus import Namespace, Resource, cors
 
-from pay_api.exceptions import BusinessException
+from pay_api.exceptions import error_to_response, BusinessException
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import ReceiptService
 from pay_api.utils.auth import jwt as _jwt
+from pay_api.utils.errors import Error
 from pay_api.utils.util import cors_preflight
 
 API = Namespace('invoice-receipts', description='Payment System - Receipts')
@@ -43,8 +42,7 @@ class InvoiceReceipt(Resource):
         try:
             valid_format, errors = schema_utils.validate(request_json, 'payment_receipt_input')
             if not valid_format:
-                return jsonify(
-                    {'code': 'INVALID_REQUEST', 'message': schema_utils.serialize(errors)}), HTTPStatus.BAD_REQUEST
+                return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
             pdf = ReceiptService.create_receipt(payment_id, invoice_id, request_json)
             current_app.logger.info('<InvoiceReceipt received pdf')
@@ -56,6 +54,6 @@ class InvoiceReceipt(Resource):
             return response
 
         except BusinessException as exception:
-            response, status = exception.as_json(), exception.status
+            return exception.response()
         current_app.logger.debug('>Transaction.post')
-        return jsonify(response), status
+        return jsonify(response), 200

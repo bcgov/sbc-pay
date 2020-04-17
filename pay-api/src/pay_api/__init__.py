@@ -27,6 +27,7 @@ import config
 from config import _Config
 from pay_api.models import db, ma
 from pay_api.utils.auth import jwt
+from pay_api.utils.cache import cache
 from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
 
@@ -67,7 +68,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
         return response
 
     register_shellcontext(app)
-
+    build_cache(app)
     return app
 
 
@@ -90,3 +91,13 @@ def register_shellcontext(app):
         return {'app': app, 'jwt': jwt, 'db': db, 'models': models}  # pragma: no cover
 
     app.shell_context_processor(shell_context)
+
+
+def build_cache(app):
+    """Build cache."""
+    cache.init_app(app)
+    with app.app_context():
+        cache.clear()
+        if not app.config.get('TESTING', False):
+            from pay_api.services.code import Code as CodeService  # pylint: disable=import-outside-toplevel
+            CodeService.build_all_codes_cache()

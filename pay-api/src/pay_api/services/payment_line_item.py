@@ -254,7 +254,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
                 p.waived_fees = fee.waived_fee_amount
                 p.waived_by = user.user_name
             else:
-                raise BusinessException(Error.PAY003)
+                raise BusinessException(Error.FEE_OVERRIDE_NOT_ALLOWED)
         p_dao = p.flush()
 
         p = PaymentLineItem()

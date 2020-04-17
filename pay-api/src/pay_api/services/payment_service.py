@@ -96,11 +96,11 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 current_app.logger.debug('Creating line items')
                 line_items.append(PaymentLineItem.create(invoice.id, fee))
             current_app.logger.debug('Handing off to payment system to create invoice')
-
             pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice.id,
                                                             folio_number=folio_number,
                                                             corp_type_code=invoice.corp_type_code,
                                                             business_identifier=invoice.business_identifier)
+
             current_app.logger.debug('Updating invoice record')
             invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
             invoice.invoice_status_code = Status.CREATED.value
@@ -134,7 +134,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         try:
             payment: Payment = Payment.find_by_id(payment_id)
             if not payment.id:
-                raise BusinessException(Error.PAY005)
+                raise BusinessException(Error.INVALID_PAYMENT_ID)
 
             return payment.asdict()
         except Exception as e:
@@ -390,7 +390,7 @@ def _update_active_transactions(payment_id):
 
 def _check_if_payment_is_completed(payment):
     if payment.payment_status_code in (Status.COMPLETED.value, Status.DELETED.value):
-        raise BusinessException(Error.PAY010)
+        raise BusinessException(Error.COMPLETED_PAYMENT)
 
 
 def _get_payment_method(payment_request: Dict, authorization: Dict):

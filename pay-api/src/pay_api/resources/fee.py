@@ -63,5 +63,5 @@ class Fee(Resource):
                 HTTPStatus.OK,
             )
         except BusinessException as exception:
-            response, status = exception.as_json(), exception.status
+            return exception.response()
         return jsonify(response), status

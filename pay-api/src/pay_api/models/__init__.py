@@ -22,6 +22,7 @@ from sbc_common_components.tracing.db_tracing import DBTracing  # noqa: I001, I0
 from .fee_code import FeeCode, FeeCodeSchema  # noqa: I001
 from .corp_type import CorpType, CorpTypeSchema  # noqa: I001
 from .db import db, ma  # noqa: I001
+from .error_code import ErrorCode, ErrorCodeSchema
 from .fee_schedule import FeeSchedule, FeeScheduleSchema
 from .filing_type import FilingType, FilingTypeSchema
 from .payment_account import PaymentAccount, PaymentAccountSchema  # noqa: I001

@@ -170,7 +170,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
 
         if payment_system == PaymentSystem.BCOL.value:
             if not bcol_user_id:
-                raise BusinessException(Error.PAY015)
+                raise BusinessException(Error.INCOMPLETE_ACCOUNT_SETUP)
 
             account_dao: BcolPaymentAccount = BcolPaymentAccount.find_by_bcol_user_id_and_account(
                 auth_account_id=auth_account_id,
@@ -184,7 +184,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
                                                                  )
         elif payment_system == PaymentSystem.PAYBC.value:
             if not corp_number and not corp_type:
-                raise BusinessException(Error.PAY004)
+                raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
             account_dao = CreditPaymentAccount.find_by_corp_number_and_corp_type_and_auth_account_id(
                 corp_number=corp_number,
                 corp_type=corp_type,
@@ -207,7 +207,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         elif kwargs.get('bcol_account_id'):
             account_dao = BcolPaymentAccount.find_by_id(kwargs.get('bcol_account_id'))
         if not account_dao:
-            raise BusinessException(Error.PAY009)
+            raise BusinessException(Error.INVALID_ACCOUNT_ID)
 
         account = PaymentAccount()
         account.populate(account_dao)  # pylint: disable=protected-access
