@@ -68,7 +68,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
         return response
 
     register_shellcontext(app)
-    # build_cache(app)
+    build_cache(app)
     return app
 
 
@@ -99,5 +99,9 @@ def build_cache(app):
     with app.app_context():
         cache.clear()
         if not app.config.get('TESTING', False):
-            from pay_api.services.code import Code as CodeService  # pylint: disable=import-outside-toplevel
-            CodeService.build_all_codes_cache()
+            try:
+                from pay_api.services.code import Code as CodeService  # pylint: disable=import-outside-toplevel
+                CodeService.build_all_codes_cache()
+            except Exception as e:  # pylint:disable=broad-except
+                app.logger.error('Error on caching ')
+                app.logger.error(e)
