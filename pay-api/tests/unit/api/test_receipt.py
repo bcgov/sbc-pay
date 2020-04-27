@@ -115,7 +115,7 @@ def test_receipt_creation_with_invalid_request(session, client, jwt, app):
     rv = client.post(f'/api/v1/payment-requests/{pay_id}/invoices/{inovice_id}/receipts', data=json.dumps(filing_data),
                      headers=headers)
     assert rv.status_code == 400
-    assert rv.json.get('code') == 'INVALID_REQUEST'
+    assert rv.json.get('type') == 'INVALID_REQUEST'
 
 
 def test_receipt_creation_with_invalid_identifiers(session, client, jwt, app):

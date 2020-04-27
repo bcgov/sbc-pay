@@ -26,6 +26,7 @@ from typing import Dict
 from flask import Response
 
 from pay_api.utils.errors import Error
+from pay_api.utils.enums import Code
 
 
 def convert_to_response(body: Dict, status: int = HTTPStatus.BAD_REQUEST):
@@ -36,7 +37,7 @@ def convert_to_response(body: Dict, status: int = HTTPStatus.BAD_REQUEST):
 def error_to_response(error: Error, invalid_params=None):
     """Convert Error enum to response."""
     return convert_to_response(body={
-        'type': construct_type(error.name),
+        'type': construct_type(error.code),
         'title': error.message,
         'detail': error.details,
         'invalidParams': invalid_params
@@ -45,7 +46,8 @@ def error_to_response(error: Error, invalid_params=None):
 
 def construct_type(code):
     """Construct type in response."""
-    return 'https://bcrs.gov.bc.ca/.well_known/schemas/problem#{}'.format(code)
+    # return 'https://bcrs.gov.bc.ca/.well_known/schemas/problem#{}'.format(code)
+    return code
 
 
 class BusinessException(Exception):
@@ -54,25 +56,13 @@ class BusinessException(Exception):
     def __init__(self, error: Error, *args, **kwargs):
         """Return a valid BusinessException."""
         super(BusinessException, self).__init__(*args, **kwargs)
-        self.message = error.message
-        self.details = error.details
-        self.code = error.name
+        self.code = error.code
         self.status = error.status
-
-    def as_json(self):
-        """Return json of error message."""
-        return {
-            'message': self.message,
-            'code': self.code
-        }
 
     def as_problem_json(self):
         """Return problem+json of error message."""
-        return {
-            'type': construct_type(self.code),
-            'title': self.message,
-            'detail': self.details
-        }
+        from pay_api.services.code import Code as CodeService  # pylint: disable=import-outside-toplevel
+        return CodeService.find_code_value_by_type_and_code(Code.ERROR.value, self.code)
 
     def response(self):
         """Response attributes."""
@@ -90,8 +80,7 @@ class ServiceUnavailableException(Exception):
 
     def response(self, error: Error = Error.SERVICE_UNAVAILABLE):  # pylint: disable=no-self-use
         """Response attributes."""
-        return convert_to_response(body={
-            'type': construct_type(error.name),
-            'title': error.message,
-            'detail': error.details
-        }, status=error.status)
+        from pay_api.services.code import Code as CodeService  # pylint: disable=import-outside-toplevel
+
+        error_details = CodeService.find_code_value_by_type_and_code(Code.ERROR.value, error.code)
+        return convert_to_response(body=error_details, status=error.status)

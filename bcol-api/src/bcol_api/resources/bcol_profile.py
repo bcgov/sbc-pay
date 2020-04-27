@@ -16,7 +16,7 @@
 from http import HTTPStatus
 
 from flask import request
-from flask_restplus import Namespace, Resource
+from flask_restplus import Namespace, Resource, cors
 
 from bcol_api.exceptions import BusinessException
 from bcol_api.schemas import utils as schema_utils
@@ -37,6 +37,7 @@ class BcolProfile(Resource):
     @staticmethod
     @_tracing.trace()
     @_jwt.requires_auth
+    @cors.crossdomain(origin='*')
     def post():
         """Return the account details."""
         try:

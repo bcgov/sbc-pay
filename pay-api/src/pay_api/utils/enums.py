@@ -63,3 +63,9 @@ class Role(Enum):
     VIEWER = 'view'
     EDITOR = 'edit'
     SYSTEM = 'system'
+
+
+class Code(Enum):
+    """Code value keys."""
+
+    ERROR = 'errors'

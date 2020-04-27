@@ -1,5 +1,6 @@
 gunicorn
 Flask
+Flask-Caching
 Flask-Migrate
 Flask-Script
 Flask-Moment

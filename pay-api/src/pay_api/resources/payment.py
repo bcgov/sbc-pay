@@ -79,7 +79,7 @@ class Payments(Resource):
         try:
             response, status = PaymentService.get_payment(payment_id), HTTPStatus.OK
         except BusinessException as exception:
-            response, status = exception.as_json(), exception.status
+            return exception.response()
         return jsonify(response), status
 
     @staticmethod
