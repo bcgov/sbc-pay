@@ -52,7 +52,7 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
             current_app.logger.debug(response)
 
             if self.__get(response, 'ReturnCode') != '0000':
-                raise BusinessException(Error.BCOL003)
+                raise BusinessException(Error.PAYMENT_ERROR)
 
             transaction = response['TranID']
             pay_response = {
@@ -75,9 +75,11 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
             current_app.logger.error(parsed_fault_detail)
             raise PaymentException(message=self.__get(parsed_fault_detail, 'message'),
                                    code=self.__get(parsed_fault_detail, 'returnCode'))
+        except BusinessException as e:
+            raise e
         except Exception as e:
             current_app.logger.error(e)
-            raise BusinessException(Error.BCOL003)
+            raise BusinessException(Error.PAYMENT_ERROR)
 
         current_app.logger.debug('>query_profile')
         return pay_response

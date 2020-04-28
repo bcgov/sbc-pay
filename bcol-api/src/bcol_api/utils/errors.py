@@ -19,13 +19,17 @@ from http import HTTPStatus
 class Error(Enum):
     """Error Codes."""
 
-    BCOL001 = 'Invalid User Id or Password', HTTPStatus.BAD_REQUEST
-    BCOL002 = 'Cannot retrieve user profile', HTTPStatus.BAD_REQUEST
-    BCOL003 = 'Cannot create payment', HTTPStatus.BAD_REQUEST
+    INVALID_CREDENTIALS = 'Invalid Credentials', 'Invalid User Id or Password', HTTPStatus.BAD_REQUEST
+    NOT_A_PRIME_USER = 'Invalid Credentials', 'Invalid User Id or Password', HTTPStatus.BAD_REQUEST
+    SYSTEM_ERROR = 'System error', 'Cannot verify user profile due to system errors.', HTTPStatus.BAD_REQUEST
+    PAYMENT_ERROR = 'Cannot create payment', 'Error occurred during payment', HTTPStatus.BAD_REQUEST
 
-    def __new__(cls, message, status):
+    INVALID_REQUEST = 'Invalid Request', 'Invalid Request', HTTPStatus.BAD_REQUEST
+
+    def __new__(cls, title, details, status):
         """Attributes for the enum."""
         obj = object.__new__(cls)
-        obj.message = message
+        obj.title = title
+        obj.details = details
         obj.status = status
         return obj
