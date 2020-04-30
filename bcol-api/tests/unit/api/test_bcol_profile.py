@@ -19,6 +19,7 @@ Test-Suite to ensure that the /accounts/<id>/users/<user_id> endpoint is working
 import json
 
 from tests.utilities.base_test import get_claims, get_token_header
+from bcol_api.utils.errors import Error
 
 
 def test_post_accounts(client, jwt, app, ldap_mock, query_profile_mock):
@@ -30,7 +31,7 @@ def test_post_accounts(client, jwt, app, ldap_mock, query_profile_mock):
 
 
 def test_post_accounts_invalid_request(client, jwt, app, ldap_mock, query_profile_mock):
-    """Assert that the endpoint returns 200."""
+    """Assert that the endpoint returns 400."""
     token = jwt.create_jwt(get_claims(), get_token_header())
     headers = {'content-type': 'application/json', 'Authorization': f'Bearer {token}'}
     rv = client.post('/api/v1/profiles', data=json.dumps({'user': 'TEST', 'password': 'TEST'}), headers=headers)
@@ -38,7 +39,7 @@ def test_post_accounts_invalid_request(client, jwt, app, ldap_mock, query_profil
 
 
 def test_post_accounts_auth_error(client, jwt, app, ldap_mock_error, query_profile_mock):
-    """Assert that the endpoint returns 200."""
+    """Assert that the endpoint returns 400."""
     token = jwt.create_jwt(get_claims(), get_token_header())
     headers = {'content-type': 'application/json', 'Authorization': f'Bearer {token}'}
     rv = client.post('/api/v1/profiles', data=json.dumps({'userId': 'TEST', 'password': 'TEST'}), headers=headers)
@@ -46,8 +47,17 @@ def test_post_accounts_auth_error(client, jwt, app, ldap_mock_error, query_profi
 
 
 def test_post_accounts_query_error(client, jwt, app, ldap_mock, query_profile_mock_error):
-    """Assert that the endpoint returns 200."""
+    """Assert that the endpoint returns 400."""
     token = jwt.create_jwt(get_claims(), get_token_header())
     headers = {'content-type': 'application/json', 'Authorization': f'Bearer {token}'}
     rv = client.post('/api/v1/profiles', data=json.dumps({'userId': 'TEST', 'password': 'TEST'}), headers=headers)
     assert rv.status_code == 400
+
+
+def test_post_accounts_not_prime_error(client, jwt, app, ldap_mock, query_profile_contact_mock):
+    """Assert that the endpoint returns 400."""
+    token = jwt.create_jwt(get_claims(), get_token_header())
+    headers = {'content-type': 'application/json', 'Authorization': f'Bearer {token}'}
+    rv = client.post('/api/v1/profiles', data=json.dumps({'userId': 'TEST', 'password': 'TEST'}), headers=headers)
+    assert rv.status_code == 400
+    assert rv.json.get('type') == Error.NOT_A_PRIME_USER.name

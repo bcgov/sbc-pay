@@ -100,7 +100,42 @@ def query_profile_mock():
     mock_query_profile.return_value = {
         'Userid': 'PB25020',
         'AccountNumber': '1234567890',
-        'AuthCode': 'M',
+        'AuthCode': 'P',
+        'AccountType': 'B',
+        'GSTStatus': ' ',
+        'PSTStatus': ' ',
+        'UserName': 'Test, Test',
+        'Address': {
+            'AddressA': '#400A - 4000 SEYMOUR PLACE',
+            'AddressB': 'PENTHOUSE',
+            'City': 'AB1',
+            'Prov': 'BC',
+            'Country': 'CANADA',
+            'PostalCode': 'V8X 5J8',
+        },
+        'UserPhone': '(250)953-8271 EX1999',
+        'UserFax': '(250)953-8212',
+        'Status': 'Y',
+        'org-name': 'BC ONLINE TECHNICAL TEAM DEVL',
+        'org-type': 'LAW',
+        'queryProfileFlag': [{'name': 'TEST'}],
+    }
+
+    yield
+    mock_query_profile_patcher.stop()
+
+
+@pytest.fixture()
+def query_profile_contact_mock():
+    """Mock Query Profile SOAP for Master user."""
+    mock_query_profile_patcher = patch(
+        'bcol_api.services.bcol_profile.BcolProfile.get_profile_response'
+    )
+    mock_query_profile = mock_query_profile_patcher.start()
+    mock_query_profile.return_value = {
+        'Userid': 'PB25020',
+        'AccountNumber': '1234567890',
+        'AuthCode': 'C',
         'AccountType': 'B',
         'GSTStatus': ' ',
         'PSTStatus': ' ',
