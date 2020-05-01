@@ -20,7 +20,7 @@ class Error(Enum):
     """Error Codes."""
 
     INVALID_CREDENTIALS = 'Invalid Credentials', 'Invalid User Id or Password', HTTPStatus.BAD_REQUEST
-    NOT_A_PRIME_USER = 'Invalid Credentials', 'Invalid User Id or Password', HTTPStatus.BAD_REQUEST
+    NOT_A_PRIME_USER = 'Not a prime user', 'Not a prime user', HTTPStatus.BAD_REQUEST
     SYSTEM_ERROR = 'System error', 'Cannot verify user profile due to system errors.', HTTPStatus.BAD_REQUEST
     PAYMENT_ERROR = 'Cannot create payment', 'Error occurred during payment', HTTPStatus.BAD_REQUEST
 
