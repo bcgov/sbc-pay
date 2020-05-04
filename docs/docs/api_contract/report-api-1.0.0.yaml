@@ -37,7 +37,7 @@ paths:
                 reportName:
                   type: string
                 templateVars:
-                  type: string
+                  type: object
                 populatePageNumber:
                   type: boolean
                 templateName:
