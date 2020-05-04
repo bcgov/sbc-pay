@@ -14,7 +14,15 @@ paths:
             application/pdf:
               schema:
                 type: object
-                properties: {}
+              examples:
+                example-1:
+                  value:
+            text/csv:
+              schema:
+                type: object
+              examples:
+                example-1:
+                  value:
         '400':
           description: Bad Request
           content:
@@ -26,22 +34,6 @@ paths:
                     type: string
                   message:
                     type: string
-        '':
-          content:
-            application/pdf:
-              schema:
-                type: object
-                properties: {}
-              examples:
-                example-1:
-                  value:
-            text/csv:
-              schema:
-                type: object
-                properties: {}
-              examples:
-                example-1:
-                  value:
       description: Create pdf report.
       operationId: post_report
       requestBody:
