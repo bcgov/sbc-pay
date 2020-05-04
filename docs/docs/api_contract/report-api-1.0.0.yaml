@@ -11,20 +11,20 @@ paths:
         '200':
           description: OK
           content:
-            application/pdf:
+            application/json:
               schema:
                 type: object
               examples:
                 example1:
                   value:
                     test: test
-            text/csv:
-              schema:
-                type: object
-              examples:
-                example1:
-                  value:
-                    test: test
+            # text/csv:
+            #   schema:
+            #     type: object
+            #   examples:
+            #     example1:
+            #       value:
+            #         test: test
         '400':
           description: Bad Request
           content:
