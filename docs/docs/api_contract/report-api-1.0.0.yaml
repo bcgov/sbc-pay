@@ -32,7 +32,16 @@ paths:
               schema:
                 type: object
                 properties: {}
-              examples: {}
+              examples:
+                example-1:
+                  value:
+            text/csv:
+              schema:
+                type: object
+                properties: {}
+              examples:
+                example-1:
+                  value:
       description: Create pdf report.
       operationId: post_report
       requestBody:
