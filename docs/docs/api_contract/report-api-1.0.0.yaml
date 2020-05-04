@@ -15,14 +15,16 @@ paths:
               schema:
                 type: object
               examples:
-                example-1:
+                example1:
                   value:
+                    test: test
             text/csv:
               schema:
                 type: object
               examples:
-                example-1:
+                example1:
                   value:
+                    test: test
         '400':
           description: Bad Request
           content:
