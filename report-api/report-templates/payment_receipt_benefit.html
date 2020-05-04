@@ -222,68 +222,6 @@
       opacity: .5;
       margin-top: -240px;
     }
-    
-
-
-
-
-
-
-    .bcgov-receipt-column {
-      padding-top: 40px;
-      padding-right: 0;
-      padding-left: 0;
-      border-left: 1px solid #fcba19;
-    }
-
-    .receipt-details {
-      width: 100%;
-      color: #234075;
-      border: none;
-      border-collapse: collapse;
-      table-layout: fixed;
-      font-size: 14px;
-    }
-
-    .receipt-details td {
-      padding: 2px 20px;
-    }
-
-    td.name,
-    td.value {
-      width: 50%;
-    }
-
-    .receipt-items {
-      margin: 0;
-      padding: 0;
-      width: 100%;
-      border: none;
-      list-style-type: none;
-    }
-
-    .receipt-items td {
-      width: 50%;
-    }
-
-    .receipt-item__name {
-      width: 50%;
-    }
-
-    .align-right {
-      text-align: right;
-    }
-
-    .no-padding {
-      padding: 0 !important;
-    }
-
-    .float-right {
-      float: right;
-    }
-    .inline {
-      display: inline
-    }
   </style>
 </head>
 
@@ -298,98 +236,134 @@
         </td>
         <td class="r-heading">
           <div class="r-title">Receipt</div>
-          <div class="r-subtitle">BC Benefit Company - Business Incorporation Act</div>
+          <div class="r-subtitle">
+            {% if companyActName %}
+              {{companyActName}}
+            {% endif %}
+          </div>
         </td>
       </tr>
       <tr>
         <td colspan="2">
           <div class="receipt-details-header">
             <div class="details-main">
-              Vertex Property Solutions Inc.
+              {% if name %}
+                {{name}}
+              {% endif %}
             </div>
             <div class="receipt-no">
-              Receipt #12134
+              Receipt #{{receiptNo}}
             </div>
           </div>
           <div class="receipt-details-body">
+            {% if incorporationNumber %}
             <div class="detail-row">
               <div class="detail-label">
                 Incorporation Number:
               </div>
               <div class="detail-value">
-                BC1234567
+                {{incorporationNumber}}
               </div>
             </div>
+            {% endif %}
+            {% if businessNumber %}
             <div class="detail-row">
               <div class="detail-label">
                 Business Number:
               </div>
               <div class="detail-value">
-                123456789
+                {{businessNumber}}
               </div>
             </div>
+            {% endif %}
+            {% if filingDateTime %}
             <div class="detail-row">
               <div class="detail-label">
                 Filed Date and Time:
               </div>
               <div class="detail-value">
-                October 09, 2020 - 11:20 AM Pacific Time
+                {{filingDateTime}}
               </div>
             </div>
+            {% endif %}
+            {% if endDateTime %}
             <div class="detail-row">
               <div class="detail-label">
                 Recognition Date and Time:
               </div>
               <div class="detail-value">
-                January 02, 2020 - 08:15 AM Pacific Time
+                {{endDateTime}}
               </div>
             </div>
+            {% endif %}
           </div>
         </td>
       </tr>
       <tr>
         <td colspan="2">
           <div class="receipt-message">
-            This is a confirmation of payment of filing
+            This is a confirmation of payment.
           </div>
         </td>
       </tr>
       <tr>
         <td colspan="2">
+          {% if fees %}
           <div class="receipt-fee-summary">
-            <div class="fee-summary-row">
-              <div class="fee-summary-label font-bold">Incorporation Application Fee</div>
-              <div class="fee-summary-value font-bold">$350.00</div>
-            </div>
-            <div class="fee-summary-row">
-              <div class="fee-summary-label">Future Effective Date Fee</div>
-              <div class="fee-summary-value">$100.00</div>
-            </div>
-            <div class="fee-summary-row">
-              <div class="fee-summary-label">Service Charge</div>
-              <div class="fee-summary-value">$1.50</div>
-            </div>
+            {% for item in fees %}
+              {% if item.filingFee %}
+              <div class="fee-summary-row">
+                <div class="fee-summary-label font-bold">{{item.filingType}}</div>
+                <div class="fee-summary-value font-bold">{{item.filingFee}}</div>
+              </div>
+              {% endif %}
+              {% if item.futureDateFee %}
+              <div class="fee-summary-row">
+                <div class="fee-summary-label">Future Effective Date Fee</div>
+                <div class="fee-summary-value">{{item.futureDateFee}}</div>
+              </div>
+              {% endif %}
+              {% if item.priorityFee %}
+              <div class="fee-summary-row">
+                <div class="fee-summary-label">Priority Fee</div>
+                <div class="fee-summary-value">{{item.priorityFee}}</div>
+              </div>
+              {% endif %}
+              {% if item.serviceCharge %}
+              <div class="fee-summary-row">
+                <div class="fee-summary-label">Service Charge</div>
+                <div class="fee-summary-value">{{item.serviceCharge}}</div>
+              </div>
+              {% endif %}
+            {% endfor %}
             <div class="fee-summary-row total-row">
               <div class="fee-summary-label font-bold">Total</div>
-              <div class="fee-summary-value font-bold">$451.50</div>
+              <div class="fee-summary-value font-bold">{{totalFee}}</div>
             </div>
           </div>
+          {% endif %}
         </td>
       </tr>
       <tr>
         <td colspan="2">
           <div class="receipt-payment-details">
+            {% if paymentMethod %}
+              <div class="payment-row">
+                Payment Method: <span> {{paymentMethod}}</span>
+              </div>
+            {% endif %}
+            {% if invoiceNumber %}
+              <div class="payment-row">
+                Invoice Number: <span> {{invoiceNumber}}</span>
+              </div>
+            {% endif %}
+            {% if folioNumber %}
+              <div class="payment-row">
+                Folio Number: <span> {{folioNumber}}</span>
+              </div>
+            {% endif %}
             <div class="payment-row">
-              Payment Method: <span> Credit Card</span>
-            </div>
-            <div class="payment-row">
-              Invoice Number: <span> 012144</span>
-            </div>
-            <div class="payment-row">
-              Contact Name: <span> Steven Charles Johnston</span>
-            </div>
-            <div class="payment-row">
-              Contact Telephone Number: <span> 604-363-3535</span>
+              Contact Name: <span> {{contactName}}</span>
             </div>
           </div>
         </td>
@@ -411,8 +385,12 @@
                         class="logo-2">
           </div>
           <div class="footer-info">
-            <span>Filing #607</span>
-            <span>Incorporation #BC6624824</span>
+            {% if filingNumber %}
+              <span>Filing #{{filingNumber}}</span>
+            {% endif %}
+            {% if incorporationNumber %}
+              <span>Incorporation #{{incorporationNumber}}</span>
+            {% endif %}
             <span>Page 1 of 1 </span>
           </div>
         </td>
@@ -420,5 +398,5 @@
     </tfoot>
   </table>
 </body>
-
 </html>
+
