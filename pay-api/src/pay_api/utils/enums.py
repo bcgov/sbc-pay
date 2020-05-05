@@ -27,6 +27,8 @@ class ContentType(Enum):
 
     JSON = 'application/json'
     FORM_URL_ENCODED = 'application/x-www-form-urlencoded'
+    CSV = 'text/csv'
+    PDF = 'application/pdf'
 
 
 class Status(Enum):
