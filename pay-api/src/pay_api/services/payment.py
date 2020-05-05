@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Payment model related operations."""
-
 from typing import Tuple, Dict
 
+from dateutil import parser
 from flask import current_app
 
 from pay_api.models import Payment as PaymentModel
@@ -23,7 +23,10 @@ from pay_api.models.payment import PaymentSchema
 from pay_api.models.payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from pay_api.services.auth import check_auth
 from pay_api.utils.constants import ALL_ALLOWED_ROLES
+from pay_api.utils.enums import ContentType, AuthHeaderType
 from pay_api.utils.enums import Status
+from pay_api.utils.user_context import user_context
+from .oauth_service import OAuthService
 
 
 class Payment:  # pylint: disable=too-many-instance-attributes
@@ -206,3 +209,58 @@ class Payment:  # pylint: disable=too-many-instance-attributes
 
         current_app.logger.debug('>search_purchase_history')
         return data
+
+    @staticmethod
+    @user_context
+    def create_payment_report(auth_account_id: str, search_filter: Dict,  # pylint: disable=too-many-locals
+                              content_type: str, report_name: str, **kwargs):
+        """Create payment report."""
+        current_app.logger.debug(f'<create_payment_report {auth_account_id}')
+
+        labels = ['Transaction', 'Folio Number', 'Initiated By', 'Date', 'Purchase Amount', 'GST', 'Statutory Fee',
+                  'BCOL Fee', 'Status', 'Corp Number']
+
+        results = Payment.search_all_purchase_history(auth_account_id, search_filter)
+
+        report_payload = {
+            'reportName': report_name,
+            'data': {
+                'columns': labels,
+                'values': []
+            }
+        }
+
+        for item in results.get('items'):
+            invoice = item.get('invoice')
+            txn_description = ''
+            total_gst = 0
+            total_pst = 0
+            for line_item in invoice.get('line_items'):
+                txn_description += ',' + line_item.get('description')
+                total_gst += line_item.get('gst')
+                total_pst += line_item.get('pst')
+            transaction_fee = float(invoice.get('transaction_fees', 0))
+            total_fees = float(invoice.get('total', 0))
+            row_value = [
+                ','.join([line_item.get('description') for line_item in invoice.get('line_items')]),
+                invoice.get('folio_number'),
+                item.get('created_name'),
+                parser.parse(item.get('created_on')).strftime('%Y-%m-%d %I:%M %p'),
+                total_fees,
+                total_gst + total_pst,
+                total_fees - transaction_fee,  # TODO
+                transaction_fee,
+                item.get('status_code'),
+                invoice.get('business_identifier')
+            ]
+            report_payload['data']['values'].append(row_value)
+
+        report_response = OAuthService.post(endpoint=current_app.config.get('REPORT_API_BASE_URL'),
+                                            token=kwargs['user'].bearer_token,
+                                            auth_header_type=AuthHeaderType.BEARER,
+                                            content_type=ContentType.JSON,
+                                            additional_headers={'Accept': content_type},
+                                            data=report_payload)
+        current_app.logger.debug('>create_payment_report')
+
+        return report_response
