@@ -18,6 +18,7 @@ This module is the API for the Legal Entity system.
 
 import os
 
+import sentry_sdk  # noqa: I001; pylint: disable=ungrouped-imports,wrong-import-order; conflicts with Flake8
 from flask import Flask
 from sentry_sdk.integrations.flask import FlaskIntegration  # noqa: I001
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler  # noqa: I001
@@ -31,7 +32,6 @@ from pay_api.utils.cache import cache
 from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
 
-import sentry_sdk  # noqa: I001; pylint: disable=ungrouped-imports,wrong-import-order; conflicts with Flake8
 
 setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))
 

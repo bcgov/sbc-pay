@@ -28,7 +28,7 @@ class CsvService:  # pylint: disable=too-few-public-methods
         temp_file = None
         columns = payload.get('columns', None)
         values = payload.get('values', None)
-        if columns and values:
+        if columns:
             temp_file = NamedTemporaryFile(delete=True)
             with open(temp_file.name, 'w', newline='') as csvfile:
                 report = csv.writer(csvfile)

@@ -62,7 +62,8 @@ services:
     image: stoplight/prism:3.3.0
     command: >
       mock -p 4010 --host 0.0.0.0
-      https://raw.githubusercontent.com/bcgov/sbc-pay/development/docs/docs/api_contract/report-api-1.0.0.yaml
+      https://raw.githubusercontent.com/sumesh-aot/sbc-pay/export/docs/docs/api_contract/report-api-1.0.0.yaml
+#      https://raw.githubusercontent.com/bcgov/sbc-pay/development/docs/docs/api_contract/report-api-1.0.0.yaml
   paybc:
     image: stoplight/prism:3.3.0
     command: >

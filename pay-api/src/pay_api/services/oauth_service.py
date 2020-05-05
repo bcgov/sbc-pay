@@ -13,13 +13,14 @@
 # limitations under the License.
 """Service to invoke Rest services."""
 import json
+from typing import Dict
 
 import requests
 from flask import current_app
 from requests.adapters import HTTPAdapter  # pylint:disable=ungrouped-imports
+from requests.exceptions import ConnectTimeout, HTTPError
 # pylint:disable=ungrouped-imports
 from requests.exceptions import ConnectionError as ReqConnectionError
-from requests.exceptions import ConnectTimeout, HTTPError
 from urllib3.util.retry import Retry
 
 from pay_api.exceptions import ServiceUnavailableException
@@ -34,7 +35,8 @@ class OAuthService:
     @staticmethod
     def post(endpoint, token, auth_header_type: AuthHeaderType,  # pylint: disable=too-many-arguments
              content_type: ContentType, data,
-             raise_for_error: bool = True):
+             raise_for_error: bool = True,
+             additional_headers: Dict = None):
         """POST service."""
         current_app.logger.debug('<post')
 
@@ -42,6 +44,10 @@ class OAuthService:
             'Authorization': auth_header_type.value.format(token),
             'Content-Type': content_type.value
         }
+
+        if additional_headers:
+            headers.update(additional_headers)
+
         if content_type == ContentType.JSON:
             data = json.dumps(data)
 
