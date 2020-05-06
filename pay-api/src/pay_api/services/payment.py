@@ -227,8 +227,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes
             'templateVars': {
                 'columns': labels,
                 'values': []
-            },
-            'populatePageNumber': 'true'
+            }
         }
 
         for item in results.get('items'):
