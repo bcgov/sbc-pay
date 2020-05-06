@@ -224,10 +224,11 @@ class Payment:  # pylint: disable=too-many-instance-attributes
 
         report_payload = {
             'reportName': report_name,
-            'data': {
+            'templateVars': {
                 'columns': labels,
                 'values': []
-            }
+            },
+            'populatePageNumber': 'true'
         }
 
         for item in results.get('items'):
@@ -253,7 +254,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes
                 item.get('status_code'),
                 invoice.get('business_identifier')
             ]
-            report_payload['data']['values'].append(row_value)
+            report_payload['templateVars']['values'].append(row_value)
 
         report_response = OAuthService.post(endpoint=current_app.config.get('REPORT_API_BASE_URL'),
                                             token=kwargs['user'].bearer_token,

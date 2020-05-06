@@ -36,7 +36,6 @@ def test_generate_report_with_existing_template(client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.get('/api/v1/templates')
-    print(rv.json)
     template_name = rv.json['report-templates'][0]
     assert template_name is not None
     request_url = '/api/v1/reports'.format(template_name)
@@ -136,7 +135,7 @@ def test_csv_report(client, jwt, app):
     request_url = '/api/v1/reports'
     request_data = {
         'reportName': 'test',
-        'data': {
+        'templateVars': {
             'columns': [
                 'a',
                 'b',
@@ -171,7 +170,7 @@ def test_csv_report_with_invalid_request(client, jwt, app):
     request_url = '/api/v1/reports'
     request_data = {
         'reportName': 'test',
-        'data': {
+        'templateVars': {
 
         }
     }

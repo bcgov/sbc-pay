@@ -43,7 +43,7 @@ class Report(Resource):
         response_content_type = request.headers.get('Accept', 'application/pdf')
         if response_content_type == 'text/csv':
             file_name = '{}.csv'.format(request_json.get('reportName'))
-            report = CsvService.create_report(request_json.get('data'))
+            report = CsvService.create_report(request_json.get('templateVars'))
         else:
             file_name = '{}.pdf'.format(request_json.get('reportName'))
             template_vars = request_json['templateVars']
