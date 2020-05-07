@@ -224,6 +224,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes
 
         report_payload = {
             'reportName': report_name,
+            'templateName': 'payment_transactions',
             'templateVars': {
                 'columns': labels,
                 'values': []
