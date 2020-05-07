@@ -115,7 +115,8 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
             username = current_app.config.get('BCOL_LDAP_USER_DN_PATTERN').format(
                 user_id
             )
-            ldap_conn.simple_bind_s(username, password)
+            resp_type, resp_data, resp_msgid, resp_ctrls = ldap_conn.simple_bind_s(username, password)
+            print(resp_type, resp_data, resp_msgid, resp_ctrls)
         except Exception as error:
             current_app.logger.warn(error)
             raise BusinessException(Error.INVALID_CREDENTIALS)
