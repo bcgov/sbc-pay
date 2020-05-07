@@ -116,7 +116,7 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
                 user_id
             )
             resp_type, resp_data, resp_msgid, resp_ctrls = ldap_conn.simple_bind_s(username, password)
-            print(resp_type, resp_data, resp_msgid, resp_ctrls)
+            print('LDAP REsponse ------>', resp_type, resp_data, resp_msgid, resp_ctrls)
         except Exception as error:
             current_app.logger.warn(error)
             raise BusinessException(Error.INVALID_CREDENTIALS)
