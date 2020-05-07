@@ -15,9 +15,11 @@
 
 import os
 
+import sentry_sdk  # noqa: I001; pylint: disable=ungrouped-imports,wrong-import-order; conflicts with Flake8
 from flask import Flask
 from sentry_sdk.integrations.flask import FlaskIntegration  # noqa: I001
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler  # noqa: I001
+
 
 import config
 from api import models
@@ -25,7 +27,6 @@ from api.utils.auth import jwt
 from api.utils.logging import setup_logging
 from api.utils.run_version import get_run_version
 
-import sentry_sdk  # noqa: I001; pylint: disable=ungrouped-imports,wrong-import-order; conflicts with Flake8
 
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
@@ -33,7 +34,7 @@ setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.
 def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     """Return a configured Flask App using the Factory method."""
     app = Flask(__name__)
-    app.config.from_object(config.CONFIGURATION[run_mode])
+    app.config.from_object(config.CONFIGURATION[run_mode])  # pylint: disable=no-member
 
     # Configure Sentry
     if app.config.get('SENTRY_DSN', None):

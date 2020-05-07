@@ -36,7 +36,6 @@ def test_generate_report_with_existing_template(client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.get('/api/v1/templates')
-    print(rv.json)
     template_name = rv.json['report-templates'][0]
     assert template_name is not None
     request_url = '/api/v1/reports'.format(template_name)
@@ -120,6 +119,60 @@ def test_generate_report_with_invalid_request(client, jwt, app):
             'title': 'This is a sample request'
         },
         'reportName': 'Test Report'
+    }
+    rv = client.post(request_url, data=json.dumps(request_data), headers=headers)
+    assert rv.status_code == 400
+
+
+def test_csv_report(client, jwt, app):
+    """Call to generate report with invalid request."""
+    token = jwt.create_jwt(get_claims(app_request=app), token_header)
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'content-type': 'application/json',
+        'Accept': 'text/csv'
+    }
+    request_url = '/api/v1/reports'
+    request_data = {
+        'reportName': 'test',
+        'templateVars': {
+            'columns': [
+                'a',
+                'b',
+                'c'
+            ],
+            'values': [
+                [
+                    '1',
+                    '2',
+                    '3'
+                ],
+                [
+                    '4',
+                    '5',
+                    '6'
+                ]
+            ]
+        }
+    }
+    rv = client.post(request_url, data=json.dumps(request_data), headers=headers)
+    assert rv.status_code == 200
+
+
+def test_csv_report_with_invalid_request(client, jwt, app):
+    """Call to generate report with invalid request."""
+    token = jwt.create_jwt(get_claims(app_request=app), token_header)
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'content-type': 'application/json',
+        'Accept': 'text/csv'
+    }
+    request_url = '/api/v1/reports'
+    request_data = {
+        'reportName': 'test',
+        'templateVars': {
+
+        }
     }
     rv = client.post(request_url, data=json.dumps(request_data), headers=headers)
     assert rv.status_code == 400

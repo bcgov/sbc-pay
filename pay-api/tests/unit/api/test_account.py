@@ -87,3 +87,85 @@ def test_account_purchase_history_invalid_request(session, client, jwt, app):
 
     assert rv.status_code == 400
     assert schema_utils.validate(rv.json, 'problem')[0]
+
+
+def test_account_purchase_history_export_as_csv(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'content-type': 'application/json'
+    }
+
+    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+                     headers=headers)
+
+    payment: Payment = Payment.find_by_id(rv.json.get('id'))
+    credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
+
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'content-type': 'application/json',
+        'Accept': 'text/csv'
+    }
+
+    rv = client.post(f'/api/v1/accounts/{pay_account.auth_account_id}/payments/reports', data=json.dumps({}),
+                     headers=headers)
+
+    assert rv.status_code == 201
+
+
+def test_account_purchase_history_export_as_pdf(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'content-type': 'application/json'
+    }
+
+    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+                     headers=headers)
+
+    payment: Payment = Payment.find_by_id(rv.json.get('id'))
+    credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
+
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'content-type': 'application/json',
+        'Accept': 'application/pdf'
+    }
+
+    rv = client.post(f'/api/v1/accounts/{pay_account.auth_account_id}/payments/reports', data=json.dumps({}),
+                     headers=headers)
+
+    assert rv.status_code == 201
+
+
+def test_account_purchase_history_export_invalid_request(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'content-type': 'application/json'
+    }
+
+    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+                     headers=headers)
+
+    payment: Payment = Payment.find_by_id(rv.json.get('id'))
+    credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
+
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'content-type': 'application/json',
+        'Accept': 'application/pdf'
+    }
+
+    rv = client.post(f'/api/v1/accounts/{pay_account.auth_account_id}/payments/reports', data=json.dumps({
+        'businessIdentifier': 1111
+    }), headers=headers)
+
+    assert rv.status_code == 400

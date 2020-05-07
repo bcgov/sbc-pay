@@ -17,6 +17,6 @@ flake8-quotes
 pep8-naming
 autopep8
 coverage
-pylint
+pylint<2.5
 pylint-flask
 lovely-pytest-docker

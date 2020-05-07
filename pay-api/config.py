@@ -222,7 +222,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     PAYBC_PORTAL_URL = ''
     SERVER_NAME = 'auth-web.dev.com'
 
-    REPORT_API_BASE_URL = "http://localhost:8080/paybc-api/cfs/parties/"
+    REPORT_API_BASE_URL = "http://localhost:8080/reports-api/api/v1/reports"
 
     AUTH_API_ENDPOINT = "http://localhost:8080/auth-api/"
 

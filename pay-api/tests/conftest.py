@@ -329,3 +329,9 @@ def premium_user_mock(monkeypatch):
         }
 
     monkeypatch.setattr('pay_api.services.auth.check_auth', token_info)
+
+
+@pytest.fixture()
+def rest_call_mock(monkeypatch):
+    """Mock rest_call_mock."""
+    monkeypatch.setattr('pay_api.services.oauth_service.OAuthService.post', lambda *args, **kwargs: None)

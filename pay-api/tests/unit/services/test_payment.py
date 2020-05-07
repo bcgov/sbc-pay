@@ -204,3 +204,39 @@ def test_search_payment_history_for_all(session):
     assert results is not None
     assert results.get('items') is not None
     assert results.get('total') == 20
+
+
+def test_create_payment_report_csv(session, rest_call_mock):
+    """Assert that the create payment report is working."""
+    payment_account = factory_payment_account()
+    payment_account.save()
+    auth_account_id = PaymentAccount.find_by_id(payment_account.account_id).auth_account_id
+
+    for i in range(20):
+        payment = factory_payment(payment_status_code='CREATED')
+        payment.save()
+        invoice = factory_invoice(payment, payment_account)
+        invoice.save()
+        factory_invoice_reference(invoice.id).save()
+
+    Payment_service.create_payment_report(auth_account_id=auth_account_id, search_filter={},
+                                          content_type='text/csv', report_name='test')
+    assert True  # If no error, then good
+
+
+def test_create_payment_report_pdf(session, rest_call_mock):
+    """Assert that the create payment report is working."""
+    payment_account = factory_payment_account()
+    payment_account.save()
+    auth_account_id = PaymentAccount.find_by_id(payment_account.account_id).auth_account_id
+
+    for i in range(20):
+        payment = factory_payment(payment_status_code='CREATED')
+        payment.save()
+        invoice = factory_invoice(payment, payment_account)
+        invoice.save()
+        factory_invoice_reference(invoice.id).save()
+
+    Payment_service.create_payment_report(auth_account_id=auth_account_id, search_filter={},
+                                          content_type='application/pdf', report_name='test')
+    assert True  # If no error, then good
