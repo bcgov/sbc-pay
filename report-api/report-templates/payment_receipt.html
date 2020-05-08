@@ -263,13 +263,13 @@
             </div>
           </div>
           <div class="receipt-details-body">
-            {% if incorporationNumber %}
+            {% if invoice['businessIdentifier'] %}
             <div class="detail-row">
               <div class="detail-label">
                 Incorporation Number:
               </div>
               <div class="detail-value">
-                {{incorporationNumber}}
+                {{invoice['businessIdentifier']}}
               </div>
             </div>
             {% endif %}
@@ -364,14 +364,19 @@
                 Invoice Number: <span> {{invoiceNumber}}</span>
               </div>
             {% endif %}
+            {% if bcOnlineAccountNumber %}
+              <div class="payment-row">
+                BC Online Account Number: <span> {{bcOnlineAccountNumber}}</span>
+              </div>
+            {% endif %}
             {% if invoice['folioNumber'] %}
               <div class="payment-row">
                 Folio Number: <span> {{invoice['folioNumber']}}</span>
               </div>
             {% endif %}
-            {% if bcOnlineAccountNumber %}
+            {% if routingSlipNumber %}
               <div class="payment-row">
-                BC Online Account Number: <span> {{bcOnlineAccountNumber}}</span>
+                Routing Slip Number: <span> {{routingSlipNumber}}</span>
               </div>
             {% endif %}
             {% if datNumber %}
