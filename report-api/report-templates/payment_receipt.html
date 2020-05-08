@@ -2,6 +2,10 @@
 <html>
 
 <head lang="en">
+  <meta charset="UTF-8"><!DOCTYPE html>
+<html>
+
+<head lang="en">
   <meta charset="UTF-8">
   <style>
     @page {
@@ -10,7 +14,7 @@
     }
     @media print {
       body {
-        -webkit-print-color-adjust: exact; 
+        -webkit-print-color-adjust: exact;
       }
     }
     body {
@@ -101,14 +105,16 @@
       font-size: 17px;
       font-weight: 600;
       display: inline-block;
-      width: calc(100% - 126px);
+      width: 60%;
     }
 
     .receipt-details-header .receipt-no {
       font-size: 15px;
       width: 120px;
       text-align: right;
-      display: inline-block;
+      display: inline;
+      float: right;
+      width: 40%;
     }
 
     .receipt-details-body {
@@ -155,7 +161,7 @@
 
     .receipt-fee-summary .fee-summary-label {
       display: inline-block;
-      width: 240px;
+      width: 400px;
     }
 
     .receipt-fee-summary .fee-summary-value {
@@ -222,6 +228,7 @@
       opacity: .5;
       margin-top: -240px;
     }
+
   </style>
 </head>
 
@@ -237,8 +244,8 @@
         <td class="r-heading">
           <div class="r-title">Receipt</div>
           <div class="r-subtitle">
-            {% if companyActName %}
-              {{companyActName}}
+            {% if companyActDetails %}
+              {{companyActDetails}}
             {% endif %}
           </div>
         </td>
@@ -286,13 +293,13 @@
               </div>
             </div>
             {% endif %}
-            {% if endDateTime %}
+            {% if recognitionDateTime %}
             <div class="detail-row">
               <div class="detail-label">
                 Recognition Date and Time:
               </div>
               <div class="detail-value">
-                {{endDateTime}}
+                {{recognitionDateTime}}
               </div>
             </div>
             {% endif %}
@@ -308,37 +315,37 @@
       </tr>
       <tr>
         <td colspan="2">
-          {% if fees %}
+          {% if invoice['lineItems'] %}
           <div class="receipt-fee-summary">
-            {% for item in fees %}
-              {% if item.filingFee %}
+            {% for item in invoice['lineItems'] %}
+              {% if item.filingFees %}
               <div class="fee-summary-row">
-                <div class="fee-summary-label font-bold">{{item.filingType}}</div>
-                <div class="fee-summary-value font-bold">{{item.filingFee}}</div>
+                <div class="fee-summary-label font-bold">{{item.description}}</div>
+                <div class="fee-summary-value font-bold">$ {{ "%.2f"|format(item.filingFees) }} </div>
               </div>
               {% endif %}
               {% if item.futureDateFee %}
               <div class="fee-summary-row">
                 <div class="fee-summary-label">Future Effective Date Fee</div>
-                <div class="fee-summary-value">{{item.futureDateFee}}</div>
+                <div class="fee-summary-value">$ {{ "%.2f"|format(item.futureEffectiveFees) }}</div>
               </div>
               {% endif %}
               {% if item.priorityFee %}
               <div class="fee-summary-row">
                 <div class="fee-summary-label">Priority Fee</div>
-                <div class="fee-summary-value">{{item.priorityFee}}</div>
+                <div class="fee-summary-value">$ {{ "%.2f"|format(item.priorityFees) }} </div>
               </div>
               {% endif %}
               {% if item.serviceCharge %}
               <div class="fee-summary-row">
                 <div class="fee-summary-label">Service Charge</div>
-                <div class="fee-summary-value">{{item.serviceCharge}}</div>
+                <div class="fee-summary-value">$ {{ "%.2f"|format(item.transactionFees) }}</div>
               </div>
               {% endif %}
             {% endfor %}
             <div class="fee-summary-row total-row">
               <div class="fee-summary-label font-bold">Total</div>
-              <div class="fee-summary-value font-bold">{{totalFee}}</div>
+              <div class="fee-summary-value font-bold">$ {{ "%.2f"|format(invoice['total']) }} </div>
             </div>
           </div>
           {% endif %}
@@ -357,14 +364,21 @@
                 Invoice Number: <span> {{invoiceNumber}}</span>
               </div>
             {% endif %}
-            {% if folioNumber %}
+            {% if invoice['folioNumber'] %}
               <div class="payment-row">
-                Folio Number: <span> {{folioNumber}}</span>
+                Folio Number: <span> {{invoice['folioNumber']}}</span>
               </div>
             {% endif %}
-            <div class="payment-row">
-              Contact Name: <span> {{contactName}}</span>
-            </div>
+            {% if bcOnlineAccountNumber %}
+              <div class="payment-row">
+                BC Online Account Number: <span> {{bcOnlineAccountNumber}}</span>
+              </div>
+            {% endif %}
+            {% if datNumber %}
+              <div class="payment-row">
+                DAT Number: <span> {{datNumber}}</span>
+              </div>
+            {% endif %}
           </div>
         </td>
       </tr>
@@ -385,11 +399,11 @@
                         class="logo-2">
           </div>
           <div class="footer-info">
-            {% if filingNumber %}
-              <span>Filing #{{filingNumber}}</span>
+            {% if filingIdentifier %}
+              <span>Filing #{{filingIdentifier}}</span>
             {% endif %}
-            {% if incorporationNumber %}
-              <span>Incorporation #{{incorporationNumber}}</span>
+            {% if invoice['businessIdentifier'] %}
+              <span>Incorporation #{{invoice['businessIdentifier']}}</span>
             {% endif %}
             <span>Page 1 of 1 </span>
           </div>
@@ -399,4 +413,3 @@
   </table>
 </body>
 </html>
-
