@@ -369,7 +369,7 @@
                 BC Online Account Number: <span> {{bcOnlineAccountNumber}}</span>
               </div>
             {% endif %}
-            {% if invoice['folioNumber'] %}
+            {% if invoice.get('folioNumber', 'None') != 'None' %}
               <div class="payment-row">
                 Folio Number: <span> {{invoice['folioNumber']}}</span>
               </div>
