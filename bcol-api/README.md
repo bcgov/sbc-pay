@@ -42,4 +42,3 @@ You also need to set up the variables used for environment-specific settings:
 
 View the [document](https://github.com/bcgov/sbc-auth/blob/development/docs/build-deploy.md).
 
-
