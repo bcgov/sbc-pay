@@ -17,6 +17,7 @@ from datetime import datetime
 from typing import Any, Dict
 
 from flask import current_app
+from sbc_common_components.utils.camel_case_response import camelcase_dict
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import Payment as PaymentModel
@@ -29,7 +30,6 @@ from .invoice import Invoice
 from .invoice_reference import InvoiceReference
 from .oauth_service import OAuthService
 from .payment_account import PaymentAccount
-from sbc_common_components.utils.camel_case_response import camelcase_dict
 
 
 class Receipt():  # pylint: disable=too-many-instance-attributes
