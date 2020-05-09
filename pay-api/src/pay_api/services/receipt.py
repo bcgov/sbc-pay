@@ -29,6 +29,7 @@ from .invoice import Invoice
 from .invoice_reference import InvoiceReference
 from .oauth_service import OAuthService
 from .payment_account import PaymentAccount
+from sbc_common_components.utils.camel_case_response import camelcase_dict
 
 
 class Receipt():  # pylint: disable=too-many-instance-attributes
@@ -166,7 +167,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
 
         invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(invoice_data.id)
 
-        template_vars['incorporationNumber'] = payment_account.corp_number
+        # template_vars['incorporationNumber'] = payment_account.corp_number
         template_vars['invoiceNumber'] = invoice_reference.invoice_number
 
         if payment_account.payment_system_code == PaymentSystem.INTERNAL.value and invoice_data.routing_slip:
@@ -185,7 +186,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         payment_method = PaymentModel.find_payment_method_by_payment_id(payment_identifier)
         template_vars['paymentMethod'] = payment_method.description
 
-        template_vars['invoice'] = invoice_data.asdict()
+        template_vars['invoice'] = camelcase_dict(invoice_data.asdict(), {})
 
         receipt_dict['templateVars'] = template_vars
 
