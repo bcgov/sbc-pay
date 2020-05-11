@@ -32,6 +32,7 @@ from .internal_payment_account import InternalPaymentAccount
 from .invoice import Invoice
 from .invoice import InvoiceSchema
 from .payment_account import PaymentAccount
+from .payment_method import PaymentMethod
 from .payment_system import PaymentSystem
 from .payment_transaction import PaymentTransactionSchema
 
@@ -54,6 +55,15 @@ class Payment(Audit):  # pylint: disable=too-many-instance-attributes
     def find_by_id(cls, identifier: int):
         """Return a Payment by id."""
         return cls.query.get(identifier)
+
+    @classmethod
+    def find_payment_method_by_payment_id(cls, identifier: int):
+        """Return a Payment by id."""
+        query = db.session.query(PaymentMethod) \
+            .join(Payment) \
+            .filter(PaymentMethod.code == Payment.payment_method_code) \
+            .filter(Payment.id == identifier)
+        return query.one_or_none()
 
     @classmethod
     def search_purchase_history(cls, auth_account_id: str, search_filter: Dict,  # pylint:disable=too-many-arguments
