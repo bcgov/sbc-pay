@@ -51,6 +51,8 @@ class BcolProfile(Resource):
 
             response, status = BcolProfileService().query_profile(req_json.get('userId'),
                                                                   req_json.get('password')), HTTPStatus.OK
-        except BusinessException | PaymentException as exception:
+        except BusinessException as exception:
+            return exception.response()
+        except PaymentException as exception:
             return exception.response()
         return response, status

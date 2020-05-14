@@ -55,6 +55,9 @@ class AccountPayment(Resource):
 
             response, status = BcolPayment().create_payment(req_json), HTTPStatus.OK
 
-        except BusinessException | PaymentException as exception:
+        except BusinessException as exception:
             return exception.response()
+        except PaymentException as exception:
+            return exception.response()
+
         return response, status
