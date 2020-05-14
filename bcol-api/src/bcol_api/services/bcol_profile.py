@@ -90,7 +90,7 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
                 response['profile_flags'] = flags
         except zeep.exceptions.Fault as fault:
             current_app.logger.error(fault)
-            parsed_fault_detail = BcolSoap().get_payment_client().wsdl.types.deserialize(fault.detail[0])
+            parsed_fault_detail = BcolSoap().get_profile_client().wsdl.types.deserialize(fault.detail[0])
             current_app.logger.error(parsed_fault_detail)
             raise PaymentException(message=self.__get(parsed_fault_detail, 'message'),
                                    code=self.__get(parsed_fault_detail, 'returnCode'))

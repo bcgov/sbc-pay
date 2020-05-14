@@ -18,7 +18,7 @@ from http import HTTPStatus
 from flask import current_app, request
 from flask_restplus import Namespace, Resource, cors
 
-from bcol_api.exceptions import BusinessException
+from bcol_api.exceptions import BusinessException, PaymentException
 from bcol_api.exceptions import error_to_response
 from bcol_api.schemas import utils as schema_utils
 from bcol_api.services.bcol_payment import BcolPayment
@@ -55,6 +55,6 @@ class AccountPayment(Resource):
 
             response, status = BcolPayment().create_payment(req_json), HTTPStatus.OK
 
-        except BusinessException as exception:
+        except BusinessException | PaymentException as exception:
             return exception.response()
         return response, status
