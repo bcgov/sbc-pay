@@ -21,7 +21,7 @@ from flask import copy_current_request_context, current_app
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.utils.constants import EDIT_ROLE
-from pay_api.utils.enums import PaymentSystem, Status
+from pay_api.utils.enums import PaymentSystem, PaymentStatus, InvoiceStatus, LineItemStatus, InvoiceReferenceStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_str_by_path
 
@@ -103,7 +103,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
             current_app.logger.debug('Updating invoice record')
             invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
-            invoice.invoice_status_code = Status.CREATED.value
+            invoice.invoice_status_code = InvoiceStatus.CREATED.value
             invoice.save()
             InvoiceReference.create(invoice.id, pay_system_invoice.get('invoice_number', None),
                                     pay_system_invoice.get('reference_number', None))
@@ -196,13 +196,13 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             current_app.logger.debug('Updating Invoice record for payment {}'.format(payment.id))
             invoices = payment.invoices
             for invoice in invoices:
-                if invoice.invoice_status_code in (Status.DRAFT.value, Status.CREATED.value, Status.PARTIAL.value):
+                if invoice.invoice_status_code == InvoiceStatus.CREATED.value:
                     payment_line_items = invoice.payment_line_items
 
                     # Invalidate active payment line items
                     for payment_line_item in payment_line_items:
-                        if payment_line_item.line_item_status_code != Status.DELETED.value:
-                            payment_line_item.line_item_status_code = Status.DELETED.value
+                        if payment_line_item.line_item_status_code != LineItemStatus.CANCELLED.value:
+                            payment_line_item.line_item_status_code = LineItemStatus.CANCELLED.value
                             payment_line_item.save()
 
                     # add new payment line item(s)
@@ -215,9 +215,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                     # Mark the current active invoice reference as CANCELLED
                     inv_number: str = None
                     for reference in invoice.references:
-                        if reference.status_code == Status.CREATED.value:
+                        if reference.status_code == InvoiceReferenceStatus.ACTIVE.value:
                             inv_number = reference.invoice_number
-                            reference.status_code = Status.CANCELLED.value
+                            reference.status_code = InvoiceReferenceStatus.CANCELLED.value
                             reference.flush()
 
                     # update invoice
@@ -286,14 +286,14 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 bcol_account_id=invoice.bcol_account_id)
             pay_service.cancel_invoice(payment_account=payment_account,
                                        inv_number=invoice_reference.invoice_number)
-            invoice.invoice_status_code = Status.DELETED.value
+            invoice.invoice_status_code = InvoiceStatus.DELETED.value
             for line in invoice.payment_line_items:
-                line.line_item_status_code = Status.DELETED.value
+                line.line_item_status_code = LineItemStatus.CANCELLED.value
             invoice.save()
-            invoice_reference.status_code = Status.DELETED.value
+            invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
             invoice_reference.save()
 
-        payment.payment_status_code = Status.DELETED.value
+        payment.payment_status_code = PaymentStatus.DELETED.value
         payment.save()
 
         current_app.logger.debug('>delete_payment')
@@ -304,7 +304,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         current_app.logger.debug('<accept_delete')
         payment: Payment = Payment.find_by_id(payment_id, one_of_roles=[EDIT_ROLE])
         _check_if_payment_is_completed(payment)
-        payment.payment_status_code = Status.DELETE_ACCEPTED.value
+        payment.payment_status_code = PaymentStatus.DELETE_ACCEPTED.value
         payment.save()
 
         @copy_current_request_context
@@ -389,7 +389,7 @@ def _update_active_transactions(payment_id):
 
 
 def _check_if_payment_is_completed(payment):
-    if payment.payment_status_code in (Status.COMPLETED.value, Status.DELETED.value):
+    if payment.payment_status_code in (PaymentStatus.COMPLETED.value, PaymentStatus.DELETED.value):
         raise BusinessException(Error.COMPLETED_PAYMENT)
 
 

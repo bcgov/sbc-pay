@@ -28,7 +28,7 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
-from pay_api.utils.enums import PaymentSystem, Status
+from pay_api.utils.enums import PaymentSystem, PaymentStatus, TransactionStatus, InvoiceReferenceStatus, LineItemStatus, InvoiceStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.util import is_valid_redirect_url
 
@@ -197,22 +197,22 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         if not payment.id:
             raise BusinessException(Error.INVALID_PAYMENT_ID)
         # Cannot start transaction on completed payment
-        if payment.payment_status_code in (Status.COMPLETED.value, Status.DELETED.value, Status.DELETE_ACCEPTED.value):
+        if payment.payment_status_code in (PaymentStatus.COMPLETED.value, PaymentStatus.DELETED.value, PaymentStatus.DELETE_ACCEPTED.value):
             raise BusinessException(Error.COMPLETED_PAYMENT)
 
         # If there are active transactions (status=CREATED), then invalidate all of them and create a new one.
         existing_transactions = PaymentTransactionModel.find_by_payment_id(payment.id)
         if existing_transactions:
             for existing_transaction in existing_transactions:
-                if existing_transaction.status_code != Status.CANCELLED.value:
-                    existing_transaction.status_code = Status.CANCELLED.value
+                if existing_transaction.status_code != TransactionStatus.CANCELLED.value:
+                    existing_transaction.status_code = TransactionStatus.CANCELLED.value
                     existing_transaction.transaction_end_time = datetime.now()
                     existing_transaction.save()
 
         transaction = PaymentTransaction()
         transaction.payment_id = payment.id
         transaction.client_system_url = return_url
-        transaction.status_code = Status.CREATED.value
+        transaction.status_code = TransactionStatus.CREATED.value
         transaction_dao = transaction.flush()
         transaction._dao = transaction_dao  # pylint: disable=protected-access
         transaction.pay_system_url = transaction.build_pay_system_url(payment, transaction.id,
@@ -278,12 +278,12 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         )
         if not transaction_dao:
             raise BusinessException(Error.INVALID_TRANSACTION_ID)
-        if transaction_dao.status_code == Status.COMPLETED.value:
+        if transaction_dao.status_code == TransactionStatus.COMPLETED.value:
             raise BusinessException(Error.INVALID_TRANSACTION)
 
         payment: Payment = Payment.find_by_id(payment_identifier, skip_auth_check=True)
 
-        if payment.payment_status_code == Status.COMPLETED.value:
+        if payment.payment_status_code == PaymentStatus.COMPLETED.value:
             raise BusinessException(Error.COMPLETED_PAYMENT)
 
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_system_code(
@@ -311,20 +311,18 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
             invoice.paid = receipt.receipt_amount
 
             if invoice.paid == invoice.total:
-                invoice.invoice_status_code = Status.COMPLETED.value
-                payment.payment_status_code = Status.COMPLETED.value
+                invoice.invoice_status_code = InvoiceStatus.PAID.value
+                payment.payment_status_code = PaymentStatus.COMPLETED.value
                 payment.save()
 
-                invoice_reference.status_code = Status.COMPLETED.value
+                invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
                 invoice_reference.save()
 
-            elif 0 < invoice.paid < invoice.total:
-                invoice.invoice_status_code = Status.PARTIAL.value
             invoice.save()
 
-            transaction_dao.status_code = Status.COMPLETED.value
+            transaction_dao.status_code = TransactionStatus.COMPLETED.value
         else:
-            transaction_dao.status_code = Status.FAILED.value
+            transaction_dao.status_code = TransactionStatus.FAILED.value
 
         transaction_dao.transaction_end_time = datetime.now()
 
@@ -372,9 +370,9 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
     def publish_status(transaction_dao: PaymentTransactionModel, payment: Payment, filing_id: str = None):
         """Publish payment/transaction status to the Queue."""
         current_app.logger.debug('<publish_status')
-        if transaction_dao.status_code == Status.COMPLETED.value:
-            if payment.payment_status_code == Status.COMPLETED.value:
-                status_code = Status.COMPLETED.value
+        if transaction_dao.status_code == TransactionStatus.COMPLETED.value:
+            if payment.payment_status_code == PaymentStatus.COMPLETED.value:
+                status_code = TransactionStatus.COMPLETED.value
             else:
                 current_app.logger.info(f'Status {payment.payment_status_code} received for payment {payment.id}')
                 return
@@ -396,5 +394,5 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
             current_app.logger.warn(
                 f'Notification to Queue failed, marking the transaction : {transaction_dao.id} as EVENT_FAILED',
                 e)
-            transaction_dao.status_code = Status.EVENT_FAILED.value
+            transaction_dao.status_code = TransactionStatus.EVENT_FAILED.value
         current_app.logger.debug('>publish_status')

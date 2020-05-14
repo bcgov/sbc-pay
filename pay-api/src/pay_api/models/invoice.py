@@ -17,7 +17,7 @@ from marshmallow import fields, post_dump
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
-from pay_api.utils.enums import Status
+from pay_api.utils.enums import InvoiceStatus, LineItemStatus
 
 from .audit import Audit
 from .base_schema import BaseSchema
@@ -35,7 +35,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     payment_id = db.Column(db.Integer, ForeignKey('payment.id'), nullable=False)
 
-    invoice_status_code = db.Column(db.String(20), ForeignKey('status_code.code'), nullable=False)
+    invoice_status_code = db.Column(db.String(20), ForeignKey('invoice_status_code.code'), nullable=False)
     bcol_account_id = db.Column(db.Integer, ForeignKey('bcol_payment_account.id'), nullable=True)
     internal_account_id = db.Column(db.Integer, ForeignKey('internal_payment_account.id'), nullable=True)
     credit_account_id = db.Column(db.Integer, ForeignKey('credit_payment_account.id'), nullable=True)
@@ -101,7 +101,7 @@ class InvoiceSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     def _remove_deleted_lines(self, data, many):  # pylint: disable=unused-argument,no-self-use
         if data.get('line_items'):
             for line in list(data.get('line_items')):
-                if line.get('status_code') == Status.DELETED.value:
+                if line.get('status_code') == LineItemStatus.CANCELLED.value:
                     data.get('line_items').remove(line)
 
         if 'line_items' in data and not data.get('line_items'):

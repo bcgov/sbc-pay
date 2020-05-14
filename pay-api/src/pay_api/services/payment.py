@@ -24,7 +24,7 @@ from pay_api.models.payment_line_item import PaymentLineItem, PaymentLineItemSch
 from pay_api.services.auth import check_auth
 from pay_api.utils.constants import ALL_ALLOWED_ROLES
 from pay_api.utils.enums import ContentType, AuthHeaderType
-from pay_api.utils.enums import Status
+from pay_api.utils.enums import PaymentStatus
 from pay_api.utils.user_context import user_context
 from .oauth_service import OAuthService
 
@@ -138,7 +138,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('<create_payment')
         p = Payment()
         p.payment_method_code = payment_method
-        p.payment_status_code = Status.CREATED.value
+        p.payment_status_code = PaymentStatus.CREATED.value
         p.payment_system_code = payment_system
         pay_dao = p.flush()
         p = Payment()

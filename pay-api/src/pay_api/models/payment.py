@@ -21,7 +21,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import or_
 from sqlalchemy.orm import relationship
 
-from pay_api.utils.enums import Status
+from pay_api.utils.enums import PaymentStatus
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
 from .audit import Audit
 from .base_schema import BaseSchema
@@ -45,7 +45,7 @@ class Payment(Audit):  # pylint: disable=too-many-instance-attributes
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     payment_system_code = db.Column(db.String(10), ForeignKey('payment_system.code'), nullable=False)
     payment_method_code = db.Column(db.String(10), ForeignKey('payment_method.code'), nullable=False)
-    payment_status_code = db.Column(db.String(20), ForeignKey('status_code.code'), nullable=False)
+    payment_status_code = db.Column(db.String(20), ForeignKey('payment_status_code.code'), nullable=False)
 
     payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='select', innerjoin=True)
     invoices = relationship('Invoice')
@@ -129,7 +129,7 @@ class Payment(Audit):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def find_payments_marked_for_delete(cls):
         """Return a Payment by id."""
-        return cls.query.filter_by(payment_status_code=Status.DELETE_ACCEPTED.value).all()
+        return cls.query.filter_by(payment_status_code=PaymentStatus.DELETE_ACCEPTED.value).all()
 
 
 class PaymentSchema(BaseSchema):  # pylint: disable=too-many-ancestors

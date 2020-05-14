@@ -99,11 +99,11 @@ def test_find_older_records_invalid_status(session):
     payment_transaction_now = factory_payment_transaction(payment_id=payment.id, status_code='COMPLETED')
     payment_transaction_now.save()  # not eligible
 
-    payment_transaction_now_draft = factory_payment_transaction(payment_id=payment.id, status_code='DRAFT')
+    payment_transaction_now_draft = factory_payment_transaction(payment_id=payment.id, status_code='CREATED')
     payment_transaction_now_draft.save()  # not eligible
 
     payment_transaction_now_draft_3_hours = factory_payment_transaction(
-        payment_id=payment.id, status_code='DRAFT',
+        payment_id=payment.id, status_code='CREATED',
         transaction_start_time=datetime.now() - timedelta(
             hours=3))
     payment_transaction_now_draft_3_hours.save()  # this is eligible

@@ -18,7 +18,7 @@ from flask import current_app
 from pay_api.exceptions import BusinessException
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.fee_schedule import FeeSchedule
-from pay_api.utils.enums import Role, Status
+from pay_api.utils.enums import Role, LineItemStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 
@@ -248,7 +248,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         p.pst = fee.pst
         p.future_effective_fees = fee.future_effective_fee
         p.quantity = fee.quantity
-        p.line_item_status_code = Status.CREATED.value
+        p.line_item_status_code = LineItemStatus.ACTIVE.value
         if fee.waived_fee_amount > 0:
             if user.has_role(Role.STAFF.value):
                 p.waived_fees = fee.waived_fee_amount

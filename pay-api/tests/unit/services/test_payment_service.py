@@ -25,7 +25,7 @@ from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.models import CreditPaymentAccount, FeeSchedule, InternalPaymentAccount, Payment
 from pay_api.services.payment_service import PaymentService
-from pay_api.utils.enums import Status
+from pay_api.utils.enums import PaymentSystem, PaymentStatus, TransactionStatus, InvoiceReferenceStatus, LineItemStatus, InvoiceStatus
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
     factory_payment_transaction, get_auth_basic_user, get_auth_premium_user, get_payment_request,
@@ -101,7 +101,7 @@ def test_update_payment_record_transaction_invalid(session, public_user_mock):
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
-    transaction = factory_payment_transaction(payment.id, Status.COMPLETED.value)
+    transaction = factory_payment_transaction(payment.id, TransactionStatus.COMPLETED.value)
     transaction.save()
 
     payment_response = PaymentService.update_payment(payment.id, get_payment_request(), get_auth_basic_user())
@@ -113,7 +113,7 @@ def test_update_payment_completed_invalid(session, public_user_mock):
     payment_account = factory_payment_account()
     payment = factory_payment()
     payment_account.save()
-    payment.payment_status_code = Status.COMPLETED.value
+    payment.payment_status_code = PaymentStatus.COMPLETED.value
     payment.save()
     invoice = factory_invoice(payment, payment_account)
     invoice.save()
@@ -135,7 +135,7 @@ def test_update_payment_deleted_invalid(session, public_user_mock):
     payment_account = factory_payment_account()
     payment = factory_payment()
     payment_account.save()
-    payment.payment_status_code = Status.DELETED.value
+    payment.payment_status_code = PaymentStatus.DELETED.value
     payment.save()
     invoice = factory_invoice(payment, payment_account)
     invoice.save()
@@ -159,7 +159,7 @@ def test_update_payment_invoice_deleted_invalid(session, public_user_mock):
     payment_account.save()
     payment.save()
     invoice = factory_invoice(payment, payment_account)
-    invoice.invoice_status_code = Status.DELETED.value
+    invoice.invoice_status_code = InvoiceStatus.DELETED.value
     invoice.save()
     factory_invoice_reference(invoice.id).save()
 
@@ -306,14 +306,14 @@ def test_delete_payment(session, auth_mock, public_user_mock):
 
     PaymentService.delete_payment(payment.id)
     payment = Payment.find_by_id(payment.id)
-    assert payment.payment_status_code == Status.DELETED.value
-    assert payment.invoices[0].invoice_status_code == Status.DELETED.value
+    assert payment.payment_status_code == PaymentStatus.DELETED.value
+    assert payment.invoices[0].invoice_status_code == InvoiceStatus.DELETED.value
 
 
 def test_delete_completed_payment(session, auth_mock):
     """Assert that the payment records are soft deleted."""
     payment_account = factory_payment_account()
-    payment = factory_payment(payment_status_code=Status.COMPLETED.value)
+    payment = factory_payment(payment_status_code=PaymentStatus.COMPLETED.value)
     payment_account.save()
     payment.save()
     invoice = factory_invoice(payment, payment_account)
