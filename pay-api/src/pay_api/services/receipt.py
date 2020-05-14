@@ -181,7 +181,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
 
         if invoice_data.bcol_account_id:
             bcol_account: BcolPaymentAccountModel = BcolPaymentAccountModel.find_by_id(invoice_data.bcol_account_id)
-            template_vars['bcOnlineAccountNumber'] = bcol_account.account_id
+            template_vars['bcOnlineAccountNumber'] = bcol_account.bcol_account_id
 
         payment_method = PaymentModel.find_payment_method_by_payment_id(payment_identifier)
         template_vars['paymentMethod'] = payment_method.description
