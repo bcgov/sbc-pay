@@ -19,7 +19,7 @@ import ldap
 import zeep
 from flask import current_app
 
-from bcol_api.exceptions import BusinessException
+from bcol_api.exceptions import BusinessException, PaymentException
 from bcol_api.services.bcol_soap import BcolSoap
 from bcol_api.utils.constants import account_type_mapping, auth_code_mapping, tax_status_mapping
 from bcol_api.utils.errors import Error
@@ -88,6 +88,12 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
                 for flag in query_profile_flags:
                     flags.append(flag['name'])
                 response['profile_flags'] = flags
+        except zeep.exceptions.Fault as fault:
+            current_app.logger.error(fault)
+            parsed_fault_detail = BcolSoap().get_profile_client().wsdl.types.deserialize(fault.detail[0])
+            current_app.logger.error(parsed_fault_detail)
+            raise PaymentException(message=self.__get(parsed_fault_detail, 'message'),
+                                   code=self.__get(parsed_fault_detail, 'returnCode'))
         except BusinessException as e:
             raise e
         except Exception as e:

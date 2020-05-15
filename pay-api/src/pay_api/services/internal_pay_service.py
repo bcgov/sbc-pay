@@ -68,4 +68,4 @@ class InternalPayService(PaymentSystemService, OAuthService):
         """Create a static receipt."""
         # Find the invoice using the invoice_number
         invoice = Invoice.find_by_id(invoice_reference.invoice_id, skip_auth_check=True)
-        return f'RCPT_{invoice_reference.invoice_number}', datetime.now(), invoice.total
+        return f'{invoice_reference.invoice_number}', datetime.now(), invoice.total

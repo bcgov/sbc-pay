@@ -108,7 +108,7 @@ class BcolService(PaymentSystemService, OAuthService):
         """Get receipt from bcol for the receipt number or get receipt against invoice number."""
         current_app.logger.debug('<get_receipt')
         invoice = Invoice.find_by_id(invoice_reference.invoice_id, skip_auth_check=True)
-        return f'RCPT_{invoice_reference.invoice_number}', datetime.now(), invoice.total
+        return f'{invoice_reference.invoice_number}', datetime.now(), invoice.total
 
     def _get_fee_code(self, corp_type: str):  # pylint: disable=no-self-use
         """Return BCOL fee code."""

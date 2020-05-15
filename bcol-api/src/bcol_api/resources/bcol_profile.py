@@ -18,7 +18,7 @@ from http import HTTPStatus
 from flask import request
 from flask_restplus import Namespace, Resource, cors
 
-from bcol_api.exceptions import BusinessException
+from bcol_api.exceptions import BusinessException, PaymentException
 from bcol_api.exceptions import error_to_response
 from bcol_api.schemas import utils as schema_utils
 from bcol_api.services.bcol_profile import BcolProfile as BcolProfileService
@@ -52,5 +52,7 @@ class BcolProfile(Resource):
             response, status = BcolProfileService().query_profile(req_json.get('userId'),
                                                                   req_json.get('password')), HTTPStatus.OK
         except BusinessException as exception:
+            return exception.response()
+        except PaymentException as exception:
             return exception.response()
         return response, status

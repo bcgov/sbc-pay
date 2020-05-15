@@ -14,16 +14,18 @@
 """Service to manage Receipt."""
 
 from datetime import datetime
-from typing import Any, Dict, Tuple
+from typing import Any, Dict
 
 from flask import current_app
+from sbc_common_components.utils.camel_case_response import camelcase_dict
 
 from pay_api.exceptions import BusinessException
+from pay_api.models import Payment as PaymentModel
 from pay_api.models import Receipt as ReceiptModel
+from pay_api.models.bcol_payment_account import BcolPaymentAccount as BcolPaymentAccountModel
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
-
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
 from .oauth_service import OAuthService
@@ -140,60 +142,54 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     @user_context
-    def create_receipt(payment_identifier: str, invoice_identifier: str, filing_data: Tuple[Dict[str, Any]],
+    def create_receipt(payment_identifier: str, invoice_identifier: str, filing_data: Dict[str, Any],
                        skip_auth_check: bool = False, **kwargs):
         """Create receipt."""
         current_app.logger.debug('<create receipt initiated')
         receipt_dict = {
-            'templateVars': {
-                'lineItems': [],
-            },
-            'templateName': 'payment_receipt_coops',
-            'reportName': 'payment_receipt_coops'
+            'templateName': 'payment_receipt',
+            'reportName': filing_data.pop('fileName', 'payment_receipt')
         }
-        template_vars = receipt_dict['templateVars']
-        template_vars['coopsName'] = filing_data.get('corpName')
-        template_vars['filingDateTime'] = filing_data.get('filingDateTime')
-        # inovice number not mandatory ;since only one invoice exist for a payment now
+
+        template_vars = {}
+        template_vars.update(filing_data)
+
+        # invoice number not mandatory ;since only one invoice exist for a payment now
         if not invoice_identifier:
-            invoice_data = Invoice.find_by_payment_identifier(payment_identifier,
-                                                              skip_auth_check=skip_auth_check)
+            invoice_data = Invoice.find_by_payment_identifier(payment_identifier, skip_auth_check=skip_auth_check)
         else:
-            invoice_data = Invoice.find_by_id(invoice_identifier, payment_identifier,
-                                              skip_auth_check=skip_auth_check)
+            invoice_data = Invoice.find_by_id(invoice_identifier, payment_identifier, skip_auth_check=skip_auth_check)
 
         payment_account = PaymentAccount.find_by_pay_system_id(
             credit_account_id=invoice_data.credit_account_id,
             internal_account_id=invoice_data.internal_account_id,
             bcol_account_id=invoice_data.bcol_account_id)
+
         invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(invoice_data.id)
 
-        template_vars['incorporationNumber'] = payment_account.corp_number
-        template_vars['paymentInvoiceNumber'] = invoice_reference.invoice_number
+        # template_vars['incorporationNumber'] = payment_account.corp_number
+        template_vars['invoiceNumber'] = invoice_reference.invoice_number
 
         if payment_account.payment_system_code == PaymentSystem.INTERNAL.value and invoice_data.routing_slip:
             template_vars['routingSlipNumber'] = invoice_data.routing_slip
-        else:
-            template_vars['displayRoutingSlip'] = 'none'
 
         if not invoice_data.receipts:
             raise BusinessException(Error.INVALID_REQUEST)
 
-        template_vars['receiptNumber'] = invoice_data.receipts[0].receipt_number
-        for line_item in invoice_data.payment_line_items:
-            template_vars['lineItems'].append(
-                {
-                    'description': line_item.description,
-                    'filingFees': '{:.2f}'.format(line_item.total)
-                }
-            )
+        template_vars['receiptNo'] = invoice_data.receipts[0].receipt_number
+        template_vars['filingIdentifier'] = filing_data.get('filingIdentifier', invoice_data.filing_id)
 
-        template_vars['lineItems'].append(
-            {
-                'description': 'Total',
-                'filingFees': '{:.2f}'.format(invoice_data.total)
-            }
-        )
+        if invoice_data.bcol_account_id:
+            bcol_account: BcolPaymentAccountModel = BcolPaymentAccountModel.find_by_id(invoice_data.bcol_account_id)
+            template_vars['bcOnlineAccountNumber'] = bcol_account.bcol_account_id
+
+        payment_method = PaymentModel.find_payment_method_by_payment_id(payment_identifier)
+        template_vars['paymentMethod'] = payment_method.description
+
+        template_vars['invoice'] = camelcase_dict(invoice_data.asdict(), {})
+
+        receipt_dict['templateVars'] = template_vars
+
         current_app.logger.debug(
             '<OAuthService invoked from receipt.py {}'.format(current_app.config.get('REPORT_API_BASE_URL')))
 

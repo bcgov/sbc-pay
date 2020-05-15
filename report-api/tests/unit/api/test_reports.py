@@ -42,7 +42,8 @@ def test_generate_report_with_existing_template(client, jwt, app):
     request_data = {
         'templateName': template_name,
         'templateVars': {
-            'title': 'This is a sample request'
+            'title': 'This is a sample request',
+            'invoice': {}
         },
         'reportName': 'sample'
     }
