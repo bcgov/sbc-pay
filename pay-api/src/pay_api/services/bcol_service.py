@@ -85,7 +85,7 @@ class BcolService(PaymentSystemService, OAuthService):
             pay_response.raise_for_status()
         except HTTPError as bol_err:
             current_app.logger.error(bol_err)
-            raise BusinessException(get_bcol_error(response_json.get('code')))
+            raise BusinessException(get_bcol_error(int(response_json.get('type'))))
 
         invoice = {
             'invoice_number': response_json.get('key'),
