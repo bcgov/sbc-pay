@@ -77,3 +77,15 @@ class PaymentException(Exception):
         self.message = message
         self.details = message
         self.code = str(code)
+
+    def as_problem_json(self):
+        """Return problem+json of error message."""
+        return {
+            'type': self.code,
+            'title': self.message,
+            'detail': self.details
+        }
+
+    def response(self):
+        """Response attributes."""
+        return convert_to_response(body=self.as_problem_json(), status=self.status)
