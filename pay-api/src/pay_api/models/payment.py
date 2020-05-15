@@ -34,6 +34,7 @@ from .invoice import InvoiceSchema
 from .payment_account import PaymentAccount
 from .payment_method import PaymentMethod
 from .payment_system import PaymentSystem
+from .payment_status_code import PaymentStatusCode
 from .payment_transaction import PaymentTransactionSchema
 
 
@@ -48,6 +49,7 @@ class Payment(Audit):  # pylint: disable=too-many-instance-attributes
     payment_status_code = db.Column(db.String(20), ForeignKey('payment_status_code.code'), nullable=False)
 
     payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='select', innerjoin=True)
+    payment_status = relationship(PaymentStatusCode, foreign_keys=[payment_status_code], lazy='select', innerjoin=True)
     invoices = relationship('Invoice')
     transactions = relationship('PaymentTransaction')
 
@@ -139,7 +141,7 @@ class PaymentSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Payment
-        exclude = ['payment_system']
+        exclude = ['payment_system', 'payment_status']
 
     payment_system_code = fields.String(data_key='payment_system')
     payment_method_code = fields.String(data_key='payment_method')

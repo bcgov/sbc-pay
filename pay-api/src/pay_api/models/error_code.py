@@ -30,12 +30,6 @@ class ErrorCode(db.Model, CodeTable):
     title = db.Column(db.String(100))
     detail = db.Column(db.String(500))
 
-    @classmethod
-    def find_all(cls):
-        """Return all of the error code master details."""
-        codes = cls.query.all()
-        return codes
-
 
 class ErrorCodeSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Error code."""

@@ -108,3 +108,4 @@ class Code(Enum):
     """Code value keys."""
 
     ERROR = 'errors'
+    PAYMENT_STATUS = 'payment_statuses'
