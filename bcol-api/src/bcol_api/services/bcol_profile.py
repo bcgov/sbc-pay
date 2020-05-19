@@ -134,7 +134,7 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
     def __get(self, value: object, key: object) -> str:  # pylint: disable=no-self-use
         """Get the value from dict and strip."""
         if value and value[key]:
-            return value[key].strip()
+            return value[key].strip() if isinstance(value[key], str) else value[key]
         return None
 
     def get_profile_response(self, data: Dict):  # pragma: no cover # pylint: disable=no-self-use
