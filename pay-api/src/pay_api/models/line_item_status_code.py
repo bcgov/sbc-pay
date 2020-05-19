@@ -25,11 +25,6 @@ class LineItemStatusCode(db.Model, CodeTable):
     code = db.Column(db.String(20), primary_key=True)
     description = db.Column('description', db.String(200), nullable=False)
 
-    def save(self):
-        """Save status."""
-        db.session.add(self)
-        db.session.commit()
-
 
 class LineItemStatusCodeSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Status Code."""

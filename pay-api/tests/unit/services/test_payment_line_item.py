@@ -19,9 +19,9 @@ Test-Suite to ensure that the FeeSchedule Service is working as expected.
 
 from pay_api.models import FeeSchedule, Invoice, InvoiceSchema
 from pay_api.services.payment_line_item import PaymentLineItem as PaymentLineService
+from pay_api.utils.enums import LineItemStatus
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item)
-from pay_api.utils.enums import LineItemStatus
 
 
 def test_line_saved_from_new(session):
@@ -36,7 +36,8 @@ def test_line_saved_from_new(session):
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
-    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, status=LineItemStatus.CANCELLED.value)
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id,
+                                     status=LineItemStatus.CANCELLED.value)
     line.save()
 
     p = PaymentLineService.find_by_id(line.id)

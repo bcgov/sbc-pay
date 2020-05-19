@@ -22,8 +22,8 @@ from datetime import datetime
 from pay_api.models import (
     BcolPaymentAccount, CreditPaymentAccount, InternalPaymentAccount, Invoice, InvoiceReference, Payment,
     PaymentAccount, PaymentLineItem, PaymentTransaction)
-from pay_api.utils.enums import PaymentSystem, Role, PaymentStatus, TransactionStatus, InvoiceReferenceStatus, LineItemStatus, InvoiceStatus
-
+from pay_api.utils.enums import PaymentSystem, Role, PaymentStatus, InvoiceReferenceStatus, \
+    LineItemStatus, InvoiceStatus
 
 token_header = {
     'alg': 'RS256',
@@ -284,7 +284,8 @@ def factory_payment(
     )
 
 
-def factory_invoice(payment: Payment, payment_account: str, status_code: str = InvoiceStatus.CREATED.value, corp_type_code='CP',
+def factory_invoice(payment: Payment, payment_account: str, status_code: str = InvoiceStatus.CREATED.value,
+                    corp_type_code='CP',
                     business_identifier: str = 'CP0001234'):
     """Factory."""
     bcol_account_id = None

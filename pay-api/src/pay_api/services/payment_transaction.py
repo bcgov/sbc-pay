@@ -28,10 +28,9 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
-from pay_api.utils.enums import PaymentSystem, PaymentStatus, TransactionStatus, InvoiceReferenceStatus, LineItemStatus, InvoiceStatus
+from pay_api.utils.enums import PaymentSystem, PaymentStatus, TransactionStatus, InvoiceReferenceStatus, InvoiceStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.util import is_valid_redirect_url
-
 from .invoice import InvoiceModel
 from .payment import Payment
 from .queue_publisher import publish_response
@@ -197,7 +196,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         if not payment.id:
             raise BusinessException(Error.INVALID_PAYMENT_ID)
         # Cannot start transaction on completed payment
-        if payment.payment_status_code in (PaymentStatus.COMPLETED.value, PaymentStatus.DELETED.value, PaymentStatus.DELETE_ACCEPTED.value):
+        if payment.payment_status_code in (PaymentStatus.COMPLETED.value,
+                                           PaymentStatus.DELETED.value, PaymentStatus.DELETE_ACCEPTED.value):
             raise BusinessException(Error.COMPLETED_PAYMENT)
 
         # If there are active transactions (status=CREATED), then invalidate all of them and create a new one.

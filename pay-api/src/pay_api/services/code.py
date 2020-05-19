@@ -14,6 +14,7 @@
 """Service to manage Fee Calculation."""
 
 from flask import current_app
+from sqlalchemy.exc import SQLAlchemyError
 
 from pay_api.models.error_code import ErrorCode, ErrorCodeSchema
 from pay_api.models.payment_status_code import PaymentStatusCode, PaymentStatusCodeSchema
@@ -25,15 +26,13 @@ class Code:
     """Service to manage Fee related operations."""
 
     @classmethod
-    def build_all_codes_cache(
-            cls
-    ):
+    def build_all_codes_cache(cls):
         """Build cache for all codes."""
         try:
-            for cd in CodeValue:
-                Code.find_code_values_by_type(cd.value)
-        except Exception as e:
-            current_app.logger.info('Error on building cache')
+            for code in CodeValue:
+                Code.find_code_values_by_type(code.value)
+        except SQLAlchemyError as e:
+            current_app.logger.info('Error on building cache {}', e)
 
     @classmethod
     def find_code_values_by_type(

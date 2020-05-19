@@ -48,7 +48,8 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods
     @classmethod
     def find_active_by_payment_id(cls, payment_id: int):
         """Return Active Payment Transactions by payment identifier."""
-        return cls.query.filter_by(payment_id=payment_id).filter_by(status_code=TransactionStatus.CREATED.value).one_or_none()
+        return cls.query.filter_by(payment_id=payment_id).filter_by(
+            status_code=TransactionStatus.CREATED.value).one_or_none()
 
     @classmethod
     def find_by_id_and_payment_id(cls, identifier: uuid, payment_id: int):
@@ -62,7 +63,8 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods
         Used in the batch job to find orphan records which are untouched for a time.
         """
         oldest_transaction_time = datetime.now() - (timedelta(days=days, hours=hours, minutes=minutes))
-        completed_status = [TransactionStatus.COMPLETED.value, TransactionStatus.CANCELLED.value, TransactionStatus.FAILED.value]
+        completed_status = [TransactionStatus.COMPLETED.value, TransactionStatus.CANCELLED.value,
+                            TransactionStatus.FAILED.value]
         return cls.query.filter(PaymentTransaction.status_code.notin_(completed_status)). \
             filter(PaymentTransaction.transaction_start_time < oldest_transaction_time).all()
 

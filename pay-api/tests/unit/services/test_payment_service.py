@@ -25,12 +25,11 @@ from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.models import CreditPaymentAccount, FeeSchedule, InternalPaymentAccount, Payment
 from pay_api.services.payment_service import PaymentService
-from pay_api.utils.enums import PaymentSystem, PaymentStatus, TransactionStatus, InvoiceReferenceStatus, LineItemStatus, InvoiceStatus
+from pay_api.utils.enums import PaymentStatus, TransactionStatus, InvoiceStatus
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
     factory_payment_transaction, get_auth_basic_user, get_auth_premium_user, get_payment_request,
     get_payment_request_with_payment_method, get_zero_dollar_payment_request)
-
 
 test_user_token = {'preferred_username': 'test'}
 

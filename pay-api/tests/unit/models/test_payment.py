@@ -20,7 +20,7 @@ Test-Suite to ensure that the CorpType Class is working as expected.
 from datetime import datetime
 
 from pay_api.models import Payment
-from pay_api.utils.enums import PaymentSystem, PaymentStatus, TransactionStatus, InvoiceReferenceStatus, LineItemStatus, InvoiceStatus
+from pay_api.utils.enums import PaymentStatus
 
 
 def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC', payment_status_code='CREATED'):

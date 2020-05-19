@@ -26,9 +26,8 @@ from pay_api.utils.constants import ALL_ALLOWED_ROLES
 from pay_api.utils.enums import ContentType, AuthHeaderType, Code
 from pay_api.utils.enums import PaymentStatus
 from pay_api.utils.user_context import user_context
-from .oauth_service import OAuthService
 from .code import Code as CodeService
-
+from .oauth_service import OAuthService
 
 
 class Payment:  # pylint: disable=too-many-instance-attributes
@@ -191,7 +190,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes
             payment_schema = PaymentSchema(exclude=('invoices', 'transactions', '_links', 'created_by', 'updated_by'))
             purchase_history = payment_schema.dump(payment_dao)
 
-            filtered_codes = [cd for cd in payment_status_codes['codes'] if cd['code'] == purchase_history['status_code']]
+            filtered_codes = [cd for cd in payment_status_codes['codes'] if
+                              cd['code'] == purchase_history['status_code']]
             if filtered_codes:
                 purchase_history['status_code'] = filtered_codes[0]['description']
 

@@ -33,6 +33,7 @@ class ContentType(Enum):
 
 class PaymentStatus(Enum):
     """Payment status codes."""
+
     CREATED = 'CREATED'
     COMPLETED = 'COMPLETED'
     DELETED = 'DELETED'
@@ -41,6 +42,7 @@ class PaymentStatus(Enum):
 
 class InvoiceStatus(Enum):
     """Invoice status codes."""
+
     CREATED = 'CREATED'
     PAID = 'PAID'
     DELETED = 'DELETED'
@@ -48,6 +50,7 @@ class InvoiceStatus(Enum):
 
 class TransactionStatus(Enum):
     """Transaction status codes."""
+
     CREATED = 'CREATED'
     COMPLETED = 'COMPLETED'
     FAILED = 'FAILED'
@@ -57,32 +60,17 @@ class TransactionStatus(Enum):
 
 class LineItemStatus(Enum):
     """Line Item status codes."""
+
     ACTIVE = 'ACTIVE'
     CANCELLED = 'CANCELLED'
 
 
 class InvoiceReferenceStatus(Enum):
     """Line Invoice Reference status codes."""
+
     ACTIVE = 'ACTIVE'
     COMPLETED = 'COMPLETED'
     CANCELLED = 'CANCELLED'
-
-
-# class Status(Enum):
-#     """Status enum codes."""
-
-    # DRAFT = 'DRAFT'
-    # IN_PROGRESS = 'IN_PROGRESS'
-    # CREATED = 'CREATED'
-    # COMPLETED = 'COMPLETED'
-    # PARTIAL = 'PARTIAL'
-    # FAILED = 'FAILED'
-    # REFUNDED = 'REFUNDED'
-    # CANCELLED = 'CANCELLED'
-    # UPDATED = 'UPDATED'
-    # EVENT_FAILED = 'EVENT_FAILED'
-    # DELETED = 'DELETED'
-    # DELETE_ACCEPTED = 'DELETE_ACCEPTED'
 
 
 class PaymentSystem(Enum):

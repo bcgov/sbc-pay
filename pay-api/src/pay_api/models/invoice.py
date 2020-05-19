@@ -17,8 +17,7 @@ from marshmallow import fields, post_dump
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
-from pay_api.utils.enums import InvoiceStatus, LineItemStatus
-
+from pay_api.utils.enums import LineItemStatus
 from .audit import Audit
 from .base_schema import BaseSchema
 from .db import db, ma

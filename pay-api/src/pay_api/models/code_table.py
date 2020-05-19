@@ -26,6 +26,5 @@ class CodeTable:  # pylint: disable=too-few-public-methods
     @classmethod
     def find_all(cls):
         """Return all of the code master details."""
-        codes = cls.query.all()
+        codes = cls.query.all()  # pylint: disable=no-member
         return codes
-

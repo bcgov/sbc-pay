@@ -20,7 +20,7 @@ from datetime import datetime
 
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.services.payment import Payment as Payment_service
-from pay_api.utils.enums import PaymentSystem, PaymentStatus, TransactionStatus, InvoiceReferenceStatus, LineItemStatus, InvoiceStatus
+from pay_api.utils.enums import InvoiceStatus
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account)
 
