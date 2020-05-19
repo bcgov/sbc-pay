@@ -38,7 +38,7 @@ def test_generate_report_with_existing_template(client, jwt, app):
     rv = client.get('/api/v1/templates')
     template_name = rv.json['report-templates'][0]
     assert template_name is not None
-    request_url = '/api/v1/reports'.format(template_name)
+    request_url = '/api/v1/reports'
     request_data = {
         'templateName': template_name,
         'templateVars': {
@@ -58,8 +58,7 @@ def test_generate_report_with_invalid_template(client, jwt, app):
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    template_name = 'some-random-text-to-fial-generation'
-    request_url = '/api/v1/reports'.format(template_name)
+    request_url = '/api/v1/reports'
     request_data = {
         'templateName': 'some-really-random-values',
         'templateVars': {
