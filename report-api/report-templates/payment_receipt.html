@@ -352,12 +352,10 @@
           {% if invoice['lineItems'] %}
           <div class="receipt-fee-summary">
             {% for item in invoice['lineItems'] %}
-              {% if item.filingFees %}
               <div class="fee-summary-row">
                 <div class="fee-summary-label font-bold">{{item.description}}</div>
                 <div class="fee-summary-value font-bold">$ {{ "%.2f"|format(item.filingFees) }} </div>
               </div>
-              {% endif %}
               {% if item.futureDateFee %}
               <div class="fee-summary-row">
                 <div class="fee-summary-label">Future Effective Date Fee</div>
