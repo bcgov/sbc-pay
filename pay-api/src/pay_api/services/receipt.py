@@ -184,7 +184,10 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
             template_vars['bcOnlineAccountNumber'] = bcol_account.bcol_account_id
 
         payment_method = PaymentModel.find_payment_method_by_payment_id(payment_identifier)
-        template_vars['paymentMethod'] = payment_method.description
+
+        # TODO fix properly later
+        if not invoice_data.internal_account_id:
+            template_vars['paymentMethod'] = payment_method.description
 
         template_vars['invoice'] = camelcase_dict(invoice_data.asdict(), {})
 
