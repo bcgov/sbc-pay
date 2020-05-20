@@ -8,6 +8,36 @@
 <head lang="en">
   <meta charset="UTF-8">
   <style>
+    @font-face{
+      font-family: 'BCSans';
+      font-style: normal;
+      font-weight: 400;
+      src: url('./fonts/BCSans/BCSans-Regular.woff2') format('woff2'), /* Optimized for very modern browsers */
+          url('./fonts/BCSans/BCSans-Regular.woff') format('woff'), local('BCSans'); /* Modern Browsers */
+      font-display: swap;
+    }
+    @font-face{
+      font-family: 'BCSans';
+      font-style: italic;
+      src: url('./fonts/BCSans/BCSans-Italic.woff2') format('woff2'), /* Optimized for very modern browsers */
+          url('./fonts/BCSans/BCSans-Italic.woff') format('woff'), local('BCSans'); /* Modern Browsers */
+      font-display: swap;
+    }
+    @font-face{
+      font-family: 'BCSans';
+      font-weight: 700; 
+      src: url('./fonts/BCSans/BCSans-Bold.woff2') format('woff2'), /* Optimized for very modern browsers */
+          url('./fonts/BCSans/BCSans-Bold.woff') format('woff'), local('BCSans'); /* Modern Browsers */
+      font-display: swap;
+    }
+    @font-face{
+      font-family: 'BCSans';
+      font-style: italic;
+      font-weight: 700; 
+      src: url('./fonts/BCSans/BCSans-BoldItalic.woff2') format('woff2'), /* Optimized for very modern browsers */
+          url('./fonts/BCSans/BCSans-BoldItalic.woff') format('woff'), local('BCSans'); /* Modern Browsers */
+      font-display: swap;
+    }
     @page {
       size: A4; /* Change from the default size of A4 */
       margin: 1cm; /* Set margin on each page */
@@ -15,10 +45,11 @@
     @media print {
       body {
         -webkit-print-color-adjust: exact;
+        font-family: 'BCSans', Arial, Helvetica, sans-serif;
       }
     }
     body {
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: 'BCSans', Arial, Helvetica, sans-serif;
       font-size: 14px;
       color: #313132;
     }
