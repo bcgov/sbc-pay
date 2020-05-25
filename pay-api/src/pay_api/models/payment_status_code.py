@@ -17,24 +17,19 @@ from .code_table import CodeTable
 from .db import db, ma
 
 
-class StatusCode(db.Model, CodeTable):
+class PaymentStatusCode(db.Model, CodeTable):
     """This class manages all of the base data about a Payment Status Code."""
 
-    __tablename__ = 'status_code'
+    __tablename__ = 'payment_status_code'
 
     code = db.Column(db.String(20), primary_key=True)
     description = db.Column('description', db.String(200), nullable=False)
 
-    def save(self):
-        """Save status."""
-        db.session.add(self)
-        db.session.commit()
 
-
-class StatusCodeSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class PaymentStatusCodeSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Status Code."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
-        model = StatusCode
+        model = PaymentStatusCode

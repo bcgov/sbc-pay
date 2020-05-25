@@ -20,20 +20,20 @@ Test-Suite to ensure that the /fees endpoint is working as expected.
 
 def test_codes_valid(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
-    rv = client.get(f'/api/v1/codes/errors', headers={})
+    rv = client.get('/api/v1/codes/errors', headers={})
     assert rv.status_code == 200
     assert len(rv.json.get('codes')) > 0
 
 
 def test_codes_invalid(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
-    rv = client.get(f'/api/v1/codes/xxxx', headers={})
+    rv = client.get('/api/v1/codes/xxxx', headers={})
     assert rv.json.get('codes') is None
 
 
 def test_find_code(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
-    rv = client.get(f'/api/v1/codes/errors', headers={})
+    rv = client.get('/api/v1/codes/errors', headers={})
     code = rv.json.get('codes')[0].get('type')
     rv = client.get(f'/api/v1/codes/errors/{code}', headers={})
     assert rv.json.get('type') == code

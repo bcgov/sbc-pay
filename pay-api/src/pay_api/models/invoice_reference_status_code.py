@@ -11,32 +11,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Model to handle all operations related to Error Code master data."""
-from marshmallow import fields
+"""Model to handle all operations related to Payment Status master data."""
 
 from .code_table import CodeTable
 from .db import db, ma
 
 
-class ErrorCode(db.Model, CodeTable):
-    """This class manages all of the base data about a Error Code.
+class InvoiceReferenceStatusCode(db.Model, CodeTable):
+    """This class manages all of the base data about a Invoice Status Code."""
 
-    Error Codes holds the error details produced by the API.
-    """
+    __tablename__ = 'invoice_reference_status_code'
 
-    __tablename__ = 'error_code'
-
-    code = db.Column(db.String(50), primary_key=True)
-    title = db.Column(db.String(100))
-    detail = db.Column(db.String(500))
+    code = db.Column(db.String(20), primary_key=True)
+    description = db.Column('description', db.String(200), nullable=False)
 
 
-class ErrorCodeSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
-    """Main schema used to serialize the Error code."""
+class InvoiceReferenceStatusCodeSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+    """Main schema used to serialize the Status Code."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
-        model = ErrorCode
-
-    code = fields.String(data_key='type')
+        model = InvoiceReferenceStatusCode

@@ -38,7 +38,7 @@ class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attribute
     gst = db.Column(db.Float, nullable=True)
     pst = db.Column(db.Float, nullable=True)
     total = db.Column(db.Float, nullable=False)
-    line_item_status_code = db.Column(db.String(20), ForeignKey('status_code.code'), nullable=False)
+    line_item_status_code = db.Column(db.String(20), ForeignKey('line_item_status_code.code'), nullable=False)
     waived_fees = db.Column(db.Float, nullable=True)
     waived_by = db.Column(db.String(50), nullable=True, default=None)
 

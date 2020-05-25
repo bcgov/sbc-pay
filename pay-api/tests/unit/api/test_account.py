@@ -32,7 +32,7 @@ def test_account_purchase_history(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
@@ -51,7 +51,7 @@ def test_account_purchase_history_pagination(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     for i in range(10):
-        rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+        rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
     credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
@@ -71,7 +71,7 @@ def test_account_purchase_history_invalid_request(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
     credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
@@ -97,7 +97,7 @@ def test_account_purchase_history_export_as_csv(session, client, jwt, app):
         'content-type': 'application/json'
     }
 
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
@@ -124,7 +124,7 @@ def test_account_purchase_history_export_as_pdf(session, client, jwt, app):
         'content-type': 'application/json'
     }
 
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
@@ -151,7 +151,7 @@ def test_account_purchase_history_export_invalid_request(session, client, jwt, a
         'content-type': 'application/json'
     }
 
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))

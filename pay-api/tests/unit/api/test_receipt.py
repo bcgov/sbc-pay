@@ -31,7 +31,7 @@ def run_around_tests(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     # Create a payment first
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     assert rv.status_code == 201
 
 
@@ -40,7 +40,7 @@ def test_receipt_creation(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     pay_id = rv.json.get('id')
 
     payment_id = rv.json.get('id')
@@ -69,7 +69,7 @@ def test_receipt_creation_with_invoice(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     pay_id = rv.json.get('id')
     inovice_id = rv.json.get('invoices')[0].get('id')
     payment_id = rv.json.get('id')
@@ -98,7 +98,7 @@ def test_receipt_creation_with_invalid_request(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     pay_id = rv.json.get('id')
     inovice_id = rv.json.get('invoices')[0].get('id')
     payment_id = rv.json.get('id')
@@ -141,7 +141,7 @@ def test_receipt_creation_for_internal_payments(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_zero_dollar_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_zero_dollar_payment_request()), headers=headers)
     pay_id = rv.json.get('id')
 
     filing_data = {

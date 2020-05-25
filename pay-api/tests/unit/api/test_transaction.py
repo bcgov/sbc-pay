@@ -34,7 +34,7 @@ def test_transaction_post(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     # Create a payment first
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     payment_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
@@ -53,7 +53,7 @@ def test_transaction_post_with_invalid_return_url(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     # Create a payment first
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     payment_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://google.com/coops-web/transactions/transaction_id=abcd',
@@ -70,7 +70,7 @@ def test_transaction_post_no_redirect_uri(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     # Create a payment first
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     payment_id = rv.json.get('id')
     rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps({}),
                      headers={'content-type': 'application/json'})
@@ -91,7 +91,7 @@ def test_transaction_get(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     # Create a payment first
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     payment_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
@@ -113,7 +113,7 @@ def test_transaction_get_invalid_payment_and_transaction(session, client, jwt, a
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     # Create a payment first
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     payment_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
@@ -138,7 +138,7 @@ def test_transaction_put(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     # Create a payment first
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     payment_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
@@ -160,7 +160,7 @@ def test_transaction_put_with_no_receipt(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     # Create a payment first
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     payment_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
@@ -181,7 +181,7 @@ def test_transaction_put_completed_payment(session, client, jwt, app, stan_serve
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     # Create a payment first
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     payment_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
@@ -206,7 +206,7 @@ def test_transactions_get(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     # Create a payment first
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
 
     transactions_link = rv.json.get('_links').get('transactions')
     rv = client.get(f'{transactions_link}', headers=headers)
@@ -240,7 +240,7 @@ def test_transaction_patch_completed_payment_and_transaction_status(session, cli
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     # Create a payment first
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     payment_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
@@ -264,7 +264,7 @@ def test_transaction_patch_when_paybc_down(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     # Create a payment first
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     payment_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',

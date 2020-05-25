@@ -17,19 +17,19 @@
 Test-Suite to ensure that the CorpType Class is working as expected.
 """
 
-from pay_api.models.status_code import StatusCode
+# from pay_api.models.status_code import StatusCode
 
 
-def factory_status_code(code: str = 'DRAFT', description='Draft'):
-    """Factory."""
-    return StatusCode(code=code, description=description)
-
-
-def test_status_code(session):
-    """Assert a status_code is stored.
-
-    Start with a blank database.
-    """
-    status_code = factory_status_code(code='XX', description='TEST')
-    status_code.save()
-    assert status_code.code == 'XX'
+# def factory_status_code(code: str = 'DRAFT', description='Draft'):
+#     """Factory."""
+#     return StatusCode(code=code, description=description)
+#
+#
+# def test_status_code(session):
+#     """Assert a status_code is stored.
+#
+#     Start with a blank database.
+#     """
+#     status_code = factory_status_code(code='XX', description='TEST')
+#     status_code.save()
+#     assert status_code.code == 'XX'

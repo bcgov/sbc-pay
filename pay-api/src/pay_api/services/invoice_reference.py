@@ -16,7 +16,7 @@
 from flask import current_app
 
 from pay_api.models import InvoiceReference as ReferenceModel
-from pay_api.utils.enums import Status
+from pay_api.utils.enums import InvoiceReferenceStatus
 
 
 class InvoiceReference:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
@@ -111,7 +111,7 @@ class InvoiceReference:  # pylint: disable=too-many-instance-attributes,too-many
         current_app.logger.debug('<create')
         i = InvoiceReference()
         i.invoice_id = invoice_id
-        i.status_code = Status.CREATED.value
+        i.status_code = InvoiceReferenceStatus.ACTIVE.value
         i.invoice_number = invoice_number
         i.reference_number = reference_number
 
@@ -122,7 +122,7 @@ class InvoiceReference:  # pylint: disable=too-many-instance-attributes,too-many
     @staticmethod
     def find_active_reference_by_invoice_id(inv_id: int):
         """Find invoice reference by invoice id."""
-        ref_dao = ReferenceModel.find_reference_by_invoice_id_and_status(inv_id, Status.CREATED.value)
+        ref_dao = ReferenceModel.find_reference_by_invoice_id_and_status(inv_id, InvoiceReferenceStatus.ACTIVE.value)
         invoice_reference = None
         if ref_dao:
             invoice_reference = InvoiceReference()
@@ -134,7 +134,7 @@ class InvoiceReference:  # pylint: disable=too-many-instance-attributes,too-many
     @staticmethod
     def find_completed_reference_by_invoice_id(inv_id: int):
         """Find invoice reference by invoice id."""
-        ref_dao = ReferenceModel.find_reference_by_invoice_id_and_status(inv_id, Status.COMPLETED.value)
+        ref_dao = ReferenceModel.find_reference_by_invoice_id_and_status(inv_id, InvoiceReferenceStatus.COMPLETED.value)
         invoice_reference = InvoiceReference()
         invoice_reference._dao = ref_dao  # pylint: disable=protected-access
 

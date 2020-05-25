@@ -19,7 +19,7 @@ from marshmallow import fields
 from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 
-from pay_api.utils.enums import Status
+from pay_api.utils.enums import TransactionStatus
 
 from .base_model import BaseModel
 from .base_schema import BaseSchema
@@ -32,7 +32,7 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods
     __tablename__ = 'payment_transaction'
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    status_code = db.Column(db.String(20), ForeignKey('status_code.code'), nullable=False)
+    status_code = db.Column(db.String(20), ForeignKey('transaction_status_code.code'), nullable=False)
     payment_id = db.Column(db.Integer, ForeignKey('payment.id'), nullable=False)
     client_system_url = db.Column(db.String(500), nullable=True)
     pay_system_url = db.Column(db.String(500), nullable=True)
@@ -48,7 +48,8 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods
     @classmethod
     def find_active_by_payment_id(cls, payment_id: int):
         """Return Active Payment Transactions by payment identifier."""
-        return cls.query.filter_by(payment_id=payment_id).filter_by(status_code=Status.CREATED.value).one_or_none()
+        return cls.query.filter_by(payment_id=payment_id).filter_by(
+            status_code=TransactionStatus.CREATED.value).one_or_none()
 
     @classmethod
     def find_by_id_and_payment_id(cls, identifier: uuid, payment_id: int):
@@ -62,7 +63,8 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods
         Used in the batch job to find orphan records which are untouched for a time.
         """
         oldest_transaction_time = datetime.now() - (timedelta(days=days, hours=hours, minutes=minutes))
-        completed_status = [Status.COMPLETED.value, Status.CANCELLED.value, Status.FAILED.value]
+        completed_status = [TransactionStatus.COMPLETED.value, TransactionStatus.CANCELLED.value,
+                            TransactionStatus.FAILED.value]
         return cls.query.filter(PaymentTransaction.status_code.notin_(completed_status)). \
             filter(PaymentTransaction.transaction_start_time < oldest_transaction_time).all()
 

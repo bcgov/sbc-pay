@@ -18,7 +18,7 @@ Test-Suite to ensure that the Invoice Reference Service is working as expected.
 """
 
 from pay_api.services.invoice_reference import InvoiceReference
-from pay_api.utils.enums import Status
+from pay_api.utils.enums import InvoiceReferenceStatus
 from tests.utilities.base_test import factory_invoice, factory_payment, factory_payment_account
 
 
@@ -36,7 +36,7 @@ def test_invoice_saved_from_new(session):
     assert invoice_reference is not None
     assert invoice_reference.id is not None
     assert invoice_reference.invoice_id == i.id
-    assert invoice_reference.status_code == Status.CREATED.value
+    assert invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
 
 
 def test_invoice_invalid_lookup(session):
@@ -74,7 +74,7 @@ def test_find_completed_reference_by_invoice_id(session):
     i.save()
 
     invoice_reference = InvoiceReference.create(i.id, 'TEST_INV_NUMBER', 'TEST_REF_NUMBER')
-    invoice_reference.status_code = Status.COMPLETED.value
+    invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
     invoice_reference.save()
 
     # Do a look up
