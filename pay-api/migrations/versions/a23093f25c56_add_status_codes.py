@@ -90,7 +90,8 @@ def upgrade():
             {'code': 'ACTIVE', 'description': 'Active'},
             {'code': 'CANCELLED', 'description': 'Cancelled'},
             {'code': 'COMPLETED', 'description': 'Completed'},
-            {'code': 'DELETED', 'description': 'Deleted'}
+            {'code': 'DELETED', 'description': 'Deleted'},
+            {'code': 'CREATED', 'description': 'Created'}
         ]
     )
 
@@ -117,7 +118,7 @@ def upgrade():
     # Update all line status DELETED to CANCELLED and CREATED to ACTIVE
     op.execute("update invoice_reference set status_code='CANCELLED' where status_code='DELETED'")
     op.execute("update invoice_reference set status_code='ACTIVE' where status_code='CREATED'")
-    op.execute("delete from invoice_reference_status_code where code in ('DELETED')")
+    op.execute("delete from invoice_reference_status_code where code in ('DELETED', 'CREATED')")
 
     op.drop_table('status_code')
 
