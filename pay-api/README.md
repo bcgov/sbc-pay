@@ -1,6 +1,6 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](../LICENSE)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=bcgov_sbc-pay&metric=alert_status)](https://sonarcloud.io/code?id=bcgov_sbc-pay&selected=bcgov_sbc-pay%3Apay-api)
-[![codecov](https://codecov.io/gh/bcgov/sbc-pay/branch/master/graph/badge.svg)](https://codecov.io/gh/bcgov/sbc-pay)
+[![codecov](https://codecov.io/gh/bcgov/sbc-pay/branch/development/graph/badge.svg?flag=payapi)](https://codecov.io/gh/bcgov/sbc-pay/tree/development/pay-api)
 
 # PAY API
 

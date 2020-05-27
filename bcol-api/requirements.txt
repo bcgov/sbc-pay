@@ -1,5 +1,5 @@
 Flask-Moment==0.9.0
-Flask-SQLAlchemy==2.4.1
+Flask-SQLAlchemy==2.4.3
 Flask-Script==2.0.6
 Flask==1.1.2
 Jinja2==2.11.2
@@ -21,7 +21,6 @@ flask-marshmallow==0.12.0
 flask-restplus==0.13.0
 gunicorn==20.0.4
 idna==2.9
-importlib-metadata==1.6.0
 isodate==0.6.0
 itsdangerous==1.1.0
 jaeger-client==4.3.0
@@ -42,11 +41,10 @@ requests-toolbelt==0.9.1
 requests==2.23.0
 rsa==4.0
 sentry-sdk==0.14.4
-six==1.14.0
+six==1.15.0
 threadloop==1.0.2
 thrift==0.13.0
 tornado==6.0.4
 urllib3==1.25.9
 zeep==3.4.0
-zipp==3.1.0
 -e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components-1.0.0&subdirectory=python
