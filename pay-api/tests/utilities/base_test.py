@@ -22,8 +22,8 @@ from datetime import datetime
 from pay_api.models import (
     BcolPaymentAccount, CreditPaymentAccount, InternalPaymentAccount, Invoice, InvoiceReference, Payment,
     PaymentAccount, PaymentLineItem, PaymentTransaction)
-from pay_api.utils.enums import PaymentSystem, Role, Status
-
+from pay_api.utils.enums import PaymentSystem, Role, PaymentStatus, InvoiceReferenceStatus, \
+    LineItemStatus, InvoiceStatus
 
 token_header = {
     'alg': 'RS256',
@@ -272,7 +272,7 @@ def factory_premium_payment_account(corp_number: str = 'CP0001234', corp_type_co
 
 def factory_payment(
         payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC',
-        payment_status_code: str = Status.DRAFT.value
+        payment_status_code: str = PaymentStatus.CREATED.value
 ):
     """Factory."""
     return Payment(
@@ -284,7 +284,8 @@ def factory_payment(
     )
 
 
-def factory_invoice(payment: Payment, payment_account: str, status_code: str = Status.DRAFT.value, corp_type_code='CP',
+def factory_invoice(payment: Payment, payment_account: str, status_code: str = InvoiceStatus.CREATED.value,
+                    corp_type_code='CP',
                     business_identifier: str = 'CP0001234'):
     """Factory."""
     bcol_account_id = None
@@ -313,7 +314,7 @@ def factory_invoice(payment: Payment, payment_account: str, status_code: str = S
 
 
 def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees: int = 10, total: int = 10,
-                              status: str = Status.CREATED.value):
+                              status: str = LineItemStatus.ACTIVE.value):
     """Factory."""
     return PaymentLineItem(
         invoice_id=invoice_id,
@@ -346,7 +347,7 @@ def factory_payment_transaction(
 def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021'):
     """Factory."""
     return InvoiceReference(invoice_id=invoice_id,
-                            status_code='CREATED',
+                            status_code=InvoiceReferenceStatus.ACTIVE.value,
                             invoice_number=invoice_number)
 
 

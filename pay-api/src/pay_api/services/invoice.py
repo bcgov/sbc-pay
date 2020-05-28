@@ -25,7 +25,7 @@ from pay_api.services.auth import check_auth
 from pay_api.services.fee_schedule import FeeSchedule
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import ALL_ALLOWED_ROLES
-from pay_api.utils.enums import PaymentSystem, Status
+from pay_api.utils.enums import PaymentSystem, InvoiceStatus
 from pay_api.utils.errors import Error
 
 
@@ -308,7 +308,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         current_app.logger.debug('<create')
         i = Invoice()
         i.payment_id = payment_id
-        i.invoice_status_code = Status.DRAFT.value
+        i.invoice_status_code = InvoiceStatus.CREATED.value
         if account.payment_system_code == PaymentSystem.BCOL.value:
             i.bcol_account_id = account.id
         elif account.payment_system_code == PaymentSystem.PAYBC.value:

@@ -25,7 +25,7 @@ import pytest
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
-from pay_api.utils.enums import Status
+from pay_api.utils.enums import PaymentStatus, TransactionStatus
 from pay_api.utils.errors import Error
 from tests import skip_in_pod
 from tests.utilities.base_test import (
@@ -47,7 +47,7 @@ def test_transaction_saved_from_new(session):
     line.save()
 
     payment_transaction = PaymentTransactionService()
-    payment_transaction.status_code = 'DRAFT'
+    payment_transaction.status_code = 'CREATED'
     payment_transaction.transaction_end_time = datetime.now()
     payment_transaction.transaction_start_time = datetime.now()
     payment_transaction.pay_system_url = 'http://google.com'
@@ -135,7 +135,7 @@ def test_transaction_update(session, stan_server, public_user_mock):
     assert transaction.pay_system_url is not None
     assert transaction.transaction_start_time is not None
     assert transaction.transaction_end_time is not None
-    assert transaction.status_code == Status.COMPLETED.value
+    assert transaction.status_code == TransactionStatus.COMPLETED.value
 
 
 @skip_in_pod
@@ -163,7 +163,7 @@ def test_transaction_update_with_no_receipt(session, stan_server):
     assert transaction.pay_system_url is not None
     assert transaction.transaction_start_time is not None
     assert transaction.transaction_end_time is not None
-    assert transaction.status_code == Status.FAILED.value
+    assert transaction.status_code == TransactionStatus.FAILED.value
     assert transaction.asdict() is not None
 
 
@@ -192,7 +192,7 @@ def test_transaction_update_completed(session, stan_server, public_user_mock):
 def test_transaction_create_new_on_completed_payment(session):
     """Assert that the payment is saved to the table."""
     payment_account = factory_payment_account()
-    payment = factory_payment(payment_status_code=Status.COMPLETED.value)
+    payment = factory_payment(payment_status_code=PaymentStatus.COMPLETED.value)
     payment_account.save()
     payment.save()
     invoice = factory_invoice(payment, payment_account)
@@ -231,7 +231,7 @@ def test_multiple_transactions_for_single_payment(session):
     assert transaction.client_system_url is not None
     assert transaction.pay_system_url is not None
     assert transaction.transaction_start_time is not None
-    assert transaction.status_code == Status.CREATED.value
+    assert transaction.status_code == TransactionStatus.CREATED.value
 
 
 def test_transaction_invalid_lookup(session):
@@ -260,7 +260,7 @@ def test_transaction_find_active_lookup(session):
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
-    transaction = factory_payment_transaction(payment.id, Status.CREATED.value)
+    transaction = factory_payment_transaction(payment.id, TransactionStatus.CREATED.value)
     transaction.save()
 
     transaction = PaymentTransactionService.find_active_by_payment_id(payment.id)
@@ -271,7 +271,7 @@ def test_transaction_find_active_lookup(session):
     assert transaction.client_system_url is not None
     assert transaction.pay_system_url is not None
     assert transaction.transaction_start_time is not None
-    assert transaction.status_code == Status.CREATED.value
+    assert transaction.status_code == TransactionStatus.CREATED.value
 
 
 def test_transaction_find_active_none_lookup(session):
@@ -286,7 +286,7 @@ def test_transaction_find_active_none_lookup(session):
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
-    transaction = factory_payment_transaction(payment.id, Status.COMPLETED.value)
+    transaction = factory_payment_transaction(payment.id, TransactionStatus.COMPLETED.value)
     transaction.save()
 
     transaction = PaymentTransactionService.find_active_by_payment_id(payment.id)
@@ -305,7 +305,7 @@ def test_transaction_find_by_payment_id(session):
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
-    transaction = factory_payment_transaction(payment.id, Status.CREATED.value)
+    transaction = factory_payment_transaction(payment.id, TransactionStatus.CREATED.value)
     transaction.save()
 
     transaction = PaymentTransactionService.find_by_payment_id(payment.id)
@@ -367,4 +367,4 @@ def test_transaction_update_on_paybc_connection_error(session, stan_server):
     assert transaction.pay_system_url is not None
     assert transaction.transaction_start_time is not None
     assert transaction.transaction_end_time is not None
-    assert transaction.status_code == Status.FAILED.value
+    assert transaction.status_code == TransactionStatus.FAILED.value

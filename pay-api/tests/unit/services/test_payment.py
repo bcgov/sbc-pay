@@ -20,7 +20,7 @@ from datetime import datetime
 
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.services.payment import Payment as Payment_service
-from pay_api.utils.enums import Status
+from pay_api.utils.enums import InvoiceStatus
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account)
 
@@ -58,7 +58,7 @@ def test_payment_with_no_active_invoice(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment, payment_account, Status.DELETED.value)
+    invoice = factory_invoice(payment, payment_account, InvoiceStatus.DELETED.value)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
     p = Payment_service.find_by_id(payment.id, skip_auth_check=True)

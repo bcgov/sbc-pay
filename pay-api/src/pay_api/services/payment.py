@@ -23,9 +23,10 @@ from pay_api.models.payment import PaymentSchema
 from pay_api.models.payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from pay_api.services.auth import check_auth
 from pay_api.utils.constants import ALL_ALLOWED_ROLES
-from pay_api.utils.enums import ContentType, AuthHeaderType
-from pay_api.utils.enums import Status
+from pay_api.utils.enums import ContentType, AuthHeaderType, Code
+from pay_api.utils.enums import PaymentStatus
 from pay_api.utils.user_context import user_context
+from .code import Code as CodeService
 from .oauth_service import OAuthService
 
 
@@ -138,7 +139,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('<create_payment')
         p = Payment()
         p.payment_method_code = payment_method
-        p.payment_status_code = Status.CREATED.value
+        p.payment_status_code = PaymentStatus.CREATED.value
         p.payment_system_code = payment_system
         pay_dao = p.flush()
         p = Payment()
@@ -182,11 +183,18 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         }
 
         invoice_ids = []
+        payment_status_codes = CodeService.find_code_values_by_type(Code.PAYMENT_STATUS.value)
         for purchase in purchases:
             payment_dao = purchase[0]
             invoice_dao = purchase[1]
             payment_schema = PaymentSchema(exclude=('invoices', 'transactions', '_links', 'created_by', 'updated_by'))
             purchase_history = payment_schema.dump(payment_dao)
+
+            filtered_codes = [cd for cd in payment_status_codes['codes'] if
+                              cd['code'] == purchase_history['status_code']]
+            if filtered_codes:
+                purchase_history['status_code'] = filtered_codes[0]['description']
+
             invoice_schema = InvoiceSchema(exclude=('receipts', 'payment_line_items', 'references', '_links',
                                                     'created_by', 'created_name', 'created_on', 'updated_by',
                                                     'updated_name', 'updated_on', 'invoice_status_code'))

@@ -29,7 +29,7 @@ def test_invoices_get(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     # Create a payment first
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     assert rv.status_code == 201
     invoices_link = rv.json.get('_links').get('invoices')
     rv = client.get(f'{invoices_link}', headers=headers)
@@ -45,7 +45,7 @@ def test_invoice_get(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     # Create a payment first
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     assert rv.status_code == 201
     invoices_link = rv.json.get('_links').get('invoices')
     rv = client.get(f'{invoices_link}', headers=headers)
@@ -61,7 +61,7 @@ def test_invoice_get_invalid(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     # Create a payment first
-    rv = client.post(f'/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     assert rv.status_code == 201
     invoices_link = rv.json.get('_links').get('invoices')
     rv = client.get(f'{invoices_link}', headers=headers)

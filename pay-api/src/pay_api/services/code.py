@@ -14,8 +14,10 @@
 """Service to manage Fee Calculation."""
 
 from flask import current_app
+from sqlalchemy.exc import SQLAlchemyError
 
 from pay_api.models.error_code import ErrorCode, ErrorCodeSchema
+from pay_api.models.payment_status_code import PaymentStatusCode, PaymentStatusCodeSchema
 from pay_api.utils.cache import cache
 from pay_api.utils.enums import Code as CodeValue
 
@@ -24,11 +26,13 @@ class Code:
     """Service to manage Fee related operations."""
 
     @classmethod
-    def build_all_codes_cache(
-            cls
-    ):
+    def build_all_codes_cache(cls):
         """Build cache for all codes."""
-        Code.find_code_values_by_type(CodeValue.ERROR.value)
+        try:
+            for code in CodeValue:
+                Code.find_code_values_by_type(code.value)
+        except SQLAlchemyError as e:
+            current_app.logger.info('Error on building cache {}', e)
 
     @classmethod
     def find_code_values_by_type(
@@ -46,6 +50,11 @@ class Code:
                 codes_models = ErrorCode.find_all()
                 error_schema = ErrorCodeSchema()
                 codes_response = error_schema.dump(codes_models, many=True)
+            elif code_type == CodeValue.PAYMENT_STATUS.value:
+                codes_models = PaymentStatusCode.find_all()
+                code_schema = PaymentStatusCodeSchema()
+                codes_response = code_schema.dump(codes_models, many=True)
+
             cache.set(code_type, codes_response)
 
         response['codes'] = codes_response
@@ -70,5 +79,9 @@ class Code:
                 codes_model = ErrorCode.find_by_code(code)
                 error_schema = ErrorCodeSchema()
                 code_response = error_schema.dump(codes_model, many=False)
+            elif code_type == CodeValue.PAYMENT_STATUS.value:
+                codes_model = PaymentStatusCode.find_by_code(code)
+                schema = PaymentStatusCodeSchema()
+                code_response = schema.dump(codes_model, many=False)
         current_app.logger.debug('>find_code_value_by_type_and_code')
         return code_response
