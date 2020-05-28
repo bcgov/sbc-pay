@@ -75,7 +75,7 @@
       "$id": "#/properties/line_items/items/properties/quantity",
       "type": "integer",
       "title": "Quantity",
-      "default": 0,
+      "default": 1,
       "examples": [
         1
       ]

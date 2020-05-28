@@ -25,7 +25,11 @@ from pay_api.utils.constants import DEFAULT_JURISDICTION
 from pay_api.utils.enums import Role
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import convert_to_bool, cors_preflight
-
+from pay_api.utils.user_context import get_auth_account_id
+from pay_api.services.auth import check_auth
+from pay_api.utils.constants import ALL_ALLOWED_ROLES
+from pay_api.utils.util import get_str_by_path
+from pay_api.utils.enums import AccountType
 
 API = Namespace('fees', description='Payment System - Fees')
 
@@ -45,9 +49,17 @@ class Fee(Resource):
         is_priority = convert_to_bool(request.args.get('priority', 'False'))
         is_future_effective = convert_to_bool(request.args.get('futureEffective', 'False'))
         jurisdiction = request.args.get('jurisdiction', DEFAULT_JURISDICTION)
+        quantity = int(request.args.get('quantity', 1))
         waive_fees = False
         if _jwt.validate_roles([Role.STAFF.value]):
             waive_fees = convert_to_bool(request.args.get('waiveFees', 'False'))
+
+        include_service_fees = False
+        auth_account_id = get_auth_account_id()
+        if auth_account_id:
+            authorization = check_auth(business_identifier=None, account_id=auth_account_id,
+                                       one_of_roles=ALL_ALLOWED_ROLES)
+            include_service_fees = get_str_by_path(authorization, 'account/accountType') == AccountType.PREMIUM.value
 
         try:
             response, status = (
@@ -58,7 +70,9 @@ class Fee(Resource):
                     jurisdiction=jurisdiction,
                     is_priority=is_priority,
                     is_future_effective=is_future_effective,
-                    waive_fees=waive_fees
+                    waive_fees=waive_fees,
+                    quantity=quantity,
+                    include_service_fees=include_service_fees
                 ).asdict(),
                 HTTPStatus.OK,
             )

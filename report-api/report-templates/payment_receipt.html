@@ -371,7 +371,7 @@
               {% if item.serviceCharge %}
               <div class="fee-summary-row">
                 <div class="fee-summary-label">Service Charge</div>
-                <div class="fee-summary-value">$ {{ "%.2f"|format(item.transactionFees) }}</div>
+                <div class="fee-summary-value">$ {{ "%.2f"|format(item.serviceFees) }}</div>
               </div>
               {% endif %}
             {% endfor %}

@@ -54,6 +54,14 @@
         10
       ]
     },
+    "serviceFees": {
+      "$id": "#/properties/serviceFees",
+      "type": "number",
+      "title": "Service fees",
+      "examples": [
+        10
+      ]
+    },
     "tax": {
       "$id": "#/properties/tax",
       "type": "object",

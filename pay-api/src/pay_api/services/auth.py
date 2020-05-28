@@ -22,7 +22,7 @@ from pay_api.utils.user_context import UserContext, user_context
 
 @user_context
 def check_auth(business_identifier: str, account_id: str = None, corp_type_code: str = None,
-               **kwargs):  # pylint: disable=unused-argument
+               **kwargs):  # pylint: disable=unused-argument, too-many-branches
     """Authorize the user for the business entity and return authorization response."""
     user: UserContext = kwargs['user']
     is_authorized: bool = False
@@ -60,9 +60,25 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
                 if roles:
                     is_authorized = True
             else:  # For activities not specific to a product
-                auth_url = current_app.config.get(
-                    'AUTH_API_ENDPOINT') + f'orgs/{account_id}'
-                auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+                auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{account_id}'
+
+                org_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+                # TODO Create a similar response as in auth response
+                auth_response = {
+                    'orgMembership': '',
+                    'account': {
+                        'id': org_response.get('id', None),
+                        'name': org_response.get('name', None),
+                        'accountType': org_response.get('orgType', None),
+                        'paymentPreference': {}
+                    }
+                }
+                if org_response.get('payment_settings', None):
+                    auth_response['account']['paymentPreference'] = {
+                        'methodOfPayment': org_response['payment_settings'][0].get('preferredPayment', None),
+                        'bcOnlineUserId': org_response['payment_settings'][0].get('bcolUserId', None),
+                        'bcOnlineAccountId': org_response['payment_settings'][0].get('bcolAccountId', None)
+                    }
                 is_authorized = True
 
     if not is_authorized:
