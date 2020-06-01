@@ -27,7 +27,6 @@ from pay_api.models import FeeSchedule as FeesScheduleModel
 from pay_api.models import FilingType
 from pay_api.utils.errors import Error
 
-
 CORP_TYPE_CODE = 'CPX'
 FILING_TYPE_CODE = 'OTANNX'
 
@@ -73,7 +72,6 @@ def test_find_by_corp_type_and_filing_type_from_new(session):
         'filing_type_code': FILING_TYPE_CODE,
         'filing_fees': 100,
         'service_fees': 0,
-        'processing_fees': 0,
         'total': 100,
         'tax':
             {
@@ -167,6 +165,80 @@ def test_fee_schedule_with_waive_fees(session):
 
     assert fee_schedule is not None
     assert fee_schedule.fee_amount == 0
+
+
+def test_fee_schedule_with_service_fees(session):
+    """Assert that fee with service fees can be retrieved."""
+    # Create a transaction fee
+    tran_fee_code = 'TRAN'
+    corp_type_code = 'XCORP'
+    fee_code = 'FEE01'
+    fee_code_master = FeeCode(code=tran_fee_code,
+                              amount=10)
+    fee_code_master.save()
+
+    fee_code_master = FeeCode(code=fee_code,
+                              amount=100)
+    fee_code_master.save()
+
+    corp_type = CorpType(code=corp_type_code,
+                         service_fee_code=tran_fee_code,
+                         description='TEST')
+    corp_type.save()
+
+    filing_type = FilingType(code=FILING_TYPE_CODE,
+                             description='TEST')
+    filing_type.save()
+
+    fee_schedule = services.FeeSchedule()
+    fee_schedule.filing_type_code = FILING_TYPE_CODE
+    fee_schedule.corp_type_code = corp_type_code
+    fee_schedule.fee_code = fee_code
+    fee_schedule.fee_start_date = date.today()
+    fee_schedule.save()
+
+    fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(corp_type=corp_type_code,
+                                                                          filing_type_code=FILING_TYPE_CODE,
+                                                                          valid_date=date.today(),
+                                                                          include_service_fees=True)
+    assert fee_schedule.service_fees == 10
+
+
+def test_fee_schedule_with_service_fees_for_basic_user(session):
+    """Assert that fee with service fees can be retrieved."""
+    # Create a transaction fee
+    tran_fee_code = 'TRAN'
+    corp_type_code = 'XCORP'
+    fee_code = 'FEE01'
+    fee_code_master = FeeCode(code=tran_fee_code,
+                              amount=10)
+    fee_code_master.save()
+
+    fee_code_master = FeeCode(code=fee_code,
+                              amount=100)
+    fee_code_master.save()
+
+    corp_type = CorpType(code=corp_type_code,
+                         service_fee_code=tran_fee_code,
+                         description='TEST')
+    corp_type.save()
+
+    filing_type = FilingType(code=FILING_TYPE_CODE,
+                             description='TEST')
+    filing_type.save()
+
+    fee_schedule = services.FeeSchedule()
+    fee_schedule.filing_type_code = FILING_TYPE_CODE
+    fee_schedule.corp_type_code = corp_type_code
+    fee_schedule.fee_code = fee_code
+    fee_schedule.fee_start_date = date.today()
+    fee_schedule.save()
+
+    fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(corp_type=corp_type_code,
+                                                                          filing_type_code=FILING_TYPE_CODE,
+                                                                          valid_date=date.today(),
+                                                                          include_service_fees=False)
+    assert fee_schedule.service_fees == 0
 
 
 def create_linked_data(

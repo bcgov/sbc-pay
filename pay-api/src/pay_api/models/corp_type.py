@@ -30,10 +30,10 @@ class CorpType(db.Model, CodeTable):
 
     code = db.Column('code', db.String(10), primary_key=True)
     description = db.Column('description', db.String(200), nullable=False)
-    transaction_fee_code = db.Column(db.String(10), ForeignKey('fee_code.code'), nullable=True)
+    service_fee_code = db.Column(db.String(10), ForeignKey('fee_code.code'), nullable=True)
     bcol_fee_code = db.Column(db.String(20), nullable=True)
 
-    transaction_fee = relationship('FeeCode', foreign_keys=[transaction_fee_code], lazy='joined', innerjoin=False)
+    service_fee = relationship('FeeCode', foreign_keys=[service_fee_code], lazy='joined', innerjoin=False)
 
     def save(self):
         """Save corp type."""

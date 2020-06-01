@@ -248,7 +248,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes
                 txn_description += ',' + line_item.get('description')
                 total_gst += line_item.get('gst')
                 total_pst += line_item.get('pst')
-            transaction_fee = float(invoice.get('transaction_fees', 0))
+            service_fee = float(invoice.get('service_fees', 0))
             total_fees = float(invoice.get('total', 0))
             row_value = [
                 ','.join([line_item.get('description') for line_item in invoice.get('line_items')]),
@@ -257,8 +257,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes
                 parser.parse(item.get('created_on')).strftime('%Y-%m-%d %I:%M %p'),
                 total_fees,
                 total_gst + total_pst,
-                total_fees - transaction_fee,  # TODO
-                transaction_fee,
+                total_fees - service_fee,  # TODO
+                service_fee,
                 item.get('status_code'),
                 invoice.get('business_identifier')
             ]

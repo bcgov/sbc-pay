@@ -372,6 +372,7 @@ def get_auth_basic_user():
             'name': 'Mock Business'
         },
         'account': {
+            'accountType': 'BASIC',
             'id': '1234',
             'name': 'Mock Account',
             'paymentPreference': {
@@ -396,6 +397,7 @@ def get_auth_premium_user():
             'name': 'Mock Business'
         },
         'account': {
+            'accountType': 'PREMIUM',
             'id': '1234',
             'name': 'Mock Account',
             'paymentPreference': {
