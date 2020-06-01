@@ -15,8 +15,7 @@
         "Victoria",
         "Vancouver"
       ],
-      "pattern": "^(.*)$",
-      "minLength": 1
+      "pattern": "^(.*)$"
     },
     "postalCode": {
       "$id": "#/properties/postalCode",
@@ -26,8 +25,7 @@
       "examples": [
         "V8P2N2"
       ],
-      "pattern": "^(.*)$",
-      "minLength": 6
+      "pattern": "^(.*)$"
     },
     "province": {
       "$id": "#/properties/province",
@@ -46,8 +44,7 @@
       "default": "",
       "examples": [
         "1000 Douglas Street"
-      ],
-      "minLength": 1
+      ]
     },
     "country": {
       "$id": "#/properties/country",
