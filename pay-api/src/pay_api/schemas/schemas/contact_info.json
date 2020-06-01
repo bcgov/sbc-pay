@@ -4,11 +4,6 @@
   "type": "object",
   "title": "Contact Info",
   "required": [
-    "city",
-    "postalCode",
-    "province",
-    "addressLine1",
-    "country"
   ],
   "properties": {
     "city": {

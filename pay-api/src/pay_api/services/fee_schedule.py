@@ -280,5 +280,7 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
             fee_schedule.future_effective_fee = 0
             fee_schedule.service_fees = 0
 
+        # fee_schedule.transaction_fees = Invoice.calculate_transaction_fees(account.payment_system_code, corp_type)
+
         current_app.logger.debug('>get_fees_by_corp_type_and_filing_type')
         return fee_schedule
