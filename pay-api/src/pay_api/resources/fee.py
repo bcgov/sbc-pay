@@ -56,7 +56,7 @@ class Fee(Resource):
 
         include_service_fees = False
         auth_account_id = get_auth_account_id()
-        if auth_account_id:
+        if auth_account_id and auth_account_id != '0':
             authorization = check_auth(business_identifier=None, account_id=auth_account_id,
                                        one_of_roles=ALL_ALLOWED_ROLES)
             include_service_fees = get_str_by_path(authorization, 'account/accountType') == AccountType.PREMIUM.value
