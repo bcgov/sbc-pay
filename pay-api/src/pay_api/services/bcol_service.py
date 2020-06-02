@@ -64,7 +64,7 @@ class BcolService(PaymentSystemService, OAuthService):
         user: UserContext = kwargs['user']
         pay_endpoint = current_app.config.get('BCOL_API_ENDPOINT') + '/payments'
         corp_number = kwargs.get('business_identifier', None)
-        amount_excluding_txn_fees = sum(line.filing_fees for line in line_items)
+        amount_excluding_txn_fees = sum(line.total for line in line_items)
         filing_types = ','.join([item.filing_type_code for item in line_items])
         remarks = f'{corp_number}({filing_types})-{user.first_name}'
         payload: Dict = {
