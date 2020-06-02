@@ -231,7 +231,8 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
                 'pst': self.pst
             },
             'total': self.total,
-            'service_fees': self._service_fees
+            'service_fees': self._service_fees,
+            'processing_fees': 0
         }
         return d
 
