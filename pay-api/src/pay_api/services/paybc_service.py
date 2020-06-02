@@ -216,11 +216,11 @@ class PaybcService(PaymentSystemService, OAuthService):
             'party_number': account.get('party_number', None),
             'account_number': account.get('account_number', None),
             'site_name': party.get('customer_name') + ' Site',
-            'city': account_info.get('city', DEFAULT_CITY),
-            'address_line_1': account_info.get('addressLine1', DEFAULT_ADDRESS_LINE_1),
-            'postal_code': account_info.get('postalCode', DEFAULT_POSTAL_CODE).replace(' ', ''),
-            'province': account_info.get('province', DEFAULT_JURISDICTION),
-            'country': account_info.get('country', DEFAULT_COUNTRY),
+            'city': get_non_null_value(account_info.get('city'), DEFAULT_CITY),
+            'address_line_1': get_non_null_value(account_info.get('addressLine1'), DEFAULT_ADDRESS_LINE_1),
+            'postal_code': get_non_null_value(account_info.get('postalCode'), DEFAULT_POSTAL_CODE).replace(' ', ''),
+            'province': get_non_null_value(account_info.get('province'), DEFAULT_JURISDICTION),
+            'country': get_non_null_value(account_info.get('country'), DEFAULT_COUNTRY),
             'customer_site_id': '1'
         }
 
@@ -283,3 +283,8 @@ class PaybcService(PaymentSystemService, OAuthService):
         invoice_response = self.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
         current_app.logger.debug('>__get_invoice')
         return invoice_response.json()
+
+
+def get_non_null_value(value: str, default_value: str):
+    """Return non null value for the value by replacing default value."""
+    return default_value if (value is None or value.strip() == '') else value
