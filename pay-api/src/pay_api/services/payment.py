@@ -177,7 +177,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         purchases, total = PaymentModel.search_purchase_history(auth_account_id, search_filter, page, limit, return_all)
         # If the request is not to return all and if the filter is empty, return N number of records
         # Adding offset degrades performance, so just override total records by default value if no filter is provided
-        if (not return_all) and not bool(search_filter):
+        if (not return_all) and (not bool(search_filter) or not any(search_filter.values())):
             default_total = current_app.config.get('TRANSACTION_REPORT_DEFAULT_TOTAL')
             total = default_total if total > default_total else total
 
