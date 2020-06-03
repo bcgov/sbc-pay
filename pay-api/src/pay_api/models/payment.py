@@ -95,8 +95,8 @@ class Payment(Audit):  # pylint: disable=too-many-instance-attributes
                 Payment.created_name.like('%' + search_filter.get('createdBy') + '%'))  # pylint: disable=no-member
 
         # Find start and end dates
-        created_from: datetime = datetime.now()
-        created_to: datetime = datetime.now()
+        created_from: datetime = None
+        created_to: datetime = None
         if get_str_by_path(search_filter, 'dateFilter/startDate'):
             created_from = datetime.strptime(get_str_by_path(search_filter, 'dateFilter/startDate'), '%m/%d/%Y')
         if get_str_by_path(search_filter, 'dateFilter/endDate'):
