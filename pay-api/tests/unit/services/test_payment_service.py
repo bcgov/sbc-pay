@@ -347,3 +347,16 @@ def test_create_bcol_payment_for_basic_user(session, public_user_mock):
             get_payment_request_with_payment_method(payment_method='DRAWDOWN', business_identifier='CP0002000'),
             get_auth_basic_user())
     assert excinfo.type == BusinessException
+
+
+def test_create_payment_record_with_service_charge(session, public_user_mock):
+    """Assert that the payment records are created."""
+    # Create a payment request for corp type BC
+    payment_response = PaymentService.create_payment(get_payment_request(corp_type='BC'), get_auth_basic_user())
+    account_model = CreditPaymentAccount. \
+        find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'BC',
+                                                              get_auth_basic_user().get('account').get('id'))
+    account_id = account_model.id
+    assert account_id is not None
+    assert payment_response.get('id') is not None
+    assert payment_response.get('invoices')[0].get('service_fees') == 1.50

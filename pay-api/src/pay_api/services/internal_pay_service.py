@@ -58,7 +58,8 @@ class InternalPayService(PaymentSystemService, OAuthService):
         return invoice
 
     def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
-                       line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0):
+                       line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0,
+                       **kwargs):
         """Do nothing as internal payments cannot be updated as it will be completed on creation."""
 
     def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):

@@ -318,7 +318,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
 
         i.service_fees = Invoice.calculate_service_fees(account.payment_system_code, corp_type)
 
-        i.total = i.service_fees + sum(fee.total for fee in fees) if fees else 0
+        i.total = i.service_fees + sum(fee.total_excluding_service_fees for fee in fees) if fees else 0
         i.paid = 0
         i.refund = 0
         i.routing_slip = kwargs.get('routing_slip', None)
@@ -386,11 +386,12 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
     @staticmethod
     def calculate_service_fees(payment_system_code: str, corp_type_code: str):
         """Calculate service_fees fees."""
+        current_app.logger.debug(f'<calculate_service_fees - {payment_system_code} - {corp_type_code}')
         service_fees: float = 0
 
-        if payment_system_code == PaymentSystem.BCOL.value:
-            corp_type = CorpTypeModel.find_by_code(corp_type_code)
-            if corp_type.service_fee:
-                service_fees = corp_type.service_fee.amount
+        # TODO if payment_system_code == PaymentSystem.BCOL.value:
+        corp_type = CorpTypeModel.find_by_code(corp_type_code)
+        if corp_type.service_fee:
+            service_fees = corp_type.service_fee.amount
 
         return service_fees
