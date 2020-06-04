@@ -24,6 +24,7 @@ from dateutil import parser
 from flask import current_app
 from requests import HTTPError
 
+from pay_api.models.corp_type import CorpType as CorpTypeModel
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
@@ -32,10 +33,8 @@ from pay_api.utils.constants import (
     DEFAULT_ADDRESS_LINE_1, DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
     PAYBC_ADJ_ACTIVITY_NAME, PAYBC_BATCH_SOURCE, PAYBC_CUST_TRX_TYPE, PAYBC_LINE_TYPE, PAYBC_TERM_NAME)
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem
-
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
-from pay_api.models.corp_type import CorpType as CorpTypeModel
 
 
 class PaybcService(PaymentSystemService, OAuthService):
@@ -70,12 +69,13 @@ class PaybcService(PaymentSystemService, OAuthService):
             'site_number': site.get('site_number')
         }
 
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str, **kwargs):
+    def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
+                       line_items: [PaymentLineItem], invoice_id: str, **kwargs):
         """Create Invoice in PayBC."""
         current_app.logger.debug('<create_invoice')
         now = datetime.datetime.now()
         curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
-        corp_type:CorpTypeModel = CorpTypeModel.find_by_code(kwargs.get('corp_type_code'))
+        corp_type: CorpTypeModel = CorpTypeModel.find_by_code(kwargs.get('corp_type_code'))
 
         invoice_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/' \
             .format(payment_account.paybc_party, payment_account.paybc_account, payment_account.paybc_site)
