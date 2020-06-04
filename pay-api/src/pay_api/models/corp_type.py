@@ -32,6 +32,8 @@ class CorpType(db.Model, CodeTable):
     description = db.Column('description', db.String(200), nullable=False)
     service_fee_code = db.Column(db.String(10), ForeignKey('fee_code.code'), nullable=True)
     bcol_fee_code = db.Column(db.String(20), nullable=True)
+    gl_memo = db.Column(db.String(50), nullable=True)
+    service_gl_memo = db.Column(db.String(50), nullable=True)
 
     service_fee = relationship('FeeCode', foreign_keys=[service_fee_code], lazy='joined', innerjoin=False)
 

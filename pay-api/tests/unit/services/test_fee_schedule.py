@@ -239,7 +239,7 @@ def test_fee_schedule_with_service_fees_for_basic_user(session):
                                                                           filing_type_code=FILING_TYPE_CODE,
                                                                           valid_date=date.today(),
                                                                           include_service_fees=False)
-    assert fee_schedule.service_fees == 0
+    assert fee_schedule.service_fees == 10
 
 
 def create_linked_data(

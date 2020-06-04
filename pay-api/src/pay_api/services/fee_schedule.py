@@ -142,6 +142,12 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
             + self.future_effective_fee + self.service_fees
 
     @property
+    def total_excluding_service_fees(self):
+        """Return the total excluding service fees fees calculated."""
+        return self._fee_amount + self.pst + self.gst + self.priority_fee \
+            + self.future_effective_fee
+
+    @property
     def fee_amount(self):
         """Return the fee amount."""
         return self._fee_amount
@@ -254,22 +260,21 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         if not corp_type and not filing_type_code:
             raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
         if kwargs.get('jurisdiction'):
-            current_app.logger.warn('Not using Jurisdiction now!!!')
+            current_app.logger.warning('Not using Jurisdiction now!!!')
 
         fee_schedule_dao = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type, filing_type_code, valid_date)
 
         if not fee_schedule_dao:
             raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
         fee_schedule = FeeSchedule()
-        fee_schedule.quantity = kwargs.get('quantity')
         fee_schedule._dao = fee_schedule_dao  # pylint: disable=protected-access
+        fee_schedule.quantity = kwargs.get('quantity')
 
         # Set transaction fees
-        if kwargs.get('include_service_fees', False):
-            corp_type = CorpTypeModel.find_by_code(fee_schedule.corp_type_code)
-            if corp_type.service_fee:
-                service_fees = corp_type.service_fee.amount
-                fee_schedule.service_fees = service_fees
+        corp_type = CorpTypeModel.find_by_code(fee_schedule.corp_type_code)
+        if corp_type.service_fee:
+            service_fees = corp_type.service_fee.amount
+            fee_schedule.service_fees = service_fees
 
         if kwargs.get('is_priority') and fee_schedule_dao.priority_fee:
             fee_schedule.priority_fee = fee_schedule_dao.priority_fee.amount

@@ -123,7 +123,7 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
             )
             ldap_conn.simple_bind_s(username, password)
         except Exception as error:
-            current_app.logger.warn(error)
+            current_app.logger.warning(error)
             raise BusinessException(Error.INVALID_CREDENTIALS)
         finally:
             if ldap_conn:

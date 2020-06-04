@@ -44,7 +44,8 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
 
     @abstractmethod
     def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
-                       line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0):
+                       line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0,
+                       **kwargs):
         """Update invoice in payment system."""
 
     @abstractmethod
