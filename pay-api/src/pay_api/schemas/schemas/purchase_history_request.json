@@ -62,8 +62,6 @@
            }
         ],
         "required":[
-           "startDate",
-           "endDate"
         ],
         "properties":{
            "startDate":{
