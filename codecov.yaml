@@ -1,0 +1,55 @@
+codecov:
+  require_ci_to_pass: yes
+  branch: development
+  max_report_age: off
+
+coverage:
+  precision: 2
+  round: down
+  range: "70...100"
+  status:
+    patch: off
+    project:
+      default: off
+      backend:
+        target: 80%
+        flags:
+          - payapi
+          - bcolapi
+          - reportapi
+    branches:
+      - development
+    if_not_found: success
+    if_ci_failed: error
+    informational: false
+    only_pulls: true
+
+ignore:
+  - "^/tests/**/*" # ignore test harness code
+
+parsers:
+  gcov:
+    branch_detection:
+      conditional: yes
+      loop: yes
+      method: no
+      macro: no
+
+comment:
+  layout: "diff,flags,tree"
+  behavior: default
+  require_changes: yes
+
+flags:
+  payapi:
+    paths:
+      - pay-api/src/pay_api
+    carryforward: true
+  bcolapi:
+    paths:
+      - bcol-api/src/bcol-api
+    carryforward: true
+  reportapi:
+    paths:
+      - report-api/src/api
+    carryforward: true

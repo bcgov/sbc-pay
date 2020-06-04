@@ -316,6 +316,7 @@ def premium_user_mock(monkeypatch):
                     'name': 'Mock Business'
                 },
                 'account': {
+                    'accountType': 'PREMIUM',
                     'paymentPreference': {
                         'methodOfPayment': 'DRAWDOWN',
                         'bcOnlineUserId': 'PB25020',
@@ -328,7 +329,11 @@ def premium_user_mock(monkeypatch):
             }
         }
 
+    def account_id():
+        return '1'
+
     monkeypatch.setattr('pay_api.services.auth.check_auth', token_info)
+    monkeypatch.setattr('pay_api.utils.user_context.get_auth_account_id', account_id)
 
 
 @pytest.fixture()

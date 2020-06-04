@@ -51,7 +51,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._routing_slip: str = None
         self._filing_id: str = None
         self._folio_number: str = None
-        self._transaction_fees: float = None
+        self._service_fees: float = None
         self._business_identifier: str = None
 
     @property
@@ -79,7 +79,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.routing_slip: str = self._dao.routing_slip
         self.filing_id: str = self._dao.filing_id
         self.folio_number: str = self._dao.folio_number
-        self.transaction_fees: float = self._dao.transaction_fees
+        self.service_fees: float = self._dao.service_fees
         self.business_identifier: str = self._dao.business_identifier
 
     @property
@@ -259,15 +259,15 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._dao.folio_number = value
 
     @property
-    def transaction_fees(self):
-        """Return the transaction_fees."""
-        return self._transaction_fees
+    def service_fees(self):
+        """Return the service_fees."""
+        return self._service_fees
 
-    @transaction_fees.setter
-    def transaction_fees(self, value: float):
-        """Set the transaction_fees."""
-        self._transaction_fees = value
-        self._dao.transaction_fees = value
+    @service_fees.setter
+    def service_fees(self, value: float):
+        """Set the service_fees."""
+        self._service_fees = value
+        self._dao.service_fees = value
 
     @property
     def business_identifier(self):
@@ -316,9 +316,9 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         elif account.payment_system_code == PaymentSystem.INTERNAL.value:
             i.internal_account_id = account.id
 
-        i.transaction_fees = Invoice.calculate_transaction_fees(account.payment_system_code, corp_type)
+        i.service_fees = Invoice.calculate_service_fees(account.payment_system_code, corp_type)
 
-        i.total = i.transaction_fees + sum(fee.total for fee in fees) if fees else 0
+        i.total = i.service_fees + sum(fee.total for fee in fees) if fees else 0
         i.paid = 0
         i.refund = 0
         i.routing_slip = kwargs.get('routing_slip', None)
@@ -384,13 +384,13 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         check_auth(dao.business_identifier, one_of_roles=ALL_ALLOWED_ROLES)
 
     @staticmethod
-    def calculate_transaction_fees(payment_system_code: str, corp_type_code: str):
-        """Calculate transaction fees."""
-        transaction_fees: float = 0
+    def calculate_service_fees(payment_system_code: str, corp_type_code: str):
+        """Calculate service_fees fees."""
+        service_fees: float = 0
 
         if payment_system_code == PaymentSystem.BCOL.value:
             corp_type = CorpTypeModel.find_by_code(corp_type_code)
-            if corp_type.transaction_fee:
-                transaction_fees = corp_type.transaction_fee.amount
+            if corp_type.service_fee:
+                service_fees = corp_type.service_fee.amount
 
-        return transaction_fees
+        return service_fees

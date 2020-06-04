@@ -175,6 +175,12 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         """Search purchase history for the account."""
         current_app.logger.debug(f'<search_purchase_history {auth_account_id}')
         purchases, total = PaymentModel.search_purchase_history(auth_account_id, search_filter, page, limit, return_all)
+        # If the request is not to return all and if the filter is empty, return N number of records
+        # Adding offset degrades performance, so just override total records by default value if no filter is provided
+        if (not return_all) and (not bool(search_filter) or not any(search_filter.values())):
+            default_total = current_app.config.get('TRANSACTION_REPORT_DEFAULT_TOTAL')
+            total = default_total if total > default_total else total
+
         data = {
             'total': total,
             'page': page,
@@ -248,7 +254,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes
                 txn_description += ',' + line_item.get('description')
                 total_gst += line_item.get('gst')
                 total_pst += line_item.get('pst')
-            transaction_fee = float(invoice.get('transaction_fees', 0))
+            service_fee = float(invoice.get('service_fees', 0))
             total_fees = float(invoice.get('total', 0))
             row_value = [
                 ','.join([line_item.get('description') for line_item in invoice.get('line_items')]),
@@ -257,8 +263,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes
                 parser.parse(item.get('created_on')).strftime('%Y-%m-%d %I:%M %p'),
                 total_fees,
                 total_gst + total_pst,
-                total_fees - transaction_fee,  # TODO
-                transaction_fee,
+                total_fees - service_fee,  # TODO
+                service_fee,
                 item.get('status_code'),
                 invoice.get('business_identifier')
             ]

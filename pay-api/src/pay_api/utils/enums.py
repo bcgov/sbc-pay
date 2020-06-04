@@ -97,3 +97,10 @@ class Code(Enum):
 
     ERROR = 'errors'
     PAYMENT_STATUS = 'payment_statuses'
+
+
+class AccountType(Enum):
+    """Account types."""
+
+    BASIC = 'BASIC'
+    PREMIUM = 'PREMIUM'

@@ -19,8 +19,10 @@ from flask import current_app
 from sbc_common_components.tracing.service_tracing import ServiceTracing
 
 from pay_api.exceptions import BusinessException
+from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.utils.errors import Error
+from pay_api.utils.user_context import user_context
 
 
 @ServiceTracing.trace(ServiceTracing.enable_tracing, ServiceTracing.should_be_tracing)
@@ -41,6 +43,8 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         self._priority_fee: float = 0
         self._future_effective_fee: float = 0
         self._waived_fee_amount: float = 0
+        self._quantity: int = 1
+        self._service_fees: float = 0
 
     @property
     def _dao(self):
@@ -134,7 +138,8 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
     @property
     def total(self):
         """Return the total fees calculated."""
-        return self._fee_amount + self.pst + self.gst + self.priority_fee + self.future_effective_fee
+        return self._fee_amount + self.pst + self.gst + self.priority_fee \
+            + self.future_effective_fee + self.service_fees
 
     @property
     def fee_amount(self):
@@ -176,6 +181,16 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         self._future_effective_fee = value
 
     @property
+    def service_fees(self):
+        """Return the service_fees."""
+        return self._service_fees
+
+    @service_fees.setter
+    def service_fees(self, value: float):
+        """Set the service_fees."""
+        self._service_fees = value
+
+    @property
     def gst(self):
         """Return the fee amount."""
         return 0  # TODO
@@ -187,8 +202,15 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
 
     @property
     def quantity(self):
-        """Return the fee amount."""
-        return 1  # TODO
+        """Return the quantity."""
+        return self._quantity
+
+    @quantity.setter
+    def quantity(self, value: int):
+        """Set the quantity."""
+        self._quantity = value
+        if self._quantity and self._quantity > 1:
+            self._fee_amount = self._fee_amount * self._quantity
 
     @description.setter
     def description(self, value: str):
@@ -209,8 +231,8 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
                 'pst': self.pst
             },
             'total': self.total,
-            'service_fees': 0,  # TODO Remove
-            'processing_fees': 0  # TODO Remove
+            'service_fees': self._service_fees,
+            'processing_fees': 0
         }
         return d
 
@@ -219,6 +241,7 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         self._dao.save()
 
     @classmethod
+    @user_context
     def find_by_corp_type_and_filing_type(  # pylint: disable=too-many-arguments
             cls,
             corp_type: str,
@@ -238,7 +261,15 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         if not fee_schedule_dao:
             raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
         fee_schedule = FeeSchedule()
+        fee_schedule.quantity = kwargs.get('quantity')
         fee_schedule._dao = fee_schedule_dao  # pylint: disable=protected-access
+
+        # Set transaction fees
+        if kwargs.get('include_service_fees', False):
+            corp_type = CorpTypeModel.find_by_code(fee_schedule.corp_type_code)
+            if corp_type.service_fee:
+                service_fees = corp_type.service_fee.amount
+                fee_schedule.service_fees = service_fees
 
         if kwargs.get('is_priority') and fee_schedule_dao.priority_fee:
             fee_schedule.priority_fee = fee_schedule_dao.priority_fee.amount
@@ -248,6 +279,7 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
             fee_schedule.fee_amount = 0
             fee_schedule.priority_fee = 0
             fee_schedule.future_effective_fee = 0
+            fee_schedule.service_fees = 0
 
         # fee_schedule.transaction_fees = Invoice.calculate_transaction_fees(account.payment_system_code, corp_type)
 

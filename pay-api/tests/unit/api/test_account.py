@@ -169,3 +169,25 @@ def test_account_purchase_history_export_invalid_request(session, client, jwt, a
     }), headers=headers)
 
     assert rv.status_code == 400
+
+
+def test_account_purchase_history_default_list(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    # Create 11 payments
+    for i in range(11):
+        rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+
+    payment: Payment = Payment.find_by_id(rv.json.get('id'))
+    credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
+
+    rv = client.post(f'/api/v1/accounts/{pay_account.auth_account_id}/payments/queries',
+                     data=json.dumps({}),
+                     headers=headers)
+
+    assert rv.status_code == 200
+    # Assert the total is coming as 10 which is the value of default TRANSACTION_REPORT_DEFAULT_TOTAL
+    assert rv.json.get('total') == 10

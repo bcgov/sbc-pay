@@ -58,3 +58,10 @@ jobs:
           pip install .
           export PYTHONPATH=./src/
           pytest
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          file: ./bcol-api/coverage.xml
+          flags: bcolapi
+          name: codecov-bcol-api
+          fail_ci_if_error: true

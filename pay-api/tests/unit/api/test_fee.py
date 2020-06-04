@@ -22,7 +22,6 @@ from pay_api.models import CorpType, FeeCode, FeeSchedule, FilingType
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import Role
 
-
 token_header = {
     'alg': 'RS256',
     'typ': 'JWT',
@@ -202,10 +201,12 @@ def factory_fee_model(
 
 def factory_corp_type_model(
         corp_type_code: str,
-        corp_type_description: str):
+        corp_type_description: str,
+        service_fee_code: str = None):
     """Return the corp type model."""
     corp_type = CorpType(code=corp_type_code,
-                         description=corp_type_description)
+                         description=corp_type_description,
+                         service_fee_code=service_fee_code)
     corp_type.save()
     return corp_type
 

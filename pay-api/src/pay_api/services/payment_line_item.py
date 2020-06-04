@@ -39,9 +39,9 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         self._gst: float = None
         self._pst: float = None
         self._total: float = None
-        self._quantity: int = None
+        self._quantity: int = 1
         self._line_item_status_code: str = None
-        self._waived_fees: float = None
+        self._waived_fees: float = 0
         self._waived_by: str = None
 
     @property
@@ -247,14 +247,16 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         p.priority_fees = fee.priority_fee
         p.pst = fee.pst
         p.future_effective_fees = fee.future_effective_fee
-        p.quantity = fee.quantity
+        p.quantity = fee.quantity if fee.quantity else 1
         p.line_item_status_code = LineItemStatus.ACTIVE.value
+        p.waived_fees = fee.waived_fee_amount
+
         if fee.waived_fee_amount > 0:
             if user.has_role(Role.STAFF.value):
-                p.waived_fees = fee.waived_fee_amount
                 p.waived_by = user.user_name
             else:
                 raise BusinessException(Error.FEE_OVERRIDE_NOT_ALLOWED)
+
         p_dao = p.flush()
 
         p = PaymentLineItem()
