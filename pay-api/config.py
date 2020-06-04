@@ -126,6 +126,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     KEYCLOAK_SERVICE_ACCOUNT_ID = _get_config('KEYCLOAK_SERVICE_ACCOUNT_ID')
     KEYCLOAK_SERVICE_ACCOUNT_SECRET = _get_config('KEYCLOAK_SERVICE_ACCOUNT_SECRET')
 
+    # Default number of transactions to be returned for transaction reporting
+    TRANSACTION_REPORT_DEFAULT_TOTAL = int(_get_config('TRANSACTION_REPORT_DEFAULT_TOTAL', default=50))
 
     TESTING = False
     DEBUG = True
@@ -231,6 +233,8 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     BCOL_API_ENDPOINT = 'http://localhost:8080/bcol-api'
 
     VALID_REDIRECT_URLS = ['http://localhost:8080/*']
+
+    TRANSACTION_REPORT_DEFAULT_TOTAL = 10
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
