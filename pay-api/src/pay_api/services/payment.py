@@ -174,13 +174,14 @@ class Payment:  # pylint: disable=too-many-instance-attributes
                                 limit: int, return_all: bool = False):
         """Search purchase history for the account."""
         current_app.logger.debug(f'<search_purchase_history {auth_account_id}')
-        purchases, total = PaymentModel.search_purchase_history(auth_account_id, search_filter, page, limit, return_all)
-        # If the request is not to return all and if the filter is empty, return N number of records
+        # If the request filter is empty, return N number of records
         # Adding offset degrades performance, so just override total records by default value if no filter is provided
-        if (not return_all) and (not bool(search_filter) or not any(search_filter.values())):
-            default_total = current_app.config.get('TRANSACTION_REPORT_DEFAULT_TOTAL')
-            total = default_total if total > default_total else total
+        max_no_records: int = 0
+        if not bool(search_filter) or not any(search_filter.values()):
+            max_no_records = current_app.config.get('TRANSACTION_REPORT_DEFAULT_TOTAL')
 
+        purchases, total = PaymentModel.search_purchase_history(auth_account_id, search_filter, page, limit, return_all,
+                                                                max_no_records)
         data = {
             'total': total,
             'page': page,

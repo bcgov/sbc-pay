@@ -58,12 +58,12 @@ def get_claims(app_request=None, role: str = Role.EDITOR.value, username: str = 
     return claim
 
 
-def get_payment_request(business_identifier: str = 'CP0001234'):
+def get_payment_request(business_identifier: str = 'CP0001234', corp_type: str = 'CP'):
     """Return a payment request object."""
     return {
         'businessInfo': {
             'businessIdentifier': business_identifier,
-            'corpType': 'CP',
+            'corpType': corp_type,
             'businessName': 'ABC Corp',
             'contactInfo': {
                 'city': 'Victoria',

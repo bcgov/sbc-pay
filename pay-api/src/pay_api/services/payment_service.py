@@ -63,6 +63,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         routing_slip_number = get_str_by_path(payment_request, 'accountInfo/routingSlip')
         filing_id = filing_info.get('filingIdentifier', None)
         folio_number = filing_info.get('folioNumber', get_str_by_path(authorization, 'business/folioNumber'))
+
         corp_type = business_info.get('corpType', None)
         payment_method = _get_payment_method(payment_request, authorization)
 
@@ -231,7 +232,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                         line_items,
                         invoice.id,
                         inv_number,
-                        len(invoice.references)
+                        len(invoice.references),
+                        corp_type_code=invoice.corp_type_code
                     )
                     current_app.logger.debug('Updating invoice record')
                     invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
@@ -330,7 +332,8 @@ def _calculate_fees(corp_type, filing_info):
             jurisdiction=None,
             is_priority=filing_type_info.get('priority'),
             is_future_effective=filing_type_info.get('futureEffective'),
-            waive_fees=filing_type_info.get('waiveFees')
+            waive_fees=filing_type_info.get('waiveFees'),
+            quantity=filing_type_info.get('quantity')
         )
         if filing_type_info.get('filingDescription'):
             fee.description = filing_type_info.get('filingDescription')

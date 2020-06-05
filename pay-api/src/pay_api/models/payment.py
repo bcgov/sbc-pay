@@ -68,8 +68,9 @@ class Payment(Audit):  # pylint: disable=too-many-instance-attributes
         return query.one_or_none()
 
     @classmethod
-    def search_purchase_history(cls, auth_account_id: str, search_filter: Dict,  # pylint:disable=too-many-arguments
-                                page: int, limit: int, return_all: bool):
+    def search_purchase_history(cls,  # pylint:disable=too-many-arguments, too-many-locals, too-many-branches
+                                auth_account_id: str, search_filter: Dict,
+                                page: int, limit: int, return_all: bool, max_no_records: int = 0):
         """Search for purchase history."""
         # Payment Account Sub Query
         payment_account_sub_query = db.session.query(PaymentAccount).filter(
@@ -122,9 +123,17 @@ class Payment(Audit):  # pylint: disable=too-many-instance-attributes
             # Add pagination
             pagination = query.paginate(per_page=limit, page=page)
             result, count = pagination.items, pagination.total
+            # If maximum number of records is provided, return it as total
+            if max_no_records > 0:
+                count = max_no_records if max_no_records < count else count
         else:
-            result = query.all()
-            count = len(result)
+            # If maximum number of records is provided, set the page with that number
+            if max_no_records > 0:
+                pagination = query.paginate(per_page=max_no_records, page=1)
+                result, count = pagination.items, max_no_records
+            else:
+                result = query.all()
+                count = len(result)
 
         return result, count
 

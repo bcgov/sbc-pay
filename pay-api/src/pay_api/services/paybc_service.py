@@ -24,6 +24,7 @@ from dateutil import parser
 from flask import current_app
 from requests import HTTPError
 
+from pay_api.models.corp_type import CorpType as CorpTypeModel
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
@@ -32,7 +33,6 @@ from pay_api.utils.constants import (
     DEFAULT_ADDRESS_LINE_1, DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
     PAYBC_ADJ_ACTIVITY_NAME, PAYBC_BATCH_SOURCE, PAYBC_CUST_TRX_TYPE, PAYBC_LINE_TYPE, PAYBC_TERM_NAME)
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem
-
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -69,11 +69,14 @@ class PaybcService(PaymentSystemService, OAuthService):
             'site_number': site.get('site_number')
         }
 
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str, **kwargs):
+    def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
+                       line_items: [PaymentLineItem], invoice_id: str, **kwargs):
         """Create Invoice in PayBC."""
         current_app.logger.debug('<create_invoice')
         now = datetime.datetime.now()
         curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
+        corp_type: CorpTypeModel = CorpTypeModel.find_by_code(kwargs.get('corp_type_code'))
+
         invoice_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/' \
             .format(payment_account.paybc_party, payment_account.paybc_account, payment_account.paybc_site)
 
@@ -100,11 +103,25 @@ class PaybcService(PaymentSystemService, OAuthService):
                 {
                     'line_number': index,
                     'line_type': PAYBC_LINE_TYPE,
-                    'memo_line_name': current_app.config.get('PAYBC_MEMO_LINE_NAME'),
+                    'memo_line_name': corp_type.gl_memo,
                     'description': line_item.description,
                     'attribute1': line_item.description,
                     'unit_price': line_item.total,
-                    'quantity': line_item.quantity
+                    'quantity': 1
+                }
+            )
+
+        # If there is a service fees add a new line for the service fees.
+        if corp_type.service_fee is not None and corp_type.service_fee.amount > 0:
+            invoice['lines'].append(
+                {
+                    'line_number': index + 1,
+                    'line_type': PAYBC_LINE_TYPE,
+                    'memo_line_name': corp_type.service_gl_memo,
+                    'description': 'Service Fee',
+                    'attribute1': 'Service Fee',
+                    'unit_price': corp_type.service_fee.amount,
+                    'quantity': 1
                 }
             )
 
@@ -124,7 +141,8 @@ class PaybcService(PaymentSystemService, OAuthService):
                        line_items: [PaymentLineItem],
                        invoice_id: int,
                        paybc_inv_number: str,
-                       reference_count: int = 0):
+                       reference_count: int = 0,
+                       **kwargs):
         """Update the invoice.
 
         1. Adjust the existing invoice to zero
@@ -132,7 +150,8 @@ class PaybcService(PaymentSystemService, OAuthService):
         """
         self.cancel_invoice(payment_account,
                             paybc_inv_number)
-        return self.create_invoice(payment_account, line_items, f'{invoice_id}-{reference_count}')
+        return self.create_invoice(payment_account, line_items, f'{invoice_id}-{reference_count}',
+                                   corp_type_code=kwargs.get('corp_type_code'))
 
     def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
         """Adjust the invoice to zero."""

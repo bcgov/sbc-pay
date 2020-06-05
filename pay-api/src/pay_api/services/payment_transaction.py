@@ -391,7 +391,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
             publish_response(payload=payload)
         except Exception as e:  # pylint: disable=broad-except
             current_app.logger.error(e)
-            current_app.logger.warn(
+            current_app.logger.warning(
                 f'Notification to Queue failed, marking the transaction : {transaction_dao.id} as EVENT_FAILED',
                 e)
             transaction_dao.status_code = TransactionStatus.EVENT_FAILED.value

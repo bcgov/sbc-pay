@@ -82,7 +82,7 @@ class AccountPurchaseReport(Resource):
         if not valid_format:
             return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
-        report_name = 'Payment-Report-{}'.format(datetime.now().strftime('%Y-%m-%d-%H-%M'))
+        report_name = 'bcregistry-transactions-{}'.format(datetime.now().strftime('%m-%d-%Y'))
 
         if response_content_type == ContentType.PDF.value:
             report_name = f'{report_name}.pdf'

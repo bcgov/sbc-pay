@@ -203,7 +203,8 @@ def test_search_payment_history_for_all(session):
     results = Payment_service.search_all_purchase_history(auth_account_id=auth_account_id, search_filter={})
     assert results is not None
     assert results.get('items') is not None
-    assert results.get('total') == 20
+    # Returns only the default number if payload is empty
+    assert results.get('total') == 10
 
 
 def test_create_payment_report_csv(session, rest_call_mock):
