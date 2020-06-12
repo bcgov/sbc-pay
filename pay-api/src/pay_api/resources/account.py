@@ -52,7 +52,7 @@ class AccountPurchaseHistory(Resource):
             return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
         # Check if user is authorized to perform this action
-        check_auth(business_identifier=None, account_id=account_number, contains_role=EDIT_ROLE)
+        check_auth(business_identifier=None, account_id=account_number, contains_role=EDIT_ROLE, is_premium=True)
 
         page: int = int(request.args.get('page', '1'))
         limit: int = int(request.args.get('limit', '10'))
@@ -90,7 +90,7 @@ class AccountPurchaseReport(Resource):
             report_name = f'{report_name}.csv'
 
         # Check if user is authorized to perform this action
-        check_auth(business_identifier=None, account_id=account_number, contains_role=EDIT_ROLE)
+        check_auth(business_identifier=None, account_id=account_number, contains_role=EDIT_ROLE, is_premium=True)
 
         report = Payment.create_payment_report(account_number, request_json, response_content_type, report_name)
         response = Response(report, 201)
