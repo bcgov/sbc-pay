@@ -16,7 +16,7 @@
 from flask import abort, current_app
 
 from pay_api.services.oauth_service import OAuthService as RestService
-from pay_api.utils.enums import AuthHeaderType, ContentType, Role
+from pay_api.utils.enums import AccountType, AuthHeaderType, ContentType, Role
 from pay_api.utils.user_context import UserContext, user_context
 
 
@@ -80,6 +80,10 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
                         'bcOnlineAccountId': org_response['payment_settings'][0].get('bcolAccountId', None)
                     }
                 is_authorized = True
+
+            # Check if premium flag is required
+            if kwargs.get('is_premium', False) and auth_response['account']['accountType'] != AccountType.PREMIUM.value:
+                is_authorized = False
 
     if not is_authorized:
         abort(403)
