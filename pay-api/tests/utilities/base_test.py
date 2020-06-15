@@ -286,7 +286,8 @@ def factory_payment(
 
 def factory_invoice(payment: Payment, payment_account: str, status_code: str = InvoiceStatus.CREATED.value,
                     corp_type_code='CP',
-                    business_identifier: str = 'CP0001234'):
+                    business_identifier: str = 'CP0001234',
+                    service_fees: float = 0.0):
     """Factory."""
     bcol_account_id = None
     credit_account_id = None
@@ -309,7 +310,8 @@ def factory_invoice(payment: Payment, payment_account: str, status_code: str = I
         created_on=datetime.now(),
         business_identifier=business_identifier,
         corp_type_code=corp_type_code,
-        folio_number='1234567890'
+        folio_number='1234567890',
+        service_fees=service_fees
     )
 
 

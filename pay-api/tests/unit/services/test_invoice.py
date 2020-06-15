@@ -49,6 +49,7 @@ def test_invoice_saved_from_new(session):
     assert invoice.paid is None
     assert invoice.payment_line_items is not None
     assert invoice.folio_number is not None
+    assert invoice.business_identifier is not None
 
 
 def test_invoice_invalid_lookup(session):
@@ -115,3 +116,31 @@ def test_invoice_find_by_invalid_payment_id(session):
 
     assert invoice is not None
     assert invoice.id is None
+
+
+def test_invoice_with_temproary_business_identifier(session):
+    """Assert that the invoice dictionary is not include temproary business identifier."""
+    payment_account = factory_payment_account()
+    payment = factory_payment()
+    payment_account.save()
+    payment.save()
+    i = factory_invoice(payment=payment, payment_account=payment_account, business_identifier='Tzxcasd')
+    i.save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(i.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+    invoice = Invoice_service.find_by_id(i.id, skip_auth_check=True)
+    assert invoice is not None
+    assert invoice.id is not None
+    assert invoice.payment_id is not None
+    assert invoice.invoice_status_code is not None
+    assert invoice.refund is None
+    assert invoice.payment_date is None
+    assert invoice.total is not None
+    assert invoice.paid is None
+    assert invoice.payment_line_items is not None
+    assert invoice.folio_number is not None
+    assert invoice.business_identifier is not None
+    invoice_dict = invoice.asdict()
+    print(invoice_dict)
+    assert invoice_dict.get('business_identifier') is None
