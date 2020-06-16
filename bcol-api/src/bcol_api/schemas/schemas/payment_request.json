@@ -58,7 +58,6 @@
   "required": [
     "feeCode",
     "userId",
-    "invoiceNumber",
-    "folioNumber"
+    "invoiceNumber"
   ]
 }
