@@ -104,7 +104,7 @@ def test_create_receipt_with_invoice(session, public_user_mock):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment, payment_account)
+    invoice = factory_invoice(payment, payment_account, service_fees=1.5)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')

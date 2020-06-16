@@ -106,4 +106,8 @@ class InvoiceSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         if 'line_items' in data and not data.get('line_items'):
             data.pop('line_items')
 
+        # do not include temproary business identifier
+        if data.get('business_identifier', None) and data.get('business_identifier').startswith('T'):
+            data.pop('business_identifier')
+
         return data
