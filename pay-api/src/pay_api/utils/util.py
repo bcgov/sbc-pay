@@ -59,7 +59,7 @@ def get_str_by_path(payload: Dict, path: str) -> str:
     """Return the string value from the dict for the path using dpath library."""
     try:
         raw = dpath_util.get(payload, path)
-        return str(raw)
+        return str(raw) if raw is not None else raw
     except (IndexError, KeyError, TypeError):
         return None
 
