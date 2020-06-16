@@ -38,7 +38,7 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
             'Key': pay_request.get('invoiceNumber'),
             'Account': '',
             'RateType': '',
-            'Folio': pay_request.get('folioNumber'),
+            'Folio': pay_request.get('folioNumber', None),
             'FormNumber': pay_request.get('formNumber', ''),
             'Quantity': pay_request.get('quantity', ''),
             'Rate': padded_amount,

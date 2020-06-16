@@ -19,7 +19,7 @@ from typing import Any, Dict
 from flask import current_app
 from requests.exceptions import HTTPError
 
-from pay_api.exceptions import BusinessException
+from pay_api.exceptions import BusinessException, Error
 from pay_api.models.corp_type import CorpType
 from pay_api.utils.enums import AuthHeaderType, ContentType
 from pay_api.utils.enums import PaymentSystem as PaySystemCode
@@ -71,7 +71,7 @@ class BcolService(PaymentSystemService, OAuthService):
             # 'userId': payment_account.bcol_user_id if payment_account.bcol_user_id else 'PE25020',
             'userId': payment_account.bcol_user_id,
             'invoiceNumber': str(invoice_id),
-            'folioNumber': kwargs.get('folio_number'),
+            'folioNumber': kwargs.get('folio_number', ''),
             'amount': str(amount_excluding_txn_fees),
             'rate': str(amount_excluding_txn_fees),
             'remarks': remarks[:50],
@@ -85,7 +85,12 @@ class BcolService(PaymentSystemService, OAuthService):
             pay_response.raise_for_status()
         except HTTPError as bol_err:
             current_app.logger.error(bol_err)
-            raise BusinessException(get_bcol_error(int(response_json.get('type'))))
+            error_type: str = response_json.get('type')
+            if error_type.isdigit():
+                error = get_bcol_error(int(error_type))
+            else:
+                error = Error.BCOL_ERROR
+            raise BusinessException(error)
 
         invoice = {
             'invoice_number': response_json.get('key'),
