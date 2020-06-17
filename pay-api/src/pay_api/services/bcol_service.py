@@ -71,12 +71,14 @@ class BcolService(PaymentSystemService, OAuthService):
             # 'userId': payment_account.bcol_user_id if payment_account.bcol_user_id else 'PE25020',
             'userId': payment_account.bcol_user_id,
             'invoiceNumber': str(invoice_id),
-            'folioNumber': kwargs.get('folio_number', ''),
+            'folioNumber': kwargs.get('folio_number', None),
             'amount': str(amount_excluding_txn_fees),
             'rate': str(amount_excluding_txn_fees),
             'remarks': remarks[:50],
             'feeCode': self._get_fee_code(kwargs.get('corp_type_code'))
         }
+        if payload.get('folioNumber', None) is None:  # Set empty folio if None
+            payload['folioNumber'] = ''
         try:
             pay_response = self.post(pay_endpoint, user.bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
                                      payload, raise_for_error=False)
