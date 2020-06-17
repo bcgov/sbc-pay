@@ -77,7 +77,7 @@ class BcolService(PaymentSystemService, OAuthService):
             'remarks': remarks[:50],
             'feeCode': self._get_fee_code(kwargs.get('corp_type_code'))
         }
-        if payload('folioNumber', None) is None:  # Set empty folio if None
+        if payload.get('folioNumber', None) is None:  # Set empty folio if None
             payload['folioNumber'] = ''
         try:
             pay_response = self.post(pay_endpoint, user.bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
