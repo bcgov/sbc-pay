@@ -47,4 +47,3 @@ To prepare your local database:
 ## Openshift Environment
 
 View the [document](https://github.com/bcgov/sbc-auth/blob/development/docs/build-deploy.md).
-

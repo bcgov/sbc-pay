@@ -8,11 +8,12 @@ coverage:
   round: down
   range: "70...100"
   status:
-    patch: off
+    patch: no
     project:
       default: off
       backend:
         target: 80%
+        threshold: 5%
         flags:
           - payapi
           - bcolapi
