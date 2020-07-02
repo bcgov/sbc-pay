@@ -374,7 +374,7 @@
               <div class="fee-summary-label font-bold">{{item.description}}</div>
               <div class="fee-summary-value font-bold">$ {{ "%.2f"|format(item.filingFees) }} </div>
             </div>
-            {% if item.futureDateFee %}
+            {% if item.futureEffectiveFees %}
             <div class="fee-summary-row">
               <div class="fee-summary-label">Future Effective Date Fee</div>
               <div class="fee-summary-value">$ {{ "%.2f"|format(item.futureEffectiveFees) }}</div>
