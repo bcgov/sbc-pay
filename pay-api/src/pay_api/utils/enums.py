@@ -84,8 +84,6 @@ class PaymentSystem(Enum):
 class Role(Enum):
     """User Role."""
 
-    BASIC = 'basic'
-    PREMIUM = 'premium'
     STAFF = 'staff'
     VIEWER = 'view'
     EDITOR = 'edit'
