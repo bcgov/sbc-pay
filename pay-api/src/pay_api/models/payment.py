@@ -15,10 +15,12 @@
 
 from datetime import datetime
 from typing import Dict
+from flask import current_app
 
+import pytz
 from marshmallow import fields
 from sqlalchemy import ForeignKey
-from sqlalchemy import or_
+from sqlalchemy import func, or_
 from sqlalchemy.orm import relationship
 
 from pay_api.utils.enums import PaymentStatus
@@ -33,8 +35,8 @@ from .invoice import Invoice
 from .invoice import InvoiceSchema
 from .payment_account import PaymentAccount
 from .payment_method import PaymentMethod
-from .payment_system import PaymentSystem
 from .payment_status_code import PaymentStatusCode
+from .payment_system import PaymentSystem
 from .payment_transaction import PaymentTransactionSchema
 
 
@@ -112,9 +114,13 @@ class Payment(Audit):  # pylint: disable=too-many-instance-attributes
 
         if created_from and created_to:
             # Truncate time for from date and add max time for to date
-            created_from = created_from.replace(hour=0, minute=0, second=0, microsecond=0)
-            created_to = created_to.replace(hour=23, minute=59, second=59, microsecond=999999)
-            query = query.filter(Payment.created_on.between(created_from, created_to))
+            tz_name = current_app.config['LEGISLATIVE_TIMEZONE']
+            tz_local = pytz.timezone(tz_name)
+
+            created_from = created_from.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(tz_local)
+            created_to = created_to.replace(hour=23, minute=59, second=59, microsecond=999999).astimezone(tz_local)
+            query = query.filter(
+                func.timezone(tz_name, func.timezone('UTC', Payment.created_on)).between(created_from, created_to))
 
         # Add ordering
         query = query.order_by(Payment.created_on.desc())

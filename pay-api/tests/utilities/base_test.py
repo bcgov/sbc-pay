@@ -229,7 +229,7 @@ def get_waive_fees_payment_request(business_identifier: str = 'CP0001234'):
 def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code: str = 'CP',
                             payment_system_code: str = 'PAYBC', account_number='4101', bcol_user_id='test',
                             auth_account_id: str = '1234'):
-    """Factory."""
+    """Return Factory."""
     # Create a payment account
     account = PaymentAccount(auth_account_id=auth_account_id).save()
 
@@ -260,7 +260,7 @@ def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code: str 
 def factory_premium_payment_account(corp_number: str = 'CP0001234', corp_type_code: str = 'CP',
                                     payment_system_code: str = 'BCOL',
                                     bcol_user_id='PB25020', bcol_account_id='1234567890', auth_account_id='1234'):
-    """Factory."""
+    """Return Factory."""
     account = PaymentAccount(auth_account_id=auth_account_id).save()
 
     return BcolPaymentAccount(
@@ -272,15 +272,16 @@ def factory_premium_payment_account(corp_number: str = 'CP0001234', corp_type_co
 
 def factory_payment(
         payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC',
-        payment_status_code: str = PaymentStatus.CREATED.value
+        payment_status_code: str = PaymentStatus.CREATED.value,
+        created_on: datetime = datetime.now()
 ):
-    """Factory."""
+    """Return Factory."""
     return Payment(
         payment_system_code=payment_system_code,
         payment_method_code=payment_method_code,
         payment_status_code=payment_status_code,
         created_by='test',
-        created_on=datetime.now(),
+        created_on=created_on,
     )
 
 
@@ -288,7 +289,7 @@ def factory_invoice(payment: Payment, payment_account: str, status_code: str = I
                     corp_type_code='CP',
                     business_identifier: str = 'CP0001234',
                     service_fees: float = 0.0):
-    """Factory."""
+    """Return Factory."""
     bcol_account_id = None
     credit_account_id = None
     internal_account_id = None
@@ -317,7 +318,7 @@ def factory_invoice(payment: Payment, payment_account: str, status_code: str = I
 
 def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees: int = 10, total: int = 10,
                               status: str = LineItemStatus.ACTIVE.value):
-    """Factory."""
+    """Return Factory."""
     return PaymentLineItem(
         invoice_id=invoice_id,
         fee_schedule_id=fee_schedule_id,
@@ -335,7 +336,7 @@ def factory_payment_transaction(
         transaction_start_time: datetime = datetime.now(),
         transaction_end_time: datetime = datetime.now(),
 ):
-    """Factory."""
+    """Return Factory."""
     return PaymentTransaction(
         payment_id=payment_id,
         status_code=status_code,
@@ -347,7 +348,7 @@ def factory_payment_transaction(
 
 
 def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021'):
-    """Factory."""
+    """Return Factory."""
     return InvoiceReference(invoice_id=invoice_id,
                             status_code=InvoiceReferenceStatus.ACTIVE.value,
                             invoice_number=invoice_number)
