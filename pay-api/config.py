@@ -77,7 +77,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     SQLALCHEMY_DATABASE_URI = 'postgresql://{user}:{password}@{host}:{port}/{name}'.format(
         user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=int(DB_PORT), name=DB_NAME
     )
-    SQLALCHEMY_ECHO = False
+    SQLALCHEMY_ECHO = _get_config('SQLALCHEMY_ECHO', default='False').lower() == 'true'
 
     # JWT_OIDC Settings
     JWT_OIDC_WELL_KNOWN_CONFIG = _get_config('JWT_OIDC_WELL_KNOWN_CONFIG')
@@ -128,6 +128,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
 
     # Default number of transactions to be returned for transaction reporting
     TRANSACTION_REPORT_DEFAULT_TOTAL = int(_get_config('TRANSACTION_REPORT_DEFAULT_TOTAL', default=50))
+
+    # legislative timezone for future effective dating
+    LEGISLATIVE_TIMEZONE = os.getenv('LEGISLATIVE_TIMEZONE', 'America/Vancouver')
 
     TESTING = False
     DEBUG = True

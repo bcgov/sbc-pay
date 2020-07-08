@@ -23,6 +23,7 @@ from pay_api.services.payment import Payment as Payment_service
 from pay_api.utils.enums import InvoiceStatus
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account)
+import pytz
 
 
 def test_payment_saved_from_new(session):
@@ -241,3 +242,39 @@ def test_create_payment_report_pdf(session, rest_call_mock):
     Payment_service.create_payment_report(auth_account_id=auth_account_id, search_filter={},
                                           content_type='application/pdf', report_name='test')
     assert True  # If no error, then good
+
+
+def test_search_payment_history_with_tz(session):
+    """Assert that the search payment history is working."""
+    payment_account = factory_payment_account()
+    payment_created_on = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    payment_created_on = payment_created_on.astimezone(pytz.utc)
+    payment = factory_payment(payment_status_code='CREATED', created_on=payment_created_on)
+    payment_account.save()
+    payment.save()
+    invoice = factory_invoice(payment, payment_account)
+    invoice.save()
+    factory_invoice_reference(invoice.id).save()
+    auth_account_id = PaymentAccount.find_by_id(payment_account.account_id).auth_account_id
+
+    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
+                                                      search_filter={}, limit=1, page=1)
+    assert results is not None
+    assert results.get('items') is not None
+    assert results.get('total') == 1
+
+    # Add one more payment
+    payment_created_on = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    payment_created_on = payment_created_on.astimezone(pytz.utc)
+    payment = factory_payment(payment_status_code='CREATED', created_on=payment_created_on)
+    payment_account.save()
+    payment.save()
+    invoice = factory_invoice(payment, payment_account)
+    invoice.save()
+    factory_invoice_reference(invoice.id).save()
+
+    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
+                                                      search_filter={}, limit=1, page=1)
+    assert results is not None
+    assert results.get('items') is not None
+    assert results.get('total') == 2

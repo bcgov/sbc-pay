@@ -22,3 +22,4 @@ pylint<2.5
 pylint-flask
 pydocstyle<4
 lovely-pytest-docker
+isort<5
