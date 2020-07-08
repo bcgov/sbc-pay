@@ -4,8 +4,9 @@
 # Testing
 pytest
 pytest-mock
-pytest-cov
+requests
 pyhamcrest
+pytest-cov
 
 # Lint and code style
 flake8
@@ -17,6 +18,8 @@ flake8-quotes
 pep8-naming
 autopep8
 coverage
-pylint<2.5
+pylint
 pylint-flask
+pydocstyle
+isort<5
 lovely-pytest-docker

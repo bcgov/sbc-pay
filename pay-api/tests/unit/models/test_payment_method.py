@@ -21,7 +21,7 @@ from pay_api.models import PaymentMethod
 
 
 def factory_payment_method(code: str = 'CC', description='Credit Card'):
-    """Factory."""
+    """Return Factory."""
     return PaymentMethod(code=code, description=description)
 
 
