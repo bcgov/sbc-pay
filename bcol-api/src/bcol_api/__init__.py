@@ -24,11 +24,12 @@ from sbc_common_components.exception_handling.exception_handler import Exception
 from sbc_common_components.utils.camel_case_response import convert_to_camel
 
 import config
+from config import _Config
+
 from bcol_api.resources import API_BLUEPRINT, OPS_BLUEPRINT
 from bcol_api.utils.auth import jwt
 from bcol_api.utils.logging import setup_logging
 from bcol_api.utils.run_version import get_run_version
-from config import _Config
 
 
 import sentry_sdk  # noqa: I001; pylint: disable=ungrouped-imports,wrong-import-order; conflicts with Flake8

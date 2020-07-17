@@ -24,7 +24,7 @@ from pay_api.utils.enums import PaymentStatus
 
 
 def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC', payment_status_code='CREATED'):
-    """Factory."""
+    """Return Factory."""
     return Payment(payment_system_code=payment_system_code, payment_method_code=payment_method_code,
                    payment_status_code=payment_status_code, created_by='test', created_on=datetime.now())
 
