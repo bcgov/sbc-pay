@@ -41,8 +41,4 @@ project you agree to abide by its terms.
     License for the specific language governing permissions and limitations
     under the License.
 
-# Testing Thanks
 
-Thanks to BrowserStack for Testing Tool support via OpenSource Licensing
-
-[![BrowserStack](browserstack-logo-white-small.png)](http://browserstack.com/)

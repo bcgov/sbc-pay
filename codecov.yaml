@@ -1,7 +1,7 @@
 codecov:
   require_ci_to_pass: yes
   branch: development
-  max_report_age: off
+  max_report_age: no
 
 coverage:
   precision: 2
@@ -13,17 +13,12 @@ coverage:
       default: off
       backend:
         target: 80%
-        threshold: 5%
         flags:
           - payapi
           - bcolapi
           - reportapi
     branches:
       - development
-    if_not_found: success
-    if_ci_failed: error
-    informational: false
-    only_pulls: true
 
 ignore:
   - "^/tests/**/*" # ignore test harness code

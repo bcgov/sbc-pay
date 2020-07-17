@@ -3,160 +3,145 @@ apiVersion: v1
 metadata:
   name: cron-update-stale-payment
   annotations:
-    description: 'Scheduled Task to cleanup update-stale-payment records'
+    description: "Scheduled Task to cleanup update-stale-payment records"
     tags: cronjob
 objects:
-  -
-    kind: CronJob
+  - kind: CronJob
     apiVersion: batch/v1beta1
     metadata:
       name: cron-update-stale-payment
     spec:
       successfulJobsHistoryLimit: 5
       failedJobsHistoryLimit: 5
-      schedule: '0 */4 * * *'
+      schedule: "0 */4 * * *"
       suspend: false
       jobTemplate:
         spec:
           template:
             spec:
               containers:
-                -
-                  name: update-stale-payment
-                  image: 'docker-registry.default.svc:5000/l4ygcl-tools/update-stale-payment:${ENV_TAG}'
+                - name: update-stale-payment
+                  image: "docker-registry.default.svc:5000/l4ygcl-tools/update-stale-payment:${ENV_TAG}"
                   imagePullPolicy: Always
                   args:
                     - /bin/sh
-                    - '-c'
-                    - 'cd /opt/app-root/src; ./run.sh'
+                    - "-c"
+                    - "cd /opt/app-root/src; ./run.sh"
                   envFrom:
-                    - configMapRef:
-                        name: api-${TAG_NAME}-config
+                    - secretRef:
+                        name: pay-api-${TAG_NAME}-secret
                   env:
-                  - name: DATABASE_USERNAME
-                    valueFrom:
-                      configMapKeyRef:
-                        name: "${DATABASE_NAME}-${TAG_NAME}-config"
-                        key: DATABASE_USER
-                  - name: DATABASE_PASSWORD
-                    valueFrom:
-                      secretKeyRef:
-                        name: "${DATABASE_NAME}-${TAG_NAME}-secret"
-                        key: DATABASE_PASSWORD
-                  - name: DATABASE_NAME
-                    valueFrom:
-                      configMapKeyRef:
-                        name: "${DATABASE_NAME}-${TAG_NAME}-config"
-                        key: DATABASE_NAME
-                  - name: DATABASE_HOST
-                    valueFrom:
-                      configMapKeyRef:
-                        name: "${DATABASE_NAME}-${TAG_NAME}-config"
-                        key: DATABASE_HOST
-                  - name: DATABASE_PORT
-                    valueFrom:
-                      configMapKeyRef:
-                        name: "${DATABASE_NAME}-${TAG_NAME}-config"
-                        key: DATABASE_PORT
-                  - name: DATABASE_TEST_USERNAME
-                    valueFrom:
-                      configMapKeyRef:
-                        name: "${DATABASE_NAME}-${TAG_NAME}-config"
-                        key: DATABASE_TEST_USER
-                  - name: DATABASE_TEST_PASSWORD
-                    valueFrom:
-                      secretKeyRef:
-                        name: "${DATABASE_NAME}-${TAG_NAME}-secret"
-                        key: DATABASE_TEST_PASSWORD
-                  - name: DATABASE_TEST_NAME
-                    valueFrom:
-                      configMapKeyRef:
-                        name: "${DATABASE_NAME}-${TAG_NAME}-config"
-                        key: DATABASE_TEST_NAME
-                  - name: DATABASE_TEST_HOST
-                    valueFrom:
-                      configMapKeyRef:
-                        name: "${DATABASE_NAME}-${TAG_NAME}-config"
-                        key: DATABASE_TEST_HOST
-                  - name: DATABASE_TEST_PORT
-                    valueFrom:
-                      configMapKeyRef:
-                        name: "${DATABASE_NAME}-${TAG_NAME}-config"
-                        key: DATABASE_TEST_PORT
-                  
+                    - name: DATABASE_USERNAME
+                      valueFrom:
+                        configMapKeyRef:
+                          name: "${DATABASE_NAME}-${TAG_NAME}-config"
+                          key: DATABASE_USER
+                    - name: DATABASE_PASSWORD
+                      valueFrom:
+                        secretKeyRef:
+                          name: "${DATABASE_NAME}-${TAG_NAME}-secret"
+                          key: DATABASE_PASSWORD
+                    - name: DATABASE_NAME
+                      valueFrom:
+                        configMapKeyRef:
+                          name: "${DATABASE_NAME}-${TAG_NAME}-config"
+                          key: DATABASE_NAME
+                    - name: DATABASE_HOST
+                      valueFrom:
+                        configMapKeyRef:
+                          name: "${DATABASE_NAME}-${TAG_NAME}-config"
+                          key: DATABASE_HOST
+                    - name: DATABASE_PORT
+                      valueFrom:
+                        configMapKeyRef:
+                          name: "${DATABASE_NAME}-${TAG_NAME}-config"
+                          key: DATABASE_PORT
+                    - name: DATABASE_TEST_USERNAME
+                      valueFrom:
+                        configMapKeyRef:
+                          name: "${DATABASE_NAME}-${TAG_NAME}-config"
+                          key: DATABASE_TEST_USER
+                    - name: DATABASE_TEST_PASSWORD
+                      valueFrom:
+                        secretKeyRef:
+                          name: "${DATABASE_NAME}-${TAG_NAME}-secret"
+                          key: DATABASE_TEST_PASSWORD
+                    - name: DATABASE_TEST_NAME
+                      valueFrom:
+                        configMapKeyRef:
+                          name: "${DATABASE_NAME}-${TAG_NAME}-config"
+                          key: DATABASE_TEST_NAME
+                    - name: DATABASE_TEST_HOST
+                      valueFrom:
+                        configMapKeyRef:
+                          name: "${DATABASE_NAME}-${TAG_NAME}-config"
+                          key: DATABASE_TEST_HOST
+                    - name: DATABASE_TEST_PORT
+                      valueFrom:
+                        configMapKeyRef:
+                          name: "${DATABASE_NAME}-${TAG_NAME}-config"
+                          key: DATABASE_TEST_PORT
+
               restartPolicy: Never
               concurrencyPolicy: Forbid
 parameters:
-  -
-    name: ENV_TAG
+  - name: ENV_TAG
     displayName: ENV_TAG
     description: "The name assigned to all of the OpenShift resources associated to the\nserver instance."
     required: true
     value: latest
-  -
-    name: NAME
+  - name: NAME
     displayName: Name
     description: "The name assigned to all of the OpenShift resources associated to the\nserver instance."
     required: true
     value: pay-api
-  -
-    name: APP_GROUP
-    displayName: 'App Group'
-    description: 'The name assigned to all of the deployments in this project.'
+  - name: APP_GROUP
+    displayName: "App Group"
+    description: "The name assigned to all of the deployments in this project."
     required: true
     value: sbc-pay
-  -
-    name: IMAGE_NAMESPACE
-    displayName: 'Image Namespace'
+  - name: IMAGE_NAMESPACE
+    displayName: "Image Namespace"
     required: true
     description: "The namespace of the OpenShift project containing the imagestream for\nthe application."
     value: l4ygcl-tools
-  -
-    name: TAG_NAME
-    displayName: 'Environment TAG name'
-    description: 'The TAG name for this environment, e.g., dev, test, prod'
+  - name: TAG_NAME
+    displayName: "Environment TAG name"
+    description: "The TAG name for this environment, e.g., dev, test, prod"
     required: true
     value: dev
-  -
-    name: DATABASE_NAME
-    displayName: 'Database App Name'
-    description: 'A valid database app name used by the service.'
+  - name: DATABASE_NAME
+    displayName: "Database App Name"
+    description: "A valid database app name used by the service."
     required: true
     value: postgresql
-  -
-    name: CPU_REQUEST
-    displayName: 'Resources CPU Request'
-    description: 'The resources CPU request (in cores) for this build.'
+  - name: CPU_REQUEST
+    displayName: "Resources CPU Request"
+    description: "The resources CPU request (in cores) for this build."
     required: true
     value: 100m
-  -
-    name: CPU_LIMIT
-    displayName: 'Resources CPU Limit'
-    description: 'The resources CPU limit (in cores) for this build.'
+  - name: CPU_LIMIT
+    displayName: "Resources CPU Limit"
+    description: "The resources CPU limit (in cores) for this build."
     required: true
     value: 750m
-  -
-    name: MEMORY_REQUEST
-    displayName: 'Resources Memory Request'
-    description: 'The resources Memory request (in Mi, Gi, etc) for this build.'
+  - name: MEMORY_REQUEST
+    displayName: "Resources Memory Request"
+    description: "The resources Memory request (in Mi, Gi, etc) for this build."
     required: true
     value: 100Mi
-  -
-    name: MEMORY_LIMIT
-    displayName: 'Resources Memory Limit'
-    description: 'The resources Memory limit (in Mi, Gi, etc) for this build.'
+  - name: MEMORY_LIMIT
+    displayName: "Resources Memory Limit"
+    description: "The resources Memory limit (in Mi, Gi, etc) for this build."
     required: true
     value: 2Gi
-  -
-    name: REPLICAS
-    displayName: 'The number of replicas to run'
-    description: 'The number of replicas to run in this environment.'
+  - name: REPLICAS
+    displayName: "The number of replicas to run"
+    description: "The number of replicas to run in this environment."
     required: true
-    value: '1'
-  -
-    name: JAEGER_COLLECTOR
-    displayName: 'Jaeger Tracing collector address'
-    description: 'Jaeger Tracing collector address.'
+    value: "1"
+  - name: JAEGER_COLLECTOR
+    displayName: "Jaeger Tracing collector address"
+    description: "Jaeger Tracing collector address."
     required: true
-    value: '--collector.host-port=jaeger-collector.d7eovc-dev.svc:14267'
-
+    value: "--collector.host-port=jaeger-collector.d7eovc-dev.svc:14267"
