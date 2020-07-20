@@ -55,14 +55,14 @@ class PaybcService(PaymentSystemService, OAuthService):
         """Return PAYBC as the system code."""
         return PaymentSystem.PAYBC.value
 
-    def create_account(self, name: str, account_info: Dict[str, Any], authorization: Dict[str, Any]):
+    def create_account(self, name: str, contact_info: Dict[str, Any], authorization: Dict[str, Any], **kwargs):
         """Create account in PayBC."""
         # Strip all special characters from name
         name = re.sub(r'[^a-zA-Z0-9]+', ' ', name)
         access_token = self.__get_token().json().get('access_token')
         party = self.__create_party(access_token, name)
         account = self.__create_paybc_account(access_token, party)
-        site = self.__create_site(access_token, party, account, account_info)
+        site = self.__create_site(access_token, party, account, contact_info)
         return {
             'party_number': party.get('party_number'),
             'account_number': account.get('account_number'),
@@ -70,12 +70,15 @@ class PaybcService(PaymentSystemService, OAuthService):
         }
 
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
-                       line_items: [PaymentLineItem], invoice_id: str, **kwargs):
+                       line_items: [PaymentLineItem], invoice: Invoice, **kwargs):
         """Create Invoice in PayBC."""
         current_app.logger.debug('<create_invoice')
         now = datetime.datetime.now()
         curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
         corp_type: CorpTypeModel = CorpTypeModel.find_by_code(kwargs.get('corp_type_code'))
+        invoice_number: str = kwargs.get('invoice_number', None)
+        if invoice_number is None:
+            invoice_number = invoice.id
 
         invoice_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/' \
             .format(payment_account.paybc_party, payment_account.paybc_account, payment_account.paybc_site)
@@ -84,7 +87,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         transaction_num_suffix = secrets.token_hex(10) \
             if current_app.config.get('GENERATE_RANDOM_INVOICE_NUMBER', 'False').lower() == 'true' \
             else payment_account.corp_number
-        transaction_number = f'{invoice_id}-{transaction_num_suffix}'.replace(' ', '')
+        transaction_number = f'{invoice_number}-{transaction_num_suffix}'.replace(' ', '')
 
         invoice = dict(
             batch_source=PAYBC_BATCH_SOURCE,
@@ -148,10 +151,12 @@ class PaybcService(PaymentSystemService, OAuthService):
         1. Adjust the existing invoice to zero
         2. Create a new invoice
         """
-        self.cancel_invoice(payment_account,
-                            paybc_inv_number)
-        return self.create_invoice(payment_account, line_items, f'{invoice_id}-{reference_count}',
-                                   corp_type_code=kwargs.get('corp_type_code'))
+        self.cancel_invoice(payment_account, paybc_inv_number)
+        return self.create_invoice(payment_account=payment_account,
+                                   line_items=line_items,
+                                   invoice=None,
+                                   corp_type_code=kwargs.get('corp_type_code'),
+                                   invoice_number=f'{invoice_id}-{reference_count}')
 
     def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
         """Adjust the invoice to zero."""
@@ -224,22 +229,22 @@ class PaybcService(PaymentSystemService, OAuthService):
         current_app.logger.debug('>Creating account')
         return account_response.json()
 
-    def __create_site(self, access_token, party, account, account_info):
+    def __create_site(self, access_token, party, account, contact_info):
         """Create site in PayBC."""
         current_app.logger.debug('<Creating site ')
-        if not account_info:
-            account_info = {}
+        if not contact_info:
+            contact_info = {}
         site_url = current_app.config.get('PAYBC_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/' \
             .format(account.get('party_number', None), account.get('account_number', None))
         site: Dict[str, Any] = {
             'party_number': account.get('party_number', None),
             'account_number': account.get('account_number', None),
             'site_name': party.get('customer_name') + ' Site',
-            'city': get_non_null_value(account_info.get('city'), DEFAULT_CITY),
-            'address_line_1': get_non_null_value(account_info.get('addressLine1'), DEFAULT_ADDRESS_LINE_1),
-            'postal_code': get_non_null_value(account_info.get('postalCode'), DEFAULT_POSTAL_CODE).replace(' ', ''),
-            'province': get_non_null_value(account_info.get('province'), DEFAULT_JURISDICTION),
-            'country': get_non_null_value(account_info.get('country'), DEFAULT_COUNTRY),
+            'city': get_non_null_value(contact_info.get('city'), DEFAULT_CITY),
+            'address_line_1': get_non_null_value(contact_info.get('addressLine1'), DEFAULT_ADDRESS_LINE_1),
+            'postal_code': get_non_null_value(contact_info.get('postalCode'), DEFAULT_POSTAL_CODE).replace(' ', ''),
+            'province': get_non_null_value(contact_info.get('province'), DEFAULT_JURISDICTION),
+            'country': get_non_null_value(contact_info.get('country'), DEFAULT_COUNTRY),
             'customer_site_id': '1'
         }
 

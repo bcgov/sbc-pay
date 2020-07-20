@@ -142,5 +142,4 @@ def test_invoice_with_temproary_business_identifier(session):
     assert invoice.folio_number is not None
     assert invoice.business_identifier is not None
     invoice_dict = invoice.asdict()
-    print(invoice_dict)
     assert invoice_dict.get('business_identifier') is None

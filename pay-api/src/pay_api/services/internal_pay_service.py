@@ -26,7 +26,6 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import PaymentSystem
-
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -42,16 +41,17 @@ class InternalPayService(PaymentSystemService, OAuthService):
         """Return INTERNAL as the system code."""
         return PaymentSystem.INTERNAL.value
 
-    def create_account(self, name: str, account_info: Dict[str, Any], authorization: Dict[str, Any]):
+    def create_account(self, name: str, contact_info: Dict[str, Any], authorization: Dict[str, Any], **kwargs):
         """Create account internal."""
         return {}
 
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str, **kwargs):
+    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
+                       **kwargs):
         """Return a static invoice number."""
         current_app.logger.debug('<create_invoice')
 
         invoice = {
-            'invoice_number': f'{invoice_id}'
+            'invoice_number': f'{invoice.id}'
         }
 
         current_app.logger.debug('>create_invoice')

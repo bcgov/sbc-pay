@@ -507,3 +507,48 @@ def test_payment_creation_with_folio_number(session, client, jwt, app):
 
     assert schema_utils.validate(rv.json, 'payment_response')[0]
     assert rv.json.get('invoices')[0].get('folioNumber') == 'MOCK1234'
+
+
+def test_bcol_payment_creation_by_staff(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(role='staff', username='idir/tester', login_source='IDIR'), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    dat_number: str = 'C1234567890'
+    payload = {
+        'accountInfo': {
+            'datNumber': dat_number,
+            'bcolAccountNumber': '000000'
+        },
+        'businessInfo': {
+            'businessIdentifier': 'CP0002000',
+            'corpType': 'CP',
+            'businessName': 'ABC Corp',
+            'contactInfo': {
+                'city': 'Victoria',
+                'postalCode': 'V8P2P2',
+                'province': 'BC',
+                'addressLine1': '100 Douglas Street',
+                'country': 'CA'
+            }
+        },
+        'filingInfo': {
+            'filingTypes': [
+                {
+                    'filingTypeCode': 'OTADD',
+                    'filingDescription': 'TEST'
+                },
+                {
+                    'filingTypeCode': 'OTANN'
+                }
+            ],
+            'folioNumber': 'TEST'
+        }
+    }
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('invoices')[0].get('datNumber') == dat_number
+    assert rv.json.get('paymentMethod') == 'DRAWDOWN'
+    assert rv.json.get('paymentSystem') == 'BCOL'
+
+    assert schema_utils.validate(rv.json, 'payment_response')[0]

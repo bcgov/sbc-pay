@@ -53,6 +53,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._folio_number: str = None
         self._service_fees: float = None
         self._business_identifier: str = None
+        self._dat_number: str = None
 
     @property
     def _dao(self):
@@ -81,6 +82,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.folio_number: str = self._dao.folio_number
         self.service_fees: float = self._dao.service_fees
         self.business_identifier: str = self._dao.business_identifier
+        self.dat_number: str = self._dao.dat_number
 
     @property
     def id(self):
@@ -280,6 +282,17 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._business_identifier = value
         self._dao.business_identifier = value
 
+    @property
+    def dat_number(self):
+        """Return the dat_number."""
+        return self._dat_number
+
+    @dat_number.setter
+    def dat_number(self, value: str):
+        """Set the dat_number."""
+        self._dat_number = value
+        self._dao.dat_number = value
+
     def save(self):
         """Save the information to the DB."""
         return self._dao.save()
@@ -326,6 +339,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         i.folio_number = kwargs.get('folio_number', None)
         i.business_identifier = kwargs.get('business_identifier', None)
         i.corp_type_code = corp_type
+        i.dat_number = kwargs.get('dat_number', None)
 
         i._dao = i.flush()  # pylint: disable=protected-access
         current_app.logger.debug('>create')

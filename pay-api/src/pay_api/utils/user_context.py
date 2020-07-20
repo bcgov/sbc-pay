@@ -17,6 +17,7 @@ import functools
 from typing import Dict
 
 from flask import g, request
+from pay_api.utils.enums import Role
 
 
 def _get_context():
@@ -36,6 +37,7 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
         self._roles: list = token_info.get('realm_access', None).get('roles', None) if 'realm_access' in token_info \
             else None
         self._sub: str = token_info.get('sub', None)
+        self._login_source: str = token_info.get('loginSource', None)
         self._account_id: str = get_auth_account_id()
         self._name: str = '{} {}'.format(token_info.get('firstname', None), token_info.get('lastname', None))
 
@@ -43,6 +45,15 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
     def user_name(self) -> str:
         """Return the user_name."""
         return self._user_name.upper() if self._user_name else None
+
+    @property
+    def user_name_with_no_idp(self) -> str:
+        """Return the user_name with no idp info."""
+        user_name = self.user_name
+        if user_name:
+            login_source = self._login_source.upper()
+            user_name = user_name.replace(f'@{login_source}', '').replace(f'{login_source}\\', '')
+        return user_name
 
     @property
     def first_name(self) -> str:
@@ -72,6 +83,10 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
     def has_role(self, role_name: str) -> bool:
         """Return True if the user has the role."""
         return role_name in self._roles
+
+    def is_staff(self) -> bool:
+        """Return True if the user is staff user."""
+        return Role.STAFF.value in self._roles if self._roles else False
 
     @property
     def name(self) -> str:
