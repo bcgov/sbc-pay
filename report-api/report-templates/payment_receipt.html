@@ -419,19 +419,19 @@
               BC Online Account Number: <span> {{bcOnlineAccountNumber}}</span>
             </div>
             {% endif %}
-            {% if invoice.get('folioNumber', 'None') != 'None' %}
+            {% if invoice.get('folioNumber', None) %}
             <div class="payment-row">
               Folio Number: <span> {{invoice['folioNumber']}}</span>
             </div>
             {% endif %}
-            {% if routingSlipNumber %}
+            {% if invoice.get('routingSlip', None) %}
             <div class="payment-row">
-              Routing Slip Number: <span> {{routingSlipNumber}}</span>
+              Routing Slip Number: <span> {{invoice.get('routingSlip')}}</span>
             </div>
             {% endif %}
-            {% if datNumber %}
+            {% if invoice.get('datNumber', None) %}
             <div class="payment-row">
-              DAT Number: <span> {{datNumber}}</span>
+              DAT Number: <span> {{invoice.get('datNumber')}}</span>
             </div>
             {% endif %}
           </div>

@@ -22,7 +22,6 @@ from pay_api.exceptions import BusinessException
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.utils.errors import Error
-from pay_api.utils.user_context import user_context
 
 
 @ServiceTracing.trace(ServiceTracing.enable_tracing, ServiceTracing.should_be_tracing)
@@ -247,7 +246,6 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         self._dao.save()
 
     @classmethod
-    @user_context
     def find_by_corp_type_and_filing_type(  # pylint: disable=too-many-arguments
             cls,
             corp_type: str,
@@ -257,6 +255,7 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
     ):
         """Calculate fees for the filing by using the arguments."""
         current_app.logger.debug('<get_fees_by_corp_type_and_filing_type')
+
         if not corp_type and not filing_type_code:
             raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
         if kwargs.get('jurisdiction'):
@@ -271,10 +270,7 @@ class FeeSchedule:  # pylint: disable=too-many-instance-attributes
         fee_schedule.quantity = kwargs.get('quantity')
 
         # Set transaction fees
-        corp_type = CorpTypeModel.find_by_code(fee_schedule.corp_type_code)
-        if corp_type.service_fee:
-            service_fees = corp_type.service_fee.amount
-            fee_schedule.service_fees = service_fees
+        fee_schedule.service_fees = CorpTypeModel.get_service_fees(fee_schedule.corp_type_code, fee_schedule.fee_amount)
 
         if kwargs.get('is_priority') and fee_schedule_dao.priority_fee:
             fee_schedule.priority_fee = fee_schedule_dao.priority_fee.amount

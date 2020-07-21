@@ -26,6 +26,7 @@ from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import Role
 from tests.utilities.base_test import (
     factory_payment_transaction, get_claims, get_payment_request, get_payment_request_with_folio_number,
+    get_payment_request_with_service_fees,
     get_payment_request_with_no_contact_info, get_payment_request_with_payment_method, get_waive_fees_payment_request,
     get_zero_dollar_payment_request, token_header)
 
@@ -550,5 +551,34 @@ def test_bcol_payment_creation_by_staff(session, client, jwt, app):
     assert rv.json.get('invoices')[0].get('datNumber') == dat_number
     assert rv.json.get('paymentMethod') == 'DRAWDOWN'
     assert rv.json.get('paymentSystem') == 'BCOL'
+
+    assert schema_utils.validate(rv.json, 'payment_response')[0]
+
+
+def test_payment_creation_with_service_fees(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request_with_service_fees()),
+                     headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
+    assert rv.json.get('invoices')[0].get('serviceFees') > 0
+
+    assert schema_utils.validate(rv.json, 'payment_response')[0]
+
+
+def test_payment_creation_with_service_fees_for_zero_fees(session, client, jwt, app):
+    """Assert that the service fee is zero if it's a free filing."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/payment-requests',
+                     data=json.dumps(get_payment_request_with_service_fees(filing_type='OTFDR')),
+                     headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
+    assert rv.json.get('invoices')[0].get('serviceFees') == 0
 
     assert schema_utils.validate(rv.json, 'payment_response')[0]
