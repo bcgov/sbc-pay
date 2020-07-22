@@ -12,7 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Constants."""
+from enum import Enum
 from typing import Dict
+
+
+class Role(Enum):
+    """Role enum."""
+
+    STAFF = 'staff'
+    EDIT = 'edit'
+    ACCOUNT_HOLDER = 'account_holder'
 
 
 def auth_code_mapping() -> Dict:
@@ -35,8 +44,3 @@ def account_type_mapping() -> Dict:
 def tax_status_mapping() -> Dict:
     """Return Tax status mapping from BCOL."""
     return {'E': 'Exempt', 'Z': 'Zero-rate', '': 'Must-Pay'}
-
-
-# def status_mapping() -> Dict:
-#     """Return Status mapping from BCOL."""
-#     return {'Y': 'Granted', 'N': 'Revoked'}

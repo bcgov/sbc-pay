@@ -57,6 +57,9 @@ def convert_to_bool(value: str) -> bool:
 
 def get_str_by_path(payload: Dict, path: str) -> str:
     """Return the string value from the dict for the path using dpath library."""
+    if payload is None:
+        return None
+
     try:
         raw = dpath_util.get(payload, path)
         return str(raw) if raw is not None else raw

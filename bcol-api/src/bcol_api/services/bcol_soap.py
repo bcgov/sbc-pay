@@ -34,6 +34,7 @@ class BcolSoap(metaclass=Singleton):  # pylint: disable=too-few-public-methods
 
     __profile_client = None
     __payment_client = None
+    __applied_chg_client = None
 
     def get_profile_client(self):
         """Retrieve singleton Query Profile Client."""
@@ -43,6 +44,10 @@ class BcolSoap(metaclass=Singleton):  # pylint: disable=too-few-public-methods
         """Retrieve singleton Payment Create Client."""
         return self.__payment_client
 
+    def get_applied_chg_client(self):
+        """Retrieve singleton Applied Charge Client."""
+        return self.__applied_chg_client
+
     def __init__(self):
         """Private constructor."""
         self.__profile_client = zeep.Client(
@@ -51,4 +56,8 @@ class BcolSoap(metaclass=Singleton):  # pylint: disable=too-few-public-methods
 
         self.__payment_client = zeep.Client(
             current_app.config.get('BCOL_PAYMENTS_WSDL_URL')
+        )
+
+        self.__applied_chg_client = zeep.Client(
+            current_app.config.get('BCOL_APPLIED_CHARGE_WSDL_URL')
         )

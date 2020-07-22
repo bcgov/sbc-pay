@@ -194,6 +194,44 @@ def test_fees_with_quantity(session, client, jwt, app):
     assert schema_utils.validate(rv.json, 'fees')[0]
 
 
+def test_calculate_fees_for_service_fee(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    corp_type = 'XX'
+    filing_type_code = 'XOTANN'
+    service_fee = factory_fee_model('SF01', 1.5)
+    factory_fee_schedule_model(
+        factory_filing_type_model('XOTANN', 'TEST'),
+        factory_corp_type_model('XX', 'TEST', service_fee_code=service_fee.code),
+        factory_fee_model('XXX', 100))
+    rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}', headers=headers)
+    assert rv.status_code == 200
+    assert schema_utils.validate(rv.json, 'fees')[0]
+    assert rv.json.get('filingFees') == 100
+    assert rv.json.get('serviceFees') == 1.5
+
+
+def test_calculate_fees_with_zero_service_fee(session, client, jwt, app):
+    """Assert that service fee is zero if the filing fee is zero."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    corp_type = 'XX'
+    filing_type_code = 'XOTANN'
+    service_fee = factory_fee_model('SF01', 1.5)
+    factory_fee_schedule_model(
+        factory_filing_type_model('XOTANN', 'TEST'),
+        factory_corp_type_model('XX', 'TEST', service_fee_code=service_fee.code),
+        factory_fee_model('XXX', 0))
+    rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}', headers=headers)
+    assert rv.status_code == 200
+    assert schema_utils.validate(rv.json, 'fees')[0]
+    assert rv.json.get('filingFees') == 0
+    assert rv.json.get('serviceFees') == 0
+
+
 def factory_filing_type_model(
         filing_type_code: str,
         filing_description: str = 'TEST'):

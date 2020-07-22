@@ -23,7 +23,8 @@ def get_token_header():
     }
 
 
-def get_claims(app_request=None, role: str = 'edit', username: str = 'CP0001234', login_source: str = 'PASSCODE'):
+def get_claims(app_request=None, role: str = 'account_holder', username: str = 'CP0001234',
+               login_source: str = 'PASSCODE'):
     """Return the claim with the role param."""
     claim = {
         'jti': 'a50fafa4-c4d6-4a9b-9e51-1e5e0d102878',
@@ -35,11 +36,11 @@ def get_claims(app_request=None, role: str = 'edit', username: str = 'CP0001234'
         'sub': '15099883-3c3f-4b4c-a124-a1824d6cba84',
         'typ': 'Bearer',
         'realm_access':
-            {
-                'roles':
-                    [
-                        '{}'.format(role)
-                    ]
+        {
+            'roles':
+                [
+                    '{}'.format(role)
+                ]
         },
         'preferred_username': username,
         'username': username,

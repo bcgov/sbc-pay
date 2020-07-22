@@ -23,5 +23,5 @@ from bcol_api.services.bcol_payment import BcolPayment
 def test_payment(app, payment_mock):
     """Test payment service."""
     with app.app_context():
-        payment_response = BcolPayment().create_payment({})
+        payment_response = BcolPayment().create_payment({}, False)
         assert payment_response.get('userId') == 'PB25020'

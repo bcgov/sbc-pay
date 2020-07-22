@@ -27,6 +27,8 @@ jobs:
       BCOL_DEBIT_ACCOUNT_VERSION: "fake"
       BCOL_LINK_CODE: "000"
 
+      BCOL_APPLIED_CHARGE_WSDL_URL: "https://appsd1.bconline.gov.bc.ca/account/services/AppliedCharge?wsdl"
+
     strategy:
       matrix:
         python-version: [3.7, 3.8]
