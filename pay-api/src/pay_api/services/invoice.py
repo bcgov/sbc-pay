@@ -53,6 +53,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._folio_number: str = None
         self._service_fees: float = None
         self._business_identifier: str = None
+        self._dat_number: str = None
 
     @property
     def _dao(self):
@@ -81,6 +82,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.folio_number: str = self._dao.folio_number
         self.service_fees: float = self._dao.service_fees
         self.business_identifier: str = self._dao.business_identifier
+        self.dat_number: str = self._dao.dat_number
 
     @property
     def id(self):
@@ -280,6 +282,17 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._business_identifier = value
         self._dao.business_identifier = value
 
+    @property
+    def dat_number(self):
+        """Return the dat_number."""
+        return self._dat_number
+
+    @dat_number.setter
+    def dat_number(self, value: str):
+        """Set the dat_number."""
+        self._dat_number = value
+        self._dao.dat_number = value
+
     def save(self):
         """Save the information to the DB."""
         return self._dao.save()
@@ -316,9 +329,10 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         elif account.payment_system_code == PaymentSystem.INTERNAL.value:
             i.internal_account_id = account.id
 
-        i.service_fees = Invoice.calculate_service_fees(account.payment_system_code, corp_type)
+        total_excluding_service_fee = sum(fee.total_excluding_service_fees for fee in fees) if fees else 0
+        i.service_fees = CorpTypeModel.get_service_fees(corp_type, total_excluding_service_fee)
 
-        i.total = i.service_fees + sum(fee.total_excluding_service_fees for fee in fees) if fees else 0
+        i.total = i.service_fees + total_excluding_service_fee
         i.paid = 0
         i.refund = 0
         i.routing_slip = kwargs.get('routing_slip', None)
@@ -326,6 +340,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         i.folio_number = kwargs.get('folio_number', None)
         i.business_identifier = kwargs.get('business_identifier', None)
         i.corp_type_code = corp_type
+        i.dat_number = kwargs.get('dat_number', None)
 
         i._dao = i.flush()  # pylint: disable=protected-access
         current_app.logger.debug('>create')
@@ -382,16 +397,3 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
     def _check_for_auth(dao):
         # Check if user is authorized to perform this action
         check_auth(dao.business_identifier, one_of_roles=ALL_ALLOWED_ROLES)
-
-    @staticmethod
-    def calculate_service_fees(payment_system_code: str, corp_type_code: str):
-        """Calculate service_fees fees."""
-        current_app.logger.debug(f'<calculate_service_fees - {payment_system_code} - {corp_type_code}')
-        service_fees: float = 0
-
-        # TODO if payment_system_code == PaymentSystem.BCOL.value:
-        corp_type = CorpTypeModel.find_by_code(corp_type_code)
-        if corp_type.service_fee:
-            service_fees = corp_type.service_fee.amount
-
-        return service_fees

@@ -87,6 +87,32 @@ def get_payment_request(business_identifier: str = 'CP0001234', corp_type: str =
     }
 
 
+def get_payment_request_with_service_fees(business_identifier: str = 'CP0001234', corp_type: str = 'BC',
+                                          filing_type: str = 'BCINC'):
+    """Return a payment request object."""
+    return {
+        'businessInfo': {
+            'businessIdentifier': business_identifier,
+            'corpType': corp_type,
+            'businessName': 'ABC Corp',
+            'contactInfo': {
+                'city': 'Victoria',
+                'postalCode': 'V8P2P2',
+                'province': 'BC',
+                'addressLine1': '100 Douglas Street',
+                'country': 'CA'
+            }
+        },
+        'filingInfo': {
+            'filingTypes': [
+                {
+                    'filingTypeCode': filing_type
+                }
+            ]
+        }
+    }
+
+
 def get_payment_request_with_folio_number(business_identifier: str = 'CP0001234', folio_number: str = '1234567890'):
     """Return a payment request object."""
     return {

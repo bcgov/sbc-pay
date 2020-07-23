@@ -24,9 +24,9 @@ from pay_api.models.corp_type import CorpType
 from pay_api.utils.enums import AuthHeaderType, ContentType
 from pay_api.utils.enums import PaymentSystem as PaySystemCode
 from pay_api.utils.errors import get_bcol_error
-from pay_api.utils.user_context import UserContext, user_context
+from pay_api.utils.user_context import UserContext
+from pay_api.utils.user_context import user_context
 from pay_api.utils.util import get_str_by_path
-
 from .base_payment_system import PaymentSystemService
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
@@ -38,11 +38,18 @@ from .payment_line_item import PaymentLineItem
 class BcolService(PaymentSystemService, OAuthService):
     """Service to manage BCOL integration."""
 
-    def create_account(self, name: str, account_info: Dict[str, Any], authorization: Dict[str, Any]):
+    @user_context
+    def create_account(self, name: str, contact_info: Dict[str, Any], authorization: Dict[str, Any], **kwargs):
         """Create account."""
         current_app.logger.debug('<create_account')
-        bcol_user_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineUserId')
-        bcol_account_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineAccountId')
+        user: UserContext = kwargs['user']
+        account_info: Dict[str, Any] = kwargs['account_info']
+        if user.is_staff():
+            bcol_user_id: str = None
+            bcol_account_id: str = get_str_by_path(account_info, 'bcolAccountNumber')
+        else:
+            bcol_user_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineUserId')
+            bcol_account_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineAccountId')
         return {
             'bcol_account_id': bcol_account_id,
             'bcol_user_id': bcol_user_id
@@ -58,25 +65,32 @@ class BcolService(PaymentSystemService, OAuthService):
 
     @user_context
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
-                       line_items: [PaymentLineItem], invoice_id: str, **kwargs):
+                       line_items: [PaymentLineItem], invoice: Invoice, **kwargs):
         """Create Invoice in PayBC."""
         current_app.logger.debug('<create_invoice')
         user: UserContext = kwargs['user']
         pay_endpoint = current_app.config.get('BCOL_API_ENDPOINT') + '/payments'
-        corp_number = kwargs.get('business_identifier', None)
+        corp_number = invoice.business_identifier
         amount_excluding_txn_fees = sum(line.total for line in line_items)
         filing_types = ','.join([item.filing_type_code for item in line_items])
         remarks = f'{corp_number}({filing_types})-{user.first_name}'
         payload: Dict = {
             # 'userId': payment_account.bcol_user_id if payment_account.bcol_user_id else 'PE25020',
             'userId': payment_account.bcol_user_id,
-            'invoiceNumber': str(invoice_id),
-            'folioNumber': kwargs.get('folio_number', None),
+            'invoiceNumber': str(invoice.id),
+            'folioNumber': invoice.folio_number,
             'amount': str(amount_excluding_txn_fees),
             'rate': str(amount_excluding_txn_fees),
             'remarks': remarks[:50],
-            'feeCode': self._get_fee_code(kwargs.get('corp_type_code'))
+            'feeCode': self._get_fee_code(kwargs.get('corp_type_code'), user.is_staff())
         }
+        if user.is_staff():
+            payload['userId'] = user.user_name_with_no_idp
+            payload['accountNumber'] = payment_account.bcol_account_id
+            payload['formNumber'] = invoice.dat_number
+            payload['reduntantFlag'] = 'Y'
+            payload['rateType'] = 'C'
+
         if payload.get('folioNumber', None) is None:  # Set empty folio if None
             payload['folioNumber'] = ''
         try:
@@ -118,6 +132,7 @@ class BcolService(PaymentSystemService, OAuthService):
         invoice = Invoice.find_by_id(invoice_reference.invoice_id, skip_auth_check=True)
         return f'{invoice_reference.invoice_number}', datetime.now(), invoice.total
 
-    def _get_fee_code(self, corp_type: str):  # pylint: disable=no-self-use
+    def _get_fee_code(self, corp_type: str, is_staff: bool = False):  # pylint: disable=no-self-use
         """Return BCOL fee code."""
-        return CorpType.find_by_code(code=corp_type).bcol_fee_code
+        corp_type = CorpType.find_by_code(code=corp_type)
+        return corp_type.bcol_staff_fee_code if is_staff else corp_type.bcol_fee_code

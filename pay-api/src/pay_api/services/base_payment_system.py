@@ -19,7 +19,6 @@ from typing import Any, Dict
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-
 from .payment_line_item import PaymentLineItem
 
 
@@ -35,11 +34,12 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         super(PaymentSystemService, self).__init__()
 
     @abstractmethod
-    def create_account(self, name: str, account_info: Dict[str, Any], authorization: Dict[str, Any]):
+    def create_account(self, name: str, contact_info: Dict[str, Any], authorization: Dict[str, Any], **kwargs):
         """Create account in payment system."""
 
     @abstractmethod
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str, **kwargs):
+    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
+                       **kwargs):
         """Create invoice in payment system."""
 
     @abstractmethod

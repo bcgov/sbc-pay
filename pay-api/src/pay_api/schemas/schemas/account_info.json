@@ -13,6 +13,24 @@
         "ABCD123456789"
       ],
       "pattern": "^(.*)$"
+    },
+    "datNumber": {
+      "$id": "#/properties/datNumber",
+      "type": "string",
+      "title": "DAT Number for BCOL",
+      "examples": [
+        "C1234567890"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "bcolAccountNumber": {
+      "$id": "#/properties/bcolAccountNumber",
+      "type": "string",
+      "title": "BC Online Account Number",
+      "examples": [
+        "180670"
+      ],
+      "pattern": "^(.*)$"
     }
   }
 }

@@ -54,6 +54,7 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         user: UserContext = kwargs['user']
         total_fees: int = kwargs.get('fees', None)
         payment_method = kwargs.get('payment_method', 'CC')
+        account_info = kwargs.get('account_info', None)
 
         _instance: PaymentSystemService = None
         current_app.logger.debug('payment_method: {}'.format(payment_method))
@@ -61,8 +62,13 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         if not payment_method:
             raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
 
-        if total_fees == 0 or (Role.STAFF.value in user.roles and payment_method != 'DRAWDOWN'):
+        if total_fees == 0:
             _instance = InternalPayService()
+        elif Role.STAFF.value in user.roles:
+            if account_info is not None and account_info.get('bcolAccountNumber') is not None:
+                _instance = BcolService()
+            else:
+                _instance = InternalPayService()
         else:
             if payment_method == 'CC':
                 _instance = PaybcService()

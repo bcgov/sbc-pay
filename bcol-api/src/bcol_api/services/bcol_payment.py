@@ -26,7 +26,7 @@ from bcol_api.utils.errors import Error
 class BcolPayment:  # pylint:disable=too-few-public-methods
     """Service to manage BCOL Payments."""
 
-    def create_payment(self, pay_request: Dict):
+    def create_payment(self, pay_request: Dict, is_staff: bool):
         """Create payment record in BCOL."""
         current_app.logger.debug('<create_payment')
         padded_amount = self._pad_zeros(pay_request.get('amount', '0'))
@@ -36,10 +36,10 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
             'Feecode': pay_request.get('feeCode'),
             'Userid': pay_request.get('userId'),
             'Key': pay_request.get('invoiceNumber'),
-            'Account': '',
-            'RateType': '',
+            'Account': pay_request.get('accountNumber', ''),
+            'RateType': pay_request.get('rateType', ''),
             'Folio': pay_request.get('folioNumber', None),
-            'FormNumber': pay_request.get('formNumber', ''),
+            'FormNumber': pay_request.get('formNumber', ''),  # Also DAT Number
             'Quantity': pay_request.get('quantity', ''),
             'Rate': padded_amount,
             'Amount': padded_amount,
@@ -47,8 +47,11 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
             'RedundantFlag': pay_request.get('reduntantFlag', ' '),
             'linkcode': current_app.config.get('BCOL_LINK_CODE')
         }
+
         try:
-            response = self.debit_account(data)
+            current_app.logger.debug(f'Is staff payment ? = {is_staff} ')
+
+            response = self.apply_charge(data) if is_staff else self.debit_account(data)
             current_app.logger.debug(response)
 
             if self.__get(response, 'ReturnCode') != '0000':
@@ -94,6 +97,11 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
         """Debit BCOL account."""
         client = BcolSoap().get_payment_client()
         return zeep.helpers.serialize_object(client.service.debitAccount(req=data))
+
+    def apply_charge(self, data: Dict):  # pragma: no cover # pylint: disable=no-self-use
+        """Debit BCOL account as a staff user."""
+        client = BcolSoap().get_applied_chg_client()
+        return zeep.helpers.serialize_object(client.service.appliedCharge(req=data))
 
     def _pad_zeros(self, amount: str = '0'):  # pylint: disable=no-self-use
         """Pad the amount with Zeroes to make sure the string is 10 chars."""

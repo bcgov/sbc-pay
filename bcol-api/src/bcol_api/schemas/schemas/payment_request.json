@@ -19,6 +19,11 @@
       "type": "string",
       "title": "Client System Invoice Number"
     },
+    "accountNumber": {
+      "$id": "#/properties/transactions/items/properties/accountNumber",
+      "type": "string",
+      "title": "BC Online Account Number"
+    },
     "folioNumber": {
       "$id": "#/properties/transactions/items/properties/folioNumber",
       "type": "string",

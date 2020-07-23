@@ -94,8 +94,6 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     PAYBC_CLIENT_ID = _get_config('PAYBC_CLIENT_ID')
     PAYBC_CLIENT_SECRET = _get_config('PAYBC_CLIENT_SECRET')
     PAYBC_PORTAL_URL = _get_config('PAYBC_PORTAL_URL')
-    AUTH_WEB_PAY_TRANSACTION_URL = _get_config('AUTH_WEB_PAY_TRANSACTION_URL')
-    PAYBC_MEMO_LINE_NAME = _get_config('PAYBC_MEMO_LINE_NAME')
     CONNECT_TIMEOUT = int(_get_config('PAYBC_CONNECT_TIMEOUT', default=10))
     GENERATE_RANDOM_INVOICE_NUMBER = _get_config('PAYBC_GENERATE_RANDOM_INVOICE_NUMBER', default='False')
 

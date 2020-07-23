@@ -30,7 +30,8 @@ bcol_service = BcolService()
 
 def test_create_account(session):
     """Test create_account."""
-    account = bcol_service.create_account(None, None, get_auth_premium_user())
+    account = bcol_service.create_account(name=None, contact_info=None, account_info=None,
+                                          authorization=get_auth_premium_user())
     assert account is not None
 
 
@@ -59,7 +60,10 @@ def test_create_invoice(session):
     line.save()
     line = PaymentLineItem.find_by_id(line.id)
     # payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str, **kwargs
-    inv = bcol_service.create_invoice(pay_account, [line], i.id, filing_info={'folioNumber': '1234567890'},
+    inv = bcol_service.create_invoice(payment_account=pay_account,
+                                      line_items=[line],
+                                      invoice=i,
+                                      filing_info={'folioNumber': '1234567890'},
                                       corp_type_code=i.corp_type_code,
                                       business_identifier=i.business_identifier)
     assert inv is not None

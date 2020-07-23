@@ -60,7 +60,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         business_info = payment_request.get('businessInfo')
         contact_info = business_info.get('contactInfo')
         filing_info = payment_request.get('filingInfo')
-        routing_slip_number = get_str_by_path(payment_request, 'accountInfo/routingSlip')
+        account_info = payment_request.get('accountInfo', None)
         filing_id = filing_info.get('filingIdentifier', None)
         folio_number = filing_info.get('folioNumber', get_str_by_path(authorization, 'business/folioNumber'))
 
@@ -76,11 +76,12 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         pay_service: PaymentSystemService = PaymentSystemFactory.create(
             payment_method=payment_method,
             corp_type=corp_type,
-            fees=sum(fee.total for fee in fees)
+            fees=sum(fee.total for fee in fees),
+            account_info=account_info
         )
 
         # Create payment account
-        payment_account = _create_account(pay_service, business_info, contact_info, authorization)
+        payment_account = _create_account(pay_service, business_info, contact_info, account_info, authorization)
         payment: Payment = None
         pay_system_invoice: Dict[str, any] = None
 
@@ -88,7 +89,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             payment: Payment = Payment.create(payment_method, pay_service.get_payment_system_code())
 
             current_app.logger.debug('Creating Invoice record for payment {}'.format(payment.id))
-            invoice = Invoice.create(payment_account, payment.id, fees, corp_type, routing_slip=routing_slip_number,
+            invoice = Invoice.create(payment_account, payment.id, fees, corp_type,
+                                     routing_slip=get_str_by_path(account_info, 'routingSlip'),
+                                     dat_number=get_str_by_path(account_info, 'datNumber'),
                                      filing_id=filing_id, folio_number=folio_number,
                                      business_identifier=business_info.get('businessIdentifier'))
 
@@ -97,10 +100,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 current_app.logger.debug('Creating line items')
                 line_items.append(PaymentLineItem.create(invoice.id, fee))
             current_app.logger.debug('Handing off to payment system to create invoice')
-            pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice.id,
-                                                            folio_number=folio_number,
-                                                            corp_type_code=invoice.corp_type_code,
-                                                            business_identifier=invoice.business_identifier)
+            pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice,
+                                                            corp_type_code=invoice.corp_type_code)
 
             current_app.logger.debug('Updating invoice record')
             invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
@@ -342,9 +343,8 @@ def _calculate_fees(corp_type, filing_info):
     return fees
 
 
-def _create_account(pay_service, business_info, contact_info, authorization):
+def _create_account(pay_service, business_info, contact_info, account_info, authorization):
     """Create account in pay system and save it in pay db."""
-    # TODO Create account for CC payment and account for premium based on authorizations
     current_app.logger.debug('Check if payment account exists')
     payment_account: PaymentAccount = PaymentAccount.find_account(
         business_info,
@@ -355,7 +355,10 @@ def _create_account(pay_service, business_info, contact_info, authorization):
         current_app.logger.debug('No payment account, creating new')
         name = business_info.get('businessName', get_str_by_path(authorization, 'account/name'))
         pay_system_account = pay_service.create_account(
-            name, contact_info, authorization
+            name=name,
+            contact_info=contact_info,
+            account_info=account_info,
+            authorization=authorization
         )
 
         current_app.logger.debug('Creating payment record for account : {}'.format(payment_account.id))
