@@ -82,12 +82,12 @@ objects:
                       valueFrom:
                         secretKeyRef:
                           key: BCOL_FEE_CODE
-                          name: "pay-api-${TAG_NAME}-secret"
+                          name: "bcol-api-${TAG_NAME}-secret"
                     - name: BCOL_LDAP_USER_DN_PATTERN
                       valueFrom:
                         secretKeyRef:
                           key: BCOL_LDAP_USER_DN_PATTERN
-                          name: "pay-api-${TAG_NAME}-secret"
+                          name: "bcol-api-${TAG_NAME}-secret"
                     - name: KEYCLOAK_REALMNAME
                       valueFrom:
                         secretKeyRef:
@@ -117,17 +117,17 @@ objects:
                       valueFrom:
                         secretKeyRef:
                           key: BCOL_LINK_CODE
-                          name: "pay-api-${TAG_NAME}-secret"
+                          name: "bcol-api-${TAG_NAME}-secret"
                     - name: BCOL_LDAP_SERVER
                       valueFrom:
                         secretKeyRef:
                           key: BCOL_LDAP_SERVER
-                          name: "pay-api-${TAG_NAME}-secret"
+                          name: "bcol-api-${TAG_NAME}-secret"
                     - name: BCOL_QUERY_PROFILE_WSDL_URL
                       valueFrom:
                         secretKeyRef:
                           key: BCOL_QUERY_PROFILE_WSDL_URL
-                          name: "pay-api-${TAG_NAME}-secret"
+                          name: "bcol-api-${TAG_NAME}-secret"
                     - name: JWT_OIDC_AUDIENCE
                       valueFrom:
                         secretKeyRef:
@@ -177,7 +177,7 @@ objects:
                       valueFrom:
                         secretKeyRef:
                           key: BCOL_PAYMENTS_WSDL_URL
-                          name: "pay-api-${TAG_NAME}-secret"
+                          name: "bcol-api-${TAG_NAME}-secret"
                     - name: DATABASE_USER
                       valueFrom:
                         secretKeyRef:
@@ -202,7 +202,7 @@ objects:
                       valueFrom:
                         secretKeyRef:
                           key: BCOL_DEBIT_ACCOUNT_VERSION
-                          name: "pay-api-${TAG_NAME}-secret"
+                          name: "bcol-api-${TAG_NAME}-secret"
                     - name: JWT_OIDC_ALGORITHMS
                       valueFrom:
                         secretKeyRef:
