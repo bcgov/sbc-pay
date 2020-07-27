@@ -18,7 +18,6 @@ from datetime import datetime
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
-from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceSchema
 from pay_api.services.auth import check_auth
@@ -330,7 +329,10 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
             i.internal_account_id = account.id
 
         total_excluding_service_fee = sum(fee.total_excluding_service_fees for fee in fees) if fees else 0
-        i.service_fees = CorpTypeModel.get_service_fees(corp_type, total_excluding_service_fee)
+        #   TODO Change based on decision, whether to apply service fees for each line ot not.
+        #   For now add up the service fee on each fee schedule
+
+        i.service_fees = sum(fee.service_fees for fee in fees) if fees else 0
 
         i.total = i.service_fees + total_excluding_service_fee
         i.paid = 0

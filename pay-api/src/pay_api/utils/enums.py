@@ -88,6 +88,7 @@ class Role(Enum):
     VIEWER = 'view'
     EDITOR = 'edit'
     SYSTEM = 'system'
+    STAFF_ADMIN = 'admin'
 
 
 class Code(Enum):

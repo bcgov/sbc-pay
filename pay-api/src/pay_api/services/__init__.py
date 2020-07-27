@@ -13,6 +13,7 @@
 # limitations under the License.
 """Exposes all of the Services used in the API."""
 
+from .distribution_code import DistributionCode
 from .fee_schedule import FeeSchedule
 from .invoice import Invoice as InvoiceService
 from .payment import Payment

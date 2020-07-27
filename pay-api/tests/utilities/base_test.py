@@ -21,7 +21,7 @@ from datetime import datetime
 
 from pay_api.models import (
     BcolPaymentAccount, CreditPaymentAccount, InternalPaymentAccount, Invoice, InvoiceReference, Payment,
-    PaymentAccount, PaymentLineItem, PaymentTransaction)
+    PaymentAccount, PaymentLineItem, PaymentTransaction, DistributionCode)
 from pay_api.utils.enums import PaymentSystem, Role, PaymentStatus, InvoiceReferenceStatus, \
     LineItemStatus, InvoiceStatus
 
@@ -58,7 +58,8 @@ def get_claims(app_request=None, role: str = Role.EDITOR.value, username: str = 
     return claim
 
 
-def get_payment_request(business_identifier: str = 'CP0001234', corp_type: str = 'CP'):
+def get_payment_request(business_identifier: str = 'CP0001234', corp_type: str = 'CP',
+                        second_filing_type: str = 'OTADD'):
     """Return a payment request object."""
     return {
         'businessInfo': {
@@ -76,7 +77,7 @@ def get_payment_request(business_identifier: str = 'CP0001234', corp_type: str =
         'filingInfo': {
             'filingTypes': [
                 {
-                    'filingTypeCode': 'OTADD',
+                    'filingTypeCode': second_filing_type,
                     'filingDescription': 'TEST'
                 },
                 {
@@ -351,6 +352,7 @@ def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees
         filing_fees=filing_fees,
         total=total,
         line_item_status_code=status,
+        fee_distribution_id=DistributionCode.find_by_active_for_fee_schedule(fee_schedule_id).distribution_code_id
     )
 
 
@@ -436,3 +438,28 @@ def get_auth_premium_user():
             }
         }
     }
+
+
+def get_distribution_code_payload(client: str = '100'):
+    """Return distribution code payload."""
+    return {
+        'client': client,
+        'memoName': 'Test Memo Line',
+        'projectCode': '1111111',
+        'responsibilityCentre': '22222',
+        'serviceFeeClient': '101',
+        'serviceFeeLine': '1111111',
+        'serviceFeeMemoName': 'Test Memo Line Service Fee',
+        'serviceFeeProjectCode': '1111111',
+        'serviceFeeResponsibilityCentre': '22222',
+        'serviceFeeStob': '9001',
+        'serviceLine': '1111111',
+        'stob': '9000'
+    }
+
+
+def get_distribution_schedules_payload():
+    """Return distribution schedule payload."""
+    return [{
+        'feeScheduleId': 1
+    }]

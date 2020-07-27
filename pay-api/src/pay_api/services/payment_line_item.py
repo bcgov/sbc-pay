@@ -16,14 +16,15 @@
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
+from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.fee_schedule import FeeSchedule
-from pay_api.utils.enums import Role, LineItemStatus
+from pay_api.utils.enums import LineItemStatus, Role
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 
 
-class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
+class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Service to manage Payment Line Item operations."""
 
     def __init__(self):
@@ -43,6 +44,9 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         self._line_item_status_code: str = None
         self._waived_fees: float = 0
         self._waived_by: str = None
+        self._fee_distribution_id: int = None
+        self._fee_distribution: DistributionCodeModel = None
+        self._service_fees: float = None
 
     @property
     def _dao(self):
@@ -67,6 +71,8 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         self.line_item_status_code: str = self._dao.line_item_status_code
         self.waived_fees: float = self._dao.waived_fees
         self.waived_by: str = self._dao.waived_by
+        self.fee_distribution_id: int = self._dao.fee_distribution_id
+        self.service_fees: float = self._dao.service_fees
 
     @property
     def id(self):
@@ -227,6 +233,38 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         """Return the filing_type_code."""
         return self._dao.fee_schedule.filing_type_code
 
+    @property
+    def fee_distribution_id(self):
+        """Return the fee_distribution_id."""
+        return self._fee_distribution_id
+
+    @fee_distribution_id.setter
+    def fee_distribution_id(self, value: int):
+        """Set the fee_distribution_id."""
+        self._fee_distribution_id = value
+        self._dao.fee_distribution_id = value
+
+    @property
+    def fee_distribution(self):
+        """Return the fee_distribution."""
+        return self._fee_distribution
+
+    @fee_distribution.setter
+    def fee_distribution(self, value: DistributionCodeModel):
+        """Set the fee_distribution."""
+        self._fee_distribution = value
+
+    @property
+    def service_fees(self):
+        """Return the service_fees."""
+        return self._service_fees
+
+    @service_fees.setter
+    def service_fees(self, value: float):
+        """Set the service_fees."""
+        self._service_fees = value
+        self._dao.service_fees = value
+
     def flush(self):
         """Save the information to the DB."""
         return self._dao.flush()
@@ -250,6 +288,12 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         p.quantity = fee.quantity if fee.quantity else 1
         p.line_item_status_code = LineItemStatus.ACTIVE.value
         p.waived_fees = fee.waived_fee_amount
+        p.service_fees = fee.service_fees
+
+        # Set distribution details to line item
+        distribution_code = DistributionCodeModel.find_by_active_for_fee_schedule(fee.fee_schedule_id)
+
+        p.fee_distribution_id = distribution_code.distribution_code_id
 
         if fee.waived_fee_amount > 0:
             if user.has_role(Role.STAFF.value):
@@ -262,6 +306,8 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes
         p = PaymentLineItem()
         p._dao = p_dao  # pylint: disable=protected-access
 
+        # Set distribution model to avoid more queries to DB
+        p.fee_distribution = distribution_code
         current_app.logger.debug('>create')
         return p
 
