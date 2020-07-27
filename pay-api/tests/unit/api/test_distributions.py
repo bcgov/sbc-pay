@@ -32,6 +32,15 @@ def test_fee_schedules(session, client, jwt, app):
     assert rv.status_code == 200
 
 
+def test_fee_schedules_for_corp_and_filing_type(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.get('/api/v1/fees/schedules?corp_type=CP&filing_type=OTANN', headers=headers)
+    assert rv.status_code == 200
+    assert len(rv.json.get('items')) == 1
+
+
 def test_create_distribution_with_invalid_data(session, client, jwt, app):
     """Assert that the endpoint returns 400."""
     # Insert a record first and then query for it
