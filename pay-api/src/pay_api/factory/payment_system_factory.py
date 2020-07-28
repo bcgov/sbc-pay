@@ -55,6 +55,7 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         total_fees: int = kwargs.get('fees', None)
         payment_method = kwargs.get('payment_method', 'CC')
         account_info = kwargs.get('account_info', None)
+        has_bcol_account_number = account_info is not None and account_info.get('bcolAccountNumber') is not None
 
         _instance: PaymentSystemService = None
         current_app.logger.debug('payment_method: {}'.format(payment_method))
@@ -65,12 +66,15 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         if total_fees == 0:
             _instance = InternalPayService()
         elif Role.STAFF.value in user.roles:
-            if account_info is not None and account_info.get('bcolAccountNumber') is not None:
+            if has_bcol_account_number:
                 _instance = BcolService()
             else:
                 _instance = InternalPayService()
         else:
-            if payment_method == 'CC':
+            # System accounts can create BCOL payments similar to staff by providing as payload
+            if has_bcol_account_number and Role.SYSTEM.value in user.roles:
+                _instance = BcolService()
+            elif payment_method == 'CC':
                 _instance = PaybcService()
             elif payment_method == 'DRAWDOWN':
                 _instance = BcolService()

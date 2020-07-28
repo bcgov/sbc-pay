@@ -26,7 +26,7 @@ from bcol_api.utils.errors import Error
 class BcolPayment:  # pylint:disable=too-few-public-methods
     """Service to manage BCOL Payments."""
 
-    def create_payment(self, pay_request: Dict, is_staff: bool):
+    def create_payment(self, pay_request: Dict, is_apply_charge: bool):
         """Create payment record in BCOL."""
         current_app.logger.debug('<create_payment')
         padded_amount = self._pad_zeros(pay_request.get('amount', '0'))
@@ -49,9 +49,9 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
         }
 
         try:
-            current_app.logger.debug(f'Is staff payment ? = {is_staff} ')
+            current_app.logger.debug(f'Is staff payment ? = {is_apply_charge} ')
 
-            response = self.apply_charge(data) if is_staff else self.debit_account(data)
+            response = self.apply_charge(data) if is_apply_charge else self.debit_account(data)
             current_app.logger.debug(response)
 
             if self.__get(response, 'ReturnCode') != '0000':
