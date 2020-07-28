@@ -340,15 +340,6 @@ def test_create_bcol_payment(session, public_user_mock):
     assert payment_response.get('status_code') == 'COMPLETED'
 
 
-def test_create_bcol_payment_for_basic_user(session, public_user_mock):
-    """Assert that the payment records are created."""
-    with pytest.raises(Exception) as excinfo:
-        PaymentService.create_payment(
-            get_payment_request_with_payment_method(payment_method='DRAWDOWN', business_identifier='CP0002000'),
-            get_auth_basic_user())
-    assert excinfo.type == BusinessException
-
-
 def test_create_payment_record_with_service_charge(session, public_user_mock):
     """Assert that the payment records are created."""
     # Create a payment request for corp type BC

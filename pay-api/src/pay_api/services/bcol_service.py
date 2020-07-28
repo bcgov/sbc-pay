@@ -22,7 +22,7 @@ from requests.exceptions import HTTPError
 from pay_api.exceptions import BusinessException, Error
 from pay_api.models.corp_type import CorpType
 from pay_api.utils.enums import AuthHeaderType, ContentType
-from pay_api.utils.enums import PaymentSystem as PaySystemCode
+from pay_api.utils.enums import PaymentSystem as PaySystemCode, PaymentMethod
 from pay_api.utils.errors import get_bcol_error
 from pay_api.utils.user_context import UserContext
 from pay_api.utils.user_context import user_context
@@ -44,7 +44,7 @@ class BcolService(PaymentSystemService, OAuthService):
         current_app.logger.debug('<create_account')
         user: UserContext = kwargs['user']
         account_info: Dict[str, Any] = kwargs['account_info']
-        if user.is_staff():
+        if user.is_staff() or user.is_system():
             bcol_user_id: str = None
             bcol_account_id: str = get_str_by_path(account_info, 'bcolAccountNumber')
         else:
@@ -73,7 +73,10 @@ class BcolService(PaymentSystemService, OAuthService):
         corp_number = invoice.business_identifier
         amount_excluding_txn_fees = sum(line.total for line in line_items)
         filing_types = ','.join([item.filing_type_code for item in line_items])
-        remarks = f'{corp_number}({filing_types})-{user.first_name}'
+        remarks = f'{corp_number}({filing_types})'
+        if user.first_name:
+            remarks = f'{remarks}-{user.first_name}'
+
         payload: Dict = {
             # 'userId': payment_account.bcol_user_id if payment_account.bcol_user_id else 'PE25020',
             'userId': payment_account.bcol_user_id,
@@ -84,8 +87,10 @@ class BcolService(PaymentSystemService, OAuthService):
             'remarks': remarks[:50],
             'feeCode': self._get_fee_code(kwargs.get('corp_type_code'), user.is_staff())
         }
-        if user.is_staff():
-            payload['userId'] = user.user_name_with_no_idp
+
+        if user.is_staff() or user.is_system():
+            payload['userId'] = user.user_name_with_no_idp if user.is_staff() else current_app.config[
+                'BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS']
             payload['accountNumber'] = payment_account.bcol_account_id
             payload['formNumber'] = invoice.dat_number
             payload['reduntantFlag'] = 'Y'
@@ -136,3 +141,7 @@ class BcolService(PaymentSystemService, OAuthService):
         """Return BCOL fee code."""
         corp_type = CorpType.find_by_code(code=corp_type)
         return corp_type.bcol_staff_fee_code if is_staff else corp_type.bcol_fee_code
+
+    def get_payment_method_code(self):
+        """Return CC as the method code."""
+        return PaymentMethod.DRAWDOWN.value

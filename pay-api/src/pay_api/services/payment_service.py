@@ -86,7 +86,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         pay_system_invoice: Dict[str, any] = None
 
         try:
-            payment: Payment = Payment.create(payment_method, pay_service.get_payment_system_code())
+            payment: Payment = Payment.create(pay_service.get_payment_method_code(),
+                                              pay_service.get_payment_system_code())
 
             current_app.logger.debug('Creating Invoice record for payment {}'.format(payment.id))
             invoice = Invoice.create(payment_account, payment.id, fees, corp_type,

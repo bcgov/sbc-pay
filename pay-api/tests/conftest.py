@@ -278,6 +278,27 @@ def staff_user_mock(monkeypatch):
     monkeypatch.setattr('pay_api.utils.user_context._get_token_info', token_info)
 
 
+@pytest.fixture()
+def system_user_mock(monkeypatch):
+    """Mock user_context."""
+    def token_info():  # pylint: disable=unused-argument; mocks of library methods
+        return {
+            'username': 'system user',
+            'realm_access': {
+                'roles': [
+                    'system',
+                    'edit'
+                ]
+            }
+        }
+
+    def mock_auth():  # pylint: disable=unused-argument; mocks of library methods
+        return 'test'
+
+    monkeypatch.setattr('pay_api.utils.user_context._get_token', mock_auth)
+    monkeypatch.setattr('pay_api.utils.user_context._get_token_info', token_info)
+
+
 @pytest.fixture(scope='session', autouse=True)
 def auto(docker_services, app):
     """Spin up a keycloak instance and initialize jwt."""
