@@ -63,3 +63,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     @abstractmethod
     def get_payment_system_code(self):
         """Return the payment system code. E.g, PAYBC, BCOL etc."""
+
+    @abstractmethod
+    def get_payment_method_code(self):
+        """Return the payment method code. E.g, CC, DRAWDOWN etc."""

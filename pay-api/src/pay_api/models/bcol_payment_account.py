@@ -40,10 +40,12 @@ class BcolPaymentAccount(BaseModel):
     def find_by_bcol_user_id_and_account(cls, bcol_user_id: str, bcol_account_id: str, auth_account_id: str):
         """Given a bcol user id, bcol account id and auth account id, this will return payment account."""
         account = None
-        if bcol_user_id and bcol_account_id and auth_account_id:
-            query = cls.query.filter_by(bcol_user_id=bcol_user_id). \
-                filter_by(bcol_account_id=bcol_account_id). \
-                join(PaymentAccount).filter(PaymentAccount.auth_account_id == auth_account_id)
+        if bcol_account_id and auth_account_id:
+            query = cls.query.filter_by(bcol_account_id=bcol_account_id)
+            if bcol_user_id is not None:
+                query = query.filter_by(bcol_user_id=bcol_user_id)
+
+            query = query.join(PaymentAccount).filter(PaymentAccount.auth_account_id == auth_account_id)
 
             account = query.one_or_none()
 
