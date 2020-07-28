@@ -22,6 +22,7 @@ class Role(Enum):
     STAFF = 'staff'
     EDIT = 'edit'
     ACCOUNT_HOLDER = 'account_holder'
+    SYSTEM = 'system'
 
 
 def auth_code_mapping() -> Dict:

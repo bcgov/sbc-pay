@@ -25,7 +25,8 @@ from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import PaymentSystem
+from pay_api.utils.enums import PaymentSystem, PaymentMethod
+
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -70,3 +71,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         # Find the invoice using the invoice_number
         invoice = Invoice.find_by_id(invoice_reference.invoice_id, skip_auth_check=True)
         return f'{invoice_reference.invoice_number}', datetime.now(), invoice.total
+
+    def get_payment_method_code(self):
+        """Return CC as the method code."""
+        return PaymentMethod.INTERNAL.value

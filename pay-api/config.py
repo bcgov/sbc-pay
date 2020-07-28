@@ -130,6 +130,10 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # legislative timezone for future effective dating
     LEGISLATIVE_TIMEZONE = os.getenv('LEGISLATIVE_TIMEZONE', 'America/Vancouver')
 
+    # BCOL user name for Service account payments
+    BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS = os.getenv('BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS',
+                                                           'BCROS SERVICE ACCOUNT')
+
     TESTING = False
     DEBUG = True
 

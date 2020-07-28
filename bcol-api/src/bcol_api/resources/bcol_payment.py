@@ -43,10 +43,10 @@ class AccountPayment(Resource):
     def post():
         """Create a payment record in BCOL."""
         try:
-            if _jwt.validate_roles([Role.STAFF.value, Role.EDIT.value]):
-                is_staff = True
+            if _jwt.validate_roles([Role.STAFF.value, Role.EDIT.value]) or _jwt.validate_roles([Role.SYSTEM.value]):
+                is_apply_charge = True
             elif _jwt.validate_roles([Role.ACCOUNT_HOLDER.value]):
-                is_staff = False
+                is_apply_charge = False
             else:
                 abort(403)
 
@@ -61,7 +61,7 @@ class AccountPayment(Resource):
                 return error_to_response(Error.INVALID_REQUEST,
                                          invalid_params=schema_utils.serialize(valid_format[1]))
 
-            response, status = BcolPayment().create_payment(req_json, is_staff), HTTPStatus.OK
+            response, status = BcolPayment().create_payment(req_json, is_apply_charge), HTTPStatus.OK
 
         except BusinessException as exception:
             return exception.response()

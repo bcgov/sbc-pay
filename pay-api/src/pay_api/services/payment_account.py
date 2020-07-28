@@ -25,6 +25,7 @@ from pay_api.models.internal_payment_account import InternalPaymentAccount
 from pay_api.utils.enums import PaymentSystem
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_str_by_path
+from pay_api.utils.user_context import user_context, UserContext
 
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes
@@ -156,10 +157,13 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         return p
 
     @classmethod
+    @user_context
     def find_account(cls, business_info: Dict[str, Any],
-                     authorization: Dict[str, Any], payment_system: str):
+                     authorization: Dict[str, Any],
+                     payment_system: str, **kwargs):
         """Find payment account by corp number, corp type and payment system code."""
         current_app.logger.debug('<find_payment_account')
+        user: UserContext = kwargs['user']
         auth_account_id: str = get_str_by_path(authorization, 'account/id')
         bcol_user_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineUserId')
         bcol_account_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineAccountId')
@@ -169,7 +173,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         account_dao = None
 
         if payment_system == PaymentSystem.BCOL.value:
-            if not bcol_user_id:
+            # If BCOL payment and if the payment is inititated by customer check if bcol_user_id is present
+            # Staff and system can make payments for users with no bcol account
+            if not user.is_system() and not user.is_staff() and bcol_user_id is None:
                 raise BusinessException(Error.INCOMPLETE_ACCOUNT_SETUP)
 
             account_dao: BcolPaymentAccount = BcolPaymentAccount.find_by_bcol_user_id_and_account(

@@ -62,9 +62,31 @@ def test_internal_staff_factory(session, staff_user_mock):
     from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
 
     # Test for CC and CP with staff role
-    instance = PaymentSystemFactory.create(payment_method='CC', corp_type='CP')
+    instance = PaymentSystemFactory.create(payment_method='CC')
     assert isinstance(instance, InternalPayService)
     assert isinstance(instance, PaymentSystemService)
+
+
+def test_bcol_factory_for_public(session, public_user_mock):
+    """Test payment system creation for BCOL payment instances."""
+    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
+
+    instance = PaymentSystemFactory.create(payment_method='DRAWDOWN')
+    assert isinstance(instance, BcolService)
+    assert isinstance(instance, PaymentSystemService)
+
+
+def test_bcol_factory_for_system(session, system_user_mock):
+    """Test payment system creation for BCOL payment instances."""
+    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
+
+    # Try a DRAWDOWN for system user
+    instance = PaymentSystemFactory.create(payment_method='DRAWDOWN')
+    assert isinstance(instance, BcolService)
+
+    # Create with not specifying a payment_method
+    instance = PaymentSystemFactory.create(account_info={'bcolAccountNumber': '10000'})
+    assert isinstance(instance, BcolService)
 
 
 def test_invalid_pay_system(session, public_user_mock):

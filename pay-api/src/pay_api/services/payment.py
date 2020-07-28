@@ -134,10 +134,11 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         return d
 
     @staticmethod
-    def create(payment_method: str, payment_system: str = 'CC'):
+    def create(payment_method: str, payment_system: str):
         """Create payment record."""
         current_app.logger.debug('<create_payment')
         p = Payment()
+
         p.payment_method_code = payment_method
         p.payment_status_code = PaymentStatus.CREATED.value
         p.payment_system_code = payment_system

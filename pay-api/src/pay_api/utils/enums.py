@@ -81,6 +81,14 @@ class PaymentSystem(Enum):
     INTERNAL = 'INTERNAL'
 
 
+class PaymentMethod(Enum):
+    """Payment Method Codes."""
+
+    CC = 'CC'
+    DRAWDOWN = 'DRAWDOWN'
+    INTERNAL = 'INTERNAL'
+
+
 class Role(Enum):
     """User Role."""
 
@@ -89,6 +97,7 @@ class Role(Enum):
     EDITOR = 'edit'
     SYSTEM = 'system'
     STAFF_ADMIN = 'admin'
+    PUBLIC_USER = 'public_user'
 
 
 class Code(Enum):

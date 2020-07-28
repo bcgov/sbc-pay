@@ -31,7 +31,7 @@ from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import (
     DEFAULT_ADDRESS_LINE_1, DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
     PAYBC_ADJ_ACTIVITY_NAME, PAYBC_BATCH_SOURCE, PAYBC_CUST_TRX_TYPE, PAYBC_LINE_TYPE, PAYBC_TERM_NAME)
-from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem
+from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem, PaymentMethod
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -305,6 +305,10 @@ class PaybcService(PaymentSystemService, OAuthService):
         invoice_response = self.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
         current_app.logger.debug('>__get_invoice')
         return invoice_response.json()
+
+    def get_payment_method_code(self):
+        """Return CC as the method code."""
+        return PaymentMethod.CC.value
 
 
 def get_non_null_value(value: str, default_value: str):
