@@ -326,9 +326,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
 
         service_fees: float = 0
 
-        if not user.is_staff() and fee_schedule_model.fee.amount > 0:
-
-            if fee_schedule_model.service_fee:
-                service_fees = fee_schedule_model.service_fee.amount
+        if not user.is_staff() and fee_schedule_model.fee.amount > 0 and fee_schedule_model.service_fee:
+            service_fees = fee_schedule_model.service_fee.amount
 
         return service_fees

@@ -44,7 +44,7 @@ class DistributionCodeLink(BaseModel):
 
     @classmethod
     def bulk_save_links(cls, links: list):
-        """Find all distribution codes."""
+        """Bulk save DistributionCodeLink."""
         db.session.bulk_save_objects(links)
         BaseModel.commit()
 
@@ -93,7 +93,7 @@ class DistributionCode(Audit):  # pylint:disable=too-many-instance-attributes
 
     @classmethod
     def find_by_active_for_fee_schedule(cls, fee_schedule_id: int):
-        """Return by id."""
+        """Return active distribution for fee schedule."""
         valid_date = date.today()
         query = db.session.query(DistributionCode). \
             join(DistributionCodeLink). \

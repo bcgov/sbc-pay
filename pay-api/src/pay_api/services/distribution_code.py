@@ -242,7 +242,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def find_by_id(identifier: int):
         """Find distribution code by id."""
-        current_app.logger.debug('<find_by_id')
+        current_app.logger.debug('<find_by_id, {}'.format(identifier))
         distribution_code = DistributionCodeModel.find_by_id(identifier=identifier)
         distribution_code_schema = DistributionCodeSchema()
         current_app.logger.debug('>find_by_id')
@@ -260,13 +260,13 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes
             distribution_code_id=distribution_id)
         fee_schedule_schema = FeeScheduleSchema()
         data['items'] = fee_schedule_schema.dump(fee_schedules, many=True)
-        current_app.logger.debug('>find_by_id')
+        current_app.logger.debug('>find_fee_schedules_by_distribution_id')
         return data
 
     @staticmethod
     def save_or_update(distribution_details: Dict, dist_id: int = None):
         """Save distribution."""
-        current_app.logger.debug('<save')
+        current_app.logger.debug('<save_or_update')
 
         dist_code_svc = DistributionCode()
         if dist_id is not None:
@@ -291,7 +291,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes
 
         dist_code_dao = dist_code_svc.save()
         distribution_code_schema = DistributionCodeSchema()
-        current_app.logger.debug('>find_by_id')
+        current_app.logger.debug('>save_or_update')
         return distribution_code_schema.dump(dist_code_dao, many=False)
 
     @staticmethod

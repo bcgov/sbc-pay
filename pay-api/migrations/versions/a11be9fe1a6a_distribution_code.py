@@ -144,6 +144,8 @@ def upgrade():
                                                                                                    result[0]))
     # Update service fee codes for fee schedule
     op.execute("update fee_schedule set service_fee_code='TRF01' where corp_type_code in ('BC', 'VS', 'PPR', 'NRO')")
+
+    # Above script creates 5 default entries, so reset the sequence to 6.
     op.execute("ALTER SEQUENCE distribution_code_distribution_code_id_seq RESTART WITH 6")
     ## Insert complete
 

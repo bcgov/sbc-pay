@@ -53,8 +53,6 @@ class FeeSchedule(db.Model):
     priority_fee = relationship(FeeCode, foreign_keys=[priority_fee_code], lazy='joined', innerjoin=False)
     service_fee = relationship(FeeCode, foreign_keys=[service_fee_code], lazy='joined', innerjoin=False)
 
-    # distribution_codes = relationship("DistributionCode", secondary="distribution_code_link")
-
     @classmethod
     def find_by_filing_type_and_corp_type(cls, corp_type_code: str,
                                           filing_type_code: str,
