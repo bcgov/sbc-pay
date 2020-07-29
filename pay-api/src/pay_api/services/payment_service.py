@@ -21,7 +21,8 @@ from flask import copy_current_request_context, current_app
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.utils.constants import EDIT_ROLE
-from pay_api.utils.enums import PaymentSystem, PaymentStatus, InvoiceStatus, LineItemStatus, InvoiceReferenceStatus
+from pay_api.utils.enums import PaymentSystem, PaymentStatus, InvoiceStatus, LineItemStatus, InvoiceReferenceStatus, \
+    PaymentMethod
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_str_by_path
 
@@ -56,7 +57,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 6.1.1 If failed adjust the invoice to zero and roll back the transaction.
             6.2 If fails rollback the transaction
         """
-        current_app.logger.debug('<create_payment')
+        current_app.logger.debug('<create_payment', payment_request)
         business_info = payment_request.get('businessInfo')
         contact_info = business_info.get('contactInfo')
         filing_info = payment_request.get('filingInfo')
@@ -66,7 +67,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
         corp_type = business_info.get('corpType', None)
         payment_method = _get_payment_method(payment_request, authorization)
-
         # Calculate the fees
         current_app.logger.debug('Calculate the fees')
         fees = _calculate_fees(corp_type, filing_info)
@@ -102,7 +102,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 current_app.logger.debug('Creating line items')
                 line_items.append(PaymentLineItem.create(invoice.id, fee))
             current_app.logger.debug('Handing off to payment system to create invoice')
-            # DONE
             pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice,
                                                             corp_type_code=invoice.corp_type_code)
 
@@ -186,7 +185,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             corp_type=corp_type,
             fees=sum(fee.total for fee in fees)
         )
-
         current_app.logger.debug('Check if payment account exists')
 
         payment: Payment = None
@@ -410,5 +408,9 @@ def _get_payment_method(payment_request: Dict, authorization: Dict):
     if not payment_method:
         payment_method = get_str_by_path(authorization, 'account/paymentPreference/methodOfPayment')
     if not payment_method:
-        payment_method = 'CC'
+        is_direct_pay_enabled = current_app.config.get('DIRECT_PAY_ENABLED')
+        if is_direct_pay_enabled:
+            payment_method = PaymentMethod.DIRECT_PAY.value
+        else:
+            payment_method = PaymentMethod.CC.value
     return payment_method

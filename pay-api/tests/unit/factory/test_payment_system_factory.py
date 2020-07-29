@@ -37,6 +37,11 @@ def test_paybc_system_factory(session, public_user_mock):
     assert isinstance(instance, PaybcService)
     assert isinstance(instance, PaymentSystemService)
 
+    # Test for CC and CP
+    instance = PaymentSystemFactory.create(payment_method=PaymentMethod.DIRECT_PAY.value, corp_type='CP')
+    assert isinstance(instance, DirectPayService)
+    assert isinstance(instance, PaymentSystemService)
+
     # Test for CC and CP with zero fees
     instance = PaymentSystemFactory.create(fees=0, payment_method='CC', corp_type='CP')
     assert isinstance(instance, InternalPayService)

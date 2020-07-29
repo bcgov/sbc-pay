@@ -21,7 +21,6 @@ from pay_api.exceptions import BusinessException
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.bcol_payment_account import BcolPaymentAccount
 from pay_api.models.credit_payment_account import CreditPaymentAccount
-from pay_api.models.direct_pay_payment_account import DirectPayPaymentAccount
 from pay_api.models.internal_payment_account import InternalPaymentAccount
 from pay_api.utils.enums import PaymentSystem, PaymentMethod
 from pay_api.utils.errors import Error
@@ -64,11 +63,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
                 self._paybc_account = value.paybc_account
                 self._paybc_party = value.paybc_party
                 self._paybc_site = value.paybc_site
-                self._corp_number = value.corp_number
-                self._corp_type_code = value.corp_type_code
-                self._account_id = value.account_id
-            elif isinstance(value, DirectPayPaymentAccount):
-                self._payment_system_code = PaymentSystem.PAYBC.value
                 self._corp_number = value.corp_number
                 self._corp_type_code = value.corp_type_code
                 self._account_id = value.account_id
@@ -147,20 +141,13 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
             dao.corp_type_code = business_info.get('corpType', None)
             dao.account_id = payment_account.id
         elif payment_system == PaymentSystem.PAYBC.value:
-            if payment_method == PaymentMethod.CC.value:
-                dao = CreditPaymentAccount()
-                dao.corp_number = business_info.get('businessIdentifier', None)
-                dao.corp_type_code = business_info.get('corpType', None)
-                dao.paybc_account = account_details.get('account_number', None)
-                dao.paybc_party = account_details.get('party_number', None)
-                dao.paybc_site = account_details.get('site_number', None)
-                dao.account_id = payment_account.id
-            elif payment_method == PaymentMethod.DIRECT_PAY.value:
-                dao = DirectPayPaymentAccount()
-                dao.corp_number = business_info.get('businessIdentifier', None)
-                dao.corp_type_code = business_info.get('corpType', None)
-                dao.account_id = payment_account.id
-
+            dao = CreditPaymentAccount()
+            dao.corp_number = business_info.get('businessIdentifier', None)
+            dao.corp_type_code = business_info.get('corpType', None)
+            dao.paybc_account = account_details.get('account_number', None)
+            dao.paybc_party = account_details.get('party_number', None)
+            dao.paybc_site = account_details.get('site_number', None)
+            dao.account_id = payment_account.id
         dao = dao.save()
 
         p = PaymentAccount()
@@ -201,19 +188,13 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
                                                                  account_id=auth_account_id
                                                                  )
         elif payment_system == PaymentSystem.PAYBC.value:
-            if payment_method == PaymentMethod.CC.value:
-                if not corp_number and not corp_type:
-                    raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
-                account_dao = CreditPaymentAccount.find_by_corp_number_and_corp_type_and_auth_account_id(
-                    corp_number=corp_number,
-                    corp_type=corp_type,
-                    auth_account_id=auth_account_id
-                )
-            elif payment_method == PaymentMethod.DIRECT_PAY.value:
-                account_dao: DirectPayPaymentAccount = DirectPayPaymentAccount. \
-                    find_by_corp_number_and_corp_type_and_account_id(corp_number=corp_number, corp_type=corp_type,
-                                                                     account_id=auth_account_id
-                                                                     )
+            if not corp_number and not corp_type:
+                raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
+            account_dao = CreditPaymentAccount.find_by_corp_number_and_corp_type_and_auth_account_id(
+                corp_number=corp_number,
+                corp_type=corp_type,
+                auth_account_id=auth_account_id
+            )
 
         payment_account = PaymentAccount()
         payment_account.populate(account_dao)  # pylint: disable=protected-access

@@ -57,7 +57,7 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         current_app.logger.debug('<create')
         user: UserContext = kwargs['user']
         total_fees: int = kwargs.get('fees', None)
-        payment_method = kwargs.get('payment_method', PaymentMethod.CC.value)
+        payment_method = kwargs.get('payment_method', PaymentMethod.DIRECT_PAY.value if current_app.config.get('DIRECT_PAY_ENABLED') else PaymentMethod.CC.value )
         account_info = kwargs.get('account_info', None)
         has_bcol_account_number = account_info is not None and account_info.get('bcolAccountNumber') is not None
 
@@ -79,11 +79,9 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
             if has_bcol_account_number and Role.SYSTEM.value in user.roles:
                 _instance = BcolService()
             elif payment_method == PaymentMethod.CC.value:
-                is_direct_pay_enabled = current_app.config.get('DIRECT_PAY_ENABLED')
-                if is_direct_pay_enabled:
-                    _instance = DirectPayService()
-                else:
-                    _instance = PaybcService()
+                _instance = PaybcService()
+            elif payment_method == PaymentMethod.DIRECT_PAY.value:
+                _instance = DirectPayService()
             elif payment_method == PaymentMethod.DRAWDOWN.value:
                 _instance = BcolService()
 

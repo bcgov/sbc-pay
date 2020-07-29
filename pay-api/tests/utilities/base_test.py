@@ -20,7 +20,7 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 from datetime import datetime
 
 from pay_api.models import (
-    BcolPaymentAccount, CreditPaymentAccount, DirectPayPaymentAccount, InternalPaymentAccount, Invoice,
+    BcolPaymentAccount, CreditPaymentAccount, InternalPaymentAccount, Invoice,
     InvoiceReference, Payment,
     PaymentAccount, PaymentLineItem, PaymentTransaction, DistributionCode)
 from pay_api.utils.enums import PaymentSystem, Role, PaymentStatus, InvoiceReferenceStatus, \
@@ -280,7 +280,7 @@ def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code: str 
                 account_id=account.id
             )
         elif payment_method_code == PaymentMethod.DIRECT_PAY.value:
-            return DirectPayPaymentAccount(
+            return CreditPaymentAccount(
                 corp_number=corp_number,
                 corp_type_code=corp_type_code,
                 account_id=account.id
@@ -399,7 +399,7 @@ def get_paybc_transaction_request():
     }
 
 
-def get_auth_basic_user():
+def get_auth_basic_user(method_of_payment='CC'):
     """Return authorization response for basic users."""
     return {
         'orgMembership': 'OWNER',
@@ -416,7 +416,7 @@ def get_auth_basic_user():
             'id': '1234',
             'name': 'Mock Account',
             'paymentPreference': {
-                'methodOfPayment': 'CC',
+                'methodOfPayment': method_of_payment,
                 'bcOnlineUserId': '',
                 'bcOnlineAccountId': ''
             }
