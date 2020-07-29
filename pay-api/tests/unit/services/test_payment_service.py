@@ -55,7 +55,8 @@ def test_create_payment_record(session, public_user_mock):
 def test_create_payment_record_with_direct_pay(session, public_user_mock):
     """Assert that the payment records are created."""
     current_app.config['DIRECT_PAY_ENABLED'] = True
-    payment_response = PaymentService.create_payment(get_payment_request(), get_auth_basic_user(PaymentMethod.DIRECT_PAY.value))
+    payment_response = PaymentService.create_payment(
+        get_payment_request(), get_auth_basic_user(PaymentMethod.DIRECT_PAY.value))
     account_model = CreditPaymentAccount. \
         find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP',
                                                               get_auth_basic_user().get('account').get('id'))

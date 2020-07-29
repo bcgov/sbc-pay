@@ -351,8 +351,7 @@ def _create_account(pay_service, business_info, contact_info, account_info, auth
     payment_account: PaymentAccount = PaymentAccount.find_account(
         business_info,
         authorization,
-        pay_service.get_payment_system_code(),
-        pay_service.get_payment_method_code(),
+        pay_service.get_payment_system_code()
     )
     if not payment_account.id:
         current_app.logger.debug('No payment account, creating new')
@@ -369,7 +368,6 @@ def _create_account(pay_service, business_info, contact_info, account_info, auth
             business_info=business_info,
             account_details=pay_system_account,
             payment_system=pay_service.get_payment_system_code(),
-            payment_method=pay_service.get_payment_method_code(),
             authorization=authorization
         )
     return payment_account

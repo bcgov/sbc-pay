@@ -22,7 +22,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.bcol_payment_account import BcolPaymentAccount
 from pay_api.models.credit_payment_account import CreditPaymentAccount
 from pay_api.models.internal_payment_account import InternalPaymentAccount
-from pay_api.utils.enums import PaymentSystem, PaymentMethod
+from pay_api.utils.enums import PaymentSystem
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_str_by_path
 from pay_api.utils.user_context import user_context, UserContext
@@ -119,7 +119,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def create(business_info: Dict[str, Any], account_details: Dict[str, str],
-               payment_system: str, payment_method: str, authorization: Dict[str, Any]):
+               payment_system: str, authorization: Dict[str, Any]):
         """Create Payment account record."""
         current_app.logger.debug('<create')
         auth_account_id = get_str_by_path(authorization, 'account/id')
@@ -159,7 +159,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
     @user_context
     def find_account(cls, business_info: Dict[str, Any],
                      authorization: Dict[str, Any],
-                     payment_system: str, payment_method: str, **kwargs):
+                     payment_system: str, **kwargs):
         """Find payment account by corp number, corp type and payment system code."""
         current_app.logger.debug('<find_payment_account')
         user: UserContext = kwargs['user']

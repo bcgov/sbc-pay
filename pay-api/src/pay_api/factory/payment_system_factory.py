@@ -57,7 +57,8 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         current_app.logger.debug('<create')
         user: UserContext = kwargs['user']
         total_fees: int = kwargs.get('fees', None)
-        payment_method = kwargs.get('payment_method', PaymentMethod.DIRECT_PAY.value if current_app.config.get('DIRECT_PAY_ENABLED') else PaymentMethod.CC.value )
+        payment_method = kwargs.get('payment_method', PaymentMethod.DIRECT_PAY.value if current_app.config.get(
+            'DIRECT_PAY_ENABLED') else PaymentMethod.CC.value)
         account_info = kwargs.get('account_info', None)
         has_bcol_account_number = account_info is not None and account_info.get('bcolAccountNumber') is not None
 
