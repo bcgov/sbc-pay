@@ -82,6 +82,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
         # Create payment account
         payment_account = _create_account(pay_service, business_info, contact_info, account_info, authorization)
+
         payment: Payment = None
         pay_system_invoice: Dict[str, any] = None
 
@@ -101,6 +102,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 current_app.logger.debug('Creating line items')
                 line_items.append(PaymentLineItem.create(invoice.id, fee))
             current_app.logger.debug('Handing off to payment system to create invoice')
+            # DONE
             pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice,
                                                             corp_type_code=invoice.corp_type_code)
 
@@ -279,7 +281,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         _check_if_payment_is_completed(payment)
 
         # Create the payment system implementation
-        pay_service: PaymentSystemService = PaymentSystemFactory.create_from_system_code(payment.payment_system_code)
+        pay_service: PaymentSystemService = PaymentSystemFactory.create_from_system_code(
+            payment.payment_system_code, payment.payment_method_code)
 
         # Cancel all invoices
         for invoice in payment.invoices:
@@ -351,6 +354,7 @@ def _create_account(pay_service, business_info, contact_info, account_info, auth
         business_info,
         authorization,
         pay_service.get_payment_system_code(),
+        pay_service.get_payment_method_code(),
     )
     if not payment_account.id:
         current_app.logger.debug('No payment account, creating new')
@@ -367,6 +371,7 @@ def _create_account(pay_service, business_info, contact_info, account_info, auth
             business_info=business_info,
             account_details=pay_system_account,
             payment_system=pay_service.get_payment_system_code(),
+            payment_method=pay_service.get_payment_method_code(),
             authorization=authorization
         )
     return payment_account

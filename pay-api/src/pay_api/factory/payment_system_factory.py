@@ -18,9 +18,10 @@ from flask import current_app
 from pay_api.exceptions import BusinessException
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.bcol_service import BcolService  # noqa: I001
+from pay_api.services.direct_pay_service import DirectPayService
 from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.services.paybc_service import PaybcService
-from pay_api.utils.enums import PaymentSystem, Role  # noqa: I001
+from pay_api.utils.enums import PaymentSystem, Role, PaymentMethod  # noqa: I001
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 
@@ -33,11 +34,14 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
     """
 
     @staticmethod
-    def create_from_system_code(payment_system: str):
-        """Create the payment system implementation from the payment system code."""
+    def create_from_system_code(payment_system: str, payment_method: str):
+        """Create the payment system implementation from the payment system code and payment method."""
         _instance: PaymentSystemService = None
         if payment_system == PaymentSystem.PAYBC.value:
-            _instance = PaybcService()
+            if payment_method == PaymentMethod.DIRECT_PAY.value:
+                _instance = DirectPayService()
+            else:
+                _instance = PaybcService()
         elif payment_system == PaymentSystem.BCOL.value:
             _instance = BcolService()
         elif payment_system == PaymentSystem.INTERNAL.value:
@@ -53,7 +57,7 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         current_app.logger.debug('<create')
         user: UserContext = kwargs['user']
         total_fees: int = kwargs.get('fees', None)
-        payment_method = kwargs.get('payment_method', 'CC')
+        payment_method = kwargs.get('payment_method', PaymentMethod.CC.value)
         account_info = kwargs.get('account_info', None)
         has_bcol_account_number = account_info is not None and account_info.get('bcolAccountNumber') is not None
 
@@ -74,9 +78,13 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
             # System accounts can create BCOL payments similar to staff by providing as payload
             if has_bcol_account_number and Role.SYSTEM.value in user.roles:
                 _instance = BcolService()
-            elif payment_method == 'CC':
-                _instance = PaybcService()
-            elif payment_method == 'DRAWDOWN':
+            elif payment_method == PaymentMethod.CC.value:
+                is_direct_pay_enabled = current_app.config.get('DIRECT_PAY_ENABLED')
+                if is_direct_pay_enabled:
+                    _instance = DirectPayService()
+                else:
+                    _instance = PaybcService()
+            elif payment_method == PaymentMethod.DRAWDOWN.value:
                 _instance = BcolService()
 
         if not _instance:
