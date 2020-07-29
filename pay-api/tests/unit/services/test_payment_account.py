@@ -35,7 +35,7 @@ def test_account_saved_from_new(session):
         'corpType': payment_account.corp_type_code
     }
 
-    pa = PaymentAccountService.find_account(business_info, get_auth_basic_user(), 'PAYBC', PaymentMethod.CC.value)
+    pa = PaymentAccountService.find_account(business_info, get_auth_basic_user(), 'PAYBC')
 
     assert pa is not None
     assert pa.id is not None
@@ -52,8 +52,7 @@ def test_direct_pay_account_saved_from_new(session):
         'corpType': payment_account.corp_type_code
     }
 
-    pa = PaymentAccountService.find_account(business_info, get_auth_basic_user(), 'PAYBC',
-                                            PaymentMethod.DIRECT_PAY.value)
+    pa = PaymentAccountService.find_account(business_info, get_auth_basic_user(), 'PAYBC')
 
     assert pa is not None
     assert pa.id is not None
@@ -80,7 +79,7 @@ def test_account_invalid_lookup(session):
         'corpType': 'CP'
     }
 
-    p = PaymentAccountService.find_account(business_info, get_auth_basic_user(), 'PAYBC', PaymentMethod.CC.value)
+    p = PaymentAccountService.find_account(business_info, get_auth_basic_user(), 'PAYBC')
 
     assert p is not None
     assert p.id is None
@@ -88,7 +87,7 @@ def test_account_invalid_lookup(session):
     from pay_api.exceptions import BusinessException
     from pay_api.utils.errors import Error
     with pytest.raises(BusinessException) as excinfo:
-        PaymentAccountService.find_account({}, get_auth_basic_user(), 'PAYBC', PaymentMethod.CC.value)
+        PaymentAccountService.find_account({}, get_auth_basic_user(), 'PAYBC')
     assert excinfo.value.code == Error.INVALID_CORP_OR_FILING_TYPE.name
 
 
@@ -97,7 +96,7 @@ def test_account_invalid_premium_account_lookup(session):
     business_info: Dict = {
     }
 
-    p = PaymentAccountService.find_account(business_info, get_auth_premium_user(), 'BCOL', PaymentMethod.DRAWDOWN.value)
+    p = PaymentAccountService.find_account(business_info, get_auth_premium_user(), 'BCOL')
 
     assert p is not None
     assert p.id is None
@@ -105,5 +104,5 @@ def test_account_invalid_premium_account_lookup(session):
     from pay_api.exceptions import BusinessException
     from pay_api.utils.errors import Error
     with pytest.raises(BusinessException) as excinfo:
-        PaymentAccountService.find_account(business_info, {}, 'BCOL', PaymentMethod.DRAWDOWN.value)
+        PaymentAccountService.find_account(business_info, {}, 'BCOL')
     assert excinfo.value.code == Error.INCOMPLETE_ACCOUNT_SETUP.name

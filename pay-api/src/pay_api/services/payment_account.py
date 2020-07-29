@@ -148,6 +148,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
             dao.paybc_party = account_details.get('party_number', None)
             dao.paybc_site = account_details.get('site_number', None)
             dao.account_id = payment_account.id
+
         dao = dao.save()
 
         p = PaymentAccount()
@@ -195,7 +196,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
                 corp_type=corp_type,
                 auth_account_id=auth_account_id
             )
-
         payment_account = PaymentAccount()
         payment_account.populate(account_dao)  # pylint: disable=protected-access
 
