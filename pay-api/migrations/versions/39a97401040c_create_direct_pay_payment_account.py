@@ -1,8 +1,8 @@
 """create direct_pay_payment_account
 
-Revision ID: 3832dfa020a8
-Revises: 7a316d48f9ae
-Create Date: 2020-07-28 14:02:13.323957
+Revision ID: 39a97401040c
+Revises: e385e278cf3e
+Create Date: 2020-07-29 12:20:53.748750
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '3832dfa020a8'
-down_revision = '7a316d48f9ae'
+revision = '39a97401040c'
+down_revision = 'e385e278cf3e'
 branch_labels = None
 depends_on = None
 
