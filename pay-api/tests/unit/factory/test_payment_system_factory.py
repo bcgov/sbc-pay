@@ -18,7 +18,6 @@ Test-Suite to ensure that the CorpType Class is working as expected.
 """
 
 import pytest
-from flask import current_app
 
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.bcol_service import BcolService

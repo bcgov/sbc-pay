@@ -20,7 +20,8 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 from datetime import datetime
 
 from pay_api.models import (
-    BcolPaymentAccount, CreditPaymentAccount,DirectPayPaymentAccount, InternalPaymentAccount, Invoice, InvoiceReference, Payment,
+    BcolPaymentAccount, CreditPaymentAccount, DirectPayPaymentAccount, InternalPaymentAccount, Invoice,
+    InvoiceReference, Payment,
     PaymentAccount, PaymentLineItem, PaymentTransaction, DistributionCode)
 from pay_api.utils.enums import PaymentSystem, Role, PaymentStatus, InvoiceReferenceStatus, \
     LineItemStatus, InvoiceStatus, PaymentMethod
