@@ -13,14 +13,14 @@
 # limitations under the License.
 """Service to invoke Rest services."""
 import json
+from collections.abc import Iterable
 from typing import Dict
 
 import requests
 from flask import current_app
 from requests.adapters import HTTPAdapter  # pylint:disable=ungrouped-imports
 from requests.exceptions import ConnectTimeout, HTTPError
-# pylint:disable=ungrouped-imports
-from requests.exceptions import ConnectionError as ReqConnectionError
+from requests.exceptions import ConnectionError as ReqConnectionError  # pylint:disable=ungrouped-imports
 from urllib3.util.retry import Retry
 
 from pay_api.exceptions import ServiceUnavailableException
@@ -80,7 +80,10 @@ class OAuthService:
     def __log_response(response):
         if response is not None:
             current_app.logger.debug(response.headers)
-            current_app.logger.info('response : {}'.format(response.text if response else ''))
+            if response.headers and isinstance(response.headers, Iterable) and \
+                    'Content-Type' in response.headers and \
+                    response.headers['Content-Type'] == ContentType.JSON.value:
+                current_app.logger.info('response : {}'.format(response.text if response else ''))
 
     @staticmethod
     def get(endpoint, token, auth_header_type: AuthHeaderType, content_type: ContentType,

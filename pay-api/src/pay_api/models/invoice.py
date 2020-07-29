@@ -87,6 +87,8 @@ class InvoiceSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         exclude = ['bcol_account', 'internal_account', 'credit_account']
 
     invoice_status_code = fields.String(data_key='status_code')
+    corp_type_code = fields.String(data_key='corp_type_code')
+
     # pylint: disable=no-member
     payment_line_items = ma.Nested(PaymentLineItemSchema, many=True, data_key='line_items')
     receipts = ma.Nested(ReceiptSchema, many=True, data_key='receipts')
