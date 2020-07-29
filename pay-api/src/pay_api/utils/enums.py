@@ -87,6 +87,7 @@ class PaymentMethod(Enum):
     CC = 'CC'
     DRAWDOWN = 'DRAWDOWN'
     INTERNAL = 'INTERNAL'
+    DIRECT_PAY = 'DIRECT_PAY'
 
 
 class Role(Enum):

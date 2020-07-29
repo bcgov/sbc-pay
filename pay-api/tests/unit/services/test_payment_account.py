@@ -20,6 +20,8 @@ Test-Suite to ensure that the FeeSchedule Service is working as expected.
 from typing import Dict
 
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
+from pay_api.utils.enums import PaymentMethod
+
 from tests.utilities.base_test import (
     factory_payment_account, factory_premium_payment_account, get_auth_basic_user, get_auth_premium_user)
 
@@ -41,13 +43,30 @@ def test_account_saved_from_new(session):
     assert pa.corp_type_code is not None
 
 
+def test_direct_pay_account_saved_from_new(session):
+    """Assert that the payment is saved to the table."""
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.DIRECT_PAY.value)
+    payment_account.save()
+    business_info: Dict = {
+        'businessIdentifier': payment_account.corp_number,
+        'corpType': payment_account.corp_type_code
+    }
+
+    pa = PaymentAccountService.find_account(business_info, get_auth_basic_user(), 'PAYBC')
+
+    assert pa is not None
+    assert pa.id is not None
+    assert pa.corp_number is not None
+    assert pa.corp_type_code is not None
+
+
 def test_premium_account_saved_from_new(session):
     """Assert that the payment is saved to the table."""
     payment_account = factory_premium_payment_account()
     payment_account.save()
 
     pa = PaymentAccountService.find_account({}, get_auth_premium_user(),
-                                            payment_system='BCOL')
+                                            payment_system='BCOL', payment_method=PaymentMethod.DRAWDOWN.value)
 
     assert pa is not None
     assert pa.id is not None
