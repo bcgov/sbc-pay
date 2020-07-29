@@ -343,7 +343,8 @@ def test_create_bcol_payment(session, public_user_mock):
 def test_create_payment_record_with_service_charge(session, public_user_mock):
     """Assert that the payment records are created."""
     # Create a payment request for corp type BC
-    payment_response = PaymentService.create_payment(get_payment_request(corp_type='BC'), get_auth_basic_user())
+    payment_response = PaymentService.create_payment(get_payment_request(corp_type='BC', second_filing_type='OTFDR'),
+                                                     get_auth_basic_user())
     account_model = CreditPaymentAccount. \
         find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'BC',
                                                               get_auth_basic_user().get('account').get('id'))

@@ -183,7 +183,6 @@ def test_fee_schedule_with_service_fees(session):
     fee_code_master.save()
 
     corp_type = CorpType(code=corp_type_code,
-                         service_fee_code=tran_fee_code,
                          description='TEST')
     corp_type.save()
 
@@ -196,6 +195,7 @@ def test_fee_schedule_with_service_fees(session):
     fee_schedule.corp_type_code = corp_type_code
     fee_schedule.fee_code = fee_code
     fee_schedule.fee_start_date = date.today()
+    fee_schedule.service_fee_code = tran_fee_code
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(corp_type=corp_type_code,
@@ -220,7 +220,6 @@ def test_fee_schedule_with_service_fees_for_basic_user(session):
     fee_code_master.save()
 
     corp_type = CorpType(code=corp_type_code,
-                         service_fee_code=tran_fee_code,
                          description='TEST')
     corp_type.save()
 
@@ -233,6 +232,7 @@ def test_fee_schedule_with_service_fees_for_basic_user(session):
     fee_schedule.corp_type_code = corp_type_code
     fee_schedule.fee_code = fee_code
     fee_schedule.fee_start_date = date.today()
+    fee_schedule.service_fee_code = tran_fee_code
     fee_schedule.save()
 
     fee_schedule = services.FeeSchedule.find_by_corp_type_and_filing_type(corp_type=corp_type_code,

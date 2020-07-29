@@ -26,7 +26,9 @@ from sbc_common_components.exception_handling.exception_handler import Exception
 from .account import API as ACCOUNTS_API
 from .apihelper import Api
 from .code import API as CODES_API
+from .distributions import API as DISTRIBUTION_API
 from .fee import API as FEE_API
+from .fee_schedule import API as FEE_SCHEDULE_API
 from .invoice import API as INVOICE_API
 from .invoice_receipt import API as INVOICE_RECEIPT_API
 from .meta import API as META_API
@@ -70,6 +72,8 @@ HANDLER = ExceptionHandler(API)
 API.add_namespace(META_API, path='/meta')
 API.add_namespace(PAY_API, path='/payment-requests')
 API.add_namespace(FEE_API, path='/fees')
+API.add_namespace(FEE_SCHEDULE_API, '/fees/schedules')
+API.add_namespace(DISTRIBUTION_API, '/fees/distributions')
 API.add_namespace(TRANSACTION_API, path='/payment-requests/<int:payment_id>/transactions')
 API.add_namespace(INVOICE_API, path='/payment-requests/<int:payment_id>/invoices')
 API.add_namespace(INVOICE_RECEIPT_API, path='/payment-requests/<int:payment_id>')

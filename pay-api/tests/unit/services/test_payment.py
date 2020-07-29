@@ -155,7 +155,7 @@ def test_search_payment_history(session):
     # Search by different filter
     search_filter = {
         'weekFilter': {
-            'index': 1
+            'index': 2
         }
     }
     results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
