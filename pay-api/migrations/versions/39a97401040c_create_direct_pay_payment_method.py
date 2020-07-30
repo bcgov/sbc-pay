@@ -27,7 +27,7 @@ def upgrade():
     op.bulk_insert(
         payment_method_table,
         [
-            {'code': 'DIRECT_PAY', 'description': 'Direct Pay'}
+            {'code': 'DIRECT_PAY', 'description': 'Credit Card'}
         ]
     )
 
