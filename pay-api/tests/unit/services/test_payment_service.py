@@ -20,12 +20,13 @@ Test-Suite to ensure that the FeeSchedule Service is working as expected.
 from unittest.mock import patch
 
 import pytest
+from flask import current_app
 from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.models import CreditPaymentAccount, FeeSchedule, InternalPaymentAccount, Payment
 from pay_api.services.payment_service import PaymentService
-from pay_api.utils.enums import PaymentStatus, TransactionStatus, InvoiceStatus
+from pay_api.utils.enums import PaymentStatus, TransactionStatus, InvoiceStatus, PaymentMethod
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
     factory_payment_transaction, get_auth_basic_user, get_auth_premium_user, get_payment_request,
@@ -37,6 +38,25 @@ test_user_token = {'preferred_username': 'test'}
 def test_create_payment_record(session, public_user_mock):
     """Assert that the payment records are created."""
     payment_response = PaymentService.create_payment(get_payment_request(), get_auth_basic_user())
+    account_model = CreditPaymentAccount. \
+        find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP',
+                                                              get_auth_basic_user().get('account').get('id'))
+    account_id = account_model.id
+    assert account_id is not None
+    assert payment_response.get('id') is not None
+    # Create another payment with same request, the account should be the same
+    PaymentService.create_payment(get_payment_request(), get_auth_basic_user())
+    account_model = CreditPaymentAccount. \
+        find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP',
+                                                              get_auth_basic_user().get('account').get('id'))
+    assert account_id == account_model.id
+
+
+def test_create_payment_record_with_direct_pay(session, public_user_mock):
+    """Assert that the payment records are created."""
+    current_app.config['DIRECT_PAY_ENABLED'] = True
+    payment_response = PaymentService.create_payment(
+        get_payment_request(), get_auth_basic_user(PaymentMethod.DIRECT_PAY.value))
     account_model = CreditPaymentAccount. \
         find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP',
                                                               get_auth_basic_user().get('account').get('id'))

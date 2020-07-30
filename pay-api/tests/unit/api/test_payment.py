@@ -20,6 +20,7 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 import json
 from unittest.mock import patch
 
+from flask import current_app
 from requests.exceptions import ConnectionError
 
 from pay_api.schemas import utils as schema_utils
@@ -42,6 +43,21 @@ def test_payment_creation(session, client, jwt, app):
     assert rv.json.get('_links') is not None
 
     assert schema_utils.validate(rv.json, 'payment_response')[0]
+
+
+def test_payment_creation_using_direct_pay(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    current_app.config['DIRECT_PAY_ENABLED'] = True
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0001239')),
+                     headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
+
+    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert rv.json.get('paymentMethod') == 'DIRECT_PAY'
+    assert rv.json.get('paymentSystem') == 'PAYBC'
 
 
 def test_payment_creation_with_service_account(session, client, jwt, app):
