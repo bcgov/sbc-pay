@@ -56,8 +56,8 @@ def test_payment_creation_using_direct_pay(session, client, jwt, app):
     assert rv.json.get('_links') is not None
 
     assert schema_utils.validate(rv.json, 'payment_response')[0]
-    assert rv.json.get('paymentMethod') == 'DRAWDOWN'
-    assert rv.json.get('paymentSystem') == 'BCOL'
+    assert rv.json.get('paymentMethod') == 'CC'
+    assert rv.json.get('paymentSystem') == 'DIRECT_PAY'
 
 
 def test_payment_creation_with_service_account(session, client, jwt, app):
