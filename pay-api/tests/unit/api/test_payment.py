@@ -50,14 +50,14 @@ def test_payment_creation_using_direct_pay(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     current_app.config['DIRECT_PAY_ENABLED'] = True
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0001239')),
                      headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
 
     assert schema_utils.validate(rv.json, 'payment_response')[0]
-    assert rv.json.get('paymentMethod') == 'CC'
-    assert rv.json.get('paymentSystem') == 'DIRECT_PAY'
+    assert rv.json.get('paymentMethod') == 'DIRECT_PAY'
+    assert rv.json.get('paymentSystem') == 'PAYBC'
 
 
 def test_payment_creation_with_service_account(session, client, jwt, app):
