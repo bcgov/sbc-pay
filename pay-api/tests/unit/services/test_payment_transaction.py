@@ -21,11 +21,12 @@ import uuid
 from datetime import datetime
 
 import pytest
+from flask import current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
-from pay_api.utils.enums import PaymentStatus, TransactionStatus
+from pay_api.utils.enums import PaymentStatus, TransactionStatus, PaymentMethod
 from pay_api.utils.errors import Error
 from tests import skip_in_pod
 from tests.utilities.base_test import (
@@ -90,6 +91,33 @@ def test_transaction_create_from_new(session):
     assert transaction.pay_system_url is not None
     assert transaction.transaction_start_time is not None
     assert transaction.asdict() is not None
+
+
+def test_transaction_for_direct_pay_create_from_new(session):
+    """Assert that the payment is saved to the table."""
+    current_app.config['DIRECT_PAY_ENABLED'] = True
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.DIRECT_PAY.value)
+    payment = factory_payment(payment_method_code=PaymentMethod.DIRECT_PAY.value)
+    payment_account.save()
+    payment.save()
+    invoice = factory_invoice(payment, payment_account)
+    invoice.save()
+    factory_invoice_reference(invoice.id).save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    transaction = PaymentTransactionService.create(payment.id, get_paybc_transaction_request())
+
+    assert transaction is not None
+    assert transaction.id is not None
+    assert transaction.status_code is not None
+    assert transaction.payment_id is not None
+    assert transaction.client_system_url is not None
+    assert transaction.pay_system_url is not None
+    assert transaction.transaction_start_time is not None
+    assert transaction.asdict() is not None
+    print('transaction.pay_system_url----------', transaction.pay_system_url)
 
 
 def test_transaction_create_from_invalid_payment(session):
