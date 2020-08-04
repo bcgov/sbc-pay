@@ -117,7 +117,6 @@ def test_transaction_for_direct_pay_create_from_new(session):
     assert transaction.pay_system_url is not None
     assert transaction.transaction_start_time is not None
     assert transaction.asdict() is not None
-    print('transaction.pay_system_url----------', transaction.pay_system_url)
 
 
 def test_transaction_create_from_invalid_payment(session):
