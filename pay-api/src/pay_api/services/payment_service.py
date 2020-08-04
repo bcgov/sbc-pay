@@ -384,7 +384,7 @@ def _complete_post_payment(pay_service: PaymentSystemService, payment: Payment):
                                                                         'clientSystemUrl': '',
                                                                         'payReturnUrl': ''
                                                                     })
-        transaction.update_transaction(payment.id, transaction.id, receipt_number=None)
+        transaction.update_transaction(payment.id, transaction.id, pay_response_url=None)
 
 
 def _update_active_transactions(payment_id):
@@ -393,7 +393,7 @@ def _update_active_transactions(payment_id):
     transaction: PaymentTransaction = PaymentTransaction.find_active_by_payment_id(payment_id)
     if transaction:
         # check existing payment status in PayBC;
-        PaymentTransaction.update_transaction(payment_id, transaction.id, None)
+        PaymentTransaction.update_transaction(payment_id, transaction.id, pay_response_url=None)
 
 
 def _check_if_payment_is_completed(payment):
