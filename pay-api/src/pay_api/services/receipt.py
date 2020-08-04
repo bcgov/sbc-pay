@@ -151,45 +151,9 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
             'reportName': filing_data.pop('fileName', 'payment_receipt')
         }
 
-        template_vars = {}
+        template_vars = Receipt.get_receipt_details(filing_data, invoice_identifier, payment_identifier,
+                                                    skip_auth_check)
         template_vars.update(filing_data)
-
-        # invoice number not mandatory ;since only one invoice exist for a payment now
-        if not invoice_identifier:
-            invoice_data = Invoice.find_by_payment_identifier(payment_identifier, skip_auth_check=skip_auth_check)
-        else:
-            invoice_data = Invoice.find_by_id(invoice_identifier, payment_identifier, skip_auth_check=skip_auth_check)
-
-        payment_account = PaymentAccount.find_by_pay_system_id(
-            credit_account_id=invoice_data.credit_account_id,
-            internal_account_id=invoice_data.internal_account_id,
-            bcol_account_id=invoice_data.bcol_account_id)
-
-        invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(invoice_data.id)
-
-        # template_vars['incorporationNumber'] = payment_account.corp_number
-        template_vars['invoiceNumber'] = invoice_reference.invoice_number
-
-        if payment_account.payment_system_code == PaymentSystem.INTERNAL.value and invoice_data.routing_slip:
-            template_vars['routingSlipNumber'] = invoice_data.routing_slip
-
-        if not invoice_data.receipts:
-            raise BusinessException(Error.INVALID_REQUEST)
-
-        template_vars['receiptNo'] = invoice_data.receipts[0].receipt_number
-        template_vars['filingIdentifier'] = filing_data.get('filingIdentifier', invoice_data.filing_id)
-
-        if invoice_data.bcol_account_id:
-            bcol_account: BcolPaymentAccountModel = BcolPaymentAccountModel.find_by_id(invoice_data.bcol_account_id)
-            template_vars['bcOnlineAccountNumber'] = bcol_account.bcol_account_id
-
-        payment_method = PaymentModel.find_payment_method_by_payment_id(payment_identifier)
-
-        # TODO fix properly later
-        if not invoice_data.internal_account_id:
-            template_vars['paymentMethod'] = payment_method.description
-
-        template_vars['invoice'] = camelcase_dict(invoice_data.asdict(), {})
 
         receipt_dict['templateVars'] = template_vars
 
@@ -202,3 +166,35 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('<OAuthService responded to receipt.py')
 
         return pdf_response
+
+    @staticmethod
+    def get_receipt_details(filing_data, invoice_identifier, payment_identifier, skip_auth_check):
+        """Return receipt details."""
+        receipt_details: dict = {}
+        # invoice number not mandatory ;since only one invoice exist for a payment now
+        if not invoice_identifier:
+            invoice_data = Invoice.find_by_payment_identifier(payment_identifier, skip_auth_check=skip_auth_check)
+        else:
+            invoice_data = Invoice.find_by_id(invoice_identifier, payment_identifier, skip_auth_check=skip_auth_check)
+        payment_account = PaymentAccount.find_by_pay_system_id(
+            credit_account_id=invoice_data.credit_account_id,
+            internal_account_id=invoice_data.internal_account_id,
+            bcol_account_id=invoice_data.bcol_account_id)
+        invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(invoice_data.id)
+
+        receipt_details['invoiceNumber'] = invoice_reference.invoice_number
+        if payment_account.payment_system_code == PaymentSystem.INTERNAL.value and invoice_data.routing_slip:
+            receipt_details['routingSlipNumber'] = invoice_data.routing_slip
+        if not invoice_data.receipts:
+            raise BusinessException(Error.INVALID_REQUEST)
+        receipt_details['receiptNumber'] = invoice_data.receipts[0].receipt_number
+        receipt_details['filingIdentifier'] = filing_data.get('filingIdentifier', invoice_data.filing_id)
+        if invoice_data.bcol_account_id:
+            bcol_account: BcolPaymentAccountModel = BcolPaymentAccountModel.find_by_id(invoice_data.bcol_account_id)
+            receipt_details['bcOnlineAccountNumber'] = bcol_account.bcol_account_id
+        payment_method = PaymentModel.find_payment_method_by_payment_id(payment_identifier)
+        # TODO fix properly later
+        if not invoice_data.internal_account_id:
+            receipt_details['paymentMethod'] = payment_method.description
+        receipt_details['invoice'] = camelcase_dict(invoice_data.asdict(), {})
+        return receipt_details
