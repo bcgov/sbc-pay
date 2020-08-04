@@ -13,6 +13,7 @@
 # limitations under the License.
 """Service to manage Direct Pay PAYBC Payments."""
 import json
+import secrets
 import urllib.parse
 
 from datetime import datetime, date
@@ -33,6 +34,7 @@ from .payment_line_item import PaymentLineItem
 
 PAYBC_DATE_FORMAT = '%Y-%M-%d'
 PAYBC_REVENUE_SEPARATOR = '|'
+DECIMAL_PRECISION = '.2f'
 
 
 class DirectPayService(PaymentSystemService, OAuthService):
@@ -68,23 +70,31 @@ class DirectPayService(PaymentSystemService, OAuthService):
                 distribution_code = DistributionCodeModel.find_by_active_for_fee_schedule(
                     payment_line_item.fee_schedule_id)
                 index = index + 1
-                revenue_item.append(f'{index}:{DirectPayService._get_gl_coding(distribution_code)}')
+                revenue_string = DirectPayService._get_gl_coding(distribution_code, payment_line_item.total)
+                revenue_item.append(f'{index}:{revenue_string}')
                 if payment_line_item.service_fees is not None and payment_line_item.service_fees > 0:
                     index = index + 1
-                    revenue_item.append(f'{index}:{DirectPayService._get_gl_coding_for_service_fee(distribution_code)}')
+                    revenue_service_fee_string = DirectPayService._get_gl_coding_for_service_fee(
+                        distribution_code, payment_line_item.service_fees)
+                    revenue_item.append(f'{index}:{revenue_service_fee_string}')
 
         return PAYBC_REVENUE_SEPARATOR.join(revenue_item)
 
     @staticmethod
-    def _get_gl_coding(distribution_code: DistributionCodeModel):
-        return f'{distribution_code.client}:{distribution_code.responsibility_centre}:' \
-               f'{distribution_code.service_line}:{distribution_code.stob}:{distribution_code.project_code}'
+    def _get_gl_coding(distribution_code: DistributionCodeModel, total):
+        return f'{distribution_code.client}.{distribution_code.responsibility_centre}.' \
+               f'{distribution_code.service_line}.{distribution_code.stob}.{distribution_code.project_code}' \
+               f'.000000.0000' \
+               f':{format(total, DECIMAL_PRECISION)}'
 
     @staticmethod
-    def _get_gl_coding_for_service_fee(distribution_code: DistributionCodeModel):
-        return f'{distribution_code.service_fee_client}:{distribution_code.service_fee_responsibility_centre}' \
-               f':{distribution_code.service_fee_line}:{distribution_code.service_fee_stob}:' \
-               f'{distribution_code.service_fee_project_code}'
+    def _get_gl_coding_for_service_fee(distribution_code: DistributionCodeModel, sevice_fee):
+        return f'{distribution_code.service_fee_client}.{distribution_code.service_fee_responsibility_centre}.' \
+               f'{distribution_code.service_fee_line}.{distribution_code.service_fee_stob}.' \
+               f'{distribution_code.service_fee_project_code}.' \
+               f'000000.0000' \
+               f':{format(sevice_fee, DECIMAL_PRECISION)}'
+        # todo is it the right place to pad the number with traling zeros
 
     def get_payment_system_code(self):
         """Return DIRECT_PAY as the system code."""
@@ -104,7 +114,8 @@ class DirectPayService(PaymentSystemService, OAuthService):
         current_app.logger.debug('<create_invoice_direct_pay')
 
         invoice = {
-            'invoice_number': f'{invoice.id}'
+            'invoice_number': f'{invoice.id}',
+            'reference_number': secrets.randbits(32)  # TODO is this necessary here..or whats the correct logic
         }
 
         current_app.logger.debug('>create_invoice')
