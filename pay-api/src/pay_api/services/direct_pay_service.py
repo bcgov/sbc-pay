@@ -44,19 +44,21 @@ class DirectPayService(PaymentSystemService, OAuthService):
         """Return the payment system url."""
         today = date.today().strftime(PAYBC_DATE_FORMAT)
 
-        url_params = {'trnDate': today,
-                      'pbcRefNumber': current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER'),
-                      'glDate': today,
-                      'description': 'DIRECT SALE',
-                      'trnNumber': inv_ref.reference_number,
-                      'trnAmount': invoice.total,
-                      'paymentMethod': PaymentMethod.CC.value,
-                      'redirectUri': return_url,
-                      'currency': 'CAD',
-                      'revenue': DirectPayService._create_revenue_string(invoice)}
+        url_params_dict = {'trnDate': today,
+                           'pbcRefNumber': current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER'),
+                           'glDate': today,
+                           'description': 'Direct Sale',
+                           'trnNumber': invoice.id,
+                           'trnAmount': invoice.total,
+                           'paymentMethod': PaymentMethod.CC.value,
+                           'redirectUri': return_url,
+                           'currency': 'CAD',
+                           'revenue': DirectPayService._create_revenue_string(invoice)}
 
-        url_params['hashValue'] = HashingService.encode(json.dumps(url_params))
-        encoded_query_params = urllib.parse.urlencode(url_params)
+        url_params = urllib.parse.urlencode(url_params_dict)
+        # unquote is used below so that unescaped url string can be hashed
+        url_params_dict['hashValue'] = HashingService.encode(urllib.parse.unquote(url_params))
+        encoded_query_params = urllib.parse.urlencode(url_params_dict)  # encode it again to inlcude the hash
         paybc_url = current_app.config.get('PAYBC_DIRECT_PAY_PORTAL_URL')
         return f'{paybc_url}?{encoded_query_params}'
 
@@ -66,17 +68,15 @@ class DirectPayService(PaymentSystemService, OAuthService):
         index: int = 0
         revenue_item = []
         for payment_line_item in payment_line_items:
-            if payment_line_item.fee_schedule_id is not None:  # TODO is this logic needed???
-                distribution_code = DistributionCodeModel.find_by_active_for_fee_schedule(
-                    payment_line_item.fee_schedule_id)
+            distribution_code = DistributionCodeModel.find_by_id(payment_line_item.fee_distribution_id)
+            index = index + 1
+            revenue_string = DirectPayService._get_gl_coding(distribution_code, payment_line_item.total)
+            revenue_item.append(f'{index}:{revenue_string}')
+            if payment_line_item.service_fees is not None and payment_line_item.service_fees > 0:
                 index = index + 1
-                revenue_string = DirectPayService._get_gl_coding(distribution_code, payment_line_item.total)
-                revenue_item.append(f'{index}:{revenue_string}')
-                if payment_line_item.service_fees is not None and payment_line_item.service_fees > 0:
-                    index = index + 1
-                    revenue_service_fee_string = DirectPayService._get_gl_coding_for_service_fee(
-                        distribution_code, payment_line_item.service_fees)
-                    revenue_item.append(f'{index}:{revenue_service_fee_string}')
+                revenue_service_fee_string = DirectPayService._get_gl_coding_for_service_fee(
+                    distribution_code, payment_line_item.service_fees)
+                revenue_item.append(f'{index}:{revenue_service_fee_string}')
 
         return PAYBC_REVENUE_SEPARATOR.join(revenue_item)
 
@@ -114,8 +114,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         current_app.logger.debug('<create_invoice_direct_pay')
 
         invoice = {
-            'invoice_number': f'{invoice.id}',
-            'reference_number': secrets.randbits(32)  # TODO is this necessary here..or whats the correct logic
+            'invoice_number': f'{invoice.id}'
         }
 
         current_app.logger.debug('>create_invoice')
