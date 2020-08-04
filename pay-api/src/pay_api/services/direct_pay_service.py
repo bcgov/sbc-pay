@@ -12,19 +12,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Direct Pay PAYBC Payments."""
+import json
+import secrets
+import urllib.parse
 
-from datetime import datetime
+from datetime import datetime, date
 from typing import Any, Dict
 
 from flask import current_app
 
 from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.services.hashing import HashingService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import PaymentSystem, PaymentMethod
+from pay_api.models.distribution_code import DistributionCode as DistributionCodeModel
+from pay_api.models.payment_line_item import PaymentLineItem as PaymentLineItemModel
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
+
+PAYBC_DATE_FORMAT = '%Y-%M-%d'
+PAYBC_REVENUE_SEPARATOR = '|'
+DECIMAL_PRECISION = '.2f'
 
 
 class DirectPayService(PaymentSystemService, OAuthService):
@@ -32,8 +42,59 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
     def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
-        # TODO return the proper url .Have to be addressed in the next task
-        return None
+        today = date.today().strftime(PAYBC_DATE_FORMAT)
+
+        url_params_dict = {'trnDate': today,
+                           'pbcRefNumber': current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER'),
+                           'glDate': today,
+                           'description': 'Direct Sale',
+                           'trnNumber': invoice.id,
+                           'trnAmount': invoice.total,
+                           'paymentMethod': PaymentMethod.CC.value,
+                           'redirectUri': return_url,
+                           'currency': 'CAD',
+                           'revenue': DirectPayService._create_revenue_string(invoice)}
+
+        url_params = urllib.parse.urlencode(url_params_dict)
+        # unquote is used below so that unescaped url string can be hashed
+        url_params_dict['hashValue'] = HashingService.encode(urllib.parse.unquote(url_params))
+        encoded_query_params = urllib.parse.urlencode(url_params_dict)  # encode it again to inlcude the hash
+        paybc_url = current_app.config.get('PAYBC_DIRECT_PAY_PORTAL_URL')
+        return f'{paybc_url}?{encoded_query_params}'
+
+    @staticmethod
+    def _create_revenue_string(invoice) -> str:
+        payment_line_items = PaymentLineItemModel.find_by_invoice_ids([invoice.id])
+        index: int = 0
+        revenue_item = []
+        for payment_line_item in payment_line_items:
+            distribution_code = DistributionCodeModel.find_by_id(payment_line_item.fee_distribution_id)
+            index = index + 1
+            revenue_string = DirectPayService._get_gl_coding(distribution_code, payment_line_item.total)
+            revenue_item.append(f'{index}:{revenue_string}')
+            if payment_line_item.service_fees is not None and payment_line_item.service_fees > 0:
+                index = index + 1
+                revenue_service_fee_string = DirectPayService._get_gl_coding_for_service_fee(
+                    distribution_code, payment_line_item.service_fees)
+                revenue_item.append(f'{index}:{revenue_service_fee_string}')
+
+        return PAYBC_REVENUE_SEPARATOR.join(revenue_item)
+
+    @staticmethod
+    def _get_gl_coding(distribution_code: DistributionCodeModel, total):
+        return f'{distribution_code.client}.{distribution_code.responsibility_centre}.' \
+               f'{distribution_code.service_line}.{distribution_code.stob}.{distribution_code.project_code}' \
+               f'.000000.0000' \
+               f':{format(total, DECIMAL_PRECISION)}'
+
+    @staticmethod
+    def _get_gl_coding_for_service_fee(distribution_code: DistributionCodeModel, sevice_fee):
+        return f'{distribution_code.service_fee_client}.{distribution_code.service_fee_responsibility_centre}.' \
+               f'{distribution_code.service_fee_line}.{distribution_code.service_fee_stob}.' \
+               f'{distribution_code.service_fee_project_code}.' \
+               f'000000.0000' \
+               f':{format(sevice_fee, DECIMAL_PRECISION)}'
+        # todo is it the right place to pad the number with traling zeros
 
     def get_payment_system_code(self):
         """Return DIRECT_PAY as the system code."""

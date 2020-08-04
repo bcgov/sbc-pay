@@ -8,7 +8,7 @@
       "$id": "#/properties/methodOfPayment",
       "type": "string",
       "title": "Method of payment",
-      "enum": ["CC", "DRAWDOWN"],
+      "enum": ["CC", "DRAWDOWN","DIRECT_PAY"],
       "examples": [
         "CC"
       ],

@@ -97,6 +97,13 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CONNECT_TIMEOUT = int(_get_config('PAYBC_CONNECT_TIMEOUT', default=10))
     GENERATE_RANDOM_INVOICE_NUMBER = _get_config('PAYBC_GENERATE_RANDOM_INVOICE_NUMBER', default='False')
 
+    # PAYBC Direct Pay Settings
+
+    PAYBC_DIRECT_PAY_REF_NUMBER = _get_config('PAYBC_DIRECT_PAY_REF_NUMBER')
+    PAYBC_DIRECT_PAY_API_KEY = _get_config('PAYBC_DIRECT_PAY_API_KEY')
+    PAYBC_DIRECT_PAY_PORTAL_URL = _get_config('PAYBC_DIRECT_PAY_PORTAL_URL')
+
+
     # REPORT API Settings
     REPORT_API_BASE_URL = _get_config('REPORT_API_BASE_URL')
 
@@ -230,6 +237,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     PAYBC_CLIENT_ID = 'TEST'
     PAYBC_CLIENT_SECRET = 'TEST'
     PAYBC_PORTAL_URL = ''
+    PAYBC_DIRECT_PAY_PORTAL_URL = 'https://paydev.gov.bc.ca/public/directsale'
     SERVER_NAME = 'auth-web.dev.com'
 
     REPORT_API_BASE_URL = "http://localhost:8080/reports-api/api/v1/reports"
@@ -243,6 +251,9 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     VALID_REDIRECT_URLS = ['http://localhost:8080/*']
 
     TRANSACTION_REPORT_DEFAULT_TOTAL = 10
+
+    PAYBC_DIRECT_PAY_API_KEY = 'TESTKEYSECRET'
+    PAYBC_DIRECT_PAY_REF_NUMBER = 'REF1234'
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
