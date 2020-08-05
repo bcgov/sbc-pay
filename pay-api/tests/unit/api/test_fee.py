@@ -204,8 +204,10 @@ def test_calculate_fees_for_service_fee(session, client, jwt, app):
     service_fee = factory_fee_model('SF01', 1.5)
     factory_fee_schedule_model(
         factory_filing_type_model('XOTANN', 'TEST'),
-        factory_corp_type_model('XX', 'TEST', service_fee_code=service_fee.code),
-        factory_fee_model('XXX', 100))
+        factory_corp_type_model('XX', 'TEST'),
+        factory_fee_model('XXX', 100),
+        service_fee=service_fee)
+
     rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}', headers=headers)
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, 'fees')[0]
@@ -220,10 +222,10 @@ def test_calculate_fees_with_zero_service_fee(session, client, jwt, app):
 
     corp_type = 'XX'
     filing_type_code = 'XOTANN'
-    service_fee = factory_fee_model('SF01', 1.5)
+
     factory_fee_schedule_model(
         factory_filing_type_model('XOTANN', 'TEST'),
-        factory_corp_type_model('XX', 'TEST', service_fee_code=service_fee.code),
+        factory_corp_type_model('XX', 'TEST'),
         factory_fee_model('XXX', 0))
     rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}', headers=headers)
     assert rv.status_code == 200
@@ -254,12 +256,10 @@ def factory_fee_model(
 
 def factory_corp_type_model(
         corp_type_code: str,
-        corp_type_description: str,
-        service_fee_code: str = None):
+        corp_type_description: str):
     """Return the corp type model."""
     corp_type = CorpType(code=corp_type_code,
-                         description=corp_type_description,
-                         service_fee_code=service_fee_code)
+                         description=corp_type_description)
     corp_type.save()
     return corp_type
 
@@ -269,12 +269,16 @@ def factory_fee_schedule_model(
         corp_type: CorpType,
         fee_code: FeeCode,
         fee_start_date: date = date.today(),
-        fee_end_date: date = None):
+        fee_end_date: date = None,
+        service_fee: FeeCode = None):
     """Return the fee schedule model."""
     fee_schedule = FeeSchedule(filing_type_code=filing_type.code,
                                corp_type_code=corp_type.code,
                                fee_code=fee_code.code,
                                fee_start_date=fee_start_date,
-                               fee_end_date=fee_end_date)
+                               fee_end_date=fee_end_date
+                               )
+    if service_fee:
+        fee_schedule.service_fee_code = service_fee.code
     fee_schedule.save()
     return fee_schedule

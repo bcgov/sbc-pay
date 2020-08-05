@@ -26,9 +26,9 @@ from pay_api.utils.util import cors_preflight
 API = Namespace('invoice-receipts', description='Payment System - Receipts')
 
 
-@cors_preflight('POST')
-@API.route('/receipts', methods=['POST', 'OPTIONS'])
-@API.route('/invoices/<int:invoice_id>/receipts', methods=['POST', 'OPTIONS'])
+@cors_preflight('POST,GET')
+@API.route('/receipts', methods=['GET', 'POST', 'OPTIONS'])
+@API.route('/invoices/<int:invoice_id>/receipts', methods=['GET', 'POST', 'OPTIONS'])
 class InvoiceReceipt(Resource):
     """Endpoint resource to create receipt.Use this endpoint when no invoice number is available."""
 
@@ -53,6 +53,19 @@ class InvoiceReceipt(Resource):
             response.headers.set('Content-Type', 'application/pdf')
             return response
 
+        except BusinessException as exception:
+            return exception.response()
+        current_app.logger.debug('>Transaction.post')
+        return jsonify(response), 200
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.requires_auth
+    def get(payment_id, invoice_id=''):
+        """Return the receipt details."""
+        current_app.logger.info('<Receipt.post')
+        try:
+            response = ReceiptService.get_receipt_details({}, invoice_id, payment_id, skip_auth_check=False)
         except BusinessException as exception:
             return exception.response()
         current_app.logger.debug('>Transaction.post')

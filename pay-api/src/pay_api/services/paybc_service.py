@@ -24,7 +24,6 @@ from dateutil import parser
 from flask import current_app
 from requests import HTTPError
 
-from pay_api.models.corp_type import CorpType as CorpTypeModel
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
@@ -75,7 +74,6 @@ class PaybcService(PaymentSystemService, OAuthService):
         current_app.logger.debug('<create_invoice')
         now = datetime.datetime.now()
         curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
-        corp_type: CorpTypeModel = CorpTypeModel.find_by_code(kwargs.get('corp_type_code'))
         invoice_number: str = kwargs.get('invoice_number', None)
         if invoice_number is None:
             invoice_number = invoice.id
@@ -89,7 +87,7 @@ class PaybcService(PaymentSystemService, OAuthService):
             else payment_account.corp_number
         transaction_number = f'{invoice_number}-{transaction_num_suffix}'.replace(' ', '')
 
-        invoice = dict(
+        invoice_payload = dict(
             batch_source=PAYBC_BATCH_SOURCE,
             cust_trx_type=PAYBC_CUST_TRX_TYPE,
             transaction_date=curr_time,
@@ -102,42 +100,42 @@ class PaybcService(PaymentSystemService, OAuthService):
         index: int = 0
         for line_item in line_items:
             index = index + 1
-            invoice['lines'].append(
+            invoice_payload['lines'].append(
                 {
                     'line_number': index,
                     'line_type': PAYBC_LINE_TYPE,
-                    'memo_line_name': corp_type.gl_memo,
+                    'memo_line_name': line_item.fee_distribution.memo_name,
                     'description': line_item.description,
                     'attribute1': line_item.description,
                     'unit_price': line_item.total,
                     'quantity': 1
                 }
             )
-
-        # If there is a service fees add a new line for the service fees.
-        if corp_type.service_fee is not None and corp_type.service_fee.amount > 0:
-            invoice['lines'].append(
-                {
-                    'line_number': index + 1,
-                    'line_type': PAYBC_LINE_TYPE,
-                    'memo_line_name': corp_type.service_gl_memo,
-                    'description': 'Service Fee',
-                    'attribute1': 'Service Fee',
-                    'unit_price': corp_type.service_fee.amount,
-                    'quantity': 1
-                }
-            )
+            if line_item.service_fees > 0:
+                index = index + 1
+                invoice_payload['lines'].append(
+                    {
+                        'line_number': index,
+                        'line_type': PAYBC_LINE_TYPE,
+                        'memo_line_name': line_item.fee_distribution.service_fee_memo_name,
+                        'description': 'Service Fee',
+                        'attribute1': 'Service Fee',
+                        'unit_price': line_item.service_fees,
+                        'quantity': 1
+                    }
+                )
 
         access_token = self.__get_token().json().get('access_token')
-        invoice_response = self.post(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, invoice)
+        invoice_response = self.post(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                     invoice_payload)
 
-        invoice = {
+        invoice_result = {
             'invoice_number': invoice_response.json().get('invoice_number', None),
             'reference_number': invoice_response.json().get('pbc_ref_number', None)
         }
 
         current_app.logger.debug('>create_invoice')
-        return invoice
+        return invoice_result
 
     def update_invoice(self,  # pylint: disable=too-many-arguments
                        payment_account: PaymentAccount,

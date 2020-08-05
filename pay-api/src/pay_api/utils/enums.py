@@ -87,6 +87,7 @@ class PaymentMethod(Enum):
     CC = 'CC'
     DRAWDOWN = 'DRAWDOWN'
     INTERNAL = 'INTERNAL'
+    DIRECT_PAY = 'DIRECT_PAY'
 
 
 class Role(Enum):
@@ -96,6 +97,7 @@ class Role(Enum):
     VIEWER = 'view'
     EDITOR = 'edit'
     SYSTEM = 'system'
+    STAFF_ADMIN = 'admin'
     PUBLIC_USER = 'public_user'
 
 

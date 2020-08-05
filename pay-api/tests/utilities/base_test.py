@@ -20,10 +20,11 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 from datetime import datetime
 
 from pay_api.models import (
-    BcolPaymentAccount, CreditPaymentAccount, InternalPaymentAccount, Invoice, InvoiceReference, Payment,
-    PaymentAccount, PaymentLineItem, PaymentTransaction)
+    BcolPaymentAccount, CreditPaymentAccount, InternalPaymentAccount, Invoice,
+    InvoiceReference, Payment,
+    PaymentAccount, PaymentLineItem, PaymentTransaction, DistributionCode)
 from pay_api.utils.enums import PaymentSystem, Role, PaymentStatus, InvoiceReferenceStatus, \
-    LineItemStatus, InvoiceStatus
+    LineItemStatus, InvoiceStatus, PaymentMethod
 
 token_header = {
     'alg': 'RS256',
@@ -58,7 +59,8 @@ def get_claims(app_request=None, role: str = Role.EDITOR.value, username: str = 
     return claim
 
 
-def get_payment_request(business_identifier: str = 'CP0001234', corp_type: str = 'CP'):
+def get_payment_request(business_identifier: str = 'CP0001234', corp_type: str = 'CP',
+                        second_filing_type: str = 'OTADD'):
     """Return a payment request object."""
     return {
         'businessInfo': {
@@ -76,7 +78,7 @@ def get_payment_request(business_identifier: str = 'CP0001234', corp_type: str =
         'filingInfo': {
             'filingTypes': [
                 {
-                    'filingTypeCode': 'OTADD',
+                    'filingTypeCode': second_filing_type,
                     'filingDescription': 'TEST'
                 },
                 {
@@ -253,7 +255,8 @@ def get_waive_fees_payment_request(business_identifier: str = 'CP0001234'):
 
 
 def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code: str = 'CP',
-                            payment_system_code: str = 'PAYBC', account_number='4101', bcol_user_id='test',
+                            payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC', account_number='4101',
+                            bcol_user_id='test',
                             auth_account_id: str = '1234'):
     """Return Factory."""
     # Create a payment account
@@ -267,14 +270,21 @@ def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code: str 
 
         )
     elif payment_system_code == PaymentSystem.PAYBC.value:
-        return CreditPaymentAccount(
-            corp_number=corp_number,
-            corp_type_code=corp_type_code,
-            paybc_party='11111',
-            paybc_account=account_number,
-            paybc_site='29921',
-            account_id=account.id
-        )
+        if payment_method_code == PaymentMethod.CC.value:
+            return CreditPaymentAccount(
+                corp_number=corp_number,
+                corp_type_code=corp_type_code,
+                paybc_party='11111',
+                paybc_account=account_number,
+                paybc_site='29921',
+                account_id=account.id
+            )
+        elif payment_method_code == PaymentMethod.DIRECT_PAY.value:
+            return CreditPaymentAccount(
+                corp_number=corp_number,
+                corp_type_code=corp_type_code,
+                account_id=account.id
+            )
     elif payment_system_code == PaymentSystem.INTERNAL.value:
         return InternalPaymentAccount(
             corp_number=corp_number,
@@ -351,6 +361,7 @@ def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees
         filing_fees=filing_fees,
         total=total,
         line_item_status_code=status,
+        fee_distribution_id=DistributionCode.find_by_active_for_fee_schedule(fee_schedule_id).distribution_code_id
     )
 
 
@@ -388,7 +399,7 @@ def get_paybc_transaction_request():
     }
 
 
-def get_auth_basic_user():
+def get_auth_basic_user(method_of_payment='CC'):
     """Return authorization response for basic users."""
     return {
         'orgMembership': 'OWNER',
@@ -405,7 +416,7 @@ def get_auth_basic_user():
             'id': '1234',
             'name': 'Mock Account',
             'paymentPreference': {
-                'methodOfPayment': 'CC',
+                'methodOfPayment': method_of_payment,
                 'bcOnlineUserId': '',
                 'bcOnlineAccountId': ''
             }
@@ -436,3 +447,28 @@ def get_auth_premium_user():
             }
         }
     }
+
+
+def get_distribution_code_payload(client: str = '100'):
+    """Return distribution code payload."""
+    return {
+        'client': client,
+        'memoName': 'Test Memo Line',
+        'projectCode': '1111111',
+        'responsibilityCentre': '22222',
+        'serviceFeeClient': '101',
+        'serviceFeeLine': '1111111',
+        'serviceFeeMemoName': 'Test Memo Line Service Fee',
+        'serviceFeeProjectCode': '1111111',
+        'serviceFeeResponsibilityCentre': '22222',
+        'serviceFeeStob': '9001',
+        'serviceLine': '1111111',
+        'stob': '9000'
+    }
+
+
+def get_distribution_schedules_payload():
+    """Return distribution schedule payload."""
+    return [{
+        'feeScheduleId': 1
+    }]

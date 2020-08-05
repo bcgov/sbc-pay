@@ -1,0 +1,229 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/distribution_code",
+  "type": "object",
+  "title": "Fee distribution schema",
+  "description": "Fee distribution schema.",
+  "default": {},
+  "examples": [
+    {
+      "client": "100",
+      "createdBy": "SKARIYIL@IDIR",
+      "createdName": "Sumesh Kariyil",
+      "createdOn": "2020-07-27T11:09:36.610122+00:00",
+      "distributionCodeId": 1,
+      "memoName": "Test Memo Line",
+      "projectCode": "1111111",
+      "responsibilityCentre": "22222",
+      "serviceFeeClient": "101",
+      "serviceFeeLine": "1111111",
+      "serviceFeeMemoName": "Test Memo Line Service Fee",
+      "serviceFeeProjectCode": "1111111",
+      "serviceFeeResponsibilityCentre": "22222",
+      "serviceFeeStob": "9001",
+      "serviceLine": "1111111",
+      "startDate": "2020-07-27",
+      "stob": "9000"
+    }
+  ],
+  "required": [
+    "client",
+    "projectCode",
+    "responsibilityCentre",
+    "serviceFeeClient",
+    "serviceFeeLine",
+    "serviceFeeProjectCode",
+    "serviceFeeResponsibilityCentre",
+    "serviceFeeStob",
+    "serviceLine",
+    "stob"
+  ],
+  "properties": {
+    "client": {
+      "$id": "#/properties/client",
+      "type": "string",
+      "title": "client",
+      "description": "GL code client value.",
+      "default": "",
+      "examples": [
+        "100"
+      ]
+    },
+    "createdBy": {
+      "$id": "#/properties/createdBy",
+      "type": "string",
+      "title": "createdBy",
+      "description": "Creator's id.",
+      "default": "",
+      "examples": [
+        "SKARIYIL@IDIR"
+      ]
+    },
+    "createdName": {
+      "$id": "#/properties/createdName",
+      "type": "string",
+      "title": "createdName",
+      "description": "Creator's name.",
+      "default": "",
+      "examples": [
+        "Sumesh Kariyil"
+      ]
+    },
+    "createdOn": {
+      "$id": "#/properties/createdOn",
+      "type": "string",
+      "title": "createdOn",
+      "description": "Created time.",
+      "default": "",
+      "examples": [
+        "2020-07-27T11:09:36.610122+00:00"
+      ]
+    },
+    "distributionCodeId": {
+      "$id": "#/properties/distributionCodeId",
+      "type": "integer",
+      "title": "distributionCodeId",
+      "description": "Unique identifier for distribution code.",
+      "default": 0,
+      "examples": [
+        1,2
+      ]
+    },
+    "endDate": {
+      "$id": "#/properties/endDate",
+      "type": "date",
+      "title": "endDate",
+      "description": "End date for the distribution code."
+    },
+    "memoName": {
+      "$id": "#/properties/memoName",
+      "type": "string",
+      "title": "memo name",
+      "description": "Memo name used for CFS.",
+      "default": ""
+    },
+    "projectCode": {
+      "$id": "#/properties/projectCode",
+      "type": "string",
+      "title": "projectCode",
+      "description": "Distribution project code.",
+      "default": "",
+      "examples": [
+        "P10000"
+      ]
+    },
+    "responsibilityCentre": {
+      "$id": "#/properties/responsibilityCentre",
+      "type": "string",
+      "title": "responsibilityCentre",
+      "description": "Distribution responsibility centre.",
+      "default": "",
+      "examples": [
+        "R10000"
+      ]
+    },
+    "serviceFeeClient": {
+      "$id": "#/properties/serviceFeeClient",
+      "type": "string",
+      "title": "The serviceFeeClient schema",
+      "description": "Service Fee client code.",
+      "default": "",
+      "examples": [
+        "C1000"
+      ]
+    },
+    "serviceFeeLine": {
+      "$id": "#/properties/serviceFeeLine",
+      "type": "string",
+      "title": "serviceFeeLine",
+      "description": "service line value for the service fee.",
+      "default": "",
+      "examples": [
+        "S10000"
+      ]
+    },
+    "serviceFeeMemoName": {
+      "$id": "#/properties/serviceFeeMemoName",
+      "type": "string",
+      "title": "The serviceFeeMemoName schema",
+      "description": "CFS Memo name for the service fee.",
+      "default": ""
+    },
+    "serviceFeeProjectCode": {
+      "$id": "#/properties/serviceFeeProjectCode",
+      "type": "string",
+      "title": "The serviceFeeProjectCode schema",
+      "description": "Project code for the service fee.",
+      "default": ""
+    },
+    "serviceFeeResponsibilityCentre": {
+      "$id": "#/properties/serviceFeeResponsibilityCentre",
+      "type": "string",
+      "title": "The serviceFeeResponsibilityCentre schema",
+      "description": "Responsibility centre for service fee.",
+      "default": "",
+      "examples": [
+        "R10000"
+      ]
+    },
+    "serviceFeeStob": {
+      "$id": "#/properties/serviceFeeStob",
+      "type": "string",
+      "title": "serviceFeeStob",
+      "description": "STOB value for service fee.",
+      "default": "",
+      "examples": [
+        "ST10000"
+      ]
+    },
+    "serviceLine": {
+      "$id": "#/properties/serviceLine",
+      "type": "string",
+      "title": "The serviceLine schema",
+      "description": "Service line for the distribution.",
+      "default": "",
+      "examples": [
+        "S10000"
+      ]
+    },
+    "startDate": {
+      "$id": "#/properties/startDate",
+      "type": "string",
+      "title": "The startDate schema",
+      "description": "Effective start date for the distribution.",
+      "default": "",
+      "examples": [
+        "2020-07-27"
+      ]
+    },
+    "stob": {
+      "$id": "#/properties/stob",
+      "type": "string",
+      "title": "The stob schema",
+      "description": "STOB value for distribution.",
+      "default": "",
+      "examples": [
+        "ST10000"
+      ]
+    },
+    "updatedBy": {
+      "$id": "#/properties/updatedBy",
+      "type": "string",
+      "title": "The updatedBy schema",
+      "description": "Updated by id."
+    },
+    "updatedName": {
+      "$id": "#/properties/updatedName",
+      "type": "string",
+      "title": "The updatedName schema",
+      "description": "Updated user's name."
+    },
+    "updatedOn": {
+      "$id": "#/properties/updatedOn",
+      "type": "date",
+      "title": "The updatedOn schema",
+      "description": "updated date value."
+    }
+  },
+  "additionalProperties": true
+}

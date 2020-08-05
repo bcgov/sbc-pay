@@ -14,10 +14,9 @@
 """Model to handle all operations related to Corp type master data."""
 
 from flask import current_app
-from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship
 
 from pay_api.utils.user_context import UserContext, user_context
+
 from .code_table import CodeTable
 from .db import db, ma
 
@@ -32,13 +31,8 @@ class CorpType(db.Model, CodeTable):
 
     code = db.Column('code', db.String(10), primary_key=True)
     description = db.Column('description', db.String(200), nullable=False)
-    service_fee_code = db.Column(db.String(10), ForeignKey('fee_code.code'), nullable=True)
     bcol_fee_code = db.Column(db.String(20), nullable=True)
     bcol_staff_fee_code = db.Column(db.String(20), nullable=True)
-    gl_memo = db.Column(db.String(50), nullable=True)
-    service_gl_memo = db.Column(db.String(50), nullable=True)
-
-    service_fee = relationship('FeeCode', foreign_keys=[service_fee_code], lazy='joined', innerjoin=False)
 
     def save(self):
         """Save corp type."""
