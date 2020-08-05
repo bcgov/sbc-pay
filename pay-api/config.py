@@ -89,20 +89,21 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     JWT_OIDC_CACHING_ENABLED = _get_config('JWT_OIDC_CACHING_ENABLED', default=False)
     JWT_OIDC_JWKS_CACHE_TIMEOUT = int(_get_config('JWT_OIDC_JWKS_CACHE_TIMEOUT', default=300))
 
-    # PAYBC API Settings
-    PAYBC_BASE_URL = _get_config('PAYBC_BASE_URL')
-    PAYBC_CLIENT_ID = _get_config('PAYBC_CLIENT_ID')
-    PAYBC_CLIENT_SECRET = _get_config('PAYBC_CLIENT_SECRET')
+    # CFS API Settings
+    CFS_BASE_URL = _get_config('CFS_BASE_URL')
+    CFS_CLIENT_ID = _get_config('CFS_CLIENT_ID')
+    CFS_CLIENT_SECRET = _get_config('CFS_CLIENT_SECRET')
     PAYBC_PORTAL_URL = _get_config('PAYBC_PORTAL_URL')
-    CONNECT_TIMEOUT = int(_get_config('PAYBC_CONNECT_TIMEOUT', default=10))
-    GENERATE_RANDOM_INVOICE_NUMBER = _get_config('PAYBC_GENERATE_RANDOM_INVOICE_NUMBER', default='False')
+    CONNECT_TIMEOUT = int(_get_config('CONNECT_TIMEOUT', default=10))
+    GENERATE_RANDOM_INVOICE_NUMBER = _get_config('CFS_GENERATE_RANDOM_INVOICE_NUMBER', default='False')
 
     # PAYBC Direct Pay Settings
-
     PAYBC_DIRECT_PAY_REF_NUMBER = _get_config('PAYBC_DIRECT_PAY_REF_NUMBER')
     PAYBC_DIRECT_PAY_API_KEY = _get_config('PAYBC_DIRECT_PAY_API_KEY')
     PAYBC_DIRECT_PAY_PORTAL_URL = _get_config('PAYBC_DIRECT_PAY_PORTAL_URL')
-
+    PAYBC_DIRECT_PAY_BASE_URL = _get_config('PAYBC_DIRECT_PAY_TRANSACTION_URL')
+    PAYBC_DIRECT_PAY_CLIENT_ID = _get_config('PAYBC_DIRECT_PAY_CLIENT_ID')
+    PAYBC_DIRECT_PAY_CLIENT_SECRET = _get_config('PAYBC_DIRECT_PAY_CLIENT_SECRET')
 
     # REPORT API Settings
     REPORT_API_BASE_URL = _get_config('REPORT_API_BASE_URL')
@@ -233,9 +234,9 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     4H8UZcVFN95vEKxJiLRjAmj6g273pu9kK4ymXNEjWWJn
     -----END RSA PRIVATE KEY-----"""
 
-    PAYBC_BASE_URL = 'http://localhost:8080/paybc-api'
-    PAYBC_CLIENT_ID = 'TEST'
-    PAYBC_CLIENT_SECRET = 'TEST'
+    CFS_BASE_URL = 'http://localhost:8080/paybc-api'
+    CFS_CLIENT_ID = 'TEST'
+    CFS_CLIENT_SECRET = 'TEST'
     PAYBC_PORTAL_URL = ''
     PAYBC_DIRECT_PAY_PORTAL_URL = 'https://paydev.gov.bc.ca/public/directsale'
     SERVER_NAME = 'auth-web.dev.com'

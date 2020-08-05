@@ -262,7 +262,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def update_transaction(payment_identifier: int, transaction_id: uuid,  # pylint: disable=too-many-locals
-                           receipt_number: str):
+                           pay_response_url: str):
         """Update transaction record.
 
         Does the following:
@@ -300,7 +300,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
             bcol_account_id=invoice.bcol_account_id)
 
         try:
-            receipt_details = pay_system_service.get_receipt(payment_account, receipt_number, invoice_reference)
+            receipt_details = pay_system_service.get_receipt(payment_account, pay_response_url, invoice_reference)
             txn_reason_code = None
         except ServiceUnavailableException as exc:
             txn_reason_code = exc.status
@@ -331,6 +331,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         # Publish status to Queue
         PaymentTransaction.publish_status(transaction_dao, payment, invoice.filing_id)
 
+        # Save response URL
+        transaction_dao.pay_response_url = pay_response_url
         transaction_dao = transaction_dao.save()
 
         transaction = PaymentTransaction()

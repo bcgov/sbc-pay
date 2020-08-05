@@ -19,6 +19,7 @@ A simple decorator to add the options method to a Request Class.
 import calendar
 from datetime import datetime, timedelta
 from typing import Dict
+from urllib.parse import parse_qs
 
 from dpath import util as dpath_util
 from flask import current_app
@@ -81,3 +82,14 @@ def get_first_and_last_dates_of_month(month: int, year: int):
     start_date = datetime.now().replace(day=1, year=year, month=month)
     end_date = start_date.replace(day=calendar.monthrange(year=year, month=month)[1])
     return start_date, end_date
+
+
+def parse_url_params(url_params: str) -> Dict:
+    """Parse URL params and return dict of parsed url params."""
+    parsed_url: dict = {}
+    if url_params is not None:
+        if url_params.startswith('?'):
+            url_params = url_params[1:]
+        parsed_url = parse_qs(url_params, keep_blank_values=True)
+
+    return parsed_url

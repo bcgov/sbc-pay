@@ -152,7 +152,8 @@ def test_transaction_update(session, stan_server, public_user_mock):
     line.save()
 
     transaction = PaymentTransactionService.create(payment.id, get_paybc_transaction_request())
-    transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451')
+    transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id,
+                                                               pay_response_url='receipt_number=123451')
 
     assert transaction is not None
     assert transaction.id is not None
@@ -180,7 +181,7 @@ def test_transaction_update_with_no_receipt(session, stan_server):
     line.save()
 
     transaction = PaymentTransactionService.create(payment.id, get_paybc_transaction_request())
-    transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, None)
+    transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, pay_response_url=None)
 
     assert transaction is not None
     assert transaction.id is not None
@@ -209,10 +210,12 @@ def test_transaction_update_completed(session, stan_server, public_user_mock):
     line.save()
 
     transaction = PaymentTransactionService.create(payment.id, get_paybc_transaction_request())
-    transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451')
+    transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id,
+                                                               pay_response_url='receipt_number=123451')
 
     with pytest.raises(BusinessException) as excinfo:
-        PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451')
+        PaymentTransactionService.update_transaction(payment.id, transaction.id,
+                                                     pay_response_url='receipt_number=123451')
     assert excinfo.value.code == Error.INVALID_TRANSACTION.name
 
 
@@ -271,7 +274,7 @@ def test_transaction_invalid_lookup(session):
 def test_transaction_invalid_update(session):
     """Invalid update.."""
     with pytest.raises(BusinessException) as excinfo:
-        PaymentTransactionService.update_transaction(1, uuid.uuid4(), None)
+        PaymentTransactionService.update_transaction(1, uuid.uuid4(), pay_response_url=None)
     assert excinfo.value.code == Error.INVALID_TRANSACTION_ID.name
 
 
@@ -380,10 +383,12 @@ def test_transaction_update_on_paybc_connection_error(session, stan_server):
 
     # Mock here that the invoice update fails here to test the rollback scenario
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
-        transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451')
+        transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id,
+                                                                   pay_response_url='receipt_number=123451')
         assert transaction.pay_system_reason_code == 'SERVICE_UNAVAILABLE'
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectTimeout('mocked error')):
-        transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, '123451')
+        transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id,
+                                                                   pay_response_url='receipt_number=123451')
         assert transaction.pay_system_reason_code == 'SERVICE_UNAVAILABLE'
 
     assert transaction is not None

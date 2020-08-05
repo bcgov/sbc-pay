@@ -95,10 +95,11 @@ class Transactions(Resource):
         """Update the transaction record by querying payment system."""
         current_app.logger.info(
             f'<Transaction.post for payment : {payment_id}, and transaction {transaction_id}')
-        receipt_number = request.get_json().get('receipt_number', None)
+        pay_response_url: dict = request.get_json().get('payResponseUrl', None)
+
         try:
             response, status = TransactionService.update_transaction(payment_id, transaction_id,
-                                                                     receipt_number).asdict(), HTTPStatus.OK
+                                                                     pay_response_url).asdict(), HTTPStatus.OK
         except BusinessException as exception:
             return exception.response()
         current_app.logger.debug('>Transaction.post')
