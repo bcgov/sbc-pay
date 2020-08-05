@@ -13,9 +13,9 @@
 # limitations under the License.
 """Service to manage Direct Pay PAYBC Payments."""
 import base64
-from datetime import datetime, date
+from datetime import datetime
 from typing import Any, Dict
-from urllib.parse import unquote, urlencode
+from urllib.parse import unquote_plus, urlencode
 
 from flask import current_app
 
@@ -33,7 +33,7 @@ from pay_api.utils.util import parse_url_params
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
-PAYBC_DATE_FORMAT = '%Y-%M-%d'
+PAYBC_DATE_FORMAT = '%Y-%m-%d'
 PAYBC_REVENUE_SEPARATOR = '|'
 DECIMAL_PRECISION = '.2f'
 
@@ -43,12 +43,12 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
     def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
-        today = date.today().strftime(PAYBC_DATE_FORMAT)
+        today = datetime.now().strftime(PAYBC_DATE_FORMAT)
 
         url_params_dict = {'trnDate': today,
                            'pbcRefNumber': current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER'),
                            'glDate': today,
-                           'description': 'Direct Sale',
+                           'description': 'Direct_Sale',
                            'trnNumber': invoice.id,
                            'trnAmount': invoice.total,
                            'paymentMethod': PaymentMethod.CC.value,
@@ -58,7 +58,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
         url_params = urlencode(url_params_dict)
         # unquote is used below so that unescaped url string can be hashed
-        url_params_dict['hashValue'] = HashingService.encode(unquote(url_params))
+        url_params_dict['hashValue'] = HashingService.encode(unquote_plus(url_params))
         encoded_query_params = urlencode(url_params_dict)  # encode it again to inlcude the hash
         paybc_url = current_app.config.get('PAYBC_DIRECT_PAY_PORTAL_URL')
         return f'{paybc_url}?{encoded_query_params}'

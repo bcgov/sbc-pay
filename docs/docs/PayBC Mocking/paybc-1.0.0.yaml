@@ -4,6 +4,86 @@ info:
   description: PayBC API reference documentation
   version: 1.0.0
 paths:
+  '/paybc/payment/{paybc_ref_number}/{transaction_number}':
+    get:
+      tags:
+        - PayBC get transaction
+      summary: ayBC get transaction
+      description: ayBC get transaction.
+      operationId: PAYBC_GET_TXN
+      parameters:
+        - name: paybc_ref_number
+          in: path
+          description: PayBC Ref Number.
+          required: true
+          schema:
+            type: string
+        - name: transaction_number
+          in: path
+          description: Transaction Number.
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cont'
+              examples:
+                '1234567890':
+                  value:
+                    pbcRefNumber: '10006'
+                    trnNumber: EZ000101
+                    trnDate: '2020-04-18'
+                    description: Direct Sale
+                    trnAmount: '100.00'
+                    paymentMethod: CC
+                    currency: CAD
+                    glDate: '2020-04-18'
+                    paymentStatus: PNDNG/PAID/CMPLT
+                    trnOrderId: " 45678"
+                    paymentAuthCode: " 04066N"
+                    cardType: " VI"
+                    revenue:
+                    - lineNumber: " 1"
+                      revenueAccount: 039.18ACE.14691.8928.1800000.000000.0000
+                      revenueAmount: '75.00'
+                      glStatus: 'NEW/IN PROCESS/REJECT/PROCESSED '
+                      glErrorMessage: Invalid revenue account
+                    - lineNumber: " 2"
+                      revenueAccount: 039.18ACE.14692.8928.1800000.000000.0000
+                      revenueAmount: '25.00'
+                      glStatus: 'NEW/IN PROCESS/REJECT/PROCESSED '
+                      glErrorMessage: Invalid revenue account
+
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+      - name: paybc_ref_number
+        in: path
+        required: true
+        schema:
+          format: string
+          type: string
+        examples:
+          '1234567890':
+            value: 10006
+      - name: tranasction_number
+        in: path
+        required: true
+        schema:
+          format: string
+          type: string
+        examples:
+          '1234567890':
+            value: 1234567890
+
   '/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/conts/{contact_number}':
     put:
       tags:
