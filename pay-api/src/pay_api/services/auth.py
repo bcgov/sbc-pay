@@ -30,9 +30,15 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
 
     if not account_id:
         account_id = user.account_id
-    if Role.SYSTEM.value in user.roles:
+
+    call_auth_svc: bool = True
+
+    if Role.SYSTEM.value in user.roles \
+            and user.product_code != 'BUSINESS':  # Call auth only if it's business (entities)
+        call_auth_svc = False
         is_authorized = bool(Role.EDITOR.value in user.roles)
-    else:
+
+    if call_auth_svc:
         bearer_token = user.bearer_token
         if business_identifier:
             auth_url = current_app.config.get(
@@ -84,6 +90,9 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
             # Check if premium flag is required
             if kwargs.get('is_premium', False) and auth_response['account']['accountType'] != AccountType.PREMIUM.value:
                 is_authorized = False
+
+        if Role.SYSTEM.value in user.roles and bool(Role.EDITOR.value in user.roles):
+            is_authorized = True
 
     if not is_authorized:
         abort(403)

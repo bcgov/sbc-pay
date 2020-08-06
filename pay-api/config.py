@@ -132,7 +132,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
 
     # BCOL user name for Service account payments
     BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS = os.getenv('BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS',
-                                                           'BCROS SERVICE ACCOUNT')
+                                                           'SYSTEM_USER')
 
     TESTING = False
     DEBUG = True
