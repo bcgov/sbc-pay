@@ -74,7 +74,7 @@ paths:
         examples:
           '1234567890':
             value: 10006
-      - name: tranasction_number
+      - name: transaction_number
         in: path
         required: true
         schema:
