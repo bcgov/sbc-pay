@@ -15,7 +15,7 @@
 import base64
 from datetime import datetime, date
 from typing import Any, Dict
-from urllib.parse import unquote, urlencode
+from urllib.parse import unquote_plus, urlencode
 
 from flask import current_app
 
@@ -48,7 +48,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         url_params_dict = {'trnDate': today,
                            'pbcRefNumber': current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER'),
                            'glDate': today,
-                           'description': 'Direct_Sale',
+                           'description': 'Direct Sale',
                            'trnNumber': invoice.id,
                            'trnAmount': invoice.total,
                            'paymentMethod': PaymentMethod.CC.value,
@@ -58,7 +58,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
         url_params = urlencode(url_params_dict)
         # unquote is used below so that unescaped url string can be hashed
-        url_params_dict['hashValue'] = HashingService.encode(unquote(url_params))
+        url_params_dict['hashValue'] = HashingService.encode(unquote_plus(url_params))
         encoded_query_params = urlencode(url_params_dict)  # encode it again to inlcude the hash
         paybc_url = current_app.config.get('PAYBC_DIRECT_PAY_PORTAL_URL')
         return f'{paybc_url}?{encoded_query_params}'

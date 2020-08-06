@@ -53,7 +53,7 @@ def test_get_payment_system_url(session, public_user_mock):
     url_param_dict = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(payment_response_url).query))
     assert url_param_dict['trnDate'] == today
     assert url_param_dict['glDate'] == today
-    assert url_param_dict['description'] == 'Direct_Sale'
+    assert url_param_dict['description'] == 'Direct Sale'
     assert url_param_dict['pbcRefNumber'] == current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')
     assert url_param_dict['trnNumber'] == str(invoice.id)
     assert url_param_dict['trnAmount'] == str(invoice.total)
@@ -67,7 +67,7 @@ def test_get_payment_system_url(session, public_user_mock):
                   f'000000.0000:10.00'
     assert url_param_dict['revenue'] == revenue_str
     urlstring = f"trnDate={today}&pbcRefNumber={current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')}&" \
-                f'glDate={today}&description=Direct_Sale&' \
+                f'glDate={today}&description=Direct Sale&' \
                 f'trnNumber={invoice.id}&' \
                 f'trnAmount={invoice.total}&' \
                 f'paymentMethod=CC&' \
@@ -103,7 +103,7 @@ def test_get_payment_system_url_service_fees(session, public_user_mock):
     url_param_dict = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(payment_response_url).query))
     assert url_param_dict['trnDate'] == today
     assert url_param_dict['glDate'] == today
-    assert url_param_dict['description'] == 'Direct_Sale'
+    assert url_param_dict['description'] == 'Direct Sale'
     assert url_param_dict['pbcRefNumber'] == current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')
     assert url_param_dict['trnNumber'] == str(invoice.id)
     assert url_param_dict['trnAmount'] == str(invoice.total)
@@ -123,7 +123,7 @@ def test_get_payment_system_url_service_fees(session, public_user_mock):
         f'000000.0000:{format(service_fee, DECIMAL_PRECISION)}'
     assert url_param_dict['revenue'] == f'{revenue_str}|{revenue_str_service_fee}'
     urlstring = f"trnDate={today}&pbcRefNumber={current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')}&" \
-        f'glDate={today}&description=Direct_Sale&' \
+        f'glDate={today}&description=Direct Sale&' \
         f'trnNumber={invoice.id}&' \
         f'trnAmount={invoice.total}&' \
         f'paymentMethod=CC&' \
