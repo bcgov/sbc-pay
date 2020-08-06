@@ -97,6 +97,7 @@ class Role(Enum):
     EDITOR = 'edit'
     SYSTEM = 'system'
     PUBLIC_USER = 'public_user'
+    EXCLUDE_SERVICE_FEES = 'exclude_service_fees'
 
 
 class Code(Enum):
