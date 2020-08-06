@@ -85,7 +85,7 @@ class BcolService(PaymentSystemService, OAuthService):
             'amount': str(amount_excluding_txn_fees),
             'rate': str(amount_excluding_txn_fees),
             'remarks': remarks[:50],
-            'feeCode': self._get_fee_code(kwargs.get('corp_type_code'), user.is_staff())
+            'feeCode': self._get_fee_code(kwargs.get('corp_type_code'), user.is_staff() or user.is_system())
         }
 
         if user.is_staff() or user.is_system():
