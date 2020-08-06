@@ -48,7 +48,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         url_params_dict = {'trnDate': today,
                            'pbcRefNumber': current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER'),
                            'glDate': today,
-                           'description': 'Direct Sale',
+                           'description': 'Direct_Sale',
                            'trnNumber': invoice.id,
                            'trnAmount': invoice.total,
                            'paymentMethod': PaymentMethod.CC.value,
