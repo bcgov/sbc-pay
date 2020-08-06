@@ -40,6 +40,7 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
         self._login_source: str = token_info.get('loginSource', None)
         self._account_id: str = get_auth_account_id()
         self._name: str = '{} {}'.format(token_info.get('firstname', None), token_info.get('lastname', None))
+        self._product_code: str = token_info.get('product_code', None)
 
     @property
     def user_name(self) -> str:
@@ -79,6 +80,11 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
     def account_id(self) -> str:
         """Return the account_id."""
         return self._account_id
+
+    @property
+    def product_code(self) -> str:
+        """Return the product_code."""
+        return self._product_code
 
     def has_role(self, role_name: str) -> bool:
         """Return True if the user has the role."""

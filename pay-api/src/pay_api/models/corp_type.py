@@ -15,6 +15,7 @@
 
 from flask import current_app
 
+from pay_api.utils.enums import Role
 from pay_api.utils.user_context import UserContext, user_context
 
 from .code_table import CodeTable
@@ -47,7 +48,9 @@ class CorpType(db.Model, CodeTable):
         user: UserContext = kwargs['user']
 
         service_fees: float = 0
-        if not user.is_staff() and fee > 0:
+        # TODO for system accounts with role EXCLUDE_SERVICE_FEES, do not charge service fees for now.
+        #  Handle it properly later
+        if not user.is_staff() and not (user.is_system() and Role.EXCLUDE_SERVICE_FEES.value in user.roles) and fee > 0:
             corp_type = CorpType.find_by_code(corp_type_code)
             if corp_type.service_fee:
                 service_fees = corp_type.service_fee.amount
