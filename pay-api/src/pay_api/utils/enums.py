@@ -99,6 +99,7 @@ class Role(Enum):
     SYSTEM = 'system'
     STAFF_ADMIN = 'admin'
     PUBLIC_USER = 'public_user'
+    EXCLUDE_SERVICE_FEES = 'exclude_service_fees'
 
 
 class Code(Enum):
