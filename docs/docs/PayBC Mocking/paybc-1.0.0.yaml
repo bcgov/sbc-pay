@@ -34,29 +34,29 @@ paths:
               examples:
                 '1234567890':
                   value:
-                    pbcRefNumber: '10006'
-                    trnNumber: EZ000101
-                    trnDate: '2020-04-18'
-                    description: Direct Sale
-                    trnAmount: '100.00'
-                    paymentMethod: CC
-                    currency: CAD
-                    glDate: '2020-04-18'
-                    paymentStatus: PNDNG/PAID/CMPLT
-                    trnOrderId: " 45678"
-                    paymentAuthCode: " 04066N"
-                    cardType: " VI"
-                    revenue:
-                    - lineNumber: " 1"
-                      revenueAccount: 039.18ACE.14691.8928.1800000.000000.0000
-                      revenueAmount: '75.00'
-                      glStatus: 'NEW/IN PROCESS/REJECT/PROCESSED '
-                      glErrorMessage: Invalid revenue account
-                    - lineNumber: " 2"
-                      revenueAccount: 039.18ACE.14692.8928.1800000.000000.0000
-                      revenueAmount: '25.00'
-                      glStatus: 'NEW/IN PROCESS/REJECT/PROCESSED '
-                      glErrorMessage: Invalid revenue account
+                      pbcrefnumber: '10007'
+                      trnnumber: '1'
+                      trndate: '2020-08-10'
+                      description: Direct_Sale
+                      trnamount: '50.0'
+                      paymentmethod: CC
+                      currency: CAD
+                      gldate: '2020-08-10'
+                      paymentstatus: PAID
+                      trnorderid: '1003558'
+                      paymentauthcode: TEST
+                      cardtype: VI
+                      revenue:
+                      - linenumber: '1'
+                        revenueaccount: 112.32562.20245.4378.3212319.000000.0000
+                        revenueamount: '20'
+                        glstatus: PAID
+                        glerrormessage: 
+                      - linenumber: '2'
+                        revenueaccount: 112.32562.20245.4378.3212319.000000.0000
+                        revenueamount: '30'
+                        glstatus: PAID
+                        glerrormessage: 
 
         '400':
           description: BadRequest

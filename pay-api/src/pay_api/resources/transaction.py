@@ -95,7 +95,7 @@ class Transactions(Resource):
         """Update the transaction record by querying payment system."""
         current_app.logger.info(
             f'<Transaction.post for payment : {payment_id}, and transaction {transaction_id}')
-        pay_response_url: dict = request.get_json().get('payResponseUrl', None)
+        pay_response_url: str = request.get_json().get('payResponseUrl', None)
 
         try:
             response, status = TransactionService.update_transaction(payment_id, transaction_id,

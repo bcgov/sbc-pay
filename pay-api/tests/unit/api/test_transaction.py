@@ -21,10 +21,10 @@ import json
 import uuid
 from unittest.mock import patch
 
-from pay_api.utils.enums import PaymentMethod
 from requests.exceptions import ConnectionError
 
 from pay_api.schemas import utils as schema_utils
+from pay_api.utils.enums import PaymentMethod
 from tests import skip_in_pod
 from tests.utilities.base_test import get_claims, get_payment_request, token_header, \
     get_payment_request_with_payment_method
@@ -303,3 +303,31 @@ def test_transaction_patch_when_paybc_down(session, client, jwt, app):
             headers={'content-type': 'application/json'})
         assert rv.status_code == 200
         assert rv.json.get('paySystemReasonCode') == 'SERVICE_UNAVAILABLE'
+
+
+@skip_in_pod
+def test_transaction_patch_direct_pay(session, client, jwt, app):
+    """Assert that the transaction patch updates the payment receipts."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    # Create a payment first
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(
+        get_payment_request_with_payment_method(payment_method=PaymentMethod.DIRECT_PAY.value)), headers=headers)
+    payment_id = rv.json.get('id')
+    data = {
+        'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
+        'payReturnUrl': 'http://localhost:8080/pay-web'
+    }
+    rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
+                     headers={'content-type': 'application/json'})
+    txn_id = rv.json.get('id')
+    assert rv.status_code == 201
+    assert rv.json.get('paymentId') == payment_id
+
+    client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}', data=json.dumps({}),
+                 headers={'content-type': 'application/json'})
+
+    # Get payment details
+    rv = client.get(f'/api/v1/payment-requests/{payment_id}', headers=headers)
+    assert rv.json.get('statusCode') == 'COMPLETED'

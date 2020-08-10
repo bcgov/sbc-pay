@@ -25,6 +25,7 @@ from flask import current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule
+from pay_api.services.hashing import HashingService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.utils.enums import PaymentStatus, TransactionStatus, PaymentMethod
 from pay_api.utils.errors import Error
@@ -400,3 +401,58 @@ def test_transaction_update_on_paybc_connection_error(session, stan_server):
     assert transaction.transaction_start_time is not None
     assert transaction.transaction_end_time is not None
     assert transaction.status_code == TransactionStatus.FAILED.value
+
+
+@skip_in_pod
+def test_update_transaction_for_direct_pay_with_response_url(session):
+    """Assert that the receipt records are created."""
+    current_app.config['DIRECT_PAY_ENABLED'] = True
+    response_url = 'trnApproved=1&messageText=Approved&trnOrderId=1003598&trnAmount=201.00&paymentMethod=CC' \
+                   '&cardType=VI&authCode=TEST&trnDate=2020-08-11&pbcTxnNumber=1'
+    valid_hash = f'&hashValue={HashingService.encode(response_url)}'
+
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.DIRECT_PAY.value)
+    payment = factory_payment(payment_method_code=PaymentMethod.DIRECT_PAY.value)
+    payment_account.save()
+    payment.save()
+    invoice = factory_invoice(payment, payment_account)
+    invoice.save()
+    factory_invoice_reference(invoice.id).save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    transaction = PaymentTransactionService.create(payment.id, get_paybc_transaction_request())
+
+    # Update transaction with invalid hash
+    transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, f'{response_url}1234567890')
+    assert transaction.status_code == TransactionStatus.FAILED.value
+
+    # Update transaction with valid hash
+    transaction = PaymentTransactionService.create(payment.id, get_paybc_transaction_request())
+    transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id,
+                                                               f'{response_url}{valid_hash}')
+    assert transaction.status_code == TransactionStatus.COMPLETED.value
+
+
+@skip_in_pod
+def test_update_transaction_for_direct_pay_without_response_url(session):
+    """Assert that the receipt records are created."""
+    current_app.config['DIRECT_PAY_ENABLED'] = True
+
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.DIRECT_PAY.value)
+    payment = factory_payment(payment_method_code=PaymentMethod.DIRECT_PAY.value)
+    payment_account.save()
+    payment.save()
+    invoice = factory_invoice(payment, payment_account)
+    invoice.save()
+    factory_invoice_reference(invoice.id).save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    transaction = PaymentTransactionService.create(payment.id, get_paybc_transaction_request())
+
+    # Update transaction without response url, which should update the receipt
+    transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, None)
+    assert transaction.status_code == TransactionStatus.COMPLETED.value

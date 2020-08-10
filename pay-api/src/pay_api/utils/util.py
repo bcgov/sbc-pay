@@ -19,14 +19,16 @@ A simple decorator to add the options method to a Request Class.
 import calendar
 from datetime import datetime, timedelta
 from typing import Dict
-from urllib.parse import parse_qs
+from urllib.parse import parse_qsl
 
+import pytz
 from dpath import util as dpath_util
 from flask import current_app
 
 
 def cors_preflight(methods: str = 'GET'):
     """Render an option method on the class."""
+
     def wrapper(f):
         def options(self, *args, **kwargs):  # pylint: disable=unused-argument
             return {'Allow': methods}, 200, \
@@ -90,6 +92,15 @@ def parse_url_params(url_params: str) -> Dict:
     if url_params is not None:
         if url_params.startswith('?'):
             url_params = url_params[1:]
-        parsed_url = parse_qs(url_params, keep_blank_values=True)
+        parsed_url = dict(parse_qsl(url_params))
 
     return parsed_url
+
+
+def current_local_time() -> datetime:
+    """Return current local time."""
+    today = datetime.now()
+    tz_name = current_app.config['LEGISLATIVE_TIMEZONE']
+    tz_local = pytz.timezone(tz_name)
+    today = today.astimezone(tz_local)
+    return today
