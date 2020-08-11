@@ -18,17 +18,12 @@ This module is being invoked from a job and it cleans up the stale records
 import datetime
 import os
 
+import config
 from flask import Flask
 from flask_jwt_oidc import JwtManager
-from pay_api.exceptions import BusinessException
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
-from pay_api.models import Payment as PaymentModel
 from pay_api.models import db, ma
-from pay_api.services import TransactionService
-from pay_api.services import PaymentService
 from utils.logger import setup_logging
-
-import config
 
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
@@ -41,7 +36,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     app = Flask(__name__)
 
     app.config.from_object(config.CONFIGURATION[run_mode])
-    app.logger.info(f'Rectify GL CODE Job Ran at {datetime.datetime.now()}--------------------------------------------------------!')
+    app.logger.info(f'Rectify GL CODE Job Ran at {datetime.datetime.now()}!')
     db.init_app(app)
     ma.init_app(app)
 
@@ -80,11 +75,10 @@ def run():
     application.logger.debug('Ran Batch Job--')
 
     application.app_context().push()
-    update_stale_payments(application)
-    delete_marked_payments(application)
+    find_failed_distr(application)
 
 
-def update_stale_payments(app):
+def find_failed_distr(app):
     """Update stale payment records. 
     
     This is to handle edge cases where the user has completed payment and some error occured and payment status is not up-to-date.
@@ -92,37 +86,6 @@ def update_stale_payments(app):
     stale_transactions = PaymentTransactionModel.find_stale_records(hours=4)
     if len(stale_transactions) == 0:
         app.logger.info(f'Stale Transaction Job Ran at {datetime.datetime.now()}.But No records found!')
-    for transaction in stale_transactions:
-        try:
-            app.logger.info(
-                'Stale Transaction Job found records.Payment Id: {}, Transaction Id : {}'.format(transaction.payment_id,
-                                                                                                 transaction.id))
-            TransactionService.update_transaction(transaction.payment_id, transaction.id, '')
-            app.logger.info(
-                'Stale Transaction Job Updated records.Payment Id: {}, Transaction Id : {}'.format(
-                    transaction.payment_id, transaction.id))
-        except BusinessException as err:  # just catch and continue .Don't stop
-            app.logger.error('Stale Transaction Error on update_transaction')
-            app.logger.error(err)
-
-
-def delete_marked_payments(app):
-    """Update stale payment records. 
-    
-    This is to handle edge cases where the user has completed payment and some error occured and payment status is not up-to-date.
-    """
-    payments_to_delete = PaymentModel.find_payments_marked_for_delete()
-    if len(payments_to_delete) == 0:
-        app.logger.info(f'Delete Payment Job Ran at {datetime.datetime.now()}.But No records found!')
-    for payment in payments_to_delete:
-        try:
-            app.logger.info('Delete Payment Job found records.Payment Id: {}'.format(payment.id))
-            PaymentService.delete_payment(payment.id)
-            app.logger.info(
-                'Delete Payment Job Updated records.Payment Id: {}'.format(payment.id))
-        except BusinessException as err:  # just catch and continue .Don't stop
-            app.logger.error('Error on delete_payment')
-            app.logger.error(err)
 
 
 if __name__ == "__main__":

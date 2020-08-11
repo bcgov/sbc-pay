@@ -17,40 +17,35 @@ RUN chmod ug+x /usr/local/bin/go-crond
 
 # Add a job user
 ARG uid=1001
-ARG user=sbc
+ARG user=pay
 RUN useradd -U -ms /bin/bash -u $uid $user \
     && usermod -a -G root $user
 
+ENV HOME=/update-failed-distributions
 
-RUN mkdir /opt/app-root && chmod 755 /opt/app-root
+RUN mkdir $HOME && chmod 755 $HOME
 
-WORKDIR /opt/app-root
+WORKDIR $HOME
 
 # Install the requirements
 COPY ./src/requirements.txt .
 COPY ./src/requirements/ ./requirements/
-
-# Copy source code
-#ADD ./run.sh $APP_ROOT
-#ADD ./requirements.txt .
-#ADD ./utils $APP_ROOT
-#ADD . $APP_ROOT
-
 COPY . .
 
 RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 
+
 # Set ownership and permissions
 # Set scripts as executable (make files and python files do not have to be marked)
 # Make /etc/passwd writable for the root group so an entry can be created for an OpenShift assigned user account.
-RUN chown -R sbc:root /opt/app-root \
-    && chmod -R ug+rw /opt/app-root \
-    && chmod ug+x /opt/app-root/*.sh \
-    && chmod ug+x /opt/app-root/run.sh \
+RUN chown -R $user:root $HOME \
+    && chmod -R ug+rw $HOME \
+    && chmod ug+x $HOME/*.sh \
+    && chmod ug+x $HOME/run.sh \
     && chmod g+rw /etc/passwd \
-    && chmod g-w /opt/app-root/crontab
+    && chmod g-w $HOME/crontab
 
 USER $user
 ENTRYPOINT ["bash", "docker-entrypoint.sh"]
