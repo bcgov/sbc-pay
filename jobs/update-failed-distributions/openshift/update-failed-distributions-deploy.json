@@ -3,7 +3,7 @@
   "apiVersion": "v1",
   "metadata": {
     "annotations": {
-      "description": "Deployment template for a update-failed-distributions-build.",
+      "description": "Deployment template for a update-failed-distributions-job.",
       "tags": "${NAME}-${TAG_NAME}"
     },
     "name": "${NAME}-${TAG_NAME}-deploy"
@@ -230,7 +230,7 @@
       "displayName": "Name",
       "description": "The name assigned to all of the OpenShift resources associated to the server instance.",
       "required": true,
-      "value": "update-failed-distributions-build"
+      "value": "update-failed-distributions"
     },
     {
       "name": "APP_GROUP",
