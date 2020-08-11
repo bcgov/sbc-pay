@@ -17,7 +17,6 @@ This module is being invoked from a job and it cleans up the stale records
 """
 import datetime
 import os
-from datetime import datetime
 
 from flask import Flask
 from flask_jwt_oidc import JwtManager
@@ -28,7 +27,6 @@ from pay_api.models import db, ma
 from pay_api.services import TransactionService
 from pay_api.services import PaymentService
 from utils.logger import setup_logging
-
 
 import config
 
@@ -43,12 +41,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     app = Flask(__name__)
 
     app.config.from_object(config.CONFIGURATION[run_mode])
-
-    now = datetime.now()
-    current_time = now.strftime("%H:%M:%S")
-    print("JOB RAN AT ----------------------------Current Time =", current_time)
-    app.logger.debug('JOB RAN AT ----------------------------Current Time =', current_time)
-
+    app.logger.info(f'Rectify GL CODE Job Ran at {datetime.datetime.now()}--------------------------------------------------------!')
     db.init_app(app)
     ma.init_app(app)
 
@@ -84,7 +77,7 @@ def register_shellcontext(app):
 
 def run():
     application = create_app()
-    application.logger.debug('Ran Batch Job--at ')
+    application.logger.debug('Ran Batch Job--')
 
     application.app_context().push()
     update_stale_payments(application)
