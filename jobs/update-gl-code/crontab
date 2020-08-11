@@ -1,2 +1,2 @@
-* * * * * default cd /sbc/ && ./run.sh
+*/2 * * * * default cd /opt/app-root/ && ./run.sh
 # An empty line is required at the end of this file for a valid cron file.
