@@ -108,7 +108,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             current_app.logger.debug('Updating invoice record')
             invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
             invoice.invoice_status_code = InvoiceStatus.CREATED.value
-            invoice.save()
+            invoice.flush()
             InvoiceReference.create(invoice.id, pay_system_invoice.get('invoice_number', None),
                                     pay_system_invoice.get('reference_number', None))
 
@@ -206,7 +206,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                     for payment_line_item in payment_line_items:
                         if payment_line_item.line_item_status_code != LineItemStatus.CANCELLED.value:
                             payment_line_item.line_item_status_code = LineItemStatus.CANCELLED.value
-                            payment_line_item.save()
+                            payment_line_item.flush()
 
                     # add new payment line item(s)
                     line_items = []
@@ -240,13 +240,12 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                     current_app.logger.debug('Updating invoice record')
                     invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
                     invoice.total = sum(fee.total for fee in fees)
-                    invoice.save()
+                    invoice.flush()
 
                     InvoiceReference.create(invoice.id, pay_system_invoice.get('invoice_number', None),
                                             pay_system_invoice.get('reference_number', None))
 
             payment.save()
-            payment.commit()
             _complete_post_payment(pay_service, payment)
             # return payment with updated contents
             payment = Payment.find_by_id(payment.id, skip_auth_check=True)
@@ -294,9 +293,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice.invoice_status_code = InvoiceStatus.DELETED.value
             for line in invoice.payment_line_items:
                 line.line_item_status_code = LineItemStatus.CANCELLED.value
-            invoice.save()
+            invoice.flush()
             invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
-            invoice_reference.save()
+            invoice_reference.flush()
 
         payment.payment_status_code = PaymentStatus.DELETED.value
         payment.save()

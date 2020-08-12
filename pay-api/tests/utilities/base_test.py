@@ -324,7 +324,7 @@ def factory_payment(
 def factory_invoice(payment: Payment, payment_account: str, status_code: str = InvoiceStatus.CREATED.value,
                     corp_type_code='CP',
                     business_identifier: str = 'CP0001234',
-                    service_fees: float = 0.0):
+                    service_fees: float = 0.0, total=0):
     """Return Factory."""
     bcol_account_id = None
     credit_account_id = None
@@ -342,7 +342,7 @@ def factory_invoice(payment: Payment, payment_account: str, status_code: str = I
         bcol_account_id=bcol_account_id,
         credit_account_id=credit_account_id,
         internal_account_id=internal_account_id,
-        total=0,
+        total=total,
         created_by='test',
         created_on=datetime.now(),
         business_identifier=business_identifier,

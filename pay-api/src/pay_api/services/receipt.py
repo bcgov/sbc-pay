@@ -115,8 +115,12 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         self._dao.receipt_amount = value
 
     def save(self):
-        """Save the information to the DB."""
+        """Save the information to the DB and commit."""
         return self._dao.save()
+
+    def flush(self):
+        """Save the information to the DB and flush."""
+        return self._dao.flush()
 
     @staticmethod
     def find_by_id(receipt_id: int):

@@ -74,7 +74,7 @@ def test_create_payment_record_with_direct_pay(session, public_user_mock):
 def test_create_payment_record_rollback(session, public_user_mock):
     """Assert that the payment records are created."""
     # Mock here that the invoice update fails here to test the rollback scenario
-    with patch('pay_api.services.invoice.Invoice.save', side_effect=Exception('mocked error')):
+    with patch('pay_api.services.invoice.Invoice.flush', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
             PaymentService.create_payment(get_payment_request(), get_auth_basic_user())
         assert excinfo.type == Exception
@@ -257,7 +257,7 @@ def test_update_payment_record_rollback(session, public_user_mock):
     transaction = factory_payment_transaction(payment.id)
     transaction.save()
 
-    with patch('pay_api.services.invoice.Invoice.save', side_effect=Exception('mocked error')):
+    with patch('pay_api.services.invoice.Invoice.flush', side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
             PaymentService.update_payment(payment.id, get_payment_request(), get_auth_basic_user())
         assert excinfo.type == Exception

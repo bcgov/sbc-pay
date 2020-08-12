@@ -114,6 +114,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     NATS_SUBJECT = os.getenv('NATS_SUBJECT', 'entity.filings')
     NATS_QUEUE = os.getenv('NATS_QUEUE', 'filing-worker')
 
+    # Sentry Config
+    SENTRY_DSN = os.getenv('SENTRY_DSN', None)
+
     TESTING = False
     DEBUG = True
 
