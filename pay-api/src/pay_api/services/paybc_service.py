@@ -14,7 +14,6 @@
 """Service to manage PayBC interaction."""
 
 import base64
-import datetime
 import re
 import secrets
 import urllib.parse
@@ -32,7 +31,7 @@ from pay_api.utils.constants import (
     DEFAULT_ADDRESS_LINE_1, DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
     CFS_ADJ_ACTIVITY_NAME, CFS_BATCH_SOURCE, CFS_CUST_TRX_TYPE, CFS_LINE_TYPE, CFS_TERM_NAME)
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem, PaymentMethod
-from pay_api.utils.util import parse_url_params
+from pay_api.utils.util import current_local_time, parse_url_params
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -73,7 +72,7 @@ class PaybcService(PaymentSystemService, OAuthService):
                        line_items: [PaymentLineItem], invoice: Invoice, **kwargs):
         """Create Invoice in PayBC."""
         current_app.logger.debug('<create_invoice')
-        now = datetime.datetime.now()
+        now = current_local_time()
         curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
         invoice_number: str = kwargs.get('invoice_number', None)
         if invoice_number is None:
@@ -176,7 +175,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         receipt_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/rcpts/'.format(
             payment_account.paybc_party, payment_account.paybc_account, payment_account.paybc_site)
         parsed_url = parse_url_params(pay_response_url)
-        receipt_number: str = parsed_url.get('receipt_number')[0] if 'receipt_number' in parsed_url else None
+        receipt_number: str = parsed_url.get('receipt_number') if 'receipt_number' in parsed_url else None
         if not receipt_number:  # Find all receipts for the site and then match with invoice number
             receipts_response = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
             for receipt in receipts_response.get('items'):

@@ -101,7 +101,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     PAYBC_DIRECT_PAY_REF_NUMBER = _get_config('PAYBC_DIRECT_PAY_REF_NUMBER')
     PAYBC_DIRECT_PAY_API_KEY = _get_config('PAYBC_DIRECT_PAY_API_KEY')
     PAYBC_DIRECT_PAY_PORTAL_URL = _get_config('PAYBC_DIRECT_PAY_PORTAL_URL')
-    PAYBC_DIRECT_PAY_BASE_URL = _get_config('PAYBC_DIRECT_PAY_TRANSACTION_URL')
+    PAYBC_DIRECT_PAY_BASE_URL = _get_config('PAYBC_DIRECT_PAY_BASE_URL')
     PAYBC_DIRECT_PAY_CLIENT_ID = _get_config('PAYBC_DIRECT_PAY_CLIENT_ID')
     PAYBC_DIRECT_PAY_CLIENT_SECRET = _get_config('PAYBC_DIRECT_PAY_CLIENT_SECRET')
 
@@ -144,7 +144,6 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # BCOL user name for Service account payments
     BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS = os.getenv('BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS',
                                                            'BCROS SERVICE ACCOUNT')
-    ENTITY_SERVICE_ACCOUNT_ID = os.getenv('ENTITY_SERVICE_ACCOUNT_ID', 'entity-service-account')
 
     TESTING = False
     DEBUG = True
@@ -238,8 +237,8 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     CFS_BASE_URL = 'http://localhost:8080/paybc-api'
     CFS_CLIENT_ID = 'TEST'
     CFS_CLIENT_SECRET = 'TEST'
-    PAYBC_PORTAL_URL = ''
-    PAYBC_DIRECT_PAY_PORTAL_URL = 'https://paydev.gov.bc.ca/public/directsale'
+    PAYBC_PORTAL_URL = 'https://paydev.gov.bc.ca/public/directpay'
+
     SERVER_NAME = 'auth-web.dev.com'
 
     REPORT_API_BASE_URL = "http://localhost:8080/reports-api/api/v1/reports"
@@ -256,6 +255,10 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
 
     PAYBC_DIRECT_PAY_API_KEY = 'TESTKEYSECRET'
     PAYBC_DIRECT_PAY_REF_NUMBER = 'REF1234'
+    PAYBC_DIRECT_PAY_PORTAL_URL = 'https://paydev.gov.bc.ca/public/directsale'
+    PAYBC_DIRECT_PAY_BASE_URL = 'http://localhost:8080/paybc-api'
+    PAYBC_DIRECT_PAY_CLIENT_ID = 'TEST'
+    PAYBC_DIRECT_PAY_CLIENT_SECRET = 'TEST'
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

@@ -13,11 +13,6 @@
 # limitations under the License.
 """Model to handle all operations related to Corp type master data."""
 
-from flask import current_app
-
-from pay_api.utils.enums import Role
-from pay_api.utils.user_context import UserContext, user_context
-
 from .code_table import CodeTable
 from .db import db, ma
 
@@ -39,23 +34,6 @@ class CorpType(db.Model, CodeTable):
         """Save corp type."""
         db.session.add(self)
         db.session.commit()
-
-    @staticmethod
-    @user_context
-    def get_service_fees(corp_type_code: str, fee: float, **kwargs):
-        """Calculate service_fees fees."""
-        current_app.logger.debug(f'<calculate_service_fees - {corp_type_code}')
-        user: UserContext = kwargs['user']
-
-        service_fees: float = 0
-        # TODO for system accounts with role EXCLUDE_SERVICE_FEES, do not charge service fees for now.
-        #  Handle it properly later
-        if not user.is_staff() and not (user.is_system() and Role.EXCLUDE_SERVICE_FEES.value in user.roles) and fee > 0:
-            corp_type = CorpType.find_by_code(corp_type_code)
-            if corp_type.service_fee:
-                service_fees = corp_type.service_fee.amount
-
-        return service_fees
 
 
 class CorpTypeSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors

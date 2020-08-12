@@ -13,13 +13,12 @@
 # limitations under the License.
 """Service to manage Direct Pay PAYBC Payments."""
 import base64
-from datetime import datetime, date
 from typing import Any, Dict
 from urllib.parse import unquote_plus, urlencode
 
+from dateutil import parser
 from flask import current_app
 
-from pay_api.exceptions import BusinessException
 from pay_api.models.distribution_code import DistributionCode as DistributionCodeModel
 from pay_api.models.payment_line_item import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.base_payment_system import PaymentSystemService
@@ -28,14 +27,14 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem, PaymentMethod
-from pay_api.utils.errors import Error
-from pay_api.utils.util import parse_url_params
+from pay_api.utils.util import current_local_time, parse_url_params
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
-PAYBC_DATE_FORMAT = '%Y-%M-%d'
+PAYBC_DATE_FORMAT = '%Y-%m-%d'
 PAYBC_REVENUE_SEPARATOR = '|'
 DECIMAL_PRECISION = '.2f'
+STATUS_PAID = 'PAID'
 
 
 class DirectPayService(PaymentSystemService, OAuthService):
@@ -43,12 +42,12 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
     def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
-        today = date.today().strftime(PAYBC_DATE_FORMAT)
+        today = current_local_time().strftime(PAYBC_DATE_FORMAT)
 
         url_params_dict = {'trnDate': today,
                            'pbcRefNumber': current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER'),
                            'glDate': today,
-                           'description': 'Direct Sale',
+                           'description': 'Direct_Sale',
                            'trnNumber': invoice.id,
                            'trnAmount': invoice.total,
                            'paymentMethod': PaymentMethod.CC.value,
@@ -136,24 +135,19 @@ class DirectPayService(PaymentSystemService, OAuthService):
         # If pay_response_url is present do all the pre-check, else check the status by using the invoice id
         if pay_response_url is not None:
             parsed_args = parse_url_params(pay_response_url)
-            if not parsed_args or parsed_args.get('hashValue', None) is None:
-                raise BusinessException(Error.DIRECT_PAY_INVALID_RESPONSE)
 
             # validate if hashValue matches with rest of the values hashed
-            hash_value = parsed_args.pop('hashValue', None)[0]
+            hash_value = parsed_args.pop('hashValue', None)
             pay_response_url_without_hash = urlencode(parsed_args)
-            if not HashingService.is_valid_checksum(pay_response_url_without_hash, hash_value):
-                current_app.logger.warn(f'Hash not matching for pay response URL : {pay_response_url}')
-                raise BusinessException(Error.DIRECT_PAY_INVALID_RESPONSE)
 
             # Check if trnApproved is 1=Success, 0=Declined
-            trn_approved: str = parsed_args.get('trnApproved')[0]
-            if trn_approved != '1':
-                current_app.logger.info('Returning the receipt as the transaction is not successful')
+            trn_approved: str = parsed_args.get('trnApproved')
+            if trn_approved == '1' and not HashingService.is_valid_checksum(pay_response_url_without_hash, hash_value):
+                current_app.logger.warn(f'Hash not matching for pay response URL : {pay_response_url}')
                 return None
-
             # Get the transaction number from args
-            paybc_transaction_number = parsed_args.get('trnNumber')
+            paybc_transaction_number = parsed_args.get('pbcTxnNumber')
+
         else:
             # Get the transaction number from invoice reference
             paybc_transaction_number = invoice_reference.invoice_number
@@ -167,12 +161,12 @@ class DirectPayService(PaymentSystemService, OAuthService):
         transaction_response = self.get(
             f'{paybc_transaction_url}/paybc/payment/{paybc_ref_number}/{paybc_transaction_number}',
             access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
-        if transaction_response and transaction_response.get('paymentStatus') == 'PAID':
-            return transaction_response.get('trnDate'), transaction_response.get('trnAmount'), transaction_response.get(
-                'trnOrderId')
 
-        invoice = Invoice.find_by_id(invoice_reference.invoice_id, skip_auth_check=True)
-        return f'{invoice_reference.invoice_number}', datetime.now(), invoice.total
+        if transaction_response and transaction_response.get('paymentstatus') == STATUS_PAID:
+            return transaction_response.get('trnorderid'), parser.parse(
+                transaction_response.get('trndate')), float(transaction_response.get('trnamount')),
+
+        return None
 
     def __get_token(self):
         """Generate oauth token from payBC which will be used for all communication."""

@@ -18,12 +18,12 @@ import urllib.parse
 from datetime import date
 
 from flask import current_app
+
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeSchedule
 from pay_api.services.direct_pay_service import DirectPayService, PAYBC_DATE_FORMAT, DECIMAL_PRECISION
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.hashing import HashingService
-
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item)
 from tests.utilities.base_test import get_distribution_code_payload
@@ -53,27 +53,27 @@ def test_get_payment_system_url(session, public_user_mock):
     url_param_dict = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(payment_response_url).query))
     assert url_param_dict['trnDate'] == today
     assert url_param_dict['glDate'] == today
-    assert url_param_dict['description'] == 'Direct Sale'
+    assert url_param_dict['description'] == 'Direct_Sale'
     assert url_param_dict['pbcRefNumber'] == current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')
     assert url_param_dict['trnNumber'] == str(invoice.id)
     assert url_param_dict['trnAmount'] == str(invoice.total)
     assert url_param_dict['paymentMethod'] == 'CC'
     assert url_param_dict['redirectUri'] == 'google.com'
     revenue_str = f"1:{distribution_code_payload['client']}." \
-                  f"{distribution_code_payload['responsibilityCentre']}." \
-                  f"{distribution_code_payload['serviceLine']}." \
-                  f"{distribution_code_payload['stob']}." \
-                  f"{distribution_code_payload['projectCode']}." \
-                  f'000000.0000:10.00'
+        f"{distribution_code_payload['responsibilityCentre']}." \
+        f"{distribution_code_payload['serviceLine']}." \
+        f"{distribution_code_payload['stob']}." \
+        f"{distribution_code_payload['projectCode']}." \
+        f'000000.0000:10.00'
     assert url_param_dict['revenue'] == revenue_str
     urlstring = f"trnDate={today}&pbcRefNumber={current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')}&" \
-                f'glDate={today}&description=Direct Sale&' \
-                f'trnNumber={invoice.id}&' \
-                f'trnAmount={invoice.total}&' \
-                f'paymentMethod=CC&' \
-                f'redirectUri=google.com&' \
-                f'currency=CAD&' \
-                f'revenue={revenue_str}'
+        f'glDate={today}&description=Direct_Sale&' \
+        f'trnNumber={invoice.id}&' \
+        f'trnAmount={invoice.total}&' \
+        f'paymentMethod=CC&' \
+        f'redirectUri=google.com&' \
+        f'currency=CAD&' \
+        f'revenue={revenue_str}'
     expected_hash_str = HashingService.encode(urlstring)
     assert expected_hash_str == url_param_dict['hashValue']
 
@@ -103,7 +103,7 @@ def test_get_payment_system_url_service_fees(session, public_user_mock):
     url_param_dict = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(payment_response_url).query))
     assert url_param_dict['trnDate'] == today
     assert url_param_dict['glDate'] == today
-    assert url_param_dict['description'] == 'Direct Sale'
+    assert url_param_dict['description'] == 'Direct_Sale'
     assert url_param_dict['pbcRefNumber'] == current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')
     assert url_param_dict['trnNumber'] == str(invoice.id)
     assert url_param_dict['trnAmount'] == str(invoice.total)
@@ -123,7 +123,7 @@ def test_get_payment_system_url_service_fees(session, public_user_mock):
         f'000000.0000:{format(service_fee, DECIMAL_PRECISION)}'
     assert url_param_dict['revenue'] == f'{revenue_str}|{revenue_str_service_fee}'
     urlstring = f"trnDate={today}&pbcRefNumber={current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')}&" \
-        f'glDate={today}&description=Direct Sale&' \
+        f'glDate={today}&description=Direct_Sale&' \
         f'trnNumber={invoice.id}&' \
         f'trnAmount={invoice.total}&' \
         f'paymentMethod=CC&' \
@@ -134,3 +134,32 @@ def test_get_payment_system_url_service_fees(session, public_user_mock):
     expected_hash_str = HashingService.encode(urlstring)
 
     assert expected_hash_str == url_param_dict['hashValue']
+
+
+def test_get_receipt(session, public_user_mock):
+    """Assert that get receipt is working."""
+    response_url = 'trnApproved=1&messageText=Approved&trnOrderId=1003598&trnAmount=201.00&paymentMethod=CC' \
+                   '&cardType=VI&authCode=TEST&trnDate=2020-08-11&pbcTxnNumber=1'
+    invalid_hash = '&hashValue=0f7953db6f02f222f1285e1544c6a765'
+    payment_account = factory_payment_account()
+    payment = factory_payment()
+    payment_account.save()
+    payment.save()
+    invoice = factory_invoice(payment, payment_account)
+    invoice.save()
+    invoice_ref = factory_invoice_reference(invoice.id).save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    service_fee = 100
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, service_fees=service_fee)
+    line.save()
+    direct_pay_service = DirectPayService()
+    rcpt = direct_pay_service.get_receipt(payment_account, f'{response_url}{invalid_hash}', invoice_ref)
+    assert rcpt is None
+
+    valid_hash = f'&hashValue={HashingService.encode(response_url)}'
+    rcpt = direct_pay_service.get_receipt(payment_account, f'{response_url}{valid_hash}', invoice_ref)
+    assert rcpt is not None
+
+    # Test receipt without response_url
+    rcpt = direct_pay_service.get_receipt(payment_account, None, invoice_ref)
+    assert rcpt is not None
