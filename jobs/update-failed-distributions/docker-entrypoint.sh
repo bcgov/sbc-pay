@@ -1,6 +1,6 @@
 function start_cron_jobs() {
   echo "Starting go-crond as a background task ..."
-  CRON_CMD="go-crond -v --allow-unprivileged crontab"
+  CRON_CMD="go-crond -v --allow-unprivileged cron/crontab"
   exec ${CRON_CMD}
 }
 

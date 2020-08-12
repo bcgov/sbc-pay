@@ -45,7 +45,7 @@ RUN chown -R $user:root $HOME \
     && chmod ug+x $HOME/*.sh \
     && chmod ug+x $HOME/run.sh \
     && chmod g+rw /etc/passwd \
-    && chmod g-w $HOME/crontab
+    && chmod g-w $HOME/cron/crontab
 
 USER $user
 ENTRYPOINT ["bash", "docker-entrypoint.sh"]

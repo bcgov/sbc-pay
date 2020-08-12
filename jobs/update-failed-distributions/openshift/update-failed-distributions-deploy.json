@@ -66,6 +66,15 @@
             }
           },
           "spec": {
+            "volumes": [
+              {
+                "name": "cron-config",
+                "configMap": {
+                  "name": "${NAME}-${TAG_NAME}-cron-configuration",
+                  "defaultMode": 420
+                }
+              }
+            ],
             "containers": [
               {
                 "name": "${NAME}-${TAG_NAME}",
@@ -74,6 +83,13 @@
                   {
                     "containerPort": 8080,
                     "protocol": "TCP"
+                  }
+                ],
+                "volumeMounts": [
+                  {
+                    "name": "cron-config",
+                    "readOnly": true,
+                    "mountPath": "/update-failed-distributions/cron/"
                   }
                 ],
                 "env": [
