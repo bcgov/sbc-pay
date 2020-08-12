@@ -36,7 +36,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     app = Flask(__name__)
 
     app.config.from_object(config.CONFIGURATION[run_mode])
-    app.logger.info(f'Rectify GL CODE Job Ran at {datetime.datetime.now()}!')
+    app.logger.info(f'Rectify GL CODE Job Ran-----------------------------------------------!')
     db.init_app(app)
     ma.init_app(app)
 
@@ -72,7 +72,7 @@ def register_shellcontext(app):
 
 def run():
     application = create_app()
-    application.logger.debug('Ran Batch Job--')
+    application.logger.debug('Ran Batch Job--*************************************************************')
 
     application.app_context().push()
     find_failed_distr(application)
