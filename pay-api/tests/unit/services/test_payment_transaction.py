@@ -19,6 +19,7 @@ Test-Suite to ensure that the FeeSchedule Service is working as expected.
 
 import uuid
 from datetime import datetime
+from unittest.mock import patch
 
 import pytest
 from flask import current_app
@@ -455,4 +456,60 @@ def test_update_transaction_for_direct_pay_without_response_url(session):
 
     # Update transaction without response url, which should update the receipt
     transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, None)
+    assert transaction.status_code == TransactionStatus.COMPLETED.value
+
+
+@skip_in_pod
+def test_event_failed_transactions(session, public_user_mock, stan_server, monkeypatch):
+    """Assert that the transaction status is EVENT_FAILED when Q is not available."""
+    # 1. Create payment records
+    # 2. Create a transaction
+    # 3. Fail the queue publishing which will mark the payment as COMPLETED and transaction as EVENT_FAILED
+    # 4. Update the transansaction with queue up which will mark the transaction as COMPLETED
+    current_app.config['DIRECT_PAY_ENABLED'] = True
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.DIRECT_PAY.value)
+    payment = factory_payment(payment_method_code=PaymentMethod.DIRECT_PAY.value)
+    payment_account.save()
+    payment.save()
+    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+
+    invoice = factory_invoice(payment, payment_account, total=30)
+    invoice.save()
+    factory_invoice_reference(invoice.id).save()
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    transaction = PaymentTransactionService.create(payment.id, get_paybc_transaction_request())
+
+    def get_receipt(cls, payment_account, pay_response_url: str,
+                    invoice_reference):  # pylint: disable=unused-argument; mocks of library methods
+        return '1234567890', datetime.now(), 30.00
+
+    monkeypatch.setattr('pay_api.services.direct_pay_service.DirectPayService.get_receipt', get_receipt)
+
+    with patch('pay_api.services.payment_transaction.publish_response', side_effect=ConnectionError('mocked error')):
+        transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id,
+                                                                   pay_response_url='?key=value')
+
+    assert transaction is not None
+    assert transaction.id is not None
+    assert transaction.status_code is not None
+    assert transaction.payment_id is not None
+    assert transaction.client_system_url is not None
+    assert transaction.pay_system_url is not None
+    assert transaction.transaction_start_time is not None
+    assert transaction.transaction_end_time is not None
+    assert transaction.status_code == TransactionStatus.EVENT_FAILED.value
+
+    # Now update the transaction and check the status of the transaction
+    transaction = PaymentTransactionService.update_transaction(payment.id, transaction.id, pay_response_url=None)
+
+    assert transaction is not None
+    assert transaction.id is not None
+    assert transaction.status_code is not None
+    assert transaction.payment_id is not None
+    assert transaction.client_system_url is not None
+    assert transaction.pay_system_url is not None
+    assert transaction.transaction_start_time is not None
+    assert transaction.transaction_end_time is not None
     assert transaction.status_code == TransactionStatus.COMPLETED.value
