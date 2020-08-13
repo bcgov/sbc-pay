@@ -91,7 +91,7 @@
     },
     "endDate": {
       "$id": "#/properties/endDate",
-      "type": "date",
+      "type": "string",
       "title": "endDate",
       "description": "End date for the distribution code."
     },
@@ -220,7 +220,7 @@
     },
     "updatedOn": {
       "$id": "#/properties/updatedOn",
-      "type": "date",
+      "type": "string",
       "title": "The updatedOn schema",
       "description": "updated date value."
     }
