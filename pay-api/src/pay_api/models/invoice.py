@@ -17,12 +17,12 @@ from marshmallow import fields, post_dump
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
-from pay_api.utils.enums import LineItemStatus
+from pay_api.utils.enums import InvoiceStatus, LineItemStatus
 from .audit import Audit
 from .base_schema import BaseSchema
 from .db import db, ma
 from .invoice_reference import InvoiceReferenceSchema
-from .payment_line_item import PaymentLineItemSchema
+from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from .receipt import ReceiptSchema
 
 
@@ -75,6 +75,20 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     def find_by_id_and_payment_id(cls, identifier: int, pay_id: int):
         """Return a Invoice by id."""
         return cls.query.filter_by(payment_id=pay_id).filter_by(id=identifier).one_or_none()
+
+    @classmethod
+    def update_invoices_for_revenue_updates(cls, fee_distribution_id: int):
+        """Find and update all invoices using the distribution id."""
+        query = db.session.query(Invoice) \
+            .join(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id) \
+            .filter(PaymentLineItem.fee_distribution_id == fee_distribution_id)
+
+        invoices: [Invoice] = query.all()
+        for invoice in invoices:
+            if invoice.invoice_status_code == InvoiceStatus.PAID.value:
+                invoice.invoice_status_code = InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value
+        db.session.bulk_save_objects(invoices)
+        cls.commit()
 
 
 class InvoiceSchema(BaseSchema):  # pylint: disable=too-many-ancestors

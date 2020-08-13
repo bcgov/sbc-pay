@@ -46,6 +46,7 @@ class InvoiceStatus(Enum):
     CREATED = 'CREATED'
     PAID = 'PAID'
     DELETED = 'DELETED'
+    UPDATE_REVENUE_ACCOUNT = 'GL_UPDATED'
 
 
 class TransactionStatus(Enum):

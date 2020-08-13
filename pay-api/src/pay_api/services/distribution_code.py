@@ -15,11 +15,12 @@
 
 from datetime import date
 from typing import Dict
-
+from dateutil import parser
 from flask import current_app
 from sbc_common_components.tracing.service_tracing import ServiceTracing
 
 from pay_api.models import DistributionCode as DistributionCodeModel, DistributionCodeLink as DistributionCodeLinkModel
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.models.distribution_code import DistributionCodeSchema
 from pay_api.models.fee_schedule import FeeScheduleSchema
 
@@ -78,6 +79,11 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes
 
         self._start_date: date = self._dao.start_date
         self._end_date: date = self._dao.end_date
+
+    @property
+    def distribution_code_id(self):
+        """Return the distribution_code_id."""
+        return self._distribution_code_id
 
     @property
     def end_date(self):
@@ -223,7 +229,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes
         self._dao.service_fee_project_code = value
 
     def save(self):
-        """Save the distribution code information."""
+        """Save the distribution code information and commit."""
         return self._dao.save()
 
     @staticmethod
@@ -273,8 +279,13 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes
             dist_code_dao = DistributionCodeModel.find_by_id(dist_id)
             dist_code_svc._dao = dist_code_dao  # pylint: disable=protected-access
 
-        dist_code_svc.end_date = distribution_details.get('endDate', None)
-        dist_code_svc.start_date = distribution_details.get('startDate', date.today())
+        if distribution_details.get('endDate', None):
+            dist_code_svc.end_date = parser.parse(distribution_details.get('endDate'))
+
+        if distribution_details.get('startDate', None):
+            dist_code_svc.start_date = parser.parse(distribution_details.get('startDate'))
+        else:
+            dist_code_svc.start_date = date.today()
 
         dist_code_svc.client = distribution_details.get('client', None)
         dist_code_svc.responsibility_centre = distribution_details.get('responsibilityCentre', None)
@@ -289,7 +300,12 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes
         dist_code_svc.service_fee_stob = distribution_details.get('serviceFeeStob', None)
         dist_code_svc.service_fee_project_code = distribution_details.get('serviceFeeProjectCode', None)
 
+        if dist_id is not None:
+            # Update all invoices which used this distribution for updating revenue account details
+            InvoiceModel.update_invoices_for_revenue_updates(dist_id)
+
         dist_code_dao = dist_code_svc.save()
+
         distribution_code_schema = DistributionCodeSchema()
         current_app.logger.debug('>save_or_update')
         return distribution_code_schema.dump(dist_code_dao, many=False)
