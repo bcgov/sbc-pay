@@ -17,8 +17,6 @@ coverage:
           - payapi
           - bcolapi
           - reportapi
-    branches:
-      - development
 
 ignore:
   - "^/tests/**/*" # ignore test harness code

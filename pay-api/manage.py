@@ -25,7 +25,7 @@ from pay_api import create_app
 from pay_api.models import db
 
 
-APP = create_app()
+APP = create_app(run_mode='migration')
 MIGRATE = Migrate(APP, db)
 MANAGER = Manager(APP)
 

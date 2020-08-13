@@ -28,6 +28,7 @@ CONFIGURATION = {
     'testing': 'config.TestConfig',
     'production': 'config.ProdConfig',
     'default': 'config.ProdConfig',
+    'migration': 'config.MigrationConfig',
 }
 
 
@@ -42,6 +43,8 @@ def get_named_config(config_name: str = 'production'):
         config = TestConfig()
     elif config_name == 'development':
         config = DevConfig()
+    elif config_name == 'migration':
+        config = MigrationConfig()
     else:
         raise KeyError(f"Unknown configuration '{config_name}'")
     return config
@@ -272,3 +275,20 @@ class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
 
     TESTING = False
     DEBUG = False
+
+
+class MigrationConfig():  # pylint: disable=too-few-public-methods
+    """Config for db migration """
+    TESTING = False
+    DEBUG = True
+
+    # POSTGRESQL
+    DB_USER = _get_config('DATABASE_USERNAME')
+    DB_PASSWORD = _get_config('DATABASE_PASSWORD')
+    DB_NAME = _get_config('DATABASE_NAME')
+    DB_HOST = _get_config('DATABASE_HOST')
+    DB_PORT = _get_config('DATABASE_PORT', default='5432')
+    SQLALCHEMY_DATABASE_URI = 'postgresql://{user}:{password}@{host}:{port}/{name}'.format(
+        user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=int(DB_PORT), name=DB_NAME
+    )
+    SQLALCHEMY_TRACK_MODIFICATIONS = False

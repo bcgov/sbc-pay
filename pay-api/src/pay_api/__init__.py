@@ -41,34 +41,36 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     app = Flask(__name__)
     app.config.from_object(config.CONFIGURATION[run_mode])
 
-    # Configure Sentry
-    if app.config.get('SENTRY_DSN', None):  # pragma: no cover
-        sentry_sdk.init(
-            dsn=app.config.get('SENTRY_DSN'),
-            integrations=[FlaskIntegration()]
-        )
-    # pylint: disable=import-outside-toplevel
-    from pay_api.resources import API_BLUEPRINT, OPS_BLUEPRINT
-
     db.init_app(app)
     ma.init_app(app)
 
-    app.register_blueprint(API_BLUEPRINT)
-    app.register_blueprint(OPS_BLUEPRINT)
-    app.after_request(convert_to_camel)
+    if run_mode != 'migration':
 
-    setup_jwt_manager(app, jwt)
+        # Configure Sentry
+        if app.config.get('SENTRY_DSN', None):  # pragma: no cover
+            sentry_sdk.init(
+                dsn=app.config.get('SENTRY_DSN'),
+                integrations=[FlaskIntegration()]
+            )
+        # pylint: disable=import-outside-toplevel
+        from pay_api.resources import API_BLUEPRINT, OPS_BLUEPRINT
 
-    ExceptionHandler(app)
+        app.register_blueprint(API_BLUEPRINT)
+        app.register_blueprint(OPS_BLUEPRINT)
+        app.after_request(convert_to_camel)
 
-    @app.after_request
-    def add_version(response):  # pylint: disable=unused-variable
-        version = get_run_version()
-        response.headers['API'] = f'pay_api/{version}'
-        return response
+        setup_jwt_manager(app, jwt)
 
-    register_shellcontext(app)
-    build_cache(app)
+        ExceptionHandler(app)
+
+        @app.after_request
+        def add_version(response):  # pylint: disable=unused-variable
+            version = get_run_version()
+            response.headers['API'] = f'pay_api/{version}'
+            return response
+
+        register_shellcontext(app)
+        build_cache(app)
     return app
 
 
