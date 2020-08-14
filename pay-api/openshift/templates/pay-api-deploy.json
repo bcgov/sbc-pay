@@ -33,18 +33,9 @@
               "failurePolicy": "Abort",
               "execNewPod": {
                 "command": [
-                  "/opt/app-root/src/pre-hook-update-db.sh"
+                  "/opt/app-root/pre-hook-update-db.sh"
                 ],
                 "env": [
-                  {
-                    "name": "DATABASE_ADMIN_PASSWORD",
-                    "valueFrom": {
-                      "secretKeyRef": {
-                        "name": "${DATABASE_NAME}-${TAG_NAME}-secret",
-                        "key": "DATABASE_ADMIN_PASSWORD"
-                      }
-                    }
-                  },
                   {
                     "name": "DATABASE_USERNAME",
                     "valueFrom": {
@@ -141,105 +132,7 @@
                     "protocol": "TCP"
                   }
                 ],
-                "envFrom": [
-                  {
-                    "configMapRef": {
-                      "name": "api-${TAG_NAME}-config"
-                    }
-                  }
-                ],
-                "env": [
-                  {
-                    "name": "DATABASE_USERNAME",
-                    "valueFrom": {
-                      "configMapKeyRef": {
-                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
-                        "key": "DATABASE_USER"
-                      }
-                    }
-                  },
-                  {
-                    "name": "DATABASE_PASSWORD",
-                    "valueFrom": {
-                      "secretKeyRef": {
-                        "name": "${DATABASE_NAME}-${TAG_NAME}-secret",
-                        "key": "DATABASE_PASSWORD"
-                      }
-                    }
-                  },
-                  {
-                    "name": "DATABASE_NAME",
-                    "valueFrom": {
-                      "configMapKeyRef": {
-                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
-                        "key": "DATABASE_NAME"
-                      }
-                    }
-                  },
-                  {
-                    "name": "DATABASE_HOST",
-                    "valueFrom": {
-                      "configMapKeyRef": {
-                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
-                        "key": "DATABASE_HOST"
-                      }
-                    }
-                  },
-                  {
-                    "name": "DATABASE_PORT",
-                    "valueFrom": {
-                      "configMapKeyRef": {
-                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
-                        "key": "DATABASE_PORT"
-                      }
-                    }
-                  },
-                  {
-                    "name": "DATABASE_TEST_USERNAME",
-                    "valueFrom": {
-                      "configMapKeyRef": {
-                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
-                        "key": "DATABASE_TEST_USER"
-                      }
-                    }
-                  },
-                  {
-                    "name": "DATABASE_TEST_PASSWORD",
-                    "valueFrom": {
-                      "secretKeyRef": {
-                        "name": "${DATABASE_NAME}-${TAG_NAME}-secret",
-                        "key": "DATABASE_TEST_PASSWORD"
-                      }
-                    }
-                  },
-                  {
-                    "name": "DATABASE_TEST_NAME",
-                    "valueFrom": {
-                      "configMapKeyRef": {
-                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
-                        "key": "DATABASE_TEST_NAME"
-                      }
-                    }
-                  },
-                  {
-                    "name": "DATABASE_TEST_HOST",
-                    "valueFrom": {
-                      "configMapKeyRef": {
-                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
-                        "key": "DATABASE_TEST_HOST"
-                      }
-                    }
-                  },
-                  {
-                    "name": "DATABASE_TEST_PORT",
-                    "valueFrom": {
-                      "configMapKeyRef": {
-                        "name": "${DATABASE_NAME}-${TAG_NAME}-config",
-                        "key": "DATABASE_TEST_PORT"
-                      }
-                    }
-                  }
-                ],
+                "env": [],
                 "resources": {
                   "requests": {
                     "cpu": "${CPU_REQUEST}",

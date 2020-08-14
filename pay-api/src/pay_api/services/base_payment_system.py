@@ -53,7 +53,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Cancel invoice in payment system."""
 
     @abstractmethod
-    def get_receipt(self, payment_account: PaymentAccount, receipt_number: str, invoice_reference: InvoiceReference):
+    def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Get receipt from payment system."""
 
     @abstractmethod

@@ -18,6 +18,9 @@ This module is being invoked from a job and it cleans up the stale records
 import datetime
 import os
 
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+
 from flask import Flask
 from flask_jwt_oidc import JwtManager
 from pay_api.exceptions import BusinessException
@@ -41,6 +44,12 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     app = Flask(__name__)
 
     app.config.from_object(config.CONFIGURATION[run_mode])
+    # Configure Sentry
+    if app.config.get('SENTRY_DSN', None):  # pragma: no cover
+        sentry_sdk.init(
+            dsn=app.config.get('SENTRY_DSN'),
+            integrations=[FlaskIntegration()]
+        )
 
     db.init_app(app)
     ma.init_app(app)
@@ -89,7 +98,7 @@ def update_stale_payments(app):
     
     This is to handle edge cases where the user has completed payment and some error occured and payment status is not up-to-date.
     """
-    stale_transactions = PaymentTransactionModel.find_stale_records(hours=4)
+    stale_transactions = PaymentTransactionModel.find_stale_records(minutes=30)
     if len(stale_transactions) == 0:
         app.logger.info(f'Stale Transaction Job Ran at {datetime.datetime.now()}.But No records found!')
     for transaction in stale_transactions:

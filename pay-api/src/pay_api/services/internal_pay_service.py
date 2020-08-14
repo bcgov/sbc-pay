@@ -66,7 +66,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
     def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
         """Adjust the invoice to zero."""
 
-    def get_receipt(self, payment_account: PaymentAccount, receipt_number: str, invoice_reference: InvoiceReference):
+    def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Create a static receipt."""
         # Find the invoice using the invoice_number
         invoice = Invoice.find_by_id(invoice_reference.invoice_id, skip_auth_check=True)

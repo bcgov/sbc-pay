@@ -85,7 +85,7 @@ class BcolService(PaymentSystemService, OAuthService):
             'amount': str(amount_excluding_txn_fees),
             'rate': str(amount_excluding_txn_fees),
             'remarks': remarks[:50],
-            'feeCode': self._get_fee_code(kwargs.get('corp_type_code'), user.is_staff())
+            'feeCode': self._get_fee_code(kwargs.get('corp_type_code'), user.is_staff() or user.is_system())
         }
 
         if user.is_staff() or user.is_system():
@@ -131,7 +131,7 @@ class BcolService(PaymentSystemService, OAuthService):
         """Adjust the invoice to zero."""
         current_app.logger.debug('<cancel_invoice')
 
-    def get_receipt(self, payment_account: PaymentAccount, receipt_number: str, invoice_reference: InvoiceReference):
+    def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Get receipt from bcol for the receipt number or get receipt against invoice number."""
         current_app.logger.debug('<get_receipt')
         invoice = Invoice.find_by_id(invoice_reference.invoice_id, skip_auth_check=True)

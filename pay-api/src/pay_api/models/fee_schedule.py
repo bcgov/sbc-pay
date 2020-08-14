@@ -74,6 +74,11 @@ class FeeSchedule(db.Model):
         return fee_schedule
 
     @classmethod
+    def find_by_id(cls, fee_schedule_id: int):
+        """Find and return fee schedule by id."""
+        return cls.query.get(fee_schedule_id)
+
+    @classmethod
     def find_all(cls, corp_type_code: str = None, filing_type_code: str = None):
         """Find all fee schedules matching the filters."""
         valid_date = date.today()

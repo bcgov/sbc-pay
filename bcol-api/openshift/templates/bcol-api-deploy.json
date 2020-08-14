@@ -76,16 +76,7 @@
                     "protocol": "TCP"
                   }
                 ],
-                "envFrom": [
-                  {
-                    "configMapRef": {
-                      "name": "api-${TAG_NAME}-config"
-                    }
-                  }
-                ],
-                "env": [
-
-                ],
+                "env": [],
                 "resources": {
                   "requests": {
                     "cpu": "${CPU_REQUEST}",

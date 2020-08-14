@@ -132,3 +132,17 @@ def test_get_distribution_schedules(session, client, jwt, app):
     rv = client.get(f'/api/v1/fees/distributions/{distribution_id}/schedules', headers=headers)
     assert rv.status_code == 200
     assert rv.json.get('items')[0].get('feeScheduleId') == get_distribution_schedules_payload()[0].get('feeScheduleId')
+
+
+def test_put_distribution_updates_invoice_status(session, client, jwt, app):
+    """Assert that updating an existing fee distribution will update the invoice status."""
+    # Insert a record first and then query for it
+    token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/fees/distributions', data=json.dumps(get_distribution_code_payload()), headers=headers)
+
+    distribution_id = rv.json.get('distributionCodeId')
+    rv = client.put(f'/api/v1/fees/distributions/{distribution_id}',
+                    data=json.dumps(get_distribution_code_payload(client='200')), headers=headers)
+    assert rv.json.get('client') == '200'

@@ -643,3 +643,17 @@ def test_bcol_payment_creation_by_system(session, client, jwt, app):
     assert rv.json.get('paymentSystem') == 'BCOL'
 
     assert schema_utils.validate(rv.json, 'payment_response')[0]
+
+
+def test_direct_payment_put_returns_200(session, client, jwt, app):
+    """Assert that the updating a direct payment returns 200."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    current_app.config['DIRECT_PAY_ENABLED'] = True
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0001239')),
+                     headers=headers)
+    pay_id = rv.json.get('id')
+
+    rv = client.put(f'/api/v1/payment-requests/{pay_id}',
+                    data=json.dumps(get_payment_request(business_identifier='CP0001239')), headers=headers)
+    assert rv.status_code == 200

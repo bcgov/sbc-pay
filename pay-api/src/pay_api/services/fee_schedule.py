@@ -21,6 +21,7 @@ from sbc_common_components.tracing.service_tracing import ServiceTracing
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import FeeScheduleSchema
+from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 
@@ -140,8 +141,8 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     @property
     def total(self):
         """Return the total fees calculated."""
-        return self._fee_amount + self.pst + self.gst + self.priority_fee + \
-            self.future_effective_fee + self.service_fees
+        return self._fee_amount + self.pst + self.gst + self.priority_fee + self.future_effective_fee \
+            + self.service_fees
 
     @property
     def total_excluding_service_fees(self):
@@ -296,8 +297,6 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
             fee_schedule.future_effective_fee = 0
             fee_schedule.service_fees = 0
 
-        # fee_schedule.transaction_fees = Invoice.calculate_transaction_fees(account.payment_system_code, corp_type)
-
         current_app.logger.debug('>get_fees_by_corp_type_and_filing_type')
         return fee_schedule
 
@@ -326,7 +325,11 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
 
         service_fees: float = 0
 
-        if not user.is_staff() and fee_schedule_model.fee.amount > 0 and fee_schedule_model.service_fee:
+        # TODO for system accounts with role EXCLUDE_SERVICE_FEES, do not charge service fees for now.
+        #  Handle it properly later
+        if not user.is_staff() and \
+                not (user.is_system() and Role.EXCLUDE_SERVICE_FEES.value in user.roles) \
+                and fee_schedule_model.fee.amount > 0 and fee_schedule_model.service_fee:
             service_fees = fee_schedule_model.service_fee.amount
 
         return service_fees

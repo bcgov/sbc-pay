@@ -324,7 +324,7 @@ def factory_payment(
 def factory_invoice(payment: Payment, payment_account: str, status_code: str = InvoiceStatus.CREATED.value,
                     corp_type_code='CP',
                     business_identifier: str = 'CP0001234',
-                    service_fees: float = 0.0):
+                    service_fees: float = 0.0, total=0):
     """Return Factory."""
     bcol_account_id = None
     credit_account_id = None
@@ -342,7 +342,7 @@ def factory_invoice(payment: Payment, payment_account: str, status_code: str = I
         bcol_account_id=bcol_account_id,
         credit_account_id=credit_account_id,
         internal_account_id=internal_account_id,
-        total=0,
+        total=total,
         created_by='test',
         created_on=datetime.now(),
         business_identifier=business_identifier,
@@ -353,13 +353,14 @@ def factory_invoice(payment: Payment, payment_account: str, status_code: str = I
 
 
 def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees: int = 10, total: int = 10,
-                              status: str = LineItemStatus.ACTIVE.value):
+                              service_fees: int = 0, status: str = LineItemStatus.ACTIVE.value):
     """Return Factory."""
     return PaymentLineItem(
         invoice_id=invoice_id,
         fee_schedule_id=fee_schedule_id,
         filing_fees=filing_fees,
         total=total,
+        service_fees=service_fees,
         line_item_status_code=status,
         fee_distribution_id=DistributionCode.find_by_active_for_fee_schedule(fee_schedule_id).distribution_code_id
     )
@@ -462,8 +463,9 @@ def get_distribution_code_payload(client: str = '100'):
         'serviceFeeProjectCode': '1111111',
         'serviceFeeResponsibilityCentre': '22222',
         'serviceFeeStob': '9001',
-        'serviceLine': '1111111',
-        'stob': '9000'
+        'stob': '9000',
+        'serviceLine': '20244',
+        'startDate': '2020-07-29'
     }
 
 

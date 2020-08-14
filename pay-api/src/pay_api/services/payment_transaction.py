@@ -219,8 +219,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
                                                                       request_json.get('payReturnUrl'))
         transaction_dao = transaction.save()
 
-        transaction = PaymentTransaction()
-        transaction._dao = transaction_dao  # pylint: disable=protected-access
+        transaction = PaymentTransaction.__wrap_dao(transaction_dao)
         current_app.logger.debug('>create transaction')
 
         return transaction
@@ -247,8 +246,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         if not transaction_dao:
             raise BusinessException(Error.INVALID_TRANSACTION_ID)
 
-        transaction = PaymentTransaction()
-        transaction._dao = transaction_dao  # pylint: disable=protected-access
+        transaction = PaymentTransaction.__wrap_dao(transaction_dao)
 
         current_app.logger.debug('>find_by_id')
         return transaction
@@ -262,7 +260,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def update_transaction(payment_identifier: int, transaction_id: uuid,  # pylint: disable=too-many-locals
-                           receipt_number: str):
+                           pay_response_url: str):
         """Update transaction record.
 
         Does the following:
@@ -283,8 +281,16 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
             raise BusinessException(Error.INVALID_TRANSACTION)
 
         payment: Payment = Payment.find_by_id(payment_identifier, skip_auth_check=True)
+        invoice = Invoice.find_by_payment_identifier(payment_identifier, skip_auth_check=True)
 
         if payment.payment_status_code == PaymentStatus.COMPLETED.value:
+            # if the transaction status is EVENT_FAILED then publish to queue and return, else raise error
+            if transaction_dao.status_code == TransactionStatus.EVENT_FAILED.value:
+                # Publish status to Queue
+                PaymentTransaction.publish_status(transaction_dao, payment, invoice.filing_id)
+                transaction_dao.status_code = TransactionStatus.COMPLETED.value
+                return PaymentTransaction.__wrap_dao(transaction_dao.save())
+
             raise BusinessException(Error.COMPLETED_PAYMENT)
 
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_system_code(
@@ -292,7 +298,6 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
             payment_method=payment.payment_method_code
         )
 
-        invoice = Invoice.find_by_payment_identifier(payment_identifier, skip_auth_check=True)
         invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
         payment_account = PaymentAccount.find_by_pay_system_id(
             credit_account_id=invoice.credit_account_id,
@@ -300,27 +305,26 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
             bcol_account_id=invoice.bcol_account_id)
 
         try:
-            receipt_details = pay_system_service.get_receipt(payment_account, receipt_number, invoice_reference)
+            receipt_details = pay_system_service.get_receipt(payment_account, pay_response_url, invoice_reference)
             txn_reason_code = None
         except ServiceUnavailableException as exc:
             txn_reason_code = exc.status
             receipt_details = None
-
+        print('0000000', receipt_details)
         if receipt_details:
             # Find if a receipt exists with same receipt_number for the invoice
             receipt = PaymentTransaction.__save_receipt(invoice, receipt_details)
 
             invoice.paid = receipt.receipt_amount
-
             if invoice.paid == invoice.total:
                 invoice.invoice_status_code = InvoiceStatus.PAID.value
                 payment.payment_status_code = PaymentStatus.COMPLETED.value
-                payment.save()
+                payment.flush()
 
                 invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
-                invoice_reference.save()
+                invoice_reference.flush()
 
-            invoice.save()
+            invoice.flush()
 
             transaction_dao.status_code = TransactionStatus.COMPLETED.value
         else:
@@ -331,13 +335,20 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         # Publish status to Queue
         PaymentTransaction.publish_status(transaction_dao, payment, invoice.filing_id)
 
+        # Save response URL
+        transaction_dao.pay_response_url = pay_response_url
         transaction_dao = transaction_dao.save()
 
-        transaction = PaymentTransaction()
-        transaction._dao = transaction_dao  # pylint: disable=protected-access
+        transaction = PaymentTransaction.__wrap_dao(transaction_dao)
         transaction.pay_system_reason_code = txn_reason_code
 
         current_app.logger.debug('>update_transaction')
+        return transaction
+
+    @staticmethod
+    def __wrap_dao(transaction_dao):
+        transaction = PaymentTransaction()
+        transaction._dao = transaction_dao  # pylint: disable=protected-access
         return transaction
 
     @staticmethod
@@ -352,8 +363,9 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         else:
             receipt.receipt_date = receipt_details[1]
             receipt.receipt_amount = receipt_details[2]
+
         # Save receipt details to DB.
-        receipt.save()
+        receipt.flush()
         return receipt
 
     @staticmethod

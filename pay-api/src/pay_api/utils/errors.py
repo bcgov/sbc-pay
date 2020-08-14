@@ -50,6 +50,8 @@ class Error(Enum):
     SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE', HTTPStatus.BAD_REQUEST
     INVALID_REQUEST = 'INVALID_REQUEST', HTTPStatus.BAD_REQUEST, 'Invalid Request'
 
+    DIRECT_PAY_INVALID_RESPONSE = 'DIRECT_PAY_INVALID_RESPONSE', HTTPStatus.BAD_REQUEST
+
     def __new__(cls, code, status, message=None, details=None):
         """Attributes for the enum."""
         obj = object.__new__(cls)
