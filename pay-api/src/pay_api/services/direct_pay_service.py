@@ -123,8 +123,11 @@ class DirectPayService(PaymentSystemService, OAuthService):
     def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
                        line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0,
                        **kwargs):
-        # TODO not sure if direct pay can be updated
         """Do nothing as direct payments cannot be updated as it will be completed on creation."""
+        invoice = {
+            'invoice_number': f'{invoice_id}'
+        }
+        return invoice
 
     def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
         # TODO not sure if direct pay can be cancelled
