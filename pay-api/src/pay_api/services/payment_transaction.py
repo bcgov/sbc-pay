@@ -310,7 +310,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         except ServiceUnavailableException as exc:
             txn_reason_code = exc.status
             receipt_details = None
-        print('0000000', receipt_details)
+
         if receipt_details:
             # Find if a receipt exists with same receipt_number for the invoice
             receipt = PaymentTransaction.__save_receipt(invoice, receipt_details)
