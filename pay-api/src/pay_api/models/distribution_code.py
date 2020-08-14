@@ -101,10 +101,8 @@ class DistributionCode(Audit):  # pylint:disable=too-many-instance-attributes
             filter(DistributionCode.start_date <= valid_date). \
             filter((DistributionCode.end_date.is_(None)) | (DistributionCode.end_date >= valid_date))
 
-        distribution_codes = query.all()
-        if len(distribution_codes) != 1:
-            raise Exception()
-        return distribution_codes[0]
+        distribution_code = query.one_or_none()
+        return distribution_code
 
 
 class DistributionCodeLinkSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
