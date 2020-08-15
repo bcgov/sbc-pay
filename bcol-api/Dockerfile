@@ -1,7 +1,11 @@
 FROM python:3.8.5-buster
 USER root
 
-RUN apt-get update && apt-get install -y python-dev libldap2-dev libsasl2-dev libssl-dev
+RUN apt-get update && apt-get install -y libsasl2-dev python-dev libldap2-dev libssl-dev libsnmp-dev
+
+WORKDIR /
+
+COPY ["scripts/openssl.cnf","/etc/ssl/"]
 
 # Create working directory
 RUN mkdir /opt/app-root && chmod 755 /opt/app-root
