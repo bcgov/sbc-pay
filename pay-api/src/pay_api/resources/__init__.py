@@ -24,6 +24,7 @@ from flask import Blueprint
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
 
 from .account import API as ACCOUNTS_API
+from .account_statements import API as ACCOUNT_STATEMENTS_API
 from .apihelper import Api
 from .code import API as CODES_API
 from .distributions import API as DISTRIBUTION_API
@@ -78,4 +79,5 @@ API.add_namespace(TRANSACTION_API, path='/payment-requests/<int:payment_id>/tran
 API.add_namespace(INVOICE_API, path='/payment-requests/<int:payment_id>/invoices')
 API.add_namespace(INVOICE_RECEIPT_API, path='/payment-requests/<int:payment_id>')
 API.add_namespace(ACCOUNTS_API, path='/accounts')
+API.add_namespace(ACCOUNT_STATEMENTS_API, path='/accounts/<string:account_id>/statements')
 API.add_namespace(CODES_API, path='/codes')
