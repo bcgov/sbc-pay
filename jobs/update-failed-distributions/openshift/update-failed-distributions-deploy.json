@@ -182,6 +182,51 @@
                         "key": "DATABASE_TEST_PORT"
                       }
                     }
+                  },
+                  {
+                    "name": "PAYBC_DIRECT_PAY_REF_NUMBER",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "pay-api-${TAG_NAME}-secret",
+                        "key": "PAYBC_DIRECT_PAY_REF_NUMBER"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PAYBC_DIRECT_PAY_API_KEY",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "pay-api-${TAG_NAME}-secret",
+                        "key": "PAYBC_DIRECT_PAY_API_KEY"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PAYBC_DIRECT_PAY_BASE_URL",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "pay-api-${TAG_NAME}-secret",
+                        "key": "PAYBC_DIRECT_PAY_BASE_URL"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PAYBC_DIRECT_PAY_CLIENT_ID",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "pay-api-${TAG_NAME}-secret",
+                        "key": "PAYBC_DIRECT_PAY_CLIENT_ID"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PAYBC_DIRECT_PAY_CLIENT_SECRET",
+                    "valueFrom": {
+                      "configMapKeyRef": {
+                        "name": "pay-api-${TAG_NAME}-secret",
+                        "key": "PAYBC_DIRECT_PAY_CLIENT_SECRET"
+                      }
+                    }
                   }
                 ],
                 "resources": {
