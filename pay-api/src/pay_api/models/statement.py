@@ -17,7 +17,7 @@ from datetime import date
 
 from sqlalchemy import ForeignKey
 
-from pay_api.models import PaymentAccount
+from .payment_account import PaymentAccount
 
 from .base_model import BaseModel
 from .db import db, ma
