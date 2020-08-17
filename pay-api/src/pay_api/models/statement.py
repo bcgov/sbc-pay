@@ -12,15 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle statements data."""
-from datetime import date
-
 
 from sqlalchemy import ForeignKey
 
-from .payment_account import PaymentAccount
-
 from .base_model import BaseModel
 from .db import db, ma
+from .payment_account import PaymentAccount
+from .statement_settings import StatementSettings
 
 
 class Statement(BaseModel):
@@ -31,17 +29,20 @@ class Statement(BaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
     frequency = db.Column(db.String(50), nullable=True, index=True)
-    payment_account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True, index=True)
-    from_date = db.Column(db.Date, default=date.today(), nullable=False)
+    statement_settings_id = db.Column(db.Integer, ForeignKey('statement_settings.id'), nullable=True, index=True)
+    from_date = db.Column(db.Date, default=None, nullable=False)
     to_date = db.Column(db.Date, default=None, nullable=False)
-    status = db.Column(db.String(50), nullable=True, index=True)
+
+    created_on = db.Column(db.Date, default=None, nullable=False)
 
     @classmethod
     def find_all_statements_for_account(cls, account_id: str, page, limit):
         """Return all active statements for an account."""
         # TODO is status needed.If needed , does it need a separate table to store statuses
-        query = cls.query.filter(Statement.status == 'ACTIVE'). \
-            join(PaymentAccount).filter(PaymentAccount.auth_account_id == account_id)
+        query = cls.query\
+            .join(StatementSettings) \
+            .join(PaymentAccount) \
+            .filter(PaymentAccount.auth_account_id == account_id)
 
         query = query.order_by(Statement.id)
         pagination = query.paginate(per_page=limit, page=page)
