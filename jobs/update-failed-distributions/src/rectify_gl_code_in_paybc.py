@@ -24,11 +24,8 @@ from flask_jwt_oidc import JwtManager
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import db, ma
 from utils.logger import setup_logging
-
+from services.distribution_service import DistributionService
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
-
-# lower case name as used by convention in most Flask apps
-jwt = JwtManager()  # pylint: disable=invalid-name
 
 
 def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
@@ -40,22 +37,9 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     db.init_app(app)
     ma.init_app(app)
 
-    setup_jwt_manager(app, jwt)
-
     register_shellcontext(app)
 
     return app
-
-
-def setup_jwt_manager(app, jwt_manager):
-    """Use flask app to configure the JWTManager to work for a particular Realm."""
-
-    def get_roles(a_dict):
-        return a_dict['realm_access']['roles']  # pragma: no cover
-
-    app.config['JWT_ROLE_CALLBACK'] = get_roles
-
-    jwt_manager.init_app(app)
 
 
 def register_shellcontext(app):
@@ -64,8 +48,8 @@ def register_shellcontext(app):
     def shell_context():
         """Shell context objects."""
         return {
-            'app': app,
-            'jwt': jwt}  # pragma: no cover
+            'app': app
+        }  # pragma: no cover
 
     app.shell_context_processor(shell_context)
 
@@ -75,17 +59,7 @@ def run():
     application.logger.debug('Ran Batch Job--*************************************************************')
 
     application.app_context().push()
-    find_failed_distr(application)
-
-
-def find_failed_distr(app):
-    """Update stale payment records. 
-    
-    This is to handle edge cases where the user has completed payment and some error occured and payment status is not up-to-date.
-    """
-    stale_transactions = PaymentTransactionModel.find_stale_records(hours=4)
-    if len(stale_transactions) == 0:
-        app.logger.info(f'Stale Transaction Job Ran at {datetime.datetime.now()}.But No records found!')
+    DistributionService.update_failed_distributions()
 
 
 if __name__ == "__main__":
