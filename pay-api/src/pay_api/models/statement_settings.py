@@ -33,7 +33,7 @@ class StatementSettings(BaseModel):
     frequency = db.Column(db.String(50), nullable=True, index=True)
     payment_account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True, index=True)
     from_date = db.Column(db.Date, default=date.today(), nullable=False)
-    to_date = db.Column(db.Date, default=None, nullable=False)
+    to_date = db.Column(db.Date, default=None, nullable=True)
 
     @classmethod
     def find_active_settings(cls, account_id: str, valid_date: datetime):

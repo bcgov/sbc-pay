@@ -79,7 +79,7 @@ class OAuthService:
     @staticmethod
     def __log_response(response):
         if response is not None:
-            current_app.logger.debug(response.headers)
+            current_app.logger.info('Response Headers {}'.format(response.headers))
             if response.headers and isinstance(response.headers, Iterable) and \
                     'Content-Type' in response.headers and \
                     response.headers['Content-Type'] == ContentType.JSON.value:

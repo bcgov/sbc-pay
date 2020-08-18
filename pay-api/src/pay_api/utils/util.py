@@ -92,6 +92,12 @@ def get_previous_month_and_year():
     return last_month.month, last_month.year
 
 
+def get_previous_day(val: datetime):
+    """Return previous day."""
+    # index: 0 (current week), 1 (last week) and so on
+    return val - timedelta(days=1)
+
+
 def parse_url_params(url_params: str) -> Dict:
     """Parse URL params and return dict of parsed url params."""
     parsed_url: dict = {}

@@ -15,6 +15,7 @@
 
 from datetime import datetime
 
+from dateutil.parser import parse
 from flask import current_app
 
 from pay_api.models.base_model import db
@@ -24,7 +25,7 @@ from pay_api.models.statement_invoices import StatementInvoices as StatementInvo
 from pay_api.models.statement_settings import StatementSettings as StatementSettingsModel
 from pay_api.utils.enums import StatementFrequency
 from pay_api.utils.util import get_local_time, \
-    get_previous_month_and_year, get_week_start_and_end_date, get_first_and_last_dates_of_month
+    get_previous_month_and_year, get_week_start_and_end_date, get_first_and_last_dates_of_month, get_previous_day
 
 
 class StatementJob:
@@ -57,14 +58,14 @@ class StatementJob:
         statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(current_time,
                                                                                         StatementFrequency.DAILY)
         current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate DAILY statements')
+        previous_day = get_previous_day(current_time)
         search_filter = {
             'dateFilter': {
-                'startDate': current_time,
-                'endDate': current_time
+                'startDate': previous_day.strftime('%m/%d/%Y'),
+                'endDate': previous_day.strftime('%m/%d/%Y')
             }
         }
-
-        cls._create_statement_records(current_time, search_filter, statement_settings)
+        cls._create_statement_records(previous_day, search_filter, statement_settings)
 
     @classmethod
     def _generate_weekly_statements(cls, current_time: datetime):
@@ -101,8 +102,8 @@ class StatementJob:
         statement_from = None
         statement_to = None
         if search_filter.get('dateFilter', None):
-            statement_from = search_filter.get('dateFilter').get('startDate').date()
-            statement_to = search_filter.get('dateFilter').get('endDate').date()
+            statement_from = parse(search_filter.get('dateFilter').get('startDate'))
+            statement_to = parse(search_filter.get('dateFilter').get('endDate'))
         elif search_filter.get('weekFilter', None):
             index = search_filter.get('weekFilter').get('index')
             statement_from, statement_to = get_week_start_and_end_date(index)
@@ -113,6 +114,7 @@ class StatementJob:
             statement = StatementModel(
                 frequency=setting.frequency,
                 statement_settings_id=setting.id,
+                payment_account_id=pay_account.id,
                 created_on=current_time,
                 from_date=statement_from,
                 to_date=statement_to
@@ -123,7 +125,9 @@ class StatementJob:
             purchases, total = PaymentModel.search_purchase_history(
                 auth_account_id=pay_account.auth_account_id,
                 return_all=True,
-                search_filter=search_filter
+                search_filter=search_filter,
+                page=None,
+                limit=None
             )
             for purchase in purchases:
                 invoice = purchase[1]
