@@ -40,7 +40,9 @@ from .invoice_status_code import InvoiceStatusCode, InvoiceStatusCodeSchema
 from .transaction_status_code import TransactionStatusCode, TransactionStatusCodeSchema
 from .invoice_reference_status_code import InvoiceReferenceStatusCode, InvoiceReferenceStatusCodeSchema
 from .line_item_status_code import LineItemStatusCode, LineItemStatusCodeSchema
+from .statement_settings import StatementSettings, StatementSettingsSchema
 from .statement import Statement, StatementSchema
-from .statement_invoices import StatementInovices, StatementInovicesSchema
+from .statement_invoices import StatementInvoices, StatementInvoicesSchema
+
 
 event.listen(Engine, 'before_cursor_execute', DBTracing.query_tracing)

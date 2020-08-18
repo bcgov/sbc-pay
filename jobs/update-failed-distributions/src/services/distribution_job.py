@@ -24,11 +24,11 @@ from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceStatus, \
     InvoiceReferenceStatus
 
 STATUS_PAID = 'PAID'
-STATUS_PROCESSED = 'PROCESSED'
+STATUS_NOT_PROCESSED = ('PAID', 'RJCT')
 DECIMAL_PRECISION = '.2f'
 
 
-class DistributionService(OAuthService):
+class DistributionJob:
 
     @classmethod
     def update_failed_distributions(cls):
@@ -58,7 +58,7 @@ class DistributionService(OAuthService):
                 if payment_details and payment_details.get('paymentstatus') == STATUS_PAID:
                     has_gl_completed: bool = True
                     for revenue in payment_details.get('revenue'):
-                        if revenue.get('glstatus') != STATUS_PROCESSED:
+                        if revenue.get('glstatus') in STATUS_NOT_PROCESSED:
                             has_gl_completed = False
 
                     if not has_gl_completed:
@@ -84,8 +84,8 @@ class DistributionService(OAuthService):
                                     cls.get_revenue_details(index, distribution_code, payment_line_item.service_fees,
                                                             is_service_fee=True))
 
-                        cls.post(payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
-                                 post_revenue_payload)
+                        OAuthService.post(payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                          post_revenue_payload)
 
                     gl_updated_invoice.invoice_status_code = InvoiceStatus.PAID.value
                     gl_updated_invoice.save()
@@ -94,7 +94,7 @@ class DistributionService(OAuthService):
     @classmethod
     def get_payment_details(cls, payment_url: str, access_token: str):
         """Get the receipt details by calling PayBC web service."""
-        payment_response = cls.get(payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+        payment_response = OAuthService.get(payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
         return payment_response
 
     @classmethod
@@ -125,7 +125,8 @@ class DistributionService(OAuthService):
             bytes(current_app.config.get('PAYBC_DIRECT_PAY_CLIENT_ID') + ':' + current_app.config.get(
                 'PAYBC_DIRECT_PAY_CLIENT_SECRET'), 'utf-8')).decode('utf-8')
         data = 'grant_type=client_credentials'
-        token_response = cls.post(token_url, basic_auth_encoded, AuthHeaderType.BASIC, ContentType.FORM_URL_ENCODED,
-                                  data)
+        token_response = OAuthService.post(token_url, basic_auth_encoded, AuthHeaderType.BASIC,
+                                           ContentType.FORM_URL_ENCODED,
+                                           data)
         current_app.logger.debug('>Getting token')
         return token_response

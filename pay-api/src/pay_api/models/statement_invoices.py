@@ -17,12 +17,14 @@ For one statement , there could be a lot of invoices.
 """
 
 from sqlalchemy import ForeignKey
+from sqlalchemy.orm import relationship
 
 from .base_model import BaseModel
 from .db import db, ma
+from .statement import Statement
 
 
-class StatementInovices(BaseModel):
+class StatementInvoices(BaseModel):
     """This class manages the statements related data."""
 
     __tablename__ = 'statement_invoices'
@@ -30,14 +32,15 @@ class StatementInovices(BaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
     statement_id = db.Column(db.Integer, ForeignKey('statement.id'), nullable=False, index=True)
-    inovice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
-    status = db.Column(db.String(50), nullable=True, index=True)
+    invoice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
+
+    statement = relationship(Statement, foreign_keys=[statement_id], lazy='select', innerjoin=True)
 
 
-class StatementInovicesSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class StatementInvoicesSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Statements."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
-        model = StatementInovices
+        model = StatementInvoices

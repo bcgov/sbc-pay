@@ -24,7 +24,7 @@ from flask_jwt_oidc import JwtManager
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import db, ma
 from utils.logger import setup_logging
-from services.distribution_service import DistributionService
+from services.distribution_job import DistributionJob
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
 
@@ -59,7 +59,7 @@ def run():
     application.logger.debug('Ran Batch Job--*************************************************************')
 
     application.app_context().push()
-    DistributionService.update_failed_distributions()
+    DistributionJob.update_failed_distributions()
 
 
 if __name__ == "__main__":

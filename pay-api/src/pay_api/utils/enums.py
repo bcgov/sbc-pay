@@ -115,3 +115,11 @@ class AccountType(Enum):
 
     BASIC = 'BASIC'
     PREMIUM = 'PREMIUM'
+
+
+class StatementFrequency(Enum):
+    """Statement frequency."""
+
+    DAILY = 'DAILY'
+    WEEKLY = 'WEEKLY'
+    MONTHLY = 'MONTHLY'
