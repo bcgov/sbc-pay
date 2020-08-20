@@ -32,8 +32,8 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
         self._id: int = None
         self._frequency = None
         self.payment_account_id = None
-        self._start_date = None
-        self._end_date = None
+        self._from_date = None
+        self._to_date = None
 
     @property
     def _dao(self):
@@ -47,8 +47,19 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
         self.id: int = self._dao.id
         self.frequency: str = self._dao.frequency
         self.payment_account_id: int = self._dao.payment_account_id
-        self.start_date: datetime = self._dao.start_date
-        self.end_date: datetime = self._dao.end_date
+        self.from_date: datetime = self._dao.from_date
+        self.to_date: datetime = self._dao.to_date
+
+    @property
+    def frequency(self):
+        """Return the for the statement settings."""
+        return self._frequency
+
+    @frequency.setter
+    def frequency(self, value: int):
+        """Set the frequency for the statement settings."""
+        self._frequency = value
+        self._dao.frequency = value
 
     @property
     def id(self):
@@ -62,15 +73,15 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
         self._dao.id = value
 
     @property
-    def frequency(self):
-        """Return the frequency."""
-        return self._frequency
+    def from_date(self):
+        """Return the from_date of the statement setting."""
+        return self._from_date
 
-    @frequency.setter
-    def frequency(self, value: int):
-        """Set the frequency."""
-        self._frequency = value
-        self._dao.frequency = value
+    @from_date.setter
+    def from_date(self, value: date):
+        """Set the from for the statement setting."""
+        self._from_date = value
+        self._dao.from_date = value
 
     @property
     def payment_account_id(self):
@@ -85,25 +96,14 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
 
     @property
     def to_date(self):
-        """Return the to_date of the statement."""
+        """Return the to_date of the statement setting."""
         return self._to_date
 
     @to_date.setter
     def to_date(self, value: date):
-        """Set the end_date for the statement."""
+        """Set the to_date for the statement setting."""
         self._to_date = value
         self._dao.to_date = value
-
-    @property
-    def from_date(self):
-        """Return the from_date of the statement."""
-        return self._from_date
-
-    @from_date.setter
-    def from_date(self, value: date):
-        """Set the from for the statement."""
-        self._from_date = value
-        self._dao.from_date = value
 
     def asdict(self):
         """Return the invoice as a python dict."""
@@ -126,10 +126,10 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
 
     @staticmethod
     def update_statement_settings(account_id: str, frequency: str):
-        """update statements by account id.
+        """Update statements by account id.
 
-            rather than checking frequency changes by individual if , it just applies the following logic.
-            find the maximum frequency of current one and new one ;and calculate the date which it will keep on going.
+        rather than checking frequency changes by individual if , it just applies the following logic.
+        find the maximum frequency of current one and new one ;and calculate the date which it will keep on going.
 
         """
         statements_settings_schema = StatementSettingsModelSchema()
@@ -144,15 +144,16 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
             return statements_settings_schema.dump(statements_settings)
 
         # check if the latest one is the active one.. if not , inactivate the latest one.
-        # this handles the case of repeated changing of frequencies..
-        # changed from daily to monthly but then changed back to weekly.. the monthly didnt get applied ,but even before that its being changed to weekly
+        # this handles the case of quickly changing of frequencies..
+        # changed from daily to monthly but then changed back to weekly..
+        # the monthly didn't get applied ,but even before that its being changed to weekly
         future_statements_settings = StatementSettingsModel.find_latest_settings(account_id)
         if future_statements_settings is not None and current_statements_settings.id != future_statements_settings.id:
             future_statements_settings.to_date = today
             future_statements_settings.save()
 
-        max_frequency = StatementSettings.find_max_frequency(current_statements_settings.frequency, frequency)
-        last_date = StatementSettings.get_end_of(max_frequency)
+        max_frequency = StatementSettings._find_longest_frequency(current_statements_settings.frequency, frequency)
+        last_date = StatementSettings._get_end_of(max_frequency)
         current_statements_settings.to_date = last_date
         current_statements_settings.save()
 
@@ -164,13 +165,17 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
         return statements_settings_schema.dump(new_statements_settings)
 
     @staticmethod
-    def find_max_frequency(old_frequency, new_frequency):
-        freq_list = [StatementFrequency.DAILY.value, StatementFrequency.WEEKLY.value, StatementFrequency.MONTHLY.value]
+    def _find_longest_frequency(old_frequency, new_frequency):
+        """Return the longest frequency in the passed inputs."""
+        freq_list = [StatementFrequency.DAILY.value,
+                     StatementFrequency.WEEKLY.value,
+                     StatementFrequency.MONTHLY.value]
         max_index = max(freq_list.index(old_frequency), freq_list.index(new_frequency))
         return freq_list[max_index]
 
     @staticmethod
-    def get_end_of(frequency: StatementFrequency):
+    def _get_end_of(frequency: StatementFrequency):
+        """Return the end of either week or month."""
         today = datetime.today()
         end_date = current_local_time()
         if frequency == StatementFrequency.WEEKLY.value:
