@@ -36,6 +36,11 @@ class StatementInvoices(BaseModel):
 
     statement = relationship(Statement, foreign_keys=[statement_id], lazy='select', innerjoin=True)
 
+    @classmethod
+    def find_all_invoices_for_statement(cls, statement_identifier: str):
+        """Return all invoices for statement."""
+        return cls.query.filter_by(statement_id=statement_identifier).all()
+
 
 class StatementInvoicesSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Statements."""

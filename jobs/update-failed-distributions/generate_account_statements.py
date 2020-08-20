@@ -11,29 +11,28 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The Update Payment Job.
+"""Generate account statements.
 
-This module is being invoked from a job and it cleans up the stale records
+This module will create statement records for each account.
 """
-import datetime
 import os
 
-import config
 from flask import Flask
-from flask_jwt_oidc import JwtManager
-from pay_api.models import PaymentTransaction as PaymentTransactionModel
-from pay_api.models import db, ma
 from utils.logger import setup_logging
-from services.distribution_job import DistributionJob
+
+import config
+
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
 
 def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     """Return a configured Flask App using the Factory method."""
+    from pay_api.models import db, ma
+
     app = Flask(__name__)
 
     app.config.from_object(config.CONFIGURATION[run_mode])
-    app.logger.info(f'Rectify GL CODE Job Ran-----------------------------------------------!')
+    app.logger.info(f'<<<< Starting generate statements >>>>')
     db.init_app(app)
     ma.init_app(app)
 
@@ -55,11 +54,13 @@ def register_shellcontext(app):
 
 
 def run():
+    from jobs.statement_job import StatementJob
+    
     application = create_app()
-    application.logger.debug('Ran Batch Job--*************************************************************')
 
     application.app_context().push()
-    DistributionJob.update_failed_distributions()
+    StatementJob.generate_statements()
+    application.logger.info(f'<<<< Completed generating statements >>>>')
 
 
 if __name__ == "__main__":

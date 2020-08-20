@@ -11,20 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Generate account statements.
+"""The Update Payment Job.
 
-This module will create statement records for each account.
+This module is being invoked from a job and it cleans up the stale records
 """
-import datetime
 import os
 
-import config
 from flask import Flask
-from flask_jwt_oidc import JwtManager
-from pay_api.models import PaymentTransaction as PaymentTransactionModel
-from pay_api.models import db, ma
+from jobs.distribution_job import DistributionJob
 from utils.logger import setup_logging
-from services.statement_job import StatementJob
+
+import config
+from pay_api.models import db, ma
+
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
 
@@ -59,7 +58,7 @@ def run():
     application.logger.debug('Ran Batch Job--*************************************************************')
 
     application.app_context().push()
-    StatementJob.generate_statements()
+    DistributionJob.update_failed_distributions()
 
 
 if __name__ == "__main__":

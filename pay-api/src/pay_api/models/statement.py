@@ -31,16 +31,17 @@ class Statement(BaseModel):
     statement_settings_id = db.Column(db.Integer, ForeignKey('statement_settings.id'), nullable=True, index=True)
     payment_account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True, index=True)
     from_date = db.Column(db.Date, default=None, nullable=False)
-    to_date = db.Column(db.Date, default=None, nullable=False)
+    to_date = db.Column(db.Date, default=None, nullable=True)
 
     created_on = db.Column(db.Date, default=None, nullable=False)
 
     @classmethod
-    def find_all_statements_for_account(cls, account_id: str, page, limit):
+    def find_all_statements_for_account(cls, auth_account_id: str, page, limit):
         """Return all active statements for an account."""
         query = cls.query \
             .join(PaymentAccount) \
-            .filter(and_(PaymentAccount.id == cls.payment_account_id, PaymentAccount.auth_account_id == account_id))
+            .filter(and_(PaymentAccount.id == cls.payment_account_id,
+                         PaymentAccount.auth_account_id == auth_account_id))
 
         query = query.order_by(Statement.id)
         pagination = query.paginate(per_page=limit, page=page)

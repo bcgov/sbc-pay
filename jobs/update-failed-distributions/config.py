@@ -79,6 +79,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     PAYBC_DIRECT_PAY_CLIENT_ID = os.getenv('PAYBC_DIRECT_PAY_CLIENT_ID')
     PAYBC_DIRECT_PAY_CLIENT_SECRET = os.getenv('PAYBC_DIRECT_PAY_CLIENT_SECRET')
 
+    # legislative timezone for future effective dating
+    LEGISLATIVE_TIMEZONE = os.getenv('LEGISLATIVE_TIMEZONE', 'America/Vancouver')
+
     TESTING = False
     DEBUG = True
 

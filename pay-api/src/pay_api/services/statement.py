@@ -122,10 +122,10 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return d
 
     @staticmethod
-    def find_by_account_id(account_id: str, page: int, limit: int):
+    def find_by_account_id(auth_account_id: str, page: int, limit: int):
         """Find statements by account id."""
-        current_app.logger.debug(f'<search_purchase_history {account_id}')
-        statements, total = StatementModel.find_all_statements_for_account(account_id, page, limit)
+        current_app.logger.debug(f'<search_purchase_history {auth_account_id}')
+        statements, total = StatementModel.find_all_statements_for_account(auth_account_id, page, limit)
 
         statements_schema = StatementModelSchema()
         data = {
