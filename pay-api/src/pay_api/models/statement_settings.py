@@ -40,10 +40,18 @@ class StatementSettings(BaseModel):
         """Return active statement setting for the account."""
         valid_date = get_local_time(valid_date)
         query = cls.query.join(PaymentAccount).filter(PaymentAccount.auth_account_id == account_id)
+        # need this to strip of the time information from the date
+        todays_datetime = datetime(valid_date.today().year, valid_date.today().month, valid_date.today().day)
+        query = query.filter(StatementSettings.from_date <= todays_datetime). \
+            filter((StatementSettings.to_date.is_(None)) | (StatementSettings.to_date >= todays_datetime))
 
-        query = query.filter(StatementSettings.from_date <= valid_date). \
-            filter((StatementSettings.to_date.is_(None)) | (StatementSettings.to_date >= valid_date))
+        return query.one_or_none()
 
+    @classmethod
+    def find_latest_settings(cls, account_id: str):
+        """Return latest active statement setting for the account."""
+        query = cls.query.join(PaymentAccount).filter(PaymentAccount.auth_account_id == account_id)
+        query = query.filter((StatementSettings.to_date.is_(None)))
         return query.one_or_none()
 
     @classmethod
