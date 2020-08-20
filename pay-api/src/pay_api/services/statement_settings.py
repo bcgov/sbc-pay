@@ -31,7 +31,7 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
         self.__dao = None
         self._id: int = None
         self._frequency = None
-        self.payment_account_id = None
+        self._payment_account_id = None
         self._from_date = None
         self._to_date = None
 
@@ -112,20 +112,21 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
         return d
 
     @staticmethod
-    def find_by_account_id(account_id: str):
+    def find_by_account_id(auth_account_id: str):
         """Find statements by account id."""
-        current_app.logger.debug(f'<find_by_account_id {account_id}')
-        statements_settings = StatementSettingsModel.find_latest_settings(account_id)
+        current_app.logger.debug(f'<find_by_account_id {auth_account_id}')
+        statements_settings = StatementSettingsModel.find_latest_settings(auth_account_id)
+        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
         if statements_settings is None:
             # if empty , default to weekly
             statements_settings = StatementSettingsModel(frequency=StatementFrequency.WEEKLY.value,
-                                                         payment_account_id=account_id)
+                                                         payment_account_id=payment_account.id)
         statements_settings_schema = StatementSettingsModelSchema()
         current_app.logger.debug('>statements_find_by_account_id')
         return statements_settings_schema.dump(statements_settings)
 
     @staticmethod
-    def update_statement_settings(account_id: str, frequency: str):
+    def update_statement_settings(auth_account_id: str, frequency: str):
         """Update statements by account id.
 
         rather than checking frequency changes by individual if , it just applies the following logic.
@@ -134,8 +135,8 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
         """
         statements_settings_schema = StatementSettingsModelSchema()
         today = datetime.today()
-        current_statements_settings = StatementSettingsModel.find_active_settings(account_id, today)
-        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(account_id)
+        current_statements_settings = StatementSettingsModel.find_active_settings(auth_account_id, today)
+        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
         if current_statements_settings is None:
             # no frequency yet.first time accessing the statement settings.so create a new record
             statements_settings = StatementSettingsModel(frequency=frequency,
@@ -147,7 +148,7 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
         # this handles the case of quickly changing of frequencies..
         # changed from daily to monthly but then changed back to weekly..
         # the monthly didn't get applied ,but even before that its being changed to weekly
-        future_statements_settings = StatementSettingsModel.find_latest_settings(account_id)
+        future_statements_settings = StatementSettingsModel.find_latest_settings(auth_account_id)
         if future_statements_settings is not None and current_statements_settings.id != future_statements_settings.id:
             future_statements_settings.to_date = today
             future_statements_settings.save()

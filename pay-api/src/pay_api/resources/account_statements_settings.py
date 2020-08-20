@@ -27,8 +27,8 @@ from pay_api.utils.util import cors_preflight
 API = Namespace('accounts', description='Payment System - Statements Settings')
 
 
-@cors_preflight('GET,PUT')
-@API.route('', methods=['GET', 'PUT', 'OPTIONS'])
+@cors_preflight('GET,POST')
+@API.route('', methods=['GET', 'POST', 'OPTIONS'])
 class AccountStatementsSettings(Resource):
     """Endpoint resource for statements."""
 
@@ -51,7 +51,7 @@ class AccountStatementsSettings(Resource):
     @cors.crossdomain(origin='*')
     @_jwt.requires_auth
     @_tracing.trace()
-    def put(account_id):
+    def post(account_id):
         """Update the statement settings ."""
         current_app.logger.info('<AccountStatementsSettings.put')
         request_json = request.get_json()

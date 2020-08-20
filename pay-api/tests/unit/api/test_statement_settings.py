@@ -42,14 +42,14 @@ def test_get_default_statement_settings_weekly(session, client, jwt, app):
     credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
     pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
 
-    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements-settings',
+    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/settings',
                     headers=headers)
     assert rv.status_code == 200
     assert rv.json.get('frequency') == StatementFrequency.WEEKLY.value
 
 
-def test_put_default_statement_settings_daily(session, client, jwt, app):
-    """Assert that the put endpoint works."""
+def test_post_default_statement_settings_daily(session, client, jwt, app):
+    """Assert that the post endpoint works."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
@@ -60,14 +60,14 @@ def test_put_default_statement_settings_daily(session, client, jwt, app):
     credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
     pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
 
-    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements-settings', data=json.dumps({}),
+    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/settings', data=json.dumps({}),
                     headers=headers)
     assert rv.status_code == 200
     assert rv.json.get('frequency') == StatementFrequency.WEEKLY.value
 
     # Set the frequency to Daily and assert
     daily_frequency = {'frequency': 'DAILY'}
-    rv = client.put(f'/api/v1/accounts/{pay_account.auth_account_id}/statements-settings',
+    rv = client.post(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/settings',
                     data=json.dumps(daily_frequency),
                     headers=headers)
     assert rv.json.get('frequency') == StatementFrequency.DAILY.value
@@ -76,7 +76,7 @@ def test_put_default_statement_settings_daily(session, client, jwt, app):
 
     # Set the frequency to Monthly and assert
     daily_frequency = {'frequency': 'MONTHLY'}
-    rv = client.put(f'/api/v1/accounts/{pay_account.auth_account_id}/statements-settings',
+    rv = client.post(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/settings',
                     data=json.dumps(daily_frequency),
                     headers=headers)
     end_date = get_first_and_last_dates_of_month(current_local_time().month, current_local_time().year)[1]
@@ -84,7 +84,7 @@ def test_put_default_statement_settings_daily(session, client, jwt, app):
     assert rv.json.get('fromDate') == (end_date + timedelta(days=1)).strftime('%Y-%m-%d')
 
     # Get the latest frequency
-    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements-settings', data=json.dumps({}),
+    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/settings', data=json.dumps({}),
                     headers=headers)
     assert rv.status_code == 200
     assert rv.json.get('frequency') == StatementFrequency.MONTHLY.value

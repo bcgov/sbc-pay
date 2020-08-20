@@ -81,5 +81,5 @@ API.add_namespace(INVOICE_API, path='/payment-requests/<int:payment_id>/invoices
 API.add_namespace(INVOICE_RECEIPT_API, path='/payment-requests/<int:payment_id>')
 API.add_namespace(ACCOUNTS_API, path='/accounts')
 API.add_namespace(ACCOUNT_STATEMENTS_API, path='/accounts/<string:account_id>/statements')
-API.add_namespace(ACCOUNT_STATEMENTS_SETTINGS_API, path='/accounts/<string:account_id>/statements-settings')
+API.add_namespace(ACCOUNT_STATEMENTS_SETTINGS_API, path='/accounts/<string:account_id>/statements/settings')
 API.add_namespace(CODES_API, path='/codes')
