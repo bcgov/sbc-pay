@@ -23,7 +23,6 @@ from datetime import timedelta
 from pay_api.models.credit_payment_account import CreditPaymentAccount
 from pay_api.models.payment import Payment
 from pay_api.models.payment_account import PaymentAccount
-from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import StatementFrequency
 from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month
 
