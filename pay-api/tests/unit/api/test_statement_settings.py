@@ -21,21 +21,20 @@ import json
 from datetime import timedelta
 
 from pay_api.models import BcolPaymentAccount
-from pay_api.models.credit_payment_account import CreditPaymentAccount
 from pay_api.models.payment import Payment
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.utils.enums import StatementFrequency
 from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month, get_week_start_and_end_date
 
 from tests.utilities.base_test import (
-    get_claims, get_payment_request, token_header, get_payment_request_with_payment_method)
+    get_claims, token_header, get_payment_request_with_payment_method, get_payment_request)
 
 
 def test_get_default_statement_settings_weekly(session, client, jwt, app):
     """Assert that the default statement setting is weekly."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request_with_payment_method(payment_method='DRAWDOWN')),
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
@@ -52,7 +51,7 @@ def test_post_default_statement_settings_daily(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request_with_payment_method(payment_method='DRAWDOWN')),
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
@@ -70,7 +69,6 @@ def test_post_default_statement_settings_daily(session, client, jwt, app):
                      data=json.dumps(daily_frequency),
                      headers=headers)
     assert rv.json.get('frequency') == StatementFrequency.DAILY.value
-    today = current_local_time().strftime('%Y-%m-%d')
     end_date = get_week_start_and_end_date()[1]
     assert rv.json.get('fromDate') == (end_date + timedelta(days=1)).strftime('%Y-%m-%d')
 

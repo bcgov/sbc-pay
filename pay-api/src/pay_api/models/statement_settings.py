@@ -41,7 +41,7 @@ class StatementSettings(BaseModel):
         valid_date = get_local_time(valid_date)
         query = cls.query.join(PaymentAccount).filter(PaymentAccount.auth_account_id == auth_account_id)
         # need this to strip of the time information from the date
-        todays_datetime = datetime(valid_date.today().year, valid_date.today().month, valid_date.today().day)
+        todays_datetime = valid_date.today().date()
         query = query.filter(StatementSettings.from_date <= todays_datetime). \
             filter((StatementSettings.to_date.is_(None)) | (StatementSettings.to_date >= todays_datetime))
 
