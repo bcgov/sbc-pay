@@ -72,7 +72,7 @@ class AccountStatementReport(Resource):
 
         report, report_name = StatementService.get_statement_report(statement_id=statement_id,
                                                                     content_type=response_content_type, auth=auth)
-        response = Response(report, 201)
+        response = Response(report, 200)
         response.headers.set('Content-Disposition', 'attachment', filename=report_name)
         response.headers.set('Content-Type', response_content_type)
         return response

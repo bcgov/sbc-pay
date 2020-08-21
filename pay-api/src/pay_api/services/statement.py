@@ -30,10 +30,9 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         self.__dao = None
         self._id: int = None
         self._frequency = None
-        self._account_id = None
         self._from_date = None
         self._to_date = None
-        self._status = None
+        self._payment_account_id = None
 
     @property
     def _dao(self):
@@ -46,10 +45,9 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         self.__dao = value
         self.id: int = self._dao.id
         self.frequency: str = self._dao.frequency
-        self.account_id: int = self._dao.account_id
         self.from_date: datetime = self._dao.from_date
         self.to_date: datetime = self._dao.to_date
-        self.status: str = self._dao.status
+        self.payment_account_id: int = self._dao.payment_account_id
 
     @property
     def id(self):
@@ -63,6 +61,17 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         self._dao.id = value
 
     @property
+    def payment_account_id(self):
+        """Return the payment_account_id."""
+        return self._payment_account_id
+
+    @payment_account_id.setter
+    def payment_account_id(self, value: str):
+        """Set the account_id."""
+        self._payment_account_id = value
+        self._dao.payment_account_id = value
+
+    @property
     def frequency(self):
         """Return the frequency."""
         return self._frequency
@@ -72,17 +81,6 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         """Set the frequency."""
         self._frequency = value
         self._dao.frequency = value
-
-    @property
-    def account_id(self):
-        """Return the account_id."""
-        return self._account_id
-
-    @account_id.setter
-    def account_id(self, value: str):
-        """Set the account_id."""
-        self._account_id = value
-        self._dao.account_id = value
 
     @property
     def to_date(self):
@@ -105,17 +103,6 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         """Set the from for the statement."""
         self._from_date = value
         self._dao.from_date = value
-
-    @property
-    def status(self):
-        """Return the status."""
-        return self._status
-
-    @status.setter
-    def status(self, value: str):
-        """Set the status."""
-        self._status = value
-        self._dao.status = value
 
     def asdict(self):
         """Return the invoice as a python dict."""
@@ -145,12 +132,16 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         current_app.logger.debug(f'<get_statement_report {statement_id}')
         report_name: str = 'bcregistry-statements'
 
-        statement: StatementModel = StatementModel.find_by_id(statement_id)
-        from_date_string: str = statement.from_date.strftime('%Y-%m-%d')
-        to_date_string: str = statement.to_date.strftime('%Y-%m-%d')
+        statement_dao: StatementModel = StatementModel.find_by_id(statement_id)
+
+        statement_svc = Statement()
+        statement_svc._dao = statement_dao  # pylint: disable=protected-access
+
+        from_date_string: str = statement_svc.from_date.strftime('%Y-%m-%d')
+        to_date_string: str = statement_svc.to_date.strftime('%Y-%m-%d')
         extension: str = 'pdf' if content_type == ContentType.PDF.value else 'csv'
 
-        if statement.frequency == StatementFrequency.DAILY.value:
+        if statement_svc.frequency == StatementFrequency.DAILY.value:
             report_name = f'{report_name}-{from_date_string}.{extension}'
         else:
             report_name = f'{report_name}-{from_date_string}-to-{to_date_string}.{extension}'
