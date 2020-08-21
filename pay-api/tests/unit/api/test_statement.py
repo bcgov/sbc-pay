@@ -20,9 +20,9 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 import json
 
 from pay_api.models import PaymentAccount, BcolPaymentAccount
-from pay_api.models.credit_payment_account import CreditPaymentAccount
 from pay_api.models.payment import Payment
 from pay_api.utils.enums import StatementFrequency, ContentType
+
 from tests.utilities.base_test import (
     factory_statement,
     factory_statement_invoices, factory_statement_settings)

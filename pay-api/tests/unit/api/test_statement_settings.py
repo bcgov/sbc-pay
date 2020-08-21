@@ -27,7 +27,7 @@ from pay_api.utils.enums import StatementFrequency
 from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month, get_week_start_and_end_date
 
 from tests.utilities.base_test import (
-    get_claims, token_header, get_payment_request_with_payment_method, get_payment_request)
+    get_claims, token_header, get_payment_request)
 
 
 def test_get_default_statement_settings_weekly(session, client, jwt, app):
