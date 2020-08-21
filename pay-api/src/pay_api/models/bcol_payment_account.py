@@ -32,11 +32,6 @@ class BcolPaymentAccount(BaseModel):
     account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True, index=True)
 
     @classmethod
-    def find_by_id(cls, identifier: int):
-        """Return a Account by id."""
-        return cls.query.get(identifier)
-
-    @classmethod
     def find_by_bcol_user_id_and_account(cls, bcol_user_id: str, bcol_account_id: str, auth_account_id: str):
         """Given a bcol user id, bcol account id and auth account id, this will return payment account."""
         account = None

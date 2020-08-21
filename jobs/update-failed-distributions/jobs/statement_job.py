@@ -120,7 +120,7 @@ class StatementJob:
                 to_date=statement_to
             )
             # Add to DB session
-            db.session.add(statement)
+            statement = statement.flush()
 
             purchases, total = PaymentModel.search_purchase_history(
                 auth_account_id=pay_account.auth_account_id,
@@ -132,7 +132,7 @@ class StatementJob:
             for purchase in purchases:
                 invoice = purchase[1]
                 statement_invoice = StatementInvoicesModel(
-                    statement=statement,
+                    statement_id=statement.id,
                     invoice_id=invoice.id
                 )
                 db.session.add(statement_invoice)

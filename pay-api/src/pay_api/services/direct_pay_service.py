@@ -146,7 +146,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
             # Check if trnApproved is 1=Success, 0=Declined
             trn_approved: str = parsed_args.get('trnApproved')
             if trn_approved == '1' and not HashingService.is_valid_checksum(pay_response_url_without_hash, hash_value):
-                current_app.logger.warn(f'Transaction is approved, but hash is not matching : {pay_response_url}')
+                current_app.logger.warning(f'Transaction is approved, but hash is not matching : {pay_response_url}')
                 return None
             # Get the transaction number from args
             paybc_transaction_number = parsed_args.get('pbcTxnNumber')

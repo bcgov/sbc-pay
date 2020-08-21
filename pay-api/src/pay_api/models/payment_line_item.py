@@ -48,11 +48,6 @@ class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attribute
     fee_schedule = relationship(FeeSchedule, foreign_keys=[fee_schedule_id], lazy='joined', innerjoin=True)
 
     @classmethod
-    def find_by_id(cls, identifier: int):
-        """Return a Line Item by id."""
-        return cls.query.get(identifier)
-
-    @classmethod
     def find_by_invoice_ids(cls, invoice_ids: list):
         """Return list of line items by list of invoice ids."""
         return db.session.query(PaymentLineItem).filter(PaymentLineItem.invoice_id.in_(invoice_ids)).order_by(
