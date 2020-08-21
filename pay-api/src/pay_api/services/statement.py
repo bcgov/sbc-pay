@@ -47,8 +47,8 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         self.id: int = self._dao.id
         self.frequency: str = self._dao.frequency
         self.account_id: int = self._dao.account_id
-        self.start_date: datetime = self._dao.start_date
-        self.end_date: datetime = self._dao.end_date
+        self.from_date: datetime = self._dao.from_date
+        self.to_date: datetime = self._dao.to_date
         self.status: str = self._dao.status
 
     @property
@@ -91,7 +91,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
 
     @to_date.setter
     def to_date(self, value: date):
-        """Set the end_date for the statement."""
+        """Set the to_date for the statement."""
         self._to_date = value
         self._dao.to_date = value
 
