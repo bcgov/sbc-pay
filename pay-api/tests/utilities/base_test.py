@@ -22,7 +22,8 @@ from datetime import datetime
 from pay_api.models import (
     BcolPaymentAccount, CreditPaymentAccount, InternalPaymentAccount, Invoice,
     InvoiceReference, Payment,
-    PaymentAccount, PaymentLineItem, PaymentTransaction, DistributionCode)
+    PaymentAccount, PaymentLineItem, PaymentTransaction, DistributionCode, StatementSettings, Statement,
+    StatementInvoices)
 from pay_api.utils.enums import PaymentSystem, Role, PaymentStatus, InvoiceReferenceStatus, \
     LineItemStatus, InvoiceStatus, PaymentMethod
 
@@ -293,9 +294,7 @@ def factory_payment_account(corp_number: str = 'CP0001234', corp_type_code: str 
         )
 
 
-def factory_premium_payment_account(corp_number: str = 'CP0001234', corp_type_code: str = 'CP',
-                                    payment_system_code: str = 'BCOL',
-                                    bcol_user_id='PB25020', bcol_account_id='1234567890', auth_account_id='1234'):
+def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='1234567890', auth_account_id='1234'):
     """Return Factory."""
     account = PaymentAccount(auth_account_id=auth_account_id).save()
 
@@ -390,6 +389,42 @@ def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021'):
     return InvoiceReference(invoice_id=invoice_id,
                             status_code=InvoiceReferenceStatus.ACTIVE.value,
                             invoice_number=invoice_number)
+
+
+def factory_statement_settings(
+        frequency: str = 'WEEKLY',
+        payment_account_id: str = None,
+        from_date: datetime = datetime.now(),
+        to_date: datetime = None):
+    """Return Factory."""
+    return StatementSettings(frequency=frequency,
+                             payment_account_id=payment_account_id,
+                             from_date=from_date,
+                             to_date=to_date).save()
+
+
+def factory_statement(
+        frequency: str = 'WEEKLY',
+        payment_account_id: str = None,
+        from_date: datetime = datetime.now(),
+        to_date: datetime = datetime.now(),
+        statement_settings_id: str = None,
+        created_on: datetime = datetime.now()):
+    """Return Factory."""
+    return Statement(frequency=frequency,
+                     statement_settings_id=statement_settings_id,
+                     payment_account_id=payment_account_id,
+                     from_date=from_date,
+                     to_date=to_date,
+                     created_on=created_on).save()
+
+
+def factory_statement_invoices(
+        statement_id: str,
+        invoice_id: str):
+    """Return Factory."""
+    return StatementInvoices(statement_id=statement_id,
+                             invoice_id=invoice_id).save()
 
 
 def get_paybc_transaction_request():

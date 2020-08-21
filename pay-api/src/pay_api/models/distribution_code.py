@@ -87,11 +87,6 @@ class DistributionCode(Audit):  # pylint:disable=too-many-instance-attributes
         return query.all()
 
     @classmethod
-    def find_by_id(cls, identifier: int):
-        """Return by id."""
-        return cls.query.get(identifier)
-
-    @classmethod
     def find_by_active_for_fee_schedule(cls, fee_schedule_id: int):
         """Return active distribution for fee schedule."""
         valid_date = date.today()

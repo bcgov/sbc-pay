@@ -31,11 +31,6 @@ class Receipt(BaseModel):
     receipt_amount = db.Column(db.Float)
 
     @classmethod
-    def find_by_id(cls, identfier: int):
-        """Return a receipt by id."""
-        return cls.query.get(identfier)
-
-    @classmethod
     def find_by_invoice_id_and_receipt_number(cls, invoice_id: int, receipt_number: str = None):
         """Return a Receipt by invoice id and receipt_number."""
         query = cls.query.filter_by(invoice_id=invoice_id)

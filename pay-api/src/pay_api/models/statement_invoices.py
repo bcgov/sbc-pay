@@ -17,11 +17,9 @@ For one statement , there could be a lot of invoices.
 """
 
 from sqlalchemy import ForeignKey
-from sqlalchemy.orm import relationship
 
 from .base_model import BaseModel
 from .db import db, ma
-from .statement import Statement
 
 
 class StatementInvoices(BaseModel):
@@ -33,8 +31,6 @@ class StatementInvoices(BaseModel):
 
     statement_id = db.Column(db.Integer, ForeignKey('statement.id'), nullable=False, index=True)
     invoice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
-
-    statement = relationship(Statement, foreign_keys=[statement_id], lazy='select', innerjoin=True)
 
     @classmethod
     def find_all_invoices_for_statement(cls, statement_identifier: str):

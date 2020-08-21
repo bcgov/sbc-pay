@@ -27,11 +27,6 @@ class PaymentAccount(BaseModel):  # pylint: disable=too-many-instance-attributes
     # More columns to come to handle account transactions for PAD transactions
 
     @classmethod
-    def find_by_id(cls, identifier: int):
-        """Return a Account by id."""
-        return cls.query.get(identifier)
-
-    @classmethod
     def find_by_auth_account_id(cls, auth_account_id: str):
         """Return a Account by id."""
         return cls.query.filter_by(auth_account_id=auth_account_id).one_or_none()

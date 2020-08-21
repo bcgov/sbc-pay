@@ -36,11 +36,6 @@ class CreditPaymentAccount(BaseModel):
     account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True, index=True)
 
     @classmethod
-    def find_by_id(cls, identifier: int):
-        """Return a Account by id."""
-        return cls.query.get(identifier)
-
-    @classmethod
     def find_by_corp_number_and_corp_type_and_auth_account_id(cls, corp_number: str,
                                                               corp_type: str,
                                                               auth_account_id: str

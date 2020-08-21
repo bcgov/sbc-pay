@@ -17,6 +17,8 @@ from sqlalchemy import ForeignKey, and_
 
 from .base_model import BaseModel
 from .db import db, ma
+from .invoice import Invoice
+from .payment import Payment
 from .payment_account import PaymentAccount
 
 
@@ -46,6 +48,19 @@ class Statement(BaseModel):
         query = query.order_by(Statement.id)
         pagination = query.paginate(per_page=limit, page=page)
         return pagination.items, pagination.total
+
+    @classmethod
+    def find_all_payments_and_invoices_for_statement(cls, statement_id: str):
+        """Find all payment and invoices specific to a statement."""
+        # Import from here as the statement invoice already imports statement and causes circular import.
+        from .statement_invoices import StatementInvoices  # pylint: disable=import-outside-toplevel
+
+        query = db.session.query(Payment, Invoice) \
+            .join(StatementInvoices, StatementInvoices.invoice_id == Invoice.id) \
+            .join(Statement, Statement.id == StatementInvoices.statement_id) \
+            .filter(Statement.id == statement_id)
+
+        return query.all()
 
 
 class StatementSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
