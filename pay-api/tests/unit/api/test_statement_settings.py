@@ -20,28 +20,27 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 import json
 from datetime import timedelta
 
+from pay_api.models import BcolPaymentAccount
 from pay_api.models.credit_payment_account import CreditPaymentAccount
 from pay_api.models.payment import Payment
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.utils.enums import StatementFrequency
-from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month
+from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month, get_week_start_and_end_date
 
 from tests.utilities.base_test import (
-    get_claims, get_payment_request, token_header)
+    get_claims, get_payment_request, token_header, get_payment_request_with_payment_method)
 
 
 def test_get_default_statement_settings_weekly(session, client, jwt, app):
     """Assert that the default statement setting is weekly."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request_with_payment_method(payment_method='DRAWDOWN')),
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
-
+    bcol_account: BcolPaymentAccount = BcolPaymentAccount.find_by_id(payment.invoices[0].bcol_account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(bcol_account.account_id)
     rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/settings',
                     headers=headers)
     assert rv.status_code == 200
@@ -53,12 +52,12 @@ def test_post_default_statement_settings_daily(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request_with_payment_method(payment_method='DRAWDOWN')),
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
+    bcol_account: BcolPaymentAccount = BcolPaymentAccount.find_by_id(payment.invoices[0].bcol_account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(bcol_account.account_id)
 
     rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/settings', data=json.dumps({}),
                     headers=headers)
@@ -72,7 +71,8 @@ def test_post_default_statement_settings_daily(session, client, jwt, app):
                      headers=headers)
     assert rv.json.get('frequency') == StatementFrequency.DAILY.value
     today = current_local_time().strftime('%Y-%m-%d')
-    assert rv.json.get('fromDate') == today
+    end_date = get_week_start_and_end_date()[1]
+    assert rv.json.get('fromDate') == (end_date + timedelta(days=1)).strftime('%Y-%m-%d')
 
     # Set the frequency to Monthly and assert
     daily_frequency = {'frequency': 'MONTHLY'}
