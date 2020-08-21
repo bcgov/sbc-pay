@@ -123,3 +123,8 @@ class StatementFrequency(Enum):
     DAILY = 'DAILY'
     WEEKLY = 'WEEKLY'
     MONTHLY = 'MONTHLY'
+
+    @staticmethod
+    def default_frequency():
+        """Return the default frequency for statements."""
+        return StatementFrequency.WEEKLY

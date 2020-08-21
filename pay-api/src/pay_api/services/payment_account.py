@@ -19,10 +19,11 @@ from flask import current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models.bcol_payment_account import BcolPaymentAccount
 from pay_api.models.credit_payment_account import CreditPaymentAccount
 from pay_api.models.internal_payment_account import InternalPaymentAccount
-from pay_api.utils.enums import PaymentSystem
+from pay_api.utils.enums import PaymentSystem, StatementFrequency
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_str_by_path
 from pay_api.utils.user_context import user_context, UserContext
@@ -124,10 +125,13 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('<create')
         auth_account_id = get_str_by_path(authorization, 'account/id')
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        new_payment_account: bool = False
+        is_premium_payment: bool = False
         if not payment_account:
             payment_account = PaymentAccountModel()
             payment_account.auth_account_id = auth_account_id
             payment_account = payment_account.save()
+            new_payment_account = True
 
         dao = None
         if payment_system == PaymentSystem.BCOL.value:
@@ -135,6 +139,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
             dao.account_id = payment_account.id
             dao.bcol_account_id = account_details.get('bcol_account_id', None)
             dao.bcol_user_id = account_details.get('bcol_user_id', None)
+            is_premium_payment = True
         elif payment_system == PaymentSystem.INTERNAL.value:
             dao = InternalPaymentAccount()
             dao.corp_number = business_info.get('businessIdentifier', None)
@@ -151,10 +156,21 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
 
         dao = dao.save()
 
+        if new_payment_account and is_premium_payment:
+            PaymentAccount._persist_default_statement_frequency(payment_account.id)
+
         p = PaymentAccount()
         p.populate(dao)  # pylint: disable=protected-access
         current_app.logger.debug('>create')
         return p
+
+    @staticmethod
+    def _persist_default_statement_frequency(payment_account_id):
+        statement_settings_model = StatementSettingsModel(
+            frequency=StatementFrequency.default_frequency().value,
+            payment_account_id=payment_account_id
+        )
+        statement_settings_model.save()
 
     @classmethod
     @user_context
