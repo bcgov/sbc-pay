@@ -28,8 +28,8 @@ RUN mkdir $HOME && chmod 755 $HOME
 WORKDIR $HOME
 
 # Install the requirements
-COPY ./src/requirements.txt .
-COPY ./src/requirements/ ./requirements/
+COPY ./requirements.txt .
+COPY ./requirements/ ./requirements/
 COPY . .
 
 RUN pip install --upgrade pip
