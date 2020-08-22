@@ -43,7 +43,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN chown -R $user:root $HOME \
     && chmod -R ug+rw $HOME \
     && chmod ug+x $HOME/*.sh \
-    && chmod ug+x $HOME/run.sh \
     && chmod g+rw /etc/passwd \
     && chmod g-w $HOME/cron/crontab
 
