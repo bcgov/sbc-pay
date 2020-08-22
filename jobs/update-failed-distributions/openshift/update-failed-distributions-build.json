@@ -84,7 +84,7 @@
       "displayName": "Git Reference",
       "description": "The git reference or branch.",
       "required": true,
-      "value": "jobs"
+      "value": "def"
     },
     {
       "name": "SOURCE_CONTEXT_DIR",
