@@ -16,6 +16,7 @@
 This module will create statement records for each account.
 """
 import os
+import sys
 
 from flask import Flask
 from utils.logger import setup_logging
@@ -73,5 +74,5 @@ def run(job_name):
 
 
 if __name__ == "__main__":
-    print('------------------', sys.argv[1])
+    print('----------------------------Scheduler Ran With Argument--', sys.argv[1])
     run(sys.argv[1])
