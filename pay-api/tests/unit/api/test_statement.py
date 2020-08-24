@@ -19,10 +19,10 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 
 import json
 
-from pay_api.models import PaymentAccount
-from pay_api.models.credit_payment_account import CreditPaymentAccount
+from pay_api.models import PaymentAccount, BcolPaymentAccount
 from pay_api.models.payment import Payment
 from pay_api.utils.enums import StatementFrequency, ContentType
+
 from tests.utilities.base_test import (
     factory_statement,
     factory_statement_invoices, factory_statement_settings)
@@ -37,12 +37,12 @@ def test_get_daily_statements(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
+    bcol_account: BcolPaymentAccount = BcolPaymentAccount.find_by_id(payment.invoices[0].bcol_account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(bcol_account.account_id)
 
     settings_model = factory_statement_settings(payment_account_id=pay_account.id,
                                                 frequency=StatementFrequency.DAILY.value)
@@ -65,12 +65,12 @@ def test_get_weekly_statements(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
+    bcol_account: BcolPaymentAccount = BcolPaymentAccount.find_by_id(payment.invoices[0].bcol_account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(bcol_account.account_id)
 
     settings_model = factory_statement_settings(payment_account_id=pay_account.id,
                                                 frequency=StatementFrequency.DAILY.value)
@@ -96,12 +96,12 @@ def test_get_weekly_statement_report_as_pdf(session, client, jwt, app):
         'Accept': ContentType.PDF.value
     }
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
+    bcol_account: BcolPaymentAccount = BcolPaymentAccount.find_by_id(payment.invoices[0].bcol_account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(bcol_account.account_id)
 
     settings_model = factory_statement_settings(payment_account_id=pay_account.id,
                                                 frequency=StatementFrequency.DAILY.value)
@@ -125,12 +125,12 @@ def test_get_monthly_statement_report_as_pdf(session, client, jwt, app):
         'Accept': ContentType.PDF.value
     }
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
+    bcol_account: BcolPaymentAccount = BcolPaymentAccount.find_by_id(payment.invoices[0].bcol_account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(bcol_account.account_id)
 
     settings_model = factory_statement_settings(payment_account_id=pay_account.id,
                                                 frequency=StatementFrequency.MONTHLY.value)
@@ -154,12 +154,12 @@ def test_get_daily_statement_report_as_pdf(session, client, jwt, app):
         'Accept': ContentType.PDF.value
     }
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
+    bcol_account: BcolPaymentAccount = BcolPaymentAccount.find_by_id(payment.invoices[0].bcol_account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(bcol_account.account_id)
 
     settings_model = factory_statement_settings(payment_account_id=pay_account.id,
                                                 frequency=StatementFrequency.DAILY.value)
@@ -183,12 +183,12 @@ def test_get_monthly_statement_report_as_csv(session, client, jwt, app):
         'Accept': ContentType.CSV.value
     }
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
+    bcol_account: BcolPaymentAccount = BcolPaymentAccount.find_by_id(payment.invoices[0].bcol_account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(bcol_account.account_id)
 
     settings_model = factory_statement_settings(payment_account_id=pay_account.id,
                                                 frequency=StatementFrequency.DAILY.value)

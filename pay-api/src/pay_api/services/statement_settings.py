@@ -116,11 +116,6 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
         """Find statements by account id."""
         current_app.logger.debug(f'<find_by_account_id {auth_account_id}')
         statements_settings = StatementSettingsModel.find_latest_settings(auth_account_id)
-        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-        if statements_settings is None:
-            # if empty , default to weekly
-            statements_settings = StatementSettingsModel(frequency=StatementFrequency.WEEKLY.value,
-                                                         payment_account_id=payment_account.id)
         statements_settings_schema = StatementSettingsModelSchema()
         current_app.logger.debug('>statements_find_by_account_id')
         return statements_settings_schema.dump(statements_settings)

@@ -16,6 +16,7 @@
 This module will create statement records for each account.
 """
 import os
+import sys
 
 from flask import Flask
 from utils.logger import setup_logging
@@ -53,15 +54,25 @@ def register_shellcontext(app):
     app.shell_context_processor(shell_context)
 
 
-def run():
+def run(job_name):
+    from jobs.distribution_job import DistributionJob
     from jobs.statement_job import StatementJob
     
     application = create_app()
 
     application.app_context().push()
-    StatementJob.generate_statements()
-    application.logger.info(f'<<<< Completed generating statements >>>>')
+    if job_name == 'UPDATE_GL_CODE':
+        DistributionJob.update_failed_distributions()
+        application.logger.info(f'<<<< Completed Updating GL Codes >>>>')
+    elif job_name == 'GENERATE_STATEMENTS':
+        StatementJob.generate_statements()
+        application.logger.info(f'<<<< Completed Generating GL Codes >>>>')
+    else:
+        application.logger.debug('No valid args passed.Exiting job without running any ***************')
+
+
 
 
 if __name__ == "__main__":
-    run()
+    print('----------------------------Scheduler Ran With Argument--', sys.argv[1])
+    run(sys.argv[1])

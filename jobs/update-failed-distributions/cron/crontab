@@ -1,2 +1,3 @@
-*/4 * * * * default cd /update-failed-distributions && ./run.sh
+*/4 * * * * default cd /update-failed-distributions && ./run_generate_statements.sh
+*/4 * * * * default cd /update-failed-distributions && ./run_update_gl_code_in_paybc.sh
 # An empty line is required at the end of this file for a valid cron file.
