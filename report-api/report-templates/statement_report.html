@@ -353,10 +353,10 @@
       </tr>
       <tr class="org-account-info-row">
         <td class="org-address-column">
-          {% if account && account.name %}
+          {% if account and account.name %}
           <div class="org-address">
             <div class="line-height-reg"><strong>{{account.name}}</strong></div>
-            {% if account && account.contact %}
+            {% if account and account.contact %}
             <div class="line-height-reg">{{account.contact.street}}</div>
             <div class="line-height-reg">{{account.contact.streetAdditional}}</div>
             <div class="line-height-reg">{{account.contact.city}} {{account.contact.region}} {{account.contact.postalCode}}</div>
@@ -388,7 +388,7 @@
         <td colspan="2">
           <div class="total-amount-due-row">
             <div class="total-amount-due-div1">Total Amount Due:</div>
-            <div class="total-amount-due-div2">${{(total.fees) ? total.fees : '0.00'}}</div>
+            <div class="total-amount-due-div2">${{total.fees if total.fees else '0.00'}}</div>
           </div>
         </td>
       </tr>
@@ -428,10 +428,10 @@
                   <div>{{lineItemFeeCode.filing_type_code}}</div>
                   {% endfor %}
                 </td>
-                <td>${{(item.invoice.service_fees && item.invoice.total) ? (item.invoice.total - item.invoice.service_fees) : '0.00'}}</td>
-                <td>${{(item.invoice.gst) ? item.invoice.gst : '0.00'}}</td>
-                <td>${{(item.invoice.service_fees) ? item.invoice.service_fees : '0.00'}}</td>
-                <td class="font-bold">$${{(item.invoice.total) ? item.invoice.total : '0.00'}}</td>
+                <td>${{(item.invoice.total - item.invoice.service_fees) if (item.invoice.service_fees and item.invoice.total) else '0.00'}}</td>
+                <td>${{item.invoice.gst if item.invoice.gst else '0.00'}}</td>
+                <td>${{item.invoice.service_fees if item.invoice.service_fees else '0.00'}}</td>
+                <td class="font-bold">$${{item.invoice.total if item.invoice.total else '0.00'}}</td>
               </tr>
               {% endfor %}
             </tbody>
