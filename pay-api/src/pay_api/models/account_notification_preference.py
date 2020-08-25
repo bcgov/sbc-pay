@@ -12,35 +12,32 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Payment Account data."""
-from sqlalchemy import Boolean
+from sqlalchemy import Boolean, ForeignKey
 
 from .base_model import BaseModel
 from .db import db, ma
 
 
-class PaymentAccount(BaseModel):  # pylint: disable=too-many-instance-attributes
+class AccountNotificationPreference(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Payment Account."""
 
-    __tablename__ = 'payment_account'
+    __tablename__ = 'account_notification_preference'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
-    auth_account_id = db.Column(db.String(50), nullable=True, index=True)
-    # More columns to come to handle account transactions for PAD transactions
+    payment_account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True, index=True)
 
-    # used for sending out notifications.The statement emails needs account name
-    auth_account_name = db.Column(db.String(250), nullable=True, index=True)
+    # type of notifications
+    type = db.Column(db.String(50), nullable=True)
 
-    @classmethod
-    def find_by_auth_account_id(cls, auth_account_id: str):
-        """Return a Account by id."""
-        return cls.query.filter_by(auth_account_id=auth_account_id).one_or_none()
+    # when this is enabled , send out the  notifications
+    enabled = db.Column('enabled', Boolean(), default=False)
 
 
-class PaymentAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class AccountNotificationPreferenceSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Payment Account."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
-        model = PaymentAccount
+        model = AccountNotificationPreference
