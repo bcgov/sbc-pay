@@ -29,7 +29,10 @@ class PaymentAccount(BaseModel):  # pylint: disable=too-many-instance-attributes
     # More columns to come to handle account transactions for PAD transactions
 
     # used for sending out notifications.The statement emails needs account name
-    auth_account_name = db.Column(db.String(250), nullable=True, index=True)
+    auth_account_name = db.Column(db.String(250), nullable=True, index=False)
+
+    # when this is enabled , send out the  notifications
+    statement_notification_enabled = db.Column('statement_notification_enabled', Boolean(), default=False)
 
     @classmethod
     def find_by_auth_account_id(cls, auth_account_id: str):
