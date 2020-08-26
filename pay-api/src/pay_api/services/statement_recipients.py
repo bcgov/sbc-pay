@@ -152,13 +152,15 @@ class StatementRecipients:  # pylint:disable=too-many-instance-attributes
         payment_account.save()
         recepient_list: list = []
 
-        StatementRecipientsModel.delete_all_recipients(payment_account.id)
-        for rec in notification_details.get('recipients'):
-            recepient = StatementRecipientsModel()
-            recepient.auth_user_id = rec.get('authUserId')
-            recepient.firstname = rec.get('firstname')
-            recepient.lastname = rec.get('lastname')
-            recepient.email = rec.get('email')
-            recepient.payment_account_id = payment_account.id
-            recepient_list.append(recepient)
-        StatementRecipientsModel.bulk_save_recipients(recepient_list)
+        # if no object is passed , dont update anything.Empty list passed means , delete everything
+        if (recepients := notification_details.get('recipients')) is not None:
+            StatementRecipientsModel.delete_all_recipients(payment_account.id)
+            for rec in recepients or []:
+                recipient = StatementRecipientsModel()
+                recipient.auth_user_id = rec.get('authUserId')
+                recipient.firstname = rec.get('firstname')
+                recipient.lastname = rec.get('lastname')
+                recipient.email = rec.get('email')
+                recipient.payment_account_id = payment_account.id
+                recepient_list.append(recipient)
+            StatementRecipientsModel.bulk_save_recipients(recepient_list)

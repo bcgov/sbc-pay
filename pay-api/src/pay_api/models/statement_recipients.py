@@ -43,9 +43,8 @@ class StatementRecipients(BaseModel):  # pylint: disable=too-many-instance-attri
     @classmethod
     def delete_all_recipients(cls, payment_account_id: str):
         """Return all active recipients for an account."""
-        stmt = StatementRecipients.__table__.delete().where(
-            StatementRecipients.payment_account_id == payment_account_id)
-        db.session.execute(stmt)
+        db.session.query(StatementRecipients).filter(
+            StatementRecipients.payment_account_id == payment_account_id).delete()
 
     @classmethod
     def bulk_save_recipients(cls, recipients: list):

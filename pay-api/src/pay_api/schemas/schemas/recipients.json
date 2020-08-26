@@ -1,0 +1,50 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/recipients",
+  "type": "object",
+  "title": "Recipients",
+  "required": [
+    "authUserId",
+    "email",
+    "firstname",
+    "lastname"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "authUserId": {
+      "type": "integer",
+      "title": "Auth user id",
+      "default": 0,
+      "examples": [
+        1
+      ]
+    },
+    "email": {
+      "type": "string",
+      "title": "Email",
+      "default": "",
+      "examples": [
+          "abc123@mail.com"
+        ],
+        "pattern": "(^[a-zA-Z0-9!#$%&'*+-/=?^_`{|.]+@[a-zA-Z0-9-]+\\.[a-zA-Z0-9-.]+$)"
+    },
+    "firstname": {
+      "type": "string",
+      "title": "first name",
+      "default": "",
+      "examples": [
+          "foo"
+        ]
+
+    },
+     "lastname": {
+      "type": "string",
+      "title": "first name",
+      "default": "",
+      "examples": [
+          "bar"
+        ]
+
+    }
+  }
+}

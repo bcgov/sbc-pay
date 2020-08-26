@@ -16,10 +16,12 @@ from http import HTTPStatus
 
 from flask import current_app, jsonify, request
 from flask_restplus import Namespace, Resource, cors
-from pay_api.exceptions import BusinessException
+from pay_api.exceptions import BusinessException, error_to_response
+from pay_api.schemas import utils as schema_utils
 from pay_api.services import StatementRecipients
 from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
+from pay_api.utils.errors import Error
 from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
@@ -55,6 +57,10 @@ class AccountStatementsNotifications(Resource):
         """Update the statement settings ."""
         current_app.logger.info('<AccountStatementsNotifications.post')
         request_json = request.get_json()
+        valid_format, errors = schema_utils.validate(request_json, 'statement_notification_request')
+        if not valid_format:
+            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+
         current_app.logger.debug(request_json)
         # TODO add valid formatting
         # Check if user is authorized to perform this action
