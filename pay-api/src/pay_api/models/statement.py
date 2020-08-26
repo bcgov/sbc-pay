@@ -36,6 +36,8 @@ class Statement(BaseModel):
     to_date = db.Column(db.Date, default=None, nullable=True)
 
     created_on = db.Column(db.Date, default=None, nullable=False)
+    notification_status_code = db.Column(db.String(20), ForeignKey('notification_status_code.code'), nullable=True)
+    notification_date = db.Column(db.Date, default=None, nullable=True)
 
     @classmethod
     def find_all_statements_for_account(cls, auth_account_id: str, page, limit):

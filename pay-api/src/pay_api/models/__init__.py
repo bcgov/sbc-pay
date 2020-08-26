@@ -43,6 +43,7 @@ from .line_item_status_code import LineItemStatusCode, LineItemStatusCodeSchema
 from .statement_settings import StatementSettings, StatementSettingsSchema
 from .statement import Statement, StatementSchema
 from .statement_invoices import StatementInvoices, StatementInvoicesSchema
-
+from .statement_recipients import StatementRecipients, StatementRecipientsSchema
+from .notification_status_code import NotificationStatusCode, NotificationStatusCodeSchema
 
 event.listen(Engine, 'before_cursor_execute', DBTracing.query_tracing)
