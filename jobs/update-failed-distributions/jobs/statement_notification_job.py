@@ -22,7 +22,6 @@ from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_recipients import StatementRecipients as StatementRecipientsModel
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import NotificationStatus, AuthHeaderType, ContentType
-from pay_api.utils.util import get_local_time
 from utils.auth import get_token
 
 ENV = Environment(loader=FileSystemLoader('.'), autoescape=True)
@@ -56,7 +55,7 @@ class StatementNotificationJob:
         template = ENV.get_template('statement_notification.html')
         for statement in statements_with_pending_notifications:
             statement.notification_status_code = NotificationStatus.PROCESSING.value
-            statement.notification_date = get_local_time(datetime.now())
+            statement.notification_date = datetime.now()
             statement.commit()
             payment_account = PaymentAccountModel.find_by_id(statement.payment_account_id)
             recipients = StatementRecipientsModel.find_all_recipients_for_payment_id(statement.payment_account_id)
@@ -73,11 +72,11 @@ class StatementNotificationJob:
             if not notify_response:
                 current_app.logger.error('<notification failed')
                 statement.notification_status_code = NotificationStatus.FAILED.value
-                statement.notification_date = get_local_time(datetime.now())
+                statement.notification_date = datetime.now()
                 statement.commit()
             else:
                 statement.notification_status_code = NotificationStatus.SUCCESS.value
-                statement.notification_date = get_local_time(datetime.now())
+                statement.notification_date = datetime.now()
                 statement.commit()
 
     @classmethod
