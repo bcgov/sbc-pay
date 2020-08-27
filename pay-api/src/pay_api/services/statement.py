@@ -148,12 +148,12 @@ class Statement:  # pylint:disable=too-many-instance-attributes
 
         statement_purchases = StatementModel.find_all_payments_and_invoices_for_statement(statement_id)
 
-        report_payload: dict = PaymentService.create_payment_report_details(purchases=statement_purchases, data=None)
+        result_items: dict = PaymentService.create_payment_report_details(purchases=statement_purchases, data=None)
 
-        report_payload['statement'] = statement_svc.asdict()
-
-        report_response = PaymentService.generate_payment_report(content_type, report_name, report_payload,
-                                                                 template_name, auth=kwargs.get('auth', None))
+        report_response = PaymentService.generate_payment_report(content_type, report_name, result_items,
+                                                                 template_name,
+                                                                 auth=kwargs.get('auth', None),
+                                                                 statement=statement_svc.asdict())
         current_app.logger.debug('>get_statement_report')
 
         return report_response, report_name
