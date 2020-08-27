@@ -82,6 +82,20 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # legislative timezone for future effective dating
     LEGISLATIVE_TIMEZONE = os.getenv('LEGISLATIVE_TIMEZONE', 'America/Vancouver')
 
+    # notify-API URL
+    NOTIFY_API_URL = os.getenv('NOTIFY_API_URL')
+
+    # Service account details
+    KEYCLOAK_SERVICE_ACCOUNT_ID = os.getenv('KEYCLOAK_SERVICE_ACCOUNT_ID')
+    KEYCLOAK_SERVICE_ACCOUNT_SECRET = os.getenv('KEYCLOAK_SERVICE_ACCOUNT_SECRET')
+
+    # JWT_OIDC Settings
+    JWT_OIDC_ISSUER = os.getenv('JWT_OIDC_ISSUER')
+
+    # Front end url
+    AUTH_WEB_URL = os.getenv('AUTH_WEB_URL', '')
+    AUTH_WEB_STATEMENT_URL = os.getenv('AUTH_WEB_STATEMENT_URL', 'account/orgId/settings/statements')
+
     TESTING = False
     DEBUG = True
 

@@ -128,3 +128,13 @@ class StatementFrequency(Enum):
     def default_frequency():
         """Return the default frequency for statements."""
         return StatementFrequency.WEEKLY
+
+
+class NotificationStatus(Enum):
+    """Mail notification Status."""
+
+    PENDING = 'PENDING'
+    PROCESSING = 'PROCESSING'
+    SUCCESS = 'SUCCESS'
+    SKIP = 'SKIP'
+    FAILED = 'FAILED'
