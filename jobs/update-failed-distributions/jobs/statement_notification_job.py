@@ -62,17 +62,23 @@ class StatementNotificationJob:
             recipients = StatementRecipientsModel.find_all_recipients_for_payment_id(statement.payment_account_id)
             to_emails = ','.join([str(recipient.email) for recipient in recipients])
             params['org_name'] = payment_account.auth_account_name
-            params['frequency'] = statement.frequency
+            params['frequency'] = statement.frequency.lower()
             params.update({'url': params['url'].replace('orgId', payment_account.auth_account_id)})
-            notify_response = cls.send_email(token, to_emails, template.render(params))
+            try:
+                notify_response = cls.send_email(token, to_emails, template.render(params))
+            except:
+                current_app.logger.error('<notification failed')
+                notify_response = False
+
             if not notify_response:
                 current_app.logger.error('<notification failed')
                 statement.notification_status_code = NotificationStatus.FAILED.value
                 statement.notification_date = get_local_time(datetime.now())
                 statement.commit()
-            statement.notification_status_code = NotificationStatus.SUCCESS.value
-            statement.notification_date = get_local_time(datetime.now())
-            statement.commit()
+            else:
+                statement.notification_status_code = NotificationStatus.SUCCESS.value
+                statement.notification_date = get_local_time(datetime.now())
+                statement.commit()
 
     @classmethod
     def send_email(cls, token, recipients: str,
