@@ -53,7 +53,7 @@ class Statement(BaseModel):
 
     @classmethod
     def find_all_statements_by_notification_status(cls, statuses):
-        """Return all statements for a status.Used in cron jobs"""
+        """Return all statements for a status.Used in cron jobs."""
         return cls.query \
             .filter(Statement.notification_status_code.in_(statuses)).all()
 
