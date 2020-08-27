@@ -96,4 +96,5 @@ class AccountPurchaseReport(Resource):
         response = Response(report, 201)
         response.headers.set('Content-Disposition', 'attachment', filename=report_name)
         response.headers.set('Content-Type', response_content_type)
+        response.headers.set('Access-Control-Expose-Headers', 'Content-Disposition')
         return response

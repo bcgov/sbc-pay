@@ -294,13 +294,15 @@ class Payment:  # pylint: disable=too-many-instance-attributes
                     'serviceFees': total_service_fees,
                     'fees': total
                 },
-                'account': account_info
+                'account': account_info,
+                'statement': kwargs.get('statement')
             }
 
         report_payload = {
             'reportName': report_name,
             'templateName': template_name,
-            'templateVars': template_vars
+            'templateVars': template_vars,
+            'populatePageNumber': True
         }
 
         report_response = OAuthService.post(endpoint=current_app.config.get('REPORT_API_BASE_URL'),
