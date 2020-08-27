@@ -26,9 +26,11 @@ def upgrade():
     op.bulk_insert(
         notification_status_code_table,
         [
-            {'code': 'SENT', 'description': 'Mail Sent'},
-            {'code': 'NOT_SENT', 'description': 'Mail Not yet Sent'},
-            {'code': 'SKIP_MAIL', 'description': 'No mail needed'},
+            {'code': 'PENDING', 'description': 'Mail Pending'},
+            {'code': 'PROCESSING', 'description': 'Mail Processing'},
+            {'code': 'SUCCESS', 'description': 'Mail Sent Successfully'},
+            {'code': 'SKIP', 'description': 'No mail needed'},
+            {'code': 'FAILED', 'description': 'Mail failed'},
         ]
     )
 

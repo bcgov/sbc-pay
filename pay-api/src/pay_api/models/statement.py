@@ -52,6 +52,12 @@ class Statement(BaseModel):
         return pagination.items, pagination.total
 
     @classmethod
+    def find_all_statements_by_notification_status(cls, statuses):
+        """Return all statements for a status.Used in cron jobs."""
+        return cls.query \
+            .filter(Statement.notification_status_code.in_(statuses)).all()
+
+    @classmethod
     def find_all_payments_and_invoices_for_statement(cls, statement_id: str):
         """Find all payment and invoices specific to a statement."""
         # Import from here as the statement invoice already imports statement and causes circular import.

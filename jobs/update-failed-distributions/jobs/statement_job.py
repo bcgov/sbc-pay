@@ -23,7 +23,7 @@ from pay_api.models.payment import Payment as PaymentModel
 from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_invoices import StatementInvoices as StatementInvoicesModel
 from pay_api.models.statement_settings import StatementSettings as StatementSettingsModel
-from pay_api.utils.enums import StatementFrequency
+from pay_api.utils.enums import StatementFrequency, NotificationStatus
 from pay_api.utils.util import get_local_time, \
     get_previous_month_and_year, get_week_start_and_end_date, get_first_and_last_dates_of_month, get_previous_day
 
@@ -117,7 +117,9 @@ class StatementJob:
                 payment_account_id=pay_account.id,
                 created_on=current_time,
                 from_date=statement_from,
-                to_date=statement_to
+                to_date=statement_to,
+                notification_status_code=NotificationStatus.PENDING.value if pay_account.statement_notification_enabled is True else NotificationStatus.SKIP.value
+
             )
             # Add to DB session
             statement = statement.flush()

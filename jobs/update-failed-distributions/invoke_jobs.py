@@ -57,7 +57,8 @@ def register_shellcontext(app):
 def run(job_name):
     from jobs.distribution_job import DistributionJob
     from jobs.statement_job import StatementJob
-    
+    from jobs.statement_notification_job import StatementNotificationJob
+
     application = create_app()
 
     application.app_context().push()
@@ -67,10 +68,11 @@ def run(job_name):
     elif job_name == 'GENERATE_STATEMENTS':
         StatementJob.generate_statements()
         application.logger.info(f'<<<< Completed Generating GL Codes >>>>')
+    elif job_name == 'SEND_NOTIFICATIONS':
+        StatementNotificationJob.send_notifications()
+        application.logger.info(f'<<<< Completed Sending notifications >>>>')
     else:
         application.logger.debug('No valid args passed.Exiting job without running any ***************')
-
-
 
 
 if __name__ == "__main__":
