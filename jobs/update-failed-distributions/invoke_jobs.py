@@ -58,7 +58,7 @@ def run(job_name):
     from jobs.distribution_job import DistributionJob
     from jobs.statement_job import StatementJob
     from jobs.statement_notification_job import StatementNotificationJob
-    
+
     application = create_app()
 
     application.app_context().push()
@@ -75,8 +75,6 @@ def run(job_name):
         application.logger.debug('No valid args passed.Exiting job without running any ***************')
 
 
-
-
 if __name__ == "__main__":
-    print('-------------**********---Scheduler Ran With Argument-----*-', sys.argv[1])
+    print('----------------------------Scheduler Ran With Argument--', sys.argv[1])
     run(sys.argv[1])
