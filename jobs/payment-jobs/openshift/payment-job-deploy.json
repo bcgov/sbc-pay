@@ -89,7 +89,7 @@
                   {
                     "name": "cron-config",
                     "readOnly": true,
-                    "mountPath": "/payment-job/cron/"
+                    "mountPath": "/payment-jobs/cron/"
                   }
                 ],
                 "env": [
@@ -186,7 +186,7 @@
                   {
                     "name": "PAYBC_DIRECT_PAY_REF_NUMBER",
                     "valueFrom": {
-                      "configMapKeyRef": {
+                      "secretKeyRef": {
                         "name": "pay-api-${TAG_NAME}-secret",
                         "key": "PAYBC_DIRECT_PAY_REF_NUMBER"
                       }
@@ -195,7 +195,7 @@
                   {
                     "name": "PAYBC_DIRECT_PAY_API_KEY",
                     "valueFrom": {
-                      "configMapKeyRef": {
+                      "secretKeyRef": {
                         "name": "pay-api-${TAG_NAME}-secret",
                         "key": "PAYBC_DIRECT_PAY_API_KEY"
                       }
@@ -204,7 +204,7 @@
                   {
                     "name": "PAYBC_DIRECT_PAY_BASE_URL",
                     "valueFrom": {
-                      "configMapKeyRef": {
+                      "secretKeyRef": {
                         "name": "pay-api-${TAG_NAME}-secret",
                         "key": "PAYBC_DIRECT_PAY_BASE_URL"
                       }
@@ -213,7 +213,7 @@
                   {
                     "name": "PAYBC_DIRECT_PAY_CLIENT_ID",
                     "valueFrom": {
-                      "configMapKeyRef": {
+                      "secretKeyRef": {
                         "name": "pay-api-${TAG_NAME}-secret",
                         "key": "PAYBC_DIRECT_PAY_CLIENT_ID"
                       }
@@ -222,7 +222,7 @@
                   {
                     "name": "PAYBC_DIRECT_PAY_CLIENT_SECRET",
                     "valueFrom": {
-                      "configMapKeyRef": {
+                      "secretKeyRef": {
                         "name": "pay-api-${TAG_NAME}-secret",
                         "key": "PAYBC_DIRECT_PAY_CLIENT_SECRET"
                       }

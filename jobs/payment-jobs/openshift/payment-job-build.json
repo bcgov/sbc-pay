@@ -77,21 +77,21 @@
       "displayName": "Git Repo URL",
       "description": "The URL to your GIT repo, don't use the this default unless your just experimenting.",
       "required": true,
-      "value": "https://github.com/bcgov/sbc-pay.git"
+      "value": "https://github.com/saravanpa-aot/sbc-pay.git"
     },
     {
       "name": "GIT_REF",
       "displayName": "Git Reference",
       "description": "The git reference or branch.",
       "required": true,
-      "value": "development"
+      "value": "restru"
     },
     {
       "name": "SOURCE_CONTEXT_DIR",
       "displayName": "Source Context Directory",
       "description": "The source context directory.",
       "required": true,
-      "value": "jobs/payment-job"
+      "value": "jobs/payment-jobs"
     },
     {
       "name": "SOURCE_IMAGE_KIND",

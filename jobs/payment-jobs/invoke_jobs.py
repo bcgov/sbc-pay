@@ -55,9 +55,9 @@ def register_shellcontext(app):
 
 
 def run(job_name):
-    from tasks.distribution_job import DistributionTask
-    from tasks.statement_job import StatementTask
-    from tasks.statement_notification_job import StatementNotificationTask
+    from tasks.distribution_task import DistributionTask
+    from tasks.statement_task import StatementTask
+    from tasks.statement_notification_task import StatementNotificationTask
 
     application = create_app()
 

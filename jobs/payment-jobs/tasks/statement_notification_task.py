@@ -27,7 +27,7 @@ from utils.auth import get_token
 ENV = Environment(loader=FileSystemLoader('.'), autoescape=True)
 
 
-class StatementNotificationJob:
+class StatementNotificationTask:
 
     @classmethod
     def send_notifications(cls):
