@@ -21,7 +21,7 @@ ARG user=pay
 RUN useradd -U -ms /bin/bash -u $uid $user \
     && usermod -a -G root $user
 
-ENV HOME=/update-failed-distributions
+ENV HOME=/payment-jobs
 
 RUN mkdir $HOME && chmod 755 $HOME
 
