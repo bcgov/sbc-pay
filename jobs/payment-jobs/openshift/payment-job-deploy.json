@@ -3,7 +3,7 @@
   "apiVersion": "v1",
   "metadata": {
     "annotations": {
-      "description": "Deployment template for a update-failed-distributions-job.",
+      "description": "Deployment template for a payment job.",
       "tags": "${NAME}-${TAG_NAME}"
     },
     "name": "${NAME}-${TAG_NAME}-deploy"
@@ -89,7 +89,7 @@
                   {
                     "name": "cron-config",
                     "readOnly": true,
-                    "mountPath": "/update-failed-distributions/cron/"
+                    "mountPath": "/payment-job/cron/"
                   }
                 ],
                 "env": [
@@ -291,7 +291,7 @@
       "displayName": "Name",
       "description": "The name assigned to all of the OpenShift resources associated to the server instance.",
       "required": true,
-      "value": "update-failed-distributions"
+      "value": "payment-job"
     },
     {
       "name": "APP_GROUP",
