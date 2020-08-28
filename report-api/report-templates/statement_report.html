@@ -338,7 +338,7 @@
             <div class="r-title">Deposit Account Statement</div>
             {% if statement.from_date or statement.to_date %}
             <div class="r-subtitle">
-              {% if statement.frequency is 'DAILY' %}
+              {% if 'DAILY' == statement.frequency %}
                 {{statement.from_date}}
               {% else %}
                 {{statement.from_date}} to {{statement.to_date}}
@@ -379,7 +379,7 @@
           <div class="line-height-reg">
             <div class="account-info-title">Statement Period:</div>
             <div class="account-info-value">
-              {% if statement.frequency is 'DAILY' %}
+              {% if 'DAILY' == statement.frequency %}
                 {{statement.from_date}}
               {% else %}
                 {{statement.from_date}} to {{statement.to_date}}
