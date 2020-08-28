@@ -29,7 +29,7 @@ STATUS_NOT_PROCESSED = ('PAID', 'RJCT')
 DECIMAL_PRECISION = '.2f'
 
 
-class DistributionJob:
+class DistributionTask:
 
     @classmethod
     def update_failed_distributions(cls):

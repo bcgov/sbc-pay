@@ -93,8 +93,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     JWT_OIDC_ISSUER = os.getenv('JWT_OIDC_ISSUER')
 
     # Front end url
-    AUTH_WEB_URL = os.getenv('AUTH_WEB_URL', '')
+    AUTH_WEB_URL = os.getenv('AUTH_WEB_PAY_TRANSACTION_URL', '')
     AUTH_WEB_STATEMENT_URL = os.getenv('AUTH_WEB_STATEMENT_URL', 'account/orgId/settings/statements')
+    REGISTRIES_LOGO_IMAGE_NAME = os.getenv('REGISTRIES_LOGO_IMAGE_NAME', 'bc_logo_for_email.png')
 
     TESTING = False
     DEBUG = True

@@ -28,7 +28,7 @@ from pay_api.utils.util import get_local_time, \
     get_previous_month_and_year, get_week_start_and_end_date, get_first_and_last_dates_of_month, get_previous_day
 
 
-class StatementJob:
+class StatementTask:
 
     @classmethod
     def generate_statements(cls):

@@ -33,7 +33,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     app = Flask(__name__)
 
     app.config.from_object(config.CONFIGURATION[run_mode])
-    app.logger.info(f'<<<< Starting generate statements >>>>')
+    app.logger.info(f'<<<< Starting Payment Jobs >>>>')
     db.init_app(app)
     ma.init_app(app)
 
@@ -55,21 +55,21 @@ def register_shellcontext(app):
 
 
 def run(job_name):
-    from jobs.distribution_job import DistributionJob
-    from jobs.statement_job import StatementJob
-    from jobs.statement_notification_job import StatementNotificationJob
+    from tasks.distribution_task import DistributionTask
+    from tasks.statement_task import StatementTask
+    from tasks.statement_notification_task import StatementNotificationTask
 
     application = create_app()
 
     application.app_context().push()
     if job_name == 'UPDATE_GL_CODE':
-        DistributionJob.update_failed_distributions()
+        DistributionTask.update_failed_distributions()
         application.logger.info(f'<<<< Completed Updating GL Codes >>>>')
     elif job_name == 'GENERATE_STATEMENTS':
-        StatementJob.generate_statements()
-        application.logger.info(f'<<<< Completed Generating GL Codes >>>>')
+        StatementTask.generate_statements()
+        application.logger.info(f'<<<< Completed Generating Statements >>>>')
     elif job_name == 'SEND_NOTIFICATIONS':
-        StatementNotificationJob.send_notifications()
+        StatementNotificationTask.send_notifications()
         application.logger.info(f'<<<< Completed Sending notifications >>>>')
     else:
         application.logger.debug('No valid args passed.Exiting job without running any ***************')

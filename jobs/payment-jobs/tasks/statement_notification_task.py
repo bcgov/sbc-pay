@@ -27,7 +27,7 @@ from utils.auth import get_token
 ENV = Environment(loader=FileSystemLoader('.'), autoescape=True)
 
 
-class StatementNotificationJob:
+class StatementNotificationTask:
 
     @classmethod
     def send_notifications(cls):
@@ -65,8 +65,9 @@ class StatementNotificationJob:
             params.update({'url': params['url'].replace('orgId', payment_account.auth_account_id)})
             try:
                 notify_response = cls.send_email(token, to_emails, template.render(params))
-            except:
+            except Exception as e:
                 current_app.logger.error('<notification failed')
+                current_app.logger.error(e)
                 notify_response = False
 
             if not notify_response:
