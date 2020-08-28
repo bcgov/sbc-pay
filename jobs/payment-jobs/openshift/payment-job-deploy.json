@@ -50,7 +50,7 @@
             "type": "ConfigChange"
           }
         ],
-        "replicas": "${REPLICAS}",
+        "replicas": 1,
         "test": false,
         "selector": {
           "app": "${NAME}-${TAG_NAME}",
@@ -229,11 +229,11 @@
                     }
                   },
                   {
-                    "name": "NOTIFY_SVC_URL",
+                    "name": "NOTIFY_API_URL",
                     "valueFrom": {
                       "secretKeyRef": {
                         "name": "pay-api-${TAG_NAME}-secret",
-                        "key": "NOTIFY_SVC_URL"
+                        "key": "NOTIFY_API_URL"
                       }
                     }
                   },
@@ -265,20 +265,11 @@
                     }
                   },
                   {
-                    "name": "AUTH_WEB_URL",
+                    "name": "AUTH_WEB_PAY_TRANSACTION_URL",
                     "valueFrom": {
                       "secretKeyRef": {
                         "name": "pay-api-${TAG_NAME}-secret",
-                        "key": "AUTH_WEB_URL"
-                      }
-                    }
-                  },
-                  {
-                    "name": "REGISTRIES_LOGO_IMAGE_NAME",
-                    "valueFrom": {
-                      "secretKeyRef": {
-                        "name": "pay-api-${TAG_NAME}-secret",
-                        "key": "REGISTRIES_LOGO_IMAGE_NAME"
+                        "key": "AUTH_WEB_PAY_TRANSACTION_URL"
                       }
                     }
                   }
