@@ -130,7 +130,7 @@ class StatementRecipients:  # pylint:disable=too-many-instance-attributes
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
         data = {
             'recipients': NotificationSchema().dump(recipients, many=True),
-            'statement_notification_enabled': payment_account.statement_notification_enabled
+            'statement_notification_enabled': getattr(payment_account, 'statement_notification_enabled', False)
         }
 
         current_app.logger.debug('>find_statement_notification_details')
