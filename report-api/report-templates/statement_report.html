@@ -345,9 +345,11 @@
           </div>
           <div class="r-heading">
             <div class="r-title">Deposit Account Statement</div>
+            {% if statement.from_date or statement.to_date %}
             <div class="r-subtitle">
-              MM-DD-YYYY to MM-DD-YYYY
+              {{statement.from_date}} to {{statement.to_date}}
             </div>
+            {% endif %}
           </div>
         </td>
       </tr>
@@ -366,22 +368,30 @@
           {% endif %}
         </td>
         <td class="account-info">
+          {% if statement.name %}
           <div class="line-height-reg">
             <div class="account-info-title">Account Name:</div>
-            <div class="account-info-value">My BC Registries Account</div>
+            <div class="account-info-value">{{account.name}}</div>
           </div>
+          {% endif %}
+          {% if statement.accountNumber %}
           <div class="line-height-reg">
             <div class="account-info-title">Account Number:</div>
-            <div class="account-info-value">#12345678</div>
+            <div class="account-info-value">#{{account.accountNumber}}</div>
           </div>
+          {% endif %}
+          {% if statement.from_date or statement.to_date %}
           <div class="line-height-reg">
             <div class="account-info-title">Statement Period:</div>
-            <div class="account-info-value">08-28-2028 to 08-30-1994</div>
+            <div class="account-info-value">{{statement.from_date}} to {{statement.to_date}}</div>
           </div>
+          {% endif %}
+          {% if statement.dueDate %}
           <div class="line-height-reg">
             <div class="account-info-title">Due Date:</div>
-            <div class="account-info-value">MM-DD-YYYY</div>
+            <div class="account-info-value">{{statement.dueDate}}</div>
           </div>
+          {% endif %}
         </td>
       </tr>
       <tr>
@@ -392,98 +402,100 @@
           </div>
         </td>
       </tr>
-      <tr>
-        <td colspan="2">
-          <div class="section-title">
-            Transactions
-          </div>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2">
-          <table class="transaction-table">
-            <thead>
-              <th>Folio</th>
-              <th>Product Purchased</th>
-              <th class="two-line-head" style="width: 96px;">Transaction Date</th>
-              <th>Fee Code</th>
-              <th>Fee</th>
-              <th>GST</th>
-              <th class="two-line-head" style="width: 45px;">Service Charge</th>
-              <th>Total</th>
-            </thead>
-            <tbody>
-              {% for item in payments %}
-              <tr>
-                <td>{{item.invoice.folio_number}}</td>
-                <td class="product-purchased">
-                  {% for lineItemProduct in item.invoice.line_items %}
-                  <div>{{lineItemProduct.description}}</div>
-                  {% endfor %}
-                  <div>#{{item.invoice.business_identifier}}</div>
-                </td>
-                <td>{{item.invoice.created_on}}</td>
-                <td>
-                  {% for lineItemFeeCode in item.invoice.line_items %}
-                  <div>{{lineItemFeeCode.filing_type_code}}</div>
-                  {% endfor %}
-                </td>
-                <td>${{(item.invoice.total - item.invoice.service_fees) if (item.invoice.service_fees and item.invoice.total) else '0.00'}}</td>
-                <td>${{item.invoice.gst if item.invoice.gst else '0.00'}}</td>
-                <td>${{item.invoice.service_fees if item.invoice.service_fees else '0.00'}}</td>
-                <td class="font-bold">$${{item.invoice.total if item.invoice.total else '0.00'}}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2">
-          <div class="section-title mb-0">
-            Totals
-          </div>
-        </td>
-      </tr>
-      {% if total.statutoryFees %}
-      <tr>
-        <td colspan="2">
-          <div class="total-elements">      
-            Transaction Fees:
-            <span class="total-elements-price">${{total.statutoryFees}}</span>
-          </div>
-        </td>
-      </tr>
-      {% endif %}
-      {% if total.gst %}
-      <tr>
-        <td colspan="2">
-          <div class="total-elements">      
-            Goods & Services Tax (GST):
-            <span class="total-elements-price">${{total.gst}}</span>
-          </div>
-        </td>
-      </tr>
-      {% endif %}
-      {% if total.serviceFees %}
-      <tr>
-        <td colspan="2">
-          <div class="total-elements">
-            Service Charges:
-            <span class="total-elements-price">${{total.serviceFees}}</span>
-          </div>
-        </td>
-      </tr>
-      {% endif %}
-      {% if total.fees %}
-      <tr>
-        <td colspan="2">
-          <div class="total-elements grand-total">
-            Total Amount Due:
-            <span class="total-elements-price">${{total.fees}}</span>
-          </div>
-        </td>
-      </tr>
+      {% if payments and payments.length %}
+        <tr>
+          <td colspan="2">
+            <div class="section-title">
+              Transactions
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2">
+            <table class="transaction-table">
+              <thead>
+                <th>Folio</th>
+                <th>Product Purchased</th>
+                <th class="two-line-head" style="width: 96px;">Transaction Date</th>
+                <th>Fee Code</th>
+                <th>Fee</th>
+                <th>GST</th>
+                <th class="two-line-head" style="width: 45px;">Service Charge</th>
+                <th>Total</th>
+              </thead>
+              <tbody>
+                {% for item in payments %}
+                <tr>
+                  <td>{{item.invoice.folio_number}}</td>
+                  <td class="product-purchased">
+                    {% for lineItemProduct in item.invoice.line_items %}
+                    <div>{{lineItemProduct.description}}</div>
+                    {% endfor %}
+                    <div>#{{item.invoice.business_identifier}}</div>
+                  </td>
+                  <td>{{item.invoice.created_on}}</td>
+                  <td>
+                    {% for lineItemFeeCode in item.invoice.line_items %}
+                    <div>{{lineItemFeeCode.filing_type_code}}</div>
+                    {% endfor %}
+                  </td>
+                  <td>${{(item.invoice.total - item.invoice.service_fees) if (item.invoice.service_fees and item.invoice.total) else '0.00'}}</td>
+                  <td>${{item.invoice.gst if item.invoice.gst else '0.00'}}</td>
+                  <td>${{item.invoice.service_fees if item.invoice.service_fees else '0.00'}}</td>
+                  <td class="font-bold">$${{item.invoice.total if item.invoice.total else '0.00'}}</td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2">
+            <div class="section-title mb-0">
+              Totals
+            </div>
+          </td>
+        </tr>
+        {% if total.statutoryFees %}
+        <tr>
+          <td colspan="2">
+            <div class="total-elements">      
+              Transaction Fees:
+              <span class="total-elements-price">${{total.statutoryFees}}</span>
+            </div>
+          </td>
+        </tr>
+        {% endif %}
+        {% if total.gst %}
+        <tr>
+          <td colspan="2">
+            <div class="total-elements">      
+              Goods & Services Tax (GST):
+              <span class="total-elements-price">${{total.gst}}</span>
+            </div>
+          </td>
+        </tr>
+        {% endif %}
+        {% if total.serviceFees %}
+        <tr>
+          <td colspan="2">
+            <div class="total-elements">
+              Service Charges:
+              <span class="total-elements-price">${{total.serviceFees}}</span>
+            </div>
+          </td>
+        </tr>
+        {% endif %}
+        {% if total.fees %}
+        <tr>
+          <td colspan="2">
+            <div class="total-elements grand-total">
+              Total Amount Due:
+              <span class="total-elements-price">${{total.fees}}</span>
+            </div>
+          </td>
+        </tr>
+        {% endif %}
       {% endif %}
     </tbody>
     <tfoot>
@@ -495,8 +507,8 @@
                 alt="BC registries Logo" class="logo2">
           </div>
           <div class="footer-info">
-            <span>Statement #124243</span>
-            <span>Page 1 of 1 </span>
+            <span>Statement #{{statement.id}}</span>
+            <pageinfo></pageinfo>
           </div>
         </td>
       </tr>
