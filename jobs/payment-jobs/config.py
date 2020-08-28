@@ -83,7 +83,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     LEGISLATIVE_TIMEZONE = os.getenv('LEGISLATIVE_TIMEZONE', 'America/Vancouver')
 
     # notify-API URL
-    NOTIFY_API_URL = os.getenv('NOTIFY_API_URL')
+    NOTIFY_SVC_URL = os.getenv('NOTIFY_SVC_URL')
 
     # Service account details
     KEYCLOAK_SERVICE_ACCOUNT_ID = os.getenv('KEYCLOAK_SERVICE_ACCOUNT_ID')

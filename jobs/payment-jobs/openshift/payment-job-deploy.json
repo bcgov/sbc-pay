@@ -229,11 +229,11 @@
                     }
                   },
                   {
-                    "name": "NOTIFY_API_URL",
+                    "name": "NOTIFY_SVC_URL",
                     "valueFrom": {
                       "secretKeyRef": {
                         "name": "pay-api-${TAG_NAME}-secret",
-                        "key": "NOTIFY_API_URL"
+                        "key": "NOTIFY_SVC_URL"
                       }
                     }
                   },

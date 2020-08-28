@@ -85,7 +85,7 @@ class StatementNotificationTask:
         """Send the email asynchronously, using the given details."""
         subject = 'Your BC Registries statement is available'
         current_app.logger.info(f'send_email to recipients: {recipients}')
-        notify_url = current_app.config.get('NOTIFY_API_URL') + '/notify/'
+        notify_url = current_app.config.get('NOTIFY_SVC_URL') + '/notify/'
         notify_body = {
             'recipients': recipients,
             'content': {
