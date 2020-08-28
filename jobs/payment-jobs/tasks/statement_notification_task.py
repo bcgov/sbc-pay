@@ -63,7 +63,12 @@ class StatementNotificationTask:
             params['org_name'] = payment_account.auth_account_name
             params['frequency'] = statement.frequency.lower()
             params.update({'url': params['url'].replace('orgId', payment_account.auth_account_id)})
-            notify_response = cls.send_email(token, to_emails, template.render(params))
+            try:
+                notify_response = cls.send_email(token, to_emails, template.render(params))
+            except Exception as e:
+                current_app.logger.error('<notification failed')
+                current_app.logger.error(e)
+                notify_response = False
 
             if not notify_response:
                 current_app.logger.error('<notification failed')
@@ -81,7 +86,7 @@ class StatementNotificationTask:
         """Send the email asynchronously, using the given details."""
         subject = 'Your BC Registries statement is available'
         current_app.logger.info(f'send_email to recipients: {recipients}')
-        notify_url = current_app.config.get('NOTIFY_SVC_URL') + '/notify/'
+        notify_url = current_app.config.get('NOTIFY_API_URL') + '/notify/'
         notify_body = {
             'recipients': recipients,
             'content': {
