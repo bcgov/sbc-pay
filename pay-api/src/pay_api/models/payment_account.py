@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Payment Account data."""
+from sqlalchemy import Boolean
+
 from .base_model import BaseModel
 from .db import db, ma
 
@@ -26,10 +28,11 @@ class PaymentAccount(BaseModel):  # pylint: disable=too-many-instance-attributes
     auth_account_id = db.Column(db.String(50), nullable=True, index=True)
     # More columns to come to handle account transactions for PAD transactions
 
-    @classmethod
-    def find_by_id(cls, identifier: int):
-        """Return a Account by id."""
-        return cls.query.get(identifier)
+    # used for sending out notifications.The statement emails needs account name
+    auth_account_name = db.Column(db.String(250), nullable=True, index=False)
+
+    # when this is enabled , send out the  notifications
+    statement_notification_enabled = db.Column('statement_notification_enabled', Boolean(), default=False)
 
     @classmethod
     def find_by_auth_account_id(cls, auth_account_id: str):

@@ -56,11 +56,6 @@ class Payment(Audit):  # pylint: disable=too-many-instance-attributes
     transactions = relationship('PaymentTransaction')
 
     @classmethod
-    def find_by_id(cls, identifier: int):
-        """Return a Payment by id."""
-        return cls.query.get(identifier)
-
-    @classmethod
     def find_payment_method_by_payment_id(cls, identifier: int):
         """Return a Payment by id."""
         query = db.session.query(PaymentMethod) \

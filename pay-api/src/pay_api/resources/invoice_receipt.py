@@ -51,6 +51,7 @@ class InvoiceReceipt(Resource):
             file_name = 'Coops-Filing' if not file_name else file_name
             response.headers.set('Content-Disposition', 'attachment', filename='{}.pdf'.format(file_name))
             response.headers.set('Content-Type', 'application/pdf')
+            response.headers.set('Access-Control-Expose-Headers', 'Content-Disposition')
             return response
 
         except BusinessException as exception:

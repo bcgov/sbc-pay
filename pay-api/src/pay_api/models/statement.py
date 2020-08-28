@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle statements data."""
-from datetime import date
 
-
-from sqlalchemy import ForeignKey
-
-from .payment_account import PaymentAccount
+from sqlalchemy import ForeignKey, and_
 
 from .base_model import BaseModel
 from .db import db, ma
+from .invoice import Invoice
+from .payment import Payment
+from .payment_account import PaymentAccount
 
 
 class Statement(BaseModel):
@@ -31,21 +30,45 @@ class Statement(BaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
     frequency = db.Column(db.String(50), nullable=True, index=True)
+    statement_settings_id = db.Column(db.Integer, ForeignKey('statement_settings.id'), nullable=True, index=True)
     payment_account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True, index=True)
-    from_date = db.Column(db.Date, default=date.today(), nullable=False)
-    to_date = db.Column(db.Date, default=None, nullable=False)
-    status = db.Column(db.String(50), nullable=True, index=True)
+    from_date = db.Column(db.Date, default=None, nullable=False)
+    to_date = db.Column(db.Date, default=None, nullable=True)
+
+    created_on = db.Column(db.Date, default=None, nullable=False)
+    notification_status_code = db.Column(db.String(20), ForeignKey('notification_status_code.code'), nullable=True)
+    notification_date = db.Column(db.Date, default=None, nullable=True)
 
     @classmethod
-    def find_all_statements_for_account(cls, account_id: str, page, limit):
+    def find_all_statements_for_account(cls, auth_account_id: str, page, limit):
         """Return all active statements for an account."""
-        # TODO is status needed.If needed , does it need a separate table to store statuses
-        query = cls.query.filter(Statement.status == 'ACTIVE'). \
-            join(PaymentAccount).filter(PaymentAccount.auth_account_id == account_id)
+        query = cls.query \
+            .join(PaymentAccount) \
+            .filter(and_(PaymentAccount.id == cls.payment_account_id,
+                         PaymentAccount.auth_account_id == auth_account_id))
 
         query = query.order_by(Statement.id)
         pagination = query.paginate(per_page=limit, page=page)
         return pagination.items, pagination.total
+
+    @classmethod
+    def find_all_statements_by_notification_status(cls, statuses):
+        """Return all statements for a status.Used in cron jobs."""
+        return cls.query \
+            .filter(Statement.notification_status_code.in_(statuses)).all()
+
+    @classmethod
+    def find_all_payments_and_invoices_for_statement(cls, statement_id: str):
+        """Find all payment and invoices specific to a statement."""
+        # Import from here as the statement invoice already imports statement and causes circular import.
+        from .statement_invoices import StatementInvoices  # pylint: disable=import-outside-toplevel
+
+        query = db.session.query(Payment, Invoice) \
+            .join(StatementInvoices, StatementInvoices.invoice_id == Invoice.id) \
+            .join(Statement, Statement.id == StatementInvoices.statement_id) \
+            .filter(Statement.id == statement_id)
+
+        return query.all()
 
 
 class StatementSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
@@ -55,4 +78,3 @@ class StatementSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Statement
-        exclude = ['status']

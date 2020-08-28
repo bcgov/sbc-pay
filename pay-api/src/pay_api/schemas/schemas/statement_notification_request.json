@@ -1,0 +1,38 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/statement_notification_request",
+  "type": "object",
+  "title": "statement_notification_request",
+  "required": [
+    "statementNotificationEnabled",
+    "authAccountName"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "statementNotificationEnabled": {
+      "$id": "#/properties/statementNotificationEnabled",
+      "type": "boolean",
+      "title": "statementNotificationEnabled",
+      "default": false,
+      "examples": [
+        true
+      ]
+    },
+    "authAccountName": {
+      "$id": "#/properties/authAccountName",
+      "type": "string",
+      "title": "Auth account Name",
+      "default": "",
+        "examples": [
+          "Foobar Inc."
+        ],
+        "pattern": "^[^\\s]+(\\s+[^\\s]+)*$"
+    },
+    "recipients": {
+      "type": "array",
+      "items": {
+        "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/recipients"
+      }
+    }
+  }
+}

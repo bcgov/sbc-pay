@@ -79,6 +79,24 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     PAYBC_DIRECT_PAY_CLIENT_ID = os.getenv('PAYBC_DIRECT_PAY_CLIENT_ID')
     PAYBC_DIRECT_PAY_CLIENT_SECRET = os.getenv('PAYBC_DIRECT_PAY_CLIENT_SECRET')
 
+    # legislative timezone for future effective dating
+    LEGISLATIVE_TIMEZONE = os.getenv('LEGISLATIVE_TIMEZONE', 'America/Vancouver')
+
+    # notify-API URL
+    NOTIFY_API_URL = os.getenv('NOTIFY_API_URL')
+
+    # Service account details
+    KEYCLOAK_SERVICE_ACCOUNT_ID = os.getenv('KEYCLOAK_SERVICE_ACCOUNT_ID')
+    KEYCLOAK_SERVICE_ACCOUNT_SECRET = os.getenv('KEYCLOAK_SERVICE_ACCOUNT_SECRET')
+
+    # JWT_OIDC Settings
+    JWT_OIDC_ISSUER = os.getenv('JWT_OIDC_ISSUER')
+
+    # Front end url
+    AUTH_WEB_URL = os.getenv('AUTH_WEB_PAY_TRANSACTION_URL', '')
+    AUTH_WEB_STATEMENT_URL = os.getenv('AUTH_WEB_STATEMENT_URL', 'account/orgId/settings/statements')
+    REGISTRIES_LOGO_IMAGE_NAME = os.getenv('REGISTRIES_LOGO_IMAGE_NAME', 'bc_logo_for_email.png')
+
     TESTING = False
     DEBUG = True
 

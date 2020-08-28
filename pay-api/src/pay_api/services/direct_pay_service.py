@@ -146,7 +146,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
             # Check if trnApproved is 1=Success, 0=Declined
             trn_approved: str = parsed_args.get('trnApproved')
             if trn_approved == '1' and not HashingService.is_valid_checksum(pay_response_url_without_hash, hash_value):
-                current_app.logger.warn(f'Transaction is approved, but hash is not matching : {pay_response_url}')
+                current_app.logger.warning(f'Transaction is approved, but hash is not matching : {pay_response_url}')
                 return None
             # Get the transaction number from args
             paybc_transaction_number = parsed_args.get('pbcTxnNumber')
@@ -163,11 +163,13 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
         transaction_response = self.get(
             f'{paybc_transaction_url}/paybc/payment/{paybc_ref_number}/{paybc_transaction_number}',
-            access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+            access_token, AuthHeaderType.BEARER, ContentType.JSON, return_none_if_404=True)
 
-        if transaction_response and transaction_response.get('paymentstatus') == STATUS_PAID:
-            return transaction_response.get('trnorderid'), parser.parse(
-                transaction_response.get('trndate')), float(transaction_response.get('trnamount')),
+        if transaction_response:
+            response_json = transaction_response.json()
+            if response_json.get('paymentstatus') == STATUS_PAID:
+                return response_json.get('trnorderid'), parser.parse(
+                    response_json.get('trndate')), float(response_json.get('trnamount')),
 
         return None
 

@@ -17,18 +17,19 @@ import base64
 from flask import current_app
 from pay_api.models.distribution_code import DistributionCode as DistributionCodeModel
 from pay_api.models.invoice import Invoice as InvoiceModel
+from pay_api.models.payment import Payment as PaymentModel
 from pay_api.models.payment_line_item import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceStatus, \
-    InvoiceReferenceStatus
+    InvoiceReferenceStatus, PaymentMethod
 
 STATUS_PAID = 'PAID'
-STATUS_PROCESSED = 'PROCESSED'
+STATUS_NOT_PROCESSED = ('PAID', 'RJCT')
 DECIMAL_PRECISION = '.2f'
 
 
-class DistributionService(OAuthService):
+class DistributionTask:
 
     @classmethod
     def update_failed_distributions(cls):
@@ -49,52 +50,55 @@ class DistributionService(OAuthService):
             paybc_ref_number: str = current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')
             paybc_svc_base_url = current_app.config.get('PAYBC_DIRECT_PAY_BASE_URL')
             for gl_updated_invoice in gl_updated_invoices:
-                active_reference = list(
-                    filter(lambda reference: (reference.status_code == InvoiceReferenceStatus.COMPLETED.value),
-                           gl_updated_invoice.references))[0]
-                payment_url: str = f'{paybc_svc_base_url}/paybc/payment/{paybc_ref_number}/{active_reference.invoice_number}'
+                payment: PaymentModel = PaymentModel.find_by_id(gl_updated_invoice.payment_id)
+                # For now handle only GL updates for Direct Pay, more to come in future
+                if payment.payment_method_code != PaymentMethod.DIRECT_PAY.value:
+                    cls.__update_invoice_status(gl_updated_invoice, InvoiceStatus.PAID.value)
+                else:
+                    active_reference = list(
+                        filter(lambda reference: (reference.status_code == InvoiceReferenceStatus.COMPLETED.value),
+                               gl_updated_invoice.references))[0]
+                    payment_url: str = f'{paybc_svc_base_url}/paybc/payment/{paybc_ref_number}/{active_reference.invoice_number}'
 
-                payment_details: dict = cls.get_payment_details(payment_url, access_token)
-                if payment_details and payment_details.get('paymentstatus') == STATUS_PAID:
-                    has_gl_completed: bool = True
-                    for revenue in payment_details.get('revenue'):
-                        if revenue.get('glstatus') != STATUS_PROCESSED:
-                            has_gl_completed = False
+                    payment_details: dict = cls.get_payment_details(payment_url, access_token)
+                    if payment_details and payment_details.get('paymentstatus') == STATUS_PAID:
+                        has_gl_completed: bool = True
+                        for revenue in payment_details.get('revenue'):
+                            if revenue.get('glstatus') in STATUS_NOT_PROCESSED:
+                                has_gl_completed = False
 
-                    if not has_gl_completed:
-                        post_revenue_payload = {
-                            'revenue': []
-                        }
+                        if not has_gl_completed:
+                            post_revenue_payload = {
+                                'revenue': []
+                            }
 
-                        invoice: InvoiceService = InvoiceService.find_by_id(identifier=gl_updated_invoice.id,
-                                                                            skip_auth_check=True)
+                            invoice: InvoiceService = InvoiceService.find_by_id(identifier=gl_updated_invoice.id,
+                                                                                skip_auth_check=True)
 
-                        payment_line_items = PaymentLineItemModel.find_by_invoice_ids([invoice.id])
-                        index: int = 0
+                            payment_line_items = PaymentLineItemModel.find_by_invoice_ids([invoice.id])
+                            index: int = 0
 
-                        for payment_line_item in payment_line_items:
-                            distribution_code = DistributionCodeModel.find_by_id(payment_line_item.fee_distribution_id)
-                            index = index + 1
-                            post_revenue_payload['revenue'].append(
-                                cls.get_revenue_details(index, distribution_code, payment_line_item.total))
-
-                            if payment_line_item.service_fees is not None and payment_line_item.service_fees > 0:
+                            for payment_line_item in payment_line_items:
+                                distribution_code = DistributionCodeModel.find_by_id(payment_line_item.fee_distribution_id)
                                 index = index + 1
                                 post_revenue_payload['revenue'].append(
-                                    cls.get_revenue_details(index, distribution_code, payment_line_item.service_fees,
-                                                            is_service_fee=True))
+                                    cls.get_revenue_details(index, distribution_code, payment_line_item.total))
 
-                        cls.post(payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
-                                 post_revenue_payload)
+                                if payment_line_item.service_fees is not None and payment_line_item.service_fees > 0:
+                                    index = index + 1
+                                    post_revenue_payload['revenue'].append(
+                                        cls.get_revenue_details(index, distribution_code, payment_line_item.service_fees,
+                                                                is_service_fee=True))
 
-                    gl_updated_invoice.invoice_status_code = InvoiceStatus.PAID.value
-                    gl_updated_invoice.save()
-                    current_app.logger.info(f'Updated invoice : {invoice.id}')
+                            OAuthService.post(payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                              post_revenue_payload)
+
+                        cls.__update_invoice_status(gl_updated_invoice, InvoiceStatus.PAID.value)
 
     @classmethod
     def get_payment_details(cls, payment_url: str, access_token: str):
         """Get the receipt details by calling PayBC web service."""
-        payment_response = cls.get(payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+        payment_response = OAuthService.get(payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
         return payment_response
 
     @classmethod
@@ -125,7 +129,14 @@ class DistributionService(OAuthService):
             bytes(current_app.config.get('PAYBC_DIRECT_PAY_CLIENT_ID') + ':' + current_app.config.get(
                 'PAYBC_DIRECT_PAY_CLIENT_SECRET'), 'utf-8')).decode('utf-8')
         data = 'grant_type=client_credentials'
-        token_response = cls.post(token_url, basic_auth_encoded, AuthHeaderType.BASIC, ContentType.FORM_URL_ENCODED,
-                                  data)
+        token_response = OAuthService.post(token_url, basic_auth_encoded, AuthHeaderType.BASIC,
+                                           ContentType.FORM_URL_ENCODED,
+                                           data)
         current_app.logger.debug('>Getting token')
         return token_response
+
+    @classmethod
+    def __update_invoice_status(cls, gl_updated_invoice, status: str):
+        gl_updated_invoice.invoice_status_code = status
+        gl_updated_invoice.save()
+        current_app.logger.info(f'Updated invoice : {gl_updated_invoice.id}')

@@ -21,15 +21,15 @@ ARG user=pay
 RUN useradd -U -ms /bin/bash -u $uid $user \
     && usermod -a -G root $user
 
-ENV HOME=/update-failed-distributions
+ENV HOME=/payment-jobs
 
 RUN mkdir $HOME && chmod 755 $HOME
 
 WORKDIR $HOME
 
 # Install the requirements
-COPY ./src/requirements.txt .
-COPY ./src/requirements/ ./requirements/
+COPY ./requirements.txt .
+COPY ./requirements/ ./requirements/
 COPY . .
 
 RUN pip install --upgrade pip
@@ -43,7 +43,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 RUN chown -R $user:root $HOME \
     && chmod -R ug+rw $HOME \
     && chmod ug+x $HOME/*.sh \
-    && chmod ug+x $HOME/run.sh \
     && chmod g+rw /etc/passwd \
     && chmod g-w $HOME/cron/crontab
 

@@ -22,3 +22,5 @@ from .payment_transaction import PaymentTransaction as TransactionService
 from .receipt import Receipt as ReceiptService
 from .hashing import HashingService
 from .statement import Statement
+from .statement_settings import StatementSettings
+from .statement_recipients import StatementRecipients

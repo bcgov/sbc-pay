@@ -42,3 +42,8 @@ class BaseModel(db.Model):
     def rollback():
         """RollBack."""
         db.session.rollback()
+
+    @classmethod
+    def find_by_id(cls, identifier: int):
+        """Return model by id."""
+        return cls.query.get(identifier)

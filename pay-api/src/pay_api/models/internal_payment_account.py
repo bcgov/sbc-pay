@@ -32,11 +32,6 @@ class InternalPaymentAccount(BaseModel):
     account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True, index=True)
 
     @classmethod
-    def find_by_id(cls, identifier: int):
-        """Return a Account by id."""
-        return cls.query.get(identifier)
-
-    @classmethod
     def find_by_corp_number_and_corp_type_and_account_id(cls, corp_number: str, corp_type: str, account_id):
         """Given a corp_number and corp_type, this will return payment account."""
         account = None

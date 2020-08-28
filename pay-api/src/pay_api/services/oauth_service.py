@@ -79,15 +79,16 @@ class OAuthService:
     @staticmethod
     def __log_response(response):
         if response is not None:
-            current_app.logger.debug(response.headers)
+            current_app.logger.info('Response Headers {}'.format(response.headers))
             if response.headers and isinstance(response.headers, Iterable) and \
                     'Content-Type' in response.headers and \
                     response.headers['Content-Type'] == ContentType.JSON.value:
                 current_app.logger.info('response : {}'.format(response.text if response else ''))
 
     @staticmethod
-    def get(endpoint, token, auth_header_type: AuthHeaderType, content_type: ContentType,
-            retry_on_failure: bool = False):
+    def get(endpoint, token, auth_header_type: AuthHeaderType,  # pylint:disable=too-many-arguments
+            content_type: ContentType,
+            retry_on_failure: bool = False, return_none_if_404: bool = False):
         """GET service."""
         current_app.logger.debug('<GET')
 
@@ -112,8 +113,11 @@ class OAuthService:
         except HTTPError as exc:
             current_app.logger.error(
                 'HTTPError on POST with status code {}'.format(response.status_code if response else ''))
-            if response and response.status_code >= 500:
-                raise ServiceUnavailableException(exc)
+            if response is not None:
+                if response.status_code >= 500:
+                    raise ServiceUnavailableException(exc)
+                if return_none_if_404 and response.status_code == 404:
+                    return None
             raise exc
         finally:
             OAuthService.__log_response(response)

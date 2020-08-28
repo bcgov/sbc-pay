@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Resource for Payment account."""
+
 from http import HTTPStatus
 
-from flask import current_app, jsonify, request
+from flask import Response, current_app, jsonify, request
 from flask_restplus import Namespace, Resource, cors
+
 from pay_api.services import Statement as StatementService
 from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE
+from pay_api.utils.enums import ContentType
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
 
@@ -48,3 +51,29 @@ class AccountStatements(Resource):
         response, status = StatementService.find_by_account_id(account_id, page, limit), HTTPStatus.OK
         current_app.logger.debug('>AccountStatements.get')
         return jsonify(response), status
+
+
+@cors_preflight('GET')
+@API.route('/<string:statement_id>', methods=['GET', 'OPTIONS'])
+class AccountStatementReport(Resource):
+    """Endpoint resource to generate account statement report."""
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.requires_auth
+    @_tracing.trace()
+    def get(account_id: str, statement_id: str):
+        """Create the statement report."""
+        current_app.logger.info('<AccountStatementReport.post')
+        response_content_type = request.headers.get('Accept', ContentType.PDF.value)
+
+        # Check if user is authorized to perform this action
+        auth = check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE, is_premium=True)
+
+        report, report_name = StatementService.get_statement_report(statement_id=statement_id,
+                                                                    content_type=response_content_type, auth=auth)
+        response = Response(report, 200)
+        response.headers.set('Content-Disposition', 'attachment', filename=report_name)
+        response.headers.set('Content-Type', response_content_type)
+        response.headers.set('Access-Control-Expose-Headers', 'Content-Disposition')
+        return response

@@ -15,9 +15,11 @@
 from datetime import datetime, date
 
 from flask import current_app
-from pay_api.models import Statement as StatementModel
 
+from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementSchema as StatementModelSchema
+from pay_api.utils.enums import StatementFrequency, ContentType
+from .payment import Payment as PaymentService
 
 
 class Statement:  # pylint:disable=too-many-instance-attributes
@@ -28,10 +30,9 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         self.__dao = None
         self._id: int = None
         self._frequency = None
-        self._account_id = None
-        self._start_date = None
-        self._end_date = None
-        self._status = None
+        self._from_date = None
+        self._to_date = None
+        self._payment_account_id = None
 
     @property
     def _dao(self):
@@ -44,10 +45,9 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         self.__dao = value
         self.id: int = self._dao.id
         self.frequency: str = self._dao.frequency
-        self.account_id: int = self._dao.account_id
-        self.start_date: datetime = self._dao.start_date
-        self.end_date: datetime = self._dao.end_date
-        self.status: str = self._dao.status
+        self.from_date: datetime = self._dao.from_date
+        self.to_date: datetime = self._dao.to_date
+        self.payment_account_id: int = self._dao.payment_account_id
 
     @property
     def id(self):
@@ -61,6 +61,17 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         self._dao.id = value
 
     @property
+    def payment_account_id(self):
+        """Return the payment_account_id."""
+        return self._payment_account_id
+
+    @payment_account_id.setter
+    def payment_account_id(self, value: str):
+        """Set the account_id."""
+        self._payment_account_id = value
+        self._dao.payment_account_id = value
+
+    @property
     def frequency(self):
         """Return the frequency."""
         return self._frequency
@@ -72,24 +83,13 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         self._dao.frequency = value
 
     @property
-    def account_id(self):
-        """Return the account_id."""
-        return self._account_id
-
-    @account_id.setter
-    def account_id(self, value: str):
-        """Set the account_id."""
-        self._account_id = value
-        self._dao.account_id = value
-
-    @property
     def to_date(self):
         """Return the to_date of the statement."""
         return self._to_date
 
     @to_date.setter
     def to_date(self, value: date):
-        """Set the end_date for the statement."""
+        """Set the to_date for the statement."""
         self._to_date = value
         self._dao.to_date = value
 
@@ -104,17 +104,6 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         self._from_date = value
         self._dao.from_date = value
 
-    @property
-    def status(self):
-        """Return the status."""
-        return self._status
-
-    @status.setter
-    def status(self, value: str):
-        """Set the status."""
-        self._status = value
-        self._dao.status = value
-
     def asdict(self):
         """Return the invoice as a python dict."""
         statement_schema = StatementModelSchema()
@@ -122,13 +111,10 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return d
 
     @staticmethod
-    def find_by_account_id(account_id: str, page: int, limit: int):
+    def find_by_account_id(auth_account_id: str, page: int, limit: int):
         """Find statements by account id."""
-        current_app.logger.debug(f'<search_purchase_history {account_id}')
-        data = {
-            'items': []
-        }
-        statements, total = StatementModel.find_all_statements_for_account(account_id, page, limit)
+        current_app.logger.debug(f'<search_purchase_history {auth_account_id}')
+        statements, total = StatementModel.find_all_statements_for_account(auth_account_id, page, limit)
 
         statements_schema = StatementModelSchema()
         data = {
@@ -139,3 +125,35 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         }
         current_app.logger.debug('>statements_find_by_account_id')
         return data
+
+    @staticmethod
+    def get_statement_report(statement_id: str, content_type: str, template_name='statement_report', **kwargs):
+        """Generate statement report."""
+        current_app.logger.debug(f'<get_statement_report {statement_id}')
+        report_name: str = 'bcregistry-statements'
+
+        statement_dao: StatementModel = StatementModel.find_by_id(statement_id)
+
+        statement_svc = Statement()
+        statement_svc._dao = statement_dao  # pylint: disable=protected-access
+
+        from_date_string: str = statement_svc.from_date.strftime('%Y-%m-%d')
+        to_date_string: str = statement_svc.to_date.strftime('%Y-%m-%d')
+        extension: str = 'pdf' if content_type == ContentType.PDF.value else 'csv'
+
+        if statement_svc.frequency == StatementFrequency.DAILY.value:
+            report_name = f'{report_name}-{from_date_string}.{extension}'
+        else:
+            report_name = f'{report_name}-{from_date_string}-to-{to_date_string}.{extension}'
+
+        statement_purchases = StatementModel.find_all_payments_and_invoices_for_statement(statement_id)
+
+        result_items: dict = PaymentService.create_payment_report_details(purchases=statement_purchases, data=None)
+
+        report_response = PaymentService.generate_payment_report(content_type, report_name, result_items,
+                                                                 template_name,
+                                                                 auth=kwargs.get('auth', None),
+                                                                 statement=statement_svc.asdict())
+        current_app.logger.debug('>get_statement_report')
+
+        return report_response, report_name

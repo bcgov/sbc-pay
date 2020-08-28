@@ -71,10 +71,10 @@ def get_str_by_path(payload: Dict, path: str) -> str:
 
 
 def get_week_start_and_end_date(index: int = 0):
-    """Return first and last dates (monday and sunday) for the index."""
+    """Return first and last dates (sunday and saturday) for the index."""
     # index: 0 (current week), 1 (last week) and so on
     current_date = datetime.now() - timedelta(days=index * 6)
-    start = current_date - timedelta(days=current_date.weekday())
+    start = current_date - timedelta(days=current_date.weekday() + 1)
     end = start + timedelta(days=6)
     return start, end
 
@@ -84,6 +84,18 @@ def get_first_and_last_dates_of_month(month: int, year: int):
     start_date = datetime.now().replace(day=1, year=year, month=month)
     end_date = start_date.replace(day=calendar.monthrange(year=year, month=month)[1])
     return start_date, end_date
+
+
+def get_previous_month_and_year():
+    """Return last month and year."""
+    last_month = datetime.now().replace(day=1) - timedelta(days=1)
+    return last_month.month, last_month.year
+
+
+def get_previous_day(val: datetime):
+    """Return previous day."""
+    # index: 0 (current week), 1 (last week) and so on
+    return val - timedelta(days=1)
 
 
 def parse_url_params(url_params: str) -> Dict:
@@ -100,7 +112,12 @@ def parse_url_params(url_params: str) -> Dict:
 def current_local_time() -> datetime:
     """Return current local time."""
     today = datetime.now()
+    return get_local_time(today)
+
+
+def get_local_time(date_val: datetime):
+    """Return local time value."""
     tz_name = current_app.config['LEGISLATIVE_TIMEZONE']
     tz_local = pytz.timezone(tz_name)
-    today = today.astimezone(tz_local)
-    return today
+    date_val = date_val.astimezone(tz_local)
+    return date_val

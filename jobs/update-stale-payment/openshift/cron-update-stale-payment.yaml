@@ -26,7 +26,7 @@ objects:
                   args:
                     - /bin/sh
                     - "-c"
-                    - "cd /opt/app-root/src; ./run.sh"
+                    - "cd /opt/app-root/src; ./run_update_gl_code_in_paybc.sh"
                   env:
                     - name: DATABASE_USERNAME
                       valueFrom:

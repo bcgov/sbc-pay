@@ -170,9 +170,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         """Return all results for the purchase history."""
         return Payment.search_purchase_history(auth_account_id, search_filter, 0, 0, True)
 
-    @staticmethod
-    def search_purchase_history(auth_account_id: str, search_filter: Dict, page: int,  # pylint: disable=too-many-locals
-                                limit: int, return_all: bool = False):
+    @classmethod
+    def search_purchase_history(cls, auth_account_id: str,  # pylint: disable=too-many-locals, too-many-arguments
+                                search_filter: Dict, page: int, limit: int, return_all: bool = False):
         """Search purchase history for the account."""
         current_app.logger.debug(f'<search_purchase_history {auth_account_id}')
         # If the request filter is empty, return N number of records
@@ -189,6 +189,20 @@ class Payment:  # pylint: disable=too-many-instance-attributes
             'limit': limit,
             'items': []
         }
+
+        data = cls.create_payment_report_details(purchases, data)
+
+        current_app.logger.debug('>search_purchase_history')
+        return data
+
+    @classmethod
+    def create_payment_report_details(cls, purchases: Tuple, data: Dict):  # pylint:disable=too-many-locals
+        """Return payment report details by fetching the line items.
+
+        purchases is tuple of payment and invoice model records.
+        """
+        if data is None or 'items' not in data:
+            data = {'items': []}
 
         invoice_ids = []
         payment_status_codes = CodeService.find_code_values_by_type(Code.PAYMENT_STATUS.value)
@@ -212,7 +226,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes
             data['items'].append(purchase_history)
 
             invoice_ids.append(invoice_dao.id)
-
         # Query the payment line item to retrieve more details
         payment_line_items = PaymentLineItem.find_by_invoice_ids(invoice_ids)
         for payment_line_item in payment_line_items:
@@ -222,31 +235,88 @@ class Payment:  # pylint: disable=too-many-instance-attributes
                     line_item_dict = line_item_schema.dump(payment_line_item)
                     line_item_dict['filing_type_code'] = payment_line_item.fee_schedule.filing_type_code
                     purchase_history.get('invoice').get('line_items').append(line_item_dict)
-
-        current_app.logger.debug('>search_purchase_history')
         return data
 
     @staticmethod
-    @user_context
-    def create_payment_report(auth_account_id: str, search_filter: Dict,  # pylint: disable=too-many-locals
-                              content_type: str, report_name: str, **kwargs):
+    def create_payment_report(auth_account_id: str, search_filter: Dict,
+                              content_type: str, report_name: str):
         """Create payment report."""
         current_app.logger.debug(f'<create_payment_report {auth_account_id}')
 
+        results = Payment.search_all_purchase_history(auth_account_id, search_filter)
+
+        report_response = Payment.generate_payment_report(content_type, report_name, results,
+                                                          template_name='payment_transactions')
+        current_app.logger.debug('>create_payment_report')
+
+        return report_response
+
+    @staticmethod
+    @user_context
+    def generate_payment_report(content_type, report_name, results, template_name,
+                                **kwargs):  # pylint: disable=too-many-locals
+        """Prepare data and generate payment report by calling report api."""
         labels = ['Transaction', 'Folio Number', 'Initiated By', 'Date', 'Purchase Amount', 'GST', 'Statutory Fee',
                   'BCOL Fee', 'Status', 'Corp Number']
+        if content_type == ContentType.CSV.value:
+            template_vars = {
+                'columns': labels,
+                'values': Payment._prepare_csv_data(results)
+            }
+        else:
+            total_stat_fees = 0
+            total_service_fees = 0
+            total = 0
+            payments = results.get('items', None)
+            for payment in payments:
+                total += payment.get('invoice').get('total', 0)
+                total_stat_fees += payment.get('invoice').get('total', 0) - \
+                    payment.get('invoice').get('service_fees', 0)
 
-        results = Payment.search_all_purchase_history(auth_account_id, search_filter)
+                total_service_fees += payment.get('invoice').get('service_fees', 0)
+
+            account_info = None
+            if kwargs.get('auth', None):
+                account_id = kwargs.get('auth')['account']['id']
+                contact_url = current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{account_id}/contacts'
+                contact = OAuthService.get(endpoint=contact_url,
+                                           token=kwargs['user'].bearer_token,
+                                           auth_header_type=AuthHeaderType.BEARER,
+                                           content_type=ContentType.JSON).json()
+
+                account_info = kwargs.get('auth').get('account')
+                account_info['contact'] = contact['contacts'][0]  # Get the first one from the list
+
+            template_vars = {
+                'payments': results.get('items', None),
+                'total': {
+                    'statutoryFees': total_stat_fees,
+                    'serviceFees': total_service_fees,
+                    'fees': total
+                },
+                'account': account_info,
+                'statement': kwargs.get('statement')
+            }
 
         report_payload = {
             'reportName': report_name,
-            'templateName': 'payment_transactions',
-            'templateVars': {
-                'columns': labels,
-                'values': []
-            }
+            'templateName': template_name,
+            'templateVars': template_vars,
+            'populatePageNumber': True
         }
 
+        report_response = OAuthService.post(endpoint=current_app.config.get('REPORT_API_BASE_URL'),
+                                            token=kwargs['user'].bearer_token,
+                                            auth_header_type=AuthHeaderType.BEARER,
+                                            content_type=ContentType.JSON,
+                                            additional_headers={'Accept': content_type},
+                                            data=report_payload)
+        return report_response
+
+    @staticmethod
+    def _prepare_csv_data(results):
+        """Prepare data for creating a CSV report."""
+        cells = []
         for item in results.get('items'):
             invoice = item.get('invoice')
             txn_description = ''
@@ -270,14 +340,5 @@ class Payment:  # pylint: disable=too-many-instance-attributes
                 item.get('status_code'),
                 invoice.get('business_identifier')
             ]
-            report_payload['templateVars']['values'].append(row_value)
-
-        report_response = OAuthService.post(endpoint=current_app.config.get('REPORT_API_BASE_URL'),
-                                            token=kwargs['user'].bearer_token,
-                                            auth_header_type=AuthHeaderType.BEARER,
-                                            content_type=ContentType.JSON,
-                                            additional_headers={'Accept': content_type},
-                                            data=report_payload)
-        current_app.logger.debug('>create_payment_report')
-
-        return report_response
+            cells.append(row_value)
+        return cells

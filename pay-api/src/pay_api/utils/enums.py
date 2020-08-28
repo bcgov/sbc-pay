@@ -115,3 +115,26 @@ class AccountType(Enum):
 
     BASIC = 'BASIC'
     PREMIUM = 'PREMIUM'
+
+
+class StatementFrequency(Enum):
+    """Statement frequency."""
+
+    DAILY = 'DAILY'
+    WEEKLY = 'WEEKLY'
+    MONTHLY = 'MONTHLY'
+
+    @staticmethod
+    def default_frequency():
+        """Return the default frequency for statements."""
+        return StatementFrequency.WEEKLY
+
+
+class NotificationStatus(Enum):
+    """Mail notification Status."""
+
+    PENDING = 'PENDING'
+    PROCESSING = 'PROCESSING'
+    SUCCESS = 'SUCCESS'
+    SKIP = 'SKIP'
+    FAILED = 'FAILED'

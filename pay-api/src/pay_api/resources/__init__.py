@@ -25,6 +25,8 @@ from sbc_common_components.exception_handling.exception_handler import Exception
 
 from .account import API as ACCOUNTS_API
 from .account_statements import API as ACCOUNT_STATEMENTS_API
+from .account_statements_settings import API as ACCOUNT_STATEMENTS_SETTINGS_API
+from .account_statements_notifications import API as ACCOUNT_STATEMENT_NOTIFICATIONS_API
 from .apihelper import Api
 from .code import API as CODES_API
 from .distributions import API as DISTRIBUTION_API
@@ -36,7 +38,6 @@ from .meta import API as META_API
 from .ops import API as OPS_API
 from .payment import API as PAY_API
 from .transaction import API as TRANSACTION_API
-
 
 __all__ = ('API_BLUEPRINT', 'OPS_BLUEPRINT')
 
@@ -80,4 +81,7 @@ API.add_namespace(INVOICE_API, path='/payment-requests/<int:payment_id>/invoices
 API.add_namespace(INVOICE_RECEIPT_API, path='/payment-requests/<int:payment_id>')
 API.add_namespace(ACCOUNTS_API, path='/accounts')
 API.add_namespace(ACCOUNT_STATEMENTS_API, path='/accounts/<string:account_id>/statements')
+API.add_namespace(ACCOUNT_STATEMENTS_SETTINGS_API, path='/accounts/<string:account_id>/statements/settings')
+API.add_namespace(ACCOUNT_STATEMENT_NOTIFICATIONS_API, path='/accounts/<string:account_id>/statements/notifications')
+
 API.add_namespace(CODES_API, path='/codes')

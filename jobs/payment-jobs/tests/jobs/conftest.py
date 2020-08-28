@@ -19,16 +19,7 @@ from flask_migrate import Migrate, upgrade
 from sqlalchemy import event, text
 from sqlalchemy.schema import DropConstraint, MetaData
 
-from update_stale_payment_records import create_app
-import config
-
-import pytest
-from flask_migrate import Migrate, upgrade
-from sqlalchemy import event, text
-from sqlalchemy.schema import DropConstraint, MetaData
-
-from pay_api import create_app
-from pay_api import jwt as _jwt
+from generate_account_statements import create_app
 from pay_api.models import db as _db
 
 
@@ -55,12 +46,6 @@ def client(app):  # pylint: disable=redefined-outer-name
 
 
 @pytest.fixture(scope='session')
-def jwt(app):
-    """Return session-wide jwt manager."""
-    return _jwt
-
-
-@pytest.fixture(scope='session')
 def client_ctx(app):
     """Return session-wide Flask test client."""
     with app.test_client() as _client:
@@ -70,6 +55,7 @@ def client_ctx(app):
 @pytest.fixture(scope='session')
 def db(app):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a session-wide initialised database.
+
     Drops all existing tables - Meta follows Postgres FKs
     """
     with app.app_context():
@@ -104,7 +90,7 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
         # This is the path we'll use in legal_api!!
 
         # even though this isn't referenced directly, it sets up the internal configs that upgrade needs
-        Migrate(app, _db)
+        Migrate(app, _db, directory='venv/src/pay-api/pay-api/migrations')
         upgrade()
 
         return _db

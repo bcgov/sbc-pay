@@ -62,11 +62,6 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     references = relationship('InvoiceReference')
 
     @classmethod
-    def find_by_id(cls, identifier: int):
-        """Return a Invoice by id."""
-        return cls.query.get(identifier)
-
-    @classmethod
     def find_by_payment_id(cls, identifier: int):
         """Return a Invoice by id."""
         return cls.query.filter_by(payment_id=identifier).one_or_none()

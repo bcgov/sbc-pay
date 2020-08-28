@@ -35,8 +35,8 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods
     status_code = db.Column(db.String(20), ForeignKey('transaction_status_code.code'), nullable=False)
     payment_id = db.Column(db.Integer, ForeignKey('payment.id'), nullable=False)
     client_system_url = db.Column(db.String(500), nullable=True)
-    pay_system_url = db.Column(db.String(500), nullable=True)
-    pay_response_url = db.Column(db.String(500), nullable=True)
+    pay_system_url = db.Column(db.String(2000), nullable=True)
+    pay_response_url = db.Column(db.String(2000), nullable=True)
 
     transaction_start_time = db.Column(db.DateTime, default=datetime.now, nullable=False)
     transaction_end_time = db.Column(db.DateTime, nullable=True)
