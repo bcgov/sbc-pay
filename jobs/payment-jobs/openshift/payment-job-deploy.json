@@ -227,6 +227,60 @@
                         "key": "PAYBC_DIRECT_PAY_CLIENT_SECRET"
                       }
                     }
+                  },
+                  {
+                    "name": "NOTIFY_API_URL",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "pay-api-${TAG_NAME}-secret",
+                        "key": "NOTIFY_API_URL"
+                      }
+                    }
+                  },
+                  {
+                    "name": "KEYCLOAK_SERVICE_ACCOUNT_ID",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "pay-api-${TAG_NAME}-secret",
+                        "key": "KEYCLOAK_SERVICE_ACCOUNT_ID"
+                      }
+                    }
+                  },
+                  {
+                    "name": "KEYCLOAK_SERVICE_ACCOUNT_SECRET",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "pay-api-${TAG_NAME}-secret",
+                        "key": "KEYCLOAK_SERVICE_ACCOUNT_SECRET"
+                      }
+                    }
+                  },
+                  {
+                    "name": "JWT_OIDC_ISSUER",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "pay-api-${TAG_NAME}-secret",
+                        "key": "JWT_OIDC_ISSUER"
+                      }
+                    }
+                  },
+                  {
+                    "name": "AUTH_WEB_URL",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "pay-api-${TAG_NAME}-secret",
+                        "key": "AUTH_WEB_URL"
+                      }
+                    }
+                  },
+                  {
+                    "name": "REGISTRIES_LOGO_IMAGE_NAME",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "pay-api-${TAG_NAME}-secret",
+                        "key": "REGISTRIES_LOGO_IMAGE_NAME"
+                      }
+                    }
                   }
                 ],
                 "resources": {

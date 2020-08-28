@@ -95,10 +95,10 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # Front end url
     AUTH_WEB_URL = os.getenv('AUTH_WEB_URL', '')
     AUTH_WEB_STATEMENT_URL = os.getenv('AUTH_WEB_STATEMENT_URL', 'account/orgId/settings/statements')
+    REGISTRIES_LOGO_IMAGE_NAME = os.getenv('REGISTRIES_LOGO_IMAGE_NAME', 'bc_logo_for_email.png')
 
     TESTING = False
     DEBUG = True
-
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     TESTING = False
