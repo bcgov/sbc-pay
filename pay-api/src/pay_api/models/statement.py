@@ -65,8 +65,8 @@ class Statement(BaseModel):
 
         query = db.session.query(Payment, Invoice) \
             .join(StatementInvoices, StatementInvoices.invoice_id == Invoice.id) \
-            .join(Statement, Statement.id == StatementInvoices.statement_id) \
-            .filter(Statement.id == statement_id)
+            .join(Payment, Payment.id == Invoice.payment_id) \
+            .filter(StatementInvoices.statement_id == statement_id)
 
         return query.all()
 
