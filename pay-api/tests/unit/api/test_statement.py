@@ -58,6 +58,38 @@ def test_get_daily_statements(session, client, jwt, app):
     assert rv.json.get('items')[0].get('frequency') == StatementFrequency.DAILY.value
 
 
+def test_get_daily_statements_verify_order(session, client, jwt, app):
+    """Assert that the default statement setting is daily."""
+    # Create a payment account and statement details, then get all statements for the account
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
+                     headers=headers)
+
+    payment: Payment = Payment.find_by_id(rv.json.get('id'))
+    bcol_account: BcolPaymentAccount = BcolPaymentAccount.find_by_id(payment.invoices[0].bcol_account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(bcol_account.account_id)
+
+    settings_model = factory_statement_settings(payment_account_id=pay_account.id,
+                                                frequency=StatementFrequency.DAILY.value)
+    factory_statement(payment_account_id=pay_account.id,
+                      frequency=StatementFrequency.DAILY.value,
+                      statement_settings_id=settings_model.id)
+    factory_statement(payment_account_id=pay_account.id,
+                      frequency=StatementFrequency.WEEKLY.value,
+                      statement_settings_id=settings_model.id)
+
+    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements',
+                    headers=headers)
+    assert rv.status_code == 200
+    assert rv.json.get('total') == 2
+    # should come in the order latest first
+    assert rv.json.get('items')[0].get('frequency') == StatementFrequency.WEEKLY.value
+    assert rv.json.get('items')[1].get('frequency') == StatementFrequency.DAILY.value
+
+
 def test_get_weekly_statements(session, client, jwt, app):
     """Assert that the default statement setting is weekly."""
     # Create a payment account and statement details, then get all statements for the account

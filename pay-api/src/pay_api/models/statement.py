@@ -47,7 +47,7 @@ class Statement(BaseModel):
             .filter(and_(PaymentAccount.id == cls.payment_account_id,
                          PaymentAccount.auth_account_id == auth_account_id))
 
-        query = query.order_by(Statement.id)
+        query = query.order_by(Statement.id.desc())
         pagination = query.paginate(per_page=limit, page=page)
         return pagination.items, pagination.total
 
