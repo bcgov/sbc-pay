@@ -437,7 +437,7 @@
                     <div>#{{item.invoice.business_identifier}}</div>
                     {% endif %}
                   </td>
-                  <td>{{item.invoice.created_on|format_datetime}}</td>
+                  <td>{{item.created_on|format_datetime}}</td>
                   <td>
                     {% for lineItemFeeCode in item.invoice.line_items %}
                     <div>{{lineItemFeeCode.filing_type_code}}</div>
