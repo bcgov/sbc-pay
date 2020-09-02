@@ -267,6 +267,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes
             total_stat_fees = 0
             total_service_fees = 0
             total = 0
+            total_paid = 0
+
             payments = results.get('items', None)
             for payment in payments:
                 total += payment.get('invoice').get('total', 0)
@@ -274,6 +276,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes
                     payment.get('invoice').get('service_fees', 0)
 
                 total_service_fees += payment.get('invoice').get('service_fees', 0)
+                total_paid += payment.get('invoice').get('paid', 0)
 
             account_info = None
             if kwargs.get('auth', None):
@@ -292,7 +295,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes
                 'total': {
                     'statutoryFees': total_stat_fees,
                     'serviceFees': total_service_fees,
-                    'fees': total
+                    'fees': total,
+                    'paid': total_paid,
+                    'due': total - total_paid
                 },
                 'account': account_info,
                 'statement': kwargs.get('statement')
@@ -332,7 +337,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes
                 ','.join([line_item.get('description') for line_item in invoice.get('line_items')]),
                 invoice.get('folio_number'),
                 item.get('created_name'),
-                parser.parse(item.get('created_on')).strftime('%Y-%m-%d %I:%M %p'),
+                parser.parse(item.get('created_on')).strftime('%m-%d-%Y %I:%M %p'),
                 total_fees,
                 total_gst + total_pst,
                 total_fees - service_fee,  # TODO

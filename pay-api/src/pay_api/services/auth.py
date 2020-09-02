@@ -79,11 +79,11 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
                         'paymentPreference': {}
                     }
                 }
-                if org_response.get('payment_settings', None):
+                if org_response.get('paymentSettings', None):
                     auth_response['account']['paymentPreference'] = {
-                        'methodOfPayment': org_response['payment_settings'][0].get('preferredPayment', None),
-                        'bcOnlineUserId': org_response['payment_settings'][0].get('bcolUserId', None),
-                        'bcOnlineAccountId': org_response['payment_settings'][0].get('bcolAccountId', None)
+                        'methodOfPayment': org_response['paymentSettings'][0].get('preferredPayment', None),
+                        'bcOnlineUserId': org_response['paymentSettings'][0].get('bcolUserId', None),
+                        'bcOnlineAccountId': org_response['paymentSettings'][0].get('bcolAccountId', None)
                     }
                 is_authorized = True
 

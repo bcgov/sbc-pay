@@ -54,7 +54,7 @@
       @page {
         size: A4;
         /* Change from the default size of A4 */
-        margin: 1cm;
+        margin: 0.5cm;
         /* Set margin on each page */
       }
 
@@ -163,10 +163,12 @@
 
       .org-account-info-row .org-address-column {
         padding: 24px;
+        width: 320px;
+        white-space: normal;
       }
 
       .org-account-info-row .account-info {
-        width: 60%;
+        width: 100%;
         padding: 24px;
       }
 
@@ -220,8 +222,8 @@
       }
 
       .transaction-table {
-        width: calc(100% - 48px);
         margin: 0px 24px 16px;
+        width: 690px;
       }
 
       .transaction-table thead tr,
@@ -248,6 +250,7 @@
         line-height: 1.5;
         padding-top: 10px;
         padding-bottom: 10px;
+        max-width: 135px;
       }
 
       .transaction-table thead .two-line-head {
@@ -276,14 +279,14 @@
       .statement-footer {
         padding: 10px 24px;
         position: absolute;
-        bottom: 4px;
+        bottom: 54px;
         left: -24px;
         width: 100%;
       }
 
       .footer-bcrs-logo {
         display: inline-block;
-        vertical-align: middle;
+        padding-bottom: 16px;
         padding-left: 24px;
         float: left !important;
       }
@@ -299,6 +302,7 @@
         text-align: right !important;
         float: right;
         padding-right: 24px;
+        margin-top: 30px;
       }
 
       .statement-footer .footer-info span {
@@ -342,9 +346,9 @@
             {% if statement.from_date or statement.to_date %}
             <div class="r-subtitle">
               {% if 'DAILY' == statement.frequency %}
-                {{statement.from_date}}
+                {{statement.from_date|format_datetime}}
               {% else %}
-                {{statement.from_date}} to {{statement.to_date}}
+                {{statement.from_date|format_datetime}} to {{statement.to_date|format_datetime}}
               {% endif %}
             </div>
             {% endif %}
@@ -355,7 +359,7 @@
         <td class="org-address-column">
           {% if account and account.name %}
           <div class="org-address">
-            <div class="line-height-reg"><strong>{{account.name}}</strong></div>
+            <div class="line-height-reg"><strong>ATTN: {{account.name}}</strong></div>
             {% if account and account.contact %}
             <div class="line-height-reg">{{account.contact.street}}</div>
             <div class="line-height-reg">{{account.contact.streetAdditional}}</div>
@@ -366,16 +370,10 @@
           {% endif %}
         </td>
         <td class="account-info">
-          {% if statement.name %}
+          {% if account.paymentPreference.bcOnlineAccountId %}
           <div class="line-height-reg">
-            <div class="account-info-title">Account Name:</div>
-            <div class="account-info-value">{{account.name}}</div>
-          </div>
-          {% endif %}
-          {% if statement.accountNumber %}
-          <div class="line-height-reg">
-            <div class="account-info-title">Account Number:</div>
-            <div class="account-info-value">#{{account.accountNumber}}</div>
+            <div class="account-info-title">BCOL Account Number:</div>
+            <div class="account-info-value">#{{account.paymentPreference.bcOnlineAccountId}}</div>
           </div>
           {% endif %}
           {% if statement.from_date or statement.to_date %}
@@ -383,9 +381,9 @@
             <div class="account-info-title">Statement Period:</div>
             <div class="account-info-value">
               {% if 'DAILY' == statement.frequency %}
-                {{statement.from_date}}
+                {{statement.from_date|format_datetime}}
               {% else %}
-                {{statement.from_date}} to {{statement.to_date}}
+                {{statement.from_date|format_datetime}} to {{statement.to_date|format_datetime}}
               {% endif %}
             </div>
           </div>
@@ -393,7 +391,7 @@
           {% if statement.dueDate %}
           <div class="line-height-reg">
             <div class="account-info-title">Due Date:</div>
-            <div class="account-info-value">{{statement.dueDate}}</div>
+            <div class="account-info-value">{{statement.dueDate|format_datetime}}</div>
           </div>
           {% endif %}
         </td>
@@ -401,8 +399,8 @@
       <tr>
         <td colspan="2">
           <div class="total-amount-due-row">
-            <div class="total-amount-due-div1">Total Amount Due:</div>
-            <div class="total-amount-due-div2">${{total.fees if total.fees else '0.00'}}</div>
+            <div class="total-amount-due-div1">Total Amount:</div>
+            <div class="total-amount-due-div2">${{"%.2f"|format(total.fees) if total.fees else '0.00'}}</div>
           </div>
         </td>
       </tr>
@@ -435,18 +433,20 @@
                     {% for lineItemProduct in item.invoice.line_items %}
                     <div>{{lineItemProduct.description}}</div>
                     {% endfor %}
+                    {% if item.invoice.business_identifier %}
                     <div>#{{item.invoice.business_identifier}}</div>
+                    {% endif %}
                   </td>
-                  <td>{{item.invoice.created_on}}</td>
+                  <td>{{item.invoice.created_on|format_datetime}}</td>
                   <td>
                     {% for lineItemFeeCode in item.invoice.line_items %}
                     <div>{{lineItemFeeCode.filing_type_code}}</div>
                     {% endfor %}
                   </td>
-                  <td>${{(item.invoice.total - item.invoice.service_fees) if (item.invoice.service_fees and item.invoice.total) else '0.00'}}</td>
-                  <td>${{item.invoice.gst if item.invoice.gst else '0.00'}}</td>
-                  <td>${{item.invoice.service_fees if item.invoice.service_fees else '0.00'}}</td>
-                  <td class="font-bold">$${{item.invoice.total if item.invoice.total else '0.00'}}</td>
+                  <td>${{"%.2f"|format((item.invoice.total - item.invoice.service_fees)) if (item.invoice.service_fees and item.invoice.total) else '0.00'}}</td>
+                  <td>${{"%.2f"|format(item.invoice.gst) if item.invoice.gst else '0.00'}}</td>
+                  <td>${{"%.2f"|format(item.invoice.service_fees) if item.invoice.service_fees else '0.00'}}</td>
+                  <td class="font-bold">${{"%.2f"|format(item.invoice.total) if item.invoice.total else '0.00'}}</td>
                 </tr>
                 {% endfor %}
               </tbody>
@@ -465,7 +465,7 @@
           <td colspan="2">
             <div class="total-elements">      
               Transaction Fees:
-              <span class="total-elements-price">${{total.statutoryFees}}</span>
+              <span class="total-elements-price">${{"%.2f"|format(total.statutoryFees)}}</span>
             </div>
           </td>
         </tr>
@@ -475,7 +475,7 @@
           <td colspan="2">
             <div class="total-elements">      
               Goods & Services Tax (GST):
-              <span class="total-elements-price">${{total.gst}}</span>
+              <span class="total-elements-price">${{"%.2f"|format(total.gst)}}</span>
             </div>
           </td>
         </tr>
@@ -485,7 +485,7 @@
           <td colspan="2">
             <div class="total-elements">
               Service Charges:
-              <span class="total-elements-price">${{total.serviceFees}}</span>
+              <span class="total-elements-price">${{"%.2f"|format(total.serviceFees)}}</span>
             </div>
           </td>
         </tr>
@@ -494,8 +494,28 @@
         <tr>
           <td colspan="2">
             <div class="total-elements grand-total">
+              Total Amount:
+              <span class="total-elements-price">${{"%.2f"|format(total.fees)}}</span>
+            </div>
+          </td>
+        </tr>
+        {% endif %}
+        {% if total.paid %}
+        <tr>
+          <td colspan="2">
+            <div class="total-elements grand-total">
+              Total Amount Paid:
+              <span class="total-elements-price">${{"%.2f"|format(total.paid)}}</span>
+            </div>
+          </td>
+        </tr>
+        {% endif %}
+        {% if total.due %}
+        <tr>
+          <td colspan="2">
+            <div class="total-elements grand-total">
               Total Amount Due:
-              <span class="total-elements-price">${{total.fees}}</span>
+              <span class="total-elements-price">${{"%.2f"|format(total.due)}}</span>
             </div>
           </td>
         </tr>

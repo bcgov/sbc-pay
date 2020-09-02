@@ -15,12 +15,13 @@
 import uuid
 from datetime import datetime, timedelta
 
+import pytz
 from marshmallow import fields
 from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 
+from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
 from pay_api.utils.enums import TransactionStatus
-
 from .base_model import BaseModel
 from .base_schema import BaseSchema
 from .db import db, ma
@@ -80,8 +81,10 @@ class PaymentTransactionSchema(BaseSchema):  # pylint: disable=too-many-ancestor
 
     status_code = fields.String(data_key='status_code')
     payment_id = fields.Integer(data_key='payment_id')
-    transaction_end_time = fields.String(data_key='end_time')
-    transaction_start_time = fields.String(data_key='start_time')
+    transaction_end_time = fields.DateTime(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE),
+                                           data_key='end_time')
+    transaction_start_time = fields.DateTime(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE),
+                                             data_key='start_time')
 
     # pylint: disable=no-member
     _links = ma.Hyperlinks({
