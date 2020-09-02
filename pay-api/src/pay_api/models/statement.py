@@ -13,8 +13,11 @@
 # limitations under the License.
 """Model to handle statements data."""
 
+import pytz
+from marshmallow import fields
 from sqlalchemy import ForeignKey, and_
 
+from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
 from .base_model import BaseModel
 from .db import db, ma
 from .invoice import Invoice
@@ -78,3 +81,6 @@ class StatementSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Statement
+
+    from_date = fields.Date(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))
+    to_date = fields.Date(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))

@@ -17,7 +17,7 @@ from datetime import date
 
 from sqlalchemy import ForeignKey
 
-from .audit import Audit, BaseModel
+from .audit import Audit, AuditSchema, BaseModel
 from .db import db, ma
 from .fee_schedule import FeeSchedule
 
@@ -109,7 +109,7 @@ class DistributionCodeLinkSchema(ma.ModelSchema):  # pylint: disable=too-many-an
         model = DistributionCodeLink
 
 
-class DistributionCodeSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class DistributionCodeSchema(AuditSchema, ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the DistributionCode."""
 
     class Meta:  # pylint: disable=too-few-public-methods

@@ -13,8 +13,11 @@
 # limitations under the License.
 """Model to handle all operations related to Receipt."""
 
+import pytz
+from marshmallow import fields
 from sqlalchemy import ForeignKey
 
+from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
 from .base_model import BaseModel
 from .db import db, ma
 
@@ -46,3 +49,5 @@ class ReceiptSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Receipt
+
+    receipt_date = fields.DateTime(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))

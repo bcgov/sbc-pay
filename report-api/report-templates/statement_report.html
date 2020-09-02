@@ -346,9 +346,9 @@
             {% if statement.from_date or statement.to_date %}
             <div class="r-subtitle">
               {% if 'DAILY' == statement.frequency %}
-                {{statement.from_date}}
+                {{statement.from_date|format_datetime}}
               {% else %}
-                {{statement.from_date}} to {{statement.to_date}}
+                {{statement.from_date|format_datetime}} to {{statement.to_date|format_datetime}}
               {% endif %}
             </div>
             {% endif %}
@@ -359,7 +359,7 @@
         <td class="org-address-column">
           {% if account and account.name %}
           <div class="org-address">
-            <div class="line-height-reg"><strong>{{account.name}}</strong></div>
+            <div class="line-height-reg"><strong>ATTN: {{account.name}}</strong></div>
             {% if account and account.contact %}
             <div class="line-height-reg">{{account.contact.street}}</div>
             <div class="line-height-reg">{{account.contact.streetAdditional}}</div>
@@ -370,16 +370,10 @@
           {% endif %}
         </td>
         <td class="account-info">
-          {% if statement.name %}
+          {% if account.paymentPreference.bcOnlineAccountId %}
           <div class="line-height-reg">
-            <div class="account-info-title">Account Name:</div>
-            <div class="account-info-value">{{account.name}}</div>
-          </div>
-          {% endif %}
-          {% if statement.accountNumber %}
-          <div class="line-height-reg">
-            <div class="account-info-title">Account Number:</div>
-            <div class="account-info-value">#{{account.accountNumber}}</div>
+            <div class="account-info-title">BCOL Account Number::</div>
+            <div class="account-info-value">#{{account.paymentPreference.bcOnlineAccountId}}</div>
           </div>
           {% endif %}
           {% if statement.from_date or statement.to_date %}
@@ -387,9 +381,9 @@
             <div class="account-info-title">Statement Period:</div>
             <div class="account-info-value">
               {% if 'DAILY' == statement.frequency %}
-                {{statement.from_date}}
+                {{statement.from_date|format_datetime}}
               {% else %}
-                {{statement.from_date}} to {{statement.to_date}}
+                {{statement.from_date|format_datetime}} to {{statement.to_date|format_datetime}}
               {% endif %}
             </div>
           </div>
@@ -397,7 +391,7 @@
           {% if statement.dueDate %}
           <div class="line-height-reg">
             <div class="account-info-title">Due Date:</div>
-            <div class="account-info-value">{{statement.dueDate}}</div>
+            <div class="account-info-value">{{statement.dueDate|format_datetime}}</div>
           </div>
           {% endif %}
         </td>
@@ -405,7 +399,7 @@
       <tr>
         <td colspan="2">
           <div class="total-amount-due-row">
-            <div class="total-amount-due-div1">Total Amount Due:</div>
+            <div class="total-amount-due-div1">Total Amount:</div>
             <div class="total-amount-due-div2">${{"%.2f"|format(total.fees) if total.fees else '0.00'}}</div>
           </div>
         </td>
@@ -443,7 +437,7 @@
                     <div>#{{item.invoice.business_identifier}}</div>
                     {% endif %}
                   </td>
-                  <td>{{item.invoice.created_on}}</td>
+                  <td>{{item.invoice.created_on|format_datetime}}</td>
                   <td>
                     {% for lineItemFeeCode in item.invoice.line_items %}
                     <div>{{lineItemFeeCode.filing_type_code}}</div>
@@ -500,8 +494,28 @@
         <tr>
           <td colspan="2">
             <div class="total-elements grand-total">
-              Total Amount Due:
+              Total Amount:
               <span class="total-elements-price">${{"%.2f"|format(total.fees)}}</span>
+            </div>
+          </td>
+        </tr>
+        {% endif %}
+        {% if total.paid %}
+        <tr>
+          <td colspan="2">
+            <div class="total-elements grand-total">
+              Total Amount Paid:
+              <span class="total-elements-price">${{"%.2f"|format(total.paid)}}</span>
+            </div>
+          </td>
+        </tr>
+        {% endif %}
+        {% if total.due %}
+        <tr>
+          <td colspan="2">
+            <div class="total-elements grand-total">
+              Total Amount Due:
+              <span class="total-elements-price">${{"%.2f"|format(total.due)}}</span>
             </div>
           </td>
         </tr>

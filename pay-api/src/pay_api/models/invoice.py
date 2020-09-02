@@ -18,7 +18,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
 from pay_api.utils.enums import InvoiceStatus, LineItemStatus
-from .audit import Audit
+from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
 from .db import db, ma
 from .invoice_reference import InvoiceReferenceSchema
@@ -86,7 +86,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         cls.commit()
 
 
-class InvoiceSchema(BaseSchema):  # pylint: disable=too-many-ancestors
+class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the invoice."""
 
     class Meta:  # pylint: disable=too-few-public-methods

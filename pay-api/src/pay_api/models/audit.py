@@ -14,10 +14,12 @@
 """Base class for audit model."""
 from datetime import datetime
 
+import pytz
+from marshmallow import fields
 from sqlalchemy.ext.declarative import declared_attr
 
+from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
 from pay_api.utils.user_context import user_context
-
 from .base_model import BaseModel
 from .db import db
 
@@ -61,3 +63,10 @@ class Audit(BaseModel):  # pylint: disable=too-few-public-methods
     def _get_name(**kwargs):
         """Return current user's name."""
         return kwargs['user'].name
+
+
+class AuditSchema:  # pylint: disable=too-many-ancestors, too-few-public-methods
+    """Audit Schema."""
+
+    created_on = fields.DateTime(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))
+    updated_on = fields.DateTime(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))

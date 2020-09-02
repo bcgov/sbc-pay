@@ -16,6 +16,7 @@
 
 import base64
 
+from dateutil import parser
 from flask import url_for
 from jinja2 import Environment, FileSystemLoader, Template
 from weasyprint import HTML
@@ -24,7 +25,17 @@ from weasyprint.formatting_structure.boxes import InlineBox
 from api.utils.util import TEMPLATE_FOLDER_PATH
 
 
+def format_datetime(value, format='short'):  # pylint: disable=redefined-builtin
+    """Filter to format datetime globally."""
+    if format == 'full':
+        dt_format = '%m-%d-%Y %I:%M %p'
+    elif format == 'short':
+        dt_format = '%m-%d-%Y'
+    return parser.parse(value).strftime(dt_format)
+
+
 ENV = Environment(loader=FileSystemLoader('.'), autoescape=True)
+ENV.filters['format_datetime'] = format_datetime
 
 
 class ReportService:
