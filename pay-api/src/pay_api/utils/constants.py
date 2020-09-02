@@ -30,3 +30,5 @@ EDIT_ROLE = 'edit'
 VIEW_ROLE = 'view'
 
 ALL_ALLOWED_ROLES = (EDIT_ROLE, VIEW_ROLE)
+
+LEGISLATIVE_TIMEZONE = 'America/Vancouver'

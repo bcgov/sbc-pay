@@ -15,9 +15,9 @@
 
 from datetime import datetime
 from typing import Dict
-from flask import current_app
 
 import pytz
+from flask import current_app
 from marshmallow import fields
 from sqlalchemy import ForeignKey
 from sqlalchemy import func, or_
@@ -25,8 +25,7 @@ from sqlalchemy.orm import relationship
 
 from pay_api.utils.enums import PaymentStatus
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
-from .audit import Audit
-from .base_schema import BaseSchema
+from .audit import Audit, AuditSchema
 from .bcol_payment_account import BcolPaymentAccount
 from .credit_payment_account import CreditPaymentAccount
 from .db import db, ma
@@ -38,6 +37,7 @@ from .payment_method import PaymentMethod
 from .payment_status_code import PaymentStatusCode
 from .payment_system import PaymentSystem
 from .payment_transaction import PaymentTransactionSchema
+from .base_schema import BaseSchema
 
 
 class Payment(Audit):  # pylint: disable=too-many-instance-attributes
@@ -144,7 +144,7 @@ class Payment(Audit):  # pylint: disable=too-many-instance-attributes
         return cls.query.filter_by(payment_status_code=PaymentStatus.DELETE_ACCEPTED.value).all()
 
 
-class PaymentSchema(BaseSchema):  # pylint: disable=too-many-ancestors
+class PaymentSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Payment."""
 
     class Meta:  # pylint: disable=too-few-public-methods
