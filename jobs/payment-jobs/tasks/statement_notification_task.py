@@ -50,7 +50,7 @@ class StatementNotificationTask:
 
         params = {
             'logo_url': f"{current_app.config.get('AUTH_WEB_URL')}/{current_app.config.get('REGISTRIES_LOGO_IMAGE_NAME')}",
-            'url': f"{current_app.config.get('AUTH_WEB_URL')}/{current_app.config.get('AUTH_WEB_STATEMENT_URL')}"
+            'url': f"{current_app.config.get('AUTH_WEB_URL')}"
         }
         template = ENV.get_template('statement_notification.html')
         for statement in statements_with_pending_notifications:
@@ -59,10 +59,19 @@ class StatementNotificationTask:
             statement.commit()
             payment_account = PaymentAccountModel.find_by_id(statement.payment_account_id)
             recipients = StatementRecipientsModel.find_all_recipients_for_payment_id(statement.payment_account_id)
+            if len(recipients) < 1:
+                current_app.logger.info(f'No recipients found for statement: {statement.payment_account_id}.Skipping sending')
+                statement.notification_status_code = NotificationStatus.SKIP.value
+                statement.notification_date = datetime.now()
+                statement.commit()
+                continue
+
             to_emails = ','.join([str(recipient.email) for recipient in recipients])
+            current_app.logger.info(f'Recipients email Ids:{to_emails}')
             params['org_name'] = payment_account.auth_account_name
             params['frequency'] = statement.frequency.lower()
-            params.update({'url': params['url'].replace('orgId', payment_account.auth_account_id)})
+            # logic changed https://github.com/bcgov/entity/issues/4809
+            # params.update({'url': params['url'].replace('orgId', payment_account.auth_account_id)})
             try:
                 notify_response = cls.send_email(token, to_emails, template.render(params))
             except Exception as e:
