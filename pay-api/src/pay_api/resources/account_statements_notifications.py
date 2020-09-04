@@ -43,7 +43,7 @@ class AccountStatementsNotifications(Resource):
         current_app.logger.info('<AccountStatementsNotifications.get')
 
         # Check if user is authorized to perform this action
-        # check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE, is_premium=True)
+        check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE, is_premium=True)
         statement_notification_details = StatementRecipients.find_statement_notification_details(account_id)
         response, status = statement_notification_details, HTTPStatus.OK
         current_app.logger.debug('>AccountStatementsNotifications.get')
