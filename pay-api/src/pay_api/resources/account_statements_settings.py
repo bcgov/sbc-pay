@@ -41,7 +41,7 @@ class AccountStatementsSettings(Resource):
         current_app.logger.info('<AccountStatementsSettings.get')
 
         # Check if user is authorized to perform this action
-        check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE, is_premium=True)
+        # check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE, is_premium=True)
 
         response, status = StatementSettingsService.find_by_account_id(account_id), HTTPStatus.OK
         current_app.logger.debug('>AccountStatementsSettings.get')
