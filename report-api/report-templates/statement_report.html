@@ -123,7 +123,7 @@
       }
 
       .statement-header {
-        border-bottom: 5px solid #234075;
+        border-bottom: 3px solid #234075;
       }
 
       .statement-header .r-title {
@@ -152,6 +152,7 @@
         width: 310px;
         white-space: normal;
         padding-right: 12px;
+        padding-bottom: 18px;
       }
 
       .org-account-info-row .account-info {
@@ -182,7 +183,7 @@
         padding: 16px 24px;
         font-size: 16px;
         font-family: 'BCSans-Bold', sans-serif;
-        margin: 4px 0 18px;
+        margin: 4px 0 10px;
       }
 
       .total-amount-due-row .total-amount-due-div1{
@@ -197,7 +198,7 @@
       }
 
       .section-title {
-        margin: 10px 24px;
+        margin: 10px 24px 0px;
         padding-bottom: 16px;
         font-family: 'BCSans-Bold', sans-serif;
         font-size: 18px;
@@ -228,6 +229,7 @@
         vertical-align: top;
         font-family: 'BCSans-Bold', sans-serif;
         font-weight: normal;
+        padding-bottom: 2px;
       }
       .transaction-table thead th:last-child {
         text-align: right;
@@ -272,7 +274,7 @@
       .footer-bcrs-logo {
         display: inline-block;
         padding-bottom: 16px;
-        padding-left: 14px;
+        padding-left: 16px;
         float: left !important;
       }
 
@@ -286,15 +288,16 @@
         vertical-align: middle;
         text-align: right !important;
         float: right;
-        padding-right: 24px;
+        padding-right: 34px;
         margin-top: 30px;
       }
 
       .statement-footer .footer-info span {
-        padding: 2px 10px;
-        border-right: 1px solid #bcbcbc;
+        padding: 2px 7px;
+        border-right: 1px solid #868686;
         display: inline-block;
         text-align: right;
+        margin-right: 3px;
       }
 
       .statement-footer .footer-info span:last-child {
@@ -488,23 +491,21 @@
         {% if total.paid %}
         <tr>
           <td colspan="2">
-            <div class="total-elements font-bold" style="border-bottom: none;">
+            <div class="total-elements font-bold">
               Total Amount Paid:
               <span class="total-elements-price">${{"%.2f"|format(total.paid)}}</span>
             </div>
           </td>
         </tr>
         {% endif %}
-        {% if total.due %}
         <tr>
           <td colspan="2">
             <div class="total-elements font-bold" style="border-bottom: none;">
               Total Amount Due:
-              <span class="total-elements-price">${{"%.2f"|format(total.due)}}</span>
+              <span class="total-elements-price">${{"%.2f"|format(total.due) if total.due else '0.00'}}</span>
             </div>
           </td>
         </tr>
-        {% endif %}
       {% endif %}
     </tbody>
     <tfoot>
