@@ -20,7 +20,8 @@ depends_on = None
 
 def upgrade():
     default_frequency = StatementFrequency.default_frequency().value
-    sql = f"INSERT INTO statement_settings (frequency, payment_account_id, from_date) SELECT '{default_frequency}', id, CURRENT_DATE FROM payment_account;"
+    sql = f"INSERT INTO statement_settings (frequency, payment_account_id, from_date) " \
+          f"SELECT '{default_frequency}', account_id, CURRENT_DATE FROM bcol_payment_account;"
     op.execute(sql)
 
 
