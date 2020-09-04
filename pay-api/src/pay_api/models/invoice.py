@@ -85,6 +85,11 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         db.session.bulk_save_objects(invoices)
         cls.commit()
 
+    @classmethod
+    def find_by_business_identifier(cls, business_identifier: str):
+        """Find all payment accounts by business_identifier."""
+        return cls.query.filter_by(business_identifier=business_identifier).all()
+
 
 class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the invoice."""
