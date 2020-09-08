@@ -71,7 +71,7 @@ class StatementTask:
     def _generate_weekly_statements(cls, current_time: datetime):
         """Generate weekly statements for all accounts with settings to generate weekly."""
         statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(current_time,
-                                                                                        StatementFrequency.MONTHLY)
+                                                                                        StatementFrequency.WEEKLY)
         current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate WEEKLY statements')
         search_filter = {
             'weekFilter': {

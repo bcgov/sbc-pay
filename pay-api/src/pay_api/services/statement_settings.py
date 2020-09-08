@@ -168,7 +168,9 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
 
         max_frequency = StatementSettings._find_longest_frequency(current_statements_settings.frequency, frequency)
         last_date = StatementSettings._get_end_of(max_frequency)
-        current_statements_settings.to_date = last_date
+        # should end one day after the last day since the reports will be generated next day
+        # week ends on saturday ;but the generator runs on sunday ..so End on sunday
+        current_statements_settings.to_date = last_date + timedelta(days=1)
         current_statements_settings.save()
 
         new_statements_settings = StatementSettingsModel(frequency=frequency,
