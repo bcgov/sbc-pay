@@ -55,10 +55,11 @@ class StatementTask:
     @classmethod
     def _generate_daily_statements(cls, current_time: datetime):
         """Generate daily statements for all accounts with settings to generate daily."""
-        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(current_time,
+        previous_day = get_previous_day(current_time)
+        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_day,
                                                                                         StatementFrequency.DAILY)
         current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate DAILY statements')
-        previous_day = get_previous_day(current_time)
+
         search_filter = {
             'dateFilter': {
                 'startDate': previous_day.strftime('%m/%d/%Y'),
@@ -70,7 +71,7 @@ class StatementTask:
     @classmethod
     def _generate_weekly_statements(cls, current_time: datetime):
         """Generate weekly statements for all accounts with settings to generate weekly."""
-        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(current_time,
+        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(get_previous_day(current_time),
                                                                                         StatementFrequency.WEEKLY)
         current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate WEEKLY statements')
         search_filter = {
@@ -84,7 +85,7 @@ class StatementTask:
     @classmethod
     def _generate_monthly_statements(cls, current_time: datetime):
         """Generate monthly statements for all accounts with settings to generate monthly."""
-        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(current_time,
+        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(get_previous_day(current_time),
                                                                                         StatementFrequency.MONTHLY)
         current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate MONTHLY statements')
         last_month, last_month_year = get_previous_month_and_year()
