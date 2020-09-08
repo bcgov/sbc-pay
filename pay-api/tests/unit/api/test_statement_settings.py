@@ -43,7 +43,7 @@ def test_get_default_statement_settings_weekly(session, client, jwt, app):
     rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/settings',
                     headers=headers)
     assert rv.status_code == 200
-    assert rv.json.get('frequency') == StatementFrequency.WEEKLY.value
+    assert rv.json.get('currentFrequency').get('frequency') == StatementFrequency.WEEKLY.value
 
 
 def test_post_default_statement_settings_daily(session, client, jwt, app):
@@ -61,7 +61,7 @@ def test_post_default_statement_settings_daily(session, client, jwt, app):
     rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/settings', data=json.dumps({}),
                     headers=headers)
     assert rv.status_code == 200
-    assert rv.json.get('frequency') == StatementFrequency.WEEKLY.value
+    assert rv.json.get('currentFrequency').get('frequency') == StatementFrequency.WEEKLY.value
 
     # Set the frequency to Daily and assert
     daily_frequency = {'frequency': 'DAILY'}
@@ -85,4 +85,4 @@ def test_post_default_statement_settings_daily(session, client, jwt, app):
     rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/settings', data=json.dumps({}),
                     headers=headers)
     assert rv.status_code == 200
-    assert rv.json.get('frequency') == StatementFrequency.MONTHLY.value
+    assert rv.json.get('currentFrequency').get('frequency') == StatementFrequency.MONTHLY.value
