@@ -45,7 +45,8 @@ def test_statement_settings_find_by_account(session):
     payment_account = PaymentAccount.find_by_id(bcol_account.account_id)
     statement_settings = StatementSettingsService.find_by_account_id(payment_account.auth_account_id)
     assert statement_settings is not None
-    assert statement_settings.get('frequency') == StatementFrequency.DAILY.value
+    print('statement_settingshere',statement_settings)
+    assert statement_settings.get('current_frequency').get('frequency') == StatementFrequency.DAILY.value
 
 
 def test_statement_settings_find_by_invalid_account(session):
