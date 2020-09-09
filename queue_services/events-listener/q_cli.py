@@ -92,17 +92,20 @@ async def run(loop, old_identifier, new_identifier):  # pylint: disable=too-many
 
 if __name__ == '__main__':
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hp:", ["pid=", ])
+        opts, args = getopt.getopt(sys.argv[1:], "ho:n:", ["oldid=", "newid="])
     except getopt.GetoptError:
-        print('q_cli.py -p <old_identifier> ')
+        print('q_cli.py -o <old_identifier> -n <new_identifier>')
         sys.exit(2)
+
     for opt, arg in opts:
         if opt == '-h':
-            print('q_cli.py -p <payment_invoice_id>')
+            print('q_cli.py -o <old_identifier> -n <new_identifier>')
             sys.exit()
-        elif opt in ("-p", "--pid"):
-            pid = arg
+        elif opt in ("-o", "--oldid"):
+            old_id = arg
+        elif opt in ("-n", "--newid"):
+            new_id = arg
 
-    print('publish:', pid)
+    print('publish:', old_id, new_id)
     event_loop = asyncio.get_event_loop()
-    event_loop.run_until_complete(run(event_loop, pid))
+    event_loop.run_until_complete(run(event_loop, old_id, new_id))
