@@ -44,6 +44,11 @@ class InternalPaymentAccount(BaseModel):
 
         return account
 
+    @classmethod
+    def find_by_corp_number(cls, corp_number: str):
+        """Find all payment accounts by corp number."""
+        return cls.query.filter_by(corp_number=corp_number).all()
+
 
 class InternalPaymentAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Internal Payment System Account."""

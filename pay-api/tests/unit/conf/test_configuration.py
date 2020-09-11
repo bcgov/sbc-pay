@@ -19,7 +19,7 @@ from importlib import reload
 
 import pytest
 
-import config
+import pay_api.config as config
 
 
 # testdata pattern is ({str: environment}, {expected return value})

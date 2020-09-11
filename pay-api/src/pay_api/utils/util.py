@@ -28,7 +28,6 @@ from flask import current_app
 
 def cors_preflight(methods: str = 'GET'):
     """Render an option method on the class."""
-
     def wrapper(f):
         def options(self, *args, **kwargs):  # pylint: disable=unused-argument
             return {'Allow': methods}, 200, \
