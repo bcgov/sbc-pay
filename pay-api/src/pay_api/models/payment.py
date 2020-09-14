@@ -20,16 +20,13 @@ import pytz
 from flask import current_app
 from marshmallow import fields
 from sqlalchemy import ForeignKey
-from sqlalchemy import func, or_
+from sqlalchemy import func
 from sqlalchemy.orm import relationship
 
 from pay_api.utils.enums import PaymentStatus
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
 from .audit import Audit, AuditSchema
-from .bcol_payment_account import BcolPaymentAccount
-from .credit_payment_account import CreditPaymentAccount
 from .db import db, ma
-from .internal_payment_account import InternalPaymentAccount
 from .invoice import Invoice
 from .invoice import InvoiceSchema
 from .payment_account import PaymentAccount
@@ -70,17 +67,13 @@ class Payment(Audit):  # pylint: disable=too-many-instance-attributes
                                 page: int, limit: int, return_all: bool, max_no_records: int = 0):
         """Search for purchase history."""
         # Payment Account Sub Query
-        payment_account_sub_query = db.session.query(PaymentAccount).filter(
-            PaymentAccount.auth_account_id == auth_account_id).subquery('pay_accnt')
+        # payment_account_sub_query = db.session.query(PaymentAccount).filter(
+        #     PaymentAccount.auth_account_id == auth_account_id).subquery('pay_accnt')
 
         query = db.session.query(Payment, Invoice) \
             .join(Invoice) \
-            .outerjoin(CreditPaymentAccount) \
-            .outerjoin(BcolPaymentAccount) \
-            .outerjoin(InternalPaymentAccount) \
-            .filter(or_(InternalPaymentAccount.account_id == payment_account_sub_query.c.id,
-                        BcolPaymentAccount.account_id == payment_account_sub_query.c.id,
-                        CreditPaymentAccount.account_id == payment_account_sub_query.c.id))
+            .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id) \
+            .filter(PaymentAccount.auth_account_id == auth_account_id)
 
         if search_filter.get('status', None):
             query = query.filter(Payment.payment_status_code == search_filter.get('status'))

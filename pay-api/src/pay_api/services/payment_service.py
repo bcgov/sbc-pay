@@ -40,7 +40,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
     """Service to manage Payment related operations."""
 
     @classmethod
-    def create_payment(cls, payment_request: Tuple[Dict[str, Any]], authorization: Tuple[Dict[str, Any]]):
+    def create_payment(cls, payment_request: Tuple[Dict[str, Any]], authorization: Tuple[Dict[str, Any]]) -> Dict:
         # pylint: disable=too-many-locals, too-many-statements
         """Create payment related records.
 
@@ -64,9 +64,14 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         account_info = payment_request.get('accountInfo', None)
         filing_id = filing_info.get('filingIdentifier', None)
         folio_number = filing_info.get('folioNumber', get_str_by_path(authorization, 'business/folioNumber'))
+        if account_info is not None and account_info.get('bcolAccountNumber', None) is not None:
+            bcol_account = account_info.get('bcolAccountNumber')
+        else:
+            bcol_account = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineAccountId')
 
         corp_type = business_info.get('corpType', None)
         payment_method = _get_payment_method(payment_request, authorization)
+
         # Calculate the fees
         current_app.logger.debug('Calculate the fees')
         fees = _calculate_fees(corp_type, filing_info)
@@ -91,16 +96,22 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                                               pay_service.get_payment_system_code())
 
             current_app.logger.debug('Creating Invoice record for payment {}'.format(payment.id))
-            invoice = Invoice.create(payment_account, payment.id, fees, corp_type,
+            invoice = Invoice.create(payment_account,
+                                     payment.id,
+                                     fees,
+                                     corp_type,
                                      routing_slip=get_str_by_path(account_info, 'routingSlip'),
                                      dat_number=get_str_by_path(account_info, 'datNumber'),
-                                     filing_id=filing_id, folio_number=folio_number,
-                                     business_identifier=business_info.get('businessIdentifier'))
+                                     filing_id=filing_id,
+                                     folio_number=folio_number,
+                                     business_identifier=business_info.get('businessIdentifier'),
+                                     bcol_account=bcol_account)
 
             line_items = []
             for fee in fees:
                 current_app.logger.debug('Creating line items')
                 line_items.append(PaymentLineItem.create(invoice.id, fee))
+
             current_app.logger.debug('Handing off to payment system to create invoice')
             pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice,
                                                             corp_type_code=invoice.corp_type_code)
@@ -224,10 +235,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                             reference.flush()
 
                     # update invoice
-                    payment_account: PaymentAccount = PaymentAccount.find_by_pay_system_id(
-                        credit_account_id=invoice.credit_account_id,
-                        internal_account_id=invoice.internal_account_id,
-                        bcol_account_id=invoice.bcol_account_id)
+                    payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
 
                     pay_system_invoice = pay_service.update_invoice(
                         payment_account,
@@ -284,10 +292,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         # Cancel all invoices
         for invoice in payment.invoices:
             invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
-            payment_account = PaymentAccount.find_by_pay_system_id(
-                credit_account_id=invoice.credit_account_id,
-                internal_account_id=invoice.internal_account_id,
-                bcol_account_id=invoice.bcol_account_id)
+            payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+
             pay_service.cancel_invoice(payment_account=payment_account,
                                        inv_number=invoice_reference.invoice_number)
             invoice.invoice_status_code = InvoiceStatus.DELETED.value
@@ -347,14 +353,17 @@ def _calculate_fees(corp_type, filing_info):
 def _create_account(pay_service, business_info, contact_info, account_info, authorization):
     """Create account in pay system and save it in pay db."""
     current_app.logger.debug('Check if payment account exists')
-    payment_account: PaymentAccount = PaymentAccount.find_account(
-        business_info,
-        authorization,
-        pay_service.get_payment_system_code()
-    )
-    if not payment_account.id:
-        current_app.logger.debug('No payment account, creating new')
-        name = business_info.get('businessName', get_str_by_path(authorization, 'account/name'))
+    payment_account: PaymentAccount = PaymentAccount.find_account(authorization)
+
+    # By default use account name, if None use business name
+    name = get_str_by_path(authorization, 'account/name') or business_info.get('businessName', None)
+    pay_system_account = None
+
+    # TODO Only temporary check, once auth calls pay account creation, change this
+    has_cfs_account = None not in (payment_account.cfs_party, payment_account.cfs_account, payment_account.cfs_site)
+    if (not has_cfs_account and pay_service.get_payment_system_code() == PaymentSystem.PAYBC.value) \
+            or pay_service.get_payment_system_code() == PaymentSystem.BCOL.value:
+        # Create payment account in client system.
         pay_system_account = pay_service.create_account(
             name=name,
             contact_info=contact_info,
@@ -362,13 +371,12 @@ def _create_account(pay_service, business_info, contact_info, account_info, auth
             authorization=authorization
         )
 
-        current_app.logger.debug('Creating payment record for account : {}'.format(payment_account.id))
-        payment_account = PaymentAccount.create(
-            business_info=business_info,
-            account_details=pay_system_account,
-            payment_system=pay_service.get_payment_system_code(),
-            authorization=authorization
-        )
+    # Create or update payment account in DB
+    current_app.logger.debug('Creating payment record for account : {}'.format(payment_account.id))
+    payment_account = PaymentAccount.create(
+        account_details=pay_system_account,
+        authorization=authorization
+    )
     return payment_account
 
 

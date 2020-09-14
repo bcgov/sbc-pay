@@ -35,9 +35,8 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     payment_id = db.Column(db.Integer, ForeignKey('payment.id'), nullable=False)
 
     invoice_status_code = db.Column(db.String(20), ForeignKey('invoice_status_code.code'), nullable=False)
-    bcol_account_id = db.Column(db.Integer, ForeignKey('bcol_payment_account.id'), nullable=True)
-    internal_account_id = db.Column(db.Integer, ForeignKey('internal_payment_account.id'), nullable=True)
-    credit_account_id = db.Column(db.Integer, ForeignKey('credit_payment_account.id'), nullable=True)
+    payment_account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True)
+    cfs_account_id = db.Column(db.Integer, ForeignKey('cfs_account.id'), nullable=True)
 
     corp_type_code = db.Column(db.String(10), ForeignKey('corp_type.code'), nullable=True)
     business_identifier = db.Column(db.String(20), nullable=True)
@@ -50,14 +49,13 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     filing_id = db.Column(db.String(50), nullable=True)
     folio_number = db.Column(db.String(50), nullable=True, index=True)
     dat_number = db.Column(db.String(50), nullable=True, index=True)
+    bcol_account = db.Column(db.String(50), nullable=True, index=True)
     service_fees = db.Column(db.Float, nullable=True)
 
     payment_line_items = relationship('PaymentLineItem')
     receipts = relationship('Receipt')
 
-    bcol_account = relationship('BcolPaymentAccount')
-    internal_account = relationship('InternalPaymentAccount')
-    credit_account = relationship('CreditPaymentAccount')
+    payment_account = relationship('PaymentAccount')
 
     references = relationship('InvoiceReference')
 
@@ -98,7 +96,7 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Invoice
-        exclude = ['bcol_account', 'internal_account', 'credit_account']
+        exclude = ['payment_account']
 
     invoice_status_code = fields.String(data_key='status_code')
     corp_type_code = fields.String(data_key='corp_type_code')

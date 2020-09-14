@@ -24,7 +24,7 @@ from flask import current_app
 from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
-from pay_api.models import CreditPaymentAccount, FeeSchedule, InternalPaymentAccount, Payment
+from pay_api.models import FeeSchedule, Payment, PaymentAccount
 from pay_api.services.payment_service import PaymentService
 from pay_api.utils.enums import PaymentStatus, TransactionStatus, InvoiceStatus, PaymentMethod
 from tests.utilities.base_test import (
@@ -38,17 +38,14 @@ test_user_token = {'preferred_username': 'test'}
 def test_create_payment_record(session, public_user_mock):
     """Assert that the payment records are created."""
     payment_response = PaymentService.create_payment(get_payment_request(), get_auth_basic_user())
-    account_model = CreditPaymentAccount. \
-        find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP',
-                                                              get_auth_basic_user().get('account').get('id'))
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_basic_user().get('account').get('id'))
     account_id = account_model.id
     assert account_id is not None
     assert payment_response.get('id') is not None
     # Create another payment with same request, the account should be the same
     PaymentService.create_payment(get_payment_request(), get_auth_basic_user())
-    account_model = CreditPaymentAccount. \
-        find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP',
-                                                              get_auth_basic_user().get('account').get('id'))
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_basic_user().get('account').get('id'))
+
     assert account_id == account_model.id
 
 
@@ -57,17 +54,14 @@ def test_create_payment_record_with_direct_pay(session, public_user_mock):
     current_app.config['DIRECT_PAY_ENABLED'] = True
     payment_response = PaymentService.create_payment(
         get_payment_request(), get_auth_basic_user(PaymentMethod.DIRECT_PAY.value))
-    account_model = CreditPaymentAccount. \
-        find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP',
-                                                              get_auth_basic_user().get('account').get('id'))
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_basic_user().get('account').get('id'))
     account_id = account_model.id
     assert account_id is not None
     assert payment_response.get('id') is not None
     # Create another payment with same request, the account should be the same
     PaymentService.create_payment(get_payment_request(), get_auth_basic_user())
-    account_model = CreditPaymentAccount. \
-        find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP',
-                                                              get_auth_basic_user().get('account').get('id'))
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_basic_user().get('account').get('id'))
+
     assert account_id == account_model.id
 
 
@@ -291,18 +285,14 @@ def test_create_payment_record_rollback_on_paybc_connection_error(session, publi
 def test_create_zero_dollar_payment_record(session, public_user_mock):
     """Assert that the payment records are created and completed."""
     payment_response = PaymentService.create_payment(get_zero_dollar_payment_request(), get_auth_basic_user())
-    account_model = InternalPaymentAccount.find_by_corp_number_and_corp_type_and_account_id('CP0001234', 'CP',
-                                                                                            get_auth_basic_user().get(
-                                                                                                'account').get('id'))
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_basic_user().get('account').get('id'))
     account_id = account_model.id
     assert account_id is not None
     assert payment_response.get('id') is not None
     assert payment_response.get('status_code') == 'COMPLETED'
     # Create another payment with same request, the account should be the same
     PaymentService.create_payment(get_zero_dollar_payment_request(), get_auth_basic_user())
-    account_model = InternalPaymentAccount.find_by_corp_number_and_corp_type_and_account_id('CP0001234', 'CP',
-                                                                                            get_auth_basic_user().get(
-                                                                                                'account').get('id'))
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_basic_user().get('account').get('id'))
     assert account_id == account_model.id
     assert payment_response.get('status_code') == 'COMPLETED'
 
@@ -365,9 +355,7 @@ def test_create_payment_record_with_service_charge(session, public_user_mock):
     # Create a payment request for corp type BC
     payment_response = PaymentService.create_payment(get_payment_request(corp_type='BC', second_filing_type='OTFDR'),
                                                      get_auth_basic_user())
-    account_model = CreditPaymentAccount. \
-        find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'BC',
-                                                              get_auth_basic_user().get('account').get('id'))
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_basic_user().get('account').get('id'))
     account_id = account_model.id
     assert account_id is not None
     assert payment_response.get('id') is not None

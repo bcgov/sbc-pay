@@ -15,7 +15,6 @@
 
 import base64
 import re
-import secrets
 import urllib.parse
 from typing import Any, Dict
 
@@ -79,13 +78,10 @@ class PaybcService(PaymentSystemService, OAuthService):
             invoice_number = invoice.id
 
         invoice_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/' \
-            .format(payment_account.paybc_party, payment_account.paybc_account, payment_account.paybc_site)
+            .format(payment_account.cfs_party, payment_account.cfs_account, payment_account.cfs_site)
 
         # Check if random invoice number needs to be generated
-        transaction_num_suffix = secrets.token_hex(10) \
-            if current_app.config.get('GENERATE_RANDOM_INVOICE_NUMBER', 'False').lower() == 'true' \
-            else payment_account.corp_number
-        transaction_number = f'{invoice_number}-{transaction_num_suffix}'.replace(' ', '')
+        transaction_number = f'{invoice_number}'.replace(' ', '')
 
         invoice_payload = dict(
             batch_source=CFS_BATCH_SOURCE,
@@ -173,7 +169,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         access_token: str = self.__get_token().json().get('access_token')
         current_app.logger.debug('<Getting receipt')
         receipt_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/rcpts/'.format(
-            payment_account.paybc_party, payment_account.paybc_account, payment_account.paybc_site)
+            payment_account.cfs_party, payment_account.cfs_account, payment_account.cfs_site)
         parsed_url = parse_url_params(pay_response_url)
         receipt_number: str = parsed_url.get('receipt_number') if 'receipt_number' in parsed_url else None
         if not receipt_number:  # Find all receipts for the site and then match with invoice number
@@ -278,7 +274,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         """Add adjustment to the invoice."""
         current_app.logger.debug(f'>Creating PayBC Adjustment  For Invoice: {inv_number}')
         adjustment_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/adjs/' \
-            .format(payment_account.paybc_party, payment_account.paybc_account, payment_account.paybc_site, inv_number)
+            .format(payment_account.cfs_party, payment_account.cfs_account, payment_account.cfs_site, inv_number)
         current_app.logger.debug(f'>Creating PayBC Adjustment URL {adjustment_url}')
 
         adjustment = dict(
@@ -302,7 +298,7 @@ class PaybcService(PaymentSystemService, OAuthService):
         """Get invoice from PayBC."""
         current_app.logger.debug('<__get_invoice')
         invoice_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/' \
-            .format(payment_account.paybc_party, payment_account.paybc_account, payment_account.paybc_site, inv_number)
+            .format(payment_account.cfs_party, payment_account.cfs_account, payment_account.cfs_site, inv_number)
 
         invoice_response = self.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
         current_app.logger.debug('>__get_invoice')
