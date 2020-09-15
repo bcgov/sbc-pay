@@ -34,7 +34,7 @@ jobs:
         run: |
           echo "::set-env name=TAG_NAME::dev"
 
-      - uses: pwei1018/bcrs-cd-action@1.1.1
+      - uses: pwei1018/bcrs-cd-action@latest
         with:
           WORKING_DIRECTORY: "./pay-api"
           APP_NAME: "pay-api"
