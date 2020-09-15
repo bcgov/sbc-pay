@@ -1,14 +1,14 @@
-name: Report API CHECK CI
+name: BCOL API CI
 
 on:
   pull_request:
     branches:
       - development
     paths:
-      - "report-api/**"
+      - "bcol-api/**"
 
 jobs:
-  report-api-check:
+  bcol-api-ci:
     runs-on: ubuntu-latest
     if: github.repository == 'bcgov/sbc-pay'
     env:
@@ -20,10 +20,18 @@ jobs:
       JWT_OIDC_CLIENT_SECRET: "1111111111"
       JWT_OIDC_JWKS_CACHE_TIMEOUT: "6000"
 
+      BCOL_QUERY_PROFILE_WSDL_URL: "https://appsd1.bconline.gov.bc.ca/access/services/QueryProfile/wsdl/QueryProfile.wsdl"
+      BCOL_PAYMENTS_WSDL_URL: "https://appsd1.bconline.gov.bc.ca/account/services/DebitAccount/wsdl/DebitAccount.wsdl"
+      BCOL_LDAP_SERVER: "fake"
+      BCOL_LDAP_USER_DN_PATTERN: "fake"
+      BCOL_DEBIT_ACCOUNT_VERSION: "fake"
+      BCOL_LINK_CODE: "000"
+
+      BCOL_APPLIED_CHARGE_WSDL_URL: "https://appsd1.bconline.gov.bc.ca/account/services/AppliedCharge?wsdl"
+
     strategy:
       matrix:
         python-version: [3.8]
-
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -31,21 +39,23 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        working-directory: ./report-api
+        working-directory: ./bcol-api
         run: |
+          sudo apt update
+          sudo apt install libsasl2-dev libldap2-dev libssl-dev --yes
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r requirements/dev.txt
       - name: Lint with pylint
-        working-directory: ./report-api
+        working-directory: ./bcol-api
         run: |
-          pylint --rcfile=setup.cfg --load-plugins=pylint_flask --disable=C0301,W0511 src/api
+          pylint --rcfile=setup.cfg --load-plugins=pylint_flask --disable=C0301,W0511 src/bcol_api
       - name: Lint with flake8
-        working-directory: ./report-api
+        working-directory: ./bcol-api
         run: |
-          flake8 src/api tests
+          flake8 src/bcol_api tests
       - name: Test with pytest
-        working-directory: ./report-api
+        working-directory: ./bcol-api
         run: |
           pip install .
           export PYTHONPATH=./src/
@@ -53,7 +63,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
-          file: ./report-api/coverage.xml
-          flags: reportapi
-          name: codecov-report-api
+          file: ./bcol-api/coverage.xml
+          flags: bcolapi
+          name: codecov-bcol-api
           fail_ci_if_error: true
