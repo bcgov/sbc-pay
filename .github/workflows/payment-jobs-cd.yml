@@ -15,7 +15,7 @@ on:
         default: "dev"
 
 jobs:
-  payment-jobs-dev:
+  payment-jobs-cd:
     runs-on: ubuntu-latest
     if: github.repository == 'bcgov/sbc-pay'
     steps:
@@ -34,7 +34,7 @@ jobs:
         run: |
           echo "::set-env name=TAG_NAME::dev"
 
-      - uses: pwei1018/bcrs-cd-action@1.1.0
+      - uses: pwei1018/bcrs-cd-action@1.1.1
         with:
           WORKING_DIRECTORY: "./jobs/payment-jobs"
           APP_NAME: "payment-job"
