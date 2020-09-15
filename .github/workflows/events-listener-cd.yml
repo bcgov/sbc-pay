@@ -15,7 +15,7 @@ on:
         default: "dev"
 
 jobs:
-  events-listener-dev:
+  events-listener-cd:
     runs-on: ubuntu-latest
     if: github.repository == 'bcgov/sbc-pay'
     steps:
@@ -34,7 +34,7 @@ jobs:
         run: |
           echo "::set-env name=TAG_NAME::dev"
 
-      - uses: pwei1018/bcrs-cd-action@1.1.0
+      - uses: pwei1018/bcrs-cd-action@1.1.1
         with:
           WORKING_DIRECTORY: "./queue_services/events-listener"
           APP_NAME: "events-listener"
