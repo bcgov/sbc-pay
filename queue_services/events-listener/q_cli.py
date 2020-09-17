@@ -81,7 +81,25 @@ async def run(loop, old_identifier, new_identifier):  # pylint: disable=too-many
                                     functools.partial(signal_handler, sig_loop=loop, sig_nc=nc, task=close)
                                     )
 
-        payload = {'oldBusinessIdentifier': old_identifier, 'newBusinessIdentifier': new_identifier}
+        payload = {
+            'specversion': '1.x-wip',
+            'type': 'bc.registry.business.incorporationApplication',
+            'source': 'https://api.business.bcregistry.gov.bc.ca/v1/business/BC1234567/filing/12345678',
+            'id': 'C234-1234-1234',
+            'time': '2020-08-28T17:37:34.651294+00:00',
+            'datacontenttype': 'application/json',
+            'identifier': new_identifier,
+            'tempidentifier': old_identifier,
+            'data': {
+                'filing': {
+                    'header': {'filingId': '12345678'},
+                    'business': {'identifier': 'BC1234567'}
+                }
+            }
+        }
+
+        print('payload-->', payload)
+
         await sc.publish(subject=subscription_options().get('subject'),
                          payload=json.dumps(payload).encode('utf-8'))
 

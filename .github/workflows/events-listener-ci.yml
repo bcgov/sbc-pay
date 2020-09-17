@@ -1,4 +1,4 @@
-name: Events Listener Queue PR CI
+name: Events Listener Queue CI
 
 on:
   pull_request:
@@ -8,7 +8,7 @@ on:
       - "queue_services/events-listener/**"
 
 jobs:
-  events-listener-queue_service-check:
+  events-listener-queue_service-ci:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -61,6 +61,6 @@ jobs:
         uses: codecov/codecov-action@v1
         with:
           file: ./queue_services/events-listener/coverage.xml
-          flags: events_listener
+          flags: eventlistenerqueue
           name: codecov-events-listener
           fail_ci_if_error: true

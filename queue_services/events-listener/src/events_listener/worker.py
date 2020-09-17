@@ -43,6 +43,8 @@ FLASK_APP = Flask(__name__)
 FLASK_APP.config.from_object(APP_CONFIG)
 db.init_app(FLASK_APP)
 
+INCORPORATION_TYPE = 'bc.registry.business.incorporationApplication'
+
 
 async def process_event(event_message, flask_app):
     """Render the payment status."""
@@ -50,29 +52,33 @@ async def process_event(event_message, flask_app):
         raise QueueException('Flask App not available.')
 
     with flask_app.app_context():
-        old_identifier = event_message.get('oldBusinessIdentifier')
-        new_identifier = event_message.get('newBusinessIdentifier')
-        logger.debug('Received message to update %s to %s', old_identifier, new_identifier)
+        if event_message.get('type', None) == INCORPORATION_TYPE \
+                and 'tempidentifier' in event_message\
+                and event_message.get('tempidentifier', None) is not None:
 
-        # Find all credit card payment accounts which have the old corp number
-        accounts = CreditPaymentAccount.find_by_corp_number(old_identifier)
-        for account in accounts:
-            account.corp_number = new_identifier
-            account.flush()
+            old_identifier = event_message.get('tempidentifier')
+            new_identifier = event_message.get('identifier')
+            logger.debug('Received message to update %s to %s', old_identifier, new_identifier)
 
-        # Find all internal payment accounts which have the old corp number
-        accounts = InternalPaymentAccount.find_by_corp_number(old_identifier)
-        for account in accounts:
-            account.corp_number = new_identifier
-            account.flush()
+            # Find all credit card payment accounts which have the old corp number
+            accounts = CreditPaymentAccount.find_by_corp_number(old_identifier)
+            for account in accounts:
+                account.corp_number = new_identifier
+                account.flush()
 
-        # Find all invoice records which have the old corp number
-        invoices = Invoice.find_by_business_identifier(old_identifier)
-        for inv in invoices:
-            inv.business_identifier = new_identifier
-            inv.flush()
+            # Find all internal payment accounts which have the old corp number
+            accounts = InternalPaymentAccount.find_by_corp_number(old_identifier)
+            for account in accounts:
+                account.corp_number = new_identifier
+                account.flush()
 
-        db.session.commit()
+            # Find all invoice records which have the old corp number
+            invoices = Invoice.find_by_business_identifier(old_identifier)
+            for inv in invoices:
+                inv.business_identifier = new_identifier
+                inv.flush()
+
+            db.session.commit()
 
 
 async def cb_subscription_handler(msg: nats.aio.client.Msg):
