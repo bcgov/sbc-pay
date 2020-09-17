@@ -53,7 +53,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._service_fees: float = None
         self._business_identifier: str = None
         self._dat_number: str = None
-        self._cfs_account_id: int = None
+        self._cfs_account_id: int
 
     @property
     def _dao(self):
@@ -288,7 +288,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return self._cfs_account_id
 
     @cfs_account_id.setter
-    def cfs_account_id(self, value: str):
+    def cfs_account_id(self, value: int):
         """Set the cfs_account_id."""
         self._cfs_account_id = value
         self._dao.cfs_account_id = value

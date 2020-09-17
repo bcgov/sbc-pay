@@ -14,7 +14,7 @@
 """Service to manage Payment Account model related operations."""
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 from flask import current_app
 
@@ -31,25 +31,25 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
     def __init__(self):
         """Initialize service."""
         self.__dao = None
-        self._id: int = None
-        self._auth_account_id: str = None
-        self._auth_account_name: str = None
-        self._payment_method: str = None
+        self._id: Union[None, int] = None
+        self._auth_account_id: Union[None, str] = None
+        self._auth_account_name: Union[None, str] = None
+        self._payment_method: Union[None, str] = None
 
-        self._cfs_account: str = None
-        self._cfs_party: str = None
-        self._cfs_site: str = None
+        self._cfs_account: Union[None, str] = None
+        self._cfs_party: Union[None, str] = None
+        self._cfs_site: Union[None, str] = None
 
-        self._bank_name: str = None
-        self._bank_number: str = None
-        self._bank_branch: str = None
-        self._bank_branch_number: str = None
-        self._bank_account_number: str = None
+        self._bank_name: Union[None, str] = None
+        self._bank_number: Union[None, str] = None
+        self._bank_branch: Union[None, str] = None
+        self._bank_branch_number: Union[None, str] = None
+        self._bank_account_number: Union[None, str] = None
 
-        self._bcol_user_id: str = None
-        self._bcol_account: str = None
+        self._bcol_user_id: Union[None, str] = None
+        self._bcol_account: Union[None, str] = None
 
-        self._cfs_account_id: int = None
+        self._cfs_account_id: Union[None, int] = None
 
     @property
     def _dao(self):
@@ -108,7 +108,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         return self._auth_account_id
 
     @auth_account_id.setter
-    def auth_account_id(self, value: int):
+    def auth_account_id(self, value: str):
         """Set the auth_account_id."""
         self._auth_account_id = value
         self._dao.auth_account_id = value
@@ -144,7 +144,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
     def cfs_account(self, value: int):
         """Set the cfs_account."""
         self._cfs_account = value
-        # self._dao.cfs_account = value
 
     @property
     def cfs_party(self):
@@ -155,7 +154,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
     def cfs_party(self, value: int):
         """Set the cfs_party."""
         self._cfs_party = value
-        # self._dao.cfs_party = value
 
     @property
     def cfs_site(self):
@@ -166,7 +164,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
     def cfs_site(self, value: int):
         """Set the cfs_site."""
         self._cfs_site = value
-        # self._dao.cfs_site = value
 
     @property
     def bank_name(self):
@@ -177,7 +174,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
     def bank_name(self, value: int):
         """Set the bank_name."""
         self._bank_name = value
-        # self._dao.bank_name = value
 
     @property
     def bank_number(self):
@@ -188,7 +184,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
     def bank_number(self, value: int):
         """Set the bank_number."""
         self._bank_number = value
-        # self._dao.bank_number = value
 
     @property
     def bank_branch(self):
@@ -199,7 +194,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
     def bank_branch(self, value: int):
         """Set the bank_branch."""
         self._bank_branch = value
-        # self._dao.bank_branch = value
 
     @property
     def bank_branch_number(self):
@@ -210,7 +204,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
     def bank_branch_number(self, value: int):
         """Set the bank_branch_number."""
         self._bank_branch_number = value
-        # self._dao.bank_branch_number = value
 
     @property
     def bank_account_number(self):
@@ -221,7 +214,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
     def bank_account_number(self, value: int):
         """Set the bank_account_number."""
         self._bank_account_number = value
-        # self._dao.bank_account_number = value
 
     @property
     def bcol_user_id(self):
