@@ -43,8 +43,7 @@ class StatementTask:
         generate_weekly = current_time.weekday() == 6  # Sunday is 6
         generate_monthly = current_time.day == 1
 
-        # cls._generate_daily_statements(current_time)
-        print('---------------------------------------------------------------generate_weekly----current_time---',generate_weekly,current_time)
+        cls._generate_daily_statements(current_time)
         if generate_weekly:
             cls._generate_weekly_statements(current_time)
         if generate_monthly:
@@ -59,7 +58,6 @@ class StatementTask:
         previous_day = get_previous_day(current_time)
         statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_day,
                                                                                         StatementFrequency.DAILY)
-
         current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate DAILY statements')
 
         search_filter = {
@@ -68,30 +66,22 @@ class StatementTask:
                 'endDate': previous_day.strftime('%m/%d/%Y')
             }
         }
-        # cls._create_statement_records(previous_day, search_filter, statement_settings)
+        cls._create_statement_records(previous_day, search_filter, statement_settings)
 
     @classmethod
     def _generate_weekly_statements(cls, current_time: datetime):
         """Generate weekly statements for all accounts with settings to generate weekly."""
-        print('stipped-------------------',get_previous_day(current_time).today().date())
-
-        ti = current_time- timedelta(days=2)
-        print('-------previous_day----ti---------', ti)
-        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(ti,
+        current_time_new = current_time - timedelta(days=2)
+        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(current_time_new,
                                                                                         StatementFrequency.WEEKLY)
-        for setting, pay_account in statement_settings:
-            print('-------------------------------------------------------------------------------------------------'
-                  '-----------------------------------------------------', setting.id, '-------',
-                  setting.frequency, '-------', setting.payment_account_id)
         current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate WEEKLY statements')
-
         search_filter = {
             'weekFilter': {
                 'index': 1  # previous week
             }
         }
 
-        # cls._create_statement_records(current_time, search_filter, statement_settings)
+        cls._create_statement_records(current_time, search_filter, statement_settings)
 
     @classmethod
     def _generate_monthly_statements(cls, current_time: datetime):
@@ -123,6 +113,8 @@ class StatementTask:
             statement_from, statement_to = get_first_and_last_dates_of_month(
                 search_filter.get('monthFilter').get('month'), search_filter.get('monthFilter').get('year'))
         for setting, pay_account in statement_settings:
+            if setting.id != 277:
+                continue
             statement = StatementModel(
                 frequency=setting.frequency,
                 statement_settings_id=setting.id,
