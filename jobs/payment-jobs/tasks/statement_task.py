@@ -73,26 +73,15 @@ class StatementTask:
     @classmethod
     def _generate_weekly_statements(cls, current_time: datetime):
         """Generate weekly statements for all accounts with settings to generate weekly."""
-
+        print('stipped-------------------',get_previous_day(current_time).today().date())
         print('-------previous_day-------------', get_previous_day(current_time))
         statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(get_previous_day(current_time),
                                                                                         StatementFrequency.WEEKLY)
         for setting, pay_account in statement_settings:
-            print('---------------------------------11111----------------------------------------------------------------'
-                  '---------------------------------11111111--------------------', setting.id, '-------',
+            print('-------------------------------------------------------------------------------------------------'
+                  '-----------------------------------------------------', setting.id, '-------',
                   setting.frequency, '-------', setting.payment_account_id)
         current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate WEEKLY statements')
-
-        stripped = get_previous_day(current_time).today().date()
-        print('stipped-------------------', stripped)
-        statement_settings2 = StatementSettingsModel.find_accounts_settings_by_frequency(stripped,
-                                                                                        StatementFrequency.WEEKLY)
-        for setting, pay_account in statement_settings2:
-            print('----------------------------------------------222---------------------------------------------------'
-                  '--------------------------------------------2222---------', setting.id, '-------',
-                  setting.frequency, '-------', setting.payment_account_id)
-        current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate WEEKLY statements')
-
 
         search_filter = {
             'weekFilter': {
