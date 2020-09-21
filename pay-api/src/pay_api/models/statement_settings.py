@@ -58,7 +58,7 @@ class StatementSettings(BaseModel):
     def find_accounts_settings_by_frequency(cls, valid_date: datetime, frequency: StatementFrequency):
         """Return active statement setting for the account."""
         print('-------------valid_date before conversion-----------------------------------------', valid_date ,'-----',frequency)
-        valid_date = get_local_time(valid_date).today().date()
+        valid_date = get_local_time(valid_date).date()
         print('-------------valid_date after conversion-----------------------------------------',valid_date)
         query = db.session.query(StatementSettings, PaymentAccount).join(PaymentAccount)
 
