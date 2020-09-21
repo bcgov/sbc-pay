@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service to manage PAYBC services."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from dateutil.parser import parse
 from flask import current_app
@@ -44,7 +44,7 @@ class StatementTask:
         generate_monthly = current_time.day == 1
 
         # cls._generate_daily_statements(current_time)
-        print('---------------------------------------------------------------generate_weekly-------',generate_weekly)
+        print('---------------------------------------------------------------generate_weekly----current_time---',generate_weekly,current_time)
         if generate_weekly:
             cls._generate_weekly_statements(current_time)
         if generate_monthly:
@@ -74,8 +74,10 @@ class StatementTask:
     def _generate_weekly_statements(cls, current_time: datetime):
         """Generate weekly statements for all accounts with settings to generate weekly."""
         print('stipped-------------------',get_previous_day(current_time).today().date())
-        print('-------previous_day-------------', get_previous_day(current_time))
-        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(get_previous_day(current_time),
+
+        ti = current_time- timedelta(days=2)
+        print('-------previous_day----ti---------', ti)
+        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(ti,
                                                                                         StatementFrequency.WEEKLY)
         for setting, pay_account in statement_settings:
             print('-------------------------------------------------------------------------------------------------'
