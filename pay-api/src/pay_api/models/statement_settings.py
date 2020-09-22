@@ -57,8 +57,7 @@ class StatementSettings(BaseModel):
     @classmethod
     def find_accounts_settings_by_frequency(cls, valid_date: datetime, frequency: StatementFrequency):
         """Return active statement setting for the account."""
-        valid_date = get_local_time(valid_date)
-
+        valid_date = get_local_time(valid_date).date()
         query = db.session.query(StatementSettings, PaymentAccount).join(PaymentAccount)
 
         query = query.filter(StatementSettings.from_date <= valid_date). \
