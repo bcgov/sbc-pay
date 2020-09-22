@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service to manage PAYBC services."""
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from dateutil.parser import parse
 from flask import current_app
@@ -71,8 +71,7 @@ class StatementTask:
     @classmethod
     def _generate_weekly_statements(cls, current_time: datetime):
         """Generate weekly statements for all accounts with settings to generate weekly."""
-        current_time_new = current_time - timedelta(days=2)
-        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(current_time_new,
+        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(get_previous_day(current_time),
                                                                                         StatementFrequency.WEEKLY)
         current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate WEEKLY statements')
         search_filter = {
@@ -113,8 +112,6 @@ class StatementTask:
             statement_from, statement_to = get_first_and_last_dates_of_month(
                 search_filter.get('monthFilter').get('month'), search_filter.get('monthFilter').get('year'))
         for setting, pay_account in statement_settings:
-            if setting.id != 277:
-                continue
             statement = StatementModel(
                 frequency=setting.frequency,
                 statement_settings_id=setting.id,
