@@ -1,150 +1,161 @@
 openapi: 3.0.0
 info:
-  title: SBC Pay API Reference
-  description: BC Registries Pay API reference documentation
+  title: BC Registries Payment API
+  description: |-
+    <p>BC Registries Pay system is used by the BC Registries account services and integrated systems to create payment transactions to pay for the products purchased. This abstracts the integrated systems from the underlying payment integrations and payment methods. <br/>
+    With this API you can submit the following transactions:<ul><li>Create payment transactions</li><li>Get payment status</li><li>Delete unpaid payment transactions</li><li>Generate PDF receipt</li><li>Retrieve account statements</li><li>Generate account transactions reports</li></ul>
+    <p>All requests must include an Account ID.</p>
   version: 1.0.1
+  contact:
+    name: BC Registries
 paths:
-  '/api/v1/fees/{corp_type}/{filing_type_code}':
+  '/api/v1/fees/{business_type}/{filing_type}':
     get:
       tags:
         - Fees
       summary: Calculate Fees
-      description: Calculate Fees on the filing type for corp type
-      operationId: Calculate_Fees
-      parameters:
-        - name: corp_type
-          in: path
-          description: Corp Type
-          required: true
-          schema:
-            type: string
-        - name: filing_type_code
-          in: path
-          description: Filing type code
-          required: true
-          schema:
-            type: string
-        - name: jurisdiction
-          in: query
-          description: Jurisdiction or Province code
-          required: false
-          schema:
-            type: string
-        - name: date
-          in: query
-          description: Date on which the filing rates are applicable
-          required: false
-          schema:
-            type: string
-        - name: priority
-          in: query
-          description: Indicator if priority fees are applicable
-          required: false
-          schema:
-            type: string
+      description: Get fee details based on the type business type and filing type.
+      operationId: get_fees
       responses:
         '200':
           description: Success
           headers:
-            X-Application-Context:
-              schema:
-                type: string
-              description: X-Application-Context
-              examples:
-                OTANN:
-                  value: 'application:prod'
-                OTCDR:
-                  value: 'application:prod'
-                OTADD:
-                  value: 'application:prod'
             Access-Control-Allow-Origin:
               schema:
                 type: string
               description: Access-Control-Allow-Origin
               examples:
-                OTANN:
+                /api/v1/fees/CP/OTANN:
                   value: '*'
-                OTCDR:
+                /api/v1/fees/BC/BCINC:
                   value: '*'
-                OTADD:
+                /api/v1/fees/BC/BCADD:
+                  value: '*'
+                /api/v1/fees/BC/BCINC?priority=true&futureEffective=true:
                   value: '*'
             Access-Control-Allow-Methods:
               schema:
                 type: string
               description: Access-Control-Allow-Methods
               examples:
-                OTANN:
+                /api/v1/fees/CP/OTANN:
                   value: 'GET, POST, DELETE, PUT'
-                OTCDR:
+                /api/v1/fees/BC/BCINC:
                   value: 'GET, POST, DELETE, PUT'
-                OTADD:
+                /api/v1/fees/BC/BCADD:
+                  value: 'GET, POST, DELETE, PUT'
+                /api/v1/fees/BC/BCINC?priority=true&futureEffective=true:
                   value: 'GET, POST, DELETE, PUT'
             Access-Control-Allow-Headers:
               schema:
                 type: string
               description: Access-Control-Allow-Headers
               examples:
-                OTANN:
+                /api/v1/fees/CP/OTANN:
                   value: 'Content-Type, api_key, Authorization'
-                OTCDR:
+                /api/v1/fees/BC/BCINC:
                   value: 'Content-Type, api_key, Authorization'
-                OTADD:
+                /api/v1/fees/BC/BCADD:
                   value: 'Content-Type, api_key, Authorization'
+                /api/v1/fees/BC/BCINC?priority=true&futureEffective=true:
+                  value: 'Content-Type, api_key, Authorization'
+            Access-Control-Max-Age:
+              schema:
+                type: string
+              description: Access-Control-Max-Age
+              examples:
+                /api/v1/fees/CP/OTANN:
+                  value: '3600'
+                /api/v1/fees/BC/BCINC:
+                  value: '3600'
+                /api/v1/fees/BC/BCADD:
+                  value: '3600'
+                /api/v1/fees/BC/BCINC?priority=true&futureEffective=true:
+                  value: '3600'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Fee'
               examples:
-                OTANN:
+                /api/v1/fees/CP/OTANN:
                   value:
+                    filingFees: 30
                     filingType: Annual Report
                     filingTypeCode: OTANN
-                    filingFees: 30
+                    futureEffectiveFees: 0
+                    priorityFees: 0
                     serviceFees: 0
-                    processingFees: 0
                     tax:
                       gst: 0
                       pst: 0
-                OTCDR:
+                    total: 30
+                /api/v1/fees/BC/BCINC:
                   value:
-                    filingType: Change of Registered Office Address
-                    filingTypeCode: OTCDR
+                    filingFees: 350
+                    filingType: Incorporation
+                    filingTypeCode: BCINC
+                    futureEffectiveFees: 0
+                    priorityFees: 0
+                    serviceFees: 1.5
+                    tax:
+                      gst: 0
+                      pst: 0
+                    total: 351.5
+                /api/v1/fees/BC/BCADD:
+                  value:
                     filingFees: 20
-                    serviceFees: 10
-                    processingFees: 5
+                    filingType: Change of Registered Office Address
+                    filingTypeCode: BCADD
+                    futureEffectiveFees: 0
+                    priorityFees: 0
+                    serviceFees: 1.5
                     tax:
                       gst: 0
                       pst: 0
-                OTADD:
+                    total: 21.5
+                /api/v1/fees/BC/BCINC?priority=true&futureEffective=true:
                   value:
-                    filingType: Change of Director
-                    filingTypeCode: OTADD
-                    filingFees: 55
-                    serviceFees: 0
-                    processingFees: 0
+                    filingFees: 350
+                    filingType: Incorporation
+                    filingTypeCode: BCINC
+                    futureEffectiveFees: 100
+                    priorityFees: 100
+                    serviceFees: 1.5
                     tax:
                       gst: 0
                       pst: 0
+                    total: 551.5
         '400':
           description: BadRequest
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                /api/v1/fees/XX/XXXXX:
+                  value:
+                    detail: Invalid Business Type or Filing Type.
+                    title: Invalid Request
+                    type: INVALID_CORP_OR_FILING_TYPE
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: Account-Id
     parameters:
       - schema:
           type: string
-        name: corp_type
+        name: business_type
         in: path
         required: true
       - schema:
           type: string
-        name: filing_type_code
+        name: filing_type
         in: path
         required: true
       - name: jurisdiction
         in: query
-        required: true
+        required: false
         schema:
           type: string
         examples:
@@ -164,38 +175,38 @@ paths:
         examples:
           fee_1:
             value: false
+      - name: futureEffective
+        in: query
+        schema:
+          type: boolean
+        examples:
+          fee_1:
+            value: false
   /api/v1/payment-requests:
     post:
       tags:
-        - Payments
-      summary: Create payment records
-      description: Creates payment records.
-      operationId: Create_Payment
+        - Payment Request
+      summary: Create payment request records
+      description: |-
+        Create payment transaction records. This will create transaction records in payment system based on account settings. Below payment methods are decided based on the account preference.
+        <ul><li>Credit Card</li><li>Pre Authorized Debit</li><li>Online Banking</li></ul>
+      operationId: create_transaction
       requestBody:
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/PaymentRequest'
             examples:
-              payment_post_1:
+              /api/v1/payment-requests:
                 value:
-                  paymentInfo:
-                    methodOfPayment: CC
-                  businessInfo:
-                    businessIdentifier: CP1234567
-                    corpType: CP
-                    businessName: ABC Corp
-                    contactInfo:
-                      city: Victoria
-                      postal_code: V8P2P2
-                      province: BC
-                      addressLine1: 100 Douglas Street
-                      country: CA
                   filingInfo:
                     filingTypes:
-                      - filingTypeCode: OTADD
-                        filingDescription: TEST
-                      - filingTypeCode: OTANN
+                      - priority: true
+                        futureEffective: false
+                        filingTypeCode: BCINC
+                  businessInfo:
+                    corpType: BC
+                    businessIdentifier: BC1000000
         required: true
       responses:
         '201':
@@ -203,209 +214,258 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Payment'
+                $ref: '#/components/schemas/PaymentResponse'
               examples:
-                payment_post_1:
+                /api/v1/payment-requests:
                   value:
                     _links:
                       collection: /api/v1/payment-requests
-                      invoices: /api/v1/payment-requests/153/invoices
-                      self: /api/v1/payment-requests/153
-                      transactions: /api/v1/payment-requests/153/transactions
-                    createdBy: CP1234567
-                    createdOn: '2019-06-18T11:10:00.965101+00:00'
-                    id: 153
+                      invoices: /api/v1/payment-requests/21/invoices
+                      self: /api/v1/payment-requests/21
+                      transactions: /api/v1/payment-requests/21/transactions
+                    createdBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
+                    createdName: BCREGTEST Bena THIRTEEN
+                    createdOn: '2020-09-18T12:51:30.529832+00:00'
+                    id: 1
                     invoices:
                       - _links:
-                          collection: /api/v1/payment-requests/153/invoices
-                          self: /api/v1/payment-requests/153/invoices/152
-                        createdBy: CP1234567
-                        createdOn: '2019-06-18T11:10:00.982551+00:00'
-                        id: 152
-                        invoiceNumber: '10021'
-                        paid: 0
-                        paymentDate: null
-                        referenceNumber: '10005'
+                          collection: /api/v1/payment-requests/21/invoices
+                          self: /api/v1/payment-requests/21/invoices/21
+                        businessIdentifier: BC1000000
+                        corpTypeCode: BC
+                        createdBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
+                        createdName: BCREGTEST Bena THIRTEEN
+                        createdOn: '2020-09-18T12:51:30.538028+00:00'
+                        id: 1
+                        paid: 451.5
+                        references:
+                          - id: 19
+                            invoiceNumber: '21'
+                            referenceNumber: '0001'
+                            statusCode: COMPLETED
                         refund: 0
-                        statusCode: CREATED
-                        total: 50
-                        updatedBy: null
-                        updatedOn: null
-                    paid: 0
-                    paymentMethod: CC
-                    paymentSystem: PAYBC
-                    statusCode: CREATED
-                    updatedBy: null
-                    updatedOn: null
-        '400':
-          description: BadRequest
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-  '/api/v1/payment-requests/{payment_identifier}':
-    put:
-      tags:
-        - Payments
-      summary: Update payment records
-      description: Updates payment records.
-      operationId: Update_Payment
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PaymentRequest'
-            examples:
-              payment_1:
-                value:
-                  paymentInfo:
-                    methodOfPayment: CC
-                  businessInfo:
-                    businessIdentifier: CP1234567
-                    corpType: CP
-                    businessName: ABC Corp
-                    contactInfo:
-                      city: Victoria
-                      postalCode: V8P2P2
-                      province: BC
-                      addressLine1: 100 Douglas Street
-                      country: CA
-                  filingInfo:
-                    filingTypes:
-                      - filingTypeCode: OTADD
-                        filingDescription: TEST
-                      - filingTypeCode: OTANN
-        required: true
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Payment'
-              examples:
-                payment_1:
-                  value:
-                    _links:
-                      collection: /api/v1/payment-requests
-                      invoices: /api/v1/payment-requests/153/invoices
-                      self: /api/v1/payment-requests/153
-                      transactions: /api/v1/payment-requests/153/transactions
-                    createdBy: CP1234567
-                    createdOn: '2019-06-18T11:10:00.965101+00:00'
-                    id: 153
-                    invoices:
+                        serviceFees: 1.5
+                        statusCode: PAID
+                        total: 451.5
+                        updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
+                        updatedName: BCREGTEST Bena THIRTEEN
+                        updatedOn: '2020-09-18T12:51:32.256413+00:00'
+                    paymentMethod: DRAWDOWN
+                    paymentSystem: BCOL
+                    statusCode: COMPLETED
+                    transactions:
                       - _links:
-                          collection: /api/v1/payment-requests/153/invoices
-                          self: /api/v1/payment-requests/153/invoices/152
-                        createdBy: CP1234567
-                        createdOn: '2019-06-18T11:10:00.982551+00:00'
-                        id: 152
-                        invoiceNumber: '10021'
-                        paid: 0
-                        paymentDate: null
-                        referenceNumber: '10005'
-                        refund: 0
-                        statusCode: CREATED
-                        total: 50
-                        updatedBy: null
-                        updatedOn: null
-                    paid: 0
-                    paymentMethod: CC
-                    paymentSystem: PAYBC
-                    statusCode: CREATED
-                    updatedBy: null
-                    updatedOn: null
-        '400':
-          description: BadRequest
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    get:
-      tags:
-        - Payments
-      summary: Get Payment
-      description: Get Payment by filing identifier
-      operationId: Get_Payment
-      parameters:
-        - name: payment_identifier
-          in: path
-          description: Unique Identifier for the payment
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Success
+                          collection: /api/v1/payment-requests/1/transactions
+                          self: /api/v1/payment-requests/1/transactions/d4ab8f96-8d2b-406e-bec9-a35e590db005
+                        endTime: '2020-09-18T12:51:32.264531+00:00'
+                        id: d4ab8f96-8d2b-406e-bec9-a35e590db005
+                        paymentId: 21
+                        startTime: '2020-09-18T12:51:32.132985+00:00'
+                        statusCode: COMPLETED
+                    updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
+                    updatedName: BCREGTEST Bena THIRTEEN
+                    updatedOn: '2020-09-18T12:51:32.250432+00:00'
           headers:
-            X-Application-Context:
-              schema:
-                type: string
-              description: X-Application-Context
-              examples:
-                payment_1:
-                  value: 'application:prod'
             Access-Control-Allow-Origin:
               schema:
                 type: string
               description: Access-Control-Allow-Origin
               examples:
-                payment_1:
+                /api/v1/payment-requests:
                   value: '*'
             Access-Control-Allow-Methods:
               schema:
                 type: string
               description: Access-Control-Allow-Methods
               examples:
-                payment_1:
+                /api/v1/payment-requests:
                   value: 'GET, POST, DELETE, PUT'
             Access-Control-Allow-Headers:
               schema:
                 type: string
               description: Access-Control-Allow-Headers
               examples:
-                payment_1:
+                /api/v1/payment-requests:
                   value: 'Content-Type, api_key, Authorization'
-          content:
-            application/json:
+            Access-Control-Max-Age:
               schema:
-                $ref: '#/components/schemas/Payment'
+                type: string
+              description: Access-Control-Max-Age
               examples:
-                payment_1:
-                  value:
-                    _links:
-                      collection: /api/v1/payment-requests
-                      invoices: /api/v1/payment-requests/153/invoices
-                      self: /api/v1/payment-requests/153
-                      transactions: /api/v1/payment-requests/153/transactions
-                    createdBy: CP1234567
-                    createdOn: '2019-06-18T11:10:00.965101+00:00'
-                    id: 153
-                    invoices:
-                      - _links:
-                          collection: /api/v1/payment-requests/153/invoices
-                          self: /api/v1/payment-requests/153/invoices/152
-                        createdBy: CP1234567
-                        createdOn: '2019-06-18T11:10:00.982551+00:00'
-                        id: 152
-                        invoiceNumber: '10021'
-                        referenceNumber: '10005'
-                        statusCode: CREATED
-                        total: 50
-                        updatedBy: CP1234567
-                        updatedOn: '2019-06-20T16:30:04.441211+00:00'
-                    paymentMethod: CC
-                    paymentSystem: PAYBC
-                    statusCode: CREATED
-                    updatedBy: CP1234567
-                    updatedOn: '2019-06-20T16:30:04.451576+00:00'
+                /api/v1/payment-requests:
+                  value: '3600'
         '400':
           description: BadRequest
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: Account-Id
+  '/api/v1/payment-requests/{payment_identifier}':
+    get:
+      tags:
+        - Payment Request
+      summary: Get Payment Request
+      description: Get details by request identifier
+      operationId: get_payment_request
+      responses:
+        '200':
+          description: Success
+          headers:
+            Access-Control-Max-Age:
+              schema:
+                type: string
+              description: Access-Control-Max-Age
+              examples:
+                /api/v1/payment-requests/1:
+                  value: 'application:prod'
+                /api/v1/payment-requests/2:
+                  value: 'application:prod'
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              description: Access-Control-Allow-Origin
+              examples:
+                /api/v1/payment-requests/1:
+                  value: '*'
+                /api/v1/payment-requests/2:
+                  value: '*'
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+              description: Access-Control-Allow-Methods
+              examples:
+                /api/v1/payment-requests/1:
+                  value: 'GET, POST, DELETE, PUT'
+                /api/v1/payment-requests/2:
+                  value: 'GET, POST, DELETE, PUT'
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              description: Access-Control-Allow-Headers
+              examples:
+                /api/v1/payment-requests/1:
+                  value: 'Content-Type, api_key, Authorization'
+                /api/v1/payment-requests/2:
+                  value: 'Content-Type, api_key, Authorization'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentResponse'
+              examples:
+                /api/v1/payment-requests/1:
+                  value:
+                    _links:
+                      collection: /api/v1/payment-requests
+                      invoices: /api/v1/payment-requests/1/invoices
+                      self: /api/v1/payment-requests/1
+                      transactions: /api/v1/payment-requests/1/transactions
+                    createdBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
+                    createdName: BCREGTEST Bena THIRTEEN
+                    createdOn: '2020-09-18T12:51:30.529832+00:00'
+                    id: 1
+                    invoices:
+                      - _links:
+                          collection: /api/v1/payment-requests/2/invoices
+                          self: /api/v1/payment-requests/2/invoices/2
+                        businessIdentifier: BC1000000
+                        corpTypeCode: BC
+                        createdBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
+                        createdName: BCREGTEST Bena THIRTEEN
+                        createdOn: '2020-09-18T12:51:30.538028+00:00'
+                        id: 1
+                        paid: 451.5
+                        references:
+                          - id: 19
+                            invoiceNumber: '21'
+                            referenceNumber: '0001'
+                            statusCode: COMPLETED
+                        refund: 0
+                        serviceFees: 1.5
+                        statusCode: PAID
+                        total: 451.5
+                        updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
+                        updatedName: BCREGTEST Bena THIRTEEN
+                        updatedOn: '2020-09-18T12:51:32.256413+00:00'
+                    paymentMethod: DRAWDOWN
+                    paymentSystem: BCOL
+                    statusCode: COMPLETED
+                    transactions:
+                      - _links:
+                          collection: /api/v1/payment-requests/2/transactions
+                          self: /api/v1/payment-requests/2/transactions/d4ab8f96-8d2b-406e-bec9-a35e590db005
+                        endTime: '2020-09-18T12:51:32.264531+00:00'
+                        id: d4ab8f96-8d2b-406e-bec9-a35e590db005
+                        paymentId: 1
+                        startTime: '2020-09-18T12:51:32.132985+00:00'
+                        statusCode: COMPLETED
+                    updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
+                    updatedName: BCREGTEST Bena THIRTEEN
+                    updatedOn: '2020-09-18T12:51:32.250432+00:00'
+                /api/v1/payment-requests/2:
+                  value:
+                    _links:
+                      collection: /api/v1/payment-requests
+                      invoices: /api/v1/payment-requests/2/invoices
+                      self: /api/v1/payment-requests/2
+                      transactions: /api/v1/payment-requests/2/transactions
+                    createdBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
+                    createdName: BCREGTEST Bena THIRTEEN
+                    createdOn: '2020-09-18T12:51:30.529832+00:00'
+                    id: 2
+                    invoices:
+                      - _links:
+                          collection: /api/v1/payment-requests/2/invoices
+                          self: /api/v1/payment-requests/2/invoices/2
+                        businessIdentifier: BC1000001
+                        corpTypeCode: BC
+                        createdBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
+                        createdName: BCREGTEST Bena THIRTEEN
+                        createdOn: '2020-09-18T12:51:30.538028+00:00'
+                        id: 2
+                        paid: 451.5
+                        references:
+                          - id: 19
+                            invoiceNumber: '21'
+                            referenceNumber: '0001'
+                            statusCode: COMPLETED
+                        refund: 0
+                        serviceFees: 1.5
+                        statusCode: PAID
+                        total: 451.5
+                        updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
+                        updatedName: BCREGTEST Bena THIRTEEN
+                        updatedOn: '2020-09-18T12:51:32.256413+00:00'
+                    paymentMethod: DRAWDOWN
+                    paymentSystem: BCOL
+                    statusCode: COMPLETED
+                    transactions:
+                      - _links:
+                          collection: /api/v1/payment-requests/2/transactions
+                          self: /api/v1/payment-requests/2/transactions/d4ab8f96-8d2b-406e-bec9-a35e590db005
+                        endTime: '2020-09-18T12:51:32.264531+00:00'
+                        id: d4ab8f96-8d2b-406e-bec9-a35e590db005
+                        paymentId: 21
+                        startTime: '2020-09-18T12:51:32.132985+00:00'
+                        statusCode: COMPLETED
+                    updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
+                    updatedName: BCREGTEST Bena THIRTEEN
+                    updatedOn: '2020-09-18T12:51:32.250432+00:00'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: Account-Id
     parameters:
       - schema:
           type: string
@@ -413,566 +473,909 @@ paths:
         in: path
         required: true
     delete:
+      tags:
+        - Payment Request
       summary: ''
-      operationId: delete-api-v1-payment-requests-payment_identifier
+      operationId: delete_payment_request
       responses:
-        '200':
-          description: OK
+        '202':
+          description: Accepted
+          headers:
+            Access-Control-Max-Age:
+              schema:
+                type: string
+              description: Access-Control-Max-Age
+              examples:
+                /api/v1/payment-requests/1:
+                  value: 'application:prod'
+                /api/v1/payment-requests/2:
+                  value: 'application:prod'
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              description: Access-Control-Allow-Origin
+              examples:
+                /api/v1/payment-requests/1:
+                  value: '*'
+                /api/v1/payment-requests/2:
+                  value: '*'
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+              description: Access-Control-Allow-Methods
+              examples:
+                /api/v1/payment-requests/1:
+                  value: 'GET, POST, DELETE, PUT'
+                /api/v1/payment-requests/2:
+                  value: 'GET, POST, DELETE, PUT'
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              description: Access-Control-Allow-Headers
+              examples:
+                /api/v1/payment-requests/1:
+                  value: 'Content-Type, api_key, Authorization'
+                /api/v1/payment-requests/2:
+                  value: 'Content-Type, api_key, Authorization'
       description: DELETE payment request
-  '/api/v1/payment-requests/{payment_identifier}/transactions':
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: Account-Id
     post:
       tags:
-        - Transactions
-      summary: Create a transaction
-      description: Creates a transaction for the payment.
-      operationId: Create_Transaction
-      parameters:
-        - name: redirect_uri
-          in: query
-          description: Redirect URI
-          required: true
-          schema:
-            type: string
+        - Receipts
+      summary: ''
+      operationId: generate_receipt
       responses:
         '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Transaction'
-              examples:
-                payment_1:
-                  value:
-                    _links:
-                      collection: /api/v1/payment-requests/153/transactions
-                      self: /api/v1/payment-requests/153/transactions/3378001e-cfd5-479b-84a2-bfd4e7eb804d
-                    clientCystemUrl: 'http://localhost:8080/coops-web/transactions?transaction_id=abcd'
-                    endTime: '2019-06-20 14:55:41.309606'
-                    id: 3378001e-cfd5-479b-84a2-bfd4e7eb804d
-                    paySystemUrl: 'http://localhost:8080/Payment?inv_number=10021&pbc_ref_number=10005&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Freturnpayment%2F153%2Ftransaction%2F3378001e-cfd5-479b-84a2-bfd4e7eb804d'
-                    paymentId: 153
-                    startTime: '2019-06-20 14:55:41.309574'
-                    statusCode: CREATED
-        '400':
-          description: BadRequest
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    get:
-      tags:
-        - Transactions
-      summary: Get Transactions
-      description: Get Transactions for the payment
-      operationId: Get_Transactions
-      parameters:
-        - name: payment_identifier
-          in: path
-          description: Unique Identifier for the payment
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
           description: Success
           headers:
-            X-Application-Context:
+            Access-Control-Max-Age:
               schema:
                 type: string
-              description: X-Application-Context
-              examples:
-                payment_1:
-                  value: 'application:prod'
+              description: Access-Control-Max-Age
             Access-Control-Allow-Origin:
               schema:
                 type: string
               description: Access-Control-Allow-Origin
-              examples:
-                payment_1:
-                  value: '*'
             Access-Control-Allow-Methods:
               schema:
                 type: string
               description: Access-Control-Allow-Methods
-              examples:
-                payment_1:
-                  value: 'GET, POST, DELETE, PUT'
             Access-Control-Allow-Headers:
               schema:
                 type: string
               description: Access-Control-Allow-Headers
-              examples:
-                payment_1:
-                  value: 'Content-Type, api_key, Authorization'
           content:
-            application/json:
+            application/pdf:
               schema:
-                $ref: '#/components/schemas/Transactions'
-              examples:
-                payment_1:
-                  value:
-                    items:
-                      - _links:
-                          collection: /api/v1/payment-requests/153/transactions
-                          self: /api/v1/payment-requests/153/transactions/3378001e-cfd5-479b-84a2-bfd4e7eb804d
-                        clientSystemUrl: 'http://localhost:8080/coops-web/transactions?transaction_id=abcd'
-                        endTime: '2019-06-20 14:55:41.309606'
-                        id: 3378001e-cfd5-479b-84a2-bfd4e7eb804d
-                        paySystemUrl: 'http://localhost:8080/Payment?inv_number=10021&pbc_ref_number=10005&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Freturnpayment%2F153%2Ftransaction%2F3378001e-cfd5-479b-84a2-bfd4e7eb804d'
-                        paymentId: 153
-                        startTime: '2019-06-20 14:55:41.309574'
-                        statusCode: CREATED
-                      - _links:
-                          collection: /api/v1/payment-requests/153/transactions
-                          self: /api/v1/payment-requests/153/transactions/227ea487-8f89-4897-849a-ae65febf91fe
-                        clientSystemUrl: 'http://localhost:8080/coops-web/transactions?transaction_id=abcd'
-                        endTime: '2019-06-20 16:32:15.271165'
-                        id: 227ea487-8f89-4897-849a-ae65febf91fe
-                        paySystemUrl: 'http://localhost:8080/Payment?inv_number=10021&pbc_ref_number=10005&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Freturnpayment%2F153%2Ftransaction%2F227ea487-8f89-4897-849a-ae65febf91fe'
-                        paymentId: 153
-                        startTime: '2019-06-20 14:55:41.309574'
-                        statusCode: CANCELLED
-        '400':
-          description: BadRequest
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    parameters:
-      - schema:
-          type: string
-        name: payment_identifier
-        in: path
-        required: true
-  '/api/v1/payment-requests/{payment_identifier}/transactions/{transaction_identifier}':
-    put:
-      tags:
-        - Transactions
-      summary: Update a transaction
-      description: Updaate transaction for the payment.
-      operationId: Update_Transaction
+                type: object
+                properties: {}
+              examples: {}
+      description: Generate Receipt
       parameters:
-        - name: payment_identifier
-          in: path
-          description: Unique Identifier for the payment
-          required: true
-          schema:
+        - schema:
             type: string
-        - name: receipt_number
-          in: query
-          description: Receipt Number for the payment
-          required: true
-          schema:
-            type: string
-        - name: transaction_identifier
-          in: path
-          description: Unique Identifier for the transaction
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Transaction'
-              examples:
-                payment_1:
-                  value:
-                    _links:
-                      collection: /api/v1/payment-requests/153/transactions
-                      self: /api/v1/payment-requests/153/transactions/3378001e-cfd5-479b-84a2-bfd4e7eb804d
-                    clientSystemUrl: 'http://localhost:8080/coops-web/transactions?transaction_id=abcd'
-                    endTime: '2019-06-20 14:55:41.309606'
-                    id: 3378001e-cfd5-479b-84a2-bfd4e7eb804d
-                    paySystemUrl: 'http://localhost:8080/Payment?inv_number=10021&pbc_ref_number=10005&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Freturnpayment%2F153%2Ftransaction%2F3378001e-cfd5-479b-84a2-bfd4e7eb804d'
-                    paymentId: 153
-                    startTime: '2019-06-20 14:55:41.309574'
-                    statusCode: COMPLETED
-        '400':
-          description: BadRequest
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    get:
-      tags:
-        - Transactions
-      summary: Get Transaction
-      description: Get a Transaction for the payment
-      operationId: Get_Transaction
-      parameters:
-        - name: payment_identifier
-          in: path
-          description: Unique Identifier for the payment
-          required: true
-          schema:
-            type: string
-        - name: transaction_identifier
-          in: path
-          description: Unique Identifier for the transaction
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Success
-          headers:
-            X-Application-Context:
-              schema:
-                type: string
-              description: X-Application-Context
-              examples:
-                payment_1:
-                  value: 'application:prod'
-            Access-Control-Allow-Origin:
-              schema:
-                type: string
-              description: Access-Control-Allow-Origin
-              examples:
-                payment_1:
-                  value: '*'
-            Access-Control-Allow-Methods:
-              schema:
-                type: string
-              description: Access-Control-Allow-Methods
-              examples:
-                payment_1:
-                  value: 'GET, POST, DELETE, PUT'
-            Access-Control-Allow-Headers:
-              schema:
-                type: string
-              description: Access-Control-Allow-Headers
-              examples:
-                payment_1:
-                  value: 'Content-Type, api_key, Authorization'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Transactions'
-              examples:
-                payment_1:
-                  value:
-                    _links:
-                      collection: /api/v1/payment-requests/153/transactions
-                      self: /api/v1/payment-requests/153/transactions/3378001e-cfd5-479b-84a2-bfd4e7eb804d
-                    clientSystemUrl: 'http://localhost:8080/coops-web/transactions?transaction_id=abcd'
-                    endTime: '2019-06-20 14:55:41.309606'
-                    id: 3378001e-cfd5-479b-84a2-bfd4e7eb804d
-                    paySystemUrl: 'http://localhost:8080/Payment?inv_number=10021&pbc_ref_number=10005&redirect_uri=http%3A%2F%2Flocalhost%3A8081%2Freturnpayment%2F153%2Ftransaction%2F3378001e-cfd5-479b-84a2-bfd4e7eb804d'
-                    paymentId: 153
-                    startTime: '2019-06-20 14:55:41.309574'
-                    statusCode: CREATED
-        '400':
-          description: BadRequest
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    parameters:
-      - name: payment_identifier
-        in: path
-        required: true
-        schema:
-          format: string
-          type: string
-        examples:
-          payment_1:
-            value: 153
-      - name: transaction_identifier
-        in: path
-        required: true
-        schema:
-          format: string
-          type: string
-        examples:
-          payment_1:
-            value: 3378001e-cfd5-479b-84a2-bfd4e7eb804d
-      - name: receipt_number
-        in: query
-        description: Receipt Number for the payment
-        required: true
-        schema:
-          type: string
-        examples:
-          payment_1:
-            value: 'http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd'
-  '/api/v1/payment-requests/{payment_identifier}/invoices':
-    get:
-      tags:
-        - Invoices
-      summary: Get Invoices
-      description: Get Invoices for the payment
-      operationId: Get_Invoices
-      parameters:
-        - name: payment_identifier
-          in: path
-          description: Unique Identifier for the payment
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Success
-          headers:
-            X-Application-Context:
-              schema:
-                type: string
-              description: X-Application-Context
-              examples:
-                payment_1:
-                  value: 'application:prod'
-            Access-Control-Allow-Origin:
-              schema:
-                type: string
-              description: Access-Control-Allow-Origin
-              examples:
-                payment_1:
-                  value: '*'
-            Access-Control-Allow-Methods:
-              schema:
-                type: string
-              description: Access-Control-Allow-Methods
-              examples:
-                payment_1:
-                  value: 'GET, POST, DELETE, PUT'
-            Access-Control-Allow-Headers:
-              schema:
-                type: string
-              description: Access-Control-Allow-Headers
-              examples:
-                payment_1:
-                  value: 'Content-Type, api_key, Authorization'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Invoices'
-              examples:
-                payment_1:
-                  value:
-                    items:
-                      - _links:
-                          collection: /api/v1/payment-requests/153/invoices
-                          self: /api/v1/payment-requests/153/invoices/152
-                        createdBy: CP1234567
-                        createdOn: '2019-06-18T11:10:00.982551+00:00'
-                        id: 152
-                        invoiceNumber: '10021'
-                        lineItems:
-                          - description: Change of Directors - Director A
-                            filingFees: 20
-                            gst: 0
-                            id: 371
-                            processingFees: 0
-                            pst: 0
-                            quantity: 1
-                            serviceFees: 0
-                            statusCode: CREATED
-                            total: 20
-                          - description: Annual Report
-                            filingFees: 30
-                            gst: 0
-                            id: 372
-                            processingFees: 0
-                            pst: 0
-                            quantity: 1
-                            serviceFees: 0
-                            statusCode: CREATED
-                            total: 30
-                        referenceNumber: '10005'
-                        statusCode: CREATED
-                        total: 50
-                        updatedBy: CP1234567
-                        updatedOn: '2019-06-20T16:30:04.441211+00:00'
-        '400':
-          description: BadRequest
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    parameters:
-      - name: payment_identifier
-        in: path
-        required: true
-        schema:
-          format: string
-          type: string
-        examples:
-          payment_1:
-            value: 153
-  '/api/v1/payment-requests/{payment_identifier}/invoices/{invoice_id}':
-    get:
-      tags:
-        - Invoices
-      summary: Get Invoice
-      description: Get an invoice for the payment
-      operationId: Get_Invoice
-      parameters:
-        - name: payment_identifier
-          in: path
-          description: Unique Identifier for the payment
-          required: true
-          schema:
-            type: string
-        - name: invoice_id
-          in: path
-          description: Unique Identifier for the invoice
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Success
-          headers:
-            X-Application-Context:
-              schema:
-                type: string
-              description: X-Application-Context
-              examples:
-                payment_1:
-                  value: 'application:prod'
-            Access-Control-Allow-Origin:
-              schema:
-                type: string
-              description: Access-Control-Allow-Origin
-              examples:
-                payment_1:
-                  value: '*'
-            Access-Control-Allow-Methods:
-              schema:
-                type: string
-              description: Access-Control-Allow-Methods
-              examples:
-                payment_1:
-                  value: 'GET, POST, DELETE, PUT'
-            Access-Control-Allow-Headers:
-              schema:
-                type: string
-              description: Access-Control-Allow-Headers
-              examples:
-                payment_1:
-                  value: 'Content-Type, api_key, Authorization'
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Invoice'
-              examples:
-                payment_1:
-                  value:
-                    _links:
-                      collection: /api/v1/payment-requests/153/invoices
-                      self: /api/v1/payment-requests/153/invoices/152
-                    createdBy: CP1234567
-                    createdOn: '2019-06-18T11:10:00.982551+00:00'
-                    id: 152
-                    invoiceNumber: '10021'
-                    lineItems:
-                      - description: Change of Directors - Director A
-                        filingFees: 20
-                        gst: 0
-                        id: 371
-                        processingFees: 0
-                        pst: 0
-                        quantity: 1
-                        serviceFees: 0
-                        statusCode: CREATED
-                        total: 20
-                      - description: Annual Report
-                        filingFees: 30
-                        gst: 0
-                        id: 372
-                        processingFees: 0
-                        pst: 0
-                        quantity: 1
-                        serviceFees: 0
-                        statusCode: CREATED
-                        total: 30
-                    referenceNumber: '10005'
-                    statusCode: CREATED
-                    total: 50
-                    updatedBy: CP1234567
-                    updatedOn: '2019-06-20T16:30:04.441211+00:00'
-        '400':
-          description: BadRequest
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-    parameters:
-      - name: payment_identifier
-        in: path
-        required: true
-        schema:
-          format: string
-          type: string
-        examples:
-          payment_1:
-            value: 153
-      - name: invoice_id
-        in: path
-        required: true
-        schema:
-          format: string
-          type: string
-        examples:
-          payment_1:
-            value: 152
+          in: header
+          name: Account-Id
   '/api/v1/payment-requests/{payment_identifier}/receipts':
     get:
       tags:
         - Receipts
-      summary: Get receipt for the payment
+      summary: Payment Receipts
       description: Returns payment receipt details
       operationId: Get_Receipt
-      parameters:
-        - name: payment_identifier
-          in: path
-          description: Unique Identifier for the payment
-          required: true
-          schema:
-            type: string
       responses:
         '200':
-          description: Receipt PDF file
+          description: Success
           content:
             application/pdf:
               schema:
+                $ref: '#/components/schemas/Receipt'
+              examples:
+                /api/v1/payment-requests/1/receipts:
+                  value:
+                    invoice:
+                      _links:
+                        collection: /api/v1/payment-requests/1/invoices
+                        self: /api/v1/payment-requeasts/1/invoices/1
+                      bcolAccount: '100000'
+                      businessIdentifier: BC1000000
+                      corpTypeCode: BC
+                      createdBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
+                      createdName: BCREGTEST Bena THIRTEEN
+                      createdOn: '2020-09-18T12:51:30.538028+00:00'
+                      id: 1
+                      lineItems:
+                        - description: Incorporation
+                          filingFees: 350
+                          futureEffectiveFees: 0
+                          gst: 0
+                          id: 19
+                          priorityFees: 100
+                          pst: 0
+                          quantity: 1
+                          serviceFees: 1.5
+                          statusCode: ACTIVE
+                          total: 450
+                          waivedBy: null
+                          waivedFees: 0
+                      paid: 451.5
+                      receipts:
+                        - id: 4
+                          receiptAmount: 451.5
+                          receiptDate: '2020-09-18T12:51:32.237197+00:00'
+                          receiptNumber: '21'
+                      references:
+                        - id: 19
+                          invoiceNumber: '21'
+                          referenceNumber: '0001'
+                          statusCode: COMPLETED
+                      refund: 0
+                      serviceFees: 1.5
+                      statusCode: PAID
+                      total: 451.5
+                      updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
+                      updatedName: BCREGTEST Bena THIRTEEN
+                      updatedOn: '2020-09-18T12:51:32.256413+00:00'
+                    invoiceNumber: '21'
+                    paymentMethod: Drawdown Payment
+                    receiptNumber: '21'
+                /api/v1/payment-requests/2/receipts:
+                  value:
+                    invoice:
+                      _links:
+                        collection: /api/v1/payment-requests/2/invoices
+                        self: /api/v1/payment-requeasts/2/invoices/2
+                      bcolAccount: '100001'
+                      businessIdentifier: BC1000001
+                      corpTypeCode: BC
+                      createdBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
+                      createdName: BCREGTEST Bena THIRTEEN
+                      createdOn: '2020-09-18T12:51:30.538028+00:00'
+                      id: 2
+                      lineItems:
+                        - description: Incorporation
+                          filingFees: 350
+                          futureEffectiveFees: 0
+                          gst: 0
+                          id: 19
+                          priorityFees: 100
+                          pst: 0
+                          quantity: 1
+                          serviceFees: 1.5
+                          statusCode: ACTIVE
+                          total: 450
+                          waivedBy: null
+                          waivedFees: 0
+                      paid: 451.5
+                      receipts:
+                        - id: 4
+                          receiptAmount: 451.5
+                          receiptDate: '2020-09-18T12:51:32.237197+00:00'
+                          receiptNumber: '21'
+                      references:
+                        - id: 19
+                          invoiceNumber: '22'
+                          referenceNumber: '0001'
+                          statusCode: COMPLETED
+                      refund: 0
+                      serviceFees: 1.5
+                      statusCode: PAID
+                      total: 451.5
+                      updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
+                      updatedName: BCREGTEST Bena THIRTEEN
+                      updatedOn: '2020-09-18T12:51:32.256413+00:00'
+                    invoiceNumber: '22'
+                    paymentMethod: Drawdown Payment
+                    receiptNumber: '22'
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Receipt'
+          headers:
+            Access-Control-Max-Age:
+              schema:
                 type: string
-                format: binary
+              description: Access-Control-Max-Age
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              description: Access-Control-Allow-Origin
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+              description: Access-Control-Allow-Methods
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              description: Access-Control-Allow-Headers
         '400':
           description: BadRequest
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: Account-Id
     parameters:
       - schema:
           type: string
         name: payment_identifier
         in: path
         required: true
+    post:
+      tags:
+        - Receipts
+      summary: Generate payment receipt
+      operationId: Post_Receipt
+      responses:
+        '200':
+          description: OK
+      description: Generates a payment receipt as PDF
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: Account-Id
+  '/api/v1/accounts/{accountId}/payments/queries':
+    parameters:
+      - schema:
+          type: string
+        name: accountId
+        in: path
+        required: true
+    post:
+      tags:
+        - Transaction Reports
+      summary: Query Payment Transactions
+      operationId: transaction_queries
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionReports'
+              examples:
+                /api/v1/accounts/1/payments/queries:
+                  value:
+                    items:
+                      - createdName: BCREGTEST Bena THIRTEEN
+                        createdOn: '2020-08-18T17:46:20.438243+00:00'
+                        id: 1
+                        invoice:
+                          _links:
+                            collection: /api/v1/payment-requests/2/invoices
+                            self: /api/v1/payment-requests/2/invoices/2
+                          businessIdentifier: BC1000000
+                          corpTypeCode: BC
+                          createdBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
+                          createdName: BCREGTEST Bena THIRTEEN
+                          createdOn: '2020-09-18T12:51:30.538028+00:00'
+                          id: 1
+                          paid: 451.5
+                          references:
+                            - id: 19
+                              invoiceNumber: '21'
+                              referenceNumber: '0001'
+                              statusCode: COMPLETED
+                          refund: 0
+                          serviceFees: 1.5
+                          statusCode: PAID
+                          total: 451.5
+                          updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
+                          updatedName: BCREGTEST Bena THIRTEEN
+                          updatedOn: '2020-09-18T12:51:32.256413+00:00'
+                        paymentMethod: DRAWDOWN
+                        paymentSystem: BCOL
+                        statusCode: COMPLETED
+                        updatedName: BCREGTEST Bena THIRTEEN
+                        updatedOn: '2020-08-18T17:46:22.004887+00:00'
+                    limit: 10
+                    page: 1
+                    total: 1
+                /api/v1/accounts/2/payments/queries:
+                  value:
+                    items:
+                      - createdName: BCREGTEST Bena THIRTEEN
+                        createdOn: '2020-09-16T16:24:05.393614+00:00'
+                        id: 4379
+                        invoice:
+                          corpTypeCode: BC
+                          id: 4374
+                          lineItems:
+                            - description: Incorporation
+                              filingFees: 350
+                              filingTypeCode: BCINC
+                              futureEffectiveFees: 0
+                              gst: 0
+                              priorityFees: 0
+                              pst: 0
+                              quantity: 1
+                              serviceFees: 1.5
+                              total: 350
+                              waivedBy: null
+                              waivedFees: 0
+                          paid: 351.5
+                          refund: 0
+                          serviceFees: 1.5
+                          total: 351.5
+                        paymentMethod: DRAWDOWN
+                        paymentSystem: BCOL
+                        statusCode: COMPLETED
+                        updatedName: BCREGTEST Bena THIRTEEN
+                        updatedOn: '2020-09-16T16:24:07.734560+00:00'
+                      - createdName: BCREGTEST Bena THIRTEEN
+                        createdOn: '2020-08-26T19:08:42.729457+00:00'
+                        id: 4022
+                        invoice:
+                          corpTypeCode: BC
+                          id: 4017
+                          lineItems:
+                            - description: Incorporation
+                              filingFees: 350
+                              filingTypeCode: BCINC
+                              futureEffectiveFees: 0
+                              gst: 0
+                              priorityFees: 0
+                              pst: 0
+                              quantity: 1
+                              serviceFees: 1.5
+                              total: 350
+                              waivedBy: null
+                              waivedFees: 0
+                          paid: 351.5
+                          refund: 0
+                          serviceFees: 1.5
+                          total: 351.5
+                        paymentMethod: DRAWDOWN
+                        paymentSystem: BCOL
+                        statusCode: COMPLETED
+                        updatedName: BCREGTEST Bena THIRTEEN
+                        updatedOn: '2020-08-26T19:08:44.459447+00:00'
+                      - createdName: BCREGTEST Bena THIRTEEN
+                        createdOn: '2020-08-18T17:46:20.438243+00:00'
+                        id: 3814
+                        invoice:
+                          businessIdentifier: BC1219964
+                          corpTypeCode: BC
+                          folioNumber: '123456789'
+                          id: 3809
+                          lineItems:
+                            - description: Change of Registered Office Address
+                              filingFees: 20
+                              filingTypeCode: OTADD
+                              futureEffectiveFees: 0
+                              gst: 0
+                              priorityFees: 0
+                              pst: 0
+                              quantity: 1
+                              serviceFees: 1.5
+                              total: 20
+                              waivedBy: null
+                              waivedFees: 0
+                          paid: 21.5
+                          refund: 0
+                          serviceFees: 1.5
+                          total: 21.5
+                        paymentMethod: DRAWDOWN
+                        paymentSystem: BCOL
+                        statusCode: COMPLETED
+                        updatedName: BCREGTEST Bena THIRTEEN
+                        updatedOn: '2020-08-18T17:46:22.004887+00:00'
+                      - createdName: BCREGTEST Bena THIRTEEN
+                        createdOn: '2020-08-12T16:50:51.162980+00:00'
+                        id: 3607
+                        invoice:
+                          businessIdentifier: BC1219964
+                          corpTypeCode: BC
+                          id: 3602
+                          lineItems:
+                            - description: Change of Registered Office Address
+                              filingFees: 20
+                              filingTypeCode: OTADD
+                              futureEffectiveFees: 0
+                              gst: 0
+                              priorityFees: 0
+                              pst: 0
+                              quantity: 1
+                              serviceFees: 1.5
+                              total: 20
+                              waivedBy: null
+                              waivedFees: 0
+                          paid: 21.5
+                          refund: 0
+                          serviceFees: 1.5
+                          total: 21.5
+                        paymentMethod: DRAWDOWN
+                        paymentSystem: BCOL
+                        statusCode: COMPLETED
+                        updatedName: BCREGTEST Bena THIRTEEN
+                        updatedOn: '2020-08-12T16:50:51.995572+00:00'
+                      - createdName: BCREGTEST Kerrie NINETEEN
+                        createdOn: '2020-07-30T22:08:44.097034+00:00'
+                        id: 3353
+                        invoice:
+                          businessIdentifier: CP1000006
+                          corpTypeCode: CP
+                          id: 3348
+                          lineItems:
+                            - description: Change of Director
+                              filingFees: 0
+                              filingTypeCode: OTFDR
+                              futureEffectiveFees: 0
+                              gst: 0
+                              priorityFees: 0
+                              pst: 0
+                              quantity: 1
+                              serviceFees: 0
+                              total: 0
+                              waivedBy: null
+                              waivedFees: 0
+                          paid: 0
+                          refund: 0
+                          serviceFees: 0
+                          total: 0
+                        paymentMethod: INTERNAL
+                        paymentSystem: INTERNAL
+                        statusCode: COMPLETED
+                        updatedName: BCREGTEST Kerrie NINETEEN
+                        updatedOn: '2020-07-30T22:08:44.377232+00:00'
+                      - createdName: BCREGTEST Kerrie NINETEEN
+                        createdOn: '2020-07-30T20:18:40.910391+00:00'
+                        id: 3352
+                        invoice:
+                          businessIdentifier: BC1219964
+                          corpTypeCode: BC
+                          id: 3347
+                          lineItems:
+                            - description: Change of Director
+                              filingFees: 0
+                              filingTypeCode: OTFDR
+                              futureEffectiveFees: 0
+                              gst: 0
+                              priorityFees: 0
+                              pst: 0
+                              quantity: 1
+                              serviceFees: 0
+                              total: 0
+                              waivedBy: null
+                              waivedFees: 0
+                          paid: 0
+                          refund: 0
+                          serviceFees: 0
+                          total: 0
+                        paymentMethod: INTERNAL
+                        paymentSystem: INTERNAL
+                        statusCode: COMPLETED
+                        updatedName: BCREGTEST Kerrie NINETEEN
+                        updatedOn: '2020-07-30T20:18:41.173317+00:00'
+                      - createdName: BCREGTEST Bena THIRTEEN
+                        createdOn: '2020-07-28T16:23:30.456888+00:00'
+                        id: 3316
+                        invoice:
+                          businessIdentifier: BC1219964
+                          corpTypeCode: BC
+                          id: 3311
+                          lineItems:
+                            - description: Change of Director
+                              filingFees: 20
+                              filingTypeCode: OTCDR
+                              futureEffectiveFees: 0
+                              gst: 0
+                              priorityFees: 0
+                              pst: 0
+                              quantity: 1
+                              serviceFees: null
+                              total: 20
+                              waivedBy: null
+                              waivedFees: 0
+                          paid: 21.5
+                          refund: 0
+                          serviceFees: 1.5
+                          total: 21.5
+                        paymentMethod: DRAWDOWN
+                        paymentSystem: BCOL
+                        statusCode: COMPLETED
+                        updatedName: BCREGTEST Bena THIRTEEN
+                        updatedOn: '2020-07-28T16:23:32.559398+00:00'
+                      - createdName: BCREGTEST Kerrie NINETEEN
+                        createdOn: '2020-07-22T22:34:34.236265+00:00'
+                        id: 3197
+                        invoice:
+                          businessIdentifier: BC1219942
+                          corpTypeCode: BC
+                          id: 3192
+                          lineItems:
+                            - description: Change of Registered Office Address
+                              filingFees: 20
+                              filingTypeCode: OTADD
+                              futureEffectiveFees: 0
+                              gst: 0
+                              priorityFees: 0
+                              pst: 0
+                              quantity: 1
+                              serviceFees: null
+                              total: 20
+                              waivedBy: null
+                              waivedFees: 0
+                          paid: 21.5
+                          refund: 0
+                          serviceFees: 1.5
+                          total: 21.5
+                        paymentMethod: DRAWDOWN
+                        paymentSystem: BCOL
+                        statusCode: COMPLETED
+                        updatedName: BCREGTEST Kerrie NINETEEN
+                        updatedOn: '2020-07-22T22:34:34.712447+00:00'
+                      - createdName: BCREGTEST Kerrie NINETEEN
+                        createdOn: '2020-07-22T22:32:01.249914+00:00'
+                        id: 3196
+                        invoice:
+                          businessIdentifier: BC1219942
+                          corpTypeCode: BC
+                          id: 3191
+                          lineItems:
+                            - description: Change of Director
+                              filingFees: 20
+                              filingTypeCode: OTCDR
+                              futureEffectiveFees: 0
+                              gst: 0
+                              priorityFees: 0
+                              pst: 0
+                              quantity: 1
+                              serviceFees: null
+                              total: 20
+                              waivedBy: null
+                              waivedFees: 0
+                          paid: 21.5
+                          refund: 0
+                          serviceFees: 1.5
+                          total: 21.5
+                        paymentMethod: DRAWDOWN
+                        paymentSystem: BCOL
+                        statusCode: COMPLETED
+                        updatedName: BCREGTEST Kerrie NINETEEN
+                        updatedOn: '2020-07-22T22:32:04.230188+00:00'
+                      - createdName: BCREGTEST Kerrie NINETEEN
+                        createdOn: '2020-07-22T22:31:04.817993+00:00'
+                        id: 3195
+                        invoice:
+                          businessIdentifier: BC1219942
+                          corpTypeCode: BC
+                          id: 3190
+                          lineItems:
+                            - description: Change of Director
+                              filingFees: 20
+                              filingTypeCode: OTCDR
+                              futureEffectiveFees: 0
+                              gst: 0
+                              priorityFees: 0
+                              pst: 0
+                              quantity: 1
+                              serviceFees: null
+                              total: 20
+                              waivedBy: null
+                              waivedFees: 0
+                          paid: 21.5
+                          refund: 0
+                          serviceFees: 1.5
+                          total: 21.5
+                        paymentMethod: DRAWDOWN
+                        paymentSystem: BCOL
+                        statusCode: COMPLETED
+                        updatedName: BCREGTEST Kerrie NINETEEN
+                        updatedOn: '2020-07-22T22:31:05.269737+00:00'
+                    limit: 10
+                    page: 1
+                    total: 64
+          headers:
+            Access-Control-Max-Age:
+              schema:
+                type: string
+              description: Access-Control-Max-Age
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              description: Access-Control-Allow-Origin
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+              description: Access-Control-Allow-Methods
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              description: Access-Control-Allow-Headers
+      description: Query account transaction reports
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: Account-Id
+        - schema:
+            type: integer
+            default: '1'
+          in: query
+          name: page
+          description: Page number
+        - schema:
+            type: integer
+            default: 10
+          in: query
+          name: limit
+          description: Number of records per page to be included
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionReportQuery'
+            examples:
+              /api/v1/accounts/1/payments/queries:
+                value:
+                  dateFilter:
+                    startDate: 08/01/2020
+                    endDate: 08/31/2020
+                  folioNumber: '123456789'
+              /api/v1/accounts/2/payments/queries:
+                value:
+                  dateFilter:
+                    startDate: 01/01/2020
+                    endDate: 12/31/2020
+  '/api/v1/accounts/{accountId}/statements':
+    parameters:
+      - schema:
+          type: string
+        name: accountId
+        in: path
+        required: true
+    get:
+      summary: Get list of statements
+      tags: []
+      responses:
+        '200':
+          description: OK
+          headers:
+            Access-Control-Max-Age:
+              schema:
+                type: string
+              description: Access-Control-Max-Age
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+              description: Access-Control-Allow-Origin
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+              description: Access-Control-Allow-Methods
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+              description: Access-Control-Allow-Headers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Statements'
+              examples:
+                /api/v1/accounts/1/statements:
+                  value:
+                    items:
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3783
+                        notificationDate: null
+                        toDate: '2020-09-05'
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3782
+                        notificationDate: null
+                        toDate: '2020-09-05'
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3781
+                        notificationDate: null
+                        toDate: '2020-09-05'
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3780
+                        notificationDate: null
+                        toDate: '2020-09-05'
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3779
+                        notificationDate: null
+                        toDate: '2020-09-05'
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3778
+                        notificationDate: '2020-09-07'
+                        toDate: '2020-09-05'
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3777
+                        notificationDate: null
+                        toDate: '2020-09-05'
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3776
+                        notificationDate: null
+                        toDate: '2020-09-05'
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3775
+                        notificationDate: null
+                        toDate: '2020-09-05'
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3774
+                        notificationDate: null
+                        toDate: '2020-09-05'
+                    limit: 10
+                    page: 1
+                    total: 1319
+                /api/v1/accounts/2/statements:
+                  value:
+                    items:
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3783
+                        notificationDate: null
+                        toDate: '2020-09-05'
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3782
+                        notificationDate: null
+                        toDate: '2020-09-05'
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3781
+                        notificationDate: null
+                        toDate: '2020-09-05'
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3780
+                        notificationDate: null
+                        toDate: '2020-09-05'
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3779
+                        notificationDate: null
+                        toDate: '2020-09-05'
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3778
+                        notificationDate: '2020-09-07'
+                        toDate: '2020-09-05'
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3777
+                        notificationDate: null
+                        toDate: '2020-09-05'
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3776
+                        notificationDate: null
+                        toDate: '2020-09-05'
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3775
+                        notificationDate: null
+                        toDate: '2020-09-05'
+                      - createdOn: '2020-09-07'
+                        frequency: MONTHLY
+                        fromDate: '2020-08-30'
+                        id: 3774
+                        notificationDate: null
+                        toDate: '2020-09-05'
+                    limit: 10
+                    page: 1
+                    total: 1319
+      operationId: get_statements
+      description: Get list of statements generated for the account
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: Account-Id
+        - schema:
+            type: integer
+          in: query
+          name: page
+          description: Current Page
+        - schema:
+            type: integer
+          in: query
+          name: limit
+          description: Number of records to include
+  '/api/v1/accounts/{accountId}/statments/{statementId}':
+    parameters:
+      - schema:
+          type: string
+        name: accountId
+        in: path
+        required: true
+      - schema:
+          type: string
+        name: statementId
+        in: path
+        required: true
+    get:
+      summary: Get the statement
+      tags: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/pdf:
+              schema:
+                type: object
+                properties: {}
+      operationId: get_statement
+      description: Return the statement as either PDF or CSV
+      parameters:
+        - schema:
+            type: string
+          in: header
+          name: Account-Id
+        - schema:
+            type: string
+          in: header
+          name: Accept
+          description: Accept
+          required: true
 components:
   schemas:
     ErrorResponse:
       type: object
+      description: <p>Contains details of an error that was encountered.</p>
       properties:
-        code:
+        detail:
           type: string
-          description: Identifier representing the type of error that occurred.
-        message:
+        type:
           type: string
-          description: Description of the error.
-      description: Contains details of an error that was encountered.
+        title:
+          type: string
+      title: Error
     Tax:
       type: object
       properties:
         gst:
-          type: integer
+          type: number
           description: Good Services Tax
         pst:
-          type: integer
+          type: number
           description: Provincial Sales Tax
+      title: Tax
+      description: <p>Object to hold tax details. </p>
     Fee:
       type: object
       properties:
@@ -983,97 +1386,57 @@ components:
           type: string
           description: Filing Type
         filingFees:
-          type: integer
+          type: number
           description: Fees for filing
         serviceFees:
-          type: integer
+          type: number
           description: Applicable service fees
-        processingFees:
-          type: integer
-          description: Applicable processing fees
         tax:
-          type: object
-          items:
-            $ref: '#/components/schemas/Tax'
-    PaymentLineItem:
-      type: object
-      properties:
-        id:
-          type: integer
-          description: Unique identifier for payment line item
-        invoiceId:
-          type: integer
-          description: Unique identifier for invoice
-        feeScheduleId:
-          type: integer
-          description: Fee schedule id
-        quantity:
-          type: integer
-          description: Quantity of fee
-        filingFees:
+          $ref: '#/components/schemas/Tax'
+        futureEffectiveFees:
           type: number
-          description: Fees for filing
-        serviceFees:
+          description: Future effective fees
+        priorityFees:
           type: number
-          description: Applicable service fees
-        processingFees:
+          description: Priority Fees
+        total:
           type: number
-          description: Applicable processing fees
-        description:
-          type: number
-          description: Description of the fee item
-        gst:
-          type: number
-          description: Applicable gst of the fee item
-        pst:
-          type: number
-          description: Applicable pst of the fee item
-        statusCode:
-          type: string
-          description: Line item status
-          enum:
-            - DRAFT
-            - IN_PROGRESS
-            - CREATED
-            - COMPLETED
-            - PARTIAL
-            - FAILED
-            - REFUNDED
-            - CANCELLED
+          description: Total
+      title: Fee
+      description: <p> Object to return fee information. </p>
     PaymentRequest:
       type: object
       properties:
-        paymentInfo:
-          type: object
-          items:
-            $ref: '#/components/schemas/PaymentInfo'
         filingInfo:
-          type: object
-          items:
-            $ref: '#/components/schemas/FilingInfo'
+          $ref: '#/components/schemas/FilingInfo'
         businessInfo:
-          type: object
-          items:
-            $ref: '#/components/schemas/BusinessInfo'
-    PaymentInfo:
-      type: object
-      properties:
-        methodOfPayment:
-          type: string
-          description: Method of payment
+          $ref: '#/components/schemas/BusinessInfo'
+        contactInfo:
+          $ref: '#/components/schemas/ContactInfo'
+      required:
+        - filingInfo
+        - businessInfo
+      title: Payment Request
+      description: <p>Object to hold payment request details. </p>
     FilingInfo:
       type: object
       properties:
-        corp_type:
+        filingIdentifier:
           type: string
-          description: Corp Type
-        date:
+          description: Unique identifier for the filing
+        folioNumber:
           type: string
-          description: Date on which the filing rates are applicable
+          description: 'Folio number '
         filingTypes:
           type: array
+          description: Filing types
           items:
             $ref: '#/components/schemas/FilingType'
+        date:
+          type: string
+          description: Date on which fees are applicable
+      title: Filing Information
+      description: <p>Object to store filing information for a payment request. </p>
     FilingType:
       type: object
       properties:
@@ -1085,7 +1448,20 @@ components:
           description: Priority Indicator
         filingDescription:
           type: string
-          description: Filing Type Description
+          description: Override default description
+        futureEffective:
+          type: boolean
+          description: Filing Future Effective flag
+        waiveFees:
+          type: boolean
+          description: Waive fees flag for staff users
+        quantity:
+          type: integer
+          description: Quantity
+      required:
+        - filingTypeCode
+      title: Filing Type
+      description: <p>Object to store filing type information for creating a payment request. </p>
     BusinessInfo:
       type: object
       properties:
@@ -1095,20 +1471,15 @@ components:
         businessName:
           type: string
           description: Legal entity name
-        contactInfo:
-          type: object
-          items:
-            $ref: '#/components/schemas/ContactInfo'
+        corpType:
+          type: string
+          description: Business type
+      description: <p>Object to hold business information. </p>
+      title: Business Information
     ContactInfo:
       type: object
       properties:
-        firstName:
-          type: string
-          description: Contact first name
-        lastName:
-          type: string
-          description: Contact last name
-        address:
+        addressLine1:
           type: string
           description: Addres line 1
         city:
@@ -1120,13 +1491,16 @@ components:
         postalCode:
           type: string
           description: Postal Code
-    Payment:
+        country:
+          type: string
+      title: Contact Information
+      description: <p>Object to hold business information for payment requests. </p>
+    PaymentResponse:
       type: object
+      description: <p>Object to hold details on payment transaction record. </p>
       properties:
         _links:
-          type: object
-          items:
-            $ref: '#/components/schemas/Links'
+          $ref: '#/components/schemas/Links'
         id:
           type: integer
           description: Unique identifier for payment
@@ -1147,91 +1521,111 @@ components:
         paymentMethod:
           type: string
           description: code of payment method
+          enum:
+            - CC
+            - DIRECT_PAY
+            - DRAWDOWN
+            - PAD
+            - OB
+            - EFT
+            - WIRE
+            - INTERNAL
         statusCode:
           type: string
           description: Status of payment.
           enum:
-            - DRAFT
-            - IN_PROGRESS
-            - CREATED
             - COMPLETED
-            - PARTIAL
-            - FAILED
-            - REFUNDED
-            - CANCELLED
+            - CREATED
+            - DELETED
         updatedBy:
           type: string
           description: username of the account that made update
         updatedOn:
           type: string
           description: payment update date
+        paymentSystem:
+          type: string
+          enum:
+            - PAYBC
+            - BCOL
+            - INTERNAL
+      title: PaymentRespomse
+    InvoiceRef:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Unique identifier for invoice
+        invoiceNumber:
+          type: string
+          description: id of the account
+        referenceNumber:
+          type: string
+          description: username of the account
+        statusCode:
+          type: string
+          description: invoice creation date
+      title: Invoice Reference
+      description: <p>Object to hold invoice reference details from other systems. </p>
     Invoice:
       type: object
       properties:
         _links:
-          type: object
-          items:
-            $ref: '#/components/schemas/Links'
+          $ref: '#/components/schemas/Links'
         id:
           type: integer
           description: Unique identifier for invoice
-        accountId:
-          type: integer
+        businessIdentifier:
+          type: string
           description: id of the account
-        createdBy:
+        corpTypeCode:
           type: string
           description: username of the account
-        createdOn:
+        createdBy:
           type: string
           description: invoice creation date
-        paymentDate:
+        createdOn:
           type: string
           description: date made payment
-        paymentId:
-          type: integer
-          description: payment identifier
         paid:
           type: number
           description: amount paid
+        refund:
+          type: number
+          description: reference number
+        serviceFees:
+          type: number
+          description: service fees
+        total:
+          type: number
+        statusCode:
+          type: string
+          enum:
+            - PAID
+            - DELETED
+            - CREATED
+        references:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceRef'
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transaction'
         lineItems:
           type: array
           items:
-            $ref: '#/components/schemas/PaymentLineItem'
-        referenceNumber:
-          type: string
-          description: reference number
-        statusCode:
-          type: string
-          description: Status of payment.
-          enum:
-            - DRAFT
-            - IN_PROGRESS
-            - CREATED
-            - COMPLETED
-            - PARTIAL
-            - FAILED
-            - REFUNDED
-            - CANCELLED
-    Invoices:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/Invoice'
+            $ref: '#/components/schemas/LineItem'
+      title: Invoice
+      description: <p>Object to hold invoice information </p>
     Transaction:
       type: object
       properties:
         _links:
           type: object
-          items:
-            $ref: '#/components/schemas/Links'
         id:
           type: string
           description: Unique identifier for transaction
-        clientSystemUrl:
-          type: string
-          description: Client system url
         startTime:
           type: string
           description: transaction start time
@@ -1248,21 +1642,15 @@ components:
           type: string
           description: Status of payment.
           enum:
-            - DRAFT
-            - IN_PROGRESS
             - CREATED
             - COMPLETED
-            - PARTIAL
             - FAILED
-            - REFUNDED
             - CANCELLED
-    Transactions:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/Transaction'
+            - EVENT_FAILED
+        clientSystemUrl:
+          type: string
+      title: Transaction
+      description: <p>Object to hold transaction details for each payment.</p>
     Links:
       type: object
       properties:
@@ -1272,3 +1660,139 @@ components:
         collection:
           type: string
           description: collection link
+      title: Links
+      description: <p>Generic links information for giving details on linked objects. </p>
+    LineItem:
+      title: LineItem
+      type: object
+      description: <p>Object to hold line item details. </p>
+      properties:
+        id:
+          type: integer
+        description:
+          type: string
+        filingFees:
+          type: number
+        futureEffectiveFees:
+          type: number
+        gst:
+          type: number
+        priorityFees:
+          type: number
+        pst:
+          type: number
+        quantity:
+          type: integer
+        serviceFees:
+          type: number
+        statusCode:
+          type: string
+        total:
+          type: number
+        waivedFees:
+          type: number
+    Receipt:
+      title: Receipt
+      type: object
+      description: <p>Object to store receipt details. </p>
+      properties:
+        filingIdentifier:
+          type: string
+        invoice:
+          $ref: '#/components/schemas/Invoice'
+        invoiceNumber:
+          type: string
+        receiptNumber:
+          type: string
+    TransactionReportQuery:
+      title: Transaction Report Query
+      type: object
+      description: Object to store the transaction report query.
+      properties:
+        dateFilter:
+          $ref: '#/components/schemas/DateFilter'
+        folioNumber:
+          type: string
+          description: Folio Number
+    DateFilter:
+      title: Date Filter
+      type: object
+      description: Date filter for transaction reports
+      properties:
+        startDate:
+          type: string
+          description: Start date in MM/DD/YYY
+        endDate:
+          type: string
+          description: End date in MM/DD/YYY
+    TransactionReports:
+      title: Transaction Reports
+      type: object
+      description: Paginated result for transaction reports
+      properties:
+        items:
+          type: array
+          description: List of payment transactions
+          items:
+            $ref: '#/components/schemas/PaymentResponse'
+        limit:
+          type: integer
+          description: number of records to be included
+          default: '10'
+        page:
+          type: integer
+          description: Current page
+        total:
+          type: integer
+          description: Total number of records found
+    Statements:
+      title: Statements
+      type: object
+      description: Object to store statements list
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Statement'
+        page:
+          type: integer
+        limit:
+          type: integer
+    Statement:
+      title: Statement
+      type: object
+      description: Object to store statement header information
+      properties:
+        frequency:
+          type: string
+          enum:
+            - MONTHLY
+            - WEEKLY
+            - DAILY
+        fromDate:
+          type: string
+        id:
+          type: integer
+        toDate:
+          type: string
+  securitySchemes:
+    JWT:
+      type: http
+      scheme: bearer
+    api_key:
+      name: x-apikey
+      type: apiKey
+      in: header
+servers:
+  - url: 'https://pay-api.pathfinder.gov.bc.ca'
+    description: Prod
+  - url: 'https://pay-api-test.pathfinder.gov.bc.ca'
+    description: Test
+security:
+  - api_key: []
+  - JWT: []
+tags:
+  - name: Fees
+  - name: Payment Request
+  - name: Receipts
+  - name: Transaction Reports
