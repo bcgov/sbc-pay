@@ -44,7 +44,7 @@ class Payment(Audit):  # pylint: disable=too-many-instance-attributes
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     payment_system_code = db.Column(db.String(10), ForeignKey('payment_system.code'), nullable=False)
-    payment_method_code = db.Column(db.String(10), ForeignKey('payment_method.code'), nullable=False)
+    payment_method_code = db.Column(db.String(15), ForeignKey('payment_method.code'), nullable=False)
     payment_status_code = db.Column(db.String(20), ForeignKey('payment_status_code.code'), nullable=False)
 
     payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='select', innerjoin=True)

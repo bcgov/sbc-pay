@@ -28,4 +28,4 @@ class EjvBatch(BaseModel):  # pylint: disable=too-many-instance-attributes
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
-    is_distribution = db.Column(Boolean(), Boolean(), default=True)
+    is_distribution = db.Column('is_distribution', Boolean(), default=True)
