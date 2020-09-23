@@ -47,6 +47,11 @@ class CreditPaymentAccount(BaseModel):
 
         return query.join(PaymentAccount).filter(PaymentAccount.auth_account_id == str(auth_account_id)).one_or_none()
 
+    @classmethod
+    def find_by_corp_number(cls, corp_number: str):
+        """Find all payment accounts by corp number."""
+        return cls.query.filter_by(corp_number=corp_number).all()
+
 
 class CreditPaymentAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Credit Payment System Account."""

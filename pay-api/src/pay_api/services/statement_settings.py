@@ -116,6 +116,8 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
         """Find statements by account id."""
         current_app.logger.debug(f'<find_by_account_id {auth_account_id}')
         statements_settings = StatementSettingsModel.find_latest_settings(auth_account_id)
+        if statements_settings is None:
+            return None
         all_settings = []
 
         # iterate and find the next start date to all frequencies

@@ -11,10 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""All of the configuration for the service is captured here. All items are loaded, or have Constants defined here that are loaded into the Flask configuration. All modules and lookups get their configuration from the Flask config, rather than reading environment variables directly or by accessing this configuration directly.
+"""All of the configuration for the service is captured here.
+
+All items are loaded,
+or have Constants defined here that are loaded into the Flask configuration.
+All modules and lookups get their configuration from the Flask config,
+rather than reading environment variables directly or by accessing this configuration directly.
 """
 
-import json
 import os
 import sys
 
@@ -24,16 +28,16 @@ from dotenv import find_dotenv, load_dotenv
 load_dotenv(find_dotenv())
 
 CONFIGURATION = {
-    'development': 'config.DevConfig',
-    'testing': 'config.TestConfig',
-    'production': 'config.ProdConfig',
-    'default': 'config.ProdConfig',
-    'migration': 'config.MigrationConfig',
+    'development': 'pay_api.config.DevConfig',
+    'testing': 'pay_api.config.TestConfig',
+    'production': 'pay_api.config.ProdConfig',
+    'default': 'pay_api.config.ProdConfig',
+    'migration': 'pay_api.config.MigrationConfig',
 }
 
 
 def get_named_config(config_name: str = 'production'):
-    """Return the configuration object based on the name
+    """Return the configuration object based on the name.
 
     :raise: KeyError: if an unknown configuration is requested
     """
@@ -60,8 +64,8 @@ def _get_config(config_key: str, **kwargs):
     return value
 
 
-class _Config(object):  # pylint: disable=too-few-public-methods
-    """Base class configuration that should set reasonable defaults for all the other configurations. """
+class _Config():  # pylint: disable=too-few-public-methods
+    """Base class configuration that should set reasonable defaults for all the other configurations."""
 
     PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
 
@@ -153,6 +157,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
+    """Dev config."""
+
     TESTING = False
     DEBUG = True
 
@@ -189,33 +195,37 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     JWT_OIDC_TEST_JWKS_URI = _get_config('JWT_OIDC_TEST_JWKS_URI', default=None)
 
     JWT_OIDC_TEST_KEYS = {
-        "keys": [
+        'keys': [
             {
-                "kid": "sbc-auth-web",
-                "kty": "RSA",
-                "alg": "RS256",
-                "use": "sig",
-                "n": "AN-fWcpCyE5KPzHDjigLaSUVZI0uYrcGcc40InVtl-rQRDmAh-C2W8H4_Hxhr5VLc6crsJ2LiJTV_E72S03pzpOOaaYV6-TzAjCou2GYJIXev7f6Hh512PuG5wyxda_TlBSsI-gvphRTPsKCnPutrbiukCYrnPuWxX5_cES9eStR",
-                "e": "AQAB"
+                'kid': 'sbc-auth-web',
+                'kty': 'RSA',
+                'alg': 'RS256',
+                'use': 'sig',
+                'n': 'AN-fWcpCyE5KPzHDjigLaSUVZI0uYrcGcc40InVtl-rQRDmAh-C2W8H4_Hxhr5VLc6crsJ2LiJTV_E72S03pzpOOaaYV6-'
+                     'TzAjCou2GYJIXev7f6Hh512PuG5wyxda_TlBSsI-gvphRTPsKCnPutrbiukCYrnPuWxX5_cES9eStR',
+                'e': 'AQAB'
             }
         ]
     }
 
     JWT_OIDC_TEST_PRIVATE_KEY_JWKS = {
-        "keys": [
+        'keys': [
             {
-                "kid": "sbc-auth-web",
-                "kty": "RSA",
-                "alg": "RS256",
-                "use": "sig",
-                "n": "AN-fWcpCyE5KPzHDjigLaSUVZI0uYrcGcc40InVtl-rQRDmAh-C2W8H4_Hxhr5VLc6crsJ2LiJTV_E72S03pzpOOaaYV6-TzAjCou2GYJIXev7f6Hh512PuG5wyxda_TlBSsI-gvphRTPsKCnPutrbiukCYrnPuWxX5_cES9eStR",
-                "e": "AQAB",
-                "d": "C0G3QGI6OQ6tvbCNYGCqq043YI_8MiBl7C5dqbGZmx1ewdJBhMNJPStuckhskURaDwk4-8VBW9SlvcfSJJrnZhgFMjOYSSsBtPGBIMIdM5eSKbenCCjO8Tg0BUh_xa3CHST1W4RQ5rFXadZ9AeNtaGcWj2acmXNO3DVETXAX3x0",
-                "p": "APXcusFMQNHjh6KVD_hOUIw87lvK13WkDEeeuqAydai9Ig9JKEAAfV94W6Aftka7tGgE7ulg1vo3eJoLWJ1zvKM",
-                "q": "AOjX3OnPJnk0ZFUQBwhduCweRi37I6DAdLTnhDvcPTrrNWuKPg9uGwHjzFCJgKd8KBaDQ0X1rZTZLTqi3peT43s",
-                "dp": "AN9kBoA5o6_Rl9zeqdsIdWFmv4DB5lEqlEnC7HlAP-3oo3jWFO9KQqArQL1V8w2D4aCd0uJULiC9pCP7aTHvBhc",
-                "dq": "ANtbSY6njfpPploQsF9sU26U0s7MsuLljM1E8uml8bVJE1mNsiu9MgpUvg39jEu9BtM2tDD7Y51AAIEmIQex1nM",
-                "qi": "XLE5O360x-MhsdFXx8Vwz4304-MJg-oGSJXCK_ZWYOB_FGXFRTfebxCsSYi0YwJo-oNu96bvZCuMplzRI1liZw"
+                'kid': 'sbc-auth-web',
+                'kty': 'RSA',
+                'alg': 'RS256',
+                'use': 'sig',
+                'n': 'AN-fWcpCyE5KPzHDjigLaSUVZI0uYrcGcc40InVtl-rQRDmAh-C2W8H4_Hxhr5VLc6crsJ2LiJTV_E72S03pzpOOaaYV6-'
+                     'TzAjCou2GYJIXev7f6Hh512PuG5wyxda_TlBSsI-gvphRTPsKCnPutrbiukCYrnPuWxX5_cES9eStR',
+                'e': 'AQAB',
+                'd': 'C0G3QGI6OQ6tvbCNYGCqq043YI_8MiBl7C5dqbGZmx1ewdJBhMNJPStuckhskURaDwk4-'
+                     '8VBW9SlvcfSJJrnZhgFMjOYSSsBtPGBIMIdM5eSKbenCCjO8Tg0BUh_'
+                     'xa3CHST1W4RQ5rFXadZ9AeNtaGcWj2acmXNO3DVETXAX3x0',
+                'p': 'APXcusFMQNHjh6KVD_hOUIw87lvK13WkDEeeuqAydai9Ig9JKEAAfV94W6Aftka7tGgE7ulg1vo3eJoLWJ1zvKM',
+                'q': 'AOjX3OnPJnk0ZFUQBwhduCweRi37I6DAdLTnhDvcPTrrNWuKPg9uGwHjzFCJgKd8KBaDQ0X1rZTZLTqi3peT43s',
+                'dp': 'AN9kBoA5o6_Rl9zeqdsIdWFmv4DB5lEqlEnC7HlAP-3oo3jWFO9KQqArQL1V8w2D4aCd0uJULiC9pCP7aTHvBhc',
+                'dq': 'ANtbSY6njfpPploQsF9sU26U0s7MsuLljM1E8uml8bVJE1mNsiu9MgpUvg39jEu9BtM2tDD7Y51AAIEmIQex1nM',
+                'qi': 'XLE5O360x-MhsdFXx8Vwz4304-MJg-oGSJXCK_ZWYOB_FGXFRTfebxCsSYi0YwJo-oNu96bvZCuMplzRI1liZw'
             }
         ]
     }
@@ -244,9 +254,9 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
 
     SERVER_NAME = 'auth-web.dev.com'
 
-    REPORT_API_BASE_URL = "http://localhost:8080/reports-api/api/v1/reports"
+    REPORT_API_BASE_URL = 'http://localhost:8080/reports-api/api/v1/reports'
 
-    AUTH_API_ENDPOINT = "http://localhost:8080/auth-api/"
+    AUTH_API_ENDPOINT = 'http://localhost:8080/auth-api/'
 
     NATS_SUBJECT = 'entity.filing.test'
 
@@ -278,7 +288,8 @@ class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
 
 
 class MigrationConfig():  # pylint: disable=too-few-public-methods
-    """Config for db migration """
+    """Config for db migration."""
+
     TESTING = False
     DEBUG = True
 
