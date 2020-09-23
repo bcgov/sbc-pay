@@ -25,9 +25,7 @@ from .distribution_code import DistributionCode, DistributionCodeLink
 from .fee_schedule import FeeSchedule, FeeScheduleSchema
 from .error_code import ErrorCode, ErrorCodeSchema
 from .payment_account import PaymentAccount, PaymentAccountSchema  # noqa: I001
-from .bcol_payment_account import BcolPaymentAccount, BcolPaymentAccountSchema  # noqa: I001
-from .credit_payment_account import CreditPaymentAccount, CreditPaymentAccountSchema  # noqa: I001
-from .internal_payment_account import InternalPaymentAccount, InternalPaymentAccountSchema
+from .cfs_account import CfsAccount, CfsAccountSchema
 from .invoice import Invoice, InvoiceSchema
 from .invoice_reference import InvoiceReference, InvoiceReferenceSchema
 from .payment import Payment, PaymentSchema
@@ -45,5 +43,12 @@ from .statement import Statement, StatementSchema
 from .statement_invoices import StatementInvoices, StatementInvoicesSchema
 from .statement_recipients import StatementRecipients, StatementRecipientsSchema
 from .notification_status_code import NotificationStatusCode, NotificationStatusCodeSchema
+from .daily_payment_batch import DailyPaymentBatch
+from .daily_payment_batch_link import DailyPaymentBatchLink
+from .ejv_batch import EjvBatch
+from .ejv_batch_link import EjvBatchLink
+from .invoice_batch import InvoiceBatch
+from .invoice_batch_link import InvoiceBatchLink
+
 
 event.listen(Engine, 'before_cursor_execute', DBTracing.query_tracing)

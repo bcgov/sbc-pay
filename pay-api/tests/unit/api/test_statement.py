@@ -19,7 +19,7 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 
 import json
 
-from pay_api.models import PaymentAccount, BcolPaymentAccount
+from pay_api.models import PaymentAccount
 from pay_api.models.payment import Payment
 from pay_api.utils.enums import StatementFrequency, ContentType
 
@@ -41,8 +41,7 @@ def test_get_daily_statements(session, client, jwt, app):
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    bcol_account: BcolPaymentAccount = BcolPaymentAccount.find_by_id(payment.invoices[0].bcol_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(bcol_account.account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.invoices[0].payment_account_id)
 
     settings_model = factory_statement_settings(payment_account_id=pay_account.id,
                                                 frequency=StatementFrequency.DAILY.value)
@@ -69,8 +68,7 @@ def test_get_daily_statements_verify_order(session, client, jwt, app):
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    bcol_account: BcolPaymentAccount = BcolPaymentAccount.find_by_id(payment.invoices[0].bcol_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(bcol_account.account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.invoices[0].payment_account_id)
 
     settings_model = factory_statement_settings(payment_account_id=pay_account.id,
                                                 frequency=StatementFrequency.DAILY.value)
@@ -101,8 +99,7 @@ def test_get_weekly_statements(session, client, jwt, app):
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    bcol_account: BcolPaymentAccount = BcolPaymentAccount.find_by_id(payment.invoices[0].bcol_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(bcol_account.account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.invoices[0].payment_account_id)
 
     settings_model = factory_statement_settings(payment_account_id=pay_account.id,
                                                 frequency=StatementFrequency.DAILY.value)
@@ -132,8 +129,7 @@ def test_get_weekly_statement_report_as_pdf(session, client, jwt, app):
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    bcol_account: BcolPaymentAccount = BcolPaymentAccount.find_by_id(payment.invoices[0].bcol_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(bcol_account.account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.invoices[0].payment_account_id)
 
     settings_model = factory_statement_settings(payment_account_id=pay_account.id,
                                                 frequency=StatementFrequency.DAILY.value)
@@ -161,8 +157,7 @@ def test_get_monthly_statement_report_as_pdf(session, client, jwt, app):
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    bcol_account: BcolPaymentAccount = BcolPaymentAccount.find_by_id(payment.invoices[0].bcol_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(bcol_account.account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.invoices[0].payment_account_id)
 
     settings_model = factory_statement_settings(payment_account_id=pay_account.id,
                                                 frequency=StatementFrequency.MONTHLY.value)
@@ -190,8 +185,7 @@ def test_get_daily_statement_report_as_pdf(session, client, jwt, app):
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    bcol_account: BcolPaymentAccount = BcolPaymentAccount.find_by_id(payment.invoices[0].bcol_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(bcol_account.account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.invoices[0].payment_account_id)
 
     settings_model = factory_statement_settings(payment_account_id=pay_account.id,
                                                 frequency=StatementFrequency.DAILY.value)
@@ -219,8 +213,7 @@ def test_get_monthly_statement_report_as_csv(session, client, jwt, app):
                      headers=headers)
 
     payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    bcol_account: BcolPaymentAccount = BcolPaymentAccount.find_by_id(payment.invoices[0].bcol_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(bcol_account.account_id)
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.invoices[0].payment_account_id)
 
     settings_model = factory_statement_settings(payment_account_id=pay_account.id,
                                                 frequency=StatementFrequency.DAILY.value)

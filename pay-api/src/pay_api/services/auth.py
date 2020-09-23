@@ -37,6 +37,8 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
             and user.product_code != 'BUSINESS':  # Call auth only if it's business (entities)
         call_auth_svc = False
         is_authorized = bool(Role.EDITOR.value in user.roles)
+        # Add account name as the service client name
+        auth_response = {'account': {'id': user.user_name}}
 
     if call_auth_svc:
         bearer_token = user.bearer_token

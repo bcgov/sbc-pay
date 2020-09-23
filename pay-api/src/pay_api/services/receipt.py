@@ -22,14 +22,12 @@ from sbc_common_components.utils.camel_case_response import camelcase_dict
 from pay_api.exceptions import BusinessException
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.models.bcol_payment_account import BcolPaymentAccount as BcolPaymentAccountModel
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
 from .oauth_service import OAuthService
-from .payment_account import PaymentAccount
 
 
 class Receipt():  # pylint: disable=too-many-instance-attributes
@@ -180,25 +178,23 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
             invoice_data = Invoice.find_by_payment_identifier(payment_identifier, skip_auth_check=skip_auth_check)
         else:
             invoice_data = Invoice.find_by_id(invoice_identifier, payment_identifier, skip_auth_check=skip_auth_check)
-        payment_account = PaymentAccount.find_by_pay_system_id(
-            credit_account_id=invoice_data.credit_account_id,
-            internal_account_id=invoice_data.internal_account_id,
-            bcol_account_id=invoice_data.bcol_account_id)
-        invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(invoice_data.id)
 
-        receipt_details['invoiceNumber'] = invoice_reference.invoice_number
-        if payment_account.payment_system_code == PaymentSystem.INTERNAL.value and invoice_data.routing_slip:
-            receipt_details['routingSlipNumber'] = invoice_data.routing_slip
         if not invoice_data.receipts:
             raise BusinessException(Error.INVALID_REQUEST)
+
+        invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(invoice_data.id)
+        payment: PaymentModel = PaymentModel.find_by_id(invoice_data.payment_id)
+
+        receipt_details['invoiceNumber'] = invoice_reference.invoice_number
+        if payment.payment_system_code == PaymentSystem.INTERNAL.value and invoice_data.routing_slip:
+            receipt_details['routingSlipNumber'] = invoice_data.routing_slip
         receipt_details['receiptNumber'] = invoice_data.receipts[0].receipt_number
         receipt_details['filingIdentifier'] = filing_data.get('filingIdentifier', invoice_data.filing_id)
-        if invoice_data.bcol_account_id:
-            bcol_account: BcolPaymentAccountModel = BcolPaymentAccountModel.find_by_id(invoice_data.bcol_account_id)
-            receipt_details['bcOnlineAccountNumber'] = bcol_account.bcol_account_id
+        receipt_details['bcOnlineAccountNumber'] = invoice_data.bcol_account
+
         payment_method = PaymentModel.find_payment_method_by_payment_id(payment_identifier)
-        # TODO fix properly later
-        if not invoice_data.internal_account_id:
+
+        if payment.payment_system_code != PaymentSystem.INTERNAL.value:
             receipt_details['paymentMethod'] = payment_method.description
         receipt_details['invoice'] = camelcase_dict(invoice_data.asdict(), {})
         return receipt_details

@@ -11,21 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Model to link invoices with nightly transactions roll up."""
 
-"""Tests to assure the CorpType Class.
+from sqlalchemy import ForeignKey
 
-Test-Suite to ensure that the CorpType Class is working as expected.
-"""
-
-from tests.utilities.base_test import factory_payment_account
+from .base_model import BaseModel
+from .db import db
 
 
-def test_payment_account(session):
-    """Assert a payment account is stored.
+class InvoiceBatchLink(BaseModel):  # pylint: disable=too-few-public-methods
+    """This class manages linkages between invoices and nightly roll up."""
 
-    Start with a blank database.
-    """
-    payment_account = factory_payment_account()
-    payment_account.save()
+    __tablename__ = 'invoice_batch_link'
 
-    assert payment_account.id is not None
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    invoice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
+    batch_id = db.Column(db.Integer, ForeignKey('invoice_batch.id'), nullable=False)

@@ -15,7 +15,7 @@
 
 import pytest
 from entity_queue_common.service_utils import subscribe_to_queue
-from pay_api.models import CreditPaymentAccount, InternalPaymentAccount, Invoice, Payment
+from pay_api.models import Invoice, Payment
 from pay_api.utils.enums import PaymentMethod, PaymentSystem
 
 from tests.integration import factory_invoice, factory_payment, factory_payment_account
@@ -68,13 +68,10 @@ async def test_update_internal_payment(app, session, stan_server, event_loop, cl
     events_durable_name = 'test_durable'
 
     # Create an Internal Payment
-    internal_account: InternalPaymentAccount = factory_payment_account(
-        corp_number=old_identifier, payment_system_code=PaymentSystem.INTERNAL.value).save()
-
-    account_id = internal_account.id
+    payment_account = factory_payment_account(payment_system_code=PaymentSystem.INTERNAL.value).save()
 
     payment: Payment = factory_payment(payment_method_code=PaymentMethod.INTERNAL.value).save()
-    invoice: Invoice = factory_invoice(payment=payment, payment_account=internal_account,
+    invoice: Invoice = factory_invoice(payment=payment, payment_account=payment_account,
                                        business_identifier=old_identifier).save()
 
     invoice_id = invoice.id
@@ -91,10 +88,8 @@ async def test_update_internal_payment(app, session, stan_server, event_loop, cl
                                     new_identifier=new_identifier)
 
     # Get the internal account and invoice and assert that the identifier is new identifier
-    updated_internal_account = InternalPaymentAccount.find_by_id(account_id)
     invoice = Invoice.find_by_id(invoice_id)
 
-    assert updated_internal_account.corp_number == new_identifier
     assert invoice.business_identifier == new_identifier
 
 
@@ -113,13 +108,11 @@ async def test_update_credit_payment(app, session, stan_server, event_loop, clie
     events_durable_name = 'test_durable'
 
     # Create an Internal Payment
-    credit_account: CreditPaymentAccount = factory_payment_account(
-        corp_number=old_identifier, payment_system_code=PaymentSystem.PAYBC.value).save()
-
-    account_id = credit_account.id
+    payment_account = factory_payment_account(
+        payment_system_code=PaymentSystem.PAYBC.value).save()
 
     payment: Payment = factory_payment(payment_method_code=PaymentMethod.CC.value).save()
-    invoice: Invoice = factory_invoice(payment=payment, payment_account=credit_account,
+    invoice: Invoice = factory_invoice(payment=payment, payment_account=payment_account,
                                        business_identifier=old_identifier).save()
 
     invoice_id = invoice.id
@@ -136,8 +129,6 @@ async def test_update_credit_payment(app, session, stan_server, event_loop, clie
                                     new_identifier=new_identifier)
 
     # Get the internal account and invoice and assert that the identifier is new identifier
-    updated_internal_account = CreditPaymentAccount.find_by_id(account_id)
     invoice = Invoice.find_by_id(invoice_id)
 
-    assert updated_internal_account.corp_number == new_identifier
     assert invoice.business_identifier == new_identifier
