@@ -72,17 +72,20 @@ def upgrade():
     op.execute(
         'update invoice set bcol_account = (select bcol_account_id from bcol_payment_account where id::varchar=bcol_account_id) where bcol_account_id is not null')
 
-    # Update payment account; with payment method information.
-    op.execute(
-        "UPDATE payment_account AS pay_account SET payment_method = (CASE WHEN bcol_account.bcol_user_id IS NOT NULL THEN 'DRAWDOWN' ELSE 'CC' END) from bcol_payment_account bcol_account where pay_account.id = bcol_account.account_id")
+    # Update payment account; with bcol information
+    conn = op.get_bind()
+    # Find all accounts who have linked BCOL accounts
+    res = conn.execute("select id,bcol_user_id,bcol_account_id,account_id from bcol_payment_account where bcol_user_id is not null;")
+    bcol_payment_accounts = res.fetchall()
+    for bcol_payment_account in bcol_payment_accounts:
+        bcol_user_id = bcol_payment_account[1]
+        bcol_account_id = bcol_payment_account[2]
+        account_id = bcol_payment_account[3]
+
+        op.execute(f"update payment_account set bcol_account='{bcol_account_id}', bcol_user_id='{bcol_user_id}', payment_method=\'DRAWDOWN\' where id='{account_id}'")
+
     # op.execute('update payment_account set payment_method=\'INTERNAL\' where internal_account_id is not null')
     op.execute('update payment_account set payment_method=\'CC\' where payment_method is null')
-
-    # Update payment account; with bcol information
-    op.execute(
-        'update payment_account as pa set bcol_account=(select bpa.bcol_account_id from bcol_payment_account bpa  where bpa.account_id = pa.id and bpa.bcol_user_id is not null)')
-    op.execute(
-        'update payment_account as pa set bcol_user_id=(select bpa.bcol_user_id from bcol_payment_account bpa  where bpa.account_id = pa.id and bpa.bcol_user_id is not null)')
 
     # Insert cfs_account details and mark it as inactive, as all the existing accounts are entity based.
     op.execute("insert into cfs_account (account_id, cfs_account, cfs_party, cfs_site, is_active) select account_id, paybc_account, paybc_party, paybc_site, false from credit_payment_account")
