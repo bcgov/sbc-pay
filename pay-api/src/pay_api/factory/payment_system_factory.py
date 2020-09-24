@@ -85,6 +85,8 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
                 _instance = DirectPayService()
             elif payment_method == PaymentMethod.DRAWDOWN.value:
                 _instance = BcolService()
+            elif payment_method == PaymentMethod.ONLINE_BANKING.value:
+                _instance = DirectPayService()
 
         if not _instance:
             raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
