@@ -38,13 +38,6 @@
       ],
       "pattern": "^(.*)$",
       "minLength": 1
-    },
-    "contactInfo": {
-      "oneOf": [
-        {
-          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/contact_info"
-        }
-      ]
     }
   }
 }
