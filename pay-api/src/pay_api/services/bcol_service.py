@@ -21,7 +21,7 @@ from requests.exceptions import HTTPError
 
 from pay_api.exceptions import BusinessException, Error
 from pay_api.models.corp_type import CorpType
-from pay_api.utils.enums import AuthHeaderType, ContentType
+from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceStatus, PaymentStatus
 from pay_api.utils.enums import PaymentSystem as PaySystemCode, PaymentMethod
 from pay_api.utils.errors import get_bcol_error
 from pay_api.utils.user_context import UserContext
@@ -33,6 +33,7 @@ from .invoice_reference import InvoiceReference
 from .oauth_service import OAuthService
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
+from .payment_transaction import PaymentTransaction  # pylint: disable=cyclic-import
 
 
 class BcolService(PaymentSystemService, OAuthService):
@@ -62,6 +63,14 @@ class BcolService(PaymentSystemService, OAuthService):
     def get_payment_system_code(self):
         """Return PAYBC as the system code."""
         return PaySystemCode.BCOL.value
+
+    def get_default_invoice_status(self) -> str:
+        """Return CREATED as the default invoice status."""
+        return InvoiceStatus.CREATED.value
+
+    def get_default_payment_status(self) -> str:
+        """Return the default status for payment when created."""
+        return PaymentStatus.CREATED.value
 
     @user_context
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
@@ -145,3 +154,12 @@ class BcolService(PaymentSystemService, OAuthService):
     def get_payment_method_code(self):
         """Return CC as the method code."""
         return PaymentMethod.DRAWDOWN.value
+
+    def complete_post_payment(self, payment_id: int) -> None:
+        """Complete any post payment activities if needed."""
+        transaction: PaymentTransaction = PaymentTransaction.create(payment_id,
+                                                                    {
+                                                                        'clientSystemUrl': '',
+                                                                        'payReturnUrl': ''
+                                                                    })
+        transaction.update_transaction(payment_id, transaction.id, pay_response_url=None)

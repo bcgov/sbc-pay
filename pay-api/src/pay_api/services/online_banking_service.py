@@ -20,7 +20,7 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import PaymentSystem, PaymentMethod
+from pay_api.utils.enums import PaymentSystem, PaymentMethod, InvoiceStatus, PaymentStatus
 from .payment_line_item import PaymentLineItem
 
 
@@ -34,6 +34,14 @@ class OnlineBankingService(PaymentSystemService, CFSService):
     def get_payment_system_code(self):
         """Return PAYBC as the system code."""
         return PaymentSystem.PAYBC.value
+
+    def get_default_invoice_status(self) -> str:
+        """Return CREATED as the default invoice status."""
+        return InvoiceStatus.CREATED.value
+
+    def get_default_payment_status(self) -> str:
+        """Return the default status for payment when created."""
+        return PaymentStatus.CREATED.value
 
     def get_payment_method_code(self):
         """Return ONLINE_BANKING as the system code."""
@@ -62,3 +70,6 @@ class OnlineBankingService(PaymentSystemService, CFSService):
         """Get the receipt details by calling PayBC web service."""
 
     # TODO implement this method
+
+    def complete_post_payment(self, payment_id: int) -> None:
+        """Complete any post payment activities if needed."""
