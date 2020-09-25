@@ -126,7 +126,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                                     pay_system_invoice.get('reference_number', None))
 
             payment.commit()
-            pay_service.complete_post_payment(payment)
+            pay_service.complete_post_payment(payment.id)
             payment = Payment.find_by_id(payment.id, skip_auth_check=True)
 
         except Exception as e:

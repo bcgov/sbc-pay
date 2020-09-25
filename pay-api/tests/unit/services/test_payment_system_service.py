@@ -35,7 +35,10 @@ def test_base_payment_system(session):
             'get_receipt': lambda self: print('Inside get_receipt'),
             'get_payment_system_code': lambda self: print('Inside get_payment_system_code'),
             'get_payment_system_url': lambda self: print('Inside get_payment_system_url'),
-            'get_payment_method_code': lambda self: print('Inside get_payment_system_url')
+            'get_payment_method_code': lambda self: print('Inside get_payment_method_code'),
+            'get_default_invoice_status': lambda self: print('Inside get_default_invoice_status'),
+            'get_default_payment_status': lambda self: print('Inside get_default_payment_status'),
+            'complete_post_payment': lambda self: print('Inside complete_post_payment'),
         }
     )()
     paybc_impl.create_account()
