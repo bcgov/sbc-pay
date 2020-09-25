@@ -32,7 +32,7 @@ class CFSService(OAuthService):
     def create_cfs_account(name: str, contact_info: Dict[str, Any]):
         """Create a cfs account and return the details."""
         name = re.sub(r'[^a-zA-Z0-9]+', ' ', name)
-        access_token = CFSService._get_token().json().get('access_token')
+        access_token = CFSService.get_token().json().get('access_token')
         party = CFSService._create_party(access_token, name)
         account = CFSService._create_paybc_account(access_token, party)
         site = CFSService._create_site(access_token, party, account, contact_info)
@@ -106,7 +106,7 @@ class CFSService(OAuthService):
         return site_response
 
     @staticmethod
-    def _get_token():
+    def get_token():
         """Generate oauth token from payBC which will be used for all communication."""
         current_app.logger.debug('<Getting token')
         token_url = current_app.config.get('CFS_BASE_URL') + '/oauth/token'
