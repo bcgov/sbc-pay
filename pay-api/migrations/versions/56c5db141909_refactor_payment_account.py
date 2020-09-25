@@ -60,32 +60,44 @@ def upgrade():
     op.create_foreign_key('payment_account_payment_method', 'payment_account', 'payment_method', ['payment_method'],
                           ['code'])
 
-    # Update payment account id here
-    op.execute(
-        'update invoice set payment_account_id = (select account_id from credit_payment_account where id=credit_account_id) where credit_account_id is not null')
-    op.execute(
-        'update invoice set payment_account_id = (select account_id from bcol_payment_account where id::varchar=bcol_account_id) where bcol_account_id is not null')
-    op.execute(
-        'update invoice set payment_account_id = (select account_id from internal_payment_account where id=internal_account_id) where internal_account_id is not null')
-
-    # Update bcol_account information in invoice.
-    op.execute(
-        'update invoice set bcol_account = (select bcol_account_id from bcol_payment_account where id::varchar=bcol_account_id) where bcol_account_id is not null')
-
-    # Update payment account; with payment method information.
-    op.execute(
-        "UPDATE payment_account AS pay_account SET payment_method = (CASE WHEN bcol_account.bcol_user_id IS NOT NULL THEN 'DRAWDOWN' ELSE 'CC' END) from bcol_payment_account bcol_account where pay_account.id = bcol_account.account_id")
-    # op.execute('update payment_account set payment_method=\'INTERNAL\' where internal_account_id is not null')
     op.execute('update payment_account set payment_method=\'CC\' where payment_method is null')
 
-    # Update payment account; with bcol information
-    op.execute(
-        'update payment_account as pa set bcol_account=(select bpa.bcol_account_id from bcol_payment_account bpa  where bpa.account_id = pa.id and bpa.bcol_user_id is not null)')
-    op.execute(
-        'update payment_account as pa set bcol_user_id=(select bpa.bcol_user_id from bcol_payment_account bpa  where bpa.account_id = pa.id and bpa.bcol_user_id is not null)')
+    # Update payment account id here
+    conn = op.get_bind()
+    res = conn.execute("select id, bcol_user_id, bcol_account_id, account_id from bcol_payment_account;")
+    bcol_payment_accounts = res.fetchall()
+    for bcol_payment_account in bcol_payment_accounts:
+        id = bcol_payment_account[0]
+        bcol_user_id = bcol_payment_account[1]
+        bcol_account_id = bcol_payment_account[2]
+        account_id = bcol_payment_account[3]
+
+        # Update payment account with bcol information
+        if bcol_user_id:
+            op.execute(f"update payment_account set bcol_account='{bcol_account_id}', bcol_user_id='{bcol_user_id}', payment_method=\'DRAWDOWN\' where id='{account_id}'")
+
+        op.execute(f"update invoice set bcol_account='{bcol_account_id}', payment_account_id={account_id}  where bcol_account_id='{id}'")
 
     # Insert cfs_account details and mark it as inactive, as all the existing accounts are entity based.
     op.execute("insert into cfs_account (account_id, cfs_account, cfs_party, cfs_site, is_active) select account_id, paybc_account, paybc_party, paybc_site, false from credit_payment_account")
+
+    res = conn.execute("select id, account_id from credit_payment_account;")
+    credit_payment_accounts = res.fetchall()
+    for credit_payment_account in credit_payment_accounts:
+        id = credit_payment_account[0]
+        account_id = credit_payment_account[1]
+
+        # Update payment account with bcol information
+        op.execute(f"update invoice set payment_account_id={account_id}  where credit_account_id='{id}'")
+
+    res = conn.execute("select id, account_id from internal_payment_account;")
+    internal_payment_accounts = res.fetchall()
+    for internal_payment_account in internal_payment_accounts:
+        id = internal_payment_account[0]
+        account_id = internal_payment_account[1]
+
+        # Update payment account with bcol information
+        op.execute(f"update invoice set payment_account_id={account_id}  where internal_account_id='{id}'")
 
     op.create_index(op.f('ix_invoice_bcol_account'), 'invoice', ['bcol_account'], unique=False)
     op.drop_constraint('invoice_credit_account_id_fkey', 'invoice', type_='foreignkey')
@@ -93,9 +105,9 @@ def upgrade():
     op.drop_constraint('invoice_internal_account_id_fkey', 'invoice', type_='foreignkey')
     op.create_foreign_key('payment_account_payment_account_id', 'invoice', 'payment_account', ['payment_account_id'],
                           ['id'])
-    op.drop_column('invoice', 'bcol_account_id')
-    op.drop_column('invoice', 'internal_account_id')
-    op.drop_column('invoice', 'credit_account_id')
+    # op.drop_column('invoice', 'bcol_account_id')
+    # op.drop_column('invoice', 'internal_account_id')
+    # op.drop_column('invoice', 'credit_account_id')
     # ### end Alembic commands ###
 
 
@@ -107,19 +119,20 @@ def downgrade():
     op.drop_column('payment_account', 'payment_method')
     op.drop_column('payment_account', 'bcol_user_id')
     op.drop_column('payment_account', 'bcol_account')
-    op.add_column('invoice', sa.Column('credit_account_id', sa.INTEGER(), autoincrement=False, nullable=True))
-    op.add_column('invoice', sa.Column('internal_account_id', sa.INTEGER(), autoincrement=False, nullable=True))
-    op.add_column('invoice', sa.Column('bcol_account_id', sa.INTEGER(), autoincrement=False, nullable=True))
+    # op.add_column('invoice', sa.Column('credit_account_id', sa.INTEGER(), autoincrement=False, nullable=True))
+    # op.add_column('invoice', sa.Column('internal_account_id', sa.INTEGER(), autoincrement=False, nullable=True))
+    # op.add_column('invoice', sa.Column('bcol_account_id', sa.INTEGER(), autoincrement=False, nullable=True))
     op.drop_constraint('payment_account_payment_account_id', 'invoice', type_='foreignkey')
-    op.create_foreign_key('invoice_internal_account_id_fkey', 'invoice', 'internal_payment_account',
-                          ['internal_account_id'], ['id'])
-    op.create_foreign_key('invoice_bcol_account_id_fkey', 'invoice', 'bcol_payment_account', ['bcol_account_id'],
-                          ['id'])
-    op.create_foreign_key('invoice_credit_account_id_fkey', 'invoice', 'credit_payment_account', ['credit_account_id'],
-                          ['id'])
+    # op.create_foreign_key('invoice_internal_account_id_fkey', 'invoice', 'internal_payment_account',
+    #                       ['internal_account_id'], ['id'])
+    # op.create_foreign_key('invoice_bcol_account_id_fkey', 'invoice', 'bcol_payment_account', ['bcol_account_id'],
+    #                       ['id'])
+    # op.create_foreign_key('invoice_credit_account_id_fkey', 'invoice', 'credit_payment_account', ['credit_account_id'],
+    #                       ['id'])
     op.drop_index(op.f('ix_invoice_bcol_account'), table_name='invoice')
     op.drop_column('invoice', 'payment_account_id')
     op.drop_column('invoice', 'bcol_account')
+
     # op.create_table('bcol_payment_account',
     #                 sa.Column('id', sa.INTEGER(), autoincrement=True, nullable=False),
     #                 sa.Column('bcol_user_id', sa.VARCHAR(length=50), autoincrement=False, nullable=True),

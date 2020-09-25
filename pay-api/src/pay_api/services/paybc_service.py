@@ -13,29 +13,25 @@
 # limitations under the License.
 """Service to manage PayBC interaction."""
 
-import base64
-import re
 import urllib.parse
 from typing import Any, Dict
 
 from dateutil import parser
 from flask import current_app
-from requests import HTTPError
 
 from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import (
-    DEFAULT_ADDRESS_LINE_1, DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
     CFS_ADJ_ACTIVITY_NAME, CFS_BATCH_SOURCE, CFS_CUST_TRX_TYPE, CFS_LINE_TYPE, CFS_TERM_NAME)
-from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem, PaymentMethod
+from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem, PaymentMethod, InvoiceStatus, PaymentStatus
 from pay_api.utils.util import current_local_time, parse_url_params
-from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
 
-class PaybcService(PaymentSystemService, OAuthService):
+class PaybcService(PaymentSystemService, CFSService):
     """Service to manage PayBC integration."""
 
     def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
@@ -53,19 +49,24 @@ class PaybcService(PaymentSystemService, OAuthService):
         """Return PAYBC as the system code."""
         return PaymentSystem.PAYBC.value
 
+    def get_payment_method_code(self):
+        """Return CC as the method code."""
+        return PaymentMethod.CC.value
+
+    def get_default_invoice_status(self) -> str:
+        """Return CREATED as the default invoice status."""
+        return InvoiceStatus.CREATED.value
+
+    def get_default_payment_status(self) -> str:
+        """Return the default status for payment when created."""
+        return PaymentStatus.CREATED.value
+
     def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
         """Create account in PayBC."""
-        # Strip all special characters from name
-        name = re.sub(r'[^a-zA-Z0-9]+', ' ', name)
-        access_token = self.__get_token().json().get('access_token')
-        party = self.__create_party(access_token, name)
-        account = self.__create_paybc_account(access_token, party)
-        site = self.__create_site(access_token, party, account, contact_info)
-        return {
-            'party_number': party.get('party_number'),
-            'account_number': account.get('account_number'),
-            'site_number': site.get('site_number')
-        }
+        return self.create_cfs_account(name, contact_info)
+
+    def complete_post_payment(self, payment_id: int) -> None:
+        """Complete any post payment activities if needed."""
 
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
                        line_items: [PaymentLineItem], invoice: Invoice, **kwargs):
@@ -120,8 +121,8 @@ class PaybcService(PaymentSystemService, OAuthService):
                         'quantity': 1
                     }
                 )
-
-        access_token = self.__get_token().json().get('access_token')
+        current_app.logger.debug('<paybc_service_Getting token')
+        access_token = CFSService.get_token().json().get('access_token')
         invoice_response = self.post(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
                                      invoice_payload)
 
@@ -154,7 +155,8 @@ class PaybcService(PaymentSystemService, OAuthService):
 
     def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
         """Adjust the invoice to zero."""
-        access_token: str = self.__get_token().json().get('access_token')
+        current_app.logger.debug('<paybc_service_Getting token')
+        access_token: str = CFSService.get_token().json().get('access_token')
         invoice = self.__get_invoice(payment_account, inv_number, access_token)
         for line in invoice.get('lines'):
             amount: float = line.get('unit_price') * line.get('quantity')
@@ -166,7 +168,8 @@ class PaybcService(PaymentSystemService, OAuthService):
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Get receipt from paybc for the receipt number or get receipt against invoice number."""
-        access_token: str = self.__get_token().json().get('access_token')
+        current_app.logger.debug('<paybc_service_Getting token')
+        access_token: str = CFSService.get_token().json().get('access_token')
         current_app.logger.debug('<Getting receipt')
         receipt_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/rcpts/'.format(
             payment_account.cfs_party, payment_account.cfs_account, payment_account.cfs_site)
@@ -198,76 +201,6 @@ class PaybcService(PaymentSystemService, OAuthService):
         """Get receipt details by receipt number."""
         receipt_url = receipt_url + f'{receipt_number}/'
         return self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, True).json()
-
-    def __create_party(self, access_token: str = None, party_name: str = None):
-        """Create a party record in PayBC."""
-        current_app.logger.debug('<Creating party Record')
-        party_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/'
-        party: Dict[str, Any] = {
-            'customer_name': party_name
-        }
-
-        party_response = self.post(party_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, party)
-        current_app.logger.debug('>Creating party Record')
-        return party_response.json()
-
-    def __create_paybc_account(self, access_token, party):
-        """Create account record in PayBC."""
-        current_app.logger.debug('<Creating account')
-        account_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/'.format(
-            party.get('party_number', None))
-        account: Dict[str, Any] = {
-            'party_number': party.get('party_number'),
-            'account_description': party.get('customer_name')[:30]
-        }
-
-        account_response = self.post(account_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, account)
-        current_app.logger.debug('>Creating account')
-        return account_response.json()
-
-    def __create_site(self, access_token, party, account, contact_info):
-        """Create site in PayBC."""
-        current_app.logger.debug('<Creating site ')
-        if not contact_info:
-            contact_info = {}
-        site_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/' \
-            .format(account.get('party_number', None), account.get('account_number', None))
-        site: Dict[str, Any] = {
-            'party_number': account.get('party_number', None),
-            'account_number': account.get('account_number', None),
-            'site_name': party.get('customer_name') + ' Site',
-            'city': get_non_null_value(contact_info.get('city'), DEFAULT_CITY),
-            'address_line_1': get_non_null_value(contact_info.get('addressLine1'), DEFAULT_ADDRESS_LINE_1),
-            'postal_code': get_non_null_value(contact_info.get('postalCode'), DEFAULT_POSTAL_CODE).replace(' ', ''),
-            'province': get_non_null_value(contact_info.get('province'), DEFAULT_JURISDICTION),
-            'country': get_non_null_value(contact_info.get('country'), DEFAULT_COUNTRY),
-            'customer_site_id': '1'
-        }
-
-        try:
-            site_response = self.post(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, site).json()
-        except HTTPError as e:
-            # If the site creation fails with 400, query and return site
-            if e.response.status_code == 400:
-                site_response = \
-                    self.get(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json().get('items')[0]
-            else:
-                raise e
-        current_app.logger.debug('>Creating site ')
-        return site_response
-
-    def __get_token(self):
-        """Generate oauth token from payBC which will be used for all communication."""
-        current_app.logger.debug('<Getting token')
-        token_url = current_app.config.get('CFS_BASE_URL') + '/oauth/token'
-        basic_auth_encoded = base64.b64encode(
-            bytes(current_app.config.get('CFS_CLIENT_ID') + ':' + current_app.config.get('CFS_CLIENT_SECRET'),
-                  'utf-8')).decode('utf-8')
-        data = 'grant_type=client_credentials'
-        token_response = self.post(token_url, basic_auth_encoded, AuthHeaderType.BASIC, ContentType.FORM_URL_ENCODED,
-                                   data)
-        current_app.logger.debug('>Getting token')
-        return token_response
 
     def __add_adjustment(self, payment_account: PaymentAccount,  # pylint: disable=too-many-arguments
                          inv_number: str, comment: str, amount: float, line: int = 0, access_token: str = None):
@@ -303,10 +236,6 @@ class PaybcService(PaymentSystemService, OAuthService):
         invoice_response = self.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
         current_app.logger.debug('>__get_invoice')
         return invoice_response.json()
-
-    def get_payment_method_code(self):
-        """Return CC as the method code."""
-        return PaymentMethod.CC.value
 
 
 def get_non_null_value(value: str, default_value: str):

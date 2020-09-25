@@ -88,7 +88,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
         try:
             payment: Payment = Payment.create(pay_service.get_payment_method_code(),
-                                              pay_service.get_payment_system_code())
+                                              pay_service.get_payment_system_code(),
+                                              pay_service.get_default_payment_status()
+                                              )
 
             current_app.logger.debug('Creating Invoice record for payment {}'.format(payment.id))
             invoice = Invoice.create(payment_account,
@@ -113,13 +115,13 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
             current_app.logger.debug('Updating invoice record')
             invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
-            invoice.invoice_status_code = InvoiceStatus.CREATED.value
+            invoice.invoice_status_code = pay_service.get_default_invoice_status()
             invoice.flush()
             InvoiceReference.create(invoice.id, pay_system_invoice.get('invoice_number', None),
                                     pay_system_invoice.get('reference_number', None))
 
             payment.commit()
-            _complete_post_payment(pay_service, payment)
+            pay_service.complete_post_payment(payment.id)
             payment = Payment.find_by_id(payment.id, skip_auth_check=True)
 
         except Exception as e:
@@ -272,7 +274,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                                             pay_system_invoice.get('reference_number', None))
 
             payment.save()
-            _complete_post_payment(pay_service, payment)
+            pay_service.complete_post_payment(payment)
             # return payment with updated contents
             payment = Payment.find_by_id(payment.id, skip_auth_check=True)
         except Exception as e:
@@ -366,20 +368,6 @@ def _calculate_fees(corp_type, filing_info):
 
         fees.append(fee)
     return fees
-
-
-def _complete_post_payment(pay_service: PaymentSystemService, payment: Payment):
-    """Complete the post payment actions.
-
-    For internal payments, create and complete the transactions and receipt.
-    """
-    if pay_service.get_payment_system_code() in (PaymentSystem.INTERNAL.value, PaymentSystem.BCOL.value):
-        transaction: PaymentTransaction = PaymentTransaction.create(payment.id,
-                                                                    {
-                                                                        'clientSystemUrl': '',
-                                                                        'payReturnUrl': ''
-                                                                    })
-        transaction.update_transaction(payment.id, transaction.id, pay_response_url=None)
 
 
 def _update_active_transactions(payment_id):

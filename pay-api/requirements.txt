@@ -46,7 +46,7 @@ python-jose==3.2.0
 pytz==2020.1
 requests==2.24.0
 rsa==4.6
-sentry-sdk==0.17.6
+sentry-sdk==0.17.8
 six==1.15.0
 threadloop==1.0.2
 thrift==0.13.0

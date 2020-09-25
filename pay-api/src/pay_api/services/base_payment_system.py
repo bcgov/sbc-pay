@@ -67,3 +67,15 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     @abstractmethod
     def get_payment_method_code(self):
         """Return the payment method code. E.g, CC, DRAWDOWN etc."""
+
+    @abstractmethod
+    def get_default_invoice_status(self) -> str:
+        """Return the default status for invoice when created."""
+
+    @abstractmethod
+    def get_default_payment_status(self) -> str:
+        """Return the default status for payment when created."""
+
+    @abstractmethod
+    def complete_post_payment(self, payment_id: int) -> None:
+        """Complete any post payment activities if needed."""

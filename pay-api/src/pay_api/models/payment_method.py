@@ -22,7 +22,7 @@ class PaymentMethod(db.Model, CodeTable):
 
     __tablename__ = 'payment_method'
 
-    code = db.Column(db.String(10), primary_key=True)
+    code = db.Column(db.String(15), primary_key=True)
     description = db.Column('description', db.String(200), nullable=False)
 
     def save(self):

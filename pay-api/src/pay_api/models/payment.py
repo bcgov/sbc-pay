@@ -44,7 +44,7 @@ class Payment(Audit):  # pylint: disable=too-many-instance-attributes
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     payment_system_code = db.Column(db.String(10), ForeignKey('payment_system.code'), nullable=False)
-    payment_method_code = db.Column(db.String(10), ForeignKey('payment_method.code'), nullable=False)
+    payment_method_code = db.Column(db.String(15), ForeignKey('payment_method.code'), nullable=False)
     payment_status_code = db.Column(db.String(20), ForeignKey('payment_status_code.code'), nullable=False)
 
     payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='select', innerjoin=True)
@@ -83,7 +83,7 @@ class Payment(Audit):  # pylint: disable=too-many-instance-attributes
             query = query.filter(Invoice.business_identifier == search_filter.get('businessIdentifier'))
         if search_filter.get('createdBy', None):  # pylint: disable=no-member
             query = query.filter(
-                Payment.created_name.like('%' + search_filter.get('createdBy') + '%'))  # pylint: disable=no-member
+                Payment.created_name.ilike('%' + search_filter.get('createdBy') + '%'))  # pylint: disable=no-member
 
         # Find start and end dates
         created_from: datetime = None
