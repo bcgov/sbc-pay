@@ -59,18 +59,16 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         """
         current_app.logger.debug('<create_payment', payment_request)
         business_info = payment_request.get('businessInfo')
-        contact_info = business_info.get('contactInfo')
         filing_info = payment_request.get('filingInfo')
         account_info = payment_request.get('accountInfo', None)
         filing_id = filing_info.get('filingIdentifier', None)
         folio_number = filing_info.get('folioNumber', get_str_by_path(authorization, 'business/folioNumber'))
-        if account_info is not None and account_info.get('bcolAccountNumber', None) is not None:
-            bcol_account = account_info.get('bcolAccountNumber')
-        else:
-            bcol_account = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineAccountId')
-
         corp_type = business_info.get('corpType', None)
-        payment_method = _get_payment_method(payment_request, authorization)
+
+        payment_account = cls._find_payment_account(authorization)
+
+        payment_method = _get_payment_method(payment_request, payment_account)
+        bcol_account = cls._get_bcol_account(account_info, payment_account)
 
         # Calculate the fees
         current_app.logger.debug('Calculate the fees')
@@ -84,9 +82,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             fees=sum(fee.total for fee in fees),
             account_info=account_info
         )
-
-        # Create payment account
-        payment_account = _create_account(pay_service, business_info, contact_info, account_info, authorization)
 
         payment: Payment = None
         pay_system_invoice: Dict[str, any] = None
@@ -146,6 +141,31 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         return payment.asdict()
 
     @classmethod
+    def _find_payment_account(cls, authorization):
+        # find payment account
+        payment_account: PaymentAccount = PaymentAccount.find_account(authorization)
+        # If there is no payment_account it must be a request with no account (NR, Staff payment etc.)
+        # and invoked using a service account or a staff token
+        if not payment_account:
+            payment_account = PaymentAccount.create(
+                dict(
+                    accountId=get_str_by_path(authorization, 'account/id'),
+                    paymentInfo=dict(
+                        methodOfPayment=get_str_by_path(authorization, 'account/paymentInfo/methodOfPayment'),
+                        billable=True)
+                )
+            )
+        return payment_account
+
+    @classmethod
+    def _get_bcol_account(cls, account_info, payment_account: PaymentAccount):
+        if account_info and account_info.get('bcolAccountNumber', None):
+            bcol_account = account_info.get('bcolAccountNumber')
+        else:
+            bcol_account = payment_account.bcol_account
+        return bcol_account
+
+    @classmethod
     def get_payment(cls, payment_id):
         """Get payment related records."""
         try:
@@ -185,7 +205,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         filing_info = payment_request.get('filingInfo')
 
         corp_type = business_info.get('corpType', None)
-        payment_method = _get_payment_method(payment_request, authorization)
+        payment_account: PaymentAccount = cls._find_payment_account(authorization)
+        payment_method = _get_payment_method(payment_request, payment_account)
 
         current_app.logger.debug('Calculate the fees')
         # Calculate the fees
@@ -235,9 +256,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                             inv_number = reference.invoice_number
                             reference.status_code = InvoiceReferenceStatus.CANCELLED.value
                             reference.flush()
-
-                    # update invoice
-                    payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
 
                     pay_system_invoice = pay_service.update_invoice(
                         payment_account,
@@ -352,36 +370,6 @@ def _calculate_fees(corp_type, filing_info):
     return fees
 
 
-def _create_account(pay_service, business_info, contact_info, account_info, authorization):
-    """Create account in pay system and save it in pay db."""
-    current_app.logger.debug('Check if payment account exists')
-    payment_account: PaymentAccount = PaymentAccount.find_account(authorization)
-
-    # By default use account name, if None use business name
-    name = get_str_by_path(authorization, 'account/name') or business_info.get('businessName', None)
-    pay_system_account = None
-
-    # TODO Only temporary check, once auth calls pay account creation, change this
-    has_cfs_account = None not in (payment_account.cfs_party, payment_account.cfs_account, payment_account.cfs_site)
-    if (not has_cfs_account and pay_service.get_payment_system_code() == PaymentSystem.PAYBC.value) \
-            or pay_service.get_payment_system_code() == PaymentSystem.BCOL.value:
-        # Create payment account in client system.
-        pay_system_account = pay_service.create_account(
-            name=name,
-            contact_info=contact_info,
-            account_info=account_info,
-            authorization=authorization
-        )
-
-    # Create or update payment account in DB
-    current_app.logger.debug('Creating payment record for account : {}'.format(payment_account.id))
-    payment_account = PaymentAccount.create(
-        account_details=pay_system_account,
-        authorization=authorization
-    )
-    return payment_account
-
-
 def _update_active_transactions(payment_id):
     # get existing payment transaction
     current_app.logger.debug('<_update_active_transactions')
@@ -396,10 +384,11 @@ def _check_if_payment_is_completed(payment):
         raise BusinessException(Error.COMPLETED_PAYMENT)
 
 
-def _get_payment_method(payment_request: Dict, authorization: Dict):
+def _get_payment_method(payment_request: Dict, payment_account: PaymentAccount):
+    # If no methodOfPayment is provided, use the one against the payment account table.
     payment_method = get_str_by_path(payment_request, 'paymentInfo/methodOfPayment')
     if not payment_method:
-        payment_method = get_str_by_path(authorization, 'account/paymentPreference/methodOfPayment')
+        payment_method = payment_account.payment_method
     if not payment_method:
         is_direct_pay_enabled = current_app.config.get('DIRECT_PAY_ENABLED')
         if is_direct_pay_enabled:

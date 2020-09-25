@@ -61,7 +61,7 @@ class PaybcService(PaymentSystemService, CFSService):
         """Return the default status for payment when created."""
         return PaymentStatus.CREATED.value
 
-    def create_account(self, name: str, contact_info: Dict[str, Any], authorization: Dict[str, Any], **kwargs):
+    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
         """Create account in PayBC."""
         return self.create_cfs_account(name, contact_info)
 

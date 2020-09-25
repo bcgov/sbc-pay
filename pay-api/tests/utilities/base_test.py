@@ -264,7 +264,8 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
     account = PaymentAccount(
         auth_account_id=auth_account_id,
         bcol_user_id=bcol_user_id,
-        bcol_account='TEST'
+        bcol_account='TEST',
+        payment_method=payment_method_code
     ).save()
 
     CfsAccount(cfs_party='11111',
@@ -481,3 +482,29 @@ def get_distribution_schedules_payload():
     return [{
         'feeScheduleId': 1
     }]
+
+
+def get_basic_account_payload(payment_method: str = PaymentMethod.DIRECT_PAY.value):
+    """Return a basic payment account object."""
+    return {
+        'accountId': 1234,
+        'accountName': 'Test Account',
+        'paymentInfo': {
+            'methodOfPayment': payment_method,
+            'billable': True
+        }
+    }
+
+
+def get_premium_account_payload(payment_method: str = PaymentMethod.DRAWDOWN.value, account_id: int = 1234):
+    """Return a premium payment account object."""
+    return {
+        'accountId': account_id,
+        'accountName': 'Test Account',
+        'bcolAccountNumber': '1000000',
+        'bcolUserId': 'U100000',
+        'paymentInfo': {
+            'methodOfPayment': payment_method,
+            'billable': True
+        }
+    }

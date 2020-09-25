@@ -16,7 +16,7 @@
 from flask import abort, current_app
 
 from pay_api.services.oauth_service import OAuthService as RestService
-from pay_api.utils.enums import AccountType, AuthHeaderType, ContentType, Role
+from pay_api.utils.enums import AccountType, AuthHeaderType, ContentType, PaymentMethod, Role
 from pay_api.utils.user_context import UserContext, user_context
 
 
@@ -98,4 +98,14 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
 
     if not is_authorized:
         abort(403)
+
+    # IF auth response is empty (means a service account or a business with no account by staff)
+    if not auth_response:
+        if Role.SYSTEM.value in user.roles:  # Call auth only if it's business (entities)
+            # Add account name as the service client name
+            auth_response = {'account': {'id': user.user_name},
+                             'paymentInfo': {'methodOfPayment': PaymentMethod.DIRECT_PAY.value}}
+        elif Role.STAFF.value in user.roles:
+            auth_response = {'account': {'id': PaymentMethod.INTERNAL.value},
+                             'paymentInfo': {'methodOfPayment': PaymentMethod.INTERNAL.value}}
     return auth_response

@@ -52,6 +52,8 @@ class Error(Enum):
 
     DIRECT_PAY_INVALID_RESPONSE = 'DIRECT_PAY_INVALID_RESPONSE', HTTPStatus.BAD_REQUEST
 
+    ACCOUNT_EXISTS = 'ACCOUNT_EXISTS', HTTPStatus.BAD_REQUEST
+
     def __new__(cls, code, status, message=None, details=None):
         """Attributes for the enum."""
         obj = object.__new__(cls)
