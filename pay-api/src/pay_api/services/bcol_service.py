@@ -33,7 +33,6 @@ from .invoice_reference import InvoiceReference
 from .oauth_service import OAuthService
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
-from .payment_transaction import PaymentTransaction  # pylint: disable=cyclic-import
 
 
 class BcolService(PaymentSystemService, OAuthService):
@@ -157,6 +156,7 @@ class BcolService(PaymentSystemService, OAuthService):
 
     def complete_post_payment(self, payment_id: int) -> None:
         """Complete any post payment activities if needed."""
+        from .payment_transaction import PaymentTransaction  # pylint: disable=cyclic-import,import-outside-toplevel
         transaction: PaymentTransaction = PaymentTransaction.create(payment_id,
                                                                     {
                                                                         'clientSystemUrl': '',

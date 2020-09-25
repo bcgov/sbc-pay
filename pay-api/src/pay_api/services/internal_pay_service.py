@@ -26,7 +26,6 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import PaymentSystem, PaymentMethod, InvoiceStatus, PaymentStatus
-from .payment_transaction import PaymentTransaction  # pylint: disable=cyclic-import
 
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
@@ -87,6 +86,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
 
     def complete_post_payment(self, payment_id: int) -> None:
         """Complete any post payment activities if needed."""
+        from .payment_transaction import PaymentTransaction  # pylint: disable=cyclic-import,import-outside-toplevel
         transaction: PaymentTransaction = PaymentTransaction.create(payment_id,
                                                                     {
                                                                         'clientSystemUrl': '',
