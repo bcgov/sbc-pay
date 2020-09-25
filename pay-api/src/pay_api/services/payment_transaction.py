@@ -28,7 +28,8 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
-from pay_api.utils.enums import PaymentSystem, PaymentStatus, TransactionStatus, InvoiceReferenceStatus, InvoiceStatus
+from pay_api.utils.enums import PaymentSystem, PaymentStatus, TransactionStatus, InvoiceReferenceStatus, \
+    InvoiceStatus, PaymentMethod
 from pay_api.utils.errors import Error
 from pay_api.utils.util import is_valid_redirect_url
 from .invoice import InvoiceModel
@@ -190,8 +191,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
 
         # Check if return url is valid
         return_url = request_json.get('clientSystemUrl')
-        if payment.payment_system_code == PaymentSystem.PAYBC.value and not is_valid_redirect_url(return_url):
-            raise BusinessException(Error.INVALID_REDIRECT_URI)
+
+        PaymentTransaction.validate_redirect_url_and_throw_error(payment, return_url)
 
         if not payment.id:
             raise BusinessException(Error.INVALID_PAYMENT_ID)
@@ -223,6 +224,14 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('>create transaction')
 
         return transaction
+
+    @staticmethod
+    def validate_redirect_url_and_throw_error(payment, return_url):
+        """Check and Throw if the return_url is not a valid url."""
+        is_validity_check_needed = payment.payment_system_code == PaymentSystem.PAYBC.value and \
+            payment.payment_method_code not in (PaymentMethod.PAD.value,)
+        if is_validity_check_needed and not is_valid_redirect_url(return_url):
+            raise BusinessException(Error.INVALID_REDIRECT_URI)
 
     @staticmethod
     def build_pay_system_url(payment: Payment, transaction_id: uuid, pay_return_url: str):
