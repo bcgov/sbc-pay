@@ -77,7 +77,8 @@ def test_create_payment_record_rollback(session, public_user_mock):
         with pytest.raises(Exception) as excinfo:
             PaymentService.create_payment(get_payment_request(), get_auth_basic_user())
         assert excinfo.type == Exception
-    with patch('pay_api.services.paybc_service.PaybcService.create_invoice', side_effect=Exception('mocked error')):
+    with patch('pay_api.services.direct_pay_service.DirectPayService.create_invoice',
+               side_effect=Exception('mocked error')):
         with pytest.raises(Exception) as excinfo:
             PaymentService.create_payment(get_payment_request(), get_auth_basic_user())
         assert excinfo.type == Exception
@@ -264,6 +265,9 @@ def test_update_payment_record_rollback(session, public_user_mock):
 
 def test_create_payment_record_rollback_on_paybc_connection_error(session, public_user_mock):
     """Assert that the payment records are not created."""
+    # Create a payment account
+    factory_payment_account()
+
     # Mock here that the invoice update fails here to test the rollback scenario
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
         with pytest.raises(ServiceUnavailableException) as excinfo:

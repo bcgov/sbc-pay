@@ -34,7 +34,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         super(PaymentSystemService, self).__init__()
 
     @abstractmethod
-    def create_account(self, name: str, contact_info: Dict[str, Any], authorization: Dict[str, Any], **kwargs):
+    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
         """Create account in payment system."""
 
     @abstractmethod

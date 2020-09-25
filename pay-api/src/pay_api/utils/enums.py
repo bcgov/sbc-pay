@@ -93,6 +93,7 @@ class PaymentMethod(Enum):
     WIRE = 'WIRE'
     ONLINE_BANKING = 'OB'
     PAD = 'PAD'
+    EJV = 'EJV'
 
 
 class Role(Enum):

@@ -18,18 +18,83 @@ from http import HTTPStatus
 from flask import Response, current_app, jsonify, request
 from flask_restplus import Namespace, Resource, cors
 
-from pay_api.exceptions import error_to_response
+from pay_api.exceptions import BusinessException, error_to_response
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import Payment
+from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE
-from pay_api.utils.enums import ContentType
+from pay_api.utils.enums import ContentType, Role
 from pay_api.utils.errors import Error
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
 
-API = Namespace('accounts', description='Payment System - Purchase History')
+API = Namespace('accounts', description='Payment System - Accounts')
+
+
+@cors_preflight('POST')
+@API.route('', methods=['POST', 'OPTIONS'])
+class Accounts(Resource):
+    """Endpoint resource to create payment account."""
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.requires_auth
+    @_jwt.has_one_of_roles([Role.SYSTEM.value])
+    def post():
+        """Create the payment account records."""
+        current_app.logger.info('<Account.post')
+        request_json = request.get_json()
+        current_app.logger.debug(request_json)
+        # Validate the input request
+        valid_format, errors = schema_utils.validate(request_json, 'account_info')
+
+        if not valid_format:
+            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+        try:
+            response, status = PaymentAccountService.create(request_json).asdict(), HTTPStatus.CREATED
+        except BusinessException as exception:
+            return exception.response()
+        current_app.logger.debug('>Account.post')
+        return jsonify(response), status
+
+
+@cors_preflight('PUT,GET')
+@API.route('/<string:account_number>', methods=['PUT', 'GET', 'OPTIONS'])
+class Account(Resource):
+    """Endpoint resource to update and get payment account."""
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.has_one_of_roles([Role.SYSTEM.value])
+    @_tracing.trace()
+    def put(account_number: str):
+        """Create the payment account records."""
+        current_app.logger.info('<Account.post')
+        request_json = request.get_json()
+        current_app.logger.debug(request_json)
+        # Validate the input request
+        valid_format, errors = schema_utils.validate(request_json, 'account_info')
+
+        if not valid_format:
+            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+
+        response, status = PaymentAccountService.update(account_number, request_json).asdict(), HTTPStatus.OK
+        current_app.logger.debug('>Account.post')
+        return jsonify(response), status
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.has_one_of_roles([Role.SYSTEM.value])
+    @_tracing.trace()
+    def get(account_number: str):
+        """Create the payment account records."""
+        current_app.logger.info('<Account.post')
+
+        response, status = PaymentAccountService.find_by_auth_account_id(account_number).asdict(), HTTPStatus.OK
+        current_app.logger.debug('>Account.post')
+        return jsonify(response), status
 
 
 @cors_preflight('POST')

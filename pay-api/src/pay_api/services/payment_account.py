@@ -18,14 +18,16 @@ from typing import Any, Dict, Union
 
 from flask import current_app
 
-from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.utils.enums import StatementFrequency, AccountType, PaymentMethod
+from pay_api.models import PaymentAccount as PaymentAccountModel, PaymentAccountSchema
+from pay_api.models import StatementSettings as StatementSettingsModel
+from pay_api.utils.enums import StatementFrequency, PaymentMethod, PaymentSystem
 from pay_api.utils.util import get_str_by_path
+from pay_api.exceptions import BusinessException
+from pay_api.utils.errors import Error
 
 
-class PaymentAccount():  # pylint: disable=too-many-instance-attributes
+class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Service to manage Payment Account model related operations."""
 
     def __init__(self):
@@ -237,55 +239,90 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         self._bcol_account = value
         self._dao.bcol_account = value
 
-    @staticmethod
-    def create(authorization: Dict[str, Any], account_details: Dict[str, Any] = None) -> PaymentAccount:
-        """Create Payment account record."""
-        current_app.logger.debug('<create')
-        auth_account_id = get_str_by_path(authorization, 'account/id')
-        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-        new_payment_account: bool = False
+    @classmethod
+    def create(cls, account_request: Dict[str, Any] = None) -> PaymentAccount:
+        """Create new payment account record."""
+        current_app.logger.debug('<create payment account')
+        auth_account_id = account_request.get('accountId')
+        # If an account already exists, throw error.
+        if PaymentAccountModel.find_by_auth_account_id(str(auth_account_id)):
+            raise BusinessException(Error.ACCOUNT_EXISTS)
 
-        if not payment_account:
-            payment_account = PaymentAccountModel()
-            new_payment_account = True
+        account = PaymentAccountModel()
 
-        # TODO for now, update each time as the pay account creation from auth is not in place yet.
-        payment_account.auth_account_id = auth_account_id
-        payment_account.auth_account_name = get_str_by_path(authorization, 'account/name')
-        payment_account.bcol_account = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineAccountId')
-        payment_account.bcol_user_id = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineUserId')
-        payment_account.payment_method = get_str_by_path(authorization, 'account/paymentPreference/methodOfPayment')
+        PaymentAccount._save_account(account_request, account)
+        PaymentAccount._persist_default_statement_frequency(account.id)
 
-        is_premium_payment: bool = get_str_by_path(authorization, 'account/accountType') == AccountType.PREMIUM.value \
-            or payment_account.payment_method == PaymentMethod.DRAWDOWN.value
+        payment_account = PaymentAccount()
+        payment_account._dao = account  # pylint: disable=protected-access
 
-        if account_details:
-            if new_payment_account:
-                cfs_account: CfsAccountModel = CfsAccountModel()
-            else:
-                cfs_account = CfsAccountModel.find_active_by_account_id(payment_account.id)
-                if cfs_account is None:
-                    cfs_account = CfsAccountModel()
+        current_app.logger.debug('>create payment account')
+        return payment_account
 
-            cfs_account.cfs_account = account_details.get('account_number', None)
-            cfs_account.cfs_party = account_details.get('party_number', None)
-            cfs_account.cfs_site = account_details.get('site_number', None)
+    @classmethod
+    def _save_account(cls, account_request: Dict[str, any], payment_account: PaymentAccountModel):
+        """Update and save payment account and CFS account model."""
+        # pylint:disable=cyclic-import, import-outside-toplevel
+        from pay_api.factory.payment_system_factory import PaymentSystemFactory
+
+        payment_method = payment_account.payment_method = get_str_by_path(account_request,
+                                                                          'paymentInfo/methodOfPayment')
+        payment_account.auth_account_id = account_request.get('accountId')
+        payment_account.auth_account_name = account_request.get('accountName', None)
+        payment_account.bcol_account = account_request.get('bcolAccountNumber', None)
+        payment_account.bcol_user_id = account_request.get('bcolUserId', None)
+
+        billable = get_str_by_path(account_request, 'paymentInfo/billable').lower() == 'true'
+        payment_account.billable = billable
+
+        payment_account.flush()
+
+        # Create account in CFS based on payment method
+        # If payment method is PAD, OB, EFT, WIRE create a cfs account
+        # For government accounts (billable false) create a cfs account for EJV transactions
+        if payment_method in (PaymentMethod.PAD.value, PaymentMethod.ONLINE_BANKING.value,
+                              PaymentMethod.EFT.value, PaymentMethod.WIRE.value) \
+                or not billable and payment_method == PaymentMethod.EJV.value:
+            payment_info = account_request.get('paymentInfo')
+            pay_system = PaymentSystemFactory.create_from_system_code(payment_system=PaymentSystem.PAYBC.value,
+                                                                      payment_method=payment_method)
+            cfs_account_details = pay_system.create_account(name=payment_account.auth_account_name,
+                                                            contact_info=account_request.get('contactInfo'),
+                                                            payment_info=payment_info)
+            # Create a new cfs account model if there is no existing one
+            # TODO updating the CFS account in CFS needs to be done during PAD and Online Banking tickets
+            cfs_account = CfsAccountModel.find_active_by_account_id(payment_account.id)
+            if not cfs_account:
+                cfs_account = CfsAccountModel()
             cfs_account.payment_account = payment_account
+            cfs_account.cfs_account = cfs_account_details.get('account_number')
+            cfs_account.cfs_site = cfs_account_details.get('site_number')
+            cfs_account.cfs_party = cfs_account_details.get('party_number')
+            if payment_method == PaymentMethod.PAD.value:
+                cfs_account.bank_account_number = cfs_account_details.get('bank_account_number', None)
+                cfs_account.bank_number = cfs_account_details.get('bank_number', None)
+                cfs_account.bank_branch_number = cfs_account_details.get('bank_branch_number', None)
+                cfs_account.payment_instrument_number = cfs_account_details.get('payment_instrument_number', None)
+
             cfs_account.flush()
+        payment_account.save()
 
-        # return session.is_modified(someobject) TODO
+    @classmethod
+    def update(cls, auth_account_id: str, account_request: Dict[str, Any]) -> PaymentAccount:
+        """Create or update payment account record."""
+        current_app.logger.debug('<update payment account')
+        account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        # TODO Remove it later, this is to help migration from auth to pay.
+        if not account:
+            return PaymentAccount.create(account_request)
 
-        payment_account = payment_account.save()
+        PaymentAccount._save_account(account_request, account)
 
-        # TODO move the below block, when auth-api starts calling pay-api accounts creation
-        if new_payment_account and is_premium_payment:
-            PaymentAccount._persist_default_statement_frequency(payment_account.id)
+        payment_account = PaymentAccount()
+        payment_account._dao = account  # pylint:disable=protected-access
 
-        p = PaymentAccount()
-        p._dao = payment_account  # pylint: disable=protected-access
-
-        current_app.logger.debug('>create')
-        return p
+        current_app.logger.debug('>create payment account')
+        return payment_account
 
     @staticmethod
     def _persist_default_statement_frequency(payment_account_id):
@@ -300,14 +337,22 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         """Find payment account by corp number, corp type and payment system code."""
         current_app.logger.debug('<find_payment_account')
         auth_account_id: str = get_str_by_path(authorization, 'account/id')
+        return PaymentAccount.find_by_auth_account_id(auth_account_id)
+
+    @classmethod
+    def find_by_auth_account_id(cls, auth_account_id: str) -> PaymentAccount:
+        """Find payment account by corp number, corp type and payment system code."""
+        current_app.logger.debug('<find_by_auth_account_id')
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-        p = PaymentAccount()
-        p._dao = payment_account  # pylint: disable=protected-access
-        current_app.logger.debug('>find_payment_account')
+        p = None
+        if payment_account:
+            p = PaymentAccount()
+            p._dao = payment_account  # pylint: disable=protected-access
+            current_app.logger.debug('>find_payment_account')
         return p
 
-    @staticmethod
-    def find_by_id(account_id: int):
+    @classmethod
+    def find_by_id(cls, account_id: int):
         """Find pay account by id."""
         current_app.logger.debug('<find_by_id')
 
@@ -316,3 +361,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
 
         current_app.logger.debug('>find_by_id')
         return account
+
+    def asdict(self):
+        """Return the Account as a python dict."""
+        account_schema = PaymentAccountSchema()
+        d = account_schema.dump(self._dao)
+        return d

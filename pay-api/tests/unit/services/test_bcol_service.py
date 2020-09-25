@@ -21,18 +21,15 @@ from pay_api.models.fee_schedule import FeeSchedule
 from pay_api.services.bcol_service import BcolService
 from pay_api.services.payment_line_item import PaymentLineItem
 from tests.utilities.base_test import (
-    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
-    get_auth_premium_user)
-
+    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item)
 
 bcol_service = BcolService()
 
 
 def test_create_account(session):
     """Test create_account."""
-    account = bcol_service.create_account(name=None, contact_info=None, account_info=None,
-                                          authorization=get_auth_premium_user())
-    assert account is not None
+    account = bcol_service.create_account(name=None, contact_info=None, payment_info=None)
+    assert not account
 
 
 def test_get_payment_system_url(session):

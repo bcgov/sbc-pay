@@ -104,7 +104,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         """Return DIRECT_PAY as the system code."""
         return PaymentMethod.DIRECT_PAY.value
 
-    def create_account(self, name: str, contact_info: Dict[str, Any], authorization: Dict[str, Any], **kwargs):
+    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
         """Return an empty value since Direct Pay doesnt need any account."""
         return {}
 

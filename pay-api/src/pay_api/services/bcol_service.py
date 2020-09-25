@@ -26,7 +26,6 @@ from pay_api.utils.enums import PaymentSystem as PaySystemCode, PaymentMethod
 from pay_api.utils.errors import get_bcol_error
 from pay_api.utils.user_context import UserContext
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import get_str_by_path
 from .base_payment_system import PaymentSystemService
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
@@ -39,21 +38,9 @@ class BcolService(PaymentSystemService, OAuthService):
     """Service to manage BCOL integration."""
 
     @user_context
-    def create_account(self, name: str, contact_info: Dict[str, Any], authorization: Dict[str, Any], **kwargs):
-        """Create account."""
-        current_app.logger.debug('<create_account')
-        user: UserContext = kwargs['user']
-        account_info: Dict[str, Any] = kwargs['account_info']
-        if user.is_staff() or user.is_system():
-            bcol_user_id: str = None
-            bcol_account_id: str = get_str_by_path(account_info, 'bcolAccountNumber')
-        else:
-            bcol_user_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineUserId')
-            bcol_account_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineAccountId')
-        return {
-            'bcol_account_id': bcol_account_id,
-            'bcol_user_id': bcol_user_id
-        }
+    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
+        """Return an empty value since we don't create BC Online account."""
+        return {}
 
     def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
