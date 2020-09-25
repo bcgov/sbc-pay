@@ -152,6 +152,9 @@ class _Config():  # pylint: disable=too-few-public-methods
     BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS = os.getenv('BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS',
                                                            'BCROS SERVICE ACCOUNT')
 
+    # Config value to disable activity logs
+    DISABLE_ACTIVITY_LOGS = os.getenv('DISABLE_ACTIVITY_LOGS', 'False').lower() == 'true'
+
     TESTING = False
     DEBUG = True
 

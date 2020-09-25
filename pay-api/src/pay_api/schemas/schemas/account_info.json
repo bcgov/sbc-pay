@@ -5,6 +5,42 @@
   "required": [
   ],
   "properties": {
+    "accountId": {
+      "$id": "#/properties/accountId",
+      "type": "integer",
+      "title": "BC Registries Account Number",
+      "examples": [
+        "180670"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "accountName": {
+      "$id": "#/properties/accountName",
+      "type": "string",
+      "title": "BC Registries Account Name",
+      "examples": [
+        "180670"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "bcolAccountNumber": {
+      "$id": "#/properties/bcolAccountNumber",
+      "type": "string",
+      "title": "BC Online Account Number",
+      "examples": [
+        "180670"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "bcolUserId": {
+      "$id": "#/properties/bcolUserId",
+      "type": "string",
+      "title": "BC Online User ID",
+      "examples": [
+        "180670"
+      ],
+      "pattern": "^(.*)$"
+    },
     "routingSlip": {
       "$id": "#/properties/routingSlip",
       "type": "string",
@@ -23,14 +59,19 @@
       ],
       "pattern": "^(.*)$"
     },
-    "bcolAccountNumber": {
-      "$id": "#/properties/bcolAccountNumber",
-      "type": "string",
-      "title": "BC Online Account Number",
-      "examples": [
-        "180670"
-      ],
-      "pattern": "^(.*)$"
+    "contactInfo": {
+      "oneOf": [
+        {
+          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/contact_info"
+        }
+      ]
+    },
+    "paymentInfo": {
+      "oneOf": [
+        {
+          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/payment_info"
+        }
+      ]
     }
   }
 }

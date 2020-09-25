@@ -11,21 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Model to handle nightly roll up batch."""
 
-"""Tests to assure the CorpType Class.
+from datetime import datetime
 
-Test-Suite to ensure that the CorpType Class is working as expected.
-"""
-
-from tests.utilities.base_test import factory_payment_account
+from .base_model import BaseModel
+from .db import db
 
 
-def test_payment_account(session):
-    """Assert a payment account is stored.
+class InvoiceBatch(BaseModel):  # pylint: disable=too-many-instance-attributes
+    """This class manages all of the base data nightly transactions roll up."""
 
-    Start with a blank database.
-    """
-    payment_account = factory_payment_account()
-    payment_account.save()
+    __tablename__ = 'invoice_batch'
 
-    assert payment_account.id is not None
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)

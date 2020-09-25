@@ -91,7 +91,7 @@ class BcolService(PaymentSystemService, OAuthService):
         if user.is_staff() or user.is_system():
             payload['userId'] = user.user_name_with_no_idp if user.is_staff() else current_app.config[
                 'BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS']
-            payload['accountNumber'] = payment_account.bcol_account_id
+            payload['accountNumber'] = payment_account.bcol_account
             payload['formNumber'] = invoice.dat_number
             payload['reduntantFlag'] = 'Y'
             payload['rateType'] = 'C'

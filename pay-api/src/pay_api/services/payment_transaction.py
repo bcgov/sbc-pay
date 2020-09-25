@@ -299,10 +299,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         )
 
         invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
-        payment_account = PaymentAccount.find_by_pay_system_id(
-            credit_account_id=invoice.credit_account_id,
-            internal_account_id=invoice.internal_account_id,
-            bcol_account_id=invoice.bcol_account_id)
+        payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
 
         try:
             receipt_details = pay_system_service.get_receipt(payment_account, pay_response_url, invoice_reference)

@@ -32,7 +32,7 @@ import nats
 from entity_queue_common.service import QueueServiceManager
 from entity_queue_common.service_utils import QueueException, logger
 from flask import Flask  # pylint: disable=wrong-import-order
-from pay_api.models import CreditPaymentAccount, InternalPaymentAccount, Invoice, db
+from pay_api.models import Invoice, db
 
 from events_listener import config
 
@@ -53,24 +53,12 @@ async def process_event(event_message, flask_app):
 
     with flask_app.app_context():
         if event_message.get('type', None) == INCORPORATION_TYPE \
-                and 'tempidentifier' in event_message\
+                and 'tempidentifier' in event_message \
                 and event_message.get('tempidentifier', None) is not None:
 
             old_identifier = event_message.get('tempidentifier')
             new_identifier = event_message.get('identifier')
             logger.debug('Received message to update %s to %s', old_identifier, new_identifier)
-
-            # Find all credit card payment accounts which have the old corp number
-            accounts = CreditPaymentAccount.find_by_corp_number(old_identifier)
-            for account in accounts:
-                account.corp_number = new_identifier
-                account.flush()
-
-            # Find all internal payment accounts which have the old corp number
-            accounts = InternalPaymentAccount.find_by_corp_number(old_identifier)
-            for account in accounts:
-                account.corp_number = new_identifier
-                account.flush()
 
             # Find all invoice records which have the old corp number
             invoices = Invoice.find_by_business_identifier(old_identifier)

@@ -89,6 +89,10 @@ class PaymentMethod(Enum):
     DRAWDOWN = 'DRAWDOWN'
     INTERNAL = 'INTERNAL'
     DIRECT_PAY = 'DIRECT_PAY'
+    EFT = 'EFT'
+    WIRE = 'WIRE'
+    ONLINE_BANKING = 'OB'
+    PAD = 'PAD'
 
 
 class Role(Enum):
