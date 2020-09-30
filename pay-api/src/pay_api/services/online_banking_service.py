@@ -47,7 +47,7 @@ class OnlineBankingService(PaymentSystemService, CFSService):
         """Return ONLINE_BANKING as the system code."""
         return PaymentMethod.ONLINE_BANKING.value
 
-    def create_account(self, name: str, contact_info: Dict[str, Any], authorization: Dict[str, Any], **kwargs):
+    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
         """Create an account for the online banking."""
         return self.create_cfs_account(name, contact_info)
 
@@ -71,5 +71,5 @@ class OnlineBankingService(PaymentSystemService, CFSService):
 
     # TODO implement this method
 
-    def complete_post_payment(self, payment_id: int) -> None:
-        """Complete any post payment activities if needed."""
+    def complete_post_invoice(self, invoice_id: int, invoice_reference: InvoiceReference) -> None:
+        """Complete any post invoice activities if needed."""

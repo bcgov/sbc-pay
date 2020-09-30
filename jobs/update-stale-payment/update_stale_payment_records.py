@@ -25,7 +25,7 @@ from flask import Flask
 from flask_jwt_oidc import JwtManager
 from pay_api.exceptions import BusinessException
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
-from pay_api.models import Payment as PaymentModel
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import db, ma
 from pay_api.services import TransactionService
 from pay_api.services import PaymentService
@@ -106,7 +106,7 @@ def update_stale_payments(app):
             app.logger.info(
                 'Stale Transaction Job found records.Payment Id: {}, Transaction Id : {}'.format(transaction.payment_id,
                                                                                                  transaction.id))
-            TransactionService.update_transaction(transaction.payment_id, transaction.id, '')
+            TransactionService.update_transaction(transaction.id, '')
             app.logger.info(
                 'Stale Transaction Job Updated records.Payment Id: {}, Transaction Id : {}'.format(
                     transaction.payment_id, transaction.id))
@@ -120,15 +120,15 @@ def delete_marked_payments(app):
     
     This is to handle edge cases where the user has completed payment and some error occured and payment status is not up-to-date.
     """
-    payments_to_delete = PaymentModel.find_payments_marked_for_delete()
-    if len(payments_to_delete) == 0:
-        app.logger.info(f'Delete Payment Job Ran at {datetime.datetime.now()}.But No records found!')
-    for payment in payments_to_delete:
+    invoices_to_delete = InvoiceModel.find_invoices_marked_for_delete()
+    if len(invoices_to_delete) == 0:
+        app.logger.info(f'Delete Invoice Job Ran at {datetime.datetime.now()}.But No records found!')
+    for invoice in invoices_to_delete:
         try:
-            app.logger.info('Delete Payment Job found records.Payment Id: {}'.format(payment.id))
-            PaymentService.delete_payment(payment.id)
+            app.logger.info('Delete Payment Job found records.Payment Id: {}'.format(invoice.id))
+            PaymentService.delete_invoice(invoice.id)
             app.logger.info(
-                'Delete Payment Job Updated records.Payment Id: {}'.format(payment.id))
+                'Delete Payment Job Updated records.Payment Id: {}'.format(invoice.id))
         except BusinessException as err:  # just catch and continue .Don't stop
             app.logger.error('Error on delete_payment')
             app.logger.error(err)

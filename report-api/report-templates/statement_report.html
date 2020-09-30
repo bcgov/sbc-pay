@@ -392,7 +392,7 @@
           </div>
         </td>
       </tr>
-      {% if payments %}
+      {% if invoices %}
         <tr>
           <td colspan="2">
             <div class="section-title">
@@ -414,27 +414,27 @@
                 <th>Total</th>
               </thead>
               <tbody>
-                {% for item in payments %}
+                {% for item in invoices %}
                 <tr>
-                  <td>{{item.invoice.folio_number}}</td>
+                  <td>{{item.folio_number}}</td>
                   <td class="product-purchased">
-                    {% for lineItemProduct in item.invoice.line_items %}
+                    {% for lineItemProduct in item.line_items %}
                     <div>{{lineItemProduct.description}}</div>
                     {% endfor %}
-                    {% if item.invoice.business_identifier %}
-                    <div>#{{item.invoice.business_identifier}}</div>
+                    {% if item.business_identifier %}
+                    <div>#{{item.business_identifier}}</div>
                     {% endif %}
                   </td>
                   <td>{{item.created_on|format_datetime}}</td>
                   <td>
-                    {% for lineItemFeeCode in item.invoice.line_items %}
+                    {% for lineItemFeeCode in item.line_items %}
                     <div>{{lineItemFeeCode.filing_type_code}}</div>
                     {% endfor %}
                   </td>
-                  <td>${{"%.2f"|format((item.invoice.total - item.invoice.service_fees)) if (item.invoice.service_fees and item.invoice.total) else '0.00'}}</td>
-                  <td>${{"%.2f"|format(item.invoice.gst) if item.invoice.gst else '0.00'}}</td>
-                  <td>${{"%.2f"|format(item.invoice.service_fees) if item.invoice.service_fees else '0.00'}}</td>
-                  <td class="font-bold">${{"%.2f"|format(item.invoice.total) if item.invoice.total else '0.00'}}</td>
+                  <td>${{"%.2f"|format((item.total - item.service_fees)) if (item.service_fees and item.total) else '0.00'}}</td>
+                  <td>${{"%.2f"|format(item.gst) if item.gst else '0.00'}}</td>
+                  <td>${{"%.2f"|format(item.service_fees) if item.service_fees else '0.00'}}</td>
+                  <td class="font-bold">${{"%.2f"|format(item.total) if item.total else '0.00'}}</td>
                 </tr>
                 {% endfor %}
               </tbody>

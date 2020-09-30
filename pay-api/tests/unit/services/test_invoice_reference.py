@@ -28,7 +28,7 @@ def test_invoice_saved_from_new(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    i = factory_invoice(payment=payment, payment_account=payment_account)
+    i = factory_invoice(payment_account=payment_account)
     i.save()
 
     invoice_reference = InvoiceReference.create(i.id, 'TEST_INV_NUMBER', 'TEST_REF_NUMBER')
@@ -51,7 +51,7 @@ def test_active_reference_by_invoice_id(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    i = factory_invoice(payment=payment, payment_account=payment_account)
+    i = factory_invoice(payment_account=payment_account)
     i.save()
 
     InvoiceReference.create(i.id, 'TEST_INV_NUMBER', 'TEST_REF_NUMBER')
@@ -70,7 +70,7 @@ def test_find_completed_reference_by_invoice_id(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    i = factory_invoice(payment=payment, payment_account=payment_account)
+    i = factory_invoice(payment_account=payment_account)
     i.save()
 
     invoice_reference = InvoiceReference.create(i.id, 'TEST_INV_NUMBER', 'TEST_REF_NUMBER')

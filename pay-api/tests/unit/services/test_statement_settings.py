@@ -36,7 +36,7 @@ def test_statement_settings_find_by_account(session):
 
     payment = factory_payment()
     payment.save()
-    i = factory_invoice(payment=payment, payment_account=bcol_account)
+    i = factory_invoice(payment_account=bcol_account)
     i.save()
     factory_invoice_reference(i.id).save()
     factory_statement_settings(payment_account_id=bcol_account.id,
@@ -61,7 +61,7 @@ def test_update_statement_daily(session):
 
     payment = factory_payment()
     payment.save()
-    i = factory_invoice(payment=payment, payment_account=bcol_account)
+    i = factory_invoice(payment_account=bcol_account)
     i.save()
     factory_invoice_reference(i.id).save()
     factory_statement_settings(payment_account_id=bcol_account.id,
@@ -154,7 +154,7 @@ def test_update_statement_daily_to_daily(session):
 
     payment = factory_payment()
     payment.save()
-    i = factory_invoice(payment=payment, payment_account=bcol_account)
+    i = factory_invoice(payment_account=bcol_account)
     i.save()
     factory_invoice_reference(i.id).save()
     factory_statement_settings(payment_account_id=bcol_account.id,
@@ -186,7 +186,7 @@ def test_update_statement_monthly(session):
 
     payment = factory_payment()
     payment.save()
-    i = factory_invoice(payment=payment, payment_account=bcol_account)
+    i = factory_invoice(payment_account=bcol_account)
     i.save()
     factory_invoice_reference(i.id).save()
     factory_statement_settings(payment_account_id=bcol_account.id,
@@ -227,7 +227,7 @@ def test_update_statement_weekly(session):
 
     payment = factory_payment()
     payment.save()
-    i = factory_invoice(payment=payment, payment_account=bcol_account)
+    i = factory_invoice(payment_account=bcol_account)
     i.save()
     factory_invoice_reference(i.id).save()
     factory_statement_settings(payment_account_id=bcol_account.id,

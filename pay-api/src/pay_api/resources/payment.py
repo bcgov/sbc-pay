@@ -19,7 +19,7 @@ from flask_restplus import Namespace, Resource, cors
 
 from pay_api.exceptions import error_to_response, BusinessException, ServiceUnavailableException
 from pay_api.schemas import utils as schema_utils
-from pay_api.services import PaymentService
+from pay_api.services import PaymentService, InvoiceService
 from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE
@@ -33,7 +33,7 @@ API = Namespace('payments', description='Payment System - Payments')
 
 @cors_preflight('POST')
 @API.route('', methods=['POST', 'OPTIONS'])
-class Payment(Resource):
+class Invoice(Resource):
     """Endpoint resource to create payment."""
 
     @staticmethod
@@ -41,7 +41,7 @@ class Payment(Resource):
     @_jwt.requires_auth
     @_tracing.trace()
     def post():
-        """Create the payment records."""
+        """Create the payment request records."""
         current_app.logger.info('<Payment.post')
         request_json = request.get_json()
         current_app.logger.debug(request_json)
@@ -58,7 +58,7 @@ class Payment(Resource):
         authorization = check_auth(business_identifier=business_identifier, corp_type_code=corp_type_code,
                                    contains_role=EDIT_ROLE)
         try:
-            response, status = PaymentService.create_payment(request_json, authorization), HTTPStatus.CREATED
+            response, status = PaymentService.create_invoice(request_json, authorization), HTTPStatus.CREATED
         except (BusinessException, ServiceUnavailableException) as exception:
             return exception.response()
         current_app.logger.debug('>Payment.post')
@@ -66,18 +66,18 @@ class Payment(Resource):
 
 
 @cors_preflight(['GET', 'PUT', 'DELETE'])
-@API.route('/<int:payment_id>', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
-class Payments(Resource):
-    """Endpoint resource to create payment."""
+@API.route('/<int:invoice_id>', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
+class Invoices(Resource):
+    """Endpoint resource to create payment request."""
 
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.requires_auth
     @_tracing.trace()
-    def get(payment_id):
-        """Get the payment records."""
+    def get(invoice_id):
+        """Get the invoice records."""
         try:
-            response, status = PaymentService.get_payment(payment_id), HTTPStatus.OK
+            response, status = InvoiceService.find_by_id(invoice_id).asdict(), HTTPStatus.OK
         except BusinessException as exception:
             return exception.response()
         return jsonify(response), status
@@ -86,41 +86,12 @@ class Payments(Resource):
     @cors.crossdomain(origin='*')
     @_jwt.requires_auth
     @_tracing.trace()
-    def put(payment_id):
-        """Update the payment records."""
-        current_app.logger.info('<Payment.put')
-        request_json = request.get_json()
-        current_app.logger.debug(request_json)
-        # Validate the input request
-        valid_format, errors = schema_utils.validate(request_json, 'payment_request')
-        if not valid_format:
-            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
-
-        # Check if user is authorized to perform this action
-        authorization = check_auth(request_json.get('businessInfo').get('businessIdentifier'), one_of_roles=[EDIT_ROLE])
-
-        try:
-            response, status = (
-                PaymentService.update_payment(
-                    payment_id, request_json, authorization
-                ),
-                HTTPStatus.OK,
-            )
-        except (BusinessException, ServiceUnavailableException) as exception:
-            return exception.response()
-        current_app.logger.debug('>Payment.put')
-        return jsonify(response), status
-
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_jwt.requires_auth
-    @_tracing.trace()
-    def delete(payment_id):
-        """Soft delete the payment records."""
+    def delete(invoice_id):
+        """Soft delete the invoice records."""
         current_app.logger.info('<Payment.delete')
 
         try:
-            PaymentService.accept_delete(payment_id)
+            PaymentService.accept_delete(invoice_id)
 
             response, status = None, HTTPStatus.ACCEPTED
 

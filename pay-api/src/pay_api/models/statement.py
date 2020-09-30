@@ -21,7 +21,6 @@ from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
 from .base_model import BaseModel
 from .db import db, ma
 from .invoice import Invoice
-from .payment import Payment
 from .payment_account import PaymentAccount
 
 
@@ -66,9 +65,8 @@ class Statement(BaseModel):
         # Import from here as the statement invoice already imports statement and causes circular import.
         from .statement_invoices import StatementInvoices  # pylint: disable=import-outside-toplevel
 
-        query = db.session.query(Payment, Invoice) \
+        query = db.session.query(Invoice) \
             .join(StatementInvoices, StatementInvoices.invoice_id == Invoice.id) \
-            .join(Payment, Payment.id == Invoice.payment_id) \
             .filter(StatementInvoices.statement_id == statement_id)
 
         return query.all()

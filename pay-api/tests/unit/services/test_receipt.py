@@ -23,11 +23,11 @@ import pytest
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import FeeSchedule
-from pay_api.services.payment_service import PaymentService
+from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.services.receipt import Receipt as ReceiptService
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
-    factory_payment_transaction, get_auth_basic_user, get_payment_request)
+    get_paybc_transaction_request)
 
 
 def test_receipt_saved_from_new(session):
@@ -36,7 +36,7 @@ def test_receipt_saved_from_new(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    i = factory_invoice(payment=payment, payment_account=payment_account)
+    i = factory_invoice(payment_account=payment_account)
     i.save()
     factory_invoice_reference(i.id).save()
 
@@ -73,53 +73,29 @@ def test_receipt_invalid_lookup(session):
     assert receipt.id is None
 
 
-def test_create_receipt_without_invoice(session, public_user_mock):
-    """Try creating a receipt without invoice number."""
-    payment_account = factory_payment_account()
-    payment = factory_payment()
-    payment_account.save()
-    payment.save()
-    invoice = factory_invoice(payment, payment_account)
-    invoice.save()
-    factory_invoice_reference(invoice.id).save()
-    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
-    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
-    line.save()
-    transaction = factory_payment_transaction(payment.id)
-    transaction.save()
-
-    PaymentService.update_payment(payment.id, get_payment_request(), get_auth_basic_user())
-    input_data = {
-        'corpName': 'Pennsular Coop ',
-        'filingDateTime': '1999',
-        'fileName': 'coopser'
-    }
-    response = ReceiptService.create_receipt(payment.id, '', input_data, skip_auth_check=True)
-    assert response is not None
-
-
 def test_create_receipt_with_invoice(session, public_user_mock):
     """Try creating a receipt with invoice number."""
     payment_account = factory_payment_account()
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment, payment_account, service_fees=1.5)
+    invoice = factory_invoice(payment_account, service_fees=1.5)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
-    transaction = factory_payment_transaction(payment.id)
-    transaction.save()
 
-    PaymentService.update_payment(payment.id, get_payment_request(), get_auth_basic_user())
+    transaction = PaymentTransactionService.create(invoice.id, get_paybc_transaction_request())
+    PaymentTransactionService.update_transaction(transaction.id, '')
+
     input_data = {
         'corpName': 'Pennsular Coop ',
         'filingDateTime': '1999',
         'fileName': 'coopser'
     }
-    response = ReceiptService.create_receipt(payment.id, invoice.id, input_data, skip_auth_check=True)
+
+    response = ReceiptService.create_receipt(invoice.id, input_data, skip_auth_check=True)
     assert response is not None
 
 
@@ -129,14 +105,13 @@ def test_create_receipt_with_no_receipt(session, public_user_mock):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment, payment_account)
+    invoice = factory_invoice(payment_account)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    PaymentService.update_payment(payment.id, get_payment_request(), get_auth_basic_user())
     input_data = {
         'corpName': 'Pennsular Coop ',
         'filingDateTime': '1999',
@@ -144,5 +119,5 @@ def test_create_receipt_with_no_receipt(session, public_user_mock):
     }
 
     with pytest.raises(BusinessException) as excinfo:
-        ReceiptService.create_receipt(payment.id, '', input_data, skip_auth_check=True)
+        ReceiptService.create_receipt(invoice.id, input_data, skip_auth_check=True)
     assert excinfo.type == BusinessException

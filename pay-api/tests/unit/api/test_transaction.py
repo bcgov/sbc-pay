@@ -37,15 +37,16 @@ def test_transaction_post(session, client, jwt, app):
 
     # Create a payment first
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
-    payment_id = rv.json.get('id')
+    invoice_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
         'payReturnUrl': 'http://localhost:8080/pay-web'
     }
-    rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
+    rv = client.post(f'/api/v1/payment-requests/{invoice_id}/transactions', data=json.dumps(data),
                      headers={'content-type': 'application/json'})
     assert rv.status_code == 201
-    assert rv.json.get('paymentId') == payment_id
+    assert rv.json.get('paymentId')
+
     assert schema_utils.validate(rv.json, 'transaction')[0]
 
 
@@ -57,15 +58,15 @@ def test_transaction_post_direct_pay(session, client, jwt, app):
     # Create a payment first
     rv = client.post('/api/v1/payment-requests', data=json.dumps(
         get_payment_request_with_payment_method(payment_method=PaymentMethod.DIRECT_PAY.value)), headers=headers)
-    payment_id = rv.json.get('id')
+    invoice_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
         'payReturnUrl': 'http://localhost:8080/pay-web'
     }
-    rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
+    rv = client.post(f'/api/v1/payment-requests/{invoice_id}/transactions', data=json.dumps(data),
                      headers={'content-type': 'application/json'})
     assert rv.status_code == 201
-    assert rv.json.get('paymentId') == payment_id
+    assert rv.json.get('paymentId')
     assert schema_utils.validate(rv.json, 'transaction')[0]
 
 
@@ -76,12 +77,12 @@ def test_transaction_post_with_invalid_return_url(session, client, jwt, app):
 
     # Create a payment first
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
-    payment_id = rv.json.get('id')
+    invoice_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://google.com/coops-web/transactions/transaction_id=abcd',
         'payReturnUrl': 'http://localhost:8080/pay-web'
     }
-    rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
+    rv = client.post(f'/api/v1/payment-requests/{invoice_id}/transactions', data=json.dumps(data),
                      headers={'content-type': 'application/json'})
     assert rv.status_code == 400
 
@@ -93,16 +94,16 @@ def test_transaction_post_no_redirect_uri(session, client, jwt, app):
 
     # Create a payment first
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
-    payment_id = rv.json.get('id')
-    rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps({}),
+    invoice_id = rv.json.get('id')
+    rv = client.post(f'/api/v1/payment-requests/{invoice_id}/transactions', data=json.dumps({}),
                      headers={'content-type': 'application/json'})
     assert rv.status_code == 400
 
 
 def test_transactions_post_invalid_payment(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
-    payment_id = 9999
-    rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps({}),
+    invoice_id = 9999
+    rv = client.post(f'/api/v1/payment-requests/{invoice_id}/transactions', data=json.dumps({}),
                      headers={'content-type': 'application/json'})
     assert rv.status_code == 400
 
@@ -114,17 +115,17 @@ def test_transaction_get(session, client, jwt, app):
 
     # Create a payment first
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
-    payment_id = rv.json.get('id')
+    invoice_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
         'payReturnUrl': 'http://localhost:8080/pay-web'
     }
-    rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
+    rv = client.post(f'/api/v1/payment-requests/{invoice_id}/transactions', data=json.dumps(data),
                      headers={'content-type': 'application/json'})
     txn_id = rv.json.get('id')
-    rv = client.get(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}', headers=headers)
+    rv = client.get(f'/api/v1/payment-requests/{invoice_id}/transactions/{txn_id}', headers=headers)
     assert rv.status_code == 200
-    assert rv.json.get('paymentId') == payment_id
+    assert rv.json.get('paymentId')
     assert rv.json.get('id') == txn_id
     assert schema_utils.validate(rv.json, 'transaction')[0]
 
@@ -136,20 +137,16 @@ def test_transaction_get_invalid_payment_and_transaction(session, client, jwt, a
 
     # Create a payment first
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
-    payment_id = rv.json.get('id')
+    invoice_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
         'payReturnUrl': 'http://localhost:8080/pay-web'
     }
-    rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
+    rv = client.post(f'/api/v1/payment-requests/{invoice_id}/transactions', data=json.dumps(data),
                      headers={'content-type': 'application/json'})
-    txn_id = rv.json.get('id')
-    invalid_payment_id = 999
-    rv = client.get(f'/api/v1/payment-requests/{invalid_payment_id}/transactions/{txn_id}', headers=headers)
-    assert rv.status_code == 400
-    assert rv.json.get('type') == 'INVALID_TRANSACTION_ID'
+
     invalid_txn_id = uuid.uuid4()
-    rv = client.get(f'/api/v1/payment-requests/{payment_id}/transactions/{invalid_txn_id}', headers=headers)
+    rv = client.get(f'/api/v1/payment-requests/{invoice_id}/transactions/{invalid_txn_id}', headers=headers)
     assert rv.status_code == 400
     assert rv.json.get('type') == 'INVALID_TRANSACTION_ID'
 
@@ -161,16 +158,16 @@ def test_transaction_put(session, client, jwt, app):
 
     # Create a payment first
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
-    payment_id = rv.json.get('id')
+    invoice_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
         'payReturnUrl': 'http://localhost:8080/pay-web'
     }
     receipt_number = '123451'
-    rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
+    rv = client.post(f'/api/v1/payment-requests/{invoice_id}/transactions', data=json.dumps(data),
                      headers={'content-type': 'application/json'})
     txn_id = rv.json.get('id')
-    rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}',
+    rv = client.patch(f'/api/v1/payment-requests/{invoice_id}/transactions/{txn_id}',
                       data=json.dumps({'receipt_number': receipt_number}),
                       headers={'content-type': 'application/json'})
     assert rv.status_code == 200
@@ -183,15 +180,15 @@ def test_transaction_put_with_no_receipt(session, client, jwt, app):
 
     # Create a payment first
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
-    payment_id = rv.json.get('id')
+    invoice_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
         'payReturnUrl': 'http://localhost:8080/pay-web'
     }
-    rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
+    rv = client.post(f'/api/v1/payment-requests/{invoice_id}/transactions', data=json.dumps(data),
                      headers={'content-type': 'application/json'})
     txn_id = rv.json.get('id')
-    rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}', data=json.dumps({}),
+    rv = client.patch(f'/api/v1/payment-requests/{invoice_id}/transactions/{txn_id}', data=json.dumps({}),
                       headers={'content-type': 'application/json'})
     assert rv.status_code == 200
 
@@ -204,19 +201,19 @@ def test_transaction_put_completed_payment(session, client, jwt, app, stan_serve
 
     # Create a payment first
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
-    payment_id = rv.json.get('id')
+    invoice_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
         'payReturnUrl': 'http://localhost:8080/pay-web'
     }
-    rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
+    rv = client.post(f'/api/v1/payment-requests/{invoice_id}/transactions', data=json.dumps(data),
                      headers={'content-type': 'application/json'})
 
     txn_id = rv.json.get('id')
-    rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}', data=json.dumps({}),
+    rv = client.patch(f'/api/v1/payment-requests/{invoice_id}/transactions/{txn_id}', data=json.dumps({}),
                       headers={'content-type': 'application/json'})
 
-    rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}', data=json.dumps({}),
+    rv = client.patch(f'/api/v1/payment-requests/{invoice_id}/transactions/{txn_id}', data=json.dumps({}),
                       headers={'content-type': 'application/json'})
     assert rv.status_code == 400
     assert rv.json.get('type') == 'INVALID_TRANSACTION'
@@ -230,7 +227,7 @@ def test_transactions_get(session, client, jwt, app):
     # Create a payment first
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
 
-    transactions_link = rv.json.get('_links').get('transactions')
+    transactions_link = '/api/v1/payment-requests/{}/transactions'.format(rv.json.get('id'))
     rv = client.get(f'{transactions_link}', headers=headers)
     assert rv.status_code == 200
     assert rv.json.get('items') is not None
@@ -263,16 +260,16 @@ def test_transaction_patch_completed_payment_and_transaction_status(session, cli
 
     # Create a payment first
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
-    payment_id = rv.json.get('id')
+    invoice_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
         'payReturnUrl': 'http://localhost:8080/pay-web'
     }
-    rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
+    rv = client.post(f'/api/v1/payment-requests/{invoice_id}/transactions', data=json.dumps(data),
                      headers={'content-type': 'application/json'})
 
     txn_id = rv.json.get('id')
-    rv = client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}', data=json.dumps({}),
+    rv = client.patch(f'/api/v1/payment-requests/{invoice_id}/transactions/{txn_id}', data=json.dumps({}),
                       headers={'content-type': 'application/json'})
 
     assert rv.status_code == 200
@@ -287,18 +284,18 @@ def test_transaction_patch_when_paybc_down(session, client, jwt, app):
 
     # Create a payment first
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
-    payment_id = rv.json.get('id')
+    invoice_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
         'payReturnUrl': 'http://localhost:8080/pay-web'
     }
     receipt_number = '123451'
-    rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
+    rv = client.post(f'/api/v1/payment-requests/{invoice_id}/transactions', data=json.dumps(data),
                      headers={'content-type': 'application/json'})
     txn_id = rv.json.get('id')
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
         rv = client.patch(
-            f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}',
+            f'/api/v1/payment-requests/{invoice_id}/transactions/{txn_id}',
             data=json.dumps({'receipt_number': receipt_number}),
             headers={'content-type': 'application/json'})
         assert rv.status_code == 200
@@ -314,20 +311,20 @@ def test_transaction_patch_direct_pay(session, client, jwt, app):
     # Create a payment first
     rv = client.post('/api/v1/payment-requests', data=json.dumps(
         get_payment_request_with_payment_method(payment_method=PaymentMethod.DIRECT_PAY.value)), headers=headers)
-    payment_id = rv.json.get('id')
+    invoice_id = rv.json.get('id')
     data = {
         'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
         'payReturnUrl': 'http://localhost:8080/pay-web'
     }
-    rv = client.post(f'/api/v1/payment-requests/{payment_id}/transactions', data=json.dumps(data),
+    rv = client.post(f'/api/v1/payment-requests/{invoice_id}/transactions', data=json.dumps(data),
                      headers={'content-type': 'application/json'})
     txn_id = rv.json.get('id')
     assert rv.status_code == 201
-    assert rv.json.get('paymentId') == payment_id
+    assert rv.json.get('paymentId')
 
-    client.patch(f'/api/v1/payment-requests/{payment_id}/transactions/{txn_id}', data=json.dumps({}),
+    client.patch(f'/api/v1/payment-requests/{invoice_id}/transactions/{txn_id}', data=json.dumps({}),
                  headers={'content-type': 'application/json'})
 
     # Get payment details
-    rv = client.get(f'/api/v1/payment-requests/{payment_id}', headers=headers)
+    rv = client.get(f'/api/v1/payment-requests/{invoice_id}', headers=headers)
     assert rv.json.get('statusCode') == 'COMPLETED'

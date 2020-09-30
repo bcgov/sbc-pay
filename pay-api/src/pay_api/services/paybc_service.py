@@ -65,8 +65,8 @@ class PaybcService(PaymentSystemService, CFSService):
         """Create account in PayBC."""
         return self.create_cfs_account(name, contact_info)
 
-    def complete_post_payment(self, payment_id: int) -> None:
-        """Complete any post payment activities if needed."""
+    def complete_post_invoice(self, invoice_id: int, invoice_reference: InvoiceReference) -> None:
+        """Complete any post invoice activities if needed."""
 
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
                        line_items: [PaymentLineItem], invoice: Invoice, **kwargs):

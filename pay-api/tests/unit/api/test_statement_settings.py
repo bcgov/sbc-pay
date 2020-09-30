@@ -20,7 +20,7 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 import json
 from datetime import timedelta
 
-from pay_api.models.payment import Payment
+from pay_api.models.invoice import Invoice
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.utils.enums import StatementFrequency
 from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month, get_week_start_and_end_date
@@ -36,9 +36,9 @@ def test_get_default_statement_settings_weekly(session, client, jwt, app):
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
                      headers=headers)
 
-    payment: Payment = Payment.find_by_id(rv.json.get('id'))
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.invoices[0].payment_account_id)
     rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/settings',
                     headers=headers)
     assert rv.status_code == 200
@@ -53,8 +53,8 @@ def test_post_default_statement_settings_daily(session, client, jwt, app):
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
                      headers=headers)
 
-    payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.invoices[0].payment_account_id)
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/settings', data=json.dumps({}),
                     headers=headers)
