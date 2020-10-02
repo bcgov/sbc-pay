@@ -27,3 +27,4 @@ def test_get_bcol_error(capsys):
     assert get_bcol_error(20) == Error.BCOL_ACCOUNT_CLOSED
     assert get_bcol_error(21) == Error.BCOL_USER_REVOKED
     assert get_bcol_error(48) == Error.BCOL_ACCOUNT_REVOKED
+    assert get_bcol_error(61) == Error.BCOL_ACCOUNT_INSUFFICIENT_FUNDS
