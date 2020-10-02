@@ -46,16 +46,14 @@ class InternalPayService(PaymentSystemService, OAuthService):
         return {}
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
-                       **kwargs):
+                       **kwargs) -> InvoiceReference:
         """Return a static invoice number."""
         current_app.logger.debug('<create_invoice')
 
-        invoice = {
-            'invoice_number': f'{invoice.id}'
-        }
+        invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id, str(invoice.id), None)
 
         current_app.logger.debug('>create_invoice')
-        return invoice
+        return invoice_reference
 
     def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
                        line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0,

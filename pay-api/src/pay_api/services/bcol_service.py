@@ -60,7 +60,7 @@ class BcolService(PaymentSystemService, OAuthService):
 
     @user_context
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
-                       line_items: [PaymentLineItem], invoice: Invoice, **kwargs):
+                       line_items: [PaymentLineItem], invoice: Invoice, **kwargs) -> InvoiceReference:
         """Create Invoice in PayBC."""
         current_app.logger.debug('<create_invoice')
         user: UserContext = kwargs['user']
@@ -108,13 +108,11 @@ class BcolService(PaymentSystemService, OAuthService):
                 error = Error.BCOL_ERROR
             raise BusinessException(error)
 
-        invoice = {
-            'invoice_number': response_json.get('key'),
-            'reference_number': response_json.get('sequenceNo'),
-            'totalAmount': -(int(response_json.get('totalAmount', 0)) / 100)
-        }
+        invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id, response_json.get('key'),
+                                                                      response_json.get('sequenceNo'))
+
         current_app.logger.debug('>create_invoice')
-        return invoice
+        return invoice_reference
 
     def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
                        line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0,

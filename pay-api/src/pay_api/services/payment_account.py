@@ -18,13 +18,13 @@ from typing import Any, Dict, Union
 
 from flask import current_app
 
+from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel, PaymentAccountSchema
 from pay_api.models import StatementSettings as StatementSettingsModel
-from pay_api.utils.enums import StatementFrequency, PaymentMethod, PaymentSystem
-from pay_api.utils.util import get_str_by_path
-from pay_api.exceptions import BusinessException
+from pay_api.utils.enums import StatementFrequency
 from pay_api.utils.errors import Error
+from pay_api.utils.util import get_str_by_path
 
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -275,36 +275,29 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         billable = get_str_by_path(account_request, 'paymentInfo/billable').lower() == 'true'
         payment_account.billable = billable
 
-        payment_account.flush()
-
         # Create account in CFS based on payment method
         # If payment method is PAD, OB, EFT, WIRE create a cfs account
         # For government accounts (billable false) create a cfs account for EJV transactions
-        if payment_method in (PaymentMethod.PAD.value, PaymentMethod.ONLINE_BANKING.value,
-                              PaymentMethod.EFT.value, PaymentMethod.WIRE.value) \
-                or not billable and payment_method == PaymentMethod.EJV.value:
-            payment_info = account_request.get('paymentInfo')
-            pay_system = PaymentSystemFactory.create_from_system_code(payment_system=PaymentSystem.PAYBC.value,
-                                                                      payment_method=payment_method)
-            cfs_account_details = pay_system.create_account(name=payment_account.auth_account_name,
-                                                            contact_info=account_request.get('contactInfo'),
-                                                            payment_info=payment_info)
-            # Create a new cfs account model if there is no existing one
-            # TODO updating the CFS account in CFS needs to be done during PAD and Online Banking tickets
-            cfs_account = CfsAccountModel.find_active_by_account_id(payment_account.id)
-            if not cfs_account:
-                cfs_account = CfsAccountModel()
-            cfs_account.payment_account = payment_account
-            cfs_account.cfs_account = cfs_account_details.get('account_number')
-            cfs_account.cfs_site = cfs_account_details.get('site_number')
-            cfs_account.cfs_party = cfs_account_details.get('party_number')
-            if payment_method == PaymentMethod.PAD.value:
-                cfs_account.bank_account_number = cfs_account_details.get('bank_account_number', None)
-                cfs_account.bank_number = cfs_account_details.get('bank_number', None)
-                cfs_account.bank_branch_number = cfs_account_details.get('bank_branch_number', None)
-                cfs_account.payment_instrument_number = cfs_account_details.get('payment_instrument_number', None)
+        pay_system = PaymentSystemFactory.create_from_payment_method(payment_method=payment_method)
+        cfs_account_details = pay_system.create_account(name=payment_account.auth_account_name,
+                                                        contact_info=account_request.get('contactInfo'),
+                                                        payment_info=account_request.get('paymentInfo'))
 
-            cfs_account.flush()
+        # Create a new cfs account model if there is no existing one
+        # TODO updating the CFS account in CFS needs to be done during PAD and Online Banking tickets
+        cfs_account = CfsAccountModel.find_active_by_account_id(payment_account.id)
+        if not cfs_account:
+            cfs_account = CfsAccountModel()
+        cfs_account.payment_account = payment_account
+        cfs_account.cfs_account = cfs_account_details.get('account_number')
+        cfs_account.cfs_site = cfs_account_details.get('site_number')
+        cfs_account.cfs_party = cfs_account_details.get('party_number')
+        cfs_account.bank_account_number = cfs_account_details.get('bank_account_number', None)
+        cfs_account.bank_number = cfs_account_details.get('bank_number', None)
+        cfs_account.bank_branch_number = cfs_account_details.get('bank_branch_number', None)
+        cfs_account.payment_instrument_number = cfs_account_details.get('payment_instrument_number', None)
+
+        cfs_account.flush()
         payment_account.save()
 
     @classmethod

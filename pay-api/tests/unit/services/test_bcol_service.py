@@ -64,7 +64,7 @@ def test_create_invoice(session):
                                       corp_type_code=i.corp_type_code,
                                       business_identifier=i.business_identifier)
     assert inv is not None
-    assert inv.get('invoice_number') == 'TEST'
+    assert inv.invoice_number == 'TEST'
 
 
 def test_update_invoice(session):

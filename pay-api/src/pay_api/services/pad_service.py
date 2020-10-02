@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Service to manage CFS Online Banking Payments."""
+"""Service to manage CFS Pre Authorized Debit Payments."""
 from typing import Any, Dict
 from flask import current_app
 
@@ -20,16 +20,20 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import PaymentSystem, PaymentMethod, InvoiceStatus, PaymentStatus
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentSystem, PaymentStatus
 from .payment_line_item import PaymentLineItem
 
 
-class OnlineBankingService(PaymentSystemService, CFSService):
-    """Service to manage online banking."""
+class PadService(PaymentSystemService, CFSService):
+    """Service to manage pre authorized debits."""
 
     def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
         return ''
+
+    def get_payment_method_code(self):
+        """Return PAD as the system code."""
+        return PaymentMethod.PAD.value
 
     def get_payment_system_code(self):
         """Return PAYBC as the system code."""
@@ -43,19 +47,15 @@ class OnlineBankingService(PaymentSystemService, CFSService):
         """Return the default status for payment when created."""
         return PaymentStatus.CREATED.value
 
-    def get_payment_method_code(self):
-        """Return ONLINE_BANKING as the system code."""
-        return PaymentMethod.ONLINE_BANKING.value
-
     def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
-        """Create an account for the online banking."""
-        return self.create_cfs_account(name, contact_info)
+        """Create an account for the PAD transactions."""
+        return self.create_cfs_account(name, contact_info, save_bank_details=True, payment_info=payment_info)
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number for direct pay."""
-        current_app.logger.debug('<create_invoice_online_banking')
-        # Do nothing here as the roll up happens later after creation of invoice.
+        current_app.logger.debug('<create_invoice_pad_service')
+        # Do nothing here as the invoice references are created later.
 
     def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
                        line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0,
@@ -69,8 +69,6 @@ class OnlineBankingService(PaymentSystemService, CFSService):
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Get the receipt details by calling PayBC web service."""
-
-    # TODO implement this method
 
     def complete_post_invoice(self, invoice_id: int, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""

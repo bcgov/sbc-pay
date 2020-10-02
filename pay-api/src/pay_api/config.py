@@ -276,6 +276,8 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     PAYBC_DIRECT_PAY_CLIENT_ID = 'TEST'
     PAYBC_DIRECT_PAY_CLIENT_SECRET = 'TEST'
 
+    DIRECT_PAY_ENABLED = True
+
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
     """Production environment configuration."""
