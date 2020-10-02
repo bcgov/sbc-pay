@@ -32,7 +32,7 @@ def upgrade():
         ]
     )
     # Add all columns first
-    op.add_column('invoice', sa.Column('payment_method_code', sa.String(length=15), nullable=False))
+    op.add_column('invoice', sa.Column('payment_method_code', sa.String(length=15), nullable=True))
     op.add_column('payment', sa.Column('amount', sa.Numeric(), nullable=True))
     op.add_column('payment', sa.Column('completed_on', sa.DateTime(), nullable=True))
     op.add_column('payment', sa.Column('invoice_number', sa.String(length=50), nullable=True))
