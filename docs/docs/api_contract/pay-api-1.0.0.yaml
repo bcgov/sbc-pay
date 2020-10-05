@@ -137,6 +137,18 @@ paths:
                     detail: Invalid Business Type or Filing Type.
                     title: Invalid Request
                     type: INVALID_CORP_OR_FILING_TYPE
+        '404':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                /api/v1/fees/AA/BBBBB:
+                  value:
+                    detail: Invalid Business Type or Filing Type.
+                    title: Invalid Request
+                    type: INVALID_REQUEST
       parameters:
         - schema:
             type: string
@@ -185,10 +197,10 @@ paths:
   /api/v1/payment-requests:
     post:
       tags:
-        - Payment Request
-      summary: Create payment request records
+        - Invoice
+      summary: Create invoice records
       description: |-
-        Create payment transaction records. This will create transaction records in payment system based on account settings. Below payment methods are decided based on the account preference.
+        Create invoice records. This will create transaction records in payment system based on account settings. Below payment methods are decided based on the account preference.
         <ul><li>Credit Card</li><li>Pre Authorized Debit</li><li>Online Banking</li></ul>
       operationId: create_transaction
       requestBody:
@@ -214,57 +226,38 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaymentResponse'
+                $ref: '#/components/schemas/Invoice'
               examples:
                 /api/v1/payment-requests:
                   value:
                     _links:
-                      collection: /api/v1/payment-requests
-                      invoices: /api/v1/payment-requests/21/invoices
-                      self: /api/v1/payment-requests/21
-                      transactions: /api/v1/payment-requests/21/transactions
+                      collection: /api/v1/payment-requests/21/invoices
+                      self: /api/v1/payment-requests/21/invoices/21
+                    businessIdentifier: BC1000000
+                    corpTypeCode: BC
                     createdBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
                     createdName: BCREGTEST Bena THIRTEEN
-                    createdOn: '2020-09-18T12:51:30.529832+00:00'
-                    id: 1
-                    invoices:
-                      - _links:
-                          collection: /api/v1/payment-requests/21/invoices
-                          self: /api/v1/payment-requests/21/invoices/21
-                        businessIdentifier: BC1000000
-                        corpTypeCode: BC
-                        createdBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
-                        createdName: BCREGTEST Bena THIRTEEN
-                        createdOn: '2020-09-18T12:51:30.538028+00:00'
-                        id: 1
-                        paid: 451.5
-                        references:
-                          - id: 19
-                            invoiceNumber: '21'
-                            referenceNumber: '0001'
-                            statusCode: COMPLETED
-                        refund: 0
-                        serviceFees: 1.5
-                        statusCode: PAID
-                        total: 451.5
-                        updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
-                        updatedName: BCREGTEST Bena THIRTEEN
-                        updatedOn: '2020-09-18T12:51:32.256413+00:00'
+                    createdOn: '2020-09-18T12:51:30.538028+00:00'
                     paymentMethod: DRAWDOWN
-                    paymentSystem: BCOL
-                    statusCode: COMPLETED
-                    transactions:
-                      - _links:
-                          collection: /api/v1/payment-requests/1/transactions
-                          self: /api/v1/payment-requests/1/transactions/d4ab8f96-8d2b-406e-bec9-a35e590db005
-                        endTime: '2020-09-18T12:51:32.264531+00:00'
-                        id: d4ab8f96-8d2b-406e-bec9-a35e590db005
-                        paymentId: 21
-                        startTime: '2020-09-18T12:51:32.132985+00:00'
+                    id: 1
+                    paid: 451.5
+                    references:
+                      - id: 19
+                        invoiceNumber: '21'
+                        referenceNumber: '0001'
                         statusCode: COMPLETED
+                    receipts:
+                      - id: 1
+                        receiptAmount: 451.5
+                        receiptDate: '2020-09-18T12:51:30.538028+00:00'
+                        receiptNumber: '2'
+                    refund: 0
+                    serviceFees: 1.5
+                    statusCode: PAID
+                    total: 451.5
                     updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
                     updatedName: BCREGTEST Bena THIRTEEN
-                    updatedOn: '2020-09-18T12:51:32.250432+00:00'
+                    updatedOn: '2020-09-18T12:51:32.256413+00:00'
           headers:
             Access-Control-Allow-Origin:
               schema:
@@ -295,22 +288,23 @@ paths:
                 /api/v1/payment-requests:
                   value: '3600'
         '400':
-          description: BadRequest
+          description: Bad Request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples: {}
       parameters:
         - schema:
             type: string
           in: header
           name: Account-Id
-  '/api/v1/payment-requests/{payment_identifier}':
+  '/api/v1/payment-requests/{invoice_identifier}':
     get:
       tags:
-        - Payment Request
-      summary: Get Payment Request
-      description: Get details by request identifier
+        - Invoice
+      summary: Get Invoice
+      description: Get invoice details by request identifier
       operationId: get_payment_request
       responses:
         '200':
@@ -355,112 +349,70 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaymentResponse'
+                $ref: '#/components/schemas/Invoice'
               examples:
                 /api/v1/payment-requests/1:
                   value:
                     _links:
-                      collection: /api/v1/payment-requests
-                      invoices: /api/v1/payment-requests/1/invoices
-                      self: /api/v1/payment-requests/1
-                      transactions: /api/v1/payment-requests/1/transactions
+                      collection: /api/v1/payment-requests/2/invoices
+                      self: /api/v1/payment-requests/2/invoices/2
+                    businessIdentifier: BC1000000
+                    corpTypeCode: BC
                     createdBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
                     createdName: BCREGTEST Bena THIRTEEN
-                    createdOn: '2020-09-18T12:51:30.529832+00:00'
-                    id: 1
-                    invoices:
-                      - _links:
-                          collection: /api/v1/payment-requests/2/invoices
-                          self: /api/v1/payment-requests/2/invoices/2
-                        businessIdentifier: BC1000000
-                        corpTypeCode: BC
-                        createdBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
-                        createdName: BCREGTEST Bena THIRTEEN
-                        createdOn: '2020-09-18T12:51:30.538028+00:00'
-                        id: 1
-                        paid: 451.5
-                        references:
-                          - id: 19
-                            invoiceNumber: '21'
-                            referenceNumber: '0001'
-                            statusCode: COMPLETED
-                        refund: 0
-                        serviceFees: 1.5
-                        statusCode: PAID
-                        total: 451.5
-                        updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
-                        updatedName: BCREGTEST Bena THIRTEEN
-                        updatedOn: '2020-09-18T12:51:32.256413+00:00'
+                    createdOn: '2020-09-18T12:51:30.538028+00:00'
                     paymentMethod: DRAWDOWN
-                    paymentSystem: BCOL
-                    statusCode: COMPLETED
-                    transactions:
-                      - _links:
-                          collection: /api/v1/payment-requests/2/transactions
-                          self: /api/v1/payment-requests/2/transactions/d4ab8f96-8d2b-406e-bec9-a35e590db005
-                        endTime: '2020-09-18T12:51:32.264531+00:00'
-                        id: d4ab8f96-8d2b-406e-bec9-a35e590db005
-                        paymentId: 1
-                        startTime: '2020-09-18T12:51:32.132985+00:00'
+                    id: 1
+                    paid: 451.5
+                    references:
+                      - id: 19
+                        invoiceNumber: '21'
+                        referenceNumber: '0001'
                         statusCode: COMPLETED
+                    refund: 0
+                    serviceFees: 1.5
+                    statusCode: PAID
+                    total: 451.5
                     updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
                     updatedName: BCREGTEST Bena THIRTEEN
-                    updatedOn: '2020-09-18T12:51:32.250432+00:00'
+                    updatedOn: '2020-09-18T12:51:32.256413+00:00'
                 /api/v1/payment-requests/2:
                   value:
                     _links:
-                      collection: /api/v1/payment-requests
-                      invoices: /api/v1/payment-requests/2/invoices
-                      self: /api/v1/payment-requests/2
-                      transactions: /api/v1/payment-requests/2/transactions
+                      collection: /api/v1/payment-requests/2/invoices
+                      self: /api/v1/payment-requests/2/invoices/2
+                    businessIdentifier: BC1000001
+                    corpTypeCode: BC
                     createdBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
                     createdName: BCREGTEST Bena THIRTEEN
-                    createdOn: '2020-09-18T12:51:30.529832+00:00'
+                    createdOn: '2020-09-18T12:51:30.538028+00:00'
+                    paymentMethod: PAD
                     id: 2
-                    invoices:
-                      - _links:
-                          collection: /api/v1/payment-requests/2/invoices
-                          self: /api/v1/payment-requests/2/invoices/2
-                        businessIdentifier: BC1000001
-                        corpTypeCode: BC
-                        createdBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
-                        createdName: BCREGTEST Bena THIRTEEN
-                        createdOn: '2020-09-18T12:51:30.538028+00:00'
-                        id: 2
-                        paid: 451.5
-                        references:
-                          - id: 19
-                            invoiceNumber: '21'
-                            referenceNumber: '0001'
-                            statusCode: COMPLETED
-                        refund: 0
-                        serviceFees: 1.5
-                        statusCode: PAID
-                        total: 451.5
-                        updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
-                        updatedName: BCREGTEST Bena THIRTEEN
-                        updatedOn: '2020-09-18T12:51:32.256413+00:00'
-                    paymentMethod: DRAWDOWN
-                    paymentSystem: BCOL
-                    statusCode: COMPLETED
-                    transactions:
-                      - _links:
-                          collection: /api/v1/payment-requests/2/transactions
-                          self: /api/v1/payment-requests/2/transactions/d4ab8f96-8d2b-406e-bec9-a35e590db005
-                        endTime: '2020-09-18T12:51:32.264531+00:00'
-                        id: d4ab8f96-8d2b-406e-bec9-a35e590db005
-                        paymentId: 21
-                        startTime: '2020-09-18T12:51:32.132985+00:00'
+                    paid: 451.5
+                    references:
+                      - id: 19
+                        invoiceNumber: '21'
+                        referenceNumber: '0001'
                         statusCode: COMPLETED
+                    refund: 0
+                    serviceFees: 1.5
+                    statusCode: PAID
+                    total: 451.5
                     updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
                     updatedName: BCREGTEST Bena THIRTEEN
-                    updatedOn: '2020-09-18T12:51:32.250432+00:00'
-        '400':
-          description: BadRequest
+                    updatedOn: '2020-09-18T12:51:32.256413+00:00'
+        '404':
+          description: Not Found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                /api/v1/payment-requests/0:
+                  value:
+                    detail: Invalid invoice identifier.
+                    title: Invalid Request
+                    type: INVALID_INVOICE_ID
       parameters:
         - schema:
             type: string
@@ -469,12 +421,12 @@ paths:
     parameters:
       - schema:
           type: string
-        name: payment_identifier
+        name: invoice_identifier
         in: path
         required: true
     delete:
       tags:
-        - Payment Request
+        - Invoice
       summary: ''
       operationId: delete_payment_request
       responses:
@@ -517,7 +469,19 @@ paths:
                   value: 'Content-Type, api_key, Authorization'
                 /api/v1/payment-requests/2:
                   value: 'Content-Type, api_key, Authorization'
-      description: DELETE payment request
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                /api/v1/payment-requests/0:
+                  value:
+                    detail: Invalid invoice identifier.
+                    title: Invalid Request
+                    type: INVALID_INVOICE_ID
+      description: DELETE invoice
       requestBody:
         content:
           application/json:
@@ -529,44 +493,7 @@ paths:
             type: string
           in: header
           name: Account-Id
-    post:
-      tags:
-        - Receipts
-      summary: ''
-      operationId: generate_receipt
-      responses:
-        '201':
-          description: Success
-          headers:
-            Access-Control-Max-Age:
-              schema:
-                type: string
-              description: Access-Control-Max-Age
-            Access-Control-Allow-Origin:
-              schema:
-                type: string
-              description: Access-Control-Allow-Origin
-            Access-Control-Allow-Methods:
-              schema:
-                type: string
-              description: Access-Control-Allow-Methods
-            Access-Control-Allow-Headers:
-              schema:
-                type: string
-              description: Access-Control-Allow-Headers
-          content:
-            application/pdf:
-              schema:
-                type: object
-                properties: {}
-              examples: {}
-      description: Generate Receipt
-      parameters:
-        - schema:
-            type: string
-          in: header
-          name: Account-Id
-  '/api/v1/payment-requests/{payment_identifier}/receipts':
+  '/api/v1/payment-requests/{invoice_identifier}/receipts':
     get:
       tags:
         - Receipts
@@ -577,7 +504,7 @@ paths:
         '200':
           description: Success
           content:
-            application/pdf:
+            application/json:
               schema:
                 $ref: '#/components/schemas/Receipt'
               examples:
@@ -586,7 +513,7 @@ paths:
                     invoice:
                       _links:
                         collection: /api/v1/payment-requests/1/invoices
-                        self: /api/v1/payment-requeasts/1/invoices/1
+                        self: /api/v1/payment-requests/1/invoices/1
                       bcolAccount: '100000'
                       businessIdentifier: BC1000000
                       corpTypeCode: BC
@@ -677,9 +604,6 @@ paths:
                     invoiceNumber: '22'
                     paymentMethod: Drawdown Payment
                     receiptNumber: '22'
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Receipt'
           headers:
             Access-Control-Max-Age:
               schema:
@@ -697,12 +621,18 @@ paths:
               schema:
                 type: string
               description: Access-Control-Allow-Headers
-        '400':
-          description: BadRequest
+        '404':
+          description: Not Found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                /api/v1/payment-requests/0/receipts:
+                  value:
+                    detail: Invalid invoice identifier.
+                    title: Invalid Request
+                    type: INVALID_INVOICE_ID
       parameters:
         - schema:
             type: string
@@ -711,7 +641,7 @@ paths:
     parameters:
       - schema:
           type: string
-        name: payment_identifier
+        name: invoice_identifier
         in: path
         required: true
     post:
@@ -721,13 +651,47 @@ paths:
       operationId: Post_Receipt
       responses:
         '200':
-          description: OK
+          description: Success
+          content:
+            application/pdf:
+              schema:
+                type: object
+                properties: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                /api/v1/payment-requests/0/receipts:
+                  value:
+                    detail: Invalid invoice identifier.
+                    title: Invalid Request
+                    type: INVALID_INVOICE_ID
       description: Generates a payment receipt as PDF
       parameters:
         - schema:
             type: string
           in: header
           name: Account-Id
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiptRequest'
+            examples:
+              /api/v1/payment-requests/1/receipts:
+                value:
+                  corpName: XYZ Corp
+                  filingDateTime: 'June 27, 2019'
+                  fileName: director-change
+              /api/v1/payment-requests/2/receipts:
+                value:
+                  corpName: ABC Corporation
+                  filingDateTime: 'June 27, 2019'
+                  fileName: director-change
+        description: Generate receipt request
   '/api/v1/accounts/{accountId}/payments/queries':
     parameters:
       - schema:
@@ -751,332 +715,244 @@ paths:
                 /api/v1/accounts/1/payments/queries:
                   value:
                     items:
-                      - createdName: BCREGTEST Bena THIRTEEN
-                        createdOn: '2020-08-18T17:46:20.438243+00:00'
+                      - _links:
+                          collection: /api/v1/payment-requests/2/invoices
+                          self: /api/v1/payment-requests/2/invoices/2
+                        businessIdentifier: BC1000000
+                        corpTypeCode: BC
+                        createdBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
+                        createdName: BCREGTEST Bena THIRTEEN
+                        createdOn: '2020-09-18T12:51:30.538028+00:00'
                         id: 1
-                        invoice:
-                          _links:
-                            collection: /api/v1/payment-requests/2/invoices
-                            self: /api/v1/payment-requests/2/invoices/2
-                          businessIdentifier: BC1000000
-                          corpTypeCode: BC
-                          createdBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
-                          createdName: BCREGTEST Bena THIRTEEN
-                          createdOn: '2020-09-18T12:51:30.538028+00:00'
-                          id: 1
-                          paid: 451.5
-                          references:
-                            - id: 19
-                              invoiceNumber: '21'
-                              referenceNumber: '0001'
-                              statusCode: COMPLETED
-                          refund: 0
-                          serviceFees: 1.5
-                          statusCode: PAID
-                          total: 451.5
-                          updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
-                          updatedName: BCREGTEST Bena THIRTEEN
-                          updatedOn: '2020-09-18T12:51:32.256413+00:00'
-                        paymentMethod: DRAWDOWN
-                        paymentSystem: BCOL
-                        statusCode: COMPLETED
+                        paid: 451.5
+                        references:
+                          - id: 19
+                            invoiceNumber: '21'
+                            referenceNumber: '0001'
+                            statusCode: COMPLETED
+                        refund: 0
+                        serviceFees: 1.5
+                        statusCode: PAID
+                        total: 451.5
+                        updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
                         updatedName: BCREGTEST Bena THIRTEEN
                         updatedOn: '2020-08-18T17:46:22.004887+00:00'
+                        paymentMethod: DRAWDOWN
                     limit: 10
                     page: 1
                     total: 1
                 /api/v1/accounts/2/payments/queries:
                   value:
                     items:
-                      - createdName: BCREGTEST Bena THIRTEEN
-                        createdOn: '2020-09-16T16:24:05.393614+00:00'
-                        id: 4379
-                        invoice:
-                          corpTypeCode: BC
-                          id: 4374
-                          lineItems:
-                            - description: Incorporation
-                              filingFees: 350
-                              filingTypeCode: BCINC
-                              futureEffectiveFees: 0
-                              gst: 0
-                              priorityFees: 0
-                              pst: 0
-                              quantity: 1
-                              serviceFees: 1.5
-                              total: 350
-                              waivedBy: null
-                              waivedFees: 0
-                          paid: 351.5
-                          refund: 0
-                          serviceFees: 1.5
-                          total: 351.5
+                      - corpTypeCode: BC
+                        id: 4374
+                        lineItems:
+                          - description: Incorporation
+                            filingFees: 350
+                            filingTypeCode: BCINC
+                            futureEffectiveFees: 0
+                            gst: 0
+                            priorityFees: 0
+                            pst: 0
+                            quantity: 1
+                            serviceFees: 1.5
+                            total: 350
+                            waivedBy: null
+                            waivedFees: 0
+                        paid: 351.5
+                        refund: 0
+                        serviceFees: 1.5
+                        total: 351.5
                         paymentMethod: DRAWDOWN
-                        paymentSystem: BCOL
-                        statusCode: COMPLETED
-                        updatedName: BCREGTEST Bena THIRTEEN
-                        updatedOn: '2020-09-16T16:24:07.734560+00:00'
-                      - createdName: BCREGTEST Bena THIRTEEN
-                        createdOn: '2020-08-26T19:08:42.729457+00:00'
-                        id: 4022
-                        invoice:
-                          corpTypeCode: BC
-                          id: 4017
-                          lineItems:
-                            - description: Incorporation
-                              filingFees: 350
-                              filingTypeCode: BCINC
-                              futureEffectiveFees: 0
-                              gst: 0
-                              priorityFees: 0
-                              pst: 0
-                              quantity: 1
-                              serviceFees: 1.5
-                              total: 350
-                              waivedBy: null
-                              waivedFees: 0
-                          paid: 351.5
-                          refund: 0
-                          serviceFees: 1.5
-                          total: 351.5
+                      - corpTypeCode: BC
+                        id: 4017
+                        lineItems:
+                          - description: Incorporation
+                            filingFees: 350
+                            filingTypeCode: BCINC
+                            futureEffectiveFees: 0
+                            gst: 0
+                            priorityFees: 0
+                            pst: 0
+                            quantity: 1
+                            serviceFees: 1.5
+                            total: 350
+                            waivedBy: null
+                            waivedFees: 0
+                        paid: 351.5
+                        refund: 0
+                        serviceFees: 1.5
+                        total: 351.5
                         paymentMethod: DRAWDOWN
-                        paymentSystem: BCOL
-                        statusCode: COMPLETED
-                        updatedName: BCREGTEST Bena THIRTEEN
-                        updatedOn: '2020-08-26T19:08:44.459447+00:00'
-                      - createdName: BCREGTEST Bena THIRTEEN
-                        createdOn: '2020-08-18T17:46:20.438243+00:00'
-                        id: 3814
-                        invoice:
-                          businessIdentifier: BC1219964
-                          corpTypeCode: BC
-                          folioNumber: '123456789'
-                          id: 3809
-                          lineItems:
-                            - description: Change of Registered Office Address
-                              filingFees: 20
-                              filingTypeCode: OTADD
-                              futureEffectiveFees: 0
-                              gst: 0
-                              priorityFees: 0
-                              pst: 0
-                              quantity: 1
-                              serviceFees: 1.5
-                              total: 20
-                              waivedBy: null
-                              waivedFees: 0
-                          paid: 21.5
-                          refund: 0
-                          serviceFees: 1.5
-                          total: 21.5
+                      - businessIdentifier: BC1219964
+                        corpTypeCode: BC
+                        folioNumber: '123456789'
+                        id: 3809
+                        lineItems:
+                          - description: Change of Registered Office Address
+                            filingFees: 20
+                            filingTypeCode: OTADD
+                            futureEffectiveFees: 0
+                            gst: 0
+                            priorityFees: 0
+                            pst: 0
+                            quantity: 1
+                            serviceFees: 1.5
+                            total: 20
+                            waivedBy: null
+                            waivedFees: 0
+                        paid: 21.5
+                        refund: 0
+                        serviceFees: 1.5
+                        total: 21.5
                         paymentMethod: DRAWDOWN
-                        paymentSystem: BCOL
-                        statusCode: COMPLETED
-                        updatedName: BCREGTEST Bena THIRTEEN
-                        updatedOn: '2020-08-18T17:46:22.004887+00:00'
-                      - createdName: BCREGTEST Bena THIRTEEN
-                        createdOn: '2020-08-12T16:50:51.162980+00:00'
-                        id: 3607
-                        invoice:
-                          businessIdentifier: BC1219964
-                          corpTypeCode: BC
-                          id: 3602
-                          lineItems:
-                            - description: Change of Registered Office Address
-                              filingFees: 20
-                              filingTypeCode: OTADD
-                              futureEffectiveFees: 0
-                              gst: 0
-                              priorityFees: 0
-                              pst: 0
-                              quantity: 1
-                              serviceFees: 1.5
-                              total: 20
-                              waivedBy: null
-                              waivedFees: 0
-                          paid: 21.5
-                          refund: 0
-                          serviceFees: 1.5
-                          total: 21.5
+                      - businessIdentifier: BC1219964
+                        corpTypeCode: BC
+                        id: 3602
+                        lineItems:
+                          - description: Change of Registered Office Address
+                            filingFees: 20
+                            filingTypeCode: OTADD
+                            futureEffectiveFees: 0
+                            gst: 0
+                            priorityFees: 0
+                            pst: 0
+                            quantity: 1
+                            serviceFees: 1.5
+                            total: 20
+                            waivedBy: null
+                            waivedFees: 0
+                        paid: 21.5
+                        refund: 0
+                        serviceFees: 1.5
+                        total: 21.5
                         paymentMethod: DRAWDOWN
-                        paymentSystem: BCOL
-                        statusCode: COMPLETED
-                        updatedName: BCREGTEST Bena THIRTEEN
-                        updatedOn: '2020-08-12T16:50:51.995572+00:00'
-                      - createdName: BCREGTEST Kerrie NINETEEN
-                        createdOn: '2020-07-30T22:08:44.097034+00:00'
-                        id: 3353
-                        invoice:
-                          businessIdentifier: CP1000006
-                          corpTypeCode: CP
-                          id: 3348
-                          lineItems:
-                            - description: Change of Director
-                              filingFees: 0
-                              filingTypeCode: OTFDR
-                              futureEffectiveFees: 0
-                              gst: 0
-                              priorityFees: 0
-                              pst: 0
-                              quantity: 1
-                              serviceFees: 0
-                              total: 0
-                              waivedBy: null
-                              waivedFees: 0
-                          paid: 0
-                          refund: 0
-                          serviceFees: 0
-                          total: 0
+                      - businessIdentifier: CP1000006
+                        corpTypeCode: CP
+                        id: 3348
+                        lineItems:
+                          - description: Change of Director
+                            filingFees: 0
+                            filingTypeCode: OTFDR
+                            futureEffectiveFees: 0
+                            gst: 0
+                            priorityFees: 0
+                            pst: 0
+                            quantity: 1
+                            serviceFees: 0
+                            total: 0
+                            waivedBy: null
+                            waivedFees: 0
+                        paid: 0
+                        refund: 0
+                        serviceFees: 0
+                        total: 0
                         paymentMethod: INTERNAL
-                        paymentSystem: INTERNAL
-                        statusCode: COMPLETED
-                        updatedName: BCREGTEST Kerrie NINETEEN
-                        updatedOn: '2020-07-30T22:08:44.377232+00:00'
-                      - createdName: BCREGTEST Kerrie NINETEEN
-                        createdOn: '2020-07-30T20:18:40.910391+00:00'
-                        id: 3352
-                        invoice:
-                          businessIdentifier: BC1219964
-                          corpTypeCode: BC
-                          id: 3347
-                          lineItems:
-                            - description: Change of Director
-                              filingFees: 0
-                              filingTypeCode: OTFDR
-                              futureEffectiveFees: 0
-                              gst: 0
-                              priorityFees: 0
-                              pst: 0
-                              quantity: 1
-                              serviceFees: 0
-                              total: 0
-                              waivedBy: null
-                              waivedFees: 0
-                          paid: 0
-                          refund: 0
-                          serviceFees: 0
-                          total: 0
+                      - businessIdentifier: BC1219964
+                        corpTypeCode: BC
+                        id: 3347
+                        lineItems:
+                          - description: Change of Director
+                            filingFees: 0
+                            filingTypeCode: OTFDR
+                            futureEffectiveFees: 0
+                            gst: 0
+                            priorityFees: 0
+                            pst: 0
+                            quantity: 1
+                            serviceFees: 0
+                            total: 0
+                            waivedBy: null
+                            waivedFees: 0
+                        paid: 0
+                        refund: 0
+                        serviceFees: 0
+                        total: 0
                         paymentMethod: INTERNAL
-                        paymentSystem: INTERNAL
-                        statusCode: COMPLETED
-                        updatedName: BCREGTEST Kerrie NINETEEN
-                        updatedOn: '2020-07-30T20:18:41.173317+00:00'
-                      - createdName: BCREGTEST Bena THIRTEEN
-                        createdOn: '2020-07-28T16:23:30.456888+00:00'
-                        id: 3316
-                        invoice:
-                          businessIdentifier: BC1219964
-                          corpTypeCode: BC
-                          id: 3311
-                          lineItems:
-                            - description: Change of Director
-                              filingFees: 20
-                              filingTypeCode: OTCDR
-                              futureEffectiveFees: 0
-                              gst: 0
-                              priorityFees: 0
-                              pst: 0
-                              quantity: 1
-                              serviceFees: null
-                              total: 20
-                              waivedBy: null
-                              waivedFees: 0
-                          paid: 21.5
-                          refund: 0
-                          serviceFees: 1.5
-                          total: 21.5
+                      - businessIdentifier: BC1219964
+                        corpTypeCode: BC
+                        id: 3311
+                        lineItems:
+                          - description: Change of Director
+                            filingFees: 20
+                            filingTypeCode: OTCDR
+                            futureEffectiveFees: 0
+                            gst: 0
+                            priorityFees: 0
+                            pst: 0
+                            quantity: 1
+                            serviceFees: 0
+                            total: 20
+                            waivedBy: null
+                            waivedFees: 0
+                        paid: 21.5
+                        refund: 0
+                        serviceFees: 1.5
+                        total: 21.5
                         paymentMethod: DRAWDOWN
-                        paymentSystem: BCOL
-                        statusCode: COMPLETED
-                        updatedName: BCREGTEST Bena THIRTEEN
-                        updatedOn: '2020-07-28T16:23:32.559398+00:00'
-                      - createdName: BCREGTEST Kerrie NINETEEN
-                        createdOn: '2020-07-22T22:34:34.236265+00:00'
-                        id: 3197
-                        invoice:
-                          businessIdentifier: BC1219942
-                          corpTypeCode: BC
-                          id: 3192
-                          lineItems:
-                            - description: Change of Registered Office Address
-                              filingFees: 20
-                              filingTypeCode: OTADD
-                              futureEffectiveFees: 0
-                              gst: 0
-                              priorityFees: 0
-                              pst: 0
-                              quantity: 1
-                              serviceFees: null
-                              total: 20
-                              waivedBy: null
-                              waivedFees: 0
-                          paid: 21.5
-                          refund: 0
-                          serviceFees: 1.5
-                          total: 21.5
+                      - businessIdentifier: BC1219942
+                        corpTypeCode: BC
+                        id: 3192
+                        lineItems:
+                          - description: Change of Registered Office Address
+                            filingFees: 20
+                            filingTypeCode: OTADD
+                            futureEffectiveFees: 0
+                            gst: 0
+                            priorityFees: 0
+                            pst: 0
+                            quantity: 1
+                            serviceFees: 0
+                            total: 20
+                            waivedBy: null
+                            waivedFees: 0
+                        paid: 21.5
+                        refund: 0
+                        serviceFees: 1.5
+                        total: 21.5
                         paymentMethod: DRAWDOWN
-                        paymentSystem: BCOL
-                        statusCode: COMPLETED
-                        updatedName: BCREGTEST Kerrie NINETEEN
-                        updatedOn: '2020-07-22T22:34:34.712447+00:00'
-                      - createdName: BCREGTEST Kerrie NINETEEN
-                        createdOn: '2020-07-22T22:32:01.249914+00:00'
-                        id: 3196
-                        invoice:
-                          businessIdentifier: BC1219942
-                          corpTypeCode: BC
-                          id: 3191
-                          lineItems:
-                            - description: Change of Director
-                              filingFees: 20
-                              filingTypeCode: OTCDR
-                              futureEffectiveFees: 0
-                              gst: 0
-                              priorityFees: 0
-                              pst: 0
-                              quantity: 1
-                              serviceFees: null
-                              total: 20
-                              waivedBy: null
-                              waivedFees: 0
-                          paid: 21.5
-                          refund: 0
-                          serviceFees: 1.5
-                          total: 21.5
+                      - businessIdentifier: BC1219942
+                        corpTypeCode: BC
+                        id: 3191
+                        lineItems:
+                          - description: Change of Director
+                            filingFees: 20
+                            filingTypeCode: OTCDR
+                            futureEffectiveFees: 0
+                            gst: 0
+                            priorityFees: 0
+                            pst: 0
+                            quantity: 1
+                            serviceFees: 0
+                            total: 20
+                            waivedBy: null
+                            waivedFees: 0
+                        paid: 21.5
+                        refund: 0
+                        serviceFees: 1.5
+                        total: 21.5
                         paymentMethod: DRAWDOWN
-                        paymentSystem: BCOL
-                        statusCode: COMPLETED
-                        updatedName: BCREGTEST Kerrie NINETEEN
-                        updatedOn: '2020-07-22T22:32:04.230188+00:00'
-                      - createdName: BCREGTEST Kerrie NINETEEN
-                        createdOn: '2020-07-22T22:31:04.817993+00:00'
-                        id: 3195
-                        invoice:
-                          businessIdentifier: BC1219942
-                          corpTypeCode: BC
-                          id: 3190
-                          lineItems:
-                            - description: Change of Director
-                              filingFees: 20
-                              filingTypeCode: OTCDR
-                              futureEffectiveFees: 0
-                              gst: 0
-                              priorityFees: 0
-                              pst: 0
-                              quantity: 1
-                              serviceFees: null
-                              total: 20
-                              waivedBy: null
-                              waivedFees: 0
-                          paid: 21.5
-                          refund: 0
-                          serviceFees: 1.5
-                          total: 21.5
+                      - businessIdentifier: BC1219942
+                        corpTypeCode: BC
+                        id: 3190
+                        lineItems:
+                          - description: Change of Director
+                            filingFees: 20
+                            filingTypeCode: OTCDR
+                            futureEffectiveFees: 0
+                            gst: 0
+                            priorityFees: 0
+                            pst: 0
+                            quantity: 1
+                            serviceFees: 0
+                            total: 20
+                            waivedBy: null
+                            waivedFees: 0
+                        paid: 21.5
+                        refund: 0
+                        serviceFees: 1.5
+                        total: 21.5
                         paymentMethod: DRAWDOWN
-                        paymentSystem: BCOL
-                        statusCode: COMPLETED
-                        updatedName: BCREGTEST Kerrie NINETEEN
-                        updatedOn: '2020-07-22T22:31:05.269737+00:00'
                     limit: 10
                     page: 1
                     total: 64
@@ -1097,6 +973,24 @@ paths:
               schema:
                 type: string
               description: Access-Control-Allow-Headers
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                /api/v1/accounts/0/payments/queries:
+                  value:
+                    detail: Invalid account identifier.
+                    title: Invalid Request
+                    type: INVALID_ACCOUNT_NUMBER
       description: Query account transaction reports
       parameters:
         - schema:
@@ -1124,14 +1018,14 @@ paths:
               /api/v1/accounts/1/payments/queries:
                 value:
                   dateFilter:
-                    startDate: 08/01/2020
-                    endDate: 08/31/2020
+                    startDate: '2020-11-08'
+                    endDate: '2020-11-25'
                   folioNumber: '123456789'
               /api/v1/accounts/2/payments/queries:
                 value:
                   dateFilter:
-                    startDate: 01/01/2020
-                    endDate: 12/31/2020
+                    startDate: '2020-01-01'
+                    endDate: '2020-12-31'
   '/api/v1/accounts/{accountId}/statements':
     parameters:
       - schema:
@@ -1299,6 +1193,18 @@ paths:
                     limit: 10
                     page: 1
                     total: 1319
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                /api/v1/accounts/0/statements:
+                  value:
+                    detail: Invalid account identifier.
+                    title: Invalid Request
+                    type: INVALID_ACCOUNT_NUMBER
       operationId: get_statements
       description: Get list of statements generated for the account
       parameters:
@@ -1339,6 +1245,18 @@ paths:
               schema:
                 type: object
                 properties: {}
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                /api/v1/accounts/0/statments/0:
+                  value:
+                    detail: Invalid statement identifier.
+                    title: Invalid Request
+                    type: INVALID_STATEMENT_ID
       operationId: get_statement
       description: Return the statement as either PDF or CSV
       parameters:
@@ -1495,61 +1413,6 @@ components:
           type: string
       title: Contact Information
       description: <p>Object to hold business information for payment requests. </p>
-    PaymentResponse:
-      type: object
-      description: <p>Object to hold details on payment transaction record. </p>
-      properties:
-        _links:
-          $ref: '#/components/schemas/Links'
-        id:
-          type: integer
-          description: Unique identifier for payment
-        createdBy:
-          type: string
-          description: username of the account
-        createdOn:
-          type: string
-          description: payment creation date
-        invoices:
-          type: array
-          items:
-            $ref: '#/components/schemas/Invoice'
-        transactions:
-          type: array
-          items:
-            $ref: '#/components/schemas/Transaction'
-        paymentMethod:
-          type: string
-          description: code of payment method
-          enum:
-            - CC
-            - DIRECT_PAY
-            - DRAWDOWN
-            - PAD
-            - OB
-            - EFT
-            - WIRE
-            - INTERNAL
-        statusCode:
-          type: string
-          description: Status of payment.
-          enum:
-            - COMPLETED
-            - CREATED
-            - DELETED
-        updatedBy:
-          type: string
-          description: username of the account that made update
-        updatedOn:
-          type: string
-          description: payment update date
-        paymentSystem:
-          type: string
-          enum:
-            - PAYBC
-            - BCOL
-            - INTERNAL
-      title: PaymentRespomse
     InvoiceRef:
       type: object
       properties:
@@ -1721,10 +1584,10 @@ components:
       properties:
         startDate:
           type: string
-          description: Start date in MM/DD/YYY
+          description: Start date in YYYY-MM-DD
         endDate:
           type: string
-          description: End date in MM/DD/YYY
+          description: End date in YYYY-MM-DD
     TransactionReports:
       title: Transaction Reports
       type: object
@@ -1734,7 +1597,7 @@ components:
           type: array
           description: List of payment transactions
           items:
-            $ref: '#/components/schemas/PaymentResponse'
+            $ref: '#/components/schemas/Invoice'
         limit:
           type: integer
           description: number of records to be included
@@ -1775,6 +1638,22 @@ components:
           type: integer
         toDate:
           type: string
+    ReceiptRequest:
+      title: ReceiptRequest
+      type: object
+      description: Receipt Request Model
+      properties:
+        corpName:
+          type: string
+          description: Name of the business
+        filingDateTime:
+          type: string
+          description: Filing date and time
+        fileName:
+          type: string
+          description: file name to be part of response
+      required:
+        - corpName
   securitySchemes:
     JWT:
       type: http
@@ -1793,6 +1672,6 @@ security:
   - JWT: []
 tags:
   - name: Fees
-  - name: Payment Request
+  - name: Invoice
   - name: Receipts
   - name: Transaction Reports
