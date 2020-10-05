@@ -18,7 +18,9 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 
 import json
-from datetime import timedelta
+from datetime import timedelta, datetime
+
+import dateutil
 
 from pay_api.models.payment import Payment
 from pay_api.models.payment_account import PaymentAccount
@@ -43,6 +45,24 @@ def test_get_default_statement_settings_weekly(session, client, jwt, app):
                     headers=headers)
     assert rv.status_code == 200
     assert rv.json.get('currentFrequency').get('frequency') == StatementFrequency.WEEKLY.value
+    # Assert the array of the frequncies
+    for freqeuncy in rv.json.get('frequencies'):
+        if freqeuncy.get('frequency') == StatementFrequency.WEEKLY.value:
+            actual_weekly = dateutil.parser.parse(freqeuncy.get('startDate')).date()
+            expected_weekly = (get_week_start_and_end_date()[1] + timedelta(days=1)).date()
+            assert actual_weekly == expected_weekly, 'weekly matches'
+        if freqeuncy.get('frequency') == StatementFrequency.MONTHLY.value:
+            today = datetime.today()
+            actual_monthly = dateutil.parser.parse(freqeuncy.get('startDate')).date()
+            expected_monthly = (
+                        get_first_and_last_dates_of_month(today.month, today.year)[1] + timedelta(days=1)).date()
+            assert actual_monthly == expected_monthly, 'monthly matches'
+        if freqeuncy.get('frequency') == StatementFrequency.DAILY.value:
+            end_date = get_week_start_and_end_date()[1]
+            actual_daily = dateutil.parser.parse(freqeuncy.get('startDate')).date()
+            # since current frequncy is weekly , daily changes will happen at the end of the week
+            expected_weekly = (get_week_start_and_end_date()[1] + timedelta(days=1)).date()
+            assert actual_daily == expected_weekly, 'daily matches'
 
 
 def test_post_default_statement_settings_daily(session, client, jwt, app):
