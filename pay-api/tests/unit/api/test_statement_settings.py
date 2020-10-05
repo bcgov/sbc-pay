@@ -58,7 +58,6 @@ def test_get_default_statement_settings_weekly(session, client, jwt, app):
                         get_first_and_last_dates_of_month(today.month, today.year)[1] + timedelta(days=1)).date()
             assert actual_monthly == expected_monthly, 'monthly matches'
         if freqeuncy.get('frequency') == StatementFrequency.DAILY.value:
-            end_date = get_week_start_and_end_date()[1]
             actual_daily = dateutil.parser.parse(freqeuncy.get('startDate')).date()
             # since current frequncy is weekly , daily changes will happen at the end of the week
             expected_weekly = (get_week_start_and_end_date()[1] + timedelta(days=1)).date()
