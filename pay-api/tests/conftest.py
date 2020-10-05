@@ -146,7 +146,7 @@ def session(app, db):  # pylint: disable=redefined-outer-name, invalid-name
         conn.close()
 
 
-@pytest.fixture('function')
+@pytest.fixture(scope='function')
 def client_id():
     """Return a unique client_id that can be used in tests."""
     _id = random.SystemRandom().getrandbits(0x58)
