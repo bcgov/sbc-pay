@@ -126,7 +126,7 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
             last_date = StatementSettings._get_end_of(max_frequency)
             all_settings.append({
                 'frequency': freq.name,
-                'start_date': last_date
+                'start_date': last_date + timedelta(days=1)
             })
 
         statements_settings_schema = StatementSettingsModelSchema()
