@@ -181,8 +181,8 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
         return None
 
-    def complete_post_payment(self, payment_id: int) -> None:
-        """Complete any post payment activities if needed."""
+    def complete_post_invoice(self, invoice_id: int, invoice_reference: InvoiceReference) -> None:
+        """Complete any post invoice activities if needed."""
 
     def __get_token(self):
         """Generate oauth token from payBC which will be used for all communication."""

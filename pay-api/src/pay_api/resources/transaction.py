@@ -37,7 +37,7 @@ class Transaction(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_tracing.trace()
-    def post(payment_id):
+    def post(invoice_id):
         """Create the Transaction records."""
         current_app.logger.info('<Transaction.post')
         request_json = request.get_json()
@@ -49,7 +49,7 @@ class Transaction(Resource):
             return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
         try:
-            response, status = TransactionService.create(payment_id, request_json).asdict(), HTTPStatus.CREATED
+            response, status = TransactionService.create(invoice_id, request_json).asdict(), HTTPStatus.CREATED
         except BusinessException as exception:
             return exception.response()
         current_app.logger.debug('>Transaction.post')
@@ -59,10 +59,10 @@ class Transaction(Resource):
     @cors.crossdomain(origin='*')
     @_jwt.requires_auth
     @_tracing.trace()
-    def get(payment_id):
-        """Get all transaction records for a payment."""
+    def get(invoice_id):
+        """Get all transaction records for a invoice."""
         current_app.logger.info('<Transaction.get')
-        response, status = TransactionService.find_by_payment_id(payment_id), HTTPStatus.OK
+        response, status = TransactionService.find_by_invoice_id(invoice_id), HTTPStatus.OK
         current_app.logger.debug('>Transaction.get')
         return jsonify(response), status
 
@@ -76,13 +76,12 @@ class Transactions(Resource):
     @cors.crossdomain(origin='*')
     @_jwt.requires_auth
     @_tracing.trace()
-    def get(payment_id, transaction_id):
+    def get(invoice_id, transaction_id):
         """Get the Transaction record."""
         current_app.logger.info(
-            f'<Transaction.get for payment : {payment_id}, and transaction {transaction_id}')
+            f'<Transaction.get for invoice : {invoice_id}, and transaction {transaction_id}')
         try:
-            response, status = TransactionService.find_by_id(payment_id,
-                                                             transaction_id).asdict(), HTTPStatus.OK
+            response, status = TransactionService.find_by_id(transaction_id).asdict(), HTTPStatus.OK
         except BusinessException as exception:
             return exception.response()
         current_app.logger.debug('>Transaction.get')
@@ -91,14 +90,14 @@ class Transactions(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_tracing.trace()
-    def patch(payment_id, transaction_id):
+    def patch(invoice_id, transaction_id):
         """Update the transaction record by querying payment system."""
         current_app.logger.info(
-            f'<Transaction.post for payment : {payment_id}, and transaction {transaction_id}')
+            f'<Transaction.post for payment : {invoice_id}, and transaction {transaction_id}')
         pay_response_url: str = request.get_json().get('payResponseUrl', None)
 
         try:
-            response, status = TransactionService.update_transaction(payment_id, transaction_id,
+            response, status = TransactionService.update_transaction(transaction_id,
                                                                      pay_response_url).asdict(), HTTPStatus.OK
         except BusinessException as exception:
             return exception.response()

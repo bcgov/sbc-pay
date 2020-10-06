@@ -19,7 +19,7 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 
 import json
 
-from pay_api.models.payment import Payment
+from pay_api.models.invoice import Invoice
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.schemas import utils as schema_utils
 from tests.utilities.base_test import (
@@ -35,8 +35,8 @@ def test_account_purchase_history(session, client, jwt, app):
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
                      headers=headers)
 
-    payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.invoices[0].payment_account_id)
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     rv = client.post(f'/api/v1/accounts/{pay_account.auth_account_id}/payments/queries', data=json.dumps({}),
                      headers=headers)
@@ -52,8 +52,8 @@ def test_account_purchase_history_pagination(session, client, jwt, app):
     for i in range(10):
         rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
 
-    payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.invoices[0].payment_account_id)
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     rv = client.post(f'/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=5',
                      data=json.dumps({}),
@@ -71,8 +71,8 @@ def test_account_purchase_history_invalid_request(session, client, jwt, app):
 
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
 
-    payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.invoices[0].payment_account_id)
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     search_filter = {
         'businessIdentifier': 1111
@@ -97,8 +97,8 @@ def test_account_purchase_history_export_as_csv(session, client, jwt, app):
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
                      headers=headers)
 
-    payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.invoices[0].payment_account_id)
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     headers = {
         'Authorization': f'Bearer {token}',
@@ -123,8 +123,8 @@ def test_account_purchase_history_export_as_pdf(session, client, jwt, app):
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
                      headers=headers)
 
-    payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.invoices[0].payment_account_id)
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     headers = {
         'Authorization': f'Bearer {token}',
@@ -149,8 +149,8 @@ def test_account_purchase_history_export_invalid_request(session, client, jwt, a
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
                      headers=headers)
 
-    payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.invoices[0].payment_account_id)
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     headers = {
         'Authorization': f'Bearer {token}',
@@ -174,8 +174,8 @@ def test_account_purchase_history_default_list(session, client, jwt, app):
     for i in range(11):
         rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
 
-    payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.invoices[0].payment_account_id)
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     rv = client.post(f'/api/v1/accounts/{pay_account.auth_account_id}/payments/queries',
                      data=json.dumps({}),

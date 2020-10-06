@@ -32,7 +32,6 @@ from .code import API as CODES_API
 from .distributions import API as DISTRIBUTION_API
 from .fee import API as FEE_API
 from .fee_schedule import API as FEE_SCHEDULE_API
-from .invoice import API as INVOICE_API
 from .invoice_receipt import API as INVOICE_RECEIPT_API
 from .meta import API as META_API
 from .ops import API as OPS_API
@@ -76,9 +75,8 @@ API.add_namespace(PAY_API, path='/payment-requests')
 API.add_namespace(FEE_API, path='/fees')
 API.add_namespace(FEE_SCHEDULE_API, '/fees/schedules')
 API.add_namespace(DISTRIBUTION_API, '/fees/distributions')
-API.add_namespace(TRANSACTION_API, path='/payment-requests/<int:payment_id>/transactions')
-API.add_namespace(INVOICE_API, path='/payment-requests/<int:payment_id>/invoices')
-API.add_namespace(INVOICE_RECEIPT_API, path='/payment-requests/<int:payment_id>')
+API.add_namespace(TRANSACTION_API, path='/payment-requests/<int:invoice_id>/transactions')
+API.add_namespace(INVOICE_RECEIPT_API, path='/payment-requests/<int:invoice_id>')
 API.add_namespace(ACCOUNTS_API, path='/accounts')
 API.add_namespace(ACCOUNT_STATEMENTS_API, path='/accounts/<string:account_id>/statements')
 API.add_namespace(ACCOUNT_STATEMENTS_SETTINGS_API, path='/accounts/<string:account_id>/statements/settings')

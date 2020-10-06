@@ -16,7 +16,8 @@
 
 Test-Suite to ensure that the CorpType Class is working as expected.
 """
-from pay_api.models import InvoiceSchema
+from pay_api.models import Invoice, InvoiceSchema
+from pay_api.utils.enums import InvoiceStatus
 from tests.utilities.base_test import factory_invoice, factory_payment, factory_payment_account
 
 
@@ -29,7 +30,7 @@ def test_invoice(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment=payment, payment_account=payment_account)
+    invoice = factory_invoice(payment_account=payment_account)
     invoice.save()
     assert invoice.id is not None
 
@@ -43,7 +44,7 @@ def test_invoice_find_by_id(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment=payment, payment_account=payment_account)
+    invoice = factory_invoice(payment_account=payment_account)
     invoice.save()
     assert invoice.find_by_id(invoice.id) is not None
     schema = InvoiceSchema()
@@ -51,8 +52,8 @@ def test_invoice_find_by_id(session):
     assert d.get('id') == invoice.id
 
 
-def test_invoice_find_by_id_and_payment_id(session):
-    """Assert a invoice is stored.
+def test_payments_marked_for_delete(session):
+    """Assert a payment is stored.
 
     Start with a blank database.
     """
@@ -60,6 +61,8 @@ def test_invoice_find_by_id_and_payment_id(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment=payment, payment_account=payment_account)
+    invoice = factory_invoice(status_code=InvoiceStatus.DELETE_ACCEPTED.value, payment_account=payment_account)
+    # invoice.invoice_status_code == InvoiceStatus.DELETE_ACCEPTED.value
     invoice.save()
-    assert invoice.find_by_id_and_payment_id(invoice.id, payment.id) is not None
+    invoices = Invoice.find_invoices_marked_for_delete()
+    assert len(invoices) == 1

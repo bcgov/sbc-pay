@@ -18,6 +18,7 @@ Test-Suite to ensure that the Distribution code Service is working as expected.
 """
 
 from datetime import datetime
+
 from flask import current_app
 
 from pay_api import services
@@ -75,21 +76,22 @@ def test_update_distribution(session, public_user_mock, stan_server, monkeypatch
     # Create a direct pay
     current_app.config['DIRECT_PAY_ENABLED'] = True
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.DIRECT_PAY.value)
-    payment = factory_payment(payment_method_code=PaymentMethod.DIRECT_PAY.value)
     payment_account.save()
-    payment.save()
 
-    invoice = factory_invoice(payment, payment_account, total=30)
+    invoice = factory_invoice(payment_account, total=30)
     invoice.save()
-    factory_invoice_reference(invoice.id).save()
+    invoice_reference = factory_invoice_reference(invoice.id).save()
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
+
+    factory_payment(invoice_number=invoice_reference.invoice_number,
+                    payment_method_code=PaymentMethod.DIRECT_PAY.value).save()
 
     distribution_id = line.fee_distribution_id
 
     distribution_code = distribution_code_svc.find_by_id(distribution_id)
 
-    transaction = PaymentTransactionService.create(payment.id, get_paybc_transaction_request())
+    transaction = PaymentTransactionService.create(invoice.id, get_paybc_transaction_request())
 
     def get_receipt(cls, payment_account, pay_response_url: str,
                     invoice_reference):  # pylint: disable=unused-argument; mocks of library methods
@@ -98,7 +100,7 @@ def test_update_distribution(session, public_user_mock, stan_server, monkeypatch
     monkeypatch.setattr('pay_api.services.direct_pay_service.DirectPayService.get_receipt', get_receipt)
 
     # Update transaction without response url, which should update the receipt
-    PaymentTransactionService.update_transaction(payment.id, transaction.id, pay_response_url=None)
+    PaymentTransactionService.update_transaction(transaction.id, pay_response_url=None)
 
     invoice = InvoiceModel.find_by_id(invoice.id)
     assert invoice.invoice_status_code == InvoiceStatus.PAID.value

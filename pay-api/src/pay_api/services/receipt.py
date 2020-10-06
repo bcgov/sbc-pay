@@ -20,7 +20,7 @@ from flask import current_app
 from sbc_common_components.utils.camel_case_response import camelcase_dict
 
 from pay_api.exceptions import BusinessException
-from pay_api.models import Payment as PaymentModel
+from pay_api.models import PaymentMethod as PaymentMethodModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem
 from pay_api.utils.errors import Error
@@ -144,8 +144,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     @user_context
-    def create_receipt(payment_identifier: str, invoice_identifier: str, filing_data: Dict[str, Any],
-                       skip_auth_check: bool = False, **kwargs):
+    def create_receipt(invoice_identifier: str, filing_data: Dict[str, Any], skip_auth_check: bool = False, **kwargs):
         """Create receipt."""
         current_app.logger.debug('<create receipt initiated')
         receipt_dict = {
@@ -153,8 +152,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
             'reportName': filing_data.pop('fileName', 'payment_receipt')
         }
 
-        template_vars = Receipt.get_receipt_details(filing_data, invoice_identifier, payment_identifier,
-                                                    skip_auth_check)
+        template_vars = Receipt.get_receipt_details(filing_data, invoice_identifier, skip_auth_check)
         template_vars.update(filing_data)
 
         receipt_dict['templateVars'] = template_vars
@@ -170,31 +168,27 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         return pdf_response
 
     @staticmethod
-    def get_receipt_details(filing_data, invoice_identifier, payment_identifier, skip_auth_check):
+    def get_receipt_details(filing_data, invoice_identifier, skip_auth_check):
         """Return receipt details."""
         receipt_details: dict = {}
-        # invoice number not mandatory ;since only one invoice exist for a payment now
-        if not invoice_identifier:
-            invoice_data = Invoice.find_by_payment_identifier(payment_identifier, skip_auth_check=skip_auth_check)
-        else:
-            invoice_data = Invoice.find_by_id(invoice_identifier, payment_identifier, skip_auth_check=skip_auth_check)
+        # invoice number mandatory
+        invoice_data = Invoice.find_by_id(invoice_identifier, skip_auth_check=skip_auth_check)
 
         if not invoice_data.receipts:
             raise BusinessException(Error.INVALID_REQUEST)
 
         invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(invoice_data.id)
-        payment: PaymentModel = PaymentModel.find_by_id(invoice_data.payment_id)
 
         receipt_details['invoiceNumber'] = invoice_reference.invoice_number
-        if payment.payment_system_code == PaymentSystem.INTERNAL.value and invoice_data.routing_slip:
+        if invoice_data.payment_method_code == PaymentSystem.INTERNAL.value and invoice_data.routing_slip:
             receipt_details['routingSlipNumber'] = invoice_data.routing_slip
         receipt_details['receiptNumber'] = invoice_data.receipts[0].receipt_number
         receipt_details['filingIdentifier'] = filing_data.get('filingIdentifier', invoice_data.filing_id)
         receipt_details['bcOnlineAccountNumber'] = invoice_data.bcol_account
 
-        payment_method = PaymentModel.find_payment_method_by_payment_id(payment_identifier)
+        payment_method = PaymentMethodModel.find_by_code(invoice_data.payment_method_code)
 
-        if payment.payment_system_code != PaymentSystem.INTERNAL.value:
+        if invoice_data.payment_method_code != PaymentSystem.INTERNAL.value:
             receipt_details['paymentMethod'] = payment_method.description
         receipt_details['invoice'] = camelcase_dict(invoice_data.asdict(), {})
         return receipt_details

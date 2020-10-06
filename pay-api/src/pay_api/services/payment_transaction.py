@@ -28,11 +28,10 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
-from pay_api.utils.enums import PaymentSystem, PaymentStatus, TransactionStatus, InvoiceReferenceStatus, \
+from pay_api.utils.enums import PaymentStatus, TransactionStatus, InvoiceReferenceStatus, \
     InvoiceStatus, PaymentMethod
 from pay_api.utils.errors import Error
 from pay_api.utils.util import is_valid_redirect_url
-from .invoice import InvoiceModel
 from .payment import Payment
 from .queue_publisher import publish_response
 
@@ -87,7 +86,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
 
     @status_code.setter
     def status_code(self, value: str):
-        """Set the payment_id."""
+        """Set the status_code."""
         self._status_code = value
         self._dao.status_code = value
 
@@ -167,12 +166,10 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def populate(value):
-        """Pouplate the service."""
+        """Populate the service."""
         if not value:
             return None
-        transaction: PaymentTransaction = PaymentTransaction()
-        transaction._dao = value  # pylint: disable=protected-access
-        return transaction
+        return PaymentTransaction.__wrap_dao(value)
 
     def save(self):
         """Save the fee schedule information."""
@@ -183,32 +180,46 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         return self._dao.flush()
 
     @staticmethod
-    def create(payment_identifier: str, request_json: Dict):
+    def create(invoice_id: str, request_json: Dict):
         """Create transaction record."""
         current_app.logger.debug('<create transaction')
-        # Lookup payment record
-        payment: Payment = Payment.find_by_id(payment_identifier, skip_auth_check=True)
+        # Lookup invoice record
+        invoice: Invoice = Invoice.find_by_id(invoice_id, skip_auth_check=True)
+
+        pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
+            payment_method=invoice.payment_method_code
+        )
 
         # Check if return url is valid
         return_url = request_json.get('clientSystemUrl')
 
-        PaymentTransaction.validate_redirect_url_and_throw_error(payment, return_url)
+        PaymentTransaction.validate_redirect_url_and_throw_error(invoice, return_url)
 
-        if not payment.id:
-            raise BusinessException(Error.INVALID_PAYMENT_ID)
+        if not invoice.id:
+            raise BusinessException(Error.INVALID_INVOICE_ID)
+
+        # Check if there is a payment created. If not, create a payment record with status CREATED
+        payment: Payment = Payment.find_payment_for_invoice(invoice_id)
+        if not payment:
+            # Transaction is against payment, so create a payment if not present.
+            invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
+
+            # Create a payment record
+            payment = Payment.create(payment_method=pay_system_service.get_payment_method_code(),
+                                     payment_system=pay_system_service.get_payment_system_code(),
+                                     payment_status=pay_system_service.get_default_payment_status(),
+                                     invoice_number=invoice_reference.invoice_number)
+
         # Cannot start transaction on completed payment
-        if payment.payment_status_code in (PaymentStatus.COMPLETED.value,
-                                           PaymentStatus.DELETED.value, PaymentStatus.DELETE_ACCEPTED.value):
+        if payment.payment_status_code in (PaymentStatus.COMPLETED.value, PaymentStatus.DELETED.value):
             raise BusinessException(Error.COMPLETED_PAYMENT)
 
         # If there are active transactions (status=CREATED), then invalidate all of them and create a new one.
-        existing_transactions = PaymentTransactionModel.find_by_payment_id(payment.id)
-        if existing_transactions:
-            for existing_transaction in existing_transactions:
-                if existing_transaction.status_code != TransactionStatus.CANCELLED.value:
-                    existing_transaction.status_code = TransactionStatus.CANCELLED.value
-                    existing_transaction.transaction_end_time = datetime.now()
-                    existing_transaction.save()
+        existing_transaction = PaymentTransactionModel.find_active_by_invoice_id(invoice_id)
+        if existing_transaction and existing_transaction.status_code != TransactionStatus.CANCELLED.value:
+            existing_transaction.status_code = TransactionStatus.CANCELLED.value
+            existing_transaction.transaction_end_time = datetime.now()
+            existing_transaction.save()
 
         transaction = PaymentTransaction()
         transaction.payment_id = payment.id
@@ -216,7 +227,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         transaction.status_code = TransactionStatus.CREATED.value
         transaction_dao = transaction.flush()
         transaction._dao = transaction_dao  # pylint: disable=protected-access
-        transaction.pay_system_url = transaction.build_pay_system_url(payment, transaction.id,
+        transaction.pay_system_url = transaction.build_pay_system_url(invoice, pay_system_service, transaction.id,
                                                                       request_json.get('payReturnUrl'))
         transaction_dao = transaction.save()
 
@@ -226,32 +237,29 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         return transaction
 
     @staticmethod
-    def validate_redirect_url_and_throw_error(payment, return_url):
+    def validate_redirect_url_and_throw_error(invoice: Invoice, return_url):
         """Check and Throw if the return_url is not a valid url."""
-        is_validity_check_needed = payment.payment_system_code == PaymentSystem.PAYBC.value and \
-            payment.payment_method_code not in (PaymentMethod.PAD.value,)
+        is_validity_check_needed = invoice.payment_method_code in (
+            PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value)
         if is_validity_check_needed and not is_valid_redirect_url(return_url):
             raise BusinessException(Error.INVALID_REDIRECT_URI)
 
     @staticmethod
-    def build_pay_system_url(payment: Payment, transaction_id: uuid, pay_return_url: str):
+    def build_pay_system_url(invoice: Invoice, pay_system_service: PaymentSystemService, transaction_id: uuid,
+                             pay_return_url: str):
         """Build pay system url which will be used to redirect to the payment system."""
         current_app.logger.debug('<build_pay_system_url')
-        pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_system_code(
-            payment_system=payment.payment_system_code,
-            payment_method=payment.payment_method_code
-        )
-        invoice = InvoiceModel.find_by_payment_id(payment.id)
         invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
-        return_url = f'{pay_return_url}/{payment.id}/transaction/{transaction_id}'
+        return_url = f'{pay_return_url}/{invoice.id}/transaction/{transaction_id}'
 
         current_app.logger.debug('>build_pay_system_url')
-        return pay_system_service.get_payment_system_url(Invoice.populate(invoice), invoice_reference, return_url)
+        return pay_system_service.get_payment_system_url(invoice, invoice_reference, return_url)
 
     @staticmethod
-    def find_by_id(payment_identifier: int, transaction_id: uuid):
+    def find_by_id(transaction_id: uuid):
         """Find transaction by id."""
-        transaction_dao = PaymentTransactionModel.find_by_id_and_payment_id(transaction_id, payment_identifier)
+        current_app.logger.debug(f'>find_by_id {transaction_id}')
+        transaction_dao = PaymentTransactionModel.find_by_id_and_payment_id(transaction_id)
         if not transaction_dao:
             raise BusinessException(Error.INVALID_TRANSACTION_ID)
 
@@ -261,14 +269,14 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         return transaction
 
     @staticmethod
-    def find_active_by_payment_id(payment_identifier: int):
-        """Find active transaction by id."""
-        current_app.logger.debug('>find_active_by_payment_id')
-        active_transaction = PaymentTransactionModel.find_active_by_payment_id(payment_identifier)
+    def find_active_by_invoice_id(invoice_id: int):
+        """Find active transaction by invoice id."""
+        current_app.logger.debug('>find_active_by_invoice_id')
+        active_transaction = PaymentTransactionModel.find_active_by_invoice_id(invoice_id)
         return PaymentTransaction.populate(active_transaction)
 
     @staticmethod
-    def update_transaction(payment_identifier: int, transaction_id: uuid,  # pylint: disable=too-many-locals
+    def update_transaction(transaction_id: uuid,  # pylint: disable=too-many-locals
                            pay_response_url: str):
         """Update transaction record.
 
@@ -281,22 +289,30 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         6. Change the status of Payment
         7. Update the transaction record
         """
-        transaction_dao: PaymentTransactionModel = PaymentTransactionModel.find_by_id_and_payment_id(
-            transaction_id, payment_identifier
+        #  TODO for now assumption is this def will be called only for credit card, bcol and internal payments.
+        #  When start to look into the PAD and Online Banking may need to refactor here
+        transaction_dao: PaymentTransactionModel = PaymentTransactionModel.find_by_id(
+            transaction_id
         )
         if not transaction_dao:
             raise BusinessException(Error.INVALID_TRANSACTION_ID)
         if transaction_dao.status_code == TransactionStatus.COMPLETED.value:
             raise BusinessException(Error.INVALID_TRANSACTION)
 
-        payment: Payment = Payment.find_by_id(payment_identifier, skip_auth_check=True)
-        invoice = Invoice.find_by_payment_identifier(payment_identifier, skip_auth_check=True)
+        payment: Payment = Payment.find_by_id(transaction_dao.payment_id, skip_auth_check=True)
+        payment_account: PaymentAccount = PaymentAccount.find_by_id(payment.payment_account_id)
+
+        # For transactions other than Credit Card, there could be more than one invoice per payment.
+        invoices: [Invoice] = Invoice.find_invoices_for_payment(transaction_dao.payment_id)
+        # TODO handles only one invoice for now.
+        invoice: Invoice = invoices[0]
 
         if payment.payment_status_code == PaymentStatus.COMPLETED.value:
             # if the transaction status is EVENT_FAILED then publish to queue and return, else raise error
             if transaction_dao.status_code == TransactionStatus.EVENT_FAILED.value:
                 # Publish status to Queue
-                PaymentTransaction.publish_status(transaction_dao, payment, invoice.filing_id)
+                PaymentTransaction.publish_status(transaction_dao, invoice)
+
                 transaction_dao.status_code = TransactionStatus.COMPLETED.value
                 return PaymentTransaction.__wrap_dao(transaction_dao.save())
 
@@ -308,8 +324,6 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         )
 
         invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
-        payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
-
         try:
             receipt_details = pay_system_service.get_receipt(payment_account, pay_response_url, invoice_reference)
             txn_reason_code = None
@@ -322,11 +336,14 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
             receipt = PaymentTransaction.__save_receipt(invoice, receipt_details)
 
             invoice.paid = receipt.receipt_amount
+            payment.amount = receipt.receipt_amount
+
             if invoice.paid == invoice.total:
-                invoice.invoice_status_code = InvoiceStatus.PAID.value
                 payment.payment_status_code = PaymentStatus.COMPLETED.value
+                payment.completed_on = datetime.now()
                 payment.flush()
 
+                invoice.invoice_status_code = InvoiceStatus.PAID.value
                 invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
                 invoice_reference.flush()
 
@@ -339,7 +356,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         transaction_dao.transaction_end_time = datetime.now()
 
         # Publish status to Queue
-        PaymentTransaction.publish_status(transaction_dao, payment, invoice.filing_id)
+        PaymentTransaction.publish_status(transaction_dao, invoice)
 
         # Save response URL
         transaction_dao.pay_response_url = pay_response_url
@@ -375,9 +392,9 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         return receipt
 
     @staticmethod
-    def find_by_payment_id(payment_identifier: int):
-        """Find all transactions by payment id."""
-        transactions_dao = PaymentTransactionModel.find_by_payment_id(payment_identifier)
+    def find_by_invoice_id(invoice_id: int):
+        """Find all transactions by invoice id."""
+        transactions_dao = PaymentTransactionModel.find_by_invoice_id(invoice_id)
         data: Dict = {'items': []}
         if transactions_dao:
             for transaction_dao in transactions_dao:
@@ -387,23 +404,23 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         return data
 
     @staticmethod
-    def publish_status(transaction_dao: PaymentTransactionModel, payment: Payment, filing_id: str = None):
+    def publish_status(transaction_dao: PaymentTransactionModel, invoice: Invoice):
         """Publish payment/transaction status to the Queue."""
         current_app.logger.debug('<publish_status')
         if transaction_dao.status_code == TransactionStatus.COMPLETED.value:
-            if payment.payment_status_code == PaymentStatus.COMPLETED.value:
+            if invoice.invoice_status_code == InvoiceStatus.PAID.value:
                 status_code = TransactionStatus.COMPLETED.value
             else:
-                current_app.logger.info(f'Status {payment.payment_status_code} received for payment {payment.id}')
+                current_app.logger.info(f'Status {invoice.invoice_status_code} received for invoice {invoice.id}')
                 return
         else:
             status_code = 'TRANSACTION_FAILED'
 
         payload = {
             'paymentToken': {
-                'id': payment.id,
+                'id': invoice.id,
                 'statusCode': status_code,
-                'filingIdentifier': filing_id
+                'filingIdentifier': invoice.filing_id
             }
         }
 
