@@ -48,6 +48,7 @@ def upgrade():
     conn = op.get_bind()
     res = conn.execute("select id, payment_method_code, payment_status_code from payment ")
     payments = res.fetchall()
+
     for payment in payments:
         pay_id = payment[0]
         payment_method = payment[1]
@@ -59,17 +60,20 @@ def upgrade():
         # Update payment account id to payment table
         op.execute(
             f'update payment set payment_account_id=(select payment_account_id from invoice where payment_id={pay_id}) where id={pay_id}')
+
         op.execute(
             f'update payment set amount=(select paid from invoice where payment_id={pay_id}) where id={pay_id}')
 
-        op.execute(f'update payment set completed_on=updated_on')
+        op.execute(f'update payment set completed_on=updated_on where id={pay_id}')
 
         # If payment status is DELETE_ACCEPTED then update that status to invoice.
         if payment_status == 'DELETE_ACCEPTED':
+
             op.execute(
                 f'update invoice set invoice_status_code=\'DELETE_ACCEPTED\' where payment_id={pay_id}')
+
             op.execute(
-                f'update payment set invoice_status_code=\'CREATED\' where id={pay_id}')
+                f'update payment set payment_status_code=\'CREATED\' where id={pay_id}')
 
     # Populate invoice number to payment table.
     conn = op.get_bind()
@@ -82,20 +86,20 @@ def upgrade():
 
         if inv_status == 'CREATED':
             op.execute(
-                f"update payment set invoice_number=(select invoice_number from invoice_reference where invoice_id={inv_id} and status_code='ACTIVE') where id={pay_id}")
+                f"update payment set invoice_number=(select invoice_number from invoice_reference where invoice_id={inv_id} and status_code='ACTIVE' limit 1) where id={pay_id}")
         elif inv_status == 'PAID':
             op.execute(
-                f"update payment set invoice_number=(select invoice_number from invoice_reference where invoice_id={inv_id} and status_code='COMPLETED') where id={pay_id}")
+                f"update payment set invoice_number=(select invoice_number from invoice_reference where invoice_id={inv_id} and status_code='COMPLETED' limit 1) where id={pay_id} ")
         elif inv_status == 'DELETED':
             op.execute(
-                f"update payment set invoice_number=(select invoice_number from invoice_reference where invoice_id={inv_id} and status_code='CANCELLED') where id={pay_id}")
+                f"update payment set invoice_number=(select invoice_number from invoice_reference where invoice_id={inv_id} and status_code='CANCELLED' limit 1) where id={pay_id} ")
 
     op.drop_constraint('invoice_payment_id_fkey', 'invoice', type_='foreignkey')
     op.create_foreign_key('invoice_payment_method', 'invoice', 'payment_method', ['payment_method_code'], ['code'])
-    op.drop_column('invoice', 'credit_account_id')
-    op.drop_column('invoice', 'internal_account_id')
+    # op.drop_column('invoice', 'credit_account_id')
+    # op.drop_column('invoice', 'internal_account_id')
     op.drop_column('invoice', 'payment_id')
-    op.drop_column('invoice', 'bcol_account_id')
+    # op.drop_column('invoice', 'bcol_account_id')
 
     op.create_index(op.f('ix_payment_invoice_number'), 'payment', ['invoice_number'], unique=False)
     op.create_foreign_key('payment_payment_account_id', 'payment', 'payment_account', ['payment_account_id'], ['id'])
@@ -131,10 +135,10 @@ def downgrade():
     op.drop_column('payment', 'invoice_number')
     op.drop_column('payment', 'completed_on')
     op.drop_column('payment', 'amount')
-    op.add_column('invoice', sa.Column('bcol_account_id', sa.INTEGER(), autoincrement=False, nullable=True))
+    # op.add_column('invoice', sa.Column('bcol_account_id', sa.INTEGER(), autoincrement=False, nullable=True))
     op.add_column('invoice', sa.Column('payment_id', sa.INTEGER(), autoincrement=False, nullable=False))
-    op.add_column('invoice', sa.Column('internal_account_id', sa.INTEGER(), autoincrement=False, nullable=True))
-    op.add_column('invoice', sa.Column('credit_account_id', sa.INTEGER(), autoincrement=False, nullable=True))
+    # op.add_column('invoice', sa.Column('internal_account_id', sa.INTEGER(), autoincrement=False, nullable=True))
+    # op.add_column('invoice', sa.Column('credit_account_id', sa.INTEGER(), autoincrement=False, nullable=True))
     op.drop_constraint('invoice_payment_method', 'invoice', type_='foreignkey')
     op.create_foreign_key('invoice_payment_id_fkey', 'invoice', 'payment', ['payment_id'], ['id'])
     op.drop_column('invoice', 'payment_method_code')
