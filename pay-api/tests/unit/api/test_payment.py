@@ -24,12 +24,12 @@ from flask import current_app
 from requests.exceptions import ConnectionError
 
 from pay_api.schemas import utils as schema_utils
-from pay_api.utils.enums import Role
+from pay_api.utils.enums import PaymentMethod, Role
 from tests.utilities.base_test import (
     factory_payment_transaction, get_claims, get_payment_request, get_payment_request_with_folio_number,
     get_payment_request_with_service_fees,
     get_payment_request_with_no_contact_info, get_payment_request_with_payment_method, get_waive_fees_payment_request,
-    get_zero_dollar_payment_request, token_header)
+    get_zero_dollar_payment_request, token_header, get_basic_account_payload)
 
 
 def test_payment_creation(session, client, jwt, app):
@@ -183,14 +183,17 @@ def test_payment_get_exception(session, client, jwt, app):
 
 def test_payment_put(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': '1234'}
+
+    # Create an account first.
+    client.post('/api/v1/accounts', data=json.dumps(get_basic_account_payload()), headers=headers)
+
     token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': '1234'}
 
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     pay_id = rv.json.get('id')
-
-    transaction = factory_payment_transaction(pay_id)
-    transaction.save()
 
     rv = client.put(f'/api/v1/payment-requests/{pay_id}', data=json.dumps(get_payment_request()), headers=headers)
     assert rv.status_code == 200
@@ -269,6 +272,12 @@ def test_payment_put_invalid_corp_type(session, client, jwt, app):
 
 def test_payment_creation_when_paybc_down(session, client, jwt, app):
     """Assert that the endpoint returns 400."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': '1234'}
+
+    # Create an account first with CC as preffered payment
+    client.post('/api/v1/accounts', data=json.dumps(get_basic_account_payload(PaymentMethod.CC.value)), headers=headers)
+
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
@@ -279,8 +288,14 @@ def test_payment_creation_when_paybc_down(session, client, jwt, app):
 
 def test_payment_put_when_paybc_down(session, client, jwt, app):
     """Assert that the endpoint returns 400."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': '1234'}
+
+    # Create an account first with CC as preffered payment
+    client.post('/api/v1/accounts', data=json.dumps(get_basic_account_payload(PaymentMethod.CC.value)), headers=headers)
+
     token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': '1234'}
 
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     pay_id = rv.json.get('id')

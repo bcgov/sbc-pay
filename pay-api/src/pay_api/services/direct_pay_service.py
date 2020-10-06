@@ -26,7 +26,7 @@ from pay_api.services.hashing import HashingService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem, PaymentMethod
+from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem, PaymentMethod, InvoiceStatus, PaymentStatus
 from pay_api.utils.util import current_local_time, parse_url_params
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
@@ -104,7 +104,15 @@ class DirectPayService(PaymentSystemService, OAuthService):
         """Return DIRECT_PAY as the system code."""
         return PaymentMethod.DIRECT_PAY.value
 
-    def create_account(self, name: str, contact_info: Dict[str, Any], authorization: Dict[str, Any], **kwargs):
+    def get_default_invoice_status(self) -> str:
+        """Return CREATED as the default invoice status."""
+        return InvoiceStatus.CREATED.value
+
+    def get_default_payment_status(self) -> str:
+        """Return the default status for payment when created."""
+        return PaymentStatus.CREATED.value
+
+    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
         """Return an empty value since Direct Pay doesnt need any account."""
         return {}
 
@@ -172,6 +180,9 @@ class DirectPayService(PaymentSystemService, OAuthService):
                     response_json.get('trndate')), float(response_json.get('trnamount')),
 
         return None
+
+    def complete_post_payment(self, payment_id: int) -> None:
+        """Complete any post payment activities if needed."""
 
     def __get_token(self):
         """Generate oauth token from payBC which will be used for all communication."""

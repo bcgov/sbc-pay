@@ -25,7 +25,7 @@ from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import PaymentSystem, PaymentMethod
+from pay_api.utils.enums import PaymentSystem, PaymentMethod, InvoiceStatus, PaymentStatus
 
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
@@ -42,7 +42,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         """Return INTERNAL as the system code."""
         return PaymentSystem.INTERNAL.value
 
-    def create_account(self, name: str, contact_info: Dict[str, Any], authorization: Dict[str, Any], **kwargs):
+    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
         """Create account internal."""
         return {}
 
@@ -75,3 +75,21 @@ class InternalPayService(PaymentSystemService, OAuthService):
     def get_payment_method_code(self):
         """Return CC as the method code."""
         return PaymentMethod.INTERNAL.value
+
+    def get_default_invoice_status(self) -> str:
+        """Return CREATED as the default invoice status."""
+        return InvoiceStatus.CREATED.value
+
+    def get_default_payment_status(self) -> str:
+        """Return the default status for payment when created."""
+        return PaymentStatus.CREATED.value
+
+    def complete_post_payment(self, payment_id: int) -> None:
+        """Complete any post payment activities if needed."""
+        from .payment_transaction import PaymentTransaction  # pylint: disable=cyclic-import,import-outside-toplevel
+        transaction: PaymentTransaction = PaymentTransaction.create(payment_id,
+                                                                    {
+                                                                        'clientSystemUrl': '',
+                                                                        'payReturnUrl': ''
+                                                                    })
+        transaction.update_transaction(payment_id, transaction.id, pay_response_url=None)

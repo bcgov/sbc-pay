@@ -21,12 +21,11 @@ from requests.exceptions import HTTPError
 
 from pay_api.exceptions import BusinessException, Error
 from pay_api.models.corp_type import CorpType
-from pay_api.utils.enums import AuthHeaderType, ContentType
+from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceStatus, PaymentStatus
 from pay_api.utils.enums import PaymentSystem as PaySystemCode, PaymentMethod
 from pay_api.utils.errors import get_bcol_error
 from pay_api.utils.user_context import UserContext
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import get_str_by_path
 from .base_payment_system import PaymentSystemService
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
@@ -39,21 +38,9 @@ class BcolService(PaymentSystemService, OAuthService):
     """Service to manage BCOL integration."""
 
     @user_context
-    def create_account(self, name: str, contact_info: Dict[str, Any], authorization: Dict[str, Any], **kwargs):
-        """Create account."""
-        current_app.logger.debug('<create_account')
-        user: UserContext = kwargs['user']
-        account_info: Dict[str, Any] = kwargs['account_info']
-        if user.is_staff() or user.is_system():
-            bcol_user_id: str = None
-            bcol_account_id: str = get_str_by_path(account_info, 'bcolAccountNumber')
-        else:
-            bcol_user_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineUserId')
-            bcol_account_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineAccountId')
-        return {
-            'bcol_account_id': bcol_account_id,
-            'bcol_user_id': bcol_user_id
-        }
+    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
+        """Return an empty value since we don't create BC Online account."""
+        return {}
 
     def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
@@ -62,6 +49,14 @@ class BcolService(PaymentSystemService, OAuthService):
     def get_payment_system_code(self):
         """Return PAYBC as the system code."""
         return PaySystemCode.BCOL.value
+
+    def get_default_invoice_status(self) -> str:
+        """Return CREATED as the default invoice status."""
+        return InvoiceStatus.CREATED.value
+
+    def get_default_payment_status(self) -> str:
+        """Return the default status for payment when created."""
+        return PaymentStatus.CREATED.value
 
     @user_context
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
@@ -91,7 +86,7 @@ class BcolService(PaymentSystemService, OAuthService):
         if user.is_staff() or user.is_system():
             payload['userId'] = user.user_name_with_no_idp if user.is_staff() else current_app.config[
                 'BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS']
-            payload['accountNumber'] = payment_account.bcol_account
+            payload['accountNumber'] = invoice.bcol_account
             payload['formNumber'] = invoice.dat_number
             payload['reduntantFlag'] = 'Y'
             payload['rateType'] = 'C'
@@ -145,3 +140,13 @@ class BcolService(PaymentSystemService, OAuthService):
     def get_payment_method_code(self):
         """Return CC as the method code."""
         return PaymentMethod.DRAWDOWN.value
+
+    def complete_post_payment(self, payment_id: int) -> None:
+        """Complete any post payment activities if needed."""
+        from .payment_transaction import PaymentTransaction  # pylint: disable=cyclic-import,import-outside-toplevel
+        transaction: PaymentTransaction = PaymentTransaction.create(payment_id,
+                                                                    {
+                                                                        'clientSystemUrl': '',
+                                                                        'payReturnUrl': ''
+                                                                    })
+        transaction.update_transaction(payment_id, transaction.id, pay_response_url=None)
