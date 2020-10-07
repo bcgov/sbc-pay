@@ -113,13 +113,10 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 line_items.append(PaymentLineItem.create(invoice.id, fee))
 
             current_app.logger.debug('Handing off to payment system to create invoice')
-            pay_system_invoice = pay_service.create_invoice(payment_account, line_items, invoice,
-                                                            corp_type_code=invoice.corp_type_code)
+            invoice_reference = pay_service.create_invoice(payment_account, line_items, invoice,
+                                                           corp_type_code=invoice.corp_type_code)
 
             current_app.logger.debug('Updating invoice record')
-            invoice_reference: InvoiceReference = InvoiceReference.\
-                create(invoice.id, pay_system_invoice.get('invoice_number', None),
-                       pay_system_invoice.get('reference_number', None))
 
             invoice.commit()
 
@@ -147,14 +144,17 @@ class PaymentService:  # pylint: disable=too-few-public-methods
     def _find_payment_account(cls, authorization):
         # find payment account
         payment_account: PaymentAccount = PaymentAccount.find_account(authorization)
+
         # If there is no payment_account it must be a request with no account (NR, Staff payment etc.)
         # and invoked using a service account or a staff token
         if not payment_account:
+            payment_method = get_str_by_path(authorization,
+                                             'account/paymentInfo/methodOfPayment') or _get_default_payment()
             payment_account = PaymentAccount.create(
                 dict(
                     accountId=get_str_by_path(authorization, 'account/id'),
                     paymentInfo=dict(
-                        methodOfPayment=get_str_by_path(authorization, 'account/paymentInfo/methodOfPayment'),
+                        methodOfPayment=payment_method,
                         billable=True)
                 )
             )
@@ -277,9 +277,14 @@ def _get_payment_method(payment_request: Dict, payment_account: PaymentAccount):
     if not payment_method:
         payment_method = payment_account.payment_method
     if not payment_method:
-        is_direct_pay_enabled = current_app.config.get('DIRECT_PAY_ENABLED')
-        if is_direct_pay_enabled:
-            payment_method = PaymentMethod.DIRECT_PAY.value
-        else:
-            payment_method = PaymentMethod.CC.value
+        payment_method = _get_default_payment()
+    return payment_method
+
+
+def _get_default_payment() -> str:
+    is_direct_pay_enabled = current_app.config.get('DIRECT_PAY_ENABLED')
+    if is_direct_pay_enabled:
+        payment_method = PaymentMethod.DIRECT_PAY.value
+    else:
+        payment_method = PaymentMethod.CC.value
     return payment_method

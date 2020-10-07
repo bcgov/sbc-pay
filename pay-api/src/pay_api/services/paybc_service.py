@@ -69,7 +69,7 @@ class PaybcService(PaymentSystemService, CFSService):
         """Complete any post invoice activities if needed."""
 
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
-                       line_items: [PaymentLineItem], invoice: Invoice, **kwargs):
+                       line_items: [PaymentLineItem], invoice: Invoice, **kwargs) -> InvoiceReference:
         """Create Invoice in PayBC."""
         current_app.logger.debug('<create_invoice')
         now = current_local_time()
@@ -126,13 +126,12 @@ class PaybcService(PaymentSystemService, CFSService):
         invoice_response = self.post(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
                                      invoice_payload)
 
-        invoice_result = {
-            'invoice_number': invoice_response.json().get('invoice_number', None),
-            'reference_number': invoice_response.json().get('pbc_ref_number', None)
-        }
+        invoice_reference: InvoiceReference = InvoiceReference.create(
+            invoice.id, invoice_response.json().get('invoice_number', None),
+            invoice_response.json().get('pbc_ref_number', None))
 
         current_app.logger.debug('>create_invoice')
-        return invoice_result
+        return invoice_reference
 
     def update_invoice(self,  # pylint: disable=too-many-arguments
                        payment_account: PaymentAccount,
