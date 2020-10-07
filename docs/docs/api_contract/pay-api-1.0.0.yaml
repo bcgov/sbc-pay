@@ -952,6 +952,107 @@ paths:
         name: payment_identifier
         in: path
         required: true
+  /api/v1/accounts:
+    post:
+      tags:
+        - Accounts
+      summary: Create Payment Account records
+      description: Create Payment Account records.
+      operationId: Create_Account
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountInfo'
+            examples:
+              account:
+                value:
+                  accountId: 1
+                  accountName: test_account_name
+                  paymentInfo:
+                    methodOfPayment: CC
+                    billable: true
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              examples:
+                account:
+                  value:
+                    authAccountId: 1
+                    authAccountName: tester
+                    bcolAccount:
+                    bcolUserId:
+                    billable: true
+                    credit:
+                    id: 64
+                    runningBalance:
+                    statementNotificationEnabled: false
+                    versions:
+                      - id: 64
+                        transactionId: 115
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  '/api/v1/accounts/{org_id}':
+    put:
+      tags:
+        - Accounts
+      summary: Update payment Account records
+      description: Updates payment Account records.
+      operationId: Update_Account
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountInfo'
+            examples:
+              account_info_1:
+                value:
+                  accountId: 1
+                  accountName: test_account_name
+                  paymentInfo:
+                    methodOfPayment: CC
+                    billable: true
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              examples:
+                account_post_1:
+                  value:
+                    authAccountId: '19'
+                    authAccountName: tester
+                    bcolAccount:
+                    bcolUserId:
+                    billable: true
+                    credit:
+                    id: 64
+                    runningBalance:
+                    statementNotificationEnabled: false
+                    versions:
+                      - id: 64
+                        transactionId: 115
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+      - schema:
+          type: string
+        name: org_id
+        in: path
+        required: true
+
 components:
   schemas:
     ErrorResponse:
@@ -1272,3 +1373,21 @@ components:
         collection:
           type: string
           description: collection link
+    AccountInfo:
+      type: object
+      properties:
+        accountId:
+          type: integer
+          description: Account Id
+        accountName:
+          type: string
+          description: Name of Account
+        paymentInfo:
+          type: object
+          properties:
+            methodOfPayment:
+              type: string
+              description: method of payment as CC
+            billable:
+              type: boolean
+              description: is it billable
