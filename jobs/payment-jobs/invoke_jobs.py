@@ -18,6 +18,9 @@ This module will create statement records for each account.
 import os
 import sys
 
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+
 from flask import Flask
 from utils.logger import setup_logging
 
@@ -33,6 +36,12 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     app = Flask(__name__)
 
     app.config.from_object(config.CONFIGURATION[run_mode])
+    # Configure Sentry
+    if app.config.get('SENTRY_DSN', None):  # pragma: no cover
+        sentry_sdk.init(
+            dsn=app.config.get('SENTRY_DSN'),
+            integrations=[FlaskIntegration()]
+        )
     app.logger.info(f'<<<< Starting Payment Jobs >>>>')
     db.init_app(app)
     ma.init_app(app)
@@ -58,6 +67,7 @@ def run(job_name):
     from tasks.distribution_task import DistributionTask
     from tasks.statement_task import StatementTask
     from tasks.statement_notification_task import StatementNotificationTask
+    from tasks.stale_payment_task import StalePaymentTask
 
     application = create_app()
 
@@ -71,6 +81,9 @@ def run(job_name):
     elif job_name == 'SEND_NOTIFICATIONS':
         StatementNotificationTask.send_notifications()
         application.logger.info(f'<<<< Completed Sending notifications >>>>')
+    elif job_name == 'UPDATE_STALE_PAYMENTS':
+        StalePaymentTask.update_stale_payments()
+        application.logger.info(f'<<<< Completed Updating stale payments >>>>')
     else:
         application.logger.debug('No valid args passed.Exiting job without running any ***************')
 
