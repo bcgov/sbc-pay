@@ -19,12 +19,12 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 
 import json
 
-from pay_api.models.credit_payment_account import CreditPaymentAccount
-from pay_api.models.payment import Payment
+from pay_api.models.invoice import Invoice
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.schemas import utils as schema_utils
 from tests.utilities.base_test import (
-    get_claims, get_payment_request, token_header)
+    get_claims, get_payment_request, get_basic_account_payload, get_premium_account_payload, token_header)
+from pay_api.utils.enums import Role
 
 
 def test_account_purchase_history(session, client, jwt, app):
@@ -35,9 +35,8 @@ def test_account_purchase_history(session, client, jwt, app):
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
                      headers=headers)
 
-    payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     rv = client.post(f'/api/v1/accounts/{pay_account.auth_account_id}/payments/queries', data=json.dumps({}),
                      headers=headers)
@@ -53,9 +52,8 @@ def test_account_purchase_history_pagination(session, client, jwt, app):
     for i in range(10):
         rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
 
-    payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     rv = client.post(f'/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=5',
                      data=json.dumps({}),
@@ -73,9 +71,8 @@ def test_account_purchase_history_invalid_request(session, client, jwt, app):
 
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
 
-    payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     search_filter = {
         'businessIdentifier': 1111
@@ -100,9 +97,8 @@ def test_account_purchase_history_export_as_csv(session, client, jwt, app):
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
                      headers=headers)
 
-    payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     headers = {
         'Authorization': f'Bearer {token}',
@@ -127,9 +123,8 @@ def test_account_purchase_history_export_as_pdf(session, client, jwt, app):
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
                      headers=headers)
 
-    payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     headers = {
         'Authorization': f'Bearer {token}',
@@ -154,9 +149,8 @@ def test_account_purchase_history_export_invalid_request(session, client, jwt, a
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
                      headers=headers)
 
-    payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     headers = {
         'Authorization': f'Bearer {token}',
@@ -180,9 +174,8 @@ def test_account_purchase_history_default_list(session, client, jwt, app):
     for i in range(11):
         rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
 
-    payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    credit_account: CreditPaymentAccount = CreditPaymentAccount.find_by_id(payment.invoices[0].credit_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(credit_account.account_id)
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     rv = client.post(f'/api/v1/accounts/{pay_account.auth_account_id}/payments/queries',
                      data=json.dumps({}),
@@ -191,3 +184,81 @@ def test_account_purchase_history_default_list(session, client, jwt, app):
     assert rv.status_code == 200
     # Assert the total is coming as 10 which is the value of default TRANSACTION_REPORT_DEFAULT_TOTAL
     assert rv.json.get('total') == 10
+
+
+def test_basic_account_creation(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_basic_account_payload()),
+                     headers=headers)
+
+    assert rv.status_code == 201
+
+
+def test_basic_account_creation_unauthorized(session, client, jwt, app):
+    """Assert that the endpoint returns 401."""
+    token = jwt.create_jwt(get_claims(role=Role.EDITOR.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_basic_account_payload()),
+                     headers=headers)
+
+    assert rv.status_code == 401
+
+
+def test_premium_account_creation(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_premium_account_payload()),
+                     headers=headers)
+
+    assert rv.status_code == 201
+
+
+def test_premium_duplicate_account_creation(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    client.post('/api/v1/accounts', data=json.dumps(get_premium_account_payload()),
+                headers=headers)
+
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_premium_account_payload()),
+                     headers=headers)
+
+    assert rv.status_code == 400
+
+
+def test_premium_account_update(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_premium_account_payload()),
+                     headers=headers)
+
+    auth_account_id = rv.json.get('authAccountId')
+
+    rv = client.get(f'/api/v1/accounts/{auth_account_id}', headers=headers)
+    assert rv.json.get('authAccountId') == auth_account_id
+
+    rv = client.put(f'/api/v1/accounts/{auth_account_id}', data=json.dumps(get_premium_account_payload()),
+                    headers=headers)
+
+    assert rv.status_code == 200
+
+
+def test_premium_account_update_with_no_create(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    auth_account_id = 100000
+    rv = client.put(f'/api/v1/accounts/{auth_account_id}',
+                    data=json.dumps(get_premium_account_payload(account_id=auth_account_id)),
+                    headers=headers)
+
+    assert rv.status_code == 200

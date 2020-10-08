@@ -32,12 +32,11 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     __tablename__ = 'invoice'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    payment_id = db.Column(db.Integer, ForeignKey('payment.id'), nullable=False)
 
     invoice_status_code = db.Column(db.String(20), ForeignKey('invoice_status_code.code'), nullable=False)
-    bcol_account_id = db.Column(db.Integer, ForeignKey('bcol_payment_account.id'), nullable=True)
-    internal_account_id = db.Column(db.Integer, ForeignKey('internal_payment_account.id'), nullable=True)
-    credit_account_id = db.Column(db.Integer, ForeignKey('credit_payment_account.id'), nullable=True)
+    payment_account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True)
+    cfs_account_id = db.Column(db.Integer, ForeignKey('cfs_account.id'), nullable=True)
+    payment_method_code = db.Column(db.String(15), ForeignKey('payment_method.code'), nullable=False)
 
     corp_type_code = db.Column(db.String(10), ForeignKey('corp_type.code'), nullable=True)
     business_identifier = db.Column(db.String(20), nullable=True)
@@ -50,26 +49,15 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     filing_id = db.Column(db.String(50), nullable=True)
     folio_number = db.Column(db.String(50), nullable=True, index=True)
     dat_number = db.Column(db.String(50), nullable=True, index=True)
+    bcol_account = db.Column(db.String(50), nullable=True, index=True)
     service_fees = db.Column(db.Float, nullable=True)
 
     payment_line_items = relationship('PaymentLineItem')
     receipts = relationship('Receipt')
 
-    bcol_account = relationship('BcolPaymentAccount')
-    internal_account = relationship('InternalPaymentAccount')
-    credit_account = relationship('CreditPaymentAccount')
+    payment_account = relationship('PaymentAccount')
 
     references = relationship('InvoiceReference')
-
-    @classmethod
-    def find_by_payment_id(cls, identifier: int):
-        """Return a Invoice by id."""
-        return cls.query.filter_by(payment_id=identifier).one_or_none()
-
-    @classmethod
-    def find_by_id_and_payment_id(cls, identifier: int, pay_id: int):
-        """Return a Invoice by id."""
-        return cls.query.filter_by(payment_id=pay_id).filter_by(id=identifier).one_or_none()
 
     @classmethod
     def update_invoices_for_revenue_updates(cls, fee_distribution_id: int):
@@ -90,6 +78,25 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         """Find all payment accounts by business_identifier."""
         return cls.query.filter_by(business_identifier=business_identifier).all()
 
+    @classmethod
+    def find_invoices_for_payment(cls, payment_id: int):
+        """Find all invoice records created for the payment."""
+        # pylint: disable=import-outside-toplevel, cyclic-import
+        from .invoice_reference import InvoiceReference
+        from .payment import Payment
+
+        query = db.session.query(Invoice) \
+            .join(InvoiceReference, InvoiceReference.invoice_id == Invoice.id) \
+            .join(Payment, InvoiceReference.invoice_number == Payment.invoice_number) \
+            .filter(Payment.id == payment_id)
+
+        return query.all()
+
+    @classmethod
+    def find_invoices_marked_for_delete(cls):
+        """Return a invoices with status DELETE_ACCEPTED."""
+        return cls.query.filter_by(invoice_status_code=InvoiceStatus.DELETE_ACCEPTED.value).all()
+
 
 class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the invoice."""
@@ -98,10 +105,11 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Invoice
-        exclude = ['bcol_account', 'internal_account', 'credit_account']
+        exclude = ['payment_account']
 
     invoice_status_code = fields.String(data_key='status_code')
     corp_type_code = fields.String(data_key='corp_type_code')
+    payment_method_code = fields.String(data_key='payment_method')
 
     # pylint: disable=no-member
     payment_line_items = ma.Nested(PaymentLineItemSchema, many=True, data_key='line_items')
@@ -109,8 +117,8 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
     references = ma.Nested(InvoiceReferenceSchema, many=True, data_key='references')
 
     _links = ma.Hyperlinks({
-        'self': ma.URLFor('API.invoices_invoice', payment_id='<payment_id>', invoice_id='<id>'),
-        'collection': ma.URLFor('API.invoices_invoices', payment_id='<payment_id>')
+        'self': ma.URLFor('API.payments_invoice', invoice_id='<id>'),
+        'collection': ma.URLFor('API.payments_invoices', invoice_id='<id>')
     })
 
     @post_dump

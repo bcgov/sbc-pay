@@ -34,12 +34,12 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         super(PaymentSystemService, self).__init__()
 
     @abstractmethod
-    def create_account(self, name: str, contact_info: Dict[str, Any], authorization: Dict[str, Any], **kwargs):
+    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
         """Create account in payment system."""
 
     @abstractmethod
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
-                       **kwargs):
+                       **kwargs) -> InvoiceReference:
         """Create invoice in payment system."""
 
     @abstractmethod
@@ -67,3 +67,15 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     @abstractmethod
     def get_payment_method_code(self):
         """Return the payment method code. E.g, CC, DRAWDOWN etc."""
+
+    @abstractmethod
+    def get_default_invoice_status(self) -> str:
+        """Return the default status for invoice when created."""
+
+    @abstractmethod
+    def get_default_payment_status(self) -> str:
+        """Return the default status for payment when created."""
+
+    @abstractmethod
+    def complete_post_invoice(self, invoice_id: int, invoice_reference: InvoiceReference) -> None:
+        """Complete any post invoice activities if needed."""

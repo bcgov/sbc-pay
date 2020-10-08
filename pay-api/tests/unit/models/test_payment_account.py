@@ -17,7 +17,6 @@
 Test-Suite to ensure that the CorpType Class is working as expected.
 """
 
-from pay_api.models import CreditPaymentAccount
 from tests.utilities.base_test import factory_payment_account
 
 
@@ -30,53 +29,3 @@ def test_payment_account(session):
     payment_account.save()
 
     assert payment_account.id is not None
-
-
-def find_by_corp_number_and_corp_type_and_account_id(session):
-    """Assert find works.
-
-    Start with a blank database.
-    """
-    payment_account = factory_payment_account(auth_account_id='1234')
-    payment_account.save()
-    assert CreditPaymentAccount.find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP',
-                                                                                      '1234') is not None
-
-
-def test_find_by_invalid_corp_number_and_corp_type_and_system(session):
-    """Assert find works.
-
-    Start with a blank database.
-    """
-    payment_account = factory_payment_account(auth_account_id='1234')
-    payment_account.save()
-    assert CreditPaymentAccount.find_by_corp_number_and_corp_type_and_auth_account_id('CP00012345', 'CP',
-                                                                                      '1234') is None
-    assert CreditPaymentAccount.find_by_corp_number_and_corp_type_and_auth_account_id(None, None, None) is None
-
-
-def test_flush(session):
-    """Assert flush works.
-
-    Start with a blank database.
-    """
-    payment_account = factory_payment_account(auth_account_id='1234')
-    payment_account.flush()
-    assert CreditPaymentAccount.find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP',
-                                                                                      '1234') is not None
-    payment_account.commit()
-    assert CreditPaymentAccount.find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP',
-                                                                                      '1234') is not None
-
-
-def test_rollback(session):
-    """Assert rollback works.
-
-    Start with a blank database.
-    """
-    payment_account = factory_payment_account()
-    payment_account.flush()
-    assert CreditPaymentAccount.find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP',
-                                                                                      '1234') is not None
-    payment_account.rollback()
-    assert CreditPaymentAccount.find_by_corp_number_and_corp_type_and_auth_account_id('CP0001234', 'CP', '1234') is None

@@ -24,12 +24,12 @@ from flask import current_app
 from requests.exceptions import ConnectionError
 
 from pay_api.schemas import utils as schema_utils
-from pay_api.utils.enums import Role
+from pay_api.utils.enums import PaymentMethod, Role
 from tests.utilities.base_test import (
-    factory_payment_transaction, get_claims, get_payment_request, get_payment_request_with_folio_number,
+    get_claims, get_payment_request, get_payment_request_with_folio_number,
     get_payment_request_with_service_fees,
     get_payment_request_with_no_contact_info, get_payment_request_with_payment_method, get_waive_fees_payment_request,
-    get_zero_dollar_payment_request, token_header)
+    get_zero_dollar_payment_request, token_header, get_basic_account_payload)
 
 
 def test_payment_creation(session, client, jwt, app):
@@ -41,8 +41,7 @@ def test_payment_creation(session, client, jwt, app):
                      headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
-
-    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert schema_utils.validate(rv.json, 'invoice')[0]
 
 
 def test_payment_creation_using_direct_pay(session, client, jwt, app):
@@ -55,9 +54,8 @@ def test_payment_creation_using_direct_pay(session, client, jwt, app):
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
 
-    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert schema_utils.validate(rv.json, 'invoice')[0]
     assert rv.json.get('paymentMethod') == 'DIRECT_PAY'
-    assert rv.json.get('paymentSystem') == 'PAYBC'
 
 
 def test_payment_creation_with_service_account(session, client, jwt, app):
@@ -70,7 +68,7 @@ def test_payment_creation_with_service_account(session, client, jwt, app):
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
 
-    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert schema_utils.validate(rv.json, 'invoice')[0]
 
 
 def test_payment_creation_service_account_with_no_edit_role(session, client, jwt, app):
@@ -159,11 +157,10 @@ def test_payment_get(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
-    pay_id = rv.json.get('id')
-
-    rv = client.get(f'/api/v1/payment-requests/{pay_id}', headers=headers)
+    inv_id = rv.json.get('id')
+    rv = client.get(f'/api/v1/payment-requests/{inv_id}', headers=headers)
     assert rv.status_code == 200
-    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert schema_utils.validate(rv.json, 'invoice')[0]
 
 
 def test_payment_get_exception(session, client, jwt, app):
@@ -181,114 +178,19 @@ def test_payment_get_exception(session, client, jwt, app):
     assert rv.status_code == 400
 
 
-def test_payment_put(session, client, jwt, app):
-    """Assert that the endpoint returns 200."""
-    token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
-    pay_id = rv.json.get('id')
-
-    transaction = factory_payment_transaction(pay_id)
-    transaction.save()
-
-    rv = client.put(f'/api/v1/payment-requests/{pay_id}', data=json.dumps(get_payment_request()), headers=headers)
-    assert rv.status_code == 200
-
-
-def test_payment_put_incomplete_input(session, client, jwt, app):
-    """Assert that the endpoint returns 400."""
-    token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
-    pay_id = rv.json.get('id')
-
-    transaction = factory_payment_transaction(pay_id)
-    transaction.save()
-
-    data = {
-        'businessInfo': {
-            'businessIdentifier': 'CP0001234',
-            'corpType': 'CP',
-            'businessName': 'ABC Corp',
-            'contactInfo': {
-                'city': 'Victoria',
-                'postalCode': 'V8P2P2',
-                'province': 'BC',
-                'addressLine1': '100 Douglas Street',
-                'country': 'CA'
-            }
-        }
-    }
-    rv = client.put(f'/api/v1/payment-requests/{pay_id}', data=json.dumps(data), headers=headers)
-    assert rv.status_code == 400
-    assert schema_utils.validate(rv.json, 'problem')[0]
-
-
-def test_payment_put_invalid_corp_type(session, client, jwt, app):
-    """Assert that the endpoint returns 400."""
-    token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
-    pay_id = rv.json.get('id')
-
-    transaction = factory_payment_transaction(pay_id)
-    transaction.save()
-
-    data = {
-        'businessInfo': {
-            'businessIdentifier': 'CP0001234',
-            'corpType': 'PC',
-            'businessName': 'ABC Corp',
-            'contactInfo': {
-                'city': 'Victoria',
-                'postalCode': 'V8P2P2',
-                'province': 'BC',
-                'addressLine1': '100 Douglas Street',
-                'country': 'CA'
-            }
-        },
-        'filingInfo': {
-            'filingTypes': [
-                {
-                    'filingTypeCode': 'OTADD',
-                    'filingDescription': 'TEST'
-                },
-                {
-                    'filingTypeCode': 'OTANN'
-                }
-            ]
-        }
-    }
-    rv = client.put(f'/api/v1/payment-requests/{pay_id}', data=json.dumps(data), headers=headers)
-    assert rv.status_code == 400
-    assert schema_utils.validate(rv.json, 'problem')[0]
-
-
 def test_payment_creation_when_paybc_down(session, client, jwt, app):
     """Assert that the endpoint returns 400."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': '1234'}
+
+    # Create an account first with CC as preffered payment
+    client.post('/api/v1/accounts', data=json.dumps(get_basic_account_payload(PaymentMethod.CC.value)), headers=headers)
+
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
         rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
-        assert rv.status_code == 400
-
-
-def test_payment_put_when_paybc_down(session, client, jwt, app):
-    """Assert that the endpoint returns 400."""
-    token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
-    pay_id = rv.json.get('id')
-
-    transaction = factory_payment_transaction(pay_id)
-    transaction.save()
-    with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
-        rv = client.put(f'/api/v1/payment-requests/{pay_id}', data=json.dumps(get_payment_request()), headers=headers)
         assert rv.status_code == 400
 
 
@@ -304,7 +206,7 @@ def test_zero_dollar_payment_creation(session, client, jwt, app):
     assert rv.json.get('_links') is not None
     assert rv.json.get('statusCode', None) == 'COMPLETED'
 
-    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert schema_utils.validate(rv.json, 'invoice')[0]
 
 
 def test_zero_dollar_payment_creation_for_unaffiliated_entity(session, client, jwt, app):
@@ -320,7 +222,7 @@ def test_zero_dollar_payment_creation_for_unaffiliated_entity(session, client, j
     assert rv.json.get('_links') is not None
     assert rv.json.get('statusCode', None) == 'COMPLETED'
 
-    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert schema_utils.validate(rv.json, 'invoice')[0]
 
 
 def test_delete_payment(session, client, jwt, app):
@@ -374,9 +276,9 @@ def test_payment_creation_with_routing_slip(session, client, jwt, app):
     rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
-    assert rv.json.get('invoices')[0].get('routingSlip') == 'TEST_ROUTE_SLIP'
+    assert rv.json.get('routingSlip') == 'TEST_ROUTE_SLIP'
 
-    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert schema_utils.validate(rv.json, 'invoice')[0]
 
 
 def test_bcol_payment_creation(session, client, jwt, app):
@@ -414,7 +316,7 @@ def test_bcol_payment_creation(session, client, jwt, app):
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
 
-    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert schema_utils.validate(rv.json, 'invoice')[0]
 
 
 def test_zero_dollar_payment_creation_with_waive_fees(session, client, jwt, app):
@@ -428,11 +330,11 @@ def test_zero_dollar_payment_creation_with_waive_fees(session, client, jwt, app)
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
     assert rv.json.get('statusCode', None) == 'COMPLETED'
-    assert rv.json.get('paymentSystem', None) == 'INTERNAL'
-    assert rv.json.get('invoices')[0].get('total') == 0
-    assert rv.json.get('invoices')[0].get('total') == 0
+    assert rv.json.get('paymentMethod', None) == 'INTERNAL'
+    assert rv.json.get('total') == 0
+    assert rv.json.get('total') == 0
 
-    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert schema_utils.validate(rv.json, 'invoice')[0]
 
 
 def test_zero_dollar_payment_creation_with_waive_fees_unauthorized(session, client, jwt, app):
@@ -456,7 +358,7 @@ def test_premium_payment_creation(session, client, jwt, app, premium_user_mock):
                      headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
-    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert schema_utils.validate(rv.json, 'invoice')[0]
 
 
 def test_premium_payment_creation_with_payment_method(session, client, jwt, app):
@@ -469,8 +371,8 @@ def test_premium_payment_creation_with_payment_method(session, client, jwt, app)
                      headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
-    assert schema_utils.validate(rv.json, 'payment_response')[0]
-    assert rv.json.get('paymentSystem') == 'BCOL'
+    assert schema_utils.validate(rv.json, 'invoice')[0]
+    assert rv.json.get('paymentMethod') == 'DRAWDOWN'
 
 
 def test_cc_payment_with_no_contact_info(session, client, jwt, app):
@@ -483,8 +385,8 @@ def test_cc_payment_with_no_contact_info(session, client, jwt, app):
                      headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
-    assert schema_utils.validate(rv.json, 'payment_response')[0]
-    assert rv.json.get('paymentSystem') == 'PAYBC'
+    assert schema_utils.validate(rv.json, 'invoice')[0]
+    assert rv.json.get('paymentMethod') == 'CC'
 
 
 def test_premium_payment_with_no_contact_info(session, client, jwt, app):
@@ -497,8 +399,8 @@ def test_premium_payment_with_no_contact_info(session, client, jwt, app):
                      headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
-    assert schema_utils.validate(rv.json, 'payment_response')[0]
-    assert rv.json.get('paymentSystem') == 'BCOL'
+    assert schema_utils.validate(rv.json, 'invoice')[0]
+    assert rv.json.get('paymentMethod') == 'DRAWDOWN'
 
 
 def test_payment_creation_with_folio_number(session, client, jwt, app):
@@ -513,8 +415,8 @@ def test_payment_creation_with_folio_number(session, client, jwt, app):
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
 
-    assert schema_utils.validate(rv.json, 'payment_response')[0]
-    assert rv.json.get('invoices')[0].get('folioNumber') == folio_number
+    assert schema_utils.validate(rv.json, 'invoice')[0]
+    assert rv.json.get('folioNumber') == folio_number
 
     rv = client.post('/api/v1/payment-requests',
                      data=json.dumps(get_payment_request()),
@@ -522,8 +424,8 @@ def test_payment_creation_with_folio_number(session, client, jwt, app):
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
 
-    assert schema_utils.validate(rv.json, 'payment_response')[0]
-    assert rv.json.get('invoices')[0].get('folioNumber') == 'MOCK1234'
+    assert schema_utils.validate(rv.json, 'invoice')[0]
+    assert rv.json.get('folioNumber') == 'MOCK1234'
 
 
 def test_bcol_payment_creation_by_staff(session, client, jwt, app):
@@ -564,11 +466,10 @@ def test_bcol_payment_creation_by_staff(session, client, jwt, app):
 
     rv = client.post('/api/v1/payment-requests', data=json.dumps(payload), headers=headers)
     assert rv.status_code == 201
-    assert rv.json.get('invoices')[0].get('datNumber') == dat_number
+    assert rv.json.get('datNumber') == dat_number
     assert rv.json.get('paymentMethod') == 'DRAWDOWN'
-    assert rv.json.get('paymentSystem') == 'BCOL'
 
-    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert schema_utils.validate(rv.json, 'invoice')[0]
 
 
 def test_payment_creation_with_service_fees(session, client, jwt, app):
@@ -580,9 +481,9 @@ def test_payment_creation_with_service_fees(session, client, jwt, app):
                      headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
-    assert rv.json.get('invoices')[0].get('serviceFees') > 0
+    assert rv.json.get('serviceFees') > 0
 
-    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert schema_utils.validate(rv.json, 'invoice')[0]
 
 
 def test_payment_creation_with_service_fees_for_zero_fees(session, client, jwt, app):
@@ -595,9 +496,9 @@ def test_payment_creation_with_service_fees_for_zero_fees(session, client, jwt, 
                      headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
-    assert rv.json.get('invoices')[0].get('serviceFees') == 0
+    assert rv.json.get('serviceFees') == 0
 
-    assert schema_utils.validate(rv.json, 'payment_response')[0]
+    assert schema_utils.validate(rv.json, 'invoice')[0]
 
 
 def test_bcol_payment_creation_by_system(session, client, jwt, app):
@@ -638,22 +539,7 @@ def test_bcol_payment_creation_by_system(session, client, jwt, app):
 
     rv = client.post('/api/v1/payment-requests', data=json.dumps(payload), headers=headers)
     assert rv.status_code == 201
-    assert rv.json.get('invoices')[0].get('datNumber') == dat_number
+    assert rv.json.get('datNumber') == dat_number
     assert rv.json.get('paymentMethod') == 'DRAWDOWN'
-    assert rv.json.get('paymentSystem') == 'BCOL'
 
-    assert schema_utils.validate(rv.json, 'payment_response')[0]
-
-
-def test_direct_payment_put_returns_200(session, client, jwt, app):
-    """Assert that the updating a direct payment returns 200."""
-    token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    current_app.config['DIRECT_PAY_ENABLED'] = True
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0001239')),
-                     headers=headers)
-    pay_id = rv.json.get('id')
-
-    rv = client.put(f'/api/v1/payment-requests/{pay_id}',
-                    data=json.dumps(get_payment_request(business_identifier='CP0001239')), headers=headers)
-    assert rv.status_code == 200
+    assert schema_utils.validate(rv.json, 'invoice')[0]

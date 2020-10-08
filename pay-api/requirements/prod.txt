@@ -22,3 +22,4 @@ attrs<=19.1.0
 jaeger-client
 dpath
 Werkzeug==0.16.1
+SQLAlchemy-Continuum

@@ -33,18 +33,18 @@ def test_statement_find_by_account(session):
 
     payment = factory_payment()
     payment.save()
-    i = factory_invoice(payment=payment, payment_account=bcol_account)
+    i = factory_invoice(payment_account=bcol_account)
     i.save()
     factory_invoice_reference(i.id).save()
 
-    settings_model = factory_statement_settings(payment_account_id=bcol_account.account_id,
+    settings_model = factory_statement_settings(payment_account_id=bcol_account.id,
                                                 frequency=StatementFrequency.DAILY.value)
-    statement_model = factory_statement(payment_account_id=bcol_account.account_id,
+    statement_model = factory_statement(payment_account_id=bcol_account.id,
                                         frequency=StatementFrequency.DAILY.value,
                                         statement_settings_id=settings_model.id)
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=i.id)
 
-    payment_account = PaymentAccount.find_by_id(bcol_account.account_id)
+    payment_account = PaymentAccount.find_by_id(bcol_account.id)
     statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
     assert statements is not None
     assert statements.get('total') == 1
@@ -57,19 +57,19 @@ def test_get_statement_report(session):
 
     payment = factory_payment()
     payment.save()
-    i = factory_invoice(payment=payment, payment_account=bcol_account)
+    i = factory_invoice(payment_account=bcol_account)
     i.save()
     factory_invoice_reference(i.id).save()
     factory_payment_line_item(invoice_id=i.id, fee_schedule_id=1).save()
 
-    settings_model = factory_statement_settings(payment_account_id=bcol_account.account_id,
+    settings_model = factory_statement_settings(payment_account_id=bcol_account.id,
                                                 frequency=StatementFrequency.DAILY.value)
-    statement_model = factory_statement(payment_account_id=bcol_account.account_id,
+    statement_model = factory_statement(payment_account_id=bcol_account.id,
                                         frequency=StatementFrequency.DAILY.value,
                                         statement_settings_id=settings_model.id)
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=i.id)
 
-    payment_account = PaymentAccount.find_by_id(bcol_account.account_id)
+    payment_account = PaymentAccount.find_by_id(bcol_account.id)
     statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
     assert statements is not None
 
@@ -86,18 +86,18 @@ def test_get_statement_report_for_empty_invoices(session):
 
     payment = factory_payment()
     payment.save()
-    i = factory_invoice(payment=payment, payment_account=bcol_account)
+    i = factory_invoice(payment_account=bcol_account)
     i.save()
     factory_invoice_reference(i.id).save()
     factory_payment_line_item(invoice_id=i.id, fee_schedule_id=1).save()
 
-    settings_model = factory_statement_settings(payment_account_id=bcol_account.account_id,
+    settings_model = factory_statement_settings(payment_account_id=bcol_account.id,
                                                 frequency=StatementFrequency.DAILY.value)
-    statement_model = factory_statement(payment_account_id=bcol_account.account_id,
+    statement_model = factory_statement(payment_account_id=bcol_account.id,
                                         frequency=StatementFrequency.DAILY.value,
                                         statement_settings_id=settings_model.id)
 
-    payment_account = PaymentAccount.find_by_id(bcol_account.account_id)
+    payment_account = PaymentAccount.find_by_id(bcol_account.id)
     statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
     assert statements is not None
 
@@ -114,19 +114,19 @@ def test_get_weekly_statement_report(session):
 
     payment = factory_payment()
     payment.save()
-    i = factory_invoice(payment=payment, payment_account=bcol_account)
+    i = factory_invoice(payment_account=bcol_account)
     i.save()
     factory_invoice_reference(i.id).save()
     factory_payment_line_item(invoice_id=i.id, fee_schedule_id=1).save()
 
-    settings_model = factory_statement_settings(payment_account_id=bcol_account.account_id,
+    settings_model = factory_statement_settings(payment_account_id=bcol_account.id,
                                                 frequency=StatementFrequency.WEEKLY.value)
-    statement_model = factory_statement(payment_account_id=bcol_account.account_id,
+    statement_model = factory_statement(payment_account_id=bcol_account.id,
                                         frequency=StatementFrequency.WEEKLY.value,
                                         statement_settings_id=settings_model.id)
     factory_statement_invoices(statement_id=statement_model.id, invoice_id=i.id)
 
-    payment_account = PaymentAccount.find_by_id(bcol_account.account_id)
+    payment_account = PaymentAccount.find_by_id(bcol_account.id)
     statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
     assert statements is not None
 

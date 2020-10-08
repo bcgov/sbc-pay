@@ -21,10 +21,10 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 
 from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
-from pay_api.utils.enums import TransactionStatus
+from pay_api.utils.enums import InvoiceReferenceStatus, TransactionStatus
 from .base_model import BaseModel
 from .base_schema import BaseSchema
-from .db import db, ma
+from .db import db
 
 
 class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods
@@ -54,9 +54,43 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods
             status_code=TransactionStatus.CREATED.value).one_or_none()
 
     @classmethod
-    def find_by_id_and_payment_id(cls, identifier: uuid, payment_id: int):
+    def find_active_by_invoice_id(cls, invoice_id: int):
+        """Return Active Payment Transactions by invoice identifier."""
+        # pylint: disable=import-outside-toplevel, cyclic-import
+        from .invoice_reference import InvoiceReference
+        from .payment import Payment
+        from .invoice import Invoice
+
+        query = db.session.query(PaymentTransaction) \
+            .join(Payment) \
+            .join(InvoiceReference, InvoiceReference.invoice_number == Payment.invoice_number) \
+            .join(Invoice, InvoiceReference.invoice_id == Invoice.id) \
+            .filter(Invoice.id == invoice_id) \
+            .filter(InvoiceReference.status_code == InvoiceReferenceStatus.ACTIVE.value) \
+            .filter(PaymentTransaction.status_code == TransactionStatus.CREATED.value)
+
+        return query.one_or_none()
+
+    @classmethod
+    def find_by_invoice_id(cls, invoice_id: int):
+        """Return all Payment Transactions by invoice identifier."""
+        # pylint: disable=import-outside-toplevel, cyclic-import
+        from .invoice_reference import InvoiceReference
+        from .payment import Payment
+        from .invoice import Invoice
+
+        query = db.session.query(PaymentTransaction) \
+            .join(Payment) \
+            .join(InvoiceReference, InvoiceReference.invoice_number == Payment.invoice_number) \
+            .join(Invoice, InvoiceReference.invoice_id == Invoice.id) \
+            .filter(Invoice.id == invoice_id)
+
+        return query.all()
+
+    @classmethod
+    def find_by_id_and_payment_id(cls, identifier: uuid):
         """Return Payment Transactions by payment identifier."""
-        return cls.query.filter_by(payment_id=payment_id).filter_by(id=identifier).one_or_none()
+        return cls.query.filter_by(id=identifier).one_or_none()
 
     @classmethod
     def find_stale_records(cls, days: int = 0, hours: int = 0, minutes: int = 0):
@@ -85,9 +119,3 @@ class PaymentTransactionSchema(BaseSchema):  # pylint: disable=too-many-ancestor
                                            data_key='end_time')
     transaction_start_time = fields.DateTime(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE),
                                              data_key='start_time')
-
-    # pylint: disable=no-member
-    _links = ma.Hyperlinks({
-        'self': ma.URLFor('API.transactions_transactions', payment_id='<payment_id>', transaction_id='<id>'),
-        'collection': ma.URLFor('API.transactions_transaction', payment_id='<payment_id>')
-    })

@@ -18,12 +18,13 @@ Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
 from datetime import datetime
 
+import pytz
+
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.services.payment import Payment as Payment_service
 from pay_api.utils.enums import InvoiceStatus
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account)
-import pytz
 
 
 def test_payment_saved_from_new(session):
@@ -32,7 +33,7 @@ def test_payment_saved_from_new(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment, payment_account)
+    invoice = factory_invoice(payment_account)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
     p = Payment_service.find_by_id(payment.id, skip_auth_check=True)
@@ -42,7 +43,6 @@ def test_payment_saved_from_new(session):
     assert p.payment_system_code is not None
     assert p.payment_method_code is not None
     assert p.payment_status_code is not None
-    assert p.invoices is not None
 
 
 def test_payment_invalid_lookup(session):
@@ -59,7 +59,7 @@ def test_payment_with_no_active_invoice(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment, payment_account, InvoiceStatus.DELETED.value)
+    invoice = factory_invoice(payment_account, InvoiceStatus.DELETED.value)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
     p = Payment_service.find_by_id(payment.id, skip_auth_check=True)
@@ -71,13 +71,11 @@ def test_payment_with_no_active_invoice(session):
 def test_search_payment_history(session):
     """Assert that the search payment history is working."""
     payment_account = factory_payment_account()
-    payment = factory_payment(payment_status_code='CREATED')
     payment_account.save()
-    payment.save()
-    invoice = factory_invoice(payment, payment_account)
+    invoice = factory_invoice(payment_account)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
-    auth_account_id = PaymentAccount.find_by_id(payment_account.account_id).auth_account_id
+    auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
     results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
                                                       search_filter={}, limit=1, page=1)
@@ -86,10 +84,8 @@ def test_search_payment_history(session):
     assert results.get('total') == 1
 
     # Add one more payment
-    payment = factory_payment(payment_status_code='CREATED')
     payment_account.save()
-    payment.save()
-    invoice = factory_invoice(payment, payment_account)
+    invoice = factory_invoice(payment_account)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
 
@@ -164,7 +160,8 @@ def test_search_payment_history(session):
     assert results.get('items') is not None
     assert results.get('total') == 0
 
-    # Search by different filter
+    # TODO
+    # # Search by different filter
     search_filter = {
         'monthFilter': {
             'month': datetime.now().month,
@@ -179,7 +176,7 @@ def test_search_payment_history(session):
 
     # Search by different filter
     search_filter = {
-        'createdBy': payment.created_name
+        'createdBy': invoice.created_name
     }
     results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
                                                       search_filter=search_filter, limit=1, page=1)
@@ -192,12 +189,12 @@ def test_search_payment_history_for_all(session):
     """Assert that the search payment history is working."""
     payment_account = factory_payment_account()
     payment_account.save()
-    auth_account_id = PaymentAccount.find_by_id(payment_account.account_id).auth_account_id
+    auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
     for i in range(20):
         payment = factory_payment(payment_status_code='CREATED')
         payment.save()
-        invoice = factory_invoice(payment, payment_account)
+        invoice = factory_invoice(payment_account)
         invoice.save()
         factory_invoice_reference(invoice.id).save()
 
@@ -212,12 +209,12 @@ def test_create_payment_report_csv(session, rest_call_mock):
     """Assert that the create payment report is working."""
     payment_account = factory_payment_account()
     payment_account.save()
-    auth_account_id = PaymentAccount.find_by_id(payment_account.account_id).auth_account_id
+    auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
     for i in range(20):
         payment = factory_payment(payment_status_code='CREATED')
         payment.save()
-        invoice = factory_invoice(payment, payment_account)
+        invoice = factory_invoice(payment_account)
         invoice.save()
         factory_invoice_reference(invoice.id).save()
 
@@ -230,12 +227,12 @@ def test_create_payment_report_pdf(session, rest_call_mock):
     """Assert that the create payment report is working."""
     payment_account = factory_payment_account()
     payment_account.save()
-    auth_account_id = PaymentAccount.find_by_id(payment_account.account_id).auth_account_id
+    auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
     for i in range(20):
         payment = factory_payment(payment_status_code='CREATED')
         payment.save()
-        invoice = factory_invoice(payment, payment_account)
+        invoice = factory_invoice(payment_account)
         invoice.save()
         factory_invoice_reference(invoice.id).save()
 
@@ -252,10 +249,10 @@ def test_search_payment_history_with_tz(session):
     payment = factory_payment(payment_status_code='CREATED', created_on=payment_created_on)
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment, payment_account)
+    invoice = factory_invoice(payment_account)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
-    auth_account_id = PaymentAccount.find_by_id(payment_account.account_id).auth_account_id
+    auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
     results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
                                                       search_filter={}, limit=1, page=1)
@@ -269,7 +266,7 @@ def test_search_payment_history_with_tz(session):
     payment = factory_payment(payment_status_code='CREATED', created_on=payment_created_on)
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment, payment_account)
+    invoice = factory_invoice(payment_account)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
 

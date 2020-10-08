@@ -37,7 +37,6 @@ class PaymentStatus(Enum):
     CREATED = 'CREATED'
     COMPLETED = 'COMPLETED'
     DELETED = 'DELETED'
-    DELETE_ACCEPTED = 'DELETE_ACCEPTED'
 
 
 class InvoiceStatus(Enum):
@@ -47,6 +46,7 @@ class InvoiceStatus(Enum):
     PAID = 'PAID'
     DELETED = 'DELETED'
     UPDATE_REVENUE_ACCOUNT = 'GL_UPDATED'
+    DELETE_ACCEPTED = 'DELETE_ACCEPTED'
 
 
 class TransactionStatus(Enum):
@@ -89,6 +89,11 @@ class PaymentMethod(Enum):
     DRAWDOWN = 'DRAWDOWN'
     INTERNAL = 'INTERNAL'
     DIRECT_PAY = 'DIRECT_PAY'
+    EFT = 'EFT'
+    WIRE = 'WIRE'
+    ONLINE_BANKING = 'OB'
+    PAD = 'PAD'
+    EJV = 'EJV'
 
 
 class Role(Enum):
@@ -107,7 +112,7 @@ class Code(Enum):
     """Code value keys."""
 
     ERROR = 'errors'
-    PAYMENT_STATUS = 'payment_statuses'
+    INVOICE_STATUS = 'invoice_statuses'
 
 
 class AccountType(Enum):

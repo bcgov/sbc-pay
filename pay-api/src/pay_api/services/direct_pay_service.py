@@ -26,7 +26,7 @@ from pay_api.services.hashing import HashingService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem, PaymentMethod
+from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem, PaymentMethod, InvoiceStatus, PaymentStatus
 from pay_api.utils.util import current_local_time, parse_url_params
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
@@ -104,21 +104,27 @@ class DirectPayService(PaymentSystemService, OAuthService):
         """Return DIRECT_PAY as the system code."""
         return PaymentMethod.DIRECT_PAY.value
 
-    def create_account(self, name: str, contact_info: Dict[str, Any], authorization: Dict[str, Any], **kwargs):
+    def get_default_invoice_status(self) -> str:
+        """Return CREATED as the default invoice status."""
+        return InvoiceStatus.CREATED.value
+
+    def get_default_payment_status(self) -> str:
+        """Return the default status for payment when created."""
+        return PaymentStatus.CREATED.value
+
+    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
         """Return an empty value since Direct Pay doesnt need any account."""
         return {}
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
-                       **kwargs):
+                       **kwargs) -> InvoiceReference:
         """Return a static invoice number for direct pay."""
         current_app.logger.debug('<create_invoice_direct_pay')
 
-        invoice = {
-            'invoice_number': f'{invoice.id}'
-        }
+        invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id, str(invoice.id), None)
 
-        current_app.logger.debug('>create_invoice')
-        return invoice
+        current_app.logger.debug('>create_invoice_direct_pay')
+        return invoice_reference
 
     def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
                        line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0,
@@ -172,6 +178,9 @@ class DirectPayService(PaymentSystemService, OAuthService):
                     response_json.get('trndate')), float(response_json.get('trnamount')),
 
         return None
+
+    def complete_post_invoice(self, invoice_id: int, invoice_reference: InvoiceReference) -> None:
+        """Complete any post invoice activities if needed."""
 
     def __get_token(self):
         """Generate oauth token from payBC which will be used for all communication."""

@@ -36,13 +36,13 @@ def test_statement_settings_find_by_account(session):
 
     payment = factory_payment()
     payment.save()
-    i = factory_invoice(payment=payment, payment_account=bcol_account)
+    i = factory_invoice(payment_account=bcol_account)
     i.save()
     factory_invoice_reference(i.id).save()
-    factory_statement_settings(payment_account_id=bcol_account.account_id,
+    factory_statement_settings(payment_account_id=bcol_account.id,
                                frequency=StatementFrequency.DAILY.value)
 
-    payment_account = PaymentAccount.find_by_id(bcol_account.account_id)
+    payment_account = PaymentAccount.find_by_id(bcol_account.id)
     statement_settings = StatementSettingsService.find_by_account_id(payment_account.auth_account_id)
     assert statement_settings is not None
     assert statement_settings.get('current_frequency').get('frequency') == StatementFrequency.DAILY.value
@@ -61,14 +61,14 @@ def test_update_statement_daily(session):
 
     payment = factory_payment()
     payment.save()
-    i = factory_invoice(payment=payment, payment_account=bcol_account)
+    i = factory_invoice(payment_account=bcol_account)
     i.save()
     factory_invoice_reference(i.id).save()
-    factory_statement_settings(payment_account_id=bcol_account.account_id,
+    factory_statement_settings(payment_account_id=bcol_account.id,
                                frequency=StatementFrequency.DAILY.value)
 
     # update to weekly
-    payment_account = PaymentAccount.find_by_id(bcol_account.account_id)
+    payment_account = PaymentAccount.find_by_id(bcol_account.id)
     statement_settings = StatementSettingsService.update_statement_settings(payment_account.auth_account_id,
                                                                             StatementFrequency.WEEKLY.value)
     assert statement_settings is not None
@@ -154,14 +154,14 @@ def test_update_statement_daily_to_daily(session):
 
     payment = factory_payment()
     payment.save()
-    i = factory_invoice(payment=payment, payment_account=bcol_account)
+    i = factory_invoice(payment_account=bcol_account)
     i.save()
     factory_invoice_reference(i.id).save()
-    factory_statement_settings(payment_account_id=bcol_account.account_id,
+    factory_statement_settings(payment_account_id=bcol_account.id,
                                frequency=StatementFrequency.DAILY.value)
 
     # update to weekly
-    payment_account = PaymentAccount.find_by_id(bcol_account.account_id)
+    payment_account = PaymentAccount.find_by_id(bcol_account.id)
     statement_settings = StatementSettingsService.update_statement_settings(payment_account.auth_account_id,
                                                                             StatementFrequency.DAILY.value)
     assert statement_settings is not None
@@ -186,14 +186,14 @@ def test_update_statement_monthly(session):
 
     payment = factory_payment()
     payment.save()
-    i = factory_invoice(payment=payment, payment_account=bcol_account)
+    i = factory_invoice(payment_account=bcol_account)
     i.save()
     factory_invoice_reference(i.id).save()
-    factory_statement_settings(payment_account_id=bcol_account.account_id,
+    factory_statement_settings(payment_account_id=bcol_account.id,
                                frequency=StatementFrequency.MONTHLY.value)
 
     # update to weekly
-    payment_account = PaymentAccount.find_by_id(bcol_account.account_id)
+    payment_account = PaymentAccount.find_by_id(bcol_account.id)
     statement_settings = StatementSettingsService.update_statement_settings(payment_account.auth_account_id,
                                                                             StatementFrequency.WEEKLY.value)
     assert statement_settings is not None
@@ -227,14 +227,14 @@ def test_update_statement_weekly(session):
 
     payment = factory_payment()
     payment.save()
-    i = factory_invoice(payment=payment, payment_account=bcol_account)
+    i = factory_invoice(payment_account=bcol_account)
     i.save()
     factory_invoice_reference(i.id).save()
-    factory_statement_settings(payment_account_id=bcol_account.account_id,
+    factory_statement_settings(payment_account_id=bcol_account.id,
                                frequency=StatementFrequency.WEEKLY.value)
 
     # update to weekly
-    payment_account = PaymentAccount.find_by_id(bcol_account.account_id)
+    payment_account = PaymentAccount.find_by_id(bcol_account.id)
     statement_settings = StatementSettingsService.update_statement_settings(payment_account.auth_account_id,
                                                                             StatementFrequency.WEEKLY.value)
     assert statement_settings is not None

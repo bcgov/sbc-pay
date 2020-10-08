@@ -152,6 +152,9 @@ class _Config():  # pylint: disable=too-few-public-methods
     BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS = os.getenv('BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS',
                                                            'BCROS SERVICE ACCOUNT')
 
+    # Config value to disable activity logs
+    DISABLE_ACTIVITY_LOGS = os.getenv('DISABLE_ACTIVITY_LOGS', 'False').lower() == 'true'
+
     TESTING = False
     DEBUG = True
 
@@ -272,6 +275,8 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     PAYBC_DIRECT_PAY_BASE_URL = 'http://localhost:8080/paybc-api'
     PAYBC_DIRECT_PAY_CLIENT_ID = 'TEST'
     PAYBC_DIRECT_PAY_CLIENT_SECRET = 'TEST'
+
+    DIRECT_PAY_ENABLED = True
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

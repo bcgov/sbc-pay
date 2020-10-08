@@ -21,7 +21,7 @@
     },
     "receiptAmount": {
       "$id": "#/properties/receipts/items/properties/receiptAmount",
-      "type": "integer",
+      "type": "number",
       "title": "Amount",
       "default": 0,
       "examples": [

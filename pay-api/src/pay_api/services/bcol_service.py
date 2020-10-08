@@ -21,12 +21,11 @@ from requests.exceptions import HTTPError
 
 from pay_api.exceptions import BusinessException, Error
 from pay_api.models.corp_type import CorpType
-from pay_api.utils.enums import AuthHeaderType, ContentType
+from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceStatus, PaymentStatus
 from pay_api.utils.enums import PaymentSystem as PaySystemCode, PaymentMethod
 from pay_api.utils.errors import get_bcol_error
 from pay_api.utils.user_context import UserContext
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import get_str_by_path
 from .base_payment_system import PaymentSystemService
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
@@ -39,21 +38,9 @@ class BcolService(PaymentSystemService, OAuthService):
     """Service to manage BCOL integration."""
 
     @user_context
-    def create_account(self, name: str, contact_info: Dict[str, Any], authorization: Dict[str, Any], **kwargs):
-        """Create account."""
-        current_app.logger.debug('<create_account')
-        user: UserContext = kwargs['user']
-        account_info: Dict[str, Any] = kwargs['account_info']
-        if user.is_staff() or user.is_system():
-            bcol_user_id: str = None
-            bcol_account_id: str = get_str_by_path(account_info, 'bcolAccountNumber')
-        else:
-            bcol_user_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineUserId')
-            bcol_account_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineAccountId')
-        return {
-            'bcol_account_id': bcol_account_id,
-            'bcol_user_id': bcol_user_id
-        }
+    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
+        """Return an empty value since we don't create BC Online account."""
+        return {}
 
     def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
@@ -63,9 +50,17 @@ class BcolService(PaymentSystemService, OAuthService):
         """Return PAYBC as the system code."""
         return PaySystemCode.BCOL.value
 
+    def get_default_invoice_status(self) -> str:
+        """Return CREATED as the default invoice status."""
+        return InvoiceStatus.CREATED.value
+
+    def get_default_payment_status(self) -> str:
+        """Return the default status for payment when created."""
+        return PaymentStatus.CREATED.value
+
     @user_context
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
-                       line_items: [PaymentLineItem], invoice: Invoice, **kwargs):
+                       line_items: [PaymentLineItem], invoice: Invoice, **kwargs) -> InvoiceReference:
         """Create Invoice in PayBC."""
         current_app.logger.debug('<create_invoice')
         user: UserContext = kwargs['user']
@@ -85,13 +80,13 @@ class BcolService(PaymentSystemService, OAuthService):
             'amount': str(amount_excluding_txn_fees),
             'rate': str(amount_excluding_txn_fees),
             'remarks': remarks[:50],
-            'feeCode': self._get_fee_code(kwargs.get('corp_type_code'), user.is_staff() or user.is_system())
+            'feeCode': self._get_fee_code(invoice.corp_type_code, user.is_staff() or user.is_system())
         }
 
         if user.is_staff() or user.is_system():
             payload['userId'] = user.user_name_with_no_idp if user.is_staff() else current_app.config[
                 'BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS']
-            payload['accountNumber'] = payment_account.bcol_account_id
+            payload['accountNumber'] = invoice.bcol_account
             payload['formNumber'] = invoice.dat_number
             payload['reduntantFlag'] = 'Y'
             payload['rateType'] = 'C'
@@ -113,13 +108,11 @@ class BcolService(PaymentSystemService, OAuthService):
                 error = Error.BCOL_ERROR
             raise BusinessException(error)
 
-        invoice = {
-            'invoice_number': response_json.get('key'),
-            'reference_number': response_json.get('sequenceNo'),
-            'totalAmount': -(int(response_json.get('totalAmount', 0)) / 100)
-        }
+        invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id, response_json.get('key'),
+                                                                      response_json.get('sequenceNo'))
+
         current_app.logger.debug('>create_invoice')
-        return invoice
+        return invoice_reference
 
     def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
                        line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0,
@@ -145,3 +138,21 @@ class BcolService(PaymentSystemService, OAuthService):
     def get_payment_method_code(self):
         """Return CC as the method code."""
         return PaymentMethod.DRAWDOWN.value
+
+    def complete_post_invoice(self, invoice_id: int, invoice_reference: InvoiceReference) -> None:
+        """Complete any post payment activities if needed."""
+        # pylint: disable=cyclic-import,import-outside-toplevel
+        from .payment_transaction import PaymentTransaction
+        from .payment import Payment
+
+        # Create a payment record
+        Payment.create(payment_method=self.get_payment_method_code(),
+                       payment_system=self.get_payment_system_code(),
+                       payment_status=self.get_default_payment_status(),
+                       invoice_number=invoice_reference.invoice_number)
+        transaction: PaymentTransaction = PaymentTransaction.create(invoice_id,
+                                                                    {
+                                                                        'clientSystemUrl': '',
+                                                                        'payReturnUrl': ''
+                                                                    })
+        transaction.update_transaction(transaction.id, pay_response_url=None)

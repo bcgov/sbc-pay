@@ -18,10 +18,11 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 
 import json
-from datetime import timedelta
+from datetime import timedelta, datetime
 
-from pay_api.models import BcolPaymentAccount
-from pay_api.models.payment import Payment
+import dateutil
+
+from pay_api.models.invoice import Invoice
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.utils.enums import StatementFrequency
 from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month, get_week_start_and_end_date
@@ -37,13 +38,30 @@ def test_get_default_statement_settings_weekly(session, client, jwt, app):
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
                      headers=headers)
 
-    payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    bcol_account: BcolPaymentAccount = BcolPaymentAccount.find_by_id(payment.invoices[0].bcol_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(bcol_account.account_id)
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
+
     rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/settings',
                     headers=headers)
     assert rv.status_code == 200
     assert rv.json.get('currentFrequency').get('frequency') == StatementFrequency.WEEKLY.value
+    # Assert the array of the frequncies
+    for freqeuncy in rv.json.get('frequencies'):
+        if freqeuncy.get('frequency') == StatementFrequency.WEEKLY.value:
+            actual_weekly = dateutil.parser.parse(freqeuncy.get('startDate')).date()
+            expected_weekly = (get_week_start_and_end_date()[1] + timedelta(days=1)).date()
+            assert actual_weekly == expected_weekly, 'weekly matches'
+        if freqeuncy.get('frequency') == StatementFrequency.MONTHLY.value:
+            today = datetime.today()
+            actual_monthly = dateutil.parser.parse(freqeuncy.get('startDate')).date()
+            expected_monthly = (
+                        get_first_and_last_dates_of_month(today.month, today.year)[1] + timedelta(days=1)).date()
+            assert actual_monthly == expected_monthly, 'monthly matches'
+        if freqeuncy.get('frequency') == StatementFrequency.DAILY.value:
+            actual_daily = dateutil.parser.parse(freqeuncy.get('startDate')).date()
+            # since current frequncy is weekly , daily changes will happen at the end of the week
+            expected_weekly = (get_week_start_and_end_date()[1] + timedelta(days=1)).date()
+            assert actual_daily == expected_weekly, 'daily matches'
 
 
 def test_post_default_statement_settings_daily(session, client, jwt, app):
@@ -54,9 +72,8 @@ def test_post_default_statement_settings_daily(session, client, jwt, app):
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0002000')),
                      headers=headers)
 
-    payment: Payment = Payment.find_by_id(rv.json.get('id'))
-    bcol_account: BcolPaymentAccount = BcolPaymentAccount.find_by_id(payment.invoices[0].bcol_account_id)
-    pay_account: PaymentAccount = PaymentAccount.find_by_id(bcol_account.account_id)
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
 
     rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/settings', data=json.dumps({}),
                     headers=headers)

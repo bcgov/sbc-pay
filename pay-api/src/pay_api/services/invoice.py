@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Invoice."""
+from __future__ import annotations
 
 from datetime import datetime
 
@@ -21,11 +22,9 @@ from pay_api.exceptions import BusinessException
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceSchema
 from pay_api.services.auth import check_auth
-from pay_api.services.fee_schedule import FeeSchedule
-from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import ALL_ALLOWED_ROLES
-from pay_api.utils.enums import PaymentSystem, InvoiceStatus
 from pay_api.utils.errors import Error
+from pay_api.utils.enums import InvoiceStatus, PaymentStatus
 
 
 class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
@@ -35,11 +34,9 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         """Initialize the service."""
         self.__dao = None
         self._id: int = None
-        self._payment_id: int = None
         self._invoice_status_code: str = None
-        self._credit_account_id: str = None
-        self._bcol_account_id: str = None
-        self._internal_account_id: str = None
+        self._payment_account_id: str = None
+        self._bcol_account: str = None
         self._total: float = None
         self._paid: float = None
         self._refund: float = None
@@ -53,6 +50,8 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._service_fees: float = None
         self._business_identifier: str = None
         self._dat_number: str = None
+        self._cfs_account_id: int
+        self._payment_method_code: str = None
 
     @property
     def _dao(self):
@@ -64,11 +63,10 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
     def _dao(self, value):
         self.__dao = value
         self.id: int = self._dao.id
-        self.payment_id: int = self._dao.payment_id
+        self.payment_method_code: int = self._dao.payment_method_code
         self.invoice_status_code: str = self._dao.invoice_status_code
-        self.bcol_account_id: str = self._dao.bcol_account_id
-        self.credit_account_id: str = self._dao.credit_account_id
-        self.internal_account_id: str = self._dao.internal_account_id
+        self.bcol_account: str = self._dao.bcol_account
+        self.payment_account_id: str = self._dao.payment_account_id
         self.refund: float = self._dao.refund
         self.payment_date: datetime = self._dao.payment_date
         self.total: float = self._dao.total
@@ -82,6 +80,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.service_fees: float = self._dao.service_fees
         self.business_identifier: str = self._dao.business_identifier
         self.dat_number: str = self._dao.dat_number
+        self.cfs_account_id: int = self._dao.cfs_account_id
 
     @property
     def id(self):
@@ -95,15 +94,15 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._dao.id = value
 
     @property
-    def payment_id(self):
-        """Return the payment_id."""
-        return self._payment_id
+    def payment_method_code(self):
+        """Return the payment_method_code."""
+        return self._payment_method_code
 
-    @payment_id.setter
-    def payment_id(self, value: int):
-        """Set the payment_id."""
-        self._payment_id = value
-        self._dao.payment_id = value
+    @payment_method_code.setter
+    def payment_method_code(self, value: str):
+        """Set the payment_method_code."""
+        self._payment_method_code = value
+        self._dao.payment_method_code = value
 
     @property
     def invoice_status_code(self):
@@ -117,37 +116,26 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._dao.invoice_status_code = value
 
     @property
-    def credit_account_id(self):
-        """Return the credit_account_id."""
-        return self._credit_account_id
+    def payment_account_id(self):
+        """Return the payment_account_id."""
+        return self._payment_account_id
 
-    @credit_account_id.setter
-    def credit_account_id(self, value: str):
-        """Set the credit_account_id."""
-        self._credit_account_id = value
-        self._dao.credit_account_id = value
-
-    @property
-    def bcol_account_id(self):
-        """Return the bcol_account_id."""
-        return self._bcol_account_id
-
-    @bcol_account_id.setter
-    def bcol_account_id(self, value: str):
-        """Set the bcol_account_id."""
-        self._bcol_account_id = value
-        self._dao.bcol_account_id = value
+    @payment_account_id.setter
+    def payment_account_id(self, value: str):
+        """Set the payment_account_id."""
+        self._payment_account_id = value
+        self._dao.payment_account_id = value
 
     @property
-    def internal_account_id(self):
-        """Return the internal_account_id."""
-        return self._internal_account_id
+    def bcol_account(self):
+        """Return the bcol_account."""
+        return self._bcol_account
 
-    @internal_account_id.setter
-    def internal_account_id(self, value: str):
-        """Set the internal_account_id."""
-        self._internal_account_id = value
-        self._dao.internal_account_id = value
+    @bcol_account.setter
+    def bcol_account(self, value: str):
+        """Set the bcol_account."""
+        self._bcol_account = value
+        self._dao.bcol_account = value
 
     @property
     def refund(self):
@@ -292,18 +280,40 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._dat_number = value
         self._dao.dat_number = value
 
-    def save(self):
+    @property
+    def cfs_account_id(self):
+        """Return the cfs_account_id."""
+        return self._cfs_account_id
+
+    @cfs_account_id.setter
+    def cfs_account_id(self, value: int):
+        """Set the cfs_account_id."""
+        self._cfs_account_id = value
+        self._dao.cfs_account_id = value
+
+    def commit(self):
         """Save the information to the DB."""
-        return self._dao.save()
+        return self._dao.commit()
+
+    def rollback(self):
+        """Rollback."""
+        return self._dao.rollback()
 
     def flush(self):
         """Save the information to the DB."""
         return self._dao.flush()
 
+    def save(self):
+        """Save the information to the DB."""
+        return self._dao.save()
+
     def asdict(self):
         """Return the invoice as a python dict."""
         invoice_schema = InvoiceSchema()
         d = invoice_schema.dump(self._dao)
+        # TODO remove it later, adding this here to make non-breaking changes for other teams
+        if d.get('status_code') == InvoiceStatus.PAID.value:
+            d['status_code'] = PaymentStatus.COMPLETED.value
 
         return d
 
@@ -315,49 +325,15 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoice
 
     @staticmethod
-    def create(account: PaymentAccount, payment_id: int, fees: [FeeSchedule], corp_type: str, **kwargs):
-        """Create invoice record."""
-        current_app.logger.debug('<create')
-        i = Invoice()
-        i.payment_id = payment_id
-        i.invoice_status_code = InvoiceStatus.CREATED.value
-        if account.payment_system_code == PaymentSystem.BCOL.value:
-            i.bcol_account_id = account.id
-        elif account.payment_system_code == PaymentSystem.PAYBC.value:
-            i.credit_account_id = account.id
-        elif account.payment_system_code == PaymentSystem.INTERNAL.value:
-            i.internal_account_id = account.id
-
-        total_excluding_service_fee = sum(fee.total_excluding_service_fees for fee in fees) if fees else 0
-        #   TODO Change based on decision, whether to apply service fees for each line ot not.
-        #   For now add up the service fee on each fee schedule
-
-        i.service_fees = sum(fee.service_fees for fee in fees) if fees else 0
-
-        i.total = i.service_fees + total_excluding_service_fee
-        i.paid = 0
-        i.refund = 0
-        i.routing_slip = kwargs.get('routing_slip', None)
-        i.filing_id = kwargs.get('filing_id', None)
-        i.folio_number = kwargs.get('folio_number', None)
-        i.business_identifier = kwargs.get('business_identifier', None)
-        i.corp_type_code = corp_type
-        i.dat_number = kwargs.get('dat_number', None)
-
-        i._dao = i.flush()  # pylint: disable=protected-access
-        current_app.logger.debug('>create')
-        return i
-
-    @staticmethod
-    def find_by_id(identifier: int, pay_id: int = None, skip_auth_check: bool = False):
+    def find_by_id(identifier: int, skip_auth_check: bool = False, one_of_roles=ALL_ALLOWED_ROLES):
         """Find invoice by id."""
-        invoice_dao = InvoiceModel.find_by_id(identifier) if not pay_id else InvoiceModel.find_by_id_and_payment_id(
-            identifier, pay_id)
+        invoice_dao = InvoiceModel.find_by_id(identifier)
+
         if not invoice_dao:
             raise BusinessException(Error.INVALID_INVOICE_ID)
 
         if not skip_auth_check:
-            Invoice._check_for_auth(invoice_dao)
+            Invoice._check_for_auth(invoice_dao, one_of_roles)
 
         invoice = Invoice()
         invoice._dao = invoice_dao  # pylint: disable=protected-access
@@ -366,36 +342,20 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoice
 
     @staticmethod
-    def find_by_payment_identifier(identifier: int, skip_auth_check: bool = False):
-        """Find invoice by payment identifier."""
-        invoice_dao = InvoiceModel.find_by_payment_id(identifier)
+    def find_invoices_for_payment(payment_id: int) -> [Invoice]:
+        """Find invoices by payment id."""
+        invoices: [Invoice] = []
+        invoice_daos: [InvoiceModel] = InvoiceModel.find_invoices_for_payment(payment_id)
 
-        if not skip_auth_check:
-            Invoice._check_for_auth(invoice_dao)
-
-        invoice = Invoice()
-        invoice._dao = invoice_dao  # pylint: disable=protected-access
+        for invoice_dao in invoice_daos:
+            invoice = Invoice()
+            invoice._dao = invoice_dao  # pylint: disable=protected-access
+            invoices.append(invoice)
 
         current_app.logger.debug('>find_by_id')
-        return invoice
+        return invoices
 
     @staticmethod
-    def get_invoices(payment_identifier: str, skip_auth_check: bool = False):
-        """Find invoices."""
-        current_app.logger.debug('<get_invoices')
-
-        data = {'items': []}
-        daos = [InvoiceModel.find_by_payment_id(payment_identifier)]  # Treating as a set to avoid re-work in future
-        for dao in daos:
-            if dao:
-                if not skip_auth_check:
-                    Invoice._check_for_auth(dao)
-                data['items'].append(Invoice.populate(dao).asdict())
-
-        current_app.logger.debug('>get_invoices')
-        return data
-
-    @staticmethod
-    def _check_for_auth(dao):
+    def _check_for_auth(dao, one_of_roles=ALL_ALLOWED_ROLES):
         # Check if user is authorized to perform this action
-        check_auth(dao.business_identifier, one_of_roles=ALL_ALLOWED_ROLES)
+        check_auth(dao.business_identifier, one_of_roles=one_of_roles)

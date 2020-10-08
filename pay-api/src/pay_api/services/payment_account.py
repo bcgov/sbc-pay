@@ -12,157 +12,310 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Payment Account model related operations."""
+from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any, Dict, Union
 
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
-from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import PaymentAccount as PaymentAccountModel, PaymentAccountSchema
 from pay_api.models import StatementSettings as StatementSettingsModel
-from pay_api.models.bcol_payment_account import BcolPaymentAccount
-from pay_api.models.credit_payment_account import CreditPaymentAccount
-from pay_api.models.internal_payment_account import InternalPaymentAccount
-from pay_api.utils.enums import PaymentSystem, StatementFrequency
+from pay_api.utils.enums import StatementFrequency
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_str_by_path
-from pay_api.utils.user_context import user_context, UserContext
 
 
-class PaymentAccount():  # pylint: disable=too-many-instance-attributes
+class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Service to manage Payment Account model related operations."""
 
     def __init__(self):
         """Initialize service."""
-        self._id: int = None
-        self._corp_number: str = None
-        self._corp_type_code: str = None
-        self._payment_system_code: str = None
-        self._paybc_account: str = None
-        self._paybc_party: str = None
-        self._paybc_site: str = None
-        self._bcol_user_id: str = None
-        self._bcol_account_id: str = None
-        self._account_id: str = None
+        self.__dao = None
+        self._id: Union[None, int] = None
+        self._auth_account_id: Union[None, str] = None
+        self._auth_account_name: Union[None, str] = None
+        self._payment_method: Union[None, str] = None
 
-    def populate(self, value):
-        """Populate."""
-        if value:
-            self._id: int = value.id
-            if isinstance(value, BcolPaymentAccount):
-                self._payment_system_code = PaymentSystem.BCOL.value
-                self._bcol_account_id = value.bcol_account_id
-                self._bcol_user_id = value.bcol_user_id
-                self._account_id = value.account_id
-            elif isinstance(value, InternalPaymentAccount):
-                self._payment_system_code = PaymentSystem.INTERNAL.value
-                self._corp_number = value.corp_number
-                self._corp_type_code = value.corp_type_code
-                self._account_id = value.account_id
-            elif isinstance(value, CreditPaymentAccount):
-                self._payment_system_code = PaymentSystem.PAYBC.value
-                self._paybc_account = value.paybc_account
-                self._paybc_party = value.paybc_party
-                self._paybc_site = value.paybc_site
-                self._corp_number = value.corp_number
-                self._corp_type_code = value.corp_type_code
-                self._account_id = value.account_id
+        self._cfs_account: Union[None, str] = None
+        self._cfs_party: Union[None, str] = None
+        self._cfs_site: Union[None, str] = None
+
+        self._bank_name: Union[None, str] = None
+        self._bank_number: Union[None, str] = None
+        self._bank_branch: Union[None, str] = None
+        self._bank_branch_number: Union[None, str] = None
+        self._bank_account_number: Union[None, str] = None
+
+        self._bcol_user_id: Union[None, str] = None
+        self._bcol_account: Union[None, str] = None
+
+        self._cfs_account_id: Union[None, int] = None
+
+    @property
+    def _dao(self):
+        if not self.__dao:
+            self.__dao = PaymentAccountModel()
+        return self.__dao
+
+    @_dao.setter
+    def _dao(self, value: PaymentAccountModel):
+        self.__dao = value
+        self.id: int = self._dao.id
+        self.auth_account_id: str = self._dao.auth_account_id
+        self.auth_account_name: str = self._dao.auth_account_name
+        self.payment_method: str = self._dao.payment_method
+        self.bcol_user_id: str = self._dao.bcol_user_id
+        self.bcol_account: str = self._dao.bcol_account
+
+        cfs_account: CfsAccountModel = CfsAccountModel.find_active_by_account_id(self.id)
+        if cfs_account:
+            self.cfs_account: str = cfs_account.cfs_account
+            self.cfs_party: str = cfs_account.cfs_party
+            self.cfs_site: str = cfs_account.cfs_site
+
+            self.bank_name: str = cfs_account.bank_name
+            self.bank_number: str = cfs_account.bank_number
+            self.bank_branch: str = cfs_account.bank_branch
+            self.bank_branch_number: str = cfs_account.bank_branch_number
+            self.bank_account_number: str = cfs_account.bank_account_number
+            self.cfs_account_id: int = cfs_account.id
 
     @property
     def id(self):
         """Return the _id."""
         return self._id
 
-    @property
-    def corp_number(self):
-        """Return the corp_number."""
-        return self._corp_number
+    @id.setter
+    def id(self, value: int):
+        """Set the id."""
+        self._id = value
+        self._dao.id = value
 
     @property
-    def corp_type_code(self):
-        """Return the corp_type_code."""
-        return self._corp_type_code
+    def cfs_account_id(self):
+        """Return the cfs_account_id."""
+        return self._cfs_account_id
+
+    @cfs_account_id.setter
+    def cfs_account_id(self, value: int):
+        """Set the cfs_account_id."""
+        self._cfs_account_id = value
+        self._dao.cfs_account_id = value
 
     @property
-    def payment_system_code(self):
-        """Return the payment_system_code."""
-        return self._payment_system_code
+    def auth_account_id(self):
+        """Return the auth_account_id."""
+        return self._auth_account_id
+
+    @auth_account_id.setter
+    def auth_account_id(self, value: str):
+        """Set the auth_account_id."""
+        self._auth_account_id = value
+        self._dao.auth_account_id = value
 
     @property
-    def paybc_account(self):
-        """Return the account_number."""
-        return self._paybc_account
+    def auth_account_name(self):
+        """Return the auth_account_name."""
+        return self._auth_account_name
+
+    @auth_account_name.setter
+    def auth_account_name(self, value: int):
+        """Set the auth_account_name."""
+        self._auth_account_name = value
+        self._dao.auth_account_name = value
 
     @property
-    def paybc_party(self):
-        """Return the paybc_party."""
-        return self._paybc_party
+    def payment_method(self):
+        """Return the payment_method."""
+        return self._payment_method
+
+    @payment_method.setter
+    def payment_method(self, value: int):
+        """Set the payment_method."""
+        self._payment_method = value
+        self._dao.payment_method = value
 
     @property
-    def paybc_site(self):
-        """Return the paybc_site."""
-        return self._paybc_site
+    def cfs_account(self):
+        """Return the cfs_account."""
+        return self._cfs_account
+
+    @cfs_account.setter
+    def cfs_account(self, value: int):
+        """Set the cfs_account."""
+        self._cfs_account = value
+
+    @property
+    def cfs_party(self):
+        """Return the cfs_party."""
+        return self._cfs_party
+
+    @cfs_party.setter
+    def cfs_party(self, value: int):
+        """Set the cfs_party."""
+        self._cfs_party = value
+
+    @property
+    def cfs_site(self):
+        """Return the cfs_site."""
+        return self._cfs_site
+
+    @cfs_site.setter
+    def cfs_site(self, value: int):
+        """Set the cfs_site."""
+        self._cfs_site = value
+
+    @property
+    def bank_name(self):
+        """Return the bank_name."""
+        return self._bank_name
+
+    @bank_name.setter
+    def bank_name(self, value: int):
+        """Set the bank_name."""
+        self._bank_name = value
+
+    @property
+    def bank_number(self):
+        """Return the bank_number."""
+        return self._bank_number
+
+    @bank_number.setter
+    def bank_number(self, value: int):
+        """Set the bank_number."""
+        self._bank_number = value
+
+    @property
+    def bank_branch(self):
+        """Return the bank_branch."""
+        return self._bank_branch
+
+    @bank_branch.setter
+    def bank_branch(self, value: int):
+        """Set the bank_branch."""
+        self._bank_branch = value
+
+    @property
+    def bank_branch_number(self):
+        """Return the bank_branch_number."""
+        return self._bank_branch_number
+
+    @bank_branch_number.setter
+    def bank_branch_number(self, value: int):
+        """Set the bank_branch_number."""
+        self._bank_branch_number = value
+
+    @property
+    def bank_account_number(self):
+        """Return the bank_account_number."""
+        return self._bank_account_number
+
+    @bank_account_number.setter
+    def bank_account_number(self, value: int):
+        """Set the bank_account_number."""
+        self._bank_account_number = value
 
     @property
     def bcol_user_id(self):
         """Return the bcol_user_id."""
         return self._bcol_user_id
 
-    @property
-    def bcol_account_id(self):
-        """Return the bcol_account_id."""
-        return self._bcol_account_id
+    @bcol_user_id.setter
+    def bcol_user_id(self, value: int):
+        """Set the bcol_user_id."""
+        self._bcol_user_id = value
+        self._dao.bcol_user_id = value
 
     @property
-    def account_id(self):
-        """Return the account_id."""
-        return self._account_id
+    def bcol_account(self):
+        """Return the bcol_account."""
+        return self._bcol_account
 
-    @staticmethod
-    def create(business_info: Dict[str, Any], account_details: Dict[str, str],
-               payment_system: str, authorization: Dict[str, Any]):
-        """Create Payment account record."""
-        current_app.logger.debug('<create')
-        auth_account_id = get_str_by_path(authorization, 'account/id')
-        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-        new_payment_account: bool = False
-        is_premium_payment: bool = False
-        if not payment_account:
-            payment_account = PaymentAccountModel()
-            payment_account.auth_account_id = auth_account_id
-            payment_account = payment_account.save()
-            new_payment_account = True
+    @bcol_account.setter
+    def bcol_account(self, value: int):
+        """Set the bcol_account."""
+        self._bcol_account = value
+        self._dao.bcol_account = value
 
-        dao = None
-        if payment_system == PaymentSystem.BCOL.value:
-            dao = BcolPaymentAccount()
-            dao.account_id = payment_account.id
-            dao.bcol_account_id = account_details.get('bcol_account_id', None)
-            dao.bcol_user_id = account_details.get('bcol_user_id', None)
-            is_premium_payment = True
-        elif payment_system == PaymentSystem.INTERNAL.value:
-            dao = InternalPaymentAccount()
-            dao.corp_number = business_info.get('businessIdentifier', None)
-            dao.corp_type_code = business_info.get('corpType', None)
-            dao.account_id = payment_account.id
-        elif payment_system == PaymentSystem.PAYBC.value:
-            dao = CreditPaymentAccount()
-            dao.corp_number = business_info.get('businessIdentifier', None)
-            dao.corp_type_code = business_info.get('corpType', None)
-            dao.paybc_account = account_details.get('account_number', None)
-            dao.paybc_party = account_details.get('party_number', None)
-            dao.paybc_site = account_details.get('site_number', None)
-            dao.account_id = payment_account.id
+    @classmethod
+    def create(cls, account_request: Dict[str, Any] = None) -> PaymentAccount:
+        """Create new payment account record."""
+        current_app.logger.debug('<create payment account')
+        auth_account_id = account_request.get('accountId')
+        # If an account already exists, throw error.
+        if PaymentAccountModel.find_by_auth_account_id(str(auth_account_id)):
+            raise BusinessException(Error.ACCOUNT_EXISTS)
 
-        dao = dao.save()
+        account = PaymentAccountModel()
 
-        if new_payment_account and is_premium_payment:
-            PaymentAccount._persist_default_statement_frequency(payment_account.id)
+        PaymentAccount._save_account(account_request, account)
+        PaymentAccount._persist_default_statement_frequency(account.id)
 
-        p = PaymentAccount()
-        p.populate(dao)  # pylint: disable=protected-access
-        current_app.logger.debug('>create')
-        return p
+        payment_account = PaymentAccount()
+        payment_account._dao = account  # pylint: disable=protected-access
+
+        current_app.logger.debug('>create payment account')
+        return payment_account
+
+    @classmethod
+    def _save_account(cls, account_request: Dict[str, any], payment_account: PaymentAccountModel):
+        """Update and save payment account and CFS account model."""
+        # pylint:disable=cyclic-import, import-outside-toplevel
+        from pay_api.factory.payment_system_factory import PaymentSystemFactory
+
+        payment_method = payment_account.payment_method = get_str_by_path(account_request,
+                                                                          'paymentInfo/methodOfPayment')
+        payment_account.auth_account_id = account_request.get('accountId')
+        payment_account.auth_account_name = account_request.get('accountName', None)
+        payment_account.bcol_account = account_request.get('bcolAccountNumber', None)
+        payment_account.bcol_user_id = account_request.get('bcolUserId', None)
+
+        billable = get_str_by_path(account_request, 'paymentInfo/billable').lower() == 'true'
+        payment_account.billable = billable
+
+        # Create account in CFS based on payment method
+        # If payment method is PAD, OB, EFT, WIRE create a cfs account
+        # For government accounts (billable false) create a cfs account for EJV transactions
+        pay_system = PaymentSystemFactory.create_from_payment_method(payment_method=payment_method)
+        cfs_account_details = pay_system.create_account(name=payment_account.auth_account_name,
+                                                        contact_info=account_request.get('contactInfo'),
+                                                        payment_info=account_request.get('paymentInfo'))
+
+        # Create a new cfs account model if there is no existing one
+        # TODO updating the CFS account in CFS needs to be done during PAD and Online Banking tickets
+        cfs_account = CfsAccountModel.find_active_by_account_id(payment_account.id)
+        if not cfs_account:
+            cfs_account = CfsAccountModel()
+        cfs_account.payment_account = payment_account
+        cfs_account.cfs_account = cfs_account_details.get('account_number')
+        cfs_account.cfs_site = cfs_account_details.get('site_number')
+        cfs_account.cfs_party = cfs_account_details.get('party_number')
+        cfs_account.bank_account_number = cfs_account_details.get('bank_account_number', None)
+        cfs_account.bank_number = cfs_account_details.get('bank_number', None)
+        cfs_account.bank_branch_number = cfs_account_details.get('bank_branch_number', None)
+        cfs_account.payment_instrument_number = cfs_account_details.get('payment_instrument_number', None)
+
+        cfs_account.flush()
+        payment_account.save()
+
+    @classmethod
+    def update(cls, auth_account_id: str, account_request: Dict[str, Any]) -> PaymentAccount:
+        """Create or update payment account record."""
+        current_app.logger.debug('<update payment account')
+        account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        # TODO Remove it later, this is to help migration from auth to pay.
+        if not account:
+            return PaymentAccount.create(account_request)
+
+        PaymentAccount._save_account(account_request, account)
+
+        payment_account = PaymentAccount()
+        payment_account._dao = account  # pylint:disable=protected-access
+
+        current_app.logger.debug('>create payment account')
+        return payment_account
 
     @staticmethod
     def _persist_default_statement_frequency(payment_account_id):
@@ -173,66 +326,37 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes
         statement_settings_model.save()
 
     @classmethod
-    @user_context
-    def find_account(cls, business_info: Dict[str, Any],
-                     authorization: Dict[str, Any],
-                     payment_system: str, **kwargs):
+    def find_account(cls, authorization: Dict[str, Any]) -> PaymentAccount:
         """Find payment account by corp number, corp type and payment system code."""
         current_app.logger.debug('<find_payment_account')
-        user: UserContext = kwargs['user']
         auth_account_id: str = get_str_by_path(authorization, 'account/id')
-        bcol_user_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineUserId')
-        bcol_account_id: str = get_str_by_path(authorization, 'account/paymentPreference/bcOnlineAccountId')
-        corp_number: str = business_info.get('businessIdentifier')
-        corp_type: str = business_info.get('corpType')
+        return PaymentAccount.find_by_auth_account_id(auth_account_id)
 
-        account_dao = None
+    @classmethod
+    def find_by_auth_account_id(cls, auth_account_id: str) -> PaymentAccount:
+        """Find payment account by corp number, corp type and payment system code."""
+        current_app.logger.debug('<find_by_auth_account_id')
+        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        p = None
+        if payment_account:
+            p = PaymentAccount()
+            p._dao = payment_account  # pylint: disable=protected-access
+            current_app.logger.debug('>find_payment_account')
+        return p
 
-        if payment_system == PaymentSystem.BCOL.value:
-            # If BCOL payment and if the payment is inititated by customer check if bcol_user_id is present
-            # Staff and system can make payments for users with no bcol account
-            if not user.is_system() and not user.is_staff() and bcol_user_id is None:
-                raise BusinessException(Error.INCOMPLETE_ACCOUNT_SETUP)
-
-            account_dao: BcolPaymentAccount = BcolPaymentAccount.find_by_bcol_user_id_and_account(
-                auth_account_id=auth_account_id,
-                bcol_user_id=bcol_user_id,
-                bcol_account_id=bcol_account_id
-            )
-        elif payment_system == PaymentSystem.INTERNAL.value:
-            account_dao: InternalPaymentAccount = InternalPaymentAccount. \
-                find_by_corp_number_and_corp_type_and_account_id(corp_number=corp_number, corp_type=corp_type,
-                                                                 account_id=auth_account_id
-                                                                 )
-        elif payment_system == PaymentSystem.PAYBC.value:
-            if not corp_number and not corp_type:
-                raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
-            account_dao = CreditPaymentAccount.find_by_corp_number_and_corp_type_and_auth_account_id(
-                corp_number=corp_number,
-                corp_type=corp_type,
-                auth_account_id=auth_account_id
-            )
-        payment_account = PaymentAccount()
-        payment_account.populate(account_dao)  # pylint: disable=protected-access
-
-        current_app.logger.debug('>find_payment_account')
-        return payment_account
-
-    @staticmethod
-    def find_by_pay_system_id(**kwargs):
-        """Find pay system account by id."""
-        current_app.logger.debug('<find_by_pay_system_id', kwargs)
-        if kwargs.get('credit_account_id'):
-            account_dao = CreditPaymentAccount.find_by_id(kwargs.get('credit_account_id'))
-        elif kwargs.get('internal_account_id'):
-            account_dao = InternalPaymentAccount.find_by_id(kwargs.get('internal_account_id'))
-        elif kwargs.get('bcol_account_id'):
-            account_dao = BcolPaymentAccount.find_by_id(kwargs.get('bcol_account_id'))
-        if not account_dao:
-            raise BusinessException(Error.INVALID_ACCOUNT_ID)
+    @classmethod
+    def find_by_id(cls, account_id: int):
+        """Find pay account by id."""
+        current_app.logger.debug('<find_by_id')
 
         account = PaymentAccount()
-        account.populate(account_dao)  # pylint: disable=protected-access
+        account._dao = PaymentAccountModel.find_by_id(account_id)  # pylint: disable=protected-access
 
-        current_app.logger.debug('>find_by_pay_system_id')
+        current_app.logger.debug('>find_by_id')
         return account
+
+    def asdict(self):
+        """Return the Account as a python dict."""
+        account_schema = PaymentAccountSchema()
+        d = account_schema.dump(self._dao)
+        return d

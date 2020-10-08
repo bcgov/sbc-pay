@@ -45,12 +45,15 @@ class Error(Enum):
     BCOL_ACCOUNT_CLOSED = 'BCOL_ACCOUNT_CLOSED', HTTPStatus.BAD_REQUEST
     BCOL_USER_REVOKED = 'BCOL_USER_REVOKED', HTTPStatus.BAD_REQUEST
     BCOL_ACCOUNT_REVOKED = 'BCOL_ACCOUNT_REVOKED', HTTPStatus.BAD_REQUEST
+    BCOL_ACCOUNT_INSUFFICIENT_FUNDS = 'BCOL_ACCOUNT_INSUFFICIENT_FUNDS', HTTPStatus.BAD_REQUEST
     BCOL_ERROR = 'BCOL_ERROR', HTTPStatus.BAD_REQUEST
 
     SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE', HTTPStatus.BAD_REQUEST
     INVALID_REQUEST = 'INVALID_REQUEST', HTTPStatus.BAD_REQUEST, 'Invalid Request'
 
     DIRECT_PAY_INVALID_RESPONSE = 'DIRECT_PAY_INVALID_RESPONSE', HTTPStatus.BAD_REQUEST
+
+    ACCOUNT_EXISTS = 'ACCOUNT_EXISTS', HTTPStatus.BAD_REQUEST
 
     def __new__(cls, code, status, message=None, details=None):
         """Attributes for the enum."""
@@ -73,4 +76,6 @@ def get_bcol_error(error_code: int):
         error = Error.BCOL_USER_REVOKED
     elif error_code == 48:
         error = Error.BCOL_ACCOUNT_REVOKED
+    elif error_code == 61:
+        error = Error.BCOL_ACCOUNT_INSUFFICIENT_FUNDS
     return error

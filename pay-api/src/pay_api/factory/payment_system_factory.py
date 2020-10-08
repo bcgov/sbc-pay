@@ -20,6 +20,7 @@ from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.bcol_service import BcolService  # noqa: I001
 from pay_api.services.direct_pay_service import DirectPayService
 from pay_api.services.internal_pay_service import InternalPayService
+from pay_api.services.online_banking_service import OnlineBankingService
 from pay_api.services.paybc_service import PaybcService
 from pay_api.utils.enums import PaymentSystem, Role, PaymentMethod  # noqa: I001
 from pay_api.utils.errors import Error
@@ -46,6 +47,25 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
             _instance = BcolService()
         elif payment_system == PaymentSystem.INTERNAL.value:
             _instance = InternalPayService()
+        if not _instance:
+            raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
+        return _instance
+
+    @staticmethod
+    def create_from_payment_method(payment_method: str):
+        """Create the payment system implementation from payment method."""
+        _instance: PaymentSystemService = None
+        if payment_method == PaymentMethod.DIRECT_PAY.value:
+            _instance = DirectPayService()
+        elif payment_method == PaymentMethod.CC.value:
+            _instance = PaybcService()
+        elif payment_method == PaymentMethod.DRAWDOWN.value:
+            _instance = BcolService()
+        elif payment_method == PaymentMethod.INTERNAL.value:
+            _instance = InternalPayService()
+        elif payment_method == PaymentMethod.ONLINE_BANKING.value:
+            _instance = OnlineBankingService()
+
         if not _instance:
             raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
         return _instance
@@ -85,6 +105,8 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
                 _instance = DirectPayService()
             elif payment_method == PaymentMethod.DRAWDOWN.value:
                 _instance = BcolService()
+            elif payment_method == PaymentMethod.ONLINE_BANKING.value:
+                _instance = OnlineBankingService()
 
         if not _instance:
             raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
