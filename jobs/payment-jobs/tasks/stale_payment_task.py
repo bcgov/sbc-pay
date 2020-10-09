@@ -26,7 +26,7 @@ class StalePaymentTask:
 
     @classmethod
     def update_stale_payments(cls):
-        current_app.logger.logger.info(f'StalePaymentTask Ran at {datetime.datetime.now()}')
+        current_app.logger.info(f'StalePaymentTask Ran at {datetime.datetime.now()}')
         cls._update_stale_payments()
         cls._delete_marked_payments()
 
@@ -38,20 +38,20 @@ class StalePaymentTask:
         """
         stale_transactions = PaymentTransactionModel.find_stale_records(minutes=30)
         if len(stale_transactions) == 0:
-            current_app.logger.logger.info(f'Stale Transaction Job Ran at {datetime.datetime.now()}.But No records found!')
+            current_app.logger.info(f'Stale Transaction Job Ran at {datetime.datetime.now()}.But No records found!')
         for transaction in stale_transactions:
             try:
-                current_app.logger.logger.info(
+                current_app.logger.info(
                     'Stale Transaction Job found records.Payment Id: {}, Transaction Id : {}'.format(
                         transaction.payment_id,
                         transaction.id))
                 TransactionService.update_transaction(transaction.id, '')
-                current_app.logger.logger.info(
+                current_app.logger.info(
                     'Stale Transaction Job Updated records.Payment Id: {}, Transaction Id : {}'.format(
                         transaction.payment_id, transaction.id))
             except BusinessException as err:  # just catch and continue .Don't stop
-                current_app.logger.logger.error('Stale Transaction Error on update_transaction')
-                current_app.logger.logger.error(err)
+                current_app.logger.error('Stale Transaction Error on update_transaction')
+                current_app.logger.error(err)
 
     @classmethod
     def _delete_marked_payments(cls):
@@ -61,13 +61,13 @@ class StalePaymentTask:
         """
         invoices_to_delete = InvoiceModel.find_invoices_marked_for_delete()
         if len(invoices_to_delete) == 0:
-            current_app.logger.logger.info(f'Delete Invoice Job Ran at {datetime.datetime.now()}.But No records found!')
+            current_app.logger.info(f'Delete Invoice Job Ran at {datetime.datetime.now()}.But No records found!')
         for invoice in invoices_to_delete:
             try:
-                current_app.logger.logger.info('Delete Payment Job found records.Payment Id: {}'.format(invoice.id))
+                current_app.logger.info('Delete Payment Job found records.Payment Id: {}'.format(invoice.id))
                 PaymentService.delete_invoice(invoice.id)
-                current_app.logger.logger.info(
+                current_app.logger.info(
                     'Delete Payment Job Updated records.Payment Id: {}'.format(invoice.id))
             except BusinessException as err:  # just catch and continue .Don't stop
-                current_app.logger.logger.error('Error on delete_payment')
-                current_app.logger.logger.error(err)
+                current_app.logger.error('Error on delete_payment')
+                current_app.logger.error(err)
