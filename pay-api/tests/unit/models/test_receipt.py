@@ -32,7 +32,7 @@ def test_receipt(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment=payment, payment_account=payment_account)
+    invoice = factory_invoice(payment_account=payment_account)
     invoice = invoice.save()
     receipt = Receipt()
     receipt.receipt_amount = 100
@@ -52,7 +52,7 @@ def test_receipt_find_by_id(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment=payment, payment_account=payment_account)
+    invoice = factory_invoice(payment_account=payment_account)
     invoice = invoice.save()
     receipt = Receipt()
     receipt.receipt_amount = 100

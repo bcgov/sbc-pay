@@ -20,13 +20,12 @@ Test-Suite to ensure that the CorpType Class is working as expected.
 from datetime import datetime
 
 from pay_api.models import Payment
-from pay_api.utils.enums import PaymentStatus
 
 
 def factory_payment(payment_system_code: str = 'PAYBC', payment_method_code='CC', payment_status_code='CREATED'):
     """Return Factory."""
     return Payment(payment_system_code=payment_system_code, payment_method_code=payment_method_code,
-                   payment_status_code=payment_status_code, created_by='test', created_on=datetime.now())
+                   payment_status_code=payment_status_code, created_on=datetime.now())
 
 
 def test_payment(session):
@@ -37,16 +36,3 @@ def test_payment(session):
     payment = factory_payment()
     payment.save()
     assert payment.id is not None
-
-
-def test_payments_marked_for_delete(session):
-    """Assert a payment is stored.
-
-    Start with a blank database.
-    """
-    payment = factory_payment()
-    payment.payment_status_code = PaymentStatus.DELETE_ACCEPTED.value
-    payment.save()
-    assert payment.id is not None
-    payments = Payment.find_payments_marked_for_delete()
-    assert len(payments) == 1

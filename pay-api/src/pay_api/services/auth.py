@@ -81,12 +81,6 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
                         'paymentPreference': {}
                     }
                 }
-                if org_response.get('paymentSettings', None):
-                    auth_response['account']['paymentPreference'] = {
-                        'methodOfPayment': org_response['paymentSettings'][0].get('preferredPayment', None),
-                        'bcOnlineUserId': org_response['paymentSettings'][0].get('bcolUserId', None),
-                        'bcOnlineAccountId': org_response['paymentSettings'][0].get('bcolAccountId', None)
-                    }
                 is_authorized = True
 
             # Check if premium flag is required
@@ -103,9 +97,9 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
     if not auth_response:
         if Role.SYSTEM.value in user.roles:  # Call auth only if it's business (entities)
             # Add account name as the service client name
-            auth_response = {'account': {'id': user.user_name},
-                             'paymentInfo': {'methodOfPayment': PaymentMethod.DIRECT_PAY.value}}
+            auth_response = {'account': {'id': user.user_name,
+                                         'paymentInfo': {'methodOfPayment': PaymentMethod.DIRECT_PAY.value}}}
         elif Role.STAFF.value in user.roles:
-            auth_response = {'account': {'id': PaymentMethod.INTERNAL.value},
-                             'paymentInfo': {'methodOfPayment': PaymentMethod.INTERNAL.value}}
+            auth_response = {'account': {'id': PaymentMethod.INTERNAL.value,
+                                         'paymentInfo': {'methodOfPayment': PaymentMethod.INTERNAL.value}}}
     return auth_response

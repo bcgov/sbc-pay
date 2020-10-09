@@ -117,16 +117,14 @@ class DirectPayService(PaymentSystemService, OAuthService):
         return {}
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
-                       **kwargs):
+                       **kwargs) -> InvoiceReference:
         """Return a static invoice number for direct pay."""
         current_app.logger.debug('<create_invoice_direct_pay')
 
-        invoice = {
-            'invoice_number': f'{invoice.id}'
-        }
+        invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id, str(invoice.id), None)
 
-        current_app.logger.debug('>create_invoice')
-        return invoice
+        current_app.logger.debug('>create_invoice_direct_pay')
+        return invoice_reference
 
     def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
                        line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0,
@@ -181,8 +179,8 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
         return None
 
-    def complete_post_payment(self, payment_id: int) -> None:
-        """Complete any post payment activities if needed."""
+    def complete_post_invoice(self, invoice_id: int, invoice_reference: InvoiceReference) -> None:
+        """Complete any post invoice activities if needed."""
 
     def __get_token(self):
         """Generate oauth token from payBC which will be used for all communication."""

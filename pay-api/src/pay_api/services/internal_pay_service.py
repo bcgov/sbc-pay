@@ -26,7 +26,6 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import PaymentSystem, PaymentMethod, InvoiceStatus, PaymentStatus
-
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -47,16 +46,14 @@ class InternalPayService(PaymentSystemService, OAuthService):
         return {}
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
-                       **kwargs):
+                       **kwargs) -> InvoiceReference:
         """Return a static invoice number."""
         current_app.logger.debug('<create_invoice')
 
-        invoice = {
-            'invoice_number': f'{invoice.id}'
-        }
+        invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id, str(invoice.id), None)
 
         current_app.logger.debug('>create_invoice')
-        return invoice
+        return invoice_reference
 
     def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
                        line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0,
@@ -84,12 +81,20 @@ class InternalPayService(PaymentSystemService, OAuthService):
         """Return the default status for payment when created."""
         return PaymentStatus.CREATED.value
 
-    def complete_post_payment(self, payment_id: int) -> None:
-        """Complete any post payment activities if needed."""
-        from .payment_transaction import PaymentTransaction  # pylint: disable=cyclic-import,import-outside-toplevel
-        transaction: PaymentTransaction = PaymentTransaction.create(payment_id,
+    def complete_post_invoice(self, invoice_id: int, invoice_reference: InvoiceReference) -> None:
+        """Complete any post invoice activities if needed."""
+        # pylint: disable=import-outside-toplevel, cyclic-import
+        from .payment_transaction import PaymentTransaction
+        from .payment import Payment
+        # Create a payment record
+        Payment.create(payment_method=self.get_payment_method_code(),
+                       payment_system=self.get_payment_system_code(),
+                       payment_status=self.get_default_payment_status(),
+                       invoice_number=invoice_reference.invoice_number)
+
+        transaction: PaymentTransaction = PaymentTransaction.create(invoice_id,
                                                                     {
                                                                         'clientSystemUrl': '',
                                                                         'payReturnUrl': ''
                                                                     })
-        transaction.update_transaction(payment_id, transaction.id, pay_response_url=None)
+        transaction.update_transaction(transaction.id, pay_response_url=None)

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Payment model related operations."""
+from datetime import datetime
+from decimal import Decimal
 from typing import Tuple, Dict
 
 from dateutil import parser
@@ -30,7 +32,7 @@ from .code import Code as CodeService
 from .oauth_service import OAuthService
 
 
-class Payment:  # pylint: disable=too-many-instance-attributes
+class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Service to manage Payment model related operations."""
 
     def __init__(self):
@@ -40,7 +42,10 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         self._payment_system_code: str = None
         self._payment_method_code: str = None
         self._payment_status_code: str = None
-        self._invoices = None
+        self._payment_account_id: int = None
+        self._invoice_number: str = None
+        self._completed_on: datetime = None
+        self._amount: Decimal = None
 
     @property
     def _dao(self):
@@ -55,12 +60,21 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         self.payment_system_code: str = self._dao.payment_system_code
         self.payment_method_code: str = self._dao.payment_method_code
         self.payment_status_code: str = self._dao.payment_status_code
-        self.invoices = self._dao.invoices
+        self.payment_account_id: int = self._dao.payment_account_id
+        self.invoice_number: str = self._dao.invoice_number
+        self.completed_on: datetime = self._dao.completed_on
+        self.amount: Decimal = self._dao.amount
 
     @property
     def id(self):
         """Return the _id."""
         return self._id
+
+    @id.setter
+    def id(self, value: int):
+        """Set the id."""
+        self._id = value
+        self._dao.id = value
 
     @property
     def payment_system_code(self):
@@ -77,12 +91,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         """Set the payment_system_code."""
         self._payment_system_code = value
         self._dao.payment_system_code = value
-
-    @id.setter
-    def id(self, value: int):
-        """Set the id."""
-        self._id = value
-        self._dao.id = value
 
     @payment_method_code.setter
     def payment_method_code(self, value: str):
@@ -102,26 +110,60 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         self._dao.payment_status_code = value
 
     @property
-    def invoices(self):
-        """Return the payment invoices."""
-        return self._invoices
+    def payment_account_id(self):
+        """Return the payment_account_id."""
+        return self._payment_account_id
 
-    @invoices.setter
-    def invoices(self, value):
-        """Set the invoices."""
-        self._invoices = value
+    @payment_account_id.setter
+    def payment_account_id(self, value: int):
+        """Set the payment_account_id."""
+        self._payment_account_id = value
+        self._dao.payment_account_id = value
+
+    @property
+    def invoice_number(self):
+        """Return the invoice_number."""
+        return self._invoice_number
+
+    @invoice_number.setter
+    def invoice_number(self, value: str):
+        """Set the invoice_number."""
+        self._invoice_number = value
+        self._dao.invoice_number = value
+
+    @property
+    def completed_on(self):
+        """Return the completed_on."""
+        return self._completed_on
+
+    @completed_on.setter
+    def completed_on(self, value: datetime):
+        """Set the completed_on."""
+        self._completed_on = value
+        self._dao.completed_on = value
+
+    @property
+    def amount(self):
+        """Return the amount."""
+        return self._amount
+
+    @amount.setter
+    def amount(self, value: Decimal):
+        """Set the amount."""
+        self._amount = value
+        self._dao.amount = value
 
     def commit(self):
         """Save the information to the DB."""
         return self._dao.commit()
 
-    def rollback(self):
-        """Rollback."""
-        return self._dao.rollback()
-
     def flush(self):
         """Save the information to the DB."""
         return self._dao.flush()
+
+    def rollback(self):
+        """Rollback."""
+        return self._dao.rollback()
 
     def save(self):
         """Save the information to the DB."""
@@ -134,7 +176,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         return d
 
     @staticmethod
-    def create(payment_method: str, payment_system: str, payment_status=PaymentStatus.CREATED.value):
+    def create(payment_method: str, payment_system: str, payment_status=PaymentStatus.CREATED.value,
+               invoice_number: str = None):
         """Create payment record."""
         current_app.logger.debug('<create_payment')
         p = Payment()
@@ -142,7 +185,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes
         p.payment_method_code = payment_method
         p.payment_status_code = payment_status
         p.payment_system_code = payment_system
-        pay_dao = p.flush()
+        p.invoice_number = invoice_number
+        pay_dao = p.save()
         p = Payment()
         p._dao = pay_dao  # pylint: disable=protected-access
         current_app.logger.debug('>create_payment')
@@ -205,36 +249,29 @@ class Payment:  # pylint: disable=too-many-instance-attributes
             data = {'items': []}
 
         invoice_ids = []
-        payment_status_codes = CodeService.find_code_values_by_type(Code.PAYMENT_STATUS.value)
-        for purchase in purchases:
-            payment_dao = purchase[0]
-            invoice_dao = purchase[1]
-            payment_schema = PaymentSchema(exclude=('invoices', 'transactions', '_links', 'created_by', 'updated_by'))
-            purchase_history = payment_schema.dump(payment_dao)
-
-            filtered_codes = [cd for cd in payment_status_codes['codes'] if
-                              cd['code'] == purchase_history['status_code']]
-            if filtered_codes:
-                purchase_history['status_code'] = filtered_codes[0]['description']
-
-            invoice_schema = InvoiceSchema(exclude=('receipts', 'payment_line_items', 'references', '_links',
-                                                    'created_by', 'created_name', 'created_on', 'updated_by',
-                                                    'updated_name', 'updated_on', 'invoice_status_code'))
+        invoice_status_codes = CodeService.find_code_values_by_type(Code.INVOICE_STATUS.value)
+        for invoice_dao in purchases:
+            invoice_schema = InvoiceSchema(exclude=('receipts', 'payment_line_items', 'references'))
             invoice = invoice_schema.dump(invoice_dao)
             invoice['line_items'] = []
-            purchase_history['invoice'] = invoice
-            data['items'].append(purchase_history)
+
+            filtered_codes = [cd for cd in invoice_status_codes['codes'] if
+                              cd['code'] == invoice['status_code']]
+            if filtered_codes:
+                invoice['status_code'] = filtered_codes[0]['description']
+
+            data['items'].append(invoice)
 
             invoice_ids.append(invoice_dao.id)
         # Query the payment line item to retrieve more details
         payment_line_items = PaymentLineItem.find_by_invoice_ids(invoice_ids)
         for payment_line_item in payment_line_items:
-            for purchase_history in data['items']:
-                if purchase_history.get('invoice').get('id') == payment_line_item.invoice_id:
+            for invoice in data['items']:
+                if invoice.get('id') == payment_line_item.invoice_id:
                     line_item_schema = PaymentLineItemSchema(many=False, exclude=('id', 'line_item_status_code'))
                     line_item_dict = line_item_schema.dump(payment_line_item)
                     line_item_dict['filing_type_code'] = payment_line_item.fee_schedule.filing_type_code
-                    purchase_history.get('invoice').get('line_items').append(line_item_dict)
+                    invoice.get('line_items').append(line_item_dict)
         return data
 
     @staticmethod
@@ -269,14 +306,13 @@ class Payment:  # pylint: disable=too-many-instance-attributes
             total = 0
             total_paid = 0
 
-            payments = results.get('items', None)
-            for payment in payments:
-                total += payment.get('invoice').get('total', 0)
-                total_stat_fees += payment.get('invoice').get('total', 0) - \
-                    payment.get('invoice').get('service_fees', 0)
+            invoices = results.get('items', None)
+            for invoice in invoices:
+                total += invoice.get('total', 0)
+                total_stat_fees += invoice.get('total', 0) - invoice.get('service_fees', 0)
 
-                total_service_fees += payment.get('invoice').get('service_fees', 0)
-                total_paid += payment.get('invoice').get('paid', 0)
+                total_service_fees += invoice.get('service_fees', 0)
+                total_paid += invoice.get('paid', 0)
 
             account_info = None
             if kwargs.get('auth', None):
@@ -291,7 +327,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes
                 account_info['contact'] = contact['contacts'][0]  # Get the first one from the list
 
             template_vars = {
-                'payments': results.get('items', None),
+                'invoices': results.get('items', None),
                 'total': {
                     'statutoryFees': total_stat_fees,
                     'serviceFees': total_service_fees,
@@ -322,8 +358,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes
     def _prepare_csv_data(results):
         """Prepare data for creating a CSV report."""
         cells = []
-        for item in results.get('items'):
-            invoice = item.get('invoice')
+        for invoice in results.get('items'):
             txn_description = ''
             total_gst = 0
             total_pst = 0
@@ -336,14 +371,26 @@ class Payment:  # pylint: disable=too-many-instance-attributes
             row_value = [
                 ','.join([line_item.get('description') for line_item in invoice.get('line_items')]),
                 invoice.get('folio_number'),
-                item.get('created_name'),
-                parser.parse(item.get('created_on')).strftime('%m-%d-%Y %I:%M %p'),
+                invoice.get('created_name'),
+                parser.parse(invoice.get('created_on')).strftime('%m-%d-%Y %I:%M %p'),
                 total_fees,
                 total_gst + total_pst,
                 total_fees - service_fee,  # TODO
                 service_fee,
-                item.get('status_code'),
+                invoice.get('status_code'),
                 invoice.get('business_identifier')
             ]
             cells.append(row_value)
         return cells
+
+    @staticmethod
+    def find_payment_for_invoice(invoice_id: int):
+        """Find payment for by invoice."""
+        payment_dao = PaymentModel.find_payment_for_invoice(invoice_id)
+        payment: Payment = None
+        if payment_dao:
+            payment = Payment()
+            payment._dao = payment_dao  # pylint: disable=protected-access
+
+        current_app.logger.debug('>find_payment_for_invoice')
+        return payment

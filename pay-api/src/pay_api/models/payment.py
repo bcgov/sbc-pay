@@ -23,9 +23,10 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import func
 from sqlalchemy.orm import relationship
 
-from pay_api.utils.enums import PaymentStatus
+from pay_api.utils.enums import InvoiceReferenceStatus
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
-from .audit import Audit, AuditSchema
+from .base_model import BaseModel
+from .base_schema import BaseSchema
 from .db import db, ma
 from .invoice import Invoice
 from .invoice import InvoiceSchema
@@ -34,22 +35,27 @@ from .payment_method import PaymentMethod
 from .payment_status_code import PaymentStatusCode
 from .payment_system import PaymentSystem
 from .payment_transaction import PaymentTransactionSchema
-from .base_schema import BaseSchema
+from .invoice_reference import InvoiceReference
 
 
-class Payment(Audit):  # pylint: disable=too-many-instance-attributes
+class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Payment ."""
 
     __tablename__ = 'payment'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     payment_system_code = db.Column(db.String(10), ForeignKey('payment_system.code'), nullable=False)
+    payment_account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True)
     payment_method_code = db.Column(db.String(15), ForeignKey('payment_method.code'), nullable=False)
-    payment_status_code = db.Column(db.String(20), ForeignKey('payment_status_code.code'), nullable=False)
+    payment_status_code = db.Column(db.String(20), ForeignKey('payment_status_code.code'), nullable=True)
+    invoice_number = db.Column(db.String(50), nullable=True, index=True)
+    amount = db.Column(db.Numeric(), nullable=True)
+
+    created_on = db.Column('created_on', db.DateTime, nullable=True)
+    completed_on = db.Column('completed_on', db.DateTime, nullable=True)
 
     payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='select', innerjoin=True)
     payment_status = relationship(PaymentStatusCode, foreign_keys=[payment_status_code], lazy='select', innerjoin=True)
-    invoices = relationship('Invoice')
     transactions = relationship('PaymentTransaction')
 
     @classmethod
@@ -62,28 +68,35 @@ class Payment(Audit):  # pylint: disable=too-many-instance-attributes
         return query.one_or_none()
 
     @classmethod
+    def find_payment_for_invoice(cls, invoice_id: int):
+        """Find payment records created for the invoice."""
+        query = db.session.query(Payment) \
+            .join(InvoiceReference, InvoiceReference.invoice_number == Payment.invoice_number) \
+            .join(Invoice, InvoiceReference.invoice_id == Invoice.id) \
+            .filter(Invoice.id == invoice_id) \
+            .filter(InvoiceReference.status_code.
+                    in_([InvoiceReferenceStatus.ACTIVE.value, InvoiceReferenceStatus.COMPLETED.value]))
+
+        return query.one_or_none()
+
+    @classmethod
     def search_purchase_history(cls,  # pylint:disable=too-many-arguments, too-many-locals, too-many-branches
                                 auth_account_id: str, search_filter: Dict,
                                 page: int, limit: int, return_all: bool, max_no_records: int = 0):
         """Search for purchase history."""
-        # Payment Account Sub Query
-        # payment_account_sub_query = db.session.query(PaymentAccount).filter(
-        #     PaymentAccount.auth_account_id == auth_account_id).subquery('pay_accnt')
-
-        query = db.session.query(Payment, Invoice) \
-            .join(Invoice) \
+        query = db.session.query(Invoice) \
             .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id) \
             .filter(PaymentAccount.auth_account_id == auth_account_id)
 
         if search_filter.get('status', None):
-            query = query.filter(Payment.payment_status_code == search_filter.get('status'))
+            query = query.filter(Invoice.invoice_status_code == search_filter.get('status'))
         if search_filter.get('folioNumber', None):
             query = query.filter(Invoice.folio_number == search_filter.get('folioNumber'))
         if search_filter.get('businessIdentifier', None):
             query = query.filter(Invoice.business_identifier == search_filter.get('businessIdentifier'))
         if search_filter.get('createdBy', None):  # pylint: disable=no-member
             query = query.filter(
-                Payment.created_name.ilike('%' + search_filter.get('createdBy') + '%'))  # pylint: disable=no-member
+                Invoice.created_name.ilike('%' + search_filter.get('createdBy') + '%'))  # pylint: disable=no-member
 
         # Find start and end dates
         created_from: datetime = None
@@ -108,10 +121,10 @@ class Payment(Audit):  # pylint: disable=too-many-instance-attributes
             created_from = created_from.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(tz_local)
             created_to = created_to.replace(hour=23, minute=59, second=59, microsecond=999999).astimezone(tz_local)
             query = query.filter(
-                func.timezone(tz_name, func.timezone('UTC', Payment.created_on)).between(created_from, created_to))
+                func.timezone(tz_name, func.timezone('UTC', Invoice.created_on)).between(created_from, created_to))
 
         # Add ordering
-        query = query.order_by(Payment.created_on.desc())
+        query = query.order_by(Invoice.created_on.desc())
 
         if not return_all:
             # Add pagination
@@ -131,13 +144,8 @@ class Payment(Audit):  # pylint: disable=too-many-instance-attributes
 
         return result, count
 
-    @classmethod
-    def find_payments_marked_for_delete(cls):
-        """Return a Payment by id."""
-        return cls.query.filter_by(payment_status_code=PaymentStatus.DELETE_ACCEPTED.value).all()
 
-
-class PaymentSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors
+class PaymentSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Payment."""
 
     class Meta:  # pylint: disable=too-few-public-methods
@@ -155,8 +163,8 @@ class PaymentSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
     transactions = ma.Nested(PaymentTransactionSchema, many=True)
 
     _links = ma.Hyperlinks({
-        'self': ma.URLFor('API.payments_payments', payment_id='<id>'),
+        'self': ma.URLFor('API.payments_payments', invoice_id='<id>'),
         'collection': ma.URLFor('API.payments_payment'),
-        'invoices': ma.URLFor('API.invoices_invoices', payment_id='<id>'),
-        'transactions': ma.URLFor('API.transactions_transaction', payment_id='<id>')
+        'invoices': ma.URLFor('API.invoices_invoices', invoice_id='<id>'),
+        'transactions': ma.URLFor('API.transactions_transaction', invoice_id='<id>')
     })

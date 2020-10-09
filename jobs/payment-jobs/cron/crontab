@@ -1,3 +1,5 @@
-*/4 * * * * default cd /update-failed-distributions && ./run_generate_statements.sh
-*/4 * * * * default cd /update-failed-distributions && ./run_update_gl_code_in_paybc.sh
+*/30 * * * * default cd /payment-jobs && ./run_generate_statements.sh
+*/30 * * * * default cd /payment-jobs && ./run_update_gl_code_in_paybc.sh
+*/1 * * * * default cd /payment-jobs && ./run_send_statement_notificaton.sh
+0 */4 * * * default cd /payment-jobs && ./run_send_statement_notificaton.sh
 # An empty line is required at the end of this file for a valid cron file.

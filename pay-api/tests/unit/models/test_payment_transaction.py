@@ -31,7 +31,7 @@ def test_payment_transaction(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment=payment, payment_account=payment_account)
+    invoice = factory_invoice(payment_account=payment_account)
     invoice.save()
     payment_transaction = factory_payment_transaction(payment_id=payment.id)
     payment_transaction.save()
@@ -47,7 +47,7 @@ def test_find_older_records(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment=payment, payment_account=payment_account)
+    invoice = factory_invoice(payment_account=payment_account)
     invoice.save()
 
     payment_transaction_now = factory_payment_transaction(payment_id=payment.id)
@@ -93,7 +93,7 @@ def test_find_older_records_invalid_status(session):
     payment = factory_payment()
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment=payment, payment_account=payment_account)
+    invoice = factory_invoice(payment_account=payment_account)
     invoice.save()
 
     payment_transaction_now = factory_payment_transaction(payment_id=payment.id, status_code='COMPLETED')

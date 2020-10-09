@@ -60,7 +60,7 @@ class BcolService(PaymentSystemService, OAuthService):
 
     @user_context
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
-                       line_items: [PaymentLineItem], invoice: Invoice, **kwargs):
+                       line_items: [PaymentLineItem], invoice: Invoice, **kwargs) -> InvoiceReference:
         """Create Invoice in PayBC."""
         current_app.logger.debug('<create_invoice')
         user: UserContext = kwargs['user']
@@ -80,7 +80,7 @@ class BcolService(PaymentSystemService, OAuthService):
             'amount': str(amount_excluding_txn_fees),
             'rate': str(amount_excluding_txn_fees),
             'remarks': remarks[:50],
-            'feeCode': self._get_fee_code(kwargs.get('corp_type_code'), user.is_staff() or user.is_system())
+            'feeCode': self._get_fee_code(invoice.corp_type_code, user.is_staff() or user.is_system())
         }
 
         if user.is_staff() or user.is_system():
@@ -108,13 +108,11 @@ class BcolService(PaymentSystemService, OAuthService):
                 error = Error.BCOL_ERROR
             raise BusinessException(error)
 
-        invoice = {
-            'invoice_number': response_json.get('key'),
-            'reference_number': response_json.get('sequenceNo'),
-            'totalAmount': -(int(response_json.get('totalAmount', 0)) / 100)
-        }
+        invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id, response_json.get('key'),
+                                                                      response_json.get('sequenceNo'))
+
         current_app.logger.debug('>create_invoice')
-        return invoice
+        return invoice_reference
 
     def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
                        line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0,
@@ -141,12 +139,20 @@ class BcolService(PaymentSystemService, OAuthService):
         """Return CC as the method code."""
         return PaymentMethod.DRAWDOWN.value
 
-    def complete_post_payment(self, payment_id: int) -> None:
+    def complete_post_invoice(self, invoice_id: int, invoice_reference: InvoiceReference) -> None:
         """Complete any post payment activities if needed."""
-        from .payment_transaction import PaymentTransaction  # pylint: disable=cyclic-import,import-outside-toplevel
-        transaction: PaymentTransaction = PaymentTransaction.create(payment_id,
+        # pylint: disable=cyclic-import,import-outside-toplevel
+        from .payment_transaction import PaymentTransaction
+        from .payment import Payment
+
+        # Create a payment record
+        Payment.create(payment_method=self.get_payment_method_code(),
+                       payment_system=self.get_payment_system_code(),
+                       payment_status=self.get_default_payment_status(),
+                       invoice_number=invoice_reference.invoice_number)
+        transaction: PaymentTransaction = PaymentTransaction.create(invoice_id,
                                                                     {
                                                                         'clientSystemUrl': '',
                                                                         'payReturnUrl': ''
                                                                     })
-        transaction.update_transaction(payment_id, transaction.id, pay_response_url=None)
+        transaction.update_transaction(transaction.id, pay_response_url=None)

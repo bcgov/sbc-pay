@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Resource for Payment endpoints."""
+"""Resource for Invoice endpoints."""
 from http import HTTPStatus
 
 from flask import jsonify
@@ -23,38 +23,26 @@ from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
 
-
-API = Namespace('invoices', description='Payment System - Invoices')
+API = Namespace('invoices', description='Payment System - Payment Requests')
 
 
 @cors_preflight(['GET'])
-@API.route('', methods=['GET', 'OPTIONS'])
-class Invoices(Resource):
-    """Endpoint resource to get invoice."""
+@API.route('', methods=['GET', 'OPTIONS'], doc={'deprecated': True})
+class PaymentRequestInvoice(Resource):
+    """Temporary endpoint to unblock teams who are using this endpoint."""
 
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.requires_auth
     @_tracing.trace()
-    def get(payment_id):
-        """Get the Invoice records."""
-        response, status = InvoiceService.get_invoices(payment_id), HTTPStatus.OK
-        return jsonify(response), status
-
-
-@cors_preflight(['GET'])
-@API.route('/<int:invoice_id>', methods=['GET', 'OPTIONS'])
-class Invoice(Resource):
-    """Endpoint resource to get invoice."""
-
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_jwt.requires_auth
-    @_tracing.trace()
-    def get(payment_id, invoice_id):
-        """Get the Invoice records."""
+    def get(invoice_id):
+        """Subject to remove once the change has been notified to teams."""
         try:
-            response, status = InvoiceService.find_by_id(invoice_id, payment_id).asdict(), HTTPStatus.OK
+            response = {
+                'items': []
+            }
+
+            response['items'].append(InvoiceService.find_by_id(invoice_id).asdict())
         except BusinessException as exception:
             return exception.response()
-        return jsonify(response), status
+        return jsonify(response), HTTPStatus.OK
