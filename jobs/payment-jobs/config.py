@@ -100,6 +100,13 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     TESTING = False
     DEBUG = True
 
+    # NATS Config
+    NATS_SERVERS = os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(',')
+    NATS_CLIENT_NAME = os.getenv('NATS_CLIENT_NAME', 'entity.filing.worker')
+    NATS_CLUSTER_ID = os.getenv('NATS_CLUSTER_ID', 'test-cluster')
+    NATS_SUBJECT = os.getenv('NATS_SUBJECT', 'entity.filings')
+    NATS_QUEUE = os.getenv('NATS_QUEUE', 'filing-worker')
+
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     TESTING = False
