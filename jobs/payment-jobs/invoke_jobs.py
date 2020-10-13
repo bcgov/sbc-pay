@@ -69,6 +69,7 @@ def run(job_name):
     from tasks.statement_notification_task import StatementNotificationTask
     from tasks.stale_payment_task import StalePaymentTask
     from tasks.cfs_create_account_task import CreateAccountTask
+    from tasks.cfs_create_invoice import CreateInvoiceTask
 
     application = create_app()
 
@@ -88,6 +89,9 @@ def run(job_name):
     elif job_name == 'CREATE_CFS_ACCOUNTS':
         CreateAccountTask.create_accounts()
         application.logger.info(f'<<<< Completed creating cfs accounts >>>>')
+    elif job_name == 'CREATE_INVOICES':
+        CreateInvoiceTask.create_invoices()
+        application.logger.info(f'<<<< Completed creating cfs invoices >>>>')
     else:
         application.logger.debug('No valid args passed.Exiting job without running any ***************')
 
