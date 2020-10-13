@@ -25,6 +25,7 @@ from .distribution_code import DistributionCode, DistributionCodeLink
 from .fee_schedule import FeeSchedule, FeeScheduleSchema
 from .error_code import ErrorCode, ErrorCodeSchema
 from .payment_account import PaymentAccount, PaymentAccountSchema  # noqa: I001
+from .cfs_account_status_code import CfsAccountStatusCode, CfsAccountStatusCodeSchema
 from .cfs_account import CfsAccount, CfsAccountSchema
 from .invoice import Invoice, InvoiceSchema
 from .invoice_reference import InvoiceReference, InvoiceReferenceSchema

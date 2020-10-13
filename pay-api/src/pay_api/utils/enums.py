@@ -143,3 +143,12 @@ class NotificationStatus(Enum):
     SUCCESS = 'SUCCESS'
     SKIP = 'SKIP'
     FAILED = 'FAILED'
+
+
+class CfsAccountStatus(Enum):
+    """Cfs Account Status."""
+
+    PENDING = 'PENDING'
+    ACTIVE = 'ACTIVE'
+    INACTIVE = 'INACTIVE'
+    FREEZE = 'FREEZE'
