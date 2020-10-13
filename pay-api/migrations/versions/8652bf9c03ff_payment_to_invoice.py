@@ -84,10 +84,10 @@ def upgrade():
         inv_status = invoice[1]
         pay_id = invoice[2]
 
-        if inv_status == 'CREATED':
+        if inv_status == 'CREATED' or inv_status == 'DELETE_ACCEPTED':
             op.execute(
                 f"update payment set invoice_number=(select invoice_number from invoice_reference where invoice_id={inv_id} and status_code='ACTIVE' limit 1) where id={pay_id}")
-        elif inv_status == 'PAID':
+        elif inv_status == 'PAID' or inv_status == 'GL_UPDATED':
             op.execute(
                 f"update payment set invoice_number=(select invoice_number from invoice_reference where invoice_id={inv_id} and status_code='COMPLETED' limit 1) where id={pay_id} ")
         elif inv_status == 'DELETED':
