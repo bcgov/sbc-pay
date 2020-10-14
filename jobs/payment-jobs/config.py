@@ -79,6 +79,13 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     PAYBC_DIRECT_PAY_CLIENT_ID = os.getenv('PAYBC_DIRECT_PAY_CLIENT_ID')
     PAYBC_DIRECT_PAY_CLIENT_SECRET = os.getenv('PAYBC_DIRECT_PAY_CLIENT_SECRET')
 
+    # CFS API Settings
+    CFS_BASE_URL = os.getenv('CFS_BASE_URL')
+    CFS_CLIENT_ID = os.getenv('CFS_CLIENT_ID')
+    CFS_CLIENT_SECRET = os.getenv('CFS_CLIENT_SECRET')
+    CONNECT_TIMEOUT = int(os.getenv('CONNECT_TIMEOUT', default=10))
+    GENERATE_RANDOM_INVOICE_NUMBER = os.getenv('CFS_GENERATE_RANDOM_INVOICE_NUMBER', default='False')
+
     # legislative timezone for future effective dating
     LEGISLATIVE_TIMEZONE = os.getenv('LEGISLATIVE_TIMEZONE', 'America/Vancouver')
 
@@ -99,6 +106,13 @@ class _Config(object):  # pylint: disable=too-few-public-methods
 
     TESTING = False
     DEBUG = True
+
+    # NATS Config
+    NATS_SERVERS = os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(',')
+    NATS_CLIENT_NAME = os.getenv('NATS_CLIENT_NAME', 'entity.filing.worker')
+    NATS_CLUSTER_ID = os.getenv('NATS_CLUSTER_ID', 'test-cluster')
+    NATS_SUBJECT = os.getenv('NATS_SUBJECT', 'entity.filings')
+    NATS_QUEUE = os.getenv('NATS_QUEUE', 'filing-worker')
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
