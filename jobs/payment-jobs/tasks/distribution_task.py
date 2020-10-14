@@ -21,8 +21,8 @@ from pay_api.models.payment import Payment as PaymentModel
 from pay_api.models.payment_line_item import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.services.oauth_service import OAuthService
-from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceStatus, \
-    InvoiceReferenceStatus, PaymentMethod
+from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
+
 
 STATUS_PAID = 'PAID'
 STATUS_NOT_PROCESSED = ('PAID', 'RJCT')
@@ -30,10 +30,12 @@ DECIMAL_PRECISION = '.2f'
 
 
 class DistributionTask:
+    """Task to update distribution details on paybc transactions."""
 
     @classmethod
-    def update_failed_distributions(cls):
+    def update_failed_distributions(cls):  # pylint:disable=too-many-locals
         """Update failed distributions.
+
         Steps:
         1. Get all invoices with status UPDATE_REVENUE_ACCOUNT.
         2. Find the completed invoice reference for the invoice.
@@ -45,7 +47,7 @@ class DistributionTask:
             invoice_status_code=InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value).all()
         current_app.logger.debug(f'Found {len(gl_updated_invoices)} invoices to update revenue details.')
 
-        if len(gl_updated_invoices) > 0:
+        if len(gl_updated_invoices) > 0:  # pylint:disable=too-many-nested-blocks
             access_token: str = cls.__get_token().json().get('access_token')
             paybc_ref_number: str = current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')
             paybc_svc_base_url = current_app.config.get('PAYBC_DIRECT_PAY_BASE_URL')
@@ -58,7 +60,8 @@ class DistributionTask:
                     active_reference = list(
                         filter(lambda reference: (reference.status_code == InvoiceReferenceStatus.COMPLETED.value),
                                gl_updated_invoice.references))[0]
-                    payment_url: str = f'{paybc_svc_base_url}/paybc/payment/{paybc_ref_number}/{active_reference.invoice_number}'
+                    payment_url: str = \
+                        f'{paybc_svc_base_url}/paybc/payment/{paybc_ref_number}/{active_reference.invoice_number}'
 
                     payment_details: dict = cls.get_payment_details(payment_url, access_token)
                     if payment_details and payment_details.get('paymentstatus') == STATUS_PAID:
@@ -79,7 +82,8 @@ class DistributionTask:
                             index: int = 0
 
                             for payment_line_item in payment_line_items:
-                                distribution_code = DistributionCodeModel.find_by_id(payment_line_item.fee_distribution_id)
+                                distribution_code = DistributionCodeModel.find_by_id(
+                                    payment_line_item.fee_distribution_id)
                                 index = index + 1
                                 post_revenue_payload['revenue'].append(
                                     cls.get_revenue_details(index, distribution_code, payment_line_item.total))
@@ -87,7 +91,8 @@ class DistributionTask:
                                 if payment_line_item.service_fees is not None and payment_line_item.service_fees > 0:
                                     index = index + 1
                                     post_revenue_payload['revenue'].append(
-                                        cls.get_revenue_details(index, distribution_code, payment_line_item.service_fees,
+                                        cls.get_revenue_details(index, distribution_code,
+                                                                payment_line_item.service_fees,
                                                                 is_service_fee=True))
 
                             OAuthService.post(payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,

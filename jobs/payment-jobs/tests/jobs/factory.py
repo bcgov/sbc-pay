@@ -20,11 +20,9 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 from datetime import datetime
 
 from pay_api.models import (
-    BcolPaymentAccount, CreditPaymentAccount, InternalPaymentAccount, Invoice,
-    InvoiceReference, Payment,
-    PaymentAccount, PaymentLineItem, DistributionCode, StatementSettings)
-from pay_api.utils.enums import PaymentStatus, InvoiceReferenceStatus, \
-    LineItemStatus, InvoiceStatus
+    BcolPaymentAccount, CreditPaymentAccount, DistributionCode, InternalPaymentAccount, Invoice, InvoiceReference,
+    Payment, PaymentAccount, PaymentLineItem, StatementSettings)
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentStatus
 
 
 def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='1234567890',

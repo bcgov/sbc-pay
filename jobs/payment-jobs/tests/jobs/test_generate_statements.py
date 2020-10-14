@@ -12,15 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests to assure the UpdateStalePayment .
+"""Tests to assure the UpdateStalePayment.
+
 Test-Suite to ensure that the UpdateStalePayment is working as expected.
 """
-from jobs.statement_job import StatementJob
-from .factory import *
-from pay_api.utils.util import get_previous_day, get_first_and_last_dates_of_month
 from datetime import datetime, timedelta
-from pay_api.models import Statement, StatementInvoices
-from dateutil.relativedelta import *
+
+from jobs.statement_job import StatementJob
+from pay_api.models import PaymentAccount, Statement, StatementInvoices
+from pay_api.utils.util import get_previous_day
+
+from .factory import (
+    factory_invoice, factory_invoice_reference, factory_payment, factory_premium_payment_account,
+    factory_statement_settings)
 
 
 def test_statements(session):
@@ -80,4 +84,3 @@ def test_statements_for_empty_results(session):
     assert statements is not None
     invoices = StatementInvoices.find_all_invoices_for_statement(statements[0][0].id)
     assert len(invoices) == 0
-

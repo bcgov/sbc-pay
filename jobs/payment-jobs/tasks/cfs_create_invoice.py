@@ -16,26 +16,29 @@
 from datetime import timedelta
 
 from flask import current_app
-from pay_api.models import Invoice as InvoiceModel, CfsAccount as CfsAccountModel, \
-    PaymentAccount as PaymentAccountModel, PaymentTransaction as PaymentTransactionModel, \
-    PaymentLineItem as PaymentLineItemModel
+from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.online_banking_service import OnlineBankingService
+from pay_api.services.pad_service import PadService
 from pay_api.services.payment import Payment
-from pay_api.utils.constants import (
-    CFS_BATCH_SOURCE, CFS_CUST_TRX_TYPE, CFS_LINE_TYPE, CFS_TERM_NAME)
-from pay_api.utils.enums import PaymentMethod, InvoiceStatus, AuthHeaderType, ContentType, \
-    TransactionStatus
+from pay_api.utils.constants import CFS_BATCH_SOURCE, CFS_CUST_TRX_TYPE, CFS_LINE_TYPE, CFS_TERM_NAME
+from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceStatus, PaymentMethod, TransactionStatus
 from pay_api.utils.util import current_local_time
 
 
-class CreateInvoiceTask:
+class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
+    """Task to create invoices in CFS."""
 
     @classmethod
     def create_invoices(cls):
         """Create invoice in CFS.
+
         Steps:
         1. Find all invoices from invoice table for Online Banking.
         1.1. Create invoice in CFS for each of those invoices.
@@ -47,7 +50,7 @@ class CreateInvoiceTask:
         cls._create_online_banking_invoices()
 
     @classmethod
-    def _create_pad_invoices(cls):
+    def _create_pad_invoices(cls):  # pylint: disable=too-many-locals
         """Create PAD invoices in to CFS system."""
         # TODO Add date filter
         end_time = current_local_time()
@@ -57,7 +60,7 @@ class CreateInvoiceTask:
         inv_subquery = db.session.query(InvoiceModel.payment_account_id).filter(
             InvoiceModel.created_on < end_time).filter(InvoiceModel.created_on >= start_time).subquery()
 
-        pad_accounts = PaymentAccountModel.query.filter(id.in_(inv_subquery)).all()
+        pad_accounts = PaymentAccountModel.query.filter(PaymentAccountModel.id.in_(inv_subquery)).all()
 
         for account in pad_accounts:
             # Find all PAD invoices for this account
@@ -97,11 +100,11 @@ class CreateInvoiceTask:
             access_token = CFSService.get_token().json().get('access_token')
             invoice_response = CFSService.post(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
                                                invoice_payload)
-
             # Create payment records
-            payment = Payment.create(payment_method=OnlineBankingService.get_payment_method_code(),
-                                     payment_system=OnlineBankingService.get_payment_system_code(),
-                                     payment_status=OnlineBankingService.get_default_payment_status(),
+            pad_service = PadService()
+            payment = Payment.create(payment_method=pad_service.get_payment_method_code(),
+                                     payment_system=pad_service.get_payment_system_code(),
+                                     payment_status=pad_service.get_default_payment_status(),
                                      invoice_number=invoice_response.json().get('invoice_number'))
 
             # Create a transaction record
@@ -114,7 +117,7 @@ class CreateInvoiceTask:
             # Iterate invoice and create invoice reference records
             for invoice in account_invoices:
                 # Create invoice reference, payment record and a payment transaction
-                invoice_reference: InvoiceReference = InvoiceReference.create(
+                InvoiceReference.create(
                     invoice_id=invoice.id,
                     invoice_number=invoice_response.json().get('invoice_number'),
                     reference_number=invoice_response.json().get('pbc_ref_number', None))
@@ -163,9 +166,10 @@ class CreateInvoiceTask:
                 invoice_id=invoice.id,
                 invoice_number=invoice_response.json().get('invoice_number'),
                 reference_number=invoice_response.json().get('pbc_ref_number', None))
-            payment = Payment.create(payment_method=OnlineBankingService.get_payment_method_code(),
-                                     payment_system=OnlineBankingService.get_payment_system_code(),
-                                     payment_status=OnlineBankingService.get_default_payment_status(),
+            online_banking_service = OnlineBankingService()
+            payment = Payment.create(payment_method=online_banking_service.get_payment_method_code(),
+                                     payment_system=online_banking_service.get_payment_system_code(),
+                                     payment_status=online_banking_service.get_default_payment_status(),
                                      invoice_number=invoice_reference.invoice_number)
 
             transaction: PaymentTransactionModel = PaymentTransactionModel()
@@ -180,7 +184,7 @@ class CreateInvoiceTask:
             invoice.save()
 
     @classmethod
-    def _build_lines(cls, payment_line_items: list[PaymentLineItemModel]):
+    def _build_lines(cls, payment_line_items: [PaymentLineItemModel]):
         """Build lines for the invoice."""
         lines = []
         index: int = 0

@@ -18,16 +18,19 @@ from typing import Dict
 
 from flask import current_app
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
-from pay_api.models import CfsAccount as CfsAccountModel, PaymentAccount as PaymentAccountModel
+from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.queue_publisher import publish_response
 from pay_api.utils.enums import CfsAccountStatus
 
 
-class CreateAccountTask:
+class CreateAccountTask:  # pylint: disable=too-few-public-methods
+    """Create CFS Account."""
 
     @classmethod
     def create_accounts(cls):
         """Find all pending accounts to be created in CFS.
+
         Steps:
         1. Find all pending CFS accounts.
         2. Create CFS accounts.
