@@ -17,22 +17,24 @@ from datetime import datetime
 
 from dateutil.parser import parse
 from flask import current_app
-
 from pay_api.models.base_model import db
 from pay_api.models.payment import Payment as PaymentModel
 from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_invoices import StatementInvoices as StatementInvoicesModel
 from pay_api.models.statement_settings import StatementSettings as StatementSettingsModel
-from pay_api.utils.enums import StatementFrequency, NotificationStatus
-from pay_api.utils.util import get_local_time, \
-    get_previous_month_and_year, get_week_start_and_end_date, get_first_and_last_dates_of_month, get_previous_day
+from pay_api.utils.enums import NotificationStatus, StatementFrequency
+from pay_api.utils.util import (
+    get_first_and_last_dates_of_month, get_local_time, get_previous_day, get_previous_month_and_year,
+    get_week_start_and_end_date)
 
 
-class StatementTask:
+class StatementTask:  # pylint:disable=too-few-public-methods
+    """Task to generate statements."""
 
     @classmethod
     def generate_statements(cls):
         """Generate statements.
+
         Steps:
         1. Get all payment accounts and it's active statement settings.
         """
@@ -119,13 +121,15 @@ class StatementTask:
                 created_on=current_time,
                 from_date=statement_from,
                 to_date=statement_to,
-                notification_status_code=NotificationStatus.PENDING.value if pay_account.statement_notification_enabled is True else NotificationStatus.SKIP.value
+                notification_status_code=NotificationStatus.PENDING.value
+                if pay_account.statement_notification_enabled is True
+                else NotificationStatus.SKIP.value
 
             )
             # Add to DB session
             statement = statement.flush()
 
-            purchases, total = PaymentModel.search_purchase_history(
+            purchases, total = PaymentModel.search_purchase_history(  # pylint:disable=unused-variable
                 auth_account_id=pay_account.auth_account_id,
                 return_all=True,
                 search_filter=search_filter,

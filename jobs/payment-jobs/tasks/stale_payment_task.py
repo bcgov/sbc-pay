@@ -11,21 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""This module is being invoked from a job and it cleans up the stale records"""
+"""This module is being invoked from a job and it cleans up the stale records."""
 import datetime
 
 from flask import current_app
 from pay_api.exceptions import BusinessException
-from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import Invoice as InvoiceModel
-from pay_api.services import TransactionService
-from pay_api.services import PaymentService
+from pay_api.models import PaymentTransaction as PaymentTransactionModel
+from pay_api.services import PaymentService, TransactionService
 
 
-class StalePaymentTask:
+class StalePaymentTask:  # pylint: disable=too-few-public-methods
+    """Task to sync stale payments."""
 
     @classmethod
     def update_stale_payments(cls):
+        """Update stale payments."""
         current_app.logger.info(f'StalePaymentTask Ran at {datetime.datetime.now()}')
         cls._update_stale_payments()
         cls._delete_marked_payments()
@@ -34,7 +35,8 @@ class StalePaymentTask:
     def _update_stale_payments(cls):
         """Update stale payment records.
 
-        This is to handle edge cases where the user has completed payment and some error occured and payment status is not up-to-date.
+        This is to handle edge cases where the user has completed payment and some error occured and payment status
+        is not up-to-date.
         """
         stale_transactions = PaymentTransactionModel.find_stale_records(minutes=30)
         if len(stale_transactions) == 0:
@@ -57,7 +59,8 @@ class StalePaymentTask:
     def _delete_marked_payments(cls):
         """Update stale payment records.
 
-        This is to handle edge cases where the user has completed payment and some error occured and payment status is not up-to-date.
+        This is to handle edge cases where the user has completed payment and some error
+        occured and payment status is not up-to-date.
         """
         invoices_to_delete = InvoiceModel.find_invoices_marked_for_delete()
         if len(invoices_to_delete) == 0:

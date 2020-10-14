@@ -16,11 +16,10 @@
 
 import pytest
 from flask_migrate import Migrate, upgrade
-from sqlalchemy import event, text
-from sqlalchemy.schema import DropConstraint, MetaData
-
 from generate_account_statements import create_app
 from pay_api.models import db as _db
+from sqlalchemy import event, text
+from sqlalchemy.schema import DropConstraint, MetaData
 
 
 @pytest.fixture(scope='session')
