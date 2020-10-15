@@ -103,6 +103,7 @@ class _Config():  # pylint: disable=too-few-public-methods
     PAYBC_PORTAL_URL = _get_config('PAYBC_PORTAL_URL')
     CONNECT_TIMEOUT = int(_get_config('CONNECT_TIMEOUT', default=10))
     GENERATE_RANDOM_INVOICE_NUMBER = _get_config('CFS_GENERATE_RANDOM_INVOICE_NUMBER', default='False')
+    CFS_ACCOUNT_DESCRIPTION = _get_config('CFS_ACCOUNT_DESCRIPTION', default='BC Registries and Online Services')
 
     # PAYBC Direct Pay Settings
     PAYBC_DIRECT_PAY_REF_NUMBER = _get_config('PAYBC_DIRECT_PAY_REF_NUMBER')

@@ -22,7 +22,8 @@ from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel, PaymentAccountSchema
 from pay_api.models import StatementSettings as StatementSettingsModel
-from pay_api.utils.enums import StatementFrequency
+from pay_api.services.cfs_service import CFSService
+from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, PaymentSystem, StatementFrequency
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_str_by_path
 
@@ -272,22 +273,55 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         payment_account.bcol_account = account_request.get('bcolAccountNumber', None)
         payment_account.bcol_user_id = account_request.get('bcolUserId', None)
 
-        billable = get_str_by_path(account_request, 'paymentInfo/billable').lower() == 'true'
+        payment_info = account_request.get('paymentInfo')
+        billable = payment_info.get('billable', True)
         payment_account.billable = billable
 
-        # Create account in CFS based on payment method
-        # If payment method is PAD, OB, EFT, WIRE create a cfs account
-        # For government accounts (billable false) create a cfs account for EJV transactions
+        # Steps to decide on creating CFS Account or updating CFS bank account.
+        # Updating CFS account apart from bank details not in scope now.
+        # Create CFS Account IF:
+        # 1. New payment account
+        # 2. Existing payment account:
+        # -  If the account was on DIRECT_PAY and switching to Online Banking, and active CFS account is not present.
+        # -  If the account was on DRAWDOWN and switching to PAD, and active CFS account is not present
+        cfs_account: CfsAccountModel = CfsAccountModel.find_active_by_account_id(payment_account.id) \
+            if payment_account.id else None
         pay_system = PaymentSystemFactory.create_from_payment_method(payment_method=payment_method)
-        cfs_account_details = pay_system.create_account(name=payment_account.auth_account_name,
-                                                        contact_info=account_request.get('contactInfo'),
-                                                        payment_info=account_request.get('paymentInfo'))
+        if pay_system.get_payment_system_code() == PaymentSystem.PAYBC.value:
+            if cfs_account is None:
+                cfs_account_details = pay_system.create_account(name=payment_account.auth_account_name,
+                                                                contact_info=account_request.get('contactInfo'),
+                                                                payment_info=account_request.get('paymentInfo'))
+                if cfs_account_details:
+                    cls._create_cfs_account(cfs_account_details, payment_account)
+            # If the account is PAD and bank details changed, then update bank details
+            elif payment_method == PaymentMethod.PAD.value and (
+                    str(payment_info.get('bankInstitutionNumber')) != cfs_account.bank_number or
+                    str(payment_info.get('bankTransitNumber')) != cfs_account.bank_branch_number or
+                    str(payment_info.get('bankAccountNumber')) != cfs_account.bank_account_number):
+                # Make the current CFS Account as INACTIVE in DB
+                cfs_account.status = CfsAccountStatus.INACTIVE.value
+                cfs_account.flush()
 
-        # Create a new cfs account model if there is no existing one
-        # TODO updating the CFS account in CFS needs to be done during PAD and Online Banking tickets
-        cfs_account = CfsAccountModel.find_active_by_account_id(payment_account.id)
-        if not cfs_account:
-            cfs_account = CfsAccountModel()
+                cfs_details = {
+                    'account_number': cfs_account.cfs_account,
+                    'site_number': cfs_account.cfs_site,
+                    'party_number': cfs_account.cfs_party
+                }
+
+                cfs_details.update(CFSService.update_bank_details(party_number=cfs_account.cfs_party,
+                                                                  account_number=cfs_account.cfs_account,
+                                                                  site_number=cfs_account.cfs_site,
+                                                                  payment_info=payment_info))
+
+                cls._create_cfs_account(cfs_details, payment_account)
+
+        payment_account.save()
+        print(payment_account.payment_method)
+
+    @classmethod
+    def _create_cfs_account(cls, cfs_account_details, payment_account):
+        cfs_account = CfsAccountModel()
         cfs_account.payment_account = payment_account
         cfs_account.cfs_account = cfs_account_details.get('account_number')
         cfs_account.cfs_site = cfs_account_details.get('site_number')
@@ -296,9 +330,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         cfs_account.bank_number = cfs_account_details.get('bank_number', None)
         cfs_account.bank_branch_number = cfs_account_details.get('bank_branch_number', None)
         cfs_account.payment_instrument_number = cfs_account_details.get('payment_instrument_number', None)
-
+        cfs_account.status = CfsAccountStatus.ACTIVE.value
         cfs_account.flush()
-        payment_account.save()
+        return cfs_account
 
     @classmethod
     def update(cls, auth_account_id: str, account_request: Dict[str, Any]) -> PaymentAccount:
@@ -311,11 +345,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
         PaymentAccount._save_account(account_request, account)
 
-        payment_account = PaymentAccount()
-        payment_account._dao = account  # pylint:disable=protected-access
-
         current_app.logger.debug('>create payment account')
-        return payment_account
+        return cls.find_by_id(account.id)
 
     @staticmethod
     def _persist_default_statement_frequency(payment_account_id):
