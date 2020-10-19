@@ -17,7 +17,6 @@ from datetime import datetime
 from typing import Dict
 
 from flask import current_app
-from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.queue_publisher import publish_response
@@ -36,6 +35,9 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
         2. Create CFS accounts.
         3. Publish a message to the queue if successful.
         """
+        # pylint: disable=import-outside-toplevel
+        from pay_api.factory.payment_system_factory import PaymentSystemFactory
+
         pending_accounts = CfsAccountModel.find_all_pending_accounts()
         current_app.logger.info(f'Found {len(pending_accounts)} CFS Accounts to be created.')
 

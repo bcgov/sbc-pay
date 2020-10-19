@@ -20,21 +20,17 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 from datetime import datetime
 
 from pay_api.models import (
-    BcolPaymentAccount, CreditPaymentAccount, DistributionCode, InternalPaymentAccount, Invoice, InvoiceReference,
-    Payment, PaymentAccount, PaymentLineItem, StatementSettings)
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentStatus
+    DistributionCode, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem, StatementSettings)
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
 
 
-def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='1234567890',
-                                    auth_account_id='1234') -> BcolPaymentAccount:
+def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='1234567890', auth_account_id='1234'):
     """Return Factory."""
-    account = PaymentAccount(auth_account_id=auth_account_id).save()
-
-    return BcolPaymentAccount(
-        bcol_user_id=bcol_user_id,
-        bcol_account_id=bcol_account_id,
-        account_id=account.id
-    ).save()
+    account = PaymentAccount(auth_account_id=auth_account_id,
+                             bcol_user_id=bcol_user_id,
+                             bcol_account=bcol_account_id,
+                             ).save()
+    return account
 
 
 def factory_statement_settings(pay_account_id: str, frequency='DAILY', from_date=datetime.now(),
@@ -49,51 +45,40 @@ def factory_statement_settings(pay_account_id: str, frequency='DAILY', from_date
 
 
 def factory_payment(
-        payment_system_code: str = 'BCOL',
-        payment_method_code: str = 'DRAWDOWN',
+        payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC',
         payment_status_code: str = PaymentStatus.CREATED.value,
-        created_on: datetime = datetime.now()
+        created_on: datetime = datetime.now(),
+        invoice_number: str = None
 ):
     """Return Factory."""
     return Payment(
         payment_system_code=payment_system_code,
         payment_method_code=payment_method_code,
         payment_status_code=payment_status_code,
-        created_by='test',
         created_on=created_on,
+        invoice_number=invoice_number
     ).save()
 
 
-def factory_invoice(payment: Payment,
-                    payment_account,
-                    status_code: str = InvoiceStatus.CREATED.value,
+def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.value,
                     corp_type_code='CP',
                     business_identifier: str = 'CP0001234',
-                    service_fees: float = 0.0, total=0):
+                    service_fees: float = 0.0, total=0,
+                    payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
+                    created_on: datetime = datetime.now()):
     """Return Factory."""
-    bcol_account_id = None
-    credit_account_id = None
-    internal_account_id = None
-    if isinstance(payment_account, BcolPaymentAccount):
-        bcol_account_id = payment_account.id
-    elif isinstance(payment_account, InternalPaymentAccount):
-        internal_account_id = payment_account.id
-    if isinstance(payment_account, CreditPaymentAccount):
-        credit_account_id = payment_account.id
-
     return Invoice(
-        payment_id=payment.id,
         invoice_status_code=status_code,
-        bcol_account_id=bcol_account_id,
-        credit_account_id=credit_account_id,
-        internal_account_id=internal_account_id,
+        payment_account_id=payment_account.id,
         total=total,
         created_by='test',
-        created_on=datetime.now(),
+        created_on=created_on,
         business_identifier=business_identifier,
         corp_type_code=corp_type_code,
         folio_number='1234567890',
-        service_fees=service_fees
+        service_fees=service_fees,
+        bcol_account=payment_account.bcol_account,
+        payment_method_code=payment_method_code
     ).save()
 
 

@@ -317,7 +317,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 cls._create_cfs_account(cfs_details, payment_account)
 
         payment_account.save()
-        print(payment_account.payment_method)
 
     @classmethod
     def _create_cfs_account(cls, cfs_account_details, payment_account):

@@ -69,7 +69,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 .filter(InvoiceModel.created_on >= start_time) \
                 .filter(InvoiceModel.payment_account_id == account.id) \
                 .filter(InvoiceModel.payment_method_code == PaymentMethod.PAD.value) \
-                .order_by(InvoiceModel.created_on.desc())
+                .order_by(InvoiceModel.created_on.desc()).all()
 
             # Get the first invoice id as the trx number for CFS
             transaction_number = account_invoices[0].id
@@ -134,7 +134,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         # TODO to avoid race condition, may be fetch invoices created 30 minutes earlier ?
         online_banking_invoices = InvoiceModel.query \
             .filter_by(payment_method_code=PaymentMethod.ONLINE_BANKING.value) \
-            .filter_by(invoice_status_code=InvoiceStatus.CREATED.value)
+            .filter_by(invoice_status_code=InvoiceStatus.CREATED.value).all()
 
         current_app.logger.info(f'Found {len(online_banking_invoices)} to be created in CFS.')
         for invoice in online_banking_invoices:
