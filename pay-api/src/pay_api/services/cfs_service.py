@@ -21,35 +21,31 @@ from requests import HTTPError
 
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import (
-    DEFAULT_ADDRESS_LINE_1, DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE)
+    DEFAULT_ADDRESS_LINE_1, DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE)
 from pay_api.utils.enums import AuthHeaderType, ContentType
 
 
 class CFSService(OAuthService):
     """Service to invoke CFS related operations."""
 
-    @staticmethod
-    def create_cfs_account(name: str, contact_info: Dict[str, Any], save_bank_details: bool = False,
-                           payment_info: Dict[str, any] = None):
+    @classmethod
+    def create_cfs_account(cls, name: str, contact_info: Dict[str, Any],
+                           payment_info: Dict[str, any] = None, receipt_method: str = None) -> Dict[str, str]:
         """Create a cfs account and return the details."""
         name = re.sub(r'[^a-zA-Z0-9]+', ' ', name)
         access_token = CFSService.get_token().json().get('access_token')
         party = CFSService._create_party(access_token, name)
         account = CFSService._create_paybc_account(access_token, party)
-        site = CFSService._create_site(access_token, party, account, contact_info)
+        site = CFSService._create_site(access_token, party, account, contact_info, receipt_method)
         account_details = {
             'party_number': party.get('party_number'),
             'account_number': account.get('account_number'),
             'site_number': site.get('site_number')
         }
-        if save_bank_details:
-            payment_details = CFSService._save_bank_details(access_token, party.get('party_number'),
-                                                            account.get('account_number'),
-                                                            site.get('site_number'), payment_info)
-            account_details['bank_account_number'] = payment_details.get('bank_account_num')
-            account_details['bank_number'] = payment_details.get('bank_number')
-            account_details['bank_branch_number'] = payment_details.get('branch_number')
-            account_details['payment_instrument_number'] = payment_details.get('instrument_id')
+        if payment_info:
+            account_details.update(cls._save_bank_details(access_token, party.get('party_number'),
+                                                          account.get('account_number'),
+                                                          site.get('site_number'), payment_info))
 
         return account_details
 
@@ -73,8 +69,7 @@ class CFSService(OAuthService):
         account_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/'.format(
             party.get('party_number', None))
         account: Dict[str, Any] = {
-            'party_number': party.get('party_number'),
-            'account_description': party.get('customer_name')[:30]
+            'account_description': current_app.config.get('CFS_ACCOUNT_DESCRIPTION')
         }
 
         account_response = OAuthService.post(account_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
@@ -83,7 +78,7 @@ class CFSService(OAuthService):
         return account_response.json()
 
     @staticmethod
-    def _create_site(access_token, party, account, contact_info):
+    def _create_site(access_token, party, account, contact_info, receipt_method):
         """Create site in PayBC."""
         current_app.logger.debug('<Creating site ')
         if not contact_info:
@@ -91,15 +86,15 @@ class CFSService(OAuthService):
         site_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/' \
             .format(account.get('party_number', None), account.get('account_number', None))
         site: Dict[str, Any] = {
-            'party_number': account.get('party_number', None),
-            'account_number': account.get('account_number', None),
-            'site_name': party.get('customer_name') + ' Site',
+            'site_name': party.get('customer_name'),  # TODO Check with CFS what is the best practice for this.
             'city': get_non_null_value(contact_info.get('city'), DEFAULT_CITY),
             'address_line_1': get_non_null_value(contact_info.get('addressLine1'), DEFAULT_ADDRESS_LINE_1),
             'postal_code': get_non_null_value(contact_info.get('postalCode'), DEFAULT_POSTAL_CODE).replace(' ', ''),
             'province': get_non_null_value(contact_info.get('province'), DEFAULT_JURISDICTION),
             'country': get_non_null_value(contact_info.get('country'), DEFAULT_COUNTRY),
-            'customer_site_id': '1'
+            'customer_site_id': '1',
+            'primary_bill_to': 'Y',
+            'receipt_method': receipt_method
         }
 
         try:
@@ -116,27 +111,41 @@ class CFSService(OAuthService):
         current_app.logger.debug('>Creating site ')
         return site_response
 
-    @staticmethod
-    def _save_bank_details(access_token, party_number, account_number, site_number, payment_info):
+    @classmethod
+    def _save_bank_details(cls, access_token, party_number, account_number,  # pylint: disable=too-many-arguments
+                           site_number, payment_info):
         """Save bank details to the site."""
         current_app.logger.debug('<Creating payment details ')
         site_payment_url = current_app.config.get(
-            'CFS_BASE_URL') + f'/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/payment_details/'
+            'CFS_BASE_URL') + f'/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/payment/'
+
         payment_details: Dict[str, Any] = {
-            'party_number': party_number,
-            'account_number': account_number,
-            'site_number': site_number,
-            # 'receipt_method': None,  # TODO
             'bank_number': str(payment_info.get('bankInstitutionNumber')),
             'branch_number': str(payment_info.get('bankTransitNumber')),
-            'bank_account_num': str(payment_info.get('bankAccountNumber')),
-            'country': DEFAULT_COUNTRY
+            'bank_account_number': str(payment_info.get('bankAccountNumber')),
+            'country': DEFAULT_COUNTRY,
+            'currency_code': DEFAULT_CURRENCY
         }
         site_payment_response = OAuthService.post(site_payment_url, access_token, AuthHeaderType.BEARER,
                                                   ContentType.JSON,
                                                   payment_details).json()
+
+        payment_details = {
+            'bank_account_number': payment_info.get('bankAccountNumber'),
+            'bank_number': payment_info.get('bankInstitutionNumber'),
+            'bank_branch_number': payment_info.get('bankTransitNumber'),
+            'payment_instrument_number': site_payment_response.get('payment_instrument_number')
+        }
+
         current_app.logger.debug('>Creating payment details')
-        return site_payment_response
+        return payment_details
+
+    @classmethod
+    def update_bank_details(cls, party_number, account_number, site_number, payment_info):
+        """Update bank details to the site."""
+        current_app.logger.debug('<Update bank details ')
+        access_token = CFSService.get_token().json().get('access_token')
+        return cls._save_bank_details(access_token, party_number, account_number, site_number, payment_info)
 
     @staticmethod
     def get_token():

@@ -91,7 +91,7 @@ class PaymentMethod(Enum):
     DIRECT_PAY = 'DIRECT_PAY'
     EFT = 'EFT'
     WIRE = 'WIRE'
-    ONLINE_BANKING = 'OB'
+    ONLINE_BANKING = 'ONLINE_BANKING'
     PAD = 'PAD'
     EJV = 'EJV'
 

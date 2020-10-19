@@ -49,7 +49,7 @@ class OnlineBankingService(PaymentSystemService, CFSService):
 
     def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
         """Create an account for the online banking."""
-        return self.create_cfs_account(name, contact_info)
+        return self.create_cfs_account(name, contact_info, receipt_method=None)  # TODO
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:

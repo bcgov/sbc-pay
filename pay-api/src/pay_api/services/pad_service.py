@@ -21,6 +21,7 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentSystem, PaymentStatus
+from pay_api.utils.constants import RECEIPT_METHOD_PAD_DAILY
 from .payment_line_item import PaymentLineItem
 
 
@@ -49,7 +50,8 @@ class PadService(PaymentSystemService, CFSService):
 
     def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
         """Create an account for the PAD transactions."""
-        return self.create_cfs_account(name, contact_info, save_bank_details=True, payment_info=payment_info)
+        return self.create_cfs_account(name, contact_info, payment_info=payment_info,
+                                       receipt_method=RECEIPT_METHOD_PAD_DAILY)
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
