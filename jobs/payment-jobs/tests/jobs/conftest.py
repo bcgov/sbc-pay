@@ -14,7 +14,9 @@
 
 """Common setup and fixtures for the py-test suite used by this service."""
 
-import pytest, sys
+import sys
+
+import pytest
 from flask_migrate import Migrate, upgrade
 from pay_api.models import db as _db
 from sqlalchemy import event, text
@@ -90,7 +92,8 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
         # This is the path we'll use in legal_api!!
 
         # even though this isn't referenced directly, it sets up the internal configs that upgrade needs
-        migrations_path = [folder for folder in sys.path if 'pay-api/pay-api' in folder][0].replace('/pay-api/src', '/pay-api/migrations')
+        migrations_path = [folder for folder in sys.path if 'pay-api/pay-api' in folder][0]\
+            .replace('/pay-api/src', '/pay-api/migrations')
 
         Migrate(app, _db, directory=migrations_path)
         upgrade()
