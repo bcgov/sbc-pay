@@ -136,8 +136,8 @@ class StatementTask:  # pylint:disable=too-few-public-methods
                 page=None,
                 limit=None
             )
-            for purchase in purchases:
-                invoice = purchase[1]
+
+            for invoice in purchases:
                 statement_invoice = StatementInvoicesModel(
                     statement_id=statement.id,
                     invoice_id=invoice.id
