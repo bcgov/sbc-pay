@@ -14,7 +14,7 @@
 """Service to invoke CFS related operations."""
 import base64
 import re
-from typing import Dict, Any
+from typing import Dict, Any, Tuple
 
 from flask import current_app
 from requests import HTTPError
@@ -50,6 +50,41 @@ class CFSService(OAuthService):
         return account_details
 
     @staticmethod
+    def validate_bank_account(bank_details: Tuple[Dict[str, Any]]):
+        """Validate bank details by invoking CFS validation Service."""
+        current_app.logger.debug('<Validating bank account details')
+        validation_url = current_app.config.get('CFS_BASE_URL') + '/validatepayins'
+        bank_details: Dict[str, str] = {
+            'accountNumber': bank_details.get('accountNumber', None),
+            'branchNumber': bank_details.get('branchNumber', None),
+            'bankNumber': bank_details.get('bankNumber', None),
+        }
+
+        try:
+            access_token = CFSService.get_token().json().get('access_token')
+            bank_validation_response = OAuthService.post(validation_url, access_token, AuthHeaderType.BEARER,
+                                                         ContentType.JSON,
+                                                         bank_details).json()
+
+            validation_response = {
+                'bank_number': bank_validation_response.get('bank_number', None),
+                'bank_name': bank_validation_response.get('bank_number', None),
+                'branch_number': bank_validation_response.get('branch_number', None),
+                'transit_address': bank_validation_response.get('transit_address', None),
+                'account_number': bank_validation_response.get('account_number', None),
+                'is_valid': bank_validation_response.get('CAS-Returned-Messages', None) == 'VALID',
+                'message': CFSService._transform_error_message(bank_validation_response.get('CAS-Returned-Messages'))
+            }
+
+        except HTTPError as e:
+            current_app.logger.error(e)
+            validation_response = {
+                'is_valid': False,
+                'message': 'Bank validation service cant be reached'
+            }
+        return validation_response
+
+    @staticmethod
     def _create_party(access_token: str = None, party_name: str = None):
         """Create a party record in PayBC."""
         current_app.logger.debug('<Creating party Record')
@@ -61,6 +96,15 @@ class CFSService(OAuthService):
         party_response = OAuthService.post(party_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, party)
         current_app.logger.debug('>Creating party Record')
         return party_response.json()
+
+    @staticmethod
+    def _transform_error_message(param: str):
+        """Strip out unwanted characters from the CFS returned error message."""
+        # [-+]?[0-9]+ -  matches the CFS format of 0001 -  etc.
+        list_messages = re.split('[-+]?[0-9]+ - ', param)
+        # strip out first empty
+        stipped_message = list(filter(None, list_messages))
+        return stipped_message
 
     @staticmethod
     def _create_paybc_account(access_token, party):

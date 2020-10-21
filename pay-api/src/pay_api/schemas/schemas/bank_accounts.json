@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/bank_accounts",
+  "type": "object",
+  "required": [
+  ],
+  "properties": {
+    "accountId": {
+      "$id": "#/properties/accountNumber",
+      "type": "string",
+      "title": "Customers Bank Account Number",
+      "examples": [
+        "0001"
+      ],
+      "pattern": "^[a-zA-Z0-9]+$"
+    },
+    "accountName": {
+      "$id": "#/properties/branchNumber",
+      "type": "string",
+      "title": "Customers Bank Branch number",
+      "examples": [
+        "0001"
+      ],
+      "pattern": "^[a-zA-Z0-9]+$"
+    },
+    "bcolAccountNumber": {
+      "$id": "#/properties/bankNumber",
+      "type": "string",
+      "title": "Bank Number",
+      "examples": [
+        "0001"
+      ],
+      "pattern": "^[a-zA-Z0-9]+$"
+    }
+  }
+}
