@@ -11,10 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Test Suite for the Utils package."""
-import os
-import sys
+
+"""Tests to assure the DistributionTask.
+
+Test-Suite to ensure that the DistributionTask is working as expected.
+"""
+
+from tasks.distribution_task import DistributionTask
 
 
-my_path = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, my_path + '/../')
+def test_update_failed_distributions(session):
+    """Test create account."""
+    DistributionTask.update_failed_distributions()
+    assert True

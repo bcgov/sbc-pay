@@ -11,10 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Test Suite for the Utils package."""
-import os
-import sys
+
+"""Tests to assure the StatementNotificationTask.
+
+Test-Suite to ensure that the StatementNotificationTask is working as expected.
+"""
+
+from tasks.statement_notification_task import StatementNotificationTask
 
 
-my_path = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, my_path + '/../')
+def test_send_notifications(session):
+    """Test create account."""
+    StatementNotificationTask.send_notifications()
+    assert True

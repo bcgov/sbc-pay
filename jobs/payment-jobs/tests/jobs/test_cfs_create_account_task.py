@@ -11,10 +11,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Test Suite for the Utils package."""
-import os
-import sys
+
+"""Tests to assure the CreateAccountTask.
+
+Test-Suite to ensure that the CreateAccountTask is working as expected.
+"""
+
+from tasks.cfs_create_account_task import CreateAccountTask
 
 
-my_path = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, my_path + '/../')
+def test_create_account(session):
+    """Test create account."""
+    CreateAccountTask.create_accounts()
+    assert True

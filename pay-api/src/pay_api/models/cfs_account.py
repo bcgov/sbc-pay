@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to PayBC Account data."""
-from sqlalchemy import Boolean, ForeignKey
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
-from .base_model import BaseModel
+from pay_api.utils.enums import CfsAccountStatus
+from .base_model import VersionedModel
 from .db import db, ma
 
 
-class CfsAccount(BaseModel):
+class CfsAccount(VersionedModel):  # pylint:disable=too-many-instance-attributes
     """This class manages all of the base data about PayBC Account."""
 
     __tablename__ = 'cfs_account'
@@ -37,7 +38,7 @@ class CfsAccount(BaseModel):
     bank_branch_number = db.Column(db.String(50), nullable=True, index=True)
     bank_account_number = db.Column(db.String(50), nullable=True, index=True)
 
-    is_active = db.Column(Boolean(), default=True)
+    status = db.Column(db.String(20), ForeignKey('cfs_account_status_code.code'), nullable=True)
 
     account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True, index=True)
 
@@ -46,7 +47,12 @@ class CfsAccount(BaseModel):
     @classmethod
     def find_active_by_account_id(cls, account_id: str):
         """Return a Account by id."""
-        return cls.query.filter_by(account_id=account_id, is_active=True).one_or_none()
+        return cls.query.filter_by(account_id=account_id, status=CfsAccountStatus.ACTIVE.value).one_or_none()
+
+    @classmethod
+    def find_all_pending_accounts(cls):
+        """Find all pending accounts to be created in CFS."""
+        return cls.query.filter_by(status=CfsAccountStatus.PENDING.value).all()
 
 
 class CfsAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors

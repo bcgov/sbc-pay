@@ -19,12 +19,12 @@ import os
 import sys
 
 import sentry_sdk
+from flask import Flask
 from sentry_sdk.integrations.flask import FlaskIntegration
 
-from flask import Flask
+import config
 from utils.logger import setup_logging
 
-import config
 
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
@@ -64,10 +64,12 @@ def register_shellcontext(app):
 
 
 def run(job_name):
+    from tasks.cfs_create_account_task import CreateAccountTask
+    from tasks.cfs_create_invoice import CreateInvoiceTask
     from tasks.distribution_task import DistributionTask
-    from tasks.statement_task import StatementTask
-    from tasks.statement_notification_task import StatementNotificationTask
     from tasks.stale_payment_task import StalePaymentTask
+    from tasks.statement_notification_task import StatementNotificationTask
+    from tasks.statement_task import StatementTask
 
     application = create_app()
 
@@ -84,6 +86,12 @@ def run(job_name):
     elif job_name == 'UPDATE_STALE_PAYMENTS':
         StalePaymentTask.update_stale_payments()
         application.logger.info(f'<<<< Completed Updating stale payments >>>>')
+    elif job_name == 'CREATE_CFS_ACCOUNTS':
+        CreateAccountTask.create_accounts()
+        application.logger.info(f'<<<< Completed creating cfs accounts >>>>')
+    elif job_name == 'CREATE_INVOICES':
+        CreateInvoiceTask.create_invoices()
+        application.logger.info(f'<<<< Completed creating cfs invoices >>>>')
     else:
         application.logger.debug('No valid args passed.Exiting job without running any ***************')
 

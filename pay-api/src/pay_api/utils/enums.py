@@ -91,7 +91,7 @@ class PaymentMethod(Enum):
     DIRECT_PAY = 'DIRECT_PAY'
     EFT = 'EFT'
     WIRE = 'WIRE'
-    ONLINE_BANKING = 'OB'
+    ONLINE_BANKING = 'ONLINE_BANKING'
     PAD = 'PAD'
     EJV = 'EJV'
 
@@ -143,3 +143,12 @@ class NotificationStatus(Enum):
     SUCCESS = 'SUCCESS'
     SKIP = 'SKIP'
     FAILED = 'FAILED'
+
+
+class CfsAccountStatus(Enum):
+    """Cfs Account Status."""
+
+    PENDING = 'PENDING'
+    ACTIVE = 'ACTIVE'
+    INACTIVE = 'INACTIVE'
+    FREEZE = 'FREEZE'

@@ -21,17 +21,21 @@ from pay_api.models.payment import PaymentAccount as PaymentAccountModel
 from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_recipients import StatementRecipients as StatementRecipientsModel
 from pay_api.services.oauth_service import OAuthService
-from pay_api.utils.enums import NotificationStatus, AuthHeaderType, ContentType
+from pay_api.utils.enums import AuthHeaderType, ContentType, NotificationStatus
+
 from utils.auth import get_token
+
 
 ENV = Environment(loader=FileSystemLoader('.'), autoescape=True)
 
 
-class StatementNotificationTask:
+class StatementNotificationTask:  # pylint:disable=too-few-public-methods
+    """Task to send statement notifications."""
 
     @classmethod
     def send_notifications(cls):
         """Send Notifications.
+
         Steps:
         1. Get all statements with Notification status as PENDING
         2. Start processing each statements
@@ -44,12 +48,13 @@ class StatementNotificationTask:
         if statement_len := len(statements_with_pending_notifications) < 1:
             current_app.logger.info('No Statements with Pending notifications Found!')
             return
-        else:
-            current_app.logger.info(f'{statement_len} Statements with Pending notifications Found!')
+
+        current_app.logger.info(f'{statement_len} Statements with Pending notifications Found!')
         token = get_token()
 
         params = {
-            'logo_url': f"{current_app.config.get('AUTH_WEB_URL')}/{current_app.config.get('REGISTRIES_LOGO_IMAGE_NAME')}",
+            'logo_url':
+                f"{current_app.config.get('AUTH_WEB_URL')}/{current_app.config.get('REGISTRIES_LOGO_IMAGE_NAME')}",
             'url': f"{current_app.config.get('AUTH_WEB_URL')}"
         }
         template = ENV.get_template('statement_notification.html')
@@ -60,7 +65,8 @@ class StatementNotificationTask:
             payment_account = PaymentAccountModel.find_by_id(statement.payment_account_id)
             recipients = StatementRecipientsModel.find_all_recipients_for_payment_id(statement.payment_account_id)
             if len(recipients) < 1:
-                current_app.logger.info(f'No recipients found for statement: {statement.payment_account_id}.Skipping sending')
+                current_app.logger.info(f'No recipients found for statement: '
+                                        f'{statement.payment_account_id}.Skipping sending')
                 statement.notification_status_code = NotificationStatus.SKIP.value
                 statement.notification_date = datetime.now()
                 statement.commit()
@@ -74,7 +80,7 @@ class StatementNotificationTask:
             # params.update({'url': params['url'].replace('orgId', payment_account.auth_account_id)})
             try:
                 notify_response = cls.send_email(token, to_emails, template.render(params))
-            except Exception as e:
+            except Exception as e:  # pylint:disable=broad-except
                 current_app.logger.error('<notification failed')
                 current_app.logger.error(e)
                 notify_response = False

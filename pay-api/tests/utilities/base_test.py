@@ -510,3 +510,21 @@ def get_premium_account_payload(payment_method: str = PaymentMethod.DRAWDOWN.val
             'billable': True
         }
     }
+
+
+def get_pad_account_payload(account_id: int = 1234, bank_number: str = '001', transit_number='999',
+                            bank_account='1234567890'):
+    """Return a pad payment account object."""
+    return {
+        'accountId': account_id,
+        'accountName': 'Test Account',
+        'bcolAccountNumber': '1000000',
+        'bcolUserId': 'U100000',
+        'paymentInfo': {
+            'methodOfPayment': PaymentMethod.PAD.value,
+            'billable': True,
+            'bankTransitNumber': transit_number,
+            'bankInstitutionNumber': bank_number,
+            'bankAccountNumber': bank_account
+        }
+    }
