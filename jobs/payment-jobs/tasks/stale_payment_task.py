@@ -47,7 +47,7 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
                     'Stale Transaction Job found records.Payment Id: {}, Transaction Id : {}'.format(
                         transaction.payment_id,
                         transaction.id))
-                TransactionService.update_transaction(transaction.id, '')
+                TransactionService.update_transaction(transaction.id, pay_response_url=None)
                 current_app.logger.info(
                     'Stale Transaction Job Updated records.Payment Id: {}, Transaction Id : {}'.format(
                         transaction.payment_id, transaction.id))
