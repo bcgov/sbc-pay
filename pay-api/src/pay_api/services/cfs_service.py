@@ -53,7 +53,7 @@ class CFSService(OAuthService):
     def validate_bank_account(bank_details: Tuple[Dict[str, Any]]):
         """Validate bank details by invoking CFS validation Service."""
         current_app.logger.debug('<Validating bank account details')
-        validation_url = current_app.config.get('CFS_BASE_URL') + '/validatepayins'
+        validation_url = current_app.config.get('CFS_BASE_URL') + '/cfs/validatepayins'
         bank_details: Dict[str, str] = {
             'accountNumber': bank_details.get('accountNumber', None),
             'branchNumber': bank_details.get('branchNumber', None),
