@@ -41,9 +41,12 @@ class InternalPayService(PaymentSystemService, OAuthService):
         """Return INTERNAL as the system code."""
         return PaymentSystem.INTERNAL.value
 
-    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
-        """Create account internal."""
-        return {}
+    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
+                       **kwargs) -> any:
+        """No Account needed for internal pay."""
+
+    def update_account(self, cfs_account: any, payment_info: Dict[str, Any]) -> any:
+        """No Account needed for direct pay."""
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:

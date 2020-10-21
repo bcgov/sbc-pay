@@ -45,9 +45,10 @@ class CfsAccount(VersionedModel):  # pylint:disable=too-many-instance-attributes
     payment_account = relationship('PaymentAccount', foreign_keys=[account_id], lazy='select')
 
     @classmethod
-    def find_active_by_account_id(cls, account_id: str):
+    def find_effective_by_account_id(cls, account_id: str):
         """Return a Account by id."""
-        return cls.query.filter_by(account_id=account_id, status=CfsAccountStatus.ACTIVE.value).one_or_none()
+        return CfsAccount.query.filter(CfsAccount.account_id == account_id,
+                                       CfsAccount.status != CfsAccountStatus.INACTIVE.value).one_or_none()
 
     @classmethod
     def find_all_pending_accounts(cls):

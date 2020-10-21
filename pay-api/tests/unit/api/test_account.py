@@ -18,13 +18,18 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 
 import json
+from unittest.mock import patch
 
+from requests.exceptions import ConnectionError
+
+from pay_api.exceptions import ServiceUnavailableException
 from pay_api.models.invoice import Invoice
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.schemas import utils as schema_utils
+from pay_api.utils.enums import Role, PaymentMethod
 from tests.utilities.base_test import (
-    get_claims, get_payment_request, get_basic_account_payload, get_premium_account_payload, token_header)
-from pay_api.utils.enums import Role
+    get_claims, get_payment_request, get_basic_account_payload, get_premium_account_payload, token_header,
+    get_pad_account_payload)
 
 
 def test_account_purchase_history(session, client, jwt, app):
@@ -259,6 +264,118 @@ def test_premium_account_update_with_no_create(session, client, jwt, app):
     auth_account_id = 100000
     rv = client.put(f'/api/v1/accounts/{auth_account_id}',
                     data=json.dumps(get_premium_account_payload(account_id=auth_account_id)),
+                    headers=headers)
+
+    assert rv.status_code == 200
+
+
+def test_create_pad_account_when_cfs_down(session, client, jwt, app):
+    """Assert that the payment records are created with 202."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    # Mock ServiceUnavailableException
+    with patch('pay_api.services.oauth_service.OAuthService.post',
+               side_effect=ServiceUnavailableException(ConnectionError('mocked error'))):
+        rv = client.post('/api/v1/accounts', data=json.dumps(get_pad_account_payload()),
+                         headers=headers)
+
+        assert rv.status_code == 202
+
+
+def test_create_pad_account_when_cfs_up(session, client, jwt, app):
+    """Assert that the payment records are created with 201."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_pad_account_payload()),
+                     headers=headers)
+
+    assert rv.status_code == 201
+
+
+def test_create_online_banking_account_when_cfs_down(session, client, jwt, app):
+    """Assert that the payment records are created with 202."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    # Mock ServiceUnavailableException
+    with patch('pay_api.services.oauth_service.OAuthService.post',
+               side_effect=ServiceUnavailableException(ConnectionError('mocked error'))):
+        rv = client.post('/api/v1/accounts',
+                         data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
+                         headers=headers)
+
+        assert rv.status_code == 202
+
+
+def test_create_online_banking_account_when_cfs_up(session, client, jwt, app):
+    """Assert that the payment records are created with 201."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post('/api/v1/accounts',
+                     data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
+                     headers=headers)
+
+    assert rv.status_code == 201
+
+
+def test_create_pad_update_when_cfs_down(session, client, jwt, app):
+    """Assert that the payment records are created with 202."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    # Create account first
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_pad_account_payload()), headers=headers)
+    auth_account_id = rv.json.get('authAccountId')
+
+    # Mock ServiceUnavailableException
+    with patch('pay_api.services.oauth_service.OAuthService.post',
+               side_effect=ServiceUnavailableException(ConnectionError('mocked error'))):
+        rv = client.put(f'/api/v1/accounts/{auth_account_id}',
+                        data=json.dumps(get_pad_account_payload(bank_account='11111111')),
+                        headers=headers)
+
+        assert rv.status_code == 202
+
+
+def test_update_pad_account_when_cfs_up(session, client, jwt, app):
+    """Assert that the payment records are created with 200."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_pad_account_payload()), headers=headers)
+    auth_account_id = rv.json.get('authAccountId')
+    rv = client.put(f'/api/v1/accounts/{auth_account_id}',
+                    data=json.dumps(get_pad_account_payload(bank_account='11111111')),
+                    headers=headers)
+
+    assert rv.status_code == 200
+
+
+def test_update_online_banking_account_when_cfs_down(session, client, jwt, app):
+    """Assert that the payment records are created with 200, as there is no CFS update."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post('/api/v1/accounts',
+                     data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
+                     headers=headers)
+    auth_account_id = rv.json.get('authAccountId')
+    # Mock ServiceUnavailableException
+    with patch('pay_api.services.oauth_service.OAuthService.post',
+               side_effect=ServiceUnavailableException(ConnectionError('mocked error'))):
+        rv = client.put(f'/api/v1/accounts/{auth_account_id}',
+                        data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
+                        headers=headers)
+
+        assert rv.status_code == 200
+
+
+def test_update_online_banking_account_when_cfs_up(session, client, jwt, app):
+    """Assert that the payment records are created with 200."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post('/api/v1/accounts',
+                     data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
+                     headers=headers)
+    auth_account_id = rv.json.get('authAccountId')
+    rv = client.put(f'/api/v1/accounts/{auth_account_id}',
+                    data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
                     headers=headers)
 
     assert rv.status_code == 200

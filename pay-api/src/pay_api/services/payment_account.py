@@ -22,8 +22,7 @@ from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel, PaymentAccountSchema
 from pay_api.models import StatementSettings as StatementSettingsModel
-from pay_api.services.cfs_service import CFSService
-from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, PaymentSystem, StatementFrequency
+from pay_api.utils.enums import PaymentSystem, StatementFrequency
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_str_by_path
 
@@ -53,6 +52,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self._bcol_account: Union[None, str] = None
 
         self._cfs_account_id: Union[None, int] = None
+        self._cfs_account_status: Union[None, str] = None
 
     @property
     def _dao(self):
@@ -70,7 +70,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self.bcol_user_id: str = self._dao.bcol_user_id
         self.bcol_account: str = self._dao.bcol_account
 
-        cfs_account: CfsAccountModel = CfsAccountModel.find_active_by_account_id(self.id)
+        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(self.id)
         if cfs_account:
             self.cfs_account: str = cfs_account.cfs_account
             self.cfs_party: str = cfs_account.cfs_party
@@ -82,6 +82,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             self.bank_branch_number: str = cfs_account.bank_branch_number
             self.bank_account_number: str = cfs_account.bank_account_number
             self.cfs_account_id: int = cfs_account.id
+            self.cfs_account_status: str = cfs_account.status
 
     @property
     def id(self):
@@ -240,6 +241,17 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self._bcol_account = value
         self._dao.bcol_account = value
 
+    @property
+    def cfs_account_status(self):
+        """Return the cfs_account_status."""
+        return self._cfs_account_status
+
+    @cfs_account_status.setter
+    def cfs_account_status(self, value: int):
+        """Set the cfs_account_status."""
+        self._cfs_account_status = value
+        self._dao.cfs_account_status = value
+
     @classmethod
     def create(cls, account_request: Dict[str, Any] = None) -> PaymentAccount:
         """Create new payment account record."""
@@ -284,54 +296,23 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         # 2. Existing payment account:
         # -  If the account was on DIRECT_PAY and switching to Online Banking, and active CFS account is not present.
         # -  If the account was on DRAWDOWN and switching to PAD, and active CFS account is not present
-        cfs_account: CfsAccountModel = CfsAccountModel.find_active_by_account_id(payment_account.id) \
+        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id) \
             if payment_account.id else None
         pay_system = PaymentSystemFactory.create_from_payment_method(payment_method=payment_method)
         if pay_system.get_payment_system_code() == PaymentSystem.PAYBC.value:
             if cfs_account is None:
-                cfs_account_details = pay_system.create_account(name=payment_account.auth_account_name,
-                                                                contact_info=account_request.get('contactInfo'),
-                                                                payment_info=account_request.get('paymentInfo'))
-                if cfs_account_details:
-                    cls._create_cfs_account(cfs_account_details, payment_account)
+                cfs_account = pay_system.create_account(name=payment_account.auth_account_name,
+                                                        contact_info=account_request.get('contactInfo'),
+                                                        payment_info=account_request.get('paymentInfo'))
+                if cfs_account:
+                    cfs_account.payment_account = payment_account
+                    cfs_account.flush()
             # If the account is PAD and bank details changed, then update bank details
-            elif payment_method == PaymentMethod.PAD.value and (
-                    str(payment_info.get('bankInstitutionNumber')) != cfs_account.bank_number or
-                    str(payment_info.get('bankTransitNumber')) != cfs_account.bank_branch_number or
-                    str(payment_info.get('bankAccountNumber')) != cfs_account.bank_account_number):
-                # Make the current CFS Account as INACTIVE in DB
-                cfs_account.status = CfsAccountStatus.INACTIVE.value
-                cfs_account.flush()
-
-                cfs_details = {
-                    'account_number': cfs_account.cfs_account,
-                    'site_number': cfs_account.cfs_site,
-                    'party_number': cfs_account.cfs_party
-                }
-
-                cfs_details.update(CFSService.update_bank_details(party_number=cfs_account.cfs_party,
-                                                                  account_number=cfs_account.cfs_account,
-                                                                  site_number=cfs_account.cfs_site,
-                                                                  payment_info=payment_info))
-
-                cls._create_cfs_account(cfs_details, payment_account)
+            else:
+                # Update details in CFS
+                pay_system.update_account(cfs_account=cfs_account, payment_info=payment_info)
 
         payment_account.save()
-
-    @classmethod
-    def _create_cfs_account(cls, cfs_account_details, payment_account):
-        cfs_account = CfsAccountModel()
-        cfs_account.payment_account = payment_account
-        cfs_account.cfs_account = cfs_account_details.get('account_number')
-        cfs_account.cfs_site = cfs_account_details.get('site_number')
-        cfs_account.cfs_party = cfs_account_details.get('party_number')
-        cfs_account.bank_account_number = cfs_account_details.get('bank_account_number', None)
-        cfs_account.bank_number = cfs_account_details.get('bank_number', None)
-        cfs_account.bank_branch_number = cfs_account_details.get('bank_branch_number', None)
-        cfs_account.payment_instrument_number = cfs_account_details.get('payment_instrument_number', None)
-        cfs_account.status = CfsAccountStatus.ACTIVE.value
-        cfs_account.flush()
-        return cfs_account
 
     @classmethod
     def update(cls, auth_account_id: str, account_request: Dict[str, Any]) -> PaymentAccount:

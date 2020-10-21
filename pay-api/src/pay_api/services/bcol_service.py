@@ -37,10 +37,12 @@ from .payment_line_item import PaymentLineItem
 class BcolService(PaymentSystemService, OAuthService):
     """Service to manage BCOL integration."""
 
-    @user_context
-    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
+    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
+                       **kwargs) -> any:
         """Return an empty value since we don't create BC Online account."""
-        return {}
+
+    def update_account(self, cfs_account: any, payment_info: Dict[str, Any]) -> any:
+        """No BCOL account update."""
 
     def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""

@@ -26,8 +26,10 @@ from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import (
     CFS_ADJ_ACTIVITY_NAME, CFS_BATCH_SOURCE, CFS_CUST_TRX_TYPE, CFS_LINE_TYPE, CFS_TERM_NAME)
-from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem, PaymentMethod, InvoiceStatus, PaymentStatus
+from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem, PaymentMethod, InvoiceStatus, \
+    PaymentStatus, CfsAccountStatus
 from pay_api.utils.util import current_local_time, parse_url_params
+from pay_api.models import CfsAccount as CfsAccountModel
 from .payment_line_item import PaymentLineItem
 
 
@@ -61,9 +63,21 @@ class PaybcService(PaymentSystemService, CFSService):
         """Return the default status for payment when created."""
         return PaymentStatus.CREATED.value
 
-    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
+    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs) -> any:
         """Create account in PayBC."""
-        return self.create_cfs_account(name, contact_info)
+        # Create CFS Account model instance and store the bank details
+        cfs_account = CfsAccountModel()
+        # Create CFS account
+        cfs_account_details = self.create_cfs_account(name, contact_info, receipt_method=None)
+        # Update model with response values
+        cfs_account.cfs_account = cfs_account_details.get('account_number')
+        cfs_account.cfs_site = cfs_account_details.get('site_number')
+        cfs_account.cfs_party = cfs_account_details.get('party_number')
+        cfs_account.status = CfsAccountStatus.ACTIVE.value
+        return cfs_account
+
+    def update_account(self, cfs_account: any, payment_info: Dict[str, Any]) -> any:
+        """No BCOL account update."""
 
     def complete_post_invoice(self, invoice_id: int, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""

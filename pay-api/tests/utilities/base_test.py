@@ -18,6 +18,7 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 """
 
 from datetime import datetime
+from random import randrange
 
 from pay_api.models import (CfsAccount,
                             Invoice,
@@ -498,7 +499,8 @@ def get_basic_account_payload(payment_method: str = PaymentMethod.DIRECT_PAY.val
     }
 
 
-def get_premium_account_payload(payment_method: str = PaymentMethod.DRAWDOWN.value, account_id: int = 1234):
+def get_premium_account_payload(payment_method: str = PaymentMethod.DRAWDOWN.value,
+                                account_id: int = randrange(999999)):
     """Return a premium payment account object."""
     return {
         'accountId': account_id,
@@ -512,7 +514,7 @@ def get_premium_account_payload(payment_method: str = PaymentMethod.DRAWDOWN.val
     }
 
 
-def get_pad_account_payload(account_id: int = 1234, bank_number: str = '001', transit_number='999',
+def get_pad_account_payload(account_id: int = randrange(999999), bank_number: str = '001', transit_number='999',
                             bank_account='1234567890'):
     """Return a pad payment account object."""
     return {
