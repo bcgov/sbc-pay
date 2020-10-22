@@ -72,7 +72,6 @@ class PadService(PaymentSystemService, CFSService):
             cfs_account.status = CfsAccountStatus.ACTIVE.value
 
         except ServiceUnavailableException as e:
-            print('Inside catch')
             cfs_account.status = CfsAccountStatus.PENDING.value
             current_app.logger.warning(f'CFS Error {e}')
 
