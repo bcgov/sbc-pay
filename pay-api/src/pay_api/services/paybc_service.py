@@ -76,8 +76,8 @@ class PaybcService(PaymentSystemService, CFSService):
         cfs_account.status = CfsAccountStatus.ACTIVE.value
         return cfs_account
 
-    def update_account(self, cfs_account: any, payment_info: Dict[str, Any]) -> any:
-        """No BCOL account update."""
+    def update_account(self, name: str, cfs_account: any, payment_info: Dict[str, Any]) -> any:
+        """No CFS account update."""
 
     def complete_post_invoice(self, invoice_id: int, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""

@@ -40,7 +40,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Create account in payment system."""
 
     @abstractmethod
-    def update_account(self, cfs_account: CfsAccountModel, payment_info: Dict[str, Any]) -> CfsAccountModel:
+    def update_account(self, name: str, cfs_account: CfsAccountModel, payment_info: Dict[str, Any]) -> CfsAccountModel:
         """Update account in payment system."""
 
     @abstractmethod

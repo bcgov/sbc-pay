@@ -78,7 +78,7 @@ class PadService(PaymentSystemService, CFSService):
 
         return cfs_account
 
-    def update_account(self, cfs_account: CfsAccountModel, payment_info: Dict[str, Any]) -> CfsAccountModel:
+    def update_account(self, name: str, cfs_account: CfsAccountModel, payment_info: Dict[str, Any]) -> CfsAccountModel:
         """Update account in CFS."""
         if str(payment_info.get('bankInstitutionNumber')) != cfs_account.bank_number or \
                 str(payment_info.get('bankTransitNumber')) != cfs_account.bank_branch_number or \
@@ -99,7 +99,8 @@ class PadService(PaymentSystemService, CFSService):
 
             try:
                 # Update bank information in CFS
-                bank_details = CFSService.update_bank_details(party_number=cfs_account.cfs_party,
+                bank_details = CFSService.update_bank_details(name=name,
+                                                              party_number=cfs_account.cfs_party,
                                                               account_number=cfs_account.cfs_account,
                                                               site_number=cfs_account.cfs_site,
                                                               payment_info=payment_info)

@@ -310,7 +310,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             # If the account is PAD and bank details changed, then update bank details
             else:
                 # Update details in CFS
-                pay_system.update_account(cfs_account=cfs_account, payment_info=payment_info)
+                pay_system.update_account(name=payment_account.auth_account_name, cfs_account=cfs_account,
+                                          payment_info=payment_info)
 
         payment_account.save()
 

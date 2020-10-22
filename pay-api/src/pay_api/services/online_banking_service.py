@@ -69,7 +69,7 @@ class OnlineBankingService(PaymentSystemService, CFSService):
 
         return cfs_account
 
-    def update_account(self, cfs_account: CfsAccountModel, payment_info: Dict[str, Any]) -> CfsAccountModel:
+    def update_account(self, name: str, cfs_account: CfsAccountModel, payment_info: Dict[str, Any]) -> CfsAccountModel:
         """No CFS update needed for online banking account update yet."""
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,

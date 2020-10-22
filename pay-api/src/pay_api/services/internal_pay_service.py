@@ -45,7 +45,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
                        **kwargs) -> any:
         """No Account needed for internal pay."""
 
-    def update_account(self, cfs_account: any, payment_info: Dict[str, Any]) -> any:
+    def update_account(self, name: str, cfs_account: any, payment_info: Dict[str, Any]) -> any:
         """No Account needed for direct pay."""
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
