@@ -191,7 +191,7 @@ def test_payment_creation_when_paybc_down(session, client, jwt, app):
 
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
         rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
-        assert rv.status_code == 400
+        assert rv.status_code == 503
 
 
 def test_zero_dollar_payment_creation(session, client, jwt, app):

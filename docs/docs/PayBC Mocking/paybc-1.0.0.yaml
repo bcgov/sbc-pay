@@ -468,6 +468,47 @@ paths:
         examples:
           inv_info:
             value: 10021
+  '/cfs/validatepayins/':
+    post:
+      tags:
+        - Bank Validation
+      summary: Bank Validation Endpoint
+      description: Validates bank info.
+      operationId: Bank_validation_POST
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Bank_info'
+        required: true
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              examples:
+                '2001':
+                  value:
+                    bank_number: '2001'
+                    bank_name: 'sawith'
+                    branch_number: '00720'
+                    transit_address: 'ds'
+                    account_number: '1234567'
+                    CAS-Returned-Messages: '0001 - Bank Number is Invalid'
+                '2002':
+                  value:
+                    bank_number: '2002'
+                    bank_name: 'sa'
+                    branch_number: '00720'
+                    transit_address: 'ds'
+                    account_number: '1234567'
+                    CAS-Returned-Messages: '0001 - Bank Number is Valids'
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   '/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/rcpts/':
     post:
       tags:
@@ -2249,3 +2290,36 @@ components:
                   type: string
                 amount_to_apply:
                   type: string
+    Bank_info:
+      type: object
+      properties:
+        accountNumber:
+          type: string
+          description: Account Number.
+        bankNumber:
+          type: string
+          description: Bank Number.
+        branchNumber:
+          type: string
+          description: Branch Number.
+    Bank_info_response:
+      type: object
+      properties:
+        bank_number:
+          type: string
+          description: Bank Number.
+        bank_name:
+          type: string
+          description: Bank Name.
+        branch_number:
+          type: string
+          description: Branch Number.
+        transit_address:
+          type: string
+          description: Transit Address.
+        account_number:
+          type: string
+          description: Account Number.
+        CAS-Returned-Messages:
+          type: string
+          description: CAS Returned Message.
