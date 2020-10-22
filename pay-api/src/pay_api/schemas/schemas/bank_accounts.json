@@ -5,7 +5,7 @@
   "required": [
   ],
   "properties": {
-    "accountId": {
+    "accountNumber": {
       "$id": "#/properties/accountNumber",
       "type": "string",
       "title": "Customers Bank Account Number",
@@ -14,7 +14,7 @@
       ],
       "pattern": "^[a-zA-Z0-9]+$"
     },
-    "accountName": {
+    "branchNumber": {
       "$id": "#/properties/branchNumber",
       "type": "string",
       "title": "Customers Bank Branch number",
@@ -23,7 +23,7 @@
       ],
       "pattern": "^[a-zA-Z0-9]+$"
     },
-    "bcolAccountNumber": {
+    "bankNumber": {
       "$id": "#/properties/bankNumber",
       "type": "string",
       "title": "Bank Number",

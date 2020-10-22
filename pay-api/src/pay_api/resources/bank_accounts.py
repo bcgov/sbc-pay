@@ -17,7 +17,7 @@ from http import HTTPStatus
 from flask import current_app, jsonify, request
 from flask_restplus import Namespace, Resource, cors
 
-from pay_api.exceptions import BusinessException, error_to_response
+from pay_api.exceptions import BusinessException, error_to_response, ServiceUnavailableException
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import CFSService
 from pay_api.utils.auth import jwt as _jwt
@@ -36,7 +36,7 @@ class BankAccounts(Resource):
     @cors.crossdomain(origin='*')
     @_jwt.requires_auth
     def post():
-        """Create the payment account records."""
+        """Validate the bank account details against CFS."""
         current_app.logger.info('<BankAccounts.post')
         request_json = request.get_json()
         current_app.logger.debug(request_json)
@@ -48,6 +48,10 @@ class BankAccounts(Resource):
         try:
             response, status = CFSService.validate_bank_account(request_json), HTTPStatus.OK
         except BusinessException as exception:
+            current_app.logger.error(exception)
+            return exception.response()
+        except ServiceUnavailableException as exception:
+            current_app.logger.error(exception)
             return exception.response()
         current_app.logger.debug('>Account.post')
         return jsonify(response), status
