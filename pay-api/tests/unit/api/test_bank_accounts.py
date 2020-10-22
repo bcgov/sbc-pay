@@ -39,4 +39,3 @@ def test_bank_account_valid_bank(session, client, jwt, app):
                      headers=headers)
     assert rv.status_code == 200
     print(rv.json)
-
