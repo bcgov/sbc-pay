@@ -112,9 +112,12 @@ class DirectPayService(PaymentSystemService, OAuthService):
         """Return the default status for payment when created."""
         return PaymentStatus.CREATED.value
 
-    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
-        """Return an empty value since Direct Pay doesnt need any account."""
-        return {}
+    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
+                       **kwargs) -> any:
+        """No Account needed for direct pay."""
+
+    def update_account(self, name: str, cfs_account: any, payment_info: Dict[str, Any]) -> any:
+        """No Account needed for direct pay."""
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:

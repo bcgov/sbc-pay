@@ -29,6 +29,7 @@ def test_base_payment_system(session):
         (PaymentSystemService, object),
         {
             'create_account': lambda self: print('Inside create_account'),
+            'update_account': lambda self: print('Inside update_account'),
             'create_invoice': lambda self: print('Inside create_invoice'),
             'update_invoice': lambda self: print('Inside update_invoice'),
             'cancel_invoice': lambda self: print('Inside cancel_invoice'),
