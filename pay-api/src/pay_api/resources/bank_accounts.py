@@ -41,7 +41,7 @@ class BankAccounts(Resource):
         request_json = request.get_json()
         current_app.logger.debug(request_json)
         # Validate the input request
-        valid_format, errors = schema_utils.validate(request_json, 'bank_accounts')
+        valid_format, errors = schema_utils.validate(request_json, 'payment_info')
 
         if not valid_format:
             return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))

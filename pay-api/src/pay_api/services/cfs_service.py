@@ -55,9 +55,9 @@ class CFSService(OAuthService):
         current_app.logger.debug('<Validating bank account details')
         validation_url = current_app.config.get('CFS_BASE_URL') + '/cfs/validatepayins/'
         bank_details: Dict[str, str] = {
-            'accountNumber': bank_details.get('accountNumber', None),
-            'branchNumber': bank_details.get('branchNumber', None),
-            'bankNumber': bank_details.get('bankNumber', None),
+            'accountNumber': bank_details.get('bankAccountNumber', None),
+            'branchNumber': bank_details.get('bankTransitNumber', None),
+            'bankNumber': bank_details.get('bankInstitutionNumber', None),
         }
 
         access_token = CFSService.get_token().json().get('access_token')

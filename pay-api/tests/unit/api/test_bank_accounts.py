@@ -29,9 +29,9 @@ def test_bank_account_valid_bank(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     valid_bank_details = {
-        'bankNumber': '2001',
-        'branchNumber': '00720',
-        'accountNumber': '1234567',
+        'bankInstitutionNumber': '2001',
+        'bankTransitNumber': '00720',
+        'bankAccountNumber': '1234567',
 
     }
 

@@ -30,9 +30,9 @@ cfs_service = CFSService()
 def test_validate_bank_account_valid(session):
     """Test create_account."""
     input_bank_details = {
-        'bankInstitutionNumber': 111,
-        'bankTransitNumber': 222,
-        'bankAccountNumber': 33333333
+        'bankInstitutionNumber': '2001',
+        'bankTransitNumber': '00720',
+        'bankAccountNumber': '1234567',
     }
     with patch('pay_api.services.oauth_service.requests.post') as mock_post:
         # Configure the mock to return a response with an OK status code.
@@ -56,9 +56,9 @@ def test_validate_bank_account_valid(session):
 def test_validate_bank_account_invalid(session):
     """Test create_account."""
     input_bank_details = {
-        'bankInstitutionNumber': 111,
-        'bankTransitNumber': 222,
-        'bankAccountNumber': 33333333
+        'bankInstitutionNumber': '2001',
+        'bankTransitNumber': '00720',
+        'bankAccountNumber': '1234567',
     }
     with patch('pay_api.services.oauth_service.requests.post') as mock_post:
         # Configure the mock to return a response with an OK status code.
