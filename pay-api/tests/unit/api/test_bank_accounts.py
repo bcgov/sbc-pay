@@ -23,14 +23,14 @@ from tests.utilities.base_test import (
     get_claims, token_header)
 
 
-def test_bank_account_invalid_bank(session, client, jwt, app):
+def test_bank_account_valid_bank(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     valid_bank_details = {
         'bankNumber': '2001',
-        'branchNumber': '00720  ',
+        'branchNumber': '00720',
         'accountNumber': '1234567',
 
     }
@@ -38,5 +38,5 @@ def test_bank_account_invalid_bank(session, client, jwt, app):
     rv = client.post('/api/v1/bank-accounts/verifications', data=json.dumps(valid_bank_details),
                      headers=headers)
     assert rv.status_code == 200
-    assert rv.json.get('message')[0] == 'Bank Number is Invalid'
-    assert rv.json.get('isValid') is False
+    print(rv.json)
+
