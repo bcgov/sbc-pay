@@ -105,15 +105,24 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     AUTH_WEB_STATEMENT_URL = os.getenv('AUTH_WEB_STATEMENT_URL', 'account/orgId/settings/statements')
     REGISTRIES_LOGO_IMAGE_NAME = os.getenv('REGISTRIES_LOGO_IMAGE_NAME', 'bc_logo_for_email.png')
 
-    TESTING = False
-    DEBUG = True
-
     # NATS Config
     NATS_SERVERS = os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(',')
     NATS_CLIENT_NAME = os.getenv('NATS_CLIENT_NAME', 'entity.filing.worker')
     NATS_CLUSTER_ID = os.getenv('NATS_CLUSTER_ID', 'test-cluster')
     NATS_SUBJECT = os.getenv('NATS_SUBJECT', 'entity.filings')
     NATS_QUEUE = os.getenv('NATS_QUEUE', 'filing-worker')
+
+    # NATS Config for account events
+    NATS_ACCOUNT_CLIENT_NAME = os.getenv('NATS_ACCOUNT_CLIENT_NAME', 'account.events.worker')
+    NATS_ACCOUNT_SUBJECT = os.getenv('NATS_ACCOUNT_SUBJECT', 'account.events')
+
+    # Auth API Endpoint
+    AUTH_API_ENDPOINT = os.getenv('AUTH_API_ENDPOINT')
+
+    CFS_ACCOUNT_DESCRIPTION = os.getenv('CFS_ACCOUNT_DESCRIPTION', 'BCR')
+
+    TESTING = False
+    DEBUG = True
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
@@ -141,6 +150,13 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
                                         ))
 
     SERVER_NAME = 'localhost:5001'
+
+    AUTH_API_ENDPOINT = 'http://localhost:8080/auth-api/'
+
+    CFS_BASE_URL = 'http://localhost:8080/paybc-api'
+    CFS_CLIENT_ID = 'TEST'
+    CFS_CLIENT_SECRET = 'TEST'
+    USE_DOCKER_MOCK = os.getenv('USE_DOCKER_MOCK', None)
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

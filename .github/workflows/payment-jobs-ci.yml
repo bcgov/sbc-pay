@@ -20,6 +20,7 @@ jobs:
       DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
       TEST_NATS_DOCKER: "YES"
       STAN_CLUSTER_NAME: "test-cluster"
+      USE_DOCKER_MOCK: "YES"
 
     strategy:
       matrix:

@@ -135,3 +135,24 @@ def session(app, db):  # pylint: disable=redefined-outer-name, invalid-name
         # This instruction rollsback any commit that were executed in the tests.
         txn.rollback()
         conn.close()
+
+
+@pytest.fixture(scope='session', autouse=True)
+def auto(docker_services, app):
+    """Spin up docker instances."""
+    if app.config['USE_DOCKER_MOCK']:
+        docker_services.start('bcol')
+        docker_services.start('auth')
+        docker_services.start('paybc')
+        docker_services.start('reports')
+        docker_services.start('proxy')
+        docker_services.start('nats')
+
+
+@pytest.fixture(scope='session')
+def docker_compose_files(pytestconfig):
+    """Get the docker-compose.yml absolute path."""
+    import os
+    return [
+        os.path.join(str(pytestconfig.rootdir), 'tests/docker', 'docker-compose.yml')
+    ]

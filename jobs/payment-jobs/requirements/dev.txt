@@ -21,3 +21,7 @@ coverage
 pylint
 pylint-flask
 #attrs==19.1.0
+
+# docker
+lovely-pytest-docker
+pytest-asyncio
