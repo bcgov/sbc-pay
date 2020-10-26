@@ -487,22 +487,30 @@ paths:
           content:
             application/json:
               examples:
-                '2001':
+                '0001':
                   value:
-                    bank_number: '2001'
-                    bank_name: 'sawith'
+                    bank_number: '0001'
+                    bank_name: 'BANK OF MONTREAL'
                     branch_number: '00720'
-                    transit_address: 'ds'
+                    transit_address: 'DATA CENTRE,PRINCE ANDREW CENTRE,,DON MILLS,ON,M3C 2H4'
                     account_number: '1234567'
-                    CAS-Returned-Messages: '0001 - Bank Number is Invalid'
-                '2002':
+                    CAS-Returned-Messages: 'VALID'
+                '0002':
                   value:
-                    bank_number: '2002'
-                    bank_name: 'sa'
+                    bank_number: '0002'
+                    bank_name: ''
                     branch_number: '00720'
-                    transit_address: 'ds'
+                    transit_address: ''
                     account_number: '1234567'
-                    CAS-Returned-Messages: '0001 - Bank Number is Valids'
+                    CAS-Returned-Messages: '0001 - Bank Number is Invalid.'
+                '0003':
+                  value:
+                    bank_number: '0003'
+                    bank_name: ''
+                    branch_number: '00720'
+                    transit_address: ''
+                    account_number: '1234567'
+                    CAS-Returned-Messages: '0003 - Account number has invalid characters.0005 - Account number has non-numeric characters.0006 - Account number length is not valid for this bank.'
         '400':
           description: BadRequest
           content:
