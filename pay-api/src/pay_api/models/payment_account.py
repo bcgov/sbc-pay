@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Payment Account data."""
+from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey
 
 from .base_model import VersionedModel
@@ -56,3 +57,5 @@ class PaymentAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestor
         """Returns all the fields from the SQLAlchemy class."""
 
         model = PaymentAccount
+
+    payment_method = fields.String(data_key='payment_method')
