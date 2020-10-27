@@ -31,7 +31,7 @@ def test_create_account(session):
     }
     account = pad_service.create_account(name='Test Account', contact_info={}, payment_info=payment_info)
     assert account
-    assert account.get('bank_number') == payment_info.get('bankInstitutionNumber')
+    assert account.bank_number == payment_info.get('bankInstitutionNumber')
 
 
 def test_get_payment_system_url(session):

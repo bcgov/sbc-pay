@@ -38,6 +38,7 @@ from .meta import API as META_API
 from .ops import API as OPS_API
 from .payment import API as PAY_API
 from .transaction import API as TRANSACTION_API
+from .bank_accounts import API as BANK_ACCOUNTS_API
 
 __all__ = ('API_BLUEPRINT', 'OPS_BLUEPRINT')
 
@@ -83,5 +84,6 @@ API.add_namespace(ACCOUNTS_API, path='/accounts')
 API.add_namespace(ACCOUNT_STATEMENTS_API, path='/accounts/<string:account_id>/statements')
 API.add_namespace(ACCOUNT_STATEMENTS_SETTINGS_API, path='/accounts/<string:account_id>/statements/settings')
 API.add_namespace(ACCOUNT_STATEMENT_NOTIFICATIONS_API, path='/accounts/<string:account_id>/statements/notifications')
+API.add_namespace(BANK_ACCOUNTS_API, path='/bank-accounts/verifications')
 
 API.add_namespace(CODES_API, path='/codes')

@@ -25,7 +25,7 @@ from pay_api.services.payment_account import PaymentAccount as PaymentAccountSer
 from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE
-from pay_api.utils.enums import ContentType, Role
+from pay_api.utils.enums import ContentType, Role, CfsAccountStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
@@ -53,11 +53,14 @@ class Accounts(Resource):
         if not valid_format:
             return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
         try:
-            response, status = PaymentAccountService.create(request_json).asdict(), HTTPStatus.CREATED
+            response = PaymentAccountService.create(request_json)
+            status = HTTPStatus.ACCEPTED \
+                if response.cfs_account_id and response.cfs_account_status == CfsAccountStatus.PENDING.value \
+                else HTTPStatus.CREATED
         except BusinessException as exception:
             return exception.response()
         current_app.logger.debug('>Account.post')
-        return jsonify(response), status
+        return jsonify(response.asdict()), status
 
 
 @cors_preflight('PUT,GET')
@@ -80,9 +83,13 @@ class Account(Resource):
         if not valid_format:
             return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
-        response, status = PaymentAccountService.update(account_number, request_json).asdict(), HTTPStatus.OK
+        response = PaymentAccountService.update(account_number, request_json)
+        status = HTTPStatus.ACCEPTED \
+            if response.cfs_account_id and response.cfs_account_status == CfsAccountStatus.PENDING.value \
+            else HTTPStatus.OK
+
         current_app.logger.debug('>Account.post')
-        return jsonify(response), status
+        return jsonify(response.asdict()), status
 
     @staticmethod
     @cors.crossdomain(origin='*')

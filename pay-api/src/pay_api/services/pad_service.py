@@ -13,15 +13,18 @@
 # limitations under the License.
 """Service to manage CFS Pre Authorized Debit Payments."""
 from typing import Any, Dict
+
 from flask import current_app
 
+from pay_api.exceptions import ServiceUnavailableException
+from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.services.base_payment_system import PaymentSystemService
-from pay_api.services.invoice import Invoice
 from pay_api.services.cfs_service import CFSService
+from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentSystem, PaymentStatus
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_DAILY
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentSystem, PaymentStatus, CfsAccountStatus
 from .payment_line_item import PaymentLineItem
 
 
@@ -48,10 +51,67 @@ class PadService(PaymentSystemService, CFSService):
         """Return the default status for payment when created."""
         return PaymentStatus.CREATED.value
 
-    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs):
+    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
+                       **kwargs) -> CfsAccountModel:
         """Create an account for the PAD transactions."""
-        return self.create_cfs_account(name, contact_info, payment_info=payment_info,
-                                       receipt_method=RECEIPT_METHOD_PAD_DAILY)
+        # Create CFS Account model instance and store the bank details
+        cfs_account = CfsAccountModel()
+        cfs_account.bank_number = payment_info.get('bankInstitutionNumber')
+        cfs_account.bank_branch_number = payment_info.get('bankTransitNumber')
+        cfs_account.bank_account_number = payment_info.get('bankAccountNumber')
+
+        try:
+            # Create CFS account
+            cfs_account_details = self.create_cfs_account(name, contact_info, payment_info=payment_info,
+                                                          receipt_method=RECEIPT_METHOD_PAD_DAILY)
+            # Update model with response values
+            cfs_account.payment_instrument_number = cfs_account_details.get('payment_instrument_number', None)
+            cfs_account.cfs_account = cfs_account_details.get('account_number')
+            cfs_account.cfs_site = cfs_account_details.get('site_number')
+            cfs_account.cfs_party = cfs_account_details.get('party_number')
+            cfs_account.status = CfsAccountStatus.ACTIVE.value
+
+        except ServiceUnavailableException as e:
+            cfs_account.status = CfsAccountStatus.PENDING.value
+            current_app.logger.warning(f'CFS Error {e}')
+
+        return cfs_account
+
+    def update_account(self, name: str, cfs_account: CfsAccountModel, payment_info: Dict[str, Any]) -> CfsAccountModel:
+        """Update account in CFS."""
+        if str(payment_info.get('bankInstitutionNumber')) != cfs_account.bank_number or \
+                str(payment_info.get('bankTransitNumber')) != cfs_account.bank_branch_number or \
+                str(payment_info.get('bankAccountNumber')) != cfs_account.bank_account_number:
+            # Make the current CFS Account as INACTIVE in DB
+            cfs_account.status = CfsAccountStatus.INACTIVE.value
+            cfs_account.flush()
+
+            # Create new CFS Account
+            updated_cfs_account = CfsAccountModel()
+            updated_cfs_account.bank_account_number = payment_info.get('bankAccountNumber')
+            updated_cfs_account.bank_number = payment_info.get('bankInstitutionNumber')
+            updated_cfs_account.bank_branch_number = payment_info.get('bankTransitNumber')
+            updated_cfs_account.cfs_site = cfs_account.cfs_site
+            updated_cfs_account.cfs_party = cfs_account.cfs_party
+            updated_cfs_account.cfs_account = cfs_account.cfs_account
+            updated_cfs_account.payment_account = cfs_account.payment_account
+
+            try:
+                # Update bank information in CFS
+                bank_details = CFSService.update_bank_details(name=name,
+                                                              party_number=cfs_account.cfs_party,
+                                                              account_number=cfs_account.cfs_account,
+                                                              site_number=cfs_account.cfs_site,
+                                                              payment_info=payment_info)
+                updated_cfs_account.payment_instrument_number = bank_details.get('payment_instrument_number', None)
+                updated_cfs_account.status = CfsAccountStatus.ACTIVE.value
+            except ServiceUnavailableException as e:
+                updated_cfs_account.status = CfsAccountStatus.PENDING.value
+                current_app.logger.warning(f'CFS Error {e}')
+
+            updated_cfs_account.flush()
+            return updated_cfs_account
+        return cfs_account
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
