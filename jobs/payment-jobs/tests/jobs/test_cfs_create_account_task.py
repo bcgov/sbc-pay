@@ -19,10 +19,10 @@ Test-Suite to ensure that the CreateAccountTask is working as expected.
 
 from pay_api.models import CfsAccount, PaymentAccount
 from pay_api.services.pad_service import PadService
+from pay_api.services.online_banking_service import OnlineBankingService
 from pay_api.utils.enums import CfsAccountStatus
 
 from tasks.cfs_create_account_task import CreateAccountTask
-
 from .factory import factory_create_online_banking_account, factory_create_pad_account
 
 
@@ -44,6 +44,7 @@ def test_create_pad_account(session):
     assert cfs_account.cfs_party
     assert cfs_account.cfs_site
     assert cfs_account.cfs_account
+    assert cfs_account.payment_instrument_number
 
 
 def test_create_online_banking_account(session):
@@ -58,15 +59,35 @@ def test_create_online_banking_account(session):
     assert cfs_account.cfs_party
     assert cfs_account.cfs_site
     assert cfs_account.cfs_account
+    assert cfs_account.payment_instrument_number is None
 
 
-def test_update_pad_account(session):
+def test_update_online_banking_account(session):
     """Test update account."""
     # Create a pending account first, then call the job
     account = factory_create_online_banking_account(auth_account_id='2')
     CreateAccountTask.create_accounts()
     account = PaymentAccount.find_by_id(account.id)
     cfs_account = CfsAccount.find_effective_by_account_id(account.id)
+
+    # Update account, which shouldn't change any details
+    OnlineBankingService().update_account(name='Test', cfs_account=cfs_account, payment_info=None)
+    updated_cfs_account = CfsAccount.find_effective_by_account_id(account.id)
+
+    assert updated_cfs_account.status == CfsAccountStatus.ACTIVE.value
+    assert cfs_account.id == updated_cfs_account.id
+
+
+def test_update_pad_account(session):
+    """Test update account."""
+    # Create a pending account first, then call the job
+    account = factory_create_pad_account(auth_account_id='2')
+    CreateAccountTask.create_accounts()
+
+    account = PaymentAccount.find_by_id(account.id)
+    cfs_account = CfsAccount.find_effective_by_account_id(account.id)
+
+    assert cfs_account.payment_instrument_number
 
     # Now update the account.
     new_payment_details = {
@@ -88,3 +109,4 @@ def test_update_pad_account(session):
 
     assert cfs_account.status == CfsAccountStatus.INACTIVE.value
     assert updated_cfs_account.status == CfsAccountStatus.ACTIVE.value
+    assert updated_cfs_account.payment_instrument_number

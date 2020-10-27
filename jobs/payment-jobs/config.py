@@ -84,8 +84,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CFS_BASE_URL = os.getenv('CFS_BASE_URL')
     CFS_CLIENT_ID = os.getenv('CFS_CLIENT_ID')
     CFS_CLIENT_SECRET = os.getenv('CFS_CLIENT_SECRET')
-    CONNECT_TIMEOUT = int(os.getenv('CONNECT_TIMEOUT', default=10))
-    GENERATE_RANDOM_INVOICE_NUMBER = os.getenv('CFS_GENERATE_RANDOM_INVOICE_NUMBER', default='False')
+    CONNECT_TIMEOUT = int(os.getenv('CONNECT_TIMEOUT', 10))
+    GENERATE_RANDOM_INVOICE_NUMBER = os.getenv('CFS_GENERATE_RANDOM_INVOICE_NUMBER', 'False')
 
     # legislative timezone for future effective dating
     LEGISLATIVE_TIMEZONE = os.getenv('LEGISLATIVE_TIMEZONE', 'America/Vancouver')
@@ -107,14 +107,12 @@ class _Config(object):  # pylint: disable=too-few-public-methods
 
     # NATS Config
     NATS_SERVERS = os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(',')
-    NATS_CLIENT_NAME = os.getenv('NATS_CLIENT_NAME', 'entity.filing.worker')
     NATS_CLUSTER_ID = os.getenv('NATS_CLUSTER_ID', 'test-cluster')
-    NATS_SUBJECT = os.getenv('NATS_SUBJECT', 'entity.filings')
-    NATS_QUEUE = os.getenv('NATS_QUEUE', 'filing-worker')
+    NATS_QUEUE = os.getenv('NATS_QUEUE', 'account-worker')
 
     # NATS Config for account events
-    NATS_ACCOUNT_CLIENT_NAME = os.getenv('NATS_ACCOUNT_CLIENT_NAME', 'account.events.worker')
-    NATS_ACCOUNT_SUBJECT = os.getenv('NATS_ACCOUNT_SUBJECT', 'account.events')
+    NATS_ACCOUNT_CLIENT_NAME = os.getenv('NATS_CLIENT_NAME', 'account.events.worker')
+    NATS_ACCOUNT_SUBJECT = os.getenv('NATS_SUBJECT', 'account.events')
 
     # Auth API Endpoint
     AUTH_API_ENDPOINT = os.getenv('AUTH_API_ENDPOINT')

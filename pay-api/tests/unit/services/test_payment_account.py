@@ -65,9 +65,9 @@ def test_create_pad_account(session):
     assert pad_account.bank_branch_number == get_pad_account_payload().get('paymentInfo').get('bankTransitNumber')
     assert pad_account.payment_method == PaymentMethod.PAD.value
     assert pad_account.cfs_account_id
-    # assert pad_account.cfs_account
-    # assert pad_account.cfs_party
-    # assert pad_account.cfs_site
+    assert pad_account.cfs_account is None
+    assert pad_account.cfs_party is None
+    assert pad_account.cfs_site is None
 
 
 def test_create_pad_account_to_drawdown(session):
@@ -90,9 +90,9 @@ def test_create_bcol_account_to_pad(session):
     assert bcol_account.auth_account_id == bcol_account.auth_account_id
     assert pad_account.payment_method == PaymentMethod.PAD.value
     assert pad_account.cfs_account_id
-    # assert pad_account.cfs_account
-    # assert pad_account.cfs_party
-    # assert pad_account.cfs_site
+    assert pad_account.cfs_account is None
+    assert pad_account.cfs_party is None
+    assert pad_account.cfs_site is None
 
 
 def test_create_pad_to_bcol_to_pad(session):
@@ -120,10 +120,10 @@ def test_create_online_banking_account(session):
         get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value))
     assert online_banking_account.payment_method == PaymentMethod.ONLINE_BANKING.value
     assert online_banking_account.cfs_account_id
-    # assert online_banking_account.cfs_account
-    # assert online_banking_account.cfs_party
-    # assert online_banking_account.cfs_site
-    # assert online_banking_account.bank_number is None
+    assert online_banking_account.cfs_account is None
+    assert online_banking_account.cfs_party is None
+    assert online_banking_account.cfs_site is None
+    assert online_banking_account.bank_number is None
 
 
 def test_create_online_credit_account(session):
@@ -140,10 +140,10 @@ def test_update_credit_to_online_banking(session):
         payment_method=PaymentMethod.ONLINE_BANKING.value))
     assert online_banking_account.payment_method == PaymentMethod.ONLINE_BANKING.value
     assert online_banking_account.cfs_account_id
-    # assert online_banking_account.cfs_account
-    # assert online_banking_account.cfs_party
-    # assert online_banking_account.cfs_site
-    # assert online_banking_account.bank_number is None
+    assert online_banking_account.cfs_account is None
+    assert online_banking_account.cfs_party is None
+    assert online_banking_account.cfs_site is None
+    assert online_banking_account.bank_number is None
 
 
 def test_update_online_banking_to_credit(session):

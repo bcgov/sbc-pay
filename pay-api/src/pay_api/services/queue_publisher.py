@@ -32,6 +32,7 @@ def publish_response(payload: Dict[str, any], client_name: str = None, subject: 
 
 # Connection and Queue configuration.
 def nats_connection_options(client_name: str):
+    """Return nats connection options."""
     return {
         'servers': current_app.config.get('NATS_SERVERS'),
         'error_cb': error_cb,
@@ -41,6 +42,7 @@ def nats_connection_options(client_name: str):
 
 
 def stan_connection_options(nats_con: NATS):
+    """Return stan connection options."""
     return {
         'cluster_id': current_app.config.get('NATS_CLUSTER_ID'),
         'client_id': str(random.SystemRandom().getrandbits(0x58)),

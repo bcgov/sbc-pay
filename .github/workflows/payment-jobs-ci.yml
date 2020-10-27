@@ -18,9 +18,14 @@ jobs:
     if: github.repository == 'bcgov/sbc-pay'
     env:
       DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
-      TEST_NATS_DOCKER: "YES"
-      STAN_CLUSTER_NAME: "test-cluster"
+      NATS_QUEUE: "account-worker"
+      NATS_CLUSTER_ID: "test-cluster"
+      NATS_CLIENT_NAME: "account.events.worker"
+      NATS_SUBJECT: "account.events"
       USE_DOCKER_MOCK: "YES"
+      JWT_OIDC_ISSUER: "http://localhost:8081/auth/realms/demo"
+      KEYCLOAK_SERVICE_ACCOUNT_ID: "sbc-auth-admin"
+      KEYCLOAK_SERVICE_ACCOUNT_SECRET: "2222222222"
 
     strategy:
       matrix:
