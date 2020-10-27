@@ -29,9 +29,9 @@ def test_bank_account_valid_bank(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     valid_bank_details = {
-        'bankInstitutionNumber': '0001',
+        'bankInstitutionNumber': '1234567',
         'bankTransitNumber': '00720',
-        'bankAccountNumber': '1234567',
+        'bankAccountNumber': '0001',
 
     }
 
@@ -47,9 +47,9 @@ def test_bank_account_invalid_bank_one_error(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     valid_bank_details = {
-        'bankInstitutionNumber': '0002',
+        'bankInstitutionNumber': '1234567',
         'bankTransitNumber': '00720',
-        'bankAccountNumber': '1234567',
+        'bankAccountNumber': '0002',
 
     }
 
@@ -66,9 +66,9 @@ def test_bank_account_invalid_bank_multiple_error(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     valid_bank_details = {
-        'bankInstitutionNumber': '0003',
+        'bankInstitutionNumber': '1234567',
         'bankTransitNumber': '00720',
-        'bankAccountNumber': '1234567',
+        'bankAccountNumber': '0003',
 
     }
 
