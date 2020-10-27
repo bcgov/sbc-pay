@@ -29,13 +29,54 @@ def test_bank_account_valid_bank(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     valid_bank_details = {
-        'bankInstitutionNumber': '2001',
+        'bankInstitutionNumber': '1234567',
         'bankTransitNumber': '00720',
-        'bankAccountNumber': '1234567',
+        'bankAccountNumber': '0001',
 
     }
 
     rv = client.post('/api/v1/bank-accounts/verifications', data=json.dumps(valid_bank_details),
                      headers=headers)
     assert rv.status_code == 200
-    print(rv.json)
+    assert rv.json.get('isValid') is True
+
+
+def test_bank_account_invalid_bank_one_error(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    valid_bank_details = {
+        'bankInstitutionNumber': '1234567',
+        'bankTransitNumber': '00720',
+        'bankAccountNumber': '0002',
+
+    }
+
+    rv = client.post('/api/v1/bank-accounts/verifications', data=json.dumps(valid_bank_details),
+                     headers=headers)
+    assert rv.status_code == 200
+    assert rv.json.get('isValid') is False
+    assert rv.json.get('message')[0] == 'Bank Number is Invalid.'
+
+
+def test_bank_account_invalid_bank_multiple_error(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    valid_bank_details = {
+        'bankInstitutionNumber': '1234567',
+        'bankTransitNumber': '00720',
+        'bankAccountNumber': '0003',
+
+    }
+
+    rv = client.post('/api/v1/bank-accounts/verifications', data=json.dumps(valid_bank_details),
+                     headers=headers)
+    assert rv.status_code == 200
+    assert rv.json.get('isValid') is False
+    assert len(rv.json.get('message')) == 3
+    assert 'Account number has invalid characters.' in rv.json.get('message')
+    assert 'Account number has non-numeric characters.' in rv.json.get('message')
+    assert 'Account number length is not valid for this bank.' in rv.json.get('message')
