@@ -14,6 +14,7 @@
 """Service to invoke CFS related operations."""
 import base64
 import re
+import sys
 from http import HTTPStatus
 from typing import Dict, Any, Tuple
 
@@ -83,10 +84,13 @@ class CFSService(OAuthService):
                 'message': CFSService._transform_error_message(bank_validation_response.get('CAS-Returned-Messages'))
             }
         except Exception as exc:
-            current_app.logger.debug('-------logging error', str(exc))
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            current_app.logger.debug('-------logging error', exc_value)
+            current_app.logger.debug('-------logging exc_type', exc_type)
+            current_app.logger.debug('-------logging exc_traceback', exc_traceback)
             validation_response = {
                 'status_code': HTTPStatus.SERVICE_UNAVAILABLE.value,
-                'msessage':  str(exc)
+                'msessage':  exc_value
             }
 
         return validation_response
