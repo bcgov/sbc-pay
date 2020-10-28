@@ -69,8 +69,6 @@ class CFSService(OAuthService):
                                                              ContentType.JSON,
                                                              bank_details, raise_for_error=False)
 
-            current_app.logger.debug('-----bank_validation_response_obj',bank_validation_response_obj)
-            current_app.logger.debug('-----bank_validation_response_obj', bank_validation_response_obj.status_code)
             if bank_validation_response_obj.status_code in (HTTPStatus.OK.value, HTTPStatus.BAD_REQUEST.value):
                 bank_validation_response = bank_validation_response_obj.json()
                 validation_response = {
@@ -89,16 +87,11 @@ class CFSService(OAuthService):
                     'status_code': bank_validation_response_obj.status_code,
                     'msessage': 'Bank validation service cant be reached'
                 }
-            current_app.logger.debug('----validation_response',validation_response)
-            current_app.logger.debug('-----bank_validation_response_obj', bank_validation_response_obj.text)
-            current_app.logger.debug('-----bank_validation_response_obj', bank_validation_response_obj.reason)
 
-
-        except Exception as exc:
-            current_app.logger.debug('-------logging error', str(exc))
+        except ServiceUnavailableException as exc:  # suppress all other errors
             validation_response = {
                 'status_code': HTTPStatus.SERVICE_UNAVAILABLE.value,
-                'msessage': str(exc)
+                'msessage': exc.error
             }
 
         return validation_response
