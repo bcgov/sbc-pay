@@ -78,7 +78,7 @@ class CFSService(OAuthService):
                     'transit_address': bank_validation_response.get('transit_address', None),
                     'account_number': bank_validation_response.get('account_number', None),
                     'is_valid': bank_validation_response.get('CAS-Returned-Messages', None) == 'VALID',
-                    'status_code': HTTPStatus.OK,
+                    'status_code': HTTPStatus.OK.value,
                     'message': CFSService._transform_error_message(
                         bank_validation_response.get('CAS-Returned-Messages'))
                 }
@@ -86,14 +86,14 @@ class CFSService(OAuthService):
                 current_app.logger.debug('<Bank validation HTTP exception- {}', bank_validation_response_obj.text)
                 validation_response = {
                     'status_code': bank_validation_response_obj.status_code,
-                    'msessage': 'Bank validation service cant be reached'
+                    'message': 'Bank validation service cant be reached'
                 }
 
         except ServiceUnavailableException as exc:  # suppress all other errors
             current_app.logger.debug('<Bank validation ServiceUnavailableException exception- {}', exc.error)
             validation_response = {
                 'status_code': HTTPStatus.SERVICE_UNAVAILABLE.value,
-                'msessage': exc.error
+                'message': str(exc.error)
             }
 
         return validation_response

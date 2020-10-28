@@ -37,6 +37,7 @@ def test_validate_bank_account_valid(session):
     with patch('pay_api.services.oauth_service.requests.post') as mock_post:
         # Configure the mock to return a response with an OK status code.
         mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 200
         valid_address = {
             'bank_number': '0001',
             'bank_name': 'BANK OF MONTREAL',
@@ -51,6 +52,7 @@ def test_validate_bank_account_valid(session):
         bank_details = cfs_service.validate_bank_account(input_bank_details)
         assert bank_details.get('is_valid') is True
         assert bank_details.get('message')[0] == 'VALID'
+        assert bank_details.get('status_code') == 200
 
 
 def test_validate_bank_account_invalid(session):
@@ -63,6 +65,7 @@ def test_validate_bank_account_invalid(session):
     with patch('pay_api.services.oauth_service.requests.post') as mock_post:
         # Configure the mock to return a response with an OK status code.
         mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 400
         valid_address = {
             'bank_number': '0001',
             'bank_name': '',
@@ -81,6 +84,7 @@ def test_validate_bank_account_invalid(session):
         assert bank_details.get('message')[0] == 'Account number has invalid characters.'
         assert bank_details.get('message')[1] == 'Account number has non-numeric characters.'
         assert bank_details.get('message')[2] == 'Account number length is not valid for this bank.'
+        assert bank_details.get('status_code') == 200
 
 
 def test_validate_bank_account_exception(session):
@@ -92,6 +96,6 @@ def test_validate_bank_account_exception(session):
     }
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectTimeout('mocked error')):
         # Configure the mock to return a response with an OK status code.
-        with pytest.raises(ServiceUnavailableException) as excinfo:
-            cfs_service.validate_bank_account(input_bank_details)
-        assert excinfo.type == ServiceUnavailableException
+        bank_details = cfs_service.validate_bank_account(input_bank_details)
+        assert bank_details.get('status_code') == 503
+        assert 'mocked error' in bank_details.get('message')
