@@ -18,10 +18,8 @@ Test-Suite to ensure that the CFS Service layer is working as expected.
 """
 from unittest.mock import patch
 
-import pytest
 from requests import ConnectTimeout
 
-from pay_api.exceptions import ServiceUnavailableException
 from pay_api.services.cfs_service import CFSService
 
 cfs_service = CFSService()
