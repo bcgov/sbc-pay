@@ -15,6 +15,7 @@
 """Common setup and fixtures for the py-test suite used by this service."""
 
 import sys
+import time
 
 import pytest
 from flask_migrate import Migrate, upgrade
@@ -92,7 +93,7 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
         # This is the path we'll use in legal_api!!
 
         # even though this isn't referenced directly, it sets up the internal configs that upgrade needs
-        migrations_path = [folder for folder in sys.path if 'pay-api/pay-api' in folder][0]\
+        migrations_path = [folder for folder in sys.path if 'pay-api/pay-api' in folder][0] \
             .replace('/pay-api/src', '/pay-api/migrations')
 
         Migrate(app, _db, directory=migrations_path)
@@ -135,3 +136,27 @@ def session(app, db):  # pylint: disable=redefined-outer-name, invalid-name
         # This instruction rollsback any commit that were executed in the tests.
         txn.rollback()
         conn.close()
+
+
+@pytest.fixture(scope='session', autouse=True)
+def auto(docker_services, app):
+    """Spin up docker instances."""
+    if app.config['USE_DOCKER_MOCK']:
+        docker_services.start('keycloak')
+        docker_services.wait_for_service('keycloak', 8081)
+        docker_services.start('bcol')
+        docker_services.start('auth')
+        docker_services.start('paybc')
+        docker_services.start('reports')
+        docker_services.start('proxy')
+        docker_services.start('nats')
+        time.sleep(2)
+
+
+@pytest.fixture(scope='session')
+def docker_compose_files(pytestconfig):
+    """Get the docker-compose.yml absolute path."""
+    import os
+    return [
+        os.path.join(str(pytestconfig.rootdir), 'tests/docker', 'docker-compose.yml')
+    ]

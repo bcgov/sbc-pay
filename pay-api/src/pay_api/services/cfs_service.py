@@ -151,9 +151,10 @@ class CFSService(OAuthService):
             'province': get_non_null_value(contact_info.get('province'), DEFAULT_JURISDICTION),
             'country': get_non_null_value(contact_info.get('country'), DEFAULT_COUNTRY),
             'customer_site_id': '1',
-            'primary_bill_to': 'Y',
-            'receipt_method': receipt_method
+            'primary_bill_to': 'Y'
         }
+        if receipt_method:
+            site['receipt_method'] = receipt_method
 
         try:
             site_response = OAuthService.post(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
