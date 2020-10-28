@@ -85,10 +85,11 @@ class CFSService(OAuthService):
                 'message': CFSService._transform_error_message(bank_validation_response.get('CAS-Returned-Messages'))
             }
         except ServiceUnavailableException as exc:
-            current_app.logger.debug('-------logging exc_traceback', exc.error)
+            current_app.logger.debug('-------logging exc_traceback error caught')
+            current_app.logger.debug('-------logging exc_traceback', str(exc.error))
             validation_response = {
                 'status_code': HTTPStatus.SERVICE_UNAVAILABLE.value,
-                'msessage':  exc.error
+                'msessage':  str(exc.error)
             }
 
         return validation_response
