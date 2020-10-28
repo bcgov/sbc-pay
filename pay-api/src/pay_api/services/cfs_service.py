@@ -14,11 +14,13 @@
 """Service to invoke CFS related operations."""
 import base64
 import re
+from http import HTTPStatus
 from typing import Dict, Any, Tuple
 
 from flask import current_app
 from requests import HTTPError
 
+from pay_api.exceptions import ServiceUnavailableException
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import (
     DEFAULT_ADDRESS_LINE_1, DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE)
@@ -61,19 +63,29 @@ class CFSService(OAuthService):
         }
 
         access_token = CFSService.get_token().json().get('access_token')
-        bank_validation_response = OAuthService.post(validation_url, access_token, AuthHeaderType.BEARER,
-                                                     ContentType.JSON,
-                                                     bank_details).json()
+        try:
+            # raise_for_error should be false so that HTTPErrors are not thrown.PAYBC sends validation errors as 404
+            bank_validation_response = OAuthService.post(validation_url, access_token, AuthHeaderType.BEARER,
+                                                         ContentType.JSON,
+                                                         bank_details, raise_for_error=False).json()
 
-        validation_response = {
-            'bank_number': bank_validation_response.get('bank_number', None),
-            'bank_name': bank_validation_response.get('bank_number', None),
-            'branch_number': bank_validation_response.get('branch_number', None),
-            'transit_address': bank_validation_response.get('transit_address', None),
-            'account_number': bank_validation_response.get('account_number', None),
-            'is_valid': bank_validation_response.get('CAS-Returned-Messages', None) == 'VALID',
-            'message': CFSService._transform_error_message(bank_validation_response.get('CAS-Returned-Messages'))
-        }
+            current_app.logger.debug('bank_validation_response status', bank_validation_response.status_code)
+            current_app.logger.debug('bank_validation_response', bank_validation_response)
+            validation_response = {
+                'bank_number': bank_validation_response.get('bank_number', None),
+                'bank_name': bank_validation_response.get('bank_number', None),
+                'branch_number': bank_validation_response.get('branch_number', None),
+                'transit_address': bank_validation_response.get('transit_address', None),
+                'account_number': bank_validation_response.get('account_number', None),
+                'is_valid': bank_validation_response.get('CAS-Returned-Messages', None) == 'VALID',
+                'status_code': HTTPStatus.OK,
+                'message': CFSService._transform_error_message(bank_validation_response.get('CAS-Returned-Messages'))
+            }
+        except ServiceUnavailableException as exc:
+            validation_response = {
+                'status_code': exc.st,
+                'msessage': exc.error
+            }
 
         return validation_response
 
