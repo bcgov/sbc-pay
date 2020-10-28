@@ -183,15 +183,14 @@ def test_payment_creation_when_paybc_down(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': '1234'}
 
-    # Create an account first with CC as preffered payment
+    # Create an account first with CC as preffered payment, and it will create a DIRECT_PAY account
     client.post('/api/v1/accounts', data=json.dumps(get_basic_account_payload(PaymentMethod.CC.value)), headers=headers)
 
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
-        rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
-        assert rv.status_code == 503
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    assert rv.status_code == 201
 
 
 def test_zero_dollar_payment_creation(session, client, jwt, app):

@@ -22,7 +22,7 @@ from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel, PaymentAccountSchema
 from pay_api.models import StatementSettings as StatementSettingsModel
-from pay_api.utils.enums import PaymentSystem, StatementFrequency
+from pay_api.utils.enums import PaymentSystem, StatementFrequency, PaymentMethod
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_str_by_path
 
@@ -277,9 +277,12 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         """Update and save payment account and CFS account model."""
         # pylint:disable=cyclic-import, import-outside-toplevel
         from pay_api.factory.payment_system_factory import PaymentSystemFactory
+        # If the payment method is CC, set the payment_method as DIRECT_PAY
+        payment_method = get_str_by_path(account_request, 'paymentInfo/methodOfPayment')
+        if not payment_method or payment_method == PaymentMethod.CC.value:
+            payment_method = PaymentMethod.DIRECT_PAY.value
 
-        payment_method = payment_account.payment_method = get_str_by_path(account_request,
-                                                                          'paymentInfo/methodOfPayment')
+        payment_account.payment_method = payment_method
         payment_account.auth_account_id = account_request.get('accountId')
         payment_account.auth_account_name = account_request.get('accountName', None)
         payment_account.bcol_account = account_request.get('bcolAccountNumber', None)
