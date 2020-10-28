@@ -282,9 +282,4 @@ def _get_payment_method(payment_request: Dict, payment_account: PaymentAccount):
 
 
 def _get_default_payment() -> str:
-    is_direct_pay_enabled = current_app.config.get('DIRECT_PAY_ENABLED')
-    if is_direct_pay_enabled:
-        payment_method = PaymentMethod.DIRECT_PAY.value
-    else:
-        payment_method = PaymentMethod.CC.value
-    return payment_method
+    return PaymentMethod.DIRECT_PAY.value
