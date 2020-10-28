@@ -63,8 +63,9 @@ class CFSService(OAuthService):
             'bankNumber': bank_details.get('bankInstitutionNumber', None),
         }
 
-        access_token = CFSService.get_token().json().get('access_token')
         try:
+            access_token = CFSService.get_token().json().get('access_token')
+
             # raise_for_error should be false so that HTTPErrors are not thrown.PAYBC sends validation errors as 404
             bank_validation_response_obj = OAuthService.post(validation_url, access_token, AuthHeaderType.BEARER,
                                                              ContentType.JSON,
@@ -83,14 +84,11 @@ class CFSService(OAuthService):
                 'status_code': HTTPStatus.OK,
                 'message': CFSService._transform_error_message(bank_validation_response.get('CAS-Returned-Messages'))
             }
-        except Exception as exc:
-            exc_type, exc_value, exc_traceback = sys.exc_info()
-            current_app.logger.debug('-------logging error', exc_value)
-            current_app.logger.debug('-------logging exc_type', exc_type)
-            current_app.logger.debug('-------logging exc_traceback', exc_traceback)
+        except ServiceUnavailableException as exc:
+            current_app.logger.debug('-------logging exc_traceback', exc.error)
             validation_response = {
                 'status_code': HTTPStatus.SERVICE_UNAVAILABLE.value,
-                'msessage':  exc_value
+                'msessage':  exc.error
             }
 
         return validation_response
