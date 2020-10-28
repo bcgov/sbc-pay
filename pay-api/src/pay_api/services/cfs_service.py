@@ -83,12 +83,14 @@ class CFSService(OAuthService):
                         bank_validation_response.get('CAS-Returned-Messages'))
                 }
             else:
+                current_app.logger.debug('<Bank validation HTTP exception- {}', bank_validation_response_obj.text)
                 validation_response = {
                     'status_code': bank_validation_response_obj.status_code,
                     'msessage': 'Bank validation service cant be reached'
                 }
 
         except ServiceUnavailableException as exc:  # suppress all other errors
+            current_app.logger.debug('<Bank validation ServiceUnavailableException exception- {}', exc.error)
             validation_response = {
                 'status_code': HTTPStatus.SERVICE_UNAVAILABLE.value,
                 'msessage': exc.error
