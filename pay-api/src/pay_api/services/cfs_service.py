@@ -55,15 +55,15 @@ class CFSService(OAuthService):
     def validate_bank_account(bank_details: Tuple[Dict[str, Any]]) -> Dict[str, str]:
         """Validate bank details by invoking CFS validation Service."""
         current_app.logger.debug('<Validating bank account details')
-        validation_url = current_app.config.get('CFS_BASE_URL') + '/cfs/validatepayinsz/'
+        validation_url = current_app.config.get('CFS_BASE_URL') + '/cfs/validatepayins/'
         bank_details: Dict[str, str] = {
             'accountNumber': bank_details.get('bankAccountNumber', None),
             'branchNumber': bank_details.get('bankTransitNumber', None),
             'bankNumber': bank_details.get('bankInstitutionNumber', None),
         }
-
-        access_token = CFSService.get_token().json().get('access_token')
         try:
+            access_token = CFSService.get_token().json().get('access_token')
+
             # raise_for_error should be false so that HTTPErrors are not thrown.PAYBC sends validation errors as 404
             bank_validation_response_obj = OAuthService.post(validation_url, access_token, AuthHeaderType.BEARER,
                                                              ContentType.JSON,
