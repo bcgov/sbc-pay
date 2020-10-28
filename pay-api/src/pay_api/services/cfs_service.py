@@ -14,7 +14,6 @@
 """Service to invoke CFS related operations."""
 import base64
 import re
-import sys
 from http import HTTPStatus
 from typing import Dict, Any, Tuple
 
@@ -63,33 +62,43 @@ class CFSService(OAuthService):
             'bankNumber': bank_details.get('bankInstitutionNumber', None),
         }
 
+        access_token = CFSService.get_token().json().get('access_token')
         try:
-            access_token = CFSService.get_token().json().get('access_token')
-
             # raise_for_error should be false so that HTTPErrors are not thrown.PAYBC sends validation errors as 404
             bank_validation_response_obj = OAuthService.post(validation_url, access_token, AuthHeaderType.BEARER,
                                                              ContentType.JSON,
-                                                             bank_details, raise_for_error=False).json()
+                                                             bank_details, raise_for_error=False)
 
-            current_app.logger.debug('bank_validation_response----status', bank_validation_response_obj.status_code)
-            bank_validation_response = bank_validation_response_obj.json()
-            current_app.logger.debug('bank_validation_response----', bank_validation_response)
-            validation_response = {
-                'bank_number': bank_validation_response.get('bank_number', None),
-                'bank_name': bank_validation_response.get('bank_number', None),
-                'branch_number': bank_validation_response.get('branch_number', None),
-                'transit_address': bank_validation_response.get('transit_address', None),
-                'account_number': bank_validation_response.get('account_number', None),
-                'is_valid': bank_validation_response.get('CAS-Returned-Messages', None) == 'VALID',
-                'status_code': HTTPStatus.OK,
-                'message': CFSService._transform_error_message(bank_validation_response.get('CAS-Returned-Messages'))
-            }
-        except ServiceUnavailableException as exc:
-            current_app.logger.debug('-------logging exc_traceback error caught')
-            current_app.logger.debug('-------logging exc_traceback', str(exc.error))
+            current_app.logger.debug('-----bank_validation_response_obj',bank_validation_response_obj)
+            current_app.logger.debug('-----bank_validation_response_obj', bank_validation_response_obj.status_code)
+            if bank_validation_response_obj.status_code in (HTTPStatus.OK.value, HTTPStatus.BAD_REQUEST.value):
+                bank_validation_response = bank_validation_response_obj.json()
+                validation_response = {
+                    'bank_number': bank_validation_response.get('bank_number', None),
+                    'bank_name': bank_validation_response.get('bank_number', None),
+                    'branch_number': bank_validation_response.get('branch_number', None),
+                    'transit_address': bank_validation_response.get('transit_address', None),
+                    'account_number': bank_validation_response.get('account_number', None),
+                    'is_valid': bank_validation_response.get('CAS-Returned-Messages', None) == 'VALID',
+                    'status_code': HTTPStatus.OK,
+                    'message': CFSService._transform_error_message(
+                        bank_validation_response.get('CAS-Returned-Messages'))
+                }
+            else:
+                validation_response = {
+                    'status_code': bank_validation_response_obj.status_code,
+                    'msessage': 'Bank validation service cant be reached'
+                }
+            current_app.logger.debug('----validation_response',validation_response)
+            current_app.logger.debug('-----bank_validation_response_obj', bank_validation_response_obj.text)
+            current_app.logger.debug('-----bank_validation_response_obj', bank_validation_response_obj.reason)
+
+
+        except Exception as exc:
+            current_app.logger.debug('-------logging error', str(exc))
             validation_response = {
                 'status_code': HTTPStatus.SERVICE_UNAVAILABLE.value,
-                'msessage':  str(exc.error)
+                'msessage': str(exc)
             }
 
         return validation_response
