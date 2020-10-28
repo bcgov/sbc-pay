@@ -70,32 +70,39 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
 
             account_name = pay_account.auth_account_name
             # For an existing CFS Account, call update.. This is to handle PAD update when CFS is offline
-            if pending_account.cfs_account and pending_account.cfs_party and pending_account.cfs_site:
-                # This means, PAD account details have changed. So update banking details for this CFS account
-                bank_details = CFSService.update_bank_details(name=account_name,
-                                                              party_number=pending_account.cfs_party,
-                                                              account_number=pending_account.cfs_account,
-                                                              site_number=pending_account.cfs_site,
-                                                              payment_info=payment_info)
-                pending_account.payment_instrument_number = bank_details.get('payment_instrument_number', None)
-                is_create_account = False
-            else:  # It's a new account, now create
-                # If the account have banking information, then create a PAD account else a regular account.
-                if pending_account.bank_number and pending_account.bank_branch_number \
-                        and pending_account.bank_account_number:
-                    cfs_account_details = CFSService.create_cfs_account(name=account_name,
-                                                                        contact_info=contact_info,
-                                                                        payment_info=payment_info,
-                                                                        receipt_method=RECEIPT_METHOD_PAD_DAILY)
-                else:
-                    cfs_account_details = CFSService.create_cfs_account(name=account_name,
-                                                                        contact_info=contact_info,
-                                                                        receipt_method=None)
+            try:
+                if pending_account.cfs_account and pending_account.cfs_party and pending_account.cfs_site:
+                    # This means, PAD account details have changed. So update banking details for this CFS account
+                    bank_details = CFSService.update_bank_details(name=account_name,
+                                                                  party_number=pending_account.cfs_party,
+                                                                  account_number=pending_account.cfs_account,
+                                                                  site_number=pending_account.cfs_site,
+                                                                  payment_info=payment_info)
+                    pending_account.payment_instrument_number = bank_details.get('payment_instrument_number', None)
+                    is_create_account = False
+                else:  # It's a new account, now create
+                    # If the account have banking information, then create a PAD account else a regular account.
+                    if pending_account.bank_number and pending_account.bank_branch_number \
+                            and pending_account.bank_account_number:
+                        cfs_account_details = CFSService.create_cfs_account(name=account_name,
+                                                                            contact_info=contact_info,
+                                                                            payment_info=payment_info,
+                                                                            receipt_method=RECEIPT_METHOD_PAD_DAILY)
+                    else:
+                        cfs_account_details = CFSService.create_cfs_account(name=account_name,
+                                                                            contact_info=contact_info,
+                                                                            receipt_method=None)
 
-                pending_account.payment_instrument_number = cfs_account_details.get('payment_instrument_number', None)
-                pending_account.cfs_account = cfs_account_details.get('account_number')
-                pending_account.cfs_site = cfs_account_details.get('site_number')
-                pending_account.cfs_party = cfs_account_details.get('party_number')
+                    pending_account.payment_instrument_number = cfs_account_details.get('payment_instrument_number',
+                                                                                        None)
+                    pending_account.cfs_account = cfs_account_details.get('account_number')
+                    pending_account.cfs_site = cfs_account_details.get('site_number')
+                    pending_account.cfs_party = cfs_account_details.get('party_number')
+
+            except Exception as e:  # pylint: disable=broad-except
+                current_app.logger.error(e)
+                pending_account.rollback()
+                continue
 
             pending_account.status = CfsAccountStatus.ACTIVE.value
             pending_account.save()

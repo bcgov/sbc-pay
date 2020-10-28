@@ -184,7 +184,7 @@ class CFSService(OAuthService):
             'bank_number': str(payment_info.get('bankInstitutionNumber')),
             'branch_number': str(payment_info.get('bankTransitNumber')),
             'bank_account_number': str(payment_info.get('bankAccountNumber')),
-            'country': DEFAULT_COUNTRY,
+            'country_code': DEFAULT_COUNTRY,
             'currency_code': DEFAULT_CURRENCY
         }
         site_payment_response = OAuthService.post(site_payment_url, access_token, AuthHeaderType.BEARER,
