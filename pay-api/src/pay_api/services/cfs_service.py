@@ -69,8 +69,7 @@ class CFSService(OAuthService):
                                                          ContentType.JSON,
                                                          bank_details, raise_for_error=False).json()
 
-            current_app.logger.debug('bank_validation_response status', bank_validation_response.status_code)
-            current_app.logger.debug('bank_validation_response', bank_validation_response)
+            current_app.logger.debug('bank_validation_response----', bank_validation_response)
             validation_response = {
                 'bank_number': bank_validation_response.get('bank_number', None),
                 'bank_name': bank_validation_response.get('bank_number', None),
