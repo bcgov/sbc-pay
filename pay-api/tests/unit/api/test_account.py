@@ -270,7 +270,7 @@ def test_premium_account_update_with_no_create(session, client, jwt, app):
 
 
 def test_create_pad_account_when_cfs_down(session, client, jwt, app):
-    """Assert that the payment records are created with 202."""
+    """Assert that the payment records are created with 201."""
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     # Mock ServiceUnavailableException
@@ -289,11 +289,11 @@ def test_create_pad_account_when_cfs_up(session, client, jwt, app):
     rv = client.post('/api/v1/accounts', data=json.dumps(get_pad_account_payload()),
                      headers=headers)
 
-    assert rv.status_code == 201
+    assert rv.status_code == 202
 
 
 def test_create_online_banking_account_when_cfs_down(session, client, jwt, app):
-    """Assert that the payment records are created with 202."""
+    """Assert that the payment records are created with 201."""
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     # Mock ServiceUnavailableException
@@ -314,11 +314,11 @@ def test_create_online_banking_account_when_cfs_up(session, client, jwt, app):
                      data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
                      headers=headers)
 
-    assert rv.status_code == 201
+    assert rv.status_code == 202
 
 
 def test_create_pad_update_when_cfs_down(session, client, jwt, app):
-    """Assert that the payment records are created with 202."""
+    """Assert that the payment records are created with 201."""
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     # Create account first
@@ -345,7 +345,7 @@ def test_update_pad_account_when_cfs_up(session, client, jwt, app):
                     data=json.dumps(get_pad_account_payload(bank_account='11111111')),
                     headers=headers)
 
-    assert rv.status_code == 200
+    assert rv.status_code == 202
 
 
 def test_update_online_banking_account_when_cfs_down(session, client, jwt, app):
@@ -363,7 +363,7 @@ def test_update_online_banking_account_when_cfs_down(session, client, jwt, app):
                         data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
                         headers=headers)
 
-        assert rv.status_code == 200
+        assert rv.status_code == 202
 
 
 def test_update_online_banking_account_when_cfs_up(session, client, jwt, app):
@@ -378,4 +378,4 @@ def test_update_online_banking_account_when_cfs_up(session, client, jwt, app):
                     data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
                     headers=headers)
 
-    assert rv.status_code == 200
+    assert rv.status_code == 202

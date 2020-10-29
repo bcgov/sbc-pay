@@ -13,16 +13,16 @@
 # limitations under the License.
 """Service to manage CFS Online Banking Payments."""
 from typing import Any, Dict
+
 from flask import current_app
 
+from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.services.base_payment_system import PaymentSystemService
-from pay_api.services.invoice import Invoice
 from pay_api.services.cfs_service import CFSService
+from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.utils.enums import PaymentSystem, PaymentMethod, InvoiceStatus, PaymentStatus, CfsAccountStatus
-from pay_api.exceptions import ServiceUnavailableException
 from .payment_line_item import PaymentLineItem
 
 
@@ -52,20 +52,9 @@ class OnlineBankingService(PaymentSystemService, CFSService):
     def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
                        **kwargs) -> CfsAccountModel:
         """Create an account for the online banking."""
-        try:
-            # Create CFS Account model instance and store the bank details
-            cfs_account = CfsAccountModel()
-            # Create CFS account
-            cfs_account_details = self.create_cfs_account(name, contact_info, receipt_method=None)
-            # Update model with response values
-            cfs_account.cfs_site = cfs_account_details.get('site_number')
-            cfs_account.cfs_party = cfs_account_details.get('party_number')
-            cfs_account.cfs_account = cfs_account_details.get('account_number')
-            cfs_account.status = CfsAccountStatus.ACTIVE.value
-
-        except ServiceUnavailableException as e:
-            cfs_account.status = CfsAccountStatus.PENDING.value
-            current_app.logger.warning(f'CFS Error {e}')
+        # Create CFS Account model instance and set the status as PENDING
+        cfs_account = CfsAccountModel()
+        cfs_account.status = CfsAccountStatus.PENDING.value
 
         return cfs_account
 

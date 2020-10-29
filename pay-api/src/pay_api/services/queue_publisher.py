@@ -16,6 +16,7 @@
 import asyncio
 import json
 import random
+from typing import Dict
 
 from flask import current_app
 from nats.aio.client import Client as NATS  # noqa N814; by convention the name is NATS
@@ -24,12 +25,32 @@ from stan.aio.client import Client as STAN  # noqa N814; by convention the name 
 from pay_api.utils.handlers import closed_cb, error_cb  # noq I001; conflict with flake8
 
 
-def publish_response(payload):
+def publish_response(payload: Dict[str, any], client_name: str = None, subject: str = None):
     """Publish payment response to async nats."""
-    asyncio.run(publish(payload=payload))
+    asyncio.run(publish(payload=payload, client_name=client_name, subject=subject))
 
 
-async def publish(payload):  # pylint: disable=too-few-public-methods
+# Connection and Queue configuration.
+def nats_connection_options(client_name: str):
+    """Return nats connection options."""
+    return {
+        'servers': current_app.config.get('NATS_SERVERS'),
+        'error_cb': error_cb,
+        'closed_cb': closed_cb,
+        'name': client_name or current_app.config.get('NATS_CLIENT_NAME'),
+    }
+
+
+def stan_connection_options(nats_con: NATS):
+    """Return stan connection options."""
+    return {
+        'cluster_id': current_app.config.get('NATS_CLUSTER_ID'),
+        'client_id': str(random.SystemRandom().getrandbits(0x58)),
+        'nats': nats_con
+    }
+
+
+async def publish(payload, client_name: str = None, subject: str = None):  # pylint: disable=too-few-public-methods
     """Service to manage Queue publish operations."""
     current_app.logger.debug('<publish')
     # NATS client connections
@@ -41,31 +62,15 @@ async def publish(payload):  # pylint: disable=too-few-public-methods
         await stan_con.close()
         await nats_con.close()
 
-    # Connection and Queue configuration.
-    def nats_connection_options():
-        return {
-            'servers': current_app.config.get('NATS_SERVERS'),
-            # 'io_loop': loop,
-            'error_cb': error_cb,
-            'closed_cb': closed_cb,
-            'name': current_app.config.get('NATS_CLIENT_NAME'),
-        }
-
-    def stan_connection_options():
-        return {
-            'cluster_id': current_app.config.get('NATS_CLUSTER_ID'),
-            'client_id': str(random.SystemRandom().getrandbits(0x58)),
-            'nats': nats_con
-        }
-
     try:
         # Connect to the NATS server, and then use that for the streaming connection.
-        await nats_con.connect(**nats_connection_options(), verbose=True, connect_timeout=3, reconnect_time_wait=1)
-        await stan_con.connect(**stan_connection_options())
+        await nats_con.connect(**nats_connection_options(client_name=client_name), verbose=True, connect_timeout=3,
+                               reconnect_time_wait=1)
+        await stan_con.connect(**stan_connection_options(nats_con=nats_con))
 
         current_app.logger.debug(payload)
 
-        await stan_con.publish(subject=current_app.config.get('NATS_SUBJECT'),
+        await stan_con.publish(subject=subject or current_app.config.get('NATS_SUBJECT'),
                                payload=json.dumps(payload).encode('utf-8'))
 
     except Exception as e:  # pylint: disable=broad-except

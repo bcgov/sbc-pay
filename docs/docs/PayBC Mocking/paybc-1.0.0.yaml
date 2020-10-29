@@ -482,7 +482,7 @@ paths:
               $ref: '#/components/schemas/Bank_info'
         required: true
       responses:
-        '201':
+        '200':
           description: Created
           content:
             application/json:
