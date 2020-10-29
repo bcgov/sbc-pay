@@ -118,6 +118,12 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     AUTH_API_ENDPOINT = os.getenv('AUTH_API_ENDPOINT')
 
     CFS_ACCOUNT_DESCRIPTION = os.getenv('CFS_ACCOUNT_DESCRIPTION', 'BCR')
+    CFS_INVOICE_PREFIX = os.getenv('CFS_INVOICE_PREFIX', 'REG')
+
+    CFS_INVOICE_CUT_OFF_HOURS_UTC = int(os.getenv('CFS_INVOICE_CUT_OFF_HOURS_UTC', '2'))
+    CFS_INVOICE_CUT_OFF_MINUTES_UTC = int(os.getenv('CFS_INVOICE_CUT_OFF_MINUTES_UTC', '0'))
+
+    SENTRY_DSN = os.getenv('SENTRY_DSN', None)
 
     TESTING = False
     DEBUG = True

@@ -27,7 +27,7 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem, PaymentMethod, InvoiceStatus, PaymentStatus
-from pay_api.utils.util import current_local_time, parse_url_params
+from pay_api.utils.util import current_local_time, parse_url_params, generate_transaction_number
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -48,7 +48,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
                            'pbcRefNumber': current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER'),
                            'glDate': today,
                            'description': 'Direct_Sale',
-                           'trnNumber': invoice.id,
+                           'trnNumber': generate_transaction_number(invoice.id),
                            'trnAmount': invoice.total,
                            'paymentMethod': PaymentMethod.CC.value,
                            'redirectUri': return_url,
@@ -124,7 +124,8 @@ class DirectPayService(PaymentSystemService, OAuthService):
         """Return a static invoice number for direct pay."""
         current_app.logger.debug('<create_invoice_direct_pay')
 
-        invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id, str(invoice.id), None)
+        invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id,
+                                                                      generate_transaction_number(invoice.id), None)
 
         current_app.logger.debug('>create_invoice_direct_pay')
         return invoice_reference
