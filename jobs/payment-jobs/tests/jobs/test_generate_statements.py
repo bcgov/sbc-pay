@@ -28,7 +28,7 @@ from .factory import (
     factory_statement_settings)
 
 
-@pytest.mark.skip(reason="Need to rewrite this test case using time freeze.")
+@pytest.mark.skip(reason='Need to rewrite this test case using time freeze.')
 def test_statements(session):
     """Test dailiy statement generation works.
 
