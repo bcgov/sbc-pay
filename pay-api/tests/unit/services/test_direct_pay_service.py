@@ -24,6 +24,7 @@ from pay_api.models import FeeSchedule
 from pay_api.services.direct_pay_service import DirectPayService, PAYBC_DATE_FORMAT, DECIMAL_PRECISION
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.hashing import HashingService
+from pay_api.utils.util import generate_transaction_number
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item)
 from tests.utilities.base_test import get_distribution_code_payload
@@ -55,7 +56,7 @@ def test_get_payment_system_url(session, public_user_mock):
     assert url_param_dict['glDate'] == today
     assert url_param_dict['description'] == 'Direct_Sale'
     assert url_param_dict['pbcRefNumber'] == current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')
-    assert url_param_dict['trnNumber'] == str(invoice.id)
+    assert url_param_dict['trnNumber'] == generate_transaction_number(invoice.id)
     assert url_param_dict['trnAmount'] == str(invoice.total)
     assert url_param_dict['paymentMethod'] == 'CC'
     assert url_param_dict['redirectUri'] == 'google.com'
@@ -68,7 +69,7 @@ def test_get_payment_system_url(session, public_user_mock):
     assert url_param_dict['revenue'] == revenue_str
     urlstring = f"trnDate={today}&pbcRefNumber={current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')}&" \
         f'glDate={today}&description=Direct_Sale&' \
-        f'trnNumber={invoice.id}&' \
+        f'trnNumber={generate_transaction_number(invoice.id)}&' \
         f'trnAmount={invoice.total}&' \
         f'paymentMethod=CC&' \
         f'redirectUri=google.com&' \
@@ -105,7 +106,7 @@ def test_get_payment_system_url_service_fees(session, public_user_mock):
     assert url_param_dict['glDate'] == today
     assert url_param_dict['description'] == 'Direct_Sale'
     assert url_param_dict['pbcRefNumber'] == current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')
-    assert url_param_dict['trnNumber'] == str(invoice.id)
+    assert url_param_dict['trnNumber'] == generate_transaction_number(invoice.id)
     assert url_param_dict['trnAmount'] == str(invoice.total)
     assert url_param_dict['paymentMethod'] == 'CC'
     assert url_param_dict['redirectUri'] == 'google.com'
@@ -124,7 +125,7 @@ def test_get_payment_system_url_service_fees(session, public_user_mock):
     assert url_param_dict['revenue'] == f'{revenue_str}|{revenue_str_service_fee}'
     urlstring = f"trnDate={today}&pbcRefNumber={current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')}&" \
         f'glDate={today}&description=Direct_Sale&' \
-        f'trnNumber={invoice.id}&' \
+        f'trnNumber={generate_transaction_number(invoice.id)}&' \
         f'trnAmount={invoice.total}&' \
         f'paymentMethod=CC&' \
         f'redirectUri=google.com&' \

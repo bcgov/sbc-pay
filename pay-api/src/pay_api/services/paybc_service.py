@@ -14,22 +14,22 @@
 """Service to manage PayBC interaction."""
 
 import urllib.parse
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from dateutil import parser
 from flask import current_app
 
+from pay_api.models import CfsAccount as CfsAccountModel, PaymentLineItem as PaymentLineItemModel
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import (
-    CFS_ADJ_ACTIVITY_NAME, CFS_BATCH_SOURCE, CFS_CUST_TRX_TYPE, CFS_LINE_TYPE, CFS_TERM_NAME)
+    CFS_ADJ_ACTIVITY_NAME)
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem, PaymentMethod, InvoiceStatus, \
     PaymentStatus, CfsAccountStatus
-from pay_api.utils.util import current_local_time, parse_url_params
-from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.utils.util import parse_url_params
 from .payment_line_item import PaymentLineItem
 
 
@@ -86,59 +86,12 @@ class PaybcService(PaymentSystemService, CFSService):
                        line_items: [PaymentLineItem], invoice: Invoice, **kwargs) -> InvoiceReference:
         """Create Invoice in PayBC."""
         current_app.logger.debug('<create_invoice')
-        now = current_local_time()
-        curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
-        invoice_number: str = kwargs.get('invoice_number', None)
-        if invoice_number is None:
-            invoice_number = invoice.id
-
-        invoice_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/' \
-            .format(payment_account.cfs_party, payment_account.cfs_account, payment_account.cfs_site)
-
-        # Check if random invoice number needs to be generated
-        transaction_number = f'{invoice_number}'.replace(' ', '')
-
-        invoice_payload = dict(
-            batch_source=CFS_BATCH_SOURCE,
-            cust_trx_type=CFS_CUST_TRX_TYPE,
-            transaction_date=curr_time,
-            transaction_number=transaction_number[:20],
-            gl_date=curr_time,
-            term_name=CFS_TERM_NAME,
-            comments='',
-            lines=[]
-        )
-        index: int = 0
+        # Build line item model array, as that's needed for CFS Service
+        line_item_models: List[PaymentLineItemModel] = []
         for line_item in line_items:
-            index = index + 1
-            invoice_payload['lines'].append(
-                {
-                    'line_number': index,
-                    'line_type': CFS_LINE_TYPE,
-                    'memo_line_name': line_item.fee_distribution.memo_name,
-                    'description': line_item.description,
-                    'attribute1': line_item.description,
-                    'unit_price': line_item.total,
-                    'quantity': 1
-                }
-            )
-            if line_item.service_fees > 0:
-                index = index + 1
-                invoice_payload['lines'].append(
-                    {
-                        'line_number': index,
-                        'line_type': CFS_LINE_TYPE,
-                        'memo_line_name': line_item.fee_distribution.service_fee_memo_name,
-                        'description': 'Service Fee',
-                        'attribute1': 'Service Fee',
-                        'unit_price': line_item.service_fees,
-                        'quantity': 1
-                    }
-                )
-        current_app.logger.debug('<paybc_service_Getting token')
-        access_token = CFSService.get_token().json().get('access_token')
-        invoice_response = self.post(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
-                                     invoice_payload)
+            line_item_models.append(PaymentLineItemModel.find_by_id(line_item.id))
+
+        invoice_response = self.create_account_invoice(invoice.id, line_item_models, payment_account)
 
         invoice_reference: InvoiceReference = InvoiceReference.create(
             invoice.id, invoice_response.json().get('invoice_number', None),

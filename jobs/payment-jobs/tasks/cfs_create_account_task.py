@@ -24,6 +24,7 @@ from pay_api.services.oauth_service import OAuthService
 from pay_api.services.queue_publisher import publish_response
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_DAILY
 from pay_api.utils.enums import AuthHeaderType, CfsAccountStatus, ContentType
+from sentry_sdk import capture_message
 
 from utils.auth import get_token
 
@@ -43,6 +44,9 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
         # Pass payment method if offline account creation has be restricted based on payment method.
         pending_accounts: List[CfsAccountModel] = CfsAccountModel.find_all_pending_accounts()
         current_app.logger.info(f'Found {len(pending_accounts)} CFS Accounts to be created.')
+        if len(pending_accounts) == 0:
+            return
+
         auth_token = get_token()
 
         for pending_account in pending_accounts:
@@ -100,6 +104,8 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                     pending_account.cfs_party = cfs_account_details.get('party_number')
 
             except Exception as e:  # pylint: disable=broad-except
+                capture_message(f'Error on creating CFS Account: account id={pay_account.id}, '
+                                f'auth account : {pay_account.auth_account_id}, ERROR : {str(e)}', level='error')
                 current_app.logger.error(e)
                 pending_account.rollback()
                 continue

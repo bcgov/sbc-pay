@@ -26,6 +26,7 @@ from pay_api.utils.enums import PaymentSystem as PaySystemCode, PaymentMethod
 from pay_api.utils.errors import get_bcol_error
 from pay_api.utils.user_context import UserContext
 from pay_api.utils.user_context import user_context
+from pay_api.utils.util import generate_transaction_number
 from .base_payment_system import PaymentSystemService
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
@@ -77,7 +78,7 @@ class BcolService(PaymentSystemService, OAuthService):
         payload: Dict = {
             # 'userId': payment_account.bcol_user_id if payment_account.bcol_user_id else 'PE25020',
             'userId': payment_account.bcol_user_id,
-            'invoiceNumber': str(invoice.id),
+            'invoiceNumber': generate_transaction_number(invoice.id),
             'folioNumber': invoice.folio_number,
             'amount': str(amount_excluding_txn_fees),
             'rate': str(amount_excluding_txn_fees),

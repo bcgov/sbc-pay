@@ -18,11 +18,12 @@ Test-Suite to ensure that the CreateAccountTask is working as expected.
 """
 
 from pay_api.models import CfsAccount, PaymentAccount
-from pay_api.services.pad_service import PadService
 from pay_api.services.online_banking_service import OnlineBankingService
+from pay_api.services.pad_service import PadService
 from pay_api.utils.enums import CfsAccountStatus
 
 from tasks.cfs_create_account_task import CreateAccountTask
+
 from .factory import factory_create_online_banking_account, factory_create_pad_account
 
 

@@ -120,3 +120,9 @@ def get_local_time(date_val: datetime):
     tz_local = pytz.timezone(tz_name)
     date_val = date_val.astimezone(tz_local)
     return date_val
+
+
+def generate_transaction_number(inv_id: int) -> str:
+    """Return transaction number for invoices."""
+    prefix = current_app.config.get('CFS_INVOICE_PREFIX')
+    return f'{prefix}{inv_id:08}'
