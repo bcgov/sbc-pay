@@ -37,7 +37,7 @@ def nats_connection_options(client_name: str):
         'servers': current_app.config.get('NATS_SERVERS'),
         'error_cb': error_cb,
         'closed_cb': closed_cb,
-        'name': client_name or current_app.config.get('NATS_CLIENT_NAME'),
+        'name': client_name or current_app.config.get('NATS_PAYMENT_CLIENT_NAME'),
     }
 
 
@@ -70,7 +70,7 @@ async def publish(payload, client_name: str = None, subject: str = None):  # pyl
 
         current_app.logger.debug(payload)
 
-        await stan_con.publish(subject=subject or current_app.config.get('NATS_SUBJECT'),
+        await stan_con.publish(subject=subject or current_app.config.get('NATS_PAYMENT_SUBJECT'),
                                payload=json.dumps(payload).encode('utf-8'))
 
     except Exception as e:  # pylint: disable=broad-except

@@ -108,11 +108,14 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # NATS Config
     NATS_SERVERS = os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(',')
     NATS_CLUSTER_ID = os.getenv('NATS_CLUSTER_ID', 'test-cluster')
-    NATS_QUEUE = os.getenv('NATS_QUEUE', 'account-worker')
 
     # NATS Config for account events
-    NATS_ACCOUNT_CLIENT_NAME = os.getenv('NATS_CLIENT_NAME', 'account.events.worker')
-    NATS_ACCOUNT_SUBJECT = os.getenv('NATS_SUBJECT', 'account.events')
+    NATS_ACCOUNT_CLIENT_NAME = os.getenv('NATS_ACCOUNT_CLIENT_NAME', 'account.events.worker')
+    NATS_ACCOUNT_SUBJECT = os.getenv('NATS_ACCOUNT_SUBJECT', 'account.events')
+
+    # NATS Config for transaction events
+    NATS_PAYMENT_CLIENT_NAME = os.getenv('NATS_PAYMENT_CLIENT_NAME', 'entity.filing.payment.worker')
+    NATS_PAYMENT_SUBJECT = os.getenv('NATS_PAYMENT_SUBJECT', 'entity.filing.payment')
 
     # Auth API Endpoint
     AUTH_API_ENDPOINT = os.getenv('AUTH_API_ENDPOINT')
