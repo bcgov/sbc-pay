@@ -15,10 +15,10 @@
 
 import pytest
 from entity_queue_common.service_utils import subscribe_to_queue
-from pay_api.models import Invoice, Payment
+from pay_api.models import Invoice
 from pay_api.utils.enums import PaymentMethod, PaymentSystem
 
-from tests.integration import factory_invoice, factory_payment, factory_payment_account
+from tests.integration import factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account
 
 from .utils import helper_add_event_to_queue
 
@@ -68,11 +68,14 @@ async def test_update_internal_payment(app, session, stan_server, event_loop, cl
     events_durable_name = 'test_durable'
 
     # Create an Internal Payment
-    payment_account = factory_payment_account(payment_system_code=PaymentSystem.INTERNAL.value).save()
+    payment_account = factory_payment_account(payment_system_code=PaymentSystem.BCOL.value).save()
 
-    payment: Payment = factory_payment(payment_method_code=PaymentMethod.INTERNAL.value).save()
-    invoice: Invoice = factory_invoice(payment=payment, payment_account=payment_account,
-                                       business_identifier=old_identifier).save()
+    invoice: Invoice = factory_invoice(payment_account=payment_account,
+                                       business_identifier=old_identifier,
+                                       payment_method_code=PaymentMethod.INTERNAL.value).save()
+
+    inv_ref = factory_invoice_reference(invoice_id=invoice.id)
+    factory_payment(invoice_number=inv_ref.invoice_number)
 
     invoice_id = invoice.id
 
@@ -108,12 +111,16 @@ async def test_update_credit_payment(app, session, stan_server, event_loop, clie
     events_durable_name = 'test_durable'
 
     # Create an Internal Payment
-    payment_account = factory_payment_account(
-        payment_system_code=PaymentSystem.PAYBC.value).save()
 
-    payment: Payment = factory_payment(payment_method_code=PaymentMethod.CC.value).save()
-    invoice: Invoice = factory_invoice(payment=payment, payment_account=payment_account,
-                                       business_identifier=old_identifier).save()
+    payment_account = factory_payment_account(payment_system_code=PaymentSystem.PAYBC.value,
+                                              payment_method_code=PaymentMethod.DIRECT_PAY.value).save()
+
+    invoice: Invoice = factory_invoice(payment_account=payment_account,
+                                       business_identifier=old_identifier,
+                                       payment_method_code=PaymentMethod.DIRECT_PAY.value).save()
+
+    inv_ref = factory_invoice_reference(invoice_id=invoice.id)
+    factory_payment(invoice_number=inv_ref.invoice_number)
 
     invoice_id = invoice.id
 

@@ -119,10 +119,9 @@ class _Config():  # pylint: disable=too-few-public-methods
 
     # NATS Config
     NATS_SERVERS = _get_config('NATS_SERVERS', default='nats://127.0.0.1:4222').split(',')
-    NATS_CLIENT_NAME = _get_config('NATS_CLIENT_NAME', default='entity.filing.worker')
     NATS_CLUSTER_ID = _get_config('NATS_CLUSTER_ID', default='test-cluster')
-    NATS_SUBJECT = _get_config('NATS_SUBJECT', default='entity.filings')
-    NATS_QUEUE = _get_config('NATS_QUEUE', default='filing-worker')
+    NATS_PAYMENT_CLIENT_NAME = _get_config('NATS_PAYMENT_CLIENT_NAME', default='entity.filing.worker')
+    NATS_PAYMENT_SUBJECT = _get_config('NATS_PAYMENT_SUBJECT', default='entity.filings')
 
     # Auth API Endpoint
     AUTH_API_ENDPOINT = _get_config('AUTH_API_ENDPOINT')
