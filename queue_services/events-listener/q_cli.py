@@ -53,7 +53,7 @@ async def run(loop, old_identifier, new_identifier):  # pylint: disable=too-many
             'servers': os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(','),
             'io_loop': loop,
             'error_cb': error_cb,
-            'name': os.getenv('NATS_CLIENT_NAME', 'entity.filing.tester')
+            'name': os.getenv('NATS_ENTITY_EVENTS_CLIENT_NAME', 'entity.events.worker')
         }
 
     def stan_connection_options():
@@ -65,9 +65,9 @@ async def run(loop, old_identifier, new_identifier):  # pylint: disable=too-many
 
     def subscription_options():
         return {
-            'subject': os.getenv('NATS_SUBJECT', 'entity.filings'),
-            'queue': os.getenv('NATS_QUEUE', 'filing-worker'),
-            'durable_name': os.getenv('NATS_QUEUE', 'filing-worker') + '_durable'
+            'subject': os.getenv('NATS_ENTITY_EVENTS_SUBJECT', 'entity.events'),
+            'queue': os.getenv('NATS_ENTITY_EVENTS_QUEUE', 'events-worker'),
+            'durable_name': os.getenv('NATS_ENTITY_EVENTS_QUEUE', 'events-worker') + '_durable'
         }
 
     try:
