@@ -126,6 +126,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     )
 
     STAN_CLUSTER_NAME = 'test-cluster'
+    TEST_NATS_DOCKER = os.getenv('TEST_NATS_DOCKER', None)
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

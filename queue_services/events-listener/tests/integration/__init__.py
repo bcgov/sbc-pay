@@ -15,8 +15,8 @@
 
 from datetime import datetime
 
-from pay_api.models import CfsAccount, Invoice, Payment, PaymentAccount
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem
+from pay_api.models import CfsAccount, Invoice, InvoiceReference, Payment, PaymentAccount
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem
 
 
 def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC', account_number='4101',
@@ -45,33 +45,43 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
 def factory_payment(
         payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC',
         payment_status_code: str = PaymentStatus.CREATED.value,
-        created_on: datetime = datetime.now()
+        created_on: datetime = datetime.now(),
+        invoice_number: str = None
 ):
     """Return Factory."""
     return Payment(
         payment_system_code=payment_system_code,
         payment_method_code=payment_method_code,
         payment_status_code=payment_status_code,
-        created_by='test',
         created_on=created_on,
-    )
+        invoice_number=invoice_number
+    ).save()
 
 
-def factory_invoice(payment: Payment, payment_account: PaymentAccount, status_code: str = InvoiceStatus.CREATED.value,
+def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.value,
                     corp_type_code='CP',
                     business_identifier: str = 'CP0001234',
-                    service_fees: float = 0.0, total=0):
+                    service_fees: float = 0.0, total=0,
+                    payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
+                    created_on: datetime = datetime.now()):
     """Return Factory."""
     return Invoice(
-        payment_id=payment.id,
         invoice_status_code=status_code,
         payment_account_id=payment_account.id,
         total=total,
         created_by='test',
-        created_on=datetime.now(),
+        created_on=created_on,
         business_identifier=business_identifier,
         corp_type_code=corp_type_code,
         folio_number='1234567890',
         service_fees=service_fees,
-        bcol_account=payment_account.bcol_account
-    )
+        bcol_account=payment_account.bcol_account,
+        payment_method_code=payment_method_code
+    ).save()
+
+
+def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021'):
+    """Return Factory."""
+    return InvoiceReference(invoice_id=invoice_id,
+                            status_code=InvoiceReferenceStatus.ACTIVE.value,
+                            invoice_number=invoice_number).save()
