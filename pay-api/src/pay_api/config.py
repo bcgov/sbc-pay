@@ -122,6 +122,8 @@ class _Config():  # pylint: disable=too-few-public-methods
     NATS_CLUSTER_ID = _get_config('NATS_CLUSTER_ID', default='test-cluster')
     NATS_PAYMENT_CLIENT_NAME = _get_config('NATS_PAYMENT_CLIENT_NAME', default='entity.filing.worker')
     NATS_PAYMENT_SUBJECT = _get_config('NATS_PAYMENT_SUBJECT', default='entity.filings')
+    NATS_MAILER_CLIENT_NAME = _get_config('NATS_MAILER_CLIENT_NAME', default='account.mailer.worker')
+    NATS_MAILER_SUBJECT = _get_config('NATS_MAILER_SUBJECT', default='account.mailer')
 
     # Auth API Endpoint
     AUTH_API_ENDPOINT = _get_config('AUTH_API_ENDPOINT')

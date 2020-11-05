@@ -72,6 +72,24 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods
         return query.one_or_none()
 
     @classmethod
+    def find_recent_completed_by_invoice_id(cls, invoice_id: int):
+        """Return Completed Payment Transactions by invoice identifier."""
+        # pylint: disable=import-outside-toplevel, cyclic-import
+        from .invoice_reference import InvoiceReference
+        from .payment import Payment
+        from .invoice import Invoice
+
+        query = db.session.query(PaymentTransaction) \
+            .join(Payment) \
+            .join(InvoiceReference, InvoiceReference.invoice_number == Payment.invoice_number) \
+            .join(Invoice, InvoiceReference.invoice_id == Invoice.id) \
+            .filter(Invoice.id == invoice_id) \
+            .filter(PaymentTransaction.status_code == TransactionStatus.COMPLETED.value) \
+            .order_by(PaymentTransaction.transaction_end_time.desc())
+
+        return query.first()
+
+    @classmethod
     def find_by_invoice_id(cls, invoice_id: int):
         """Return all Payment Transactions by invoice identifier."""
         # pylint: disable=import-outside-toplevel, cyclic-import
