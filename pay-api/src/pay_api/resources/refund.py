@@ -21,6 +21,7 @@ from pay_api.exceptions import error_to_response, BusinessException
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import RefundService
 from pay_api.utils.auth import jwt as _jwt
+from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.util import cors_preflight
 
@@ -34,7 +35,7 @@ class Refund(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.requires_auth
+    @_jwt.has_one_of_roles([Role.SYSTEM.value])
     def post(invoice_id):
         """Create the Refund for the Invoice."""
         current_app.logger.info('<Refund.post')
