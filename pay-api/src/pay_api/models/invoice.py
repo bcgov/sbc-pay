@@ -17,7 +17,7 @@ from marshmallow import fields, post_dump
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
-from pay_api.utils.enums import InvoiceStatus, LineItemStatus
+from pay_api.utils.enums import InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
 from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
 from .db import db, ma
@@ -122,7 +122,8 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
     })
 
     @post_dump
-    def _remove_deleted_lines(self, data, many):  # pylint: disable=unused-argument,no-self-use
+    def _clean_up(self, data, many):  # pylint: disable=unused-argument,no-self-use
+        """Clean up attributes."""
         if data.get('line_items'):
             for line in list(data.get('line_items')):
                 if line.get('status_code') == LineItemStatus.CANCELLED.value:
@@ -134,5 +135,18 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
         # do not include temproary business identifier
         if data.get('business_identifier', None) and data.get('business_identifier').startswith('T'):
             data.pop('business_identifier')
+
+        # Include redirect_for_payment flag
+        redirect_for_payment: bool = False
+        if data.get('status_code') == InvoiceStatus.CREATED.value and \
+                data.get('payment_method') in (PaymentMethod.DIRECT_PAY.value, PaymentMethod.CC.value,
+                                               PaymentMethod.ONLINE_BANKING.value):
+            redirect_for_payment = True
+
+        data['is_payment_action_required'] = redirect_for_payment
+
+        # TODO remove it later, adding this here to make non-breaking changes for other teams
+        if data.get('status_code') == InvoiceStatus.PAID.value:
+            data['status_code'] = PaymentStatus.COMPLETED.value
 
         return data
