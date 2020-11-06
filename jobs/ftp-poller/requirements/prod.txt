@@ -1,0 +1,23 @@
+gunicorn
+Flask
+Flask-Migrate
+Flask-Script
+Flask-Moment
+Flask-SQLAlchemy
+Flask-RESTplus
+flask-marshmallow==0.11.0
+flask-jwt-oidc>=0.1.5
+python-dotenv
+psycopg2-binary
+marshmallow==3.0.0.rc7
+marshmallow-sqlalchemy
+jsonschema
+requests
+Werkzeug==0.16.1
+pysftp
+minio
+
+-e git://github.com/pwei1018/jaeger-client-python.git@186f14e14758273ed108508c0d388a4f4de5c75b#egg=jaeger-client
+-e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components-1.0.0&subdirectory=python
+-e git+https://github.com/bcgov/sbc-pay.git#egg=pay-api&subdirectory=pay-api
+# -e git+https://github.com/sumesh-aot/sbc-pay.git@offline_cfs_account#egg=pay-api&subdirectory=pay-api
