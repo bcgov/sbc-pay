@@ -16,7 +16,7 @@ from flask import current_app
 from pysftp import Connection, CnOpts
 
 
-class SFTPService:
+class SFTPService:  # pylint: disable=too-few-public-methods
     """SFTP  Service class."""
 
     __instance: Connection = None
@@ -24,6 +24,7 @@ class SFTPService:
     @staticmethod
     def get_connection() -> Connection:
         """Return a SFTP connection."""
+        # pylint: disable=protected-access
         if not SFTPService.__instance or not SFTPService.__instance._sftp_live:
             SFTPService.__instance = SFTPService._connect()
         return SFTPService.__instance
@@ -37,11 +38,11 @@ class SFTPService:
             cnopts.hostkeys = None
         sftp_host: str = current_app.config.get('CAS_SFTP_HOST')
         sftp_port: int = current_app.config.get('CAS_SFTP_PORT')
-        sft_credentails = {
+        sft_credentials = {
             'username': current_app.config.get('CAS_SFTP_USER_NAME'),
             'password': current_app.config.get('CAS_SFTP_PASSWORD'),
             'private_key': current_app.config.get('BCREG_FTP_PRIVATE_KEY'),
             'private_key_pass': current_app.config.get('BCREG_FTP_PRIVATE_KEY_PASSPHRASE')
         }
-        sftp_connection = Connection(host=sftp_host, **sft_credentails, cnopts=cnopts,port=sftp_port)
+        sftp_connection = Connection(host=sftp_host, **sft_credentials, cnopts=cnopts, port=sftp_port)
         return sftp_connection

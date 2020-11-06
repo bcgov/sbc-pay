@@ -49,7 +49,7 @@ def client(app):  # pylint: disable=redefined-outer-name
 
 
 @pytest.fixture(scope='session')
-def client_ctx(app):
+def client_ctx(app):  # pylint: disable=redefined-outer-name
     """Return session-wide Flask test client."""
     with app.test_client() as _client:
         yield _client
@@ -139,7 +139,7 @@ def session(app, db):  # pylint: disable=redefined-outer-name, invalid-name
 
 
 @pytest.fixture(scope='session', autouse=True)
-def auto(docker_services, app):
+def auto(docker_services, app):  # pylint: disable=redefined-outer-name
     """Spin up docker instances."""
     if app.config['USE_DOCKER_MOCK']:
         docker_services.start('proxy')
@@ -151,7 +151,7 @@ def auto(docker_services, app):
 @pytest.fixture(scope='session')
 def docker_compose_files(pytestconfig):
     """Get the docker-compose.yml absolute path."""
-    import os
+    import os  # pylint: disable=import-outside-toplevel
     return [
         os.path.join(str(pytestconfig.rootdir), 'tests/docker', 'docker-compose.yml')
     ]

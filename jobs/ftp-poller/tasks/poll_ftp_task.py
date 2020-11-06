@@ -33,7 +33,10 @@ class PollFtpTask:  # pylint:disable=too-few-public-methods
 
         Steps:
         1. List Files.
-        2. If file
+        2. If file exists ,
+                copy to minio
+                archive to back up folder
+                send jms message
         """
         payment_file_list: List[str] = []
         try:
@@ -48,7 +51,7 @@ class PollFtpTask:  # pylint:disable=too-few-public-methods
                 file_full_name = ftp_dir + '/' + file_name
                 current_app.logger.info(f'Processing file  {file_full_name} started-----.')
                 if PollFtpTask._is_valid_payment_file(file_full_name):
-                    cls.upload_to_minio(file, file_full_name, sftp_client)
+                    cls._upload_to_minio(file, file_full_name, sftp_client)
                     payment_file_list.append(file_name)
 
             if len(payment_file_list) > 0:
@@ -61,7 +64,8 @@ class PollFtpTask:  # pylint:disable=too-few-public-methods
         return payment_file_list
 
     @classmethod
-    def upload_to_minio(cls, file, file_full_name, sftp_client):
+    def _upload_to_minio(cls, file, file_full_name, sftp_client):
+        """Upload to minio."""
         f: SFTPFile
         with sftp_client.open(file_full_name) as f:
             f.prefetch()
@@ -76,14 +80,16 @@ class PollFtpTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _post_process(cls, payment_file_list: List[str]):
         """
+        Post processing of the file.
+
         1.Move the file to backup folder
         2.Send a message to queue
         """
-        cls.move_file_to_backup(payment_file_list)
-        cls.publish_to_queue(payment_file_list)
+        cls._move_file_to_backup(payment_file_list)
+        cls._publish_to_queue(payment_file_list)
 
     @classmethod
-    def move_file_to_backup(cls, payment_file_list):
+    def _move_file_to_backup(cls, payment_file_list):
         sftp_client = SFTPService.get_connection()
         ftp_backup_dir: str = current_app.config.get('CAS_SFTP_BACKUP_DIRECTORY')
         ftp_dir: str = current_app.config.get('CAS_SFTP_DIRECTORY')
@@ -96,7 +102,7 @@ class PollFtpTask:  # pylint:disable=too-few-public-methods
         return sftp_client.isfile(file_name)
 
     @classmethod
-    def publish_to_queue(cls, file_names_list: List[str]):
+    def _publish_to_queue(cls, file_names_list: List[str]):
         # Publish message to the Queue, saying file has been uploaded. Using the event spec.
         file_names: str = ','.join(file_names_list)
         queue_data = {
@@ -122,7 +128,6 @@ class PollFtpTask:  # pylint:disable=too-few-public-methods
         except Exception as e:  # pylint: disable=broad-except
             current_app.logger.error(e)
             current_app.logger.warning(
-                f'Notification to Queue failed for the file '
-                f': {",".join(file_names)}',
+                f'Notification to Queue failed for the file {file_names}',
                 e)
             raise

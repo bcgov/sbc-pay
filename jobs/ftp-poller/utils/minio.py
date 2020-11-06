@@ -13,8 +13,6 @@
 # limitations under the License.
 """This module is a wrapper for Minio."""
 import io
-import uuid
-from datetime import timedelta
 
 from flask import current_app
 from minio import Minio
