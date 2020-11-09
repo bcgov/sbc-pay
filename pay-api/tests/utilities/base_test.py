@@ -25,7 +25,7 @@ from pay_api.models import (CfsAccount,
                             InvoiceReference, Payment,
                             PaymentAccount, PaymentLineItem, PaymentTransaction, DistributionCode, StatementSettings,
                             Statement,
-                            StatementInvoices)
+                            StatementInvoices, Receipt)
 from pay_api.utils.enums import PaymentSystem, Role, PaymentStatus, InvoiceReferenceStatus, \
     LineItemStatus, InvoiceStatus, PaymentMethod
 
@@ -365,6 +365,21 @@ def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021'):
     return InvoiceReference(invoice_id=invoice_id,
                             status_code=InvoiceReferenceStatus.ACTIVE.value,
                             invoice_number=invoice_number)
+
+
+def factory_receipt(
+        invoice_id: int,
+        receipt_number: str = 'TEST1234567890',
+        receipt_date: datetime = datetime.now(),
+        receipt_amount: float = 10.0
+):
+    """Return Factory."""
+    return Receipt(
+        invoice_id=invoice_id,
+        receipt_number=receipt_number,
+        receipt_date=receipt_date,
+        receipt_amount=receipt_amount
+    )
 
 
 def factory_statement_settings(

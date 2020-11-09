@@ -50,6 +50,7 @@ from .ejv_batch import EjvBatch
 from .ejv_batch_link import EjvBatchLink
 from .invoice_batch import InvoiceBatch
 from .invoice_batch_link import InvoiceBatchLink
+from .refund import Refund
 
 
 event.listen(Engine, 'before_cursor_execute', DBTracing.query_tracing)
