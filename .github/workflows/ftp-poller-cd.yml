@@ -38,7 +38,7 @@ jobs:
         with:
           WORKING_DIRECTORY: "./jobs/ftp-poller"
           APP_NAME: "ftp-poller"
-          VAULTS: '[{ \"vault\": \"shared\", \"application\": [\"keycloak\", \"nats\"]}, {\"vault\": \"relationship\",\"application\": [\"postgres-pay\", \"pay-api\", \"sentry\", \"jwt\", \"ftp-poller\",\"payment-reconciliations\"]}]'
+          VAULTS: '[{ \"vault\": \"shared\", \"application\": [\"minio\", \"nats\"]}, {\"vault\": \"relationship\",\"application\": [\"postgres-pay\", \"pay-api\", \"sentry\", \"jwt\", \"ftp-poller\",\"payment-reconciliations\"]}]'
           SKIP_OP: "false"
           OP_PARAMETERS: ${{ secrets.OP_PARAMETERS }}
           OPENSHIFT_LOGIN_REGISTRY: ${{ secrets.OPENSHIFT_LOGIN_REGISTRY }}
