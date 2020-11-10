@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """This module is a wrapper for SFTP Connection object."""
+from base64 import decodebytes
+
+import paramiko
 from flask import current_app
 from pysftp import Connection, CnOpts
 
@@ -32,11 +35,16 @@ class SFTPService:  # pylint: disable=too-few-public-methods
     @staticmethod
     def _connect() -> Connection:
 
+        sftp_host: str = current_app.config.get('CAS_SFTP_HOST')
         cnopts = CnOpts()
         # only for local development set this to false .
-        if current_app.config.get('SFTP_VERIFY_HOST') == 'False':
+        if current_app.config.get('SFTP_VERIFY_HOST').lower() == 'false':
             cnopts.hostkeys = None
-        sftp_host: str = current_app.config.get('CAS_SFTP_HOST')
+        else:
+            ftp_host_key_data = current_app.config.get('CAS_SFTP_HOST_KEY')
+            key = paramiko.RSAKey(data=decodebytes(ftp_host_key_data))
+            cnopts.hostkeys.add(sftp_host, 'ssh-rsa', key)
+
         sftp_port: int = current_app.config.get('CAS_SFTP_PORT')
         sft_credentials = {
             'username': current_app.config.get('CAS_SFTP_USER_NAME'),

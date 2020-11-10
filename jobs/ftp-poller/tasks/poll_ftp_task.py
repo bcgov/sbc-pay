@@ -20,8 +20,8 @@ from paramiko import SFTPFile
 from paramiko.sftp_attr import SFTPAttributes
 from pay_api.services.queue_publisher import publish_response
 
-from utils.minio import MinioService
-from utils.sftp import SFTPService
+from utils.minio import put_object
+from services.sftp import SFTPService
 
 
 class PollFtpTask:  # pylint:disable=too-few-public-methods
@@ -71,7 +71,7 @@ class PollFtpTask:  # pylint:disable=too-few-public-methods
             f.prefetch()
             value_as_bytes = f.read()
             try:
-                MinioService.put_object(value_as_bytes, file.filename, file.st_size)
+                put_object(value_as_bytes, file.filename, file.st_size)
             except Exception as e:  # pylint: disable=broad-except
                 current_app.logger.error(e)
                 current_app.logger.error(f'upload to minio failed for the file: {file_full_name}')
@@ -102,32 +102,32 @@ class PollFtpTask:  # pylint:disable=too-few-public-methods
         return sftp_client.isfile(file_name)
 
     @classmethod
-    def _publish_to_queue(cls, file_names_list: List[str]):
+    def _publish_to_queue(cls, payment_file_list: List[str]):
         # Publish message to the Queue, saying file has been uploaded. Using the event spec.
-        file_names: str = ','.join(file_names_list)
         queue_data = {
-            'fileName': file_names,
-            'file_source': 'MINIO',
+            'fileSource': 'MINIO',
             'location': current_app.config['MINIO_BUCKET_NAME']
         }
+        for file_name in payment_file_list:
+            queue_data['fileName'] = file_name
 
-        payload = {
-            'specversion': '1.x-wip',
-            'type': 'bc.registry.payment.' + 'paymentFileTypeUploaded',
-            'source': file_names,
-            'id': file_names,
-            'time': f'{datetime.now()}',
-            'datacontenttype': 'application/json',
-            'data': queue_data
-        }
+            payload = {
+                'specversion': '1.x-wip',
+                'type': 'bc.registry.payment.paymentFileTypeUploaded',
+                'source': file_name,
+                'id': file_name,
+                'time': f'{datetime.now()}',
+                'datacontenttype': 'application/json',
+                'data': queue_data
+            }
 
-        try:
-            publish_response(payload=payload,
-                             client_name=current_app.config.get('NATS_ACCOUNT_CLIENT_NAME'),
-                             subject=current_app.config.get('NATS_ACCOUNT_SUBJECT'))
-        except Exception as e:  # pylint: disable=broad-except
-            current_app.logger.error(e)
-            current_app.logger.warning(
-                f'Notification to Queue failed for the file {file_names}',
-                e)
-            raise
+            try:
+                publish_response(payload=payload,
+                                 client_name=current_app.config.get('NATS_PAYMENT_RECONCILIATIONS_CLIENT_NAME'),
+                                 subject=current_app.config.get('NATS_PAYMENT_RECONCILIATIONS_SUBJECT'))
+            except Exception as e:  # pylint: disable=broad-except
+                current_app.logger.error(e)
+                current_app.logger.warning(
+                    f'Notification to Queue failed for the file {file_name}',
+                    e)
+                raise

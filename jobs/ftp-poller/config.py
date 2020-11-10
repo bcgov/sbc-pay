@@ -80,6 +80,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CAS_SFTP_BACKUP_DIRECTORY = os.getenv('CAS_SFTP_BACKUP_DIRECTORY', '/backup')
     SFTP_VERIFY_HOST = os.getenv('SFTP_VERIFY_HOST', 'True')
     CAS_SFTP_PORT = os.getenv('CAS_SFTP_PORT', 22)
+    CAS_SFTP_HOST_KEY = os.getenv('CAS_SFTP_HOST_KEY', '')
+    BCREG_FTP_PRIVATE_KEY = os.getenv('BCREG_FTP_PRIVATE_KEY', '')
+    BCREG_FTP_PRIVATE_KEY_PASSPHRASE = os.getenv('BCREG_FTP_PRIVATE_KEY_PASSPHRASE', '')
 
     # NATS Config
     NATS_SERVERS = os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(',')
@@ -87,8 +90,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     NATS_QUEUE = os.getenv('NATS_QUEUE', 'account-worker')
 
     # NATS Config for account events
-    NATS_ACCOUNT_CLIENT_NAME = os.getenv('NATS_CLIENT_NAME', 'account.events.worker')
-    NATS_ACCOUNT_SUBJECT = os.getenv('NATS_SUBJECT', 'account.events')
+    NATS_PAYMENT_RECONCILIATIONS_CLIENT_NAME = os.getenv('NATS_PAYMENT_RECONCILIATIONS_CLIENT_NAME', 'payment.reconciliations.worker')
+    NATS_PAYMENT_RECONCILIATIONS_SUBJECT = os.getenv('NATS_SUBJECT', 'payment.reconciliations')
 
     # Minio configuration values
     MINIO_ENDPOINT = os.getenv('MINIO_ENDPOINT')

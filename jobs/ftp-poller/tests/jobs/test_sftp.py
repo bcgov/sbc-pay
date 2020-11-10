@@ -21,8 +21,8 @@ from typing import List
 
 from flask import current_app
 
-from utils.sftp import SFTPService
-from utils.minio import MinioService
+from services.sftp import SFTPService
+from utils.minio import get_object
 from tasks.poll_ftp_task import PollFtpTask
 
 
@@ -41,7 +41,7 @@ def test_poll_ftp_task(session):    # pylint:disable=unused-argument
     assert len(files) == 1, 'Files exist in FTP folder'
 
     payment_file_list: List[str] = PollFtpTask.poll_ftp()
-    minio_file_content = MinioService.get_object(payment_file_list[0]).read().decode()
+    minio_file_content = get_object(payment_file_list[0]).read().decode()
     full_path = os.path.join(os.path.dirname(__file__), '../docker/ftp/test.txt')
     sftp_local_file_content = open(full_path, "r").read()
     assert minio_file_content == sftp_local_file_content, 'minio upload works fine.' \
