@@ -120,7 +120,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
             invoice.commit()
 
-            pay_service.complete_post_invoice(invoice.id, invoice_reference)
+            pay_service.complete_post_invoice(invoice, invoice_reference)
 
             invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
 

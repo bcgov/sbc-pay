@@ -79,7 +79,7 @@ class PaybcService(PaymentSystemService, CFSService):
     def update_account(self, name: str, cfs_account: any, payment_info: Dict[str, Any]) -> any:
         """No CFS account update."""
 
-    def complete_post_invoice(self, invoice_id: int, invoice_reference: InvoiceReference) -> None:
+    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
 
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals

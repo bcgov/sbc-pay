@@ -183,7 +183,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
         return None
 
-    def complete_post_invoice(self, invoice_id: int, invoice_reference: InvoiceReference) -> None:
+    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
 
     def __get_token(self):

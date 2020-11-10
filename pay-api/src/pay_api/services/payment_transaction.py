@@ -208,7 +208,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
             payment = Payment.create(payment_method=pay_system_service.get_payment_method_code(),
                                      payment_system=pay_system_service.get_payment_system_code(),
                                      payment_status=pay_system_service.get_default_payment_status(),
-                                     invoice_number=invoice_reference.invoice_number)
+                                     invoice_number=invoice_reference.invoice_number,
+                                     invoice_amount=invoice.total)
 
         # Cannot start transaction on completed payment
         if payment.payment_status_code in (PaymentStatus.COMPLETED.value, PaymentStatus.DELETED.value):
@@ -336,7 +337,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
             receipt = PaymentTransaction.__save_receipt(invoice, receipt_details)
 
             invoice.paid = receipt.receipt_amount
-            payment.amount = receipt.receipt_amount
+            payment.paid_amount = receipt.receipt_amount
 
             if invoice.paid == invoice.total:
                 payment.payment_status_code = PaymentStatus.COMPLETED.value

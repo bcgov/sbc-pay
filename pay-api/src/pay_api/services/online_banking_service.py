@@ -82,5 +82,5 @@ class OnlineBankingService(PaymentSystemService, CFSService):
 
     # TODO implement this method
 
-    def complete_post_invoice(self, invoice_id: int, invoice_reference: InvoiceReference) -> None:
+    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""

@@ -94,8 +94,10 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
             # Add all lines together
             lines = []
+            invoice_total: float = 0
             for invoice in account_invoices:
                 lines.append(*invoice.payment_line_items)
+                invoice_total += invoice.total
 
             try:
                 # Get the first invoice id as the trx number for CFS
@@ -113,7 +115,9 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             payment = Payment.create(payment_method=pad_service.get_payment_method_code(),
                                      payment_system=pad_service.get_payment_system_code(),
                                      payment_status=pad_service.get_default_payment_status(),
-                                     invoice_number=invoice_response.json().get('invoice_number'))
+                                     invoice_number=invoice_response.json().get('invoice_number'),
+                                     payment_account_id=payment_account.id,
+                                     invoice_amount=invoice_total)
 
             # Create a transaction record
             transaction: PaymentTransactionModel = PaymentTransactionModel()
@@ -168,7 +172,9 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             payment = Payment.create(payment_method=online_banking_service.get_payment_method_code(),
                                      payment_system=online_banking_service.get_payment_system_code(),
                                      payment_status=online_banking_service.get_default_payment_status(),
-                                     invoice_number=invoice_reference.invoice_number)
+                                     invoice_number=invoice_reference.invoice_number,
+                                     invoice_amount=invoice.total,
+                                     payment_account_id=payment_account.id)
 
             transaction: PaymentTransactionModel = PaymentTransactionModel()
             transaction.payment_id = payment.id
