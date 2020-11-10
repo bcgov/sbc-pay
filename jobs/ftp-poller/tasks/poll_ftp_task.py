@@ -113,7 +113,7 @@ class PollFtpTask:  # pylint:disable=too-few-public-methods
 
             payload = {
                 'specversion': '1.x-wip',
-                'type': 'bc.registry.payment.paymentFileTypeUploaded',
+                'type': 'bc.registry.payment.casSettlementUploaded',
                 'source': file_name,
                 'id': file_name,
                 'time': f'{datetime.now()}',
