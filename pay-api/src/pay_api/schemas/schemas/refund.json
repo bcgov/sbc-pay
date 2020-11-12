@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/refund",
+  "type": "object",
+  "title": "Refund",
+  "required": [
+  ],
+  "properties": {
+    "reason": {
+      "$id": "#/properties/receipts/items/properties/reason",
+      "type": "string",
+      "title": "Amount",
+      "examples": [
+        "Duplicate Invoice"
+      ]
+    }
+  }
+}

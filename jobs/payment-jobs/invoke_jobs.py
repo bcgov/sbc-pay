@@ -65,7 +65,7 @@ def register_shellcontext(app):
 
 def run(job_name):
     from tasks.cfs_create_account_task import CreateAccountTask
-    from tasks.cfs_create_invoice import CreateInvoiceTask
+    from tasks.cfs_create_invoice_task import CreateInvoiceTask
     from tasks.distribution_task import DistributionTask
     from tasks.stale_payment_task import StalePaymentTask
     from tasks.statement_notification_task import StatementNotificationTask

@@ -1370,6 +1370,35 @@ paths:
         name: account_id
         in: path
         required: true
+  '/api/v1/payment-requests/{invoice_identifier}/refunds':
+    parameters:
+      - schema:
+          type: string
+        name: invoice_identifier
+        in: path
+        required: true
+        description: Invoice Identifier
+    post:
+      summary: 'Create refund request'
+      operationId: create_refund
+      tags: 
+        - Refunds
+      responses:
+        '202':
+          description: Accepted
+      description: 'Endpoint to create requests for refund. This endpoint is secured to be invoked only using service accounts, as the refund requirement rules are are controlled by the client system.'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Refund'
+            examples:
+              /api/v1/payment-requests/1/refunds:
+                value:
+                  reason: Duplicate submission
+              /api/v1/payment-requests/2/refunds:
+                value:
+                  reason: Incorrect fees
 components:
   schemas:
     ErrorResponse:
@@ -1532,6 +1561,8 @@ components:
       description: <p>Object to hold invoice reference details from other systems. </p>
     Invoice:
       type: object
+      title: Invoice
+      description: <p>Object to hold invoice information </p>
       properties:
         _links:
           $ref: '#/components/schemas/Links'
@@ -1579,8 +1610,9 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LineItem'
-      title: Invoice
-      description: <p>Object to hold invoice information </p>
+        isPaymentActionRequired:
+          type: boolean
+          description: Flag to indicate if a user action/redirection is needed to complete the payment.
     Transaction:
       type: object
       properties:
@@ -1772,6 +1804,20 @@ components:
             billable:
               type: boolean
               description: is it billable
+    Refund:
+      title: Refund
+      type: object
+      properties:
+        reason:
+          type: string
+          description: Reason for refund
+        requestedDate:
+          type: string
+          description: Date when refund was requested
+        requestedBy:
+          type: string
+          description: Person who initiated refund
+      description: Model to store refund details.
   securitySchemes:
     JWT:
       type: http
@@ -1789,3 +1835,4 @@ tags:
   - name: Receipts
   - name: Transaction Reports
   - name: Accounts
+  - name: Refunds

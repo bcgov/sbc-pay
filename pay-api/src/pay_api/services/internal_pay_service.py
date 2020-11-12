@@ -26,6 +26,7 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import PaymentSystem, PaymentMethod, InvoiceStatus, PaymentStatus
+from pay_api.utils.util import generate_transaction_number
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -53,7 +54,8 @@ class InternalPayService(PaymentSystemService, OAuthService):
         """Return a static invoice number."""
         current_app.logger.debug('<create_invoice')
 
-        invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id, str(invoice.id), None)
+        invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id,
+                                                                      generate_transaction_number(invoice.id), None)
 
         current_app.logger.debug('>create_invoice')
         return invoice_reference

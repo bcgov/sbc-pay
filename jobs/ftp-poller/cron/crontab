@@ -1,0 +1,2 @@
+*/30 * * * * default cd /ftp-poller && ./run_ftp_poller.sh
+# An empty line is required at the end of this file for a valid cron file.

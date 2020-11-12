@@ -24,7 +24,6 @@ from pay_api.models import InvoiceSchema
 from pay_api.services.auth import check_auth
 from pay_api.utils.constants import ALL_ALLOWED_ROLES
 from pay_api.utils.errors import Error
-from pay_api.utils.enums import InvoiceStatus, PaymentStatus
 
 
 class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
@@ -311,10 +310,6 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         """Return the invoice as a python dict."""
         invoice_schema = InvoiceSchema()
         d = invoice_schema.dump(self._dao)
-        # TODO remove it later, adding this here to make non-breaking changes for other teams
-        if d.get('status_code') == InvoiceStatus.PAID.value:
-            d['status_code'] = PaymentStatus.COMPLETED.value
-
         return d
 
     @staticmethod

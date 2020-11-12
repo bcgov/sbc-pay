@@ -28,6 +28,7 @@ from flask import current_app
 
 def cors_preflight(methods: str = 'GET'):
     """Render an option method on the class."""
+
     def wrapper(f):
         def options(self, *args, **kwargs):  # pylint: disable=unused-argument
             return {'Allow': methods}, 200, \
@@ -120,3 +121,14 @@ def get_local_time(date_val: datetime):
     tz_local = pytz.timezone(tz_name)
     date_val = date_val.astimezone(tz_local)
     return date_val
+
+
+def get_local_formatted_date_time(date_val: datetime):
+    """Return formatted local time."""
+    return get_local_time(date_val).strftime('%Y-%m-%d %H:%M:%S')
+
+
+def generate_transaction_number(inv_id: int) -> str:
+    """Return transaction number for invoices."""
+    prefix = current_app.config.get('CFS_INVOICE_PREFIX')
+    return f'{prefix}{inv_id:08}'

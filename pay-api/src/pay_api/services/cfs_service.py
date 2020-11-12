@@ -15,16 +15,21 @@
 import base64
 import re
 from http import HTTPStatus
-from typing import Dict, Any, Tuple
+from typing import Any, Dict, List, Tuple
 
 from flask import current_app
 from requests import HTTPError
 
 from pay_api.exceptions import ServiceUnavailableException
+from pay_api.models import DistributionCode as DistributionCodeModel
+from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import (
-    DEFAULT_ADDRESS_LINE_1, DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE)
-from pay_api.utils.enums import AuthHeaderType, ContentType
+    CFS_BATCH_SOURCE, CFS_CUST_TRX_TYPE, CFS_LINE_TYPE, CFS_TERM_NAME, DEFAULT_ADDRESS_LINE_1,
+    DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE)
+from pay_api.utils.enums import (
+    AuthHeaderType, ContentType)
+from pay_api.utils.util import current_local_time, generate_transaction_number
 
 
 class CFSService(OAuthService):
@@ -223,6 +228,92 @@ class CFSService(OAuthService):
                                            ContentType.FORM_URL_ENCODED, data)
         current_app.logger.debug('>Getting token')
         return token_response
+
+    @classmethod
+    def create_account_invoice(cls, transaction_number: str, line_items: List[PaymentLineItemModel], payment_account) \
+            -> Dict[str, any]:
+        """Create CFS Account Invoice."""
+        now = current_local_time()
+        curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        invoice_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/' \
+            .format(payment_account.cfs_party, payment_account.cfs_account, payment_account.cfs_site)
+
+        invoice_payload = dict(
+            batch_source=CFS_BATCH_SOURCE,
+            cust_trx_type=CFS_CUST_TRX_TYPE,
+            transaction_date=curr_time,
+            transaction_number=generate_transaction_number(transaction_number),
+            gl_date=curr_time,
+            term_name=CFS_TERM_NAME,
+            comments='',
+            lines=cls._build_lines(line_items)
+        )
+
+        access_token = CFSService.get_token().json().get('access_token')
+        invoice_response = CFSService.post(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                           invoice_payload)
+        return invoice_response
+
+    @classmethod
+    def _build_lines(cls, payment_line_items: List[PaymentLineItemModel]):
+        """Build lines for the invoice."""
+        # Fetch all distribution codes to reduce DB hits. Introduce caching if needed later
+        distribution_codes: List[DistributionCodeModel] = DistributionCodeModel.find_all()
+        lines = []
+        index: int = 0
+        for line_item in payment_line_items:
+            # Find the distribution from the above list
+            distribution_code = [dist for dist in distribution_codes
+                                 if dist.distribution_code_id == line_item.fee_distribution_id][0]
+            index = index + 1
+            lines.append(
+                {
+                    'line_number': index,
+                    'line_type': CFS_LINE_TYPE,
+                    'description': line_item.description,
+                    'unit_price': line_item.total,
+                    'quantity': 1,
+                    'attribute1': line_item.invoice_id,
+                    'attribute2': line_item.id,
+                    'distribution': [
+                        {
+                            'dist_line_number': index,
+                            'amount': line_item.total,
+                            'account': f'{distribution_code.client}.{distribution_code.responsibility_centre}.'
+                                       f'{distribution_code.service_line}.{distribution_code.stob}.'
+                                       f'{distribution_code.project_code}.000000.0000'
+                        }
+                    ]
+                }
+            )
+
+            if line_item.service_fees > 0:
+                index = index + 1
+                lines.append(
+                    {
+                        'line_number': index,
+                        'line_type': CFS_LINE_TYPE,
+                        'description': 'Service Fee',
+                        'unit_price': line_item.service_fees,
+                        'quantity': 1,
+                        'attribute1': line_item.invoice_id,
+                        'attribute2': line_item.id,
+                        'distribution': [
+                            {
+                                'dist_line_number': index,
+                                'amount': line_item.service_fees,
+                                'account': f'{distribution_code.service_fee_client}.'
+                                           f'{distribution_code.service_fee_responsibility_centre}.'
+                                           f'{distribution_code.service_fee_line}.'
+                                           f'{distribution_code.service_fee_stob}.'
+                                           f'{distribution_code.service_fee_project_code}.000000.0000'
+                            }
+                        ]
+                    }
+                )
+
+        return lines
 
 
 def get_non_null_value(value: str, default_value: str):

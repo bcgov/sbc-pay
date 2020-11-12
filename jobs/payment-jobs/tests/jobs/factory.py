@@ -62,7 +62,7 @@ def factory_payment(
     ).save()
 
 
-def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.value,
+def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceStatus.CREATED.value,
                     corp_type_code='CP',
                     business_identifier: str = 'CP0001234',
                     service_fees: float = 0.0, total=0,
@@ -80,7 +80,7 @@ def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.va
         folio_number='1234567890',
         service_fees=service_fees,
         bcol_account=payment_account.bcol_account,
-        payment_method_code=payment_method_code
+        payment_method_code=payment_method_code or payment_account.payment_method
     ).save()
 
 

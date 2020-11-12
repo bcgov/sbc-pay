@@ -80,7 +80,7 @@ class _Config():  # pylint: disable=too-few-public-methods
 
     NATS_CONNECTION_OPTIONS = {
         'servers': os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(','),
-        'name': os.getenv('NATS_CLIENT_NAME', 'entity.events.worker')
+        'name': os.getenv('NATS_ENTITY_EVENTS_CLIENT_NAME', 'entity.events.worker')
 
     }
     STAN_CONNECTION_OPTIONS = {
@@ -91,9 +91,9 @@ class _Config():  # pylint: disable=too-few-public-methods
     }
 
     SUBSCRIPTION_OPTIONS = {
-        'subject': os.getenv('NATS_SUBJECT', 'entity.events'),
-        'queue': os.getenv('NATS_QUEUE', 'filing-worker'),
-        'durable_name': os.getenv('NATS_QUEUE', 'filing-worker') + '_durable',
+        'subject': os.getenv('NATS_ENTITY_EVENTS_SUBJECT', 'entity.events'),
+        'queue': os.getenv('NATS_ENTITY_EVENTS_QUEUE', 'events-worker'),
+        'durable_name': os.getenv('NATS_ENTITY_EVENTS_QUEUE', 'events-worker') + '_durable',
     }
 
 
@@ -126,6 +126,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     )
 
     STAN_CLUSTER_NAME = 'test-cluster'
+    TEST_NATS_DOCKER = os.getenv('TEST_NATS_DOCKER', None)
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

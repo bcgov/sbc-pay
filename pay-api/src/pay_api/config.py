@@ -104,6 +104,7 @@ class _Config():  # pylint: disable=too-few-public-methods
     CONNECT_TIMEOUT = int(_get_config('CONNECT_TIMEOUT', default=10))
     GENERATE_RANDOM_INVOICE_NUMBER = _get_config('CFS_GENERATE_RANDOM_INVOICE_NUMBER', default='False')
     CFS_ACCOUNT_DESCRIPTION = _get_config('CFS_ACCOUNT_DESCRIPTION', default='BCR')
+    CFS_INVOICE_PREFIX = os.getenv('CFS_INVOICE_PREFIX', 'REG')
 
     # PAYBC Direct Pay Settings
     PAYBC_DIRECT_PAY_REF_NUMBER = _get_config('PAYBC_DIRECT_PAY_REF_NUMBER')
@@ -118,10 +119,11 @@ class _Config():  # pylint: disable=too-few-public-methods
 
     # NATS Config
     NATS_SERVERS = _get_config('NATS_SERVERS', default='nats://127.0.0.1:4222').split(',')
-    NATS_CLIENT_NAME = _get_config('NATS_CLIENT_NAME', default='entity.filing.worker')
     NATS_CLUSTER_ID = _get_config('NATS_CLUSTER_ID', default='test-cluster')
-    NATS_SUBJECT = _get_config('NATS_SUBJECT', default='entity.filings')
-    NATS_QUEUE = _get_config('NATS_QUEUE', default='filing-worker')
+    NATS_PAYMENT_CLIENT_NAME = _get_config('NATS_PAYMENT_CLIENT_NAME', default='entity.filing.worker')
+    NATS_PAYMENT_SUBJECT = _get_config('NATS_PAYMENT_SUBJECT', default='entity.filings')
+    NATS_MAILER_CLIENT_NAME = _get_config('NATS_MAILER_CLIENT_NAME', default='account.mailer.worker')
+    NATS_MAILER_SUBJECT = _get_config('NATS_MAILER_SUBJECT', default='account.mailer')
 
     # Auth API Endpoint
     AUTH_API_ENDPOINT = _get_config('AUTH_API_ENDPOINT')

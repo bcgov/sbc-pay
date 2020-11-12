@@ -37,6 +37,7 @@ class PaymentStatus(Enum):
     CREATED = 'CREATED'
     COMPLETED = 'COMPLETED'
     DELETED = 'DELETED'
+    REFUNDED = 'REFUNDED'
 
 
 class InvoiceStatus(Enum):
@@ -47,6 +48,8 @@ class InvoiceStatus(Enum):
     DELETED = 'DELETED'
     UPDATE_REVENUE_ACCOUNT = 'GL_UPDATED'
     DELETE_ACCEPTED = 'DELETE_ACCEPTED'
+    SETTLEMENT_SCHEDULED = 'SETTLEMENT_SCHED'
+    REFUND_REQUESTED = 'REFUND_REQUESTED'
 
 
 class TransactionStatus(Enum):

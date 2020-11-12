@@ -56,6 +56,7 @@ def test_payment_creation_using_direct_pay(session, client, jwt, app):
 
     assert schema_utils.validate(rv.json, 'invoice')[0]
     assert rv.json.get('paymentMethod') == 'DIRECT_PAY'
+    assert rv.json.get('isPaymentActionRequired')
 
 
 def test_payment_creation_with_service_account(session, client, jwt, app):
@@ -191,6 +192,7 @@ def test_payment_creation_when_paybc_down(session, client, jwt, app):
 
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     assert rv.status_code == 201
+    assert rv.json.get('isPaymentActionRequired')
 
 
 def test_zero_dollar_payment_creation(session, client, jwt, app):
@@ -540,5 +542,7 @@ def test_bcol_payment_creation_by_system(session, client, jwt, app):
     assert rv.status_code == 201
     assert rv.json.get('datNumber') == dat_number
     assert rv.json.get('paymentMethod') == 'DRAWDOWN'
+
+    assert not rv.json.get('isPaymentActionRequired')
 
     assert schema_utils.validate(rv.json, 'invoice')[0]

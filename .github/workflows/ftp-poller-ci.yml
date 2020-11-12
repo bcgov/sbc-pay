@@ -1,0 +1,72 @@
+name: FTP Poller CI
+
+on:
+  pull_request:
+    branches:
+      - development
+    paths:
+      - "jobs/ftp-poller/**"
+
+jobs:
+  ftp-poller-ci:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./jobs/ftp-poller
+
+    if: github.repository == 'bcgov/sbc-pay'
+    env:
+      DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+      NATS_QUEUE: "account-worker"
+      NATS_CLUSTER_ID: "test-cluster"
+      NATS_CLIENT_NAME: "account.events.worker"
+      NATS_SUBJECT: "account.events"
+      USE_DOCKER_MOCK: "YES"
+      JWT_OIDC_ISSUER: "http://localhost:8081/auth/realms/demo"
+      KEYCLOAK_SERVICE_ACCOUNT_ID: "sbc-auth-admin"
+      KEYCLOAK_SERVICE_ACCOUNT_SECRET: "2222222222"
+
+    strategy:
+      matrix:
+        python-version: [3.8]
+    services:
+      postgres:
+        image: postgres:11
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        # needed because the postgres container does not provide a healthcheck
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -r requirements/dev.txt
+      - name: Lint with pylint
+        run: |
+          pylint --rcfile=setup.cfg --disable=C0301,W0511 tasks
+      - name: Lint with flake8
+        run: |
+          flake8 tasks tests
+      - name: Test with pytest
+        run: |
+          pip install .
+          export PYTHONPATH=./src/
+          pytest
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          file: ./jobs/ftp-poller/coverage.xml
+          flags: ftppoller
+          name: codecov-ftp-poller
+          fail_ci_if_error: true
