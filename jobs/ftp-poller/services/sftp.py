@@ -38,10 +38,11 @@ class SFTPService:  # pylint: disable=too-few-public-methods
         sftp_host: str = current_app.config.get('CAS_SFTP_HOST')
         cnopts = CnOpts()
         # only for local development set this to false .
+        current_app.logger.debug('SFTP_VERIFY_HOST-- >', current_app.config.get('SFTP_VERIFY_HOST'))
         if current_app.config.get('SFTP_VERIFY_HOST').lower() == 'false':
             cnopts.hostkeys = None
         else:
-            ftp_host_key_data = current_app.config.get('CAS_SFTP_HOST_KEY')
+            ftp_host_key_data = current_app.config.get('CAS_SFTP_HOST_KEY').encode()
             key = paramiko.RSAKey(data=decodebytes(ftp_host_key_data))
             cnopts.hostkeys.add(sftp_host, 'ssh-rsa', key)
 
@@ -49,7 +50,7 @@ class SFTPService:  # pylint: disable=too-few-public-methods
         sft_credentials = {
             'username': current_app.config.get('CAS_SFTP_USER_NAME'),
             'password': current_app.config.get('CAS_SFTP_PASSWORD'),
-            # private_key should be the absolute path to where private key file lies since pysftp looks up the file
+            # private_key should be the absolute path to where private key file lies since sftp
             'private_key': current_app.config.get('BCREG_FTP_PRIVATE_KEY_LOCATION'),
             'private_key_pass': current_app.config.get('BCREG_FTP_PRIVATE_KEY_PASSPHRASE')
         }
