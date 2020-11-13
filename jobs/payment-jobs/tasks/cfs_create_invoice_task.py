@@ -13,7 +13,6 @@
 # limitations under the License.
 """Task to create CFS invoices offline."""
 
-from datetime import datetime, timedelta
 from typing import List
 
 from flask import current_app
@@ -27,7 +26,7 @@ from pay_api.services.online_banking_service import OnlineBankingService
 from pay_api.services.pad_service import PadService
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
-from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, TransactionStatus
+from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus
 from sentry_sdk import capture_message
 
 
@@ -51,26 +50,19 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _create_pad_invoices(cls):  # pylint: disable=too-many-locals
         """Create PAD invoices in to CFS system."""
-        cutoff_utc_hours: int = current_app.config.get('CFS_INVOICE_CUT_OFF_HOURS_UTC')
-        cutoff_utc_minutes: int = current_app.config.get('CFS_INVOICE_CUT_OFF_MINUTES_UTC')
-
-        end_time = datetime.now().replace(hour=cutoff_utc_hours, minute=cutoff_utc_minutes)
-        start_time = end_time - timedelta(hours=24)
-
-        # Find all accounts which have done a transaction with from and to date
-        inv_subquery = db.session.query(InvoiceModel.payment_account_id).filter(
-            InvoiceModel.created_on <= end_time).filter(InvoiceModel.created_on >= start_time).subquery()
+        # Find all accounts which have done a transaction with PAD transactions
+        inv_subquery = db.session.query(InvoiceModel.payment_account_id) \
+            .filter(InvoiceModel.payment_method_code == PaymentMethod.PAD.value) \
+            .filter(InvoiceModel.invoice_status_code == PaymentStatus.CREATED.value).subquery()
 
         pad_accounts: List[PaymentAccountModel] = PaymentAccountModel.query.filter(
             PaymentAccountModel.id.in_(inv_subquery)).all()
 
-        current_app.logger.info(f'Found {len(pad_accounts)} with PAD transactions between {start_time} and {end_time}')
+        current_app.logger.info(f'Found {len(pad_accounts)} with PAD transactions.')
 
         for account in pad_accounts:
             # Find all PAD invoices for this account
             account_invoices = db.session.query(InvoiceModel) \
-                .filter(InvoiceModel.created_on <= end_time) \
-                .filter(InvoiceModel.created_on >= start_time) \
                 .filter(InvoiceModel.payment_account_id == account.id) \
                 .filter(InvoiceModel.payment_method_code == PaymentMethod.PAD.value) \
                 .filter(InvoiceModel.invoice_status_code == InvoiceStatus.CREATED.value) \

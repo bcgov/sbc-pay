@@ -6,3 +6,4 @@ asyncio-nats-client
 asyncio-nats-streaming
 pycountry
 Werkzeug<1
+minio
