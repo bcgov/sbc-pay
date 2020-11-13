@@ -49,8 +49,11 @@ class SFTPService:  # pylint: disable=too-few-public-methods
         sft_credentials = {
             'username': current_app.config.get('CAS_SFTP_USER_NAME'),
             'password': current_app.config.get('CAS_SFTP_PASSWORD'),
-            'private_key': current_app.config.get('BCREG_FTP_PRIVATE_KEY'),
+            # private_key should be the absolute path to where private key file lies since pysftp looks up the file
+            'private_key': current_app.config.get('BCREG_FTP_PRIVATE_KEY_LOCATION'),
             'private_key_pass': current_app.config.get('BCREG_FTP_PRIVATE_KEY_PASSPHRASE')
         }
         sftp_connection = Connection(host=sftp_host, **sft_credentials, cnopts=cnopts, port=sftp_port)
+        current_app.logger.debug('sftp_connection successful')
+        current_app.logger.debug('sftp_connection listing current directory', sftp_connection.listdir())
         return sftp_connection

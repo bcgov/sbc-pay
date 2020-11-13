@@ -43,6 +43,6 @@ def test_poll_ftp_task(session):    # pylint:disable=unused-argument
     payment_file_list: List[str] = PollFtpTask.poll_ftp()
     minio_file_content = get_object(payment_file_list[0]).read().decode()
     full_path = os.path.join(os.path.dirname(__file__), '../docker/ftp/test.txt')
-    sftp_local_file_content = open(full_path, "r").read()
+    sftp_local_file_content = open(full_path, 'r').read()
     assert minio_file_content == sftp_local_file_content, 'minio upload works fine.' \
                                                           'Contents of ftp drive and minio verified'
