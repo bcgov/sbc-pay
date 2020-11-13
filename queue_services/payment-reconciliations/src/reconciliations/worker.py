@@ -54,6 +54,7 @@ from reconciliations.minio import get_object
 
 from .enums import Column, SourceTransaction, Status, TargetTransaction
 
+
 qsm = QueueServiceManager()  # pylint: disable=invalid-name
 APP_CONFIG = config.get_named_config(os.getenv('DEPLOYMENT_ENV', 'production'))
 FLASK_APP = Flask(__name__)

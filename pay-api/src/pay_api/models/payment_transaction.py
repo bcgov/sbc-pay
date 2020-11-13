@@ -21,7 +21,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 
 from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
-from pay_api.utils.enums import InvoiceReferenceStatus,PaymentMethod, TransactionStatus
+from pay_api.utils.enums import InvoiceReferenceStatus, PaymentMethod, TransactionStatus
 from .base_model import BaseModel
 from .base_schema import BaseSchema
 from .db import db
