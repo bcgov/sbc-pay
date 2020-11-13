@@ -43,7 +43,6 @@ class SFTPService:  # pylint: disable=too-few-public-methods
             cnopts.hostkeys = None
         else:
             host_key = current_app.config.get('CAS_SFTP_HOST_KEY')
-            current_app.logger.debug(f'>>>>>>>>>>>>>>host_key:{host_key}')
             ftp_host_key_data = current_app.config.get('CAS_SFTP_HOST_KEY').encode()
             key = paramiko.RSAKey(data=decodebytes(ftp_host_key_data))
             cnopts.hostkeys.add(sftp_host, 'ssh-rsa', key)
@@ -56,9 +55,10 @@ class SFTPService:  # pylint: disable=too-few-public-methods
             'private_key_pass': current_app.config.get('BCREG_FTP_PRIVATE_KEY_PASSPHRASE')
         }
 
-        current_app.logger.debug(f'>>>>>>>>>>>>>>sft_credentials:', json.dumps(sft_credentials))
-        current_app.logger.debug(f'>>>>>>>>>>>>>>sftp_port:{sftp_port}')
-        current_app.logger.debug(f'>>>>>>>>>>>>>>sftp_host:{sftp_host}')
+        # to support local testing. SFTP CAS server should run in private key mode
+        if password := current_app.config.get('CAS_SFTP_PASSWORD'):
+            sft_credentials['password'] = password
+
         sftp_connection = Connection(host=sftp_host, **sft_credentials, cnopts=cnopts, port=sftp_port)
         current_app.logger.debug('sftp_connection successful')
         current_app.logger.debug('sftp_connection listing current directory', sftp_connection.listdir())
