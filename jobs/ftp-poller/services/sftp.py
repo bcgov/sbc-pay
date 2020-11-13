@@ -38,10 +38,11 @@ class SFTPService:  # pylint: disable=too-few-public-methods
         sftp_host: str = current_app.config.get('CAS_SFTP_HOST')
         cnopts = CnOpts()
         # only for local development set this to false .
-        current_app.logger.debug('SFTP_VERIFY_HOST-- >', current_app.config.get('SFTP_VERIFY_HOST'))
         if current_app.config.get('SFTP_VERIFY_HOST').lower() == 'false':
             cnopts.hostkeys = None
         else:
+            host_key = current_app.config.get('CAS_SFTP_HOST_KEY')
+            current_app.logger.debug('>>>>>>>>>>>>>>host_key:', host_key)
             ftp_host_key_data = current_app.config.get('CAS_SFTP_HOST_KEY').encode()
             key = paramiko.RSAKey(data=decodebytes(ftp_host_key_data))
             cnopts.hostkeys.add(sftp_host, 'ssh-rsa', key)
@@ -54,6 +55,9 @@ class SFTPService:  # pylint: disable=too-few-public-methods
             'private_key': current_app.config.get('BCREG_FTP_PRIVATE_KEY_LOCATION'),
             'private_key_pass': current_app.config.get('BCREG_FTP_PRIVATE_KEY_PASSPHRASE')
         }
+        current_app.logger.debug('>>>>>>>>>>>>>>sft_credentials:', sft_credentials)
+        current_app.logger.debug('>>>>>>>>>>>>>>sftp_port:', sftp_port)
+        current_app.logger.debug('>>>>>>>>>>>>>>sftp_host:', sftp_host)
         sftp_connection = Connection(host=sftp_host, **sft_credentials, cnopts=cnopts, port=sftp_port)
         current_app.logger.debug('sftp_connection successful')
         current_app.logger.debug('sftp_connection listing current directory', sftp_connection.listdir())
