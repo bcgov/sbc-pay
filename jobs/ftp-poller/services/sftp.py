@@ -61,5 +61,4 @@ class SFTPService:  # pylint: disable=too-few-public-methods
 
         sftp_connection = Connection(host=sftp_host, **sft_credentials, cnopts=cnopts, port=sftp_port)
         current_app.logger.debug('sftp_connection successful')
-        current_app.logger.debug('sftp_connection listing current directory', sftp_connection.listdir())
         return sftp_connection
