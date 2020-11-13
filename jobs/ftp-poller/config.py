@@ -75,7 +75,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # FTP CONFIG
     CAS_SFTP_HOST = os.getenv('CAS_SFTP_HOST', 'localhost')
     CAS_SFTP_USER_NAME = os.getenv('CAS_SFTP_USER_NAME', 'foo')
-    CAS_SFTP_PASSWORD = os.getenv('CAS_SFTP_PASSWORD', 'pass')
+    CAS_SFTP_PASSWORD = os.getenv('CAS_SFTP_PASSWORD', '')
     CAS_SFTP_DIRECTORY = os.getenv('CAS_SFTP_DIRECTORY', '/upload')
     CAS_SFTP_BACKUP_DIRECTORY = os.getenv('CAS_SFTP_BACKUP_DIRECTORY', '/backup')
     SFTP_VERIFY_HOST = os.getenv('SFTP_VERIFY_HOST', 'True')
