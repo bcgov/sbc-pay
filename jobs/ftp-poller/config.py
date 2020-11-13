@@ -75,13 +75,14 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # FTP CONFIG
     CAS_SFTP_HOST = os.getenv('CAS_SFTP_HOST', 'localhost')
     CAS_SFTP_USER_NAME = os.getenv('CAS_SFTP_USER_NAME', 'foo')
-    CAS_SFTP_PASSWORD = os.getenv('CAS_SFTP_PASSWORD', 'pass')
+    CAS_SFTP_PASSWORD = os.getenv('CAS_SFTP_PASSWORD', '')
     CAS_SFTP_DIRECTORY = os.getenv('CAS_SFTP_DIRECTORY', '/upload')
     CAS_SFTP_BACKUP_DIRECTORY = os.getenv('CAS_SFTP_BACKUP_DIRECTORY', '/backup')
     SFTP_VERIFY_HOST = os.getenv('SFTP_VERIFY_HOST', 'True')
     CAS_SFTP_PORT = os.getenv('CAS_SFTP_PORT', 22)
     CAS_SFTP_HOST_KEY = os.getenv('CAS_SFTP_HOST_KEY', '')
-    BCREG_FTP_PRIVATE_KEY = os.getenv('BCREG_FTP_PRIVATE_KEY', '')
+    BCREG_FTP_PRIVATE_KEY_LOCATION = os.getenv('BCREG_FTP_PRIVATE_KEY_LOCATION',
+                                               '/ftp-poller/key/sftp_priv_key')  # full path to the privatey key
     BCREG_FTP_PRIVATE_KEY_PASSPHRASE = os.getenv('BCREG_FTP_PRIVATE_KEY_PASSPHRASE', '')
 
     # NATS Config
@@ -90,7 +91,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     NATS_QUEUE = os.getenv('NATS_QUEUE', 'account-worker')
 
     # NATS Config for account events
-    NATS_PAYMENT_RECONCILIATIONS_CLIENT_NAME = os.getenv('NATS_PAYMENT_RECONCILIATIONS_CLIENT_NAME', 'payment.reconciliations.worker')
+    NATS_PAYMENT_RECONCILIATIONS_CLIENT_NAME = os.getenv('NATS_PAYMENT_RECONCILIATIONS_CLIENT_NAME',
+                                                         'payment.reconciliations.worker')
     NATS_PAYMENT_RECONCILIATIONS_SUBJECT = os.getenv('NATS_SUBJECT', 'payment.reconciliations')
 
     # Minio configuration values
