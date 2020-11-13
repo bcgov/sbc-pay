@@ -49,9 +49,10 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     payment_method_code = db.Column(db.String(15), ForeignKey('payment_method.code'), nullable=False)
     payment_status_code = db.Column(db.String(20), ForeignKey('payment_status_code.code'), nullable=True)
     invoice_number = db.Column(db.String(50), nullable=True, index=True)
-    amount = db.Column(db.Numeric(), nullable=True)
+    invoice_amount = db.Column(db.Numeric(), nullable=True)
+    paid_amount = db.Column(db.Numeric(), nullable=True)
 
-    created_on = db.Column('created_on', db.DateTime, nullable=True)
+    created_on = db.Column('created_on', db.DateTime, default=datetime.now)
     completed_on = db.Column('completed_on', db.DateTime, nullable=True)
 
     payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='select', innerjoin=True)

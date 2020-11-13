@@ -86,7 +86,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         """Return the default status for payment when created."""
         return PaymentStatus.CREATED.value
 
-    def complete_post_invoice(self, invoice_id: int, invoice_reference: InvoiceReference) -> None:
+    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
         # pylint: disable=import-outside-toplevel, cyclic-import
         from .payment_transaction import PaymentTransaction
@@ -95,9 +95,11 @@ class InternalPayService(PaymentSystemService, OAuthService):
         Payment.create(payment_method=self.get_payment_method_code(),
                        payment_system=self.get_payment_system_code(),
                        payment_status=self.get_default_payment_status(),
-                       invoice_number=invoice_reference.invoice_number)
+                       invoice_number=invoice_reference.invoice_number,
+                       invoice_amount=invoice.total,
+                       payment_account_id=invoice.payment_account_id)
 
-        transaction: PaymentTransaction = PaymentTransaction.create(invoice_id,
+        transaction: PaymentTransaction = PaymentTransaction.create(invoice.id,
                                                                     {
                                                                         'clientSystemUrl': '',
                                                                         'payReturnUrl': ''
