@@ -126,7 +126,7 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods
             .join(Payment, Payment.id == PaymentTransaction.payment_id)\
             .filter(PaymentTransaction.status_code.notin_(completed_status))\
             .filter(PaymentTransaction.transaction_start_time < oldest_transaction_time) \
-            .filter(Payment.payment_method_code.in_(PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value)) \
+            .filter(Payment.payment_method_code.in_([PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value])) \
             .all()
 
 

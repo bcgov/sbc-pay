@@ -431,6 +431,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
 
     @staticmethod
     def create_event_payload(invoice, status_code):
+        """Create event payload for payment events."""
         payload = {
             'paymentToken': {
                 'id': invoice.id,
