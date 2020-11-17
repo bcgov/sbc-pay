@@ -19,4 +19,4 @@ Werkzeug==0.16.1
 -e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components-1.0.0&subdirectory=python
 # -e git+https://github.com/bcgov/sbc-pay.git#egg=pay-api&subdirectory=pay-api
 # -e git+https://github.com/sumesh-aot/sbc-pay.git@pad_settlement#egg=pay-api&subdirectory=pay-api
--e git+https://github.com/saravanpa-aot/sbc-pay.git@pad-conf#egg=pay-api&subdirectory=pay-api
+-e git+https://github.com/saravanpa-aot/sbc-pay.git@pad-confirmation#egg=pay-api&subdirectory=pay-api

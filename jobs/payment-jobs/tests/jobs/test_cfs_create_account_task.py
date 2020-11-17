@@ -40,6 +40,21 @@ def test_create_pad_account(session):
     CreateAccountTask.create_accounts()
     account = PaymentAccount.find_by_id(account.id)
     cfs_account: CfsAccount = CfsAccount.find_effective_by_account_id(account.id)
+    assert cfs_account.status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value
+    assert cfs_account.bank_account_number
+    assert cfs_account.cfs_party
+    assert cfs_account.cfs_site
+    assert cfs_account.cfs_account
+    assert cfs_account.payment_instrument_number
+
+
+def test_create_pad_account_no_confirmation_period(session):
+    """Test create account.Arbitrary scenario when there is no confirmation period."""
+    # Create a pending account first, then call the job
+    account = factory_create_pad_account(auth_account_id='1', confirmation_period=0)
+    CreateAccountTask.create_accounts()
+    account = PaymentAccount.find_by_id(account.id)
+    cfs_account: CfsAccount = CfsAccount.find_effective_by_account_id(account.id)
     assert cfs_account.status == CfsAccountStatus.ACTIVE.value
     assert cfs_account.bank_account_number
     assert cfs_account.cfs_party
@@ -109,5 +124,5 @@ def test_update_pad_account(session):
     assert updated_cfs_account.bank_number == new_payment_details.get('bankInstitutionNumber')
 
     assert cfs_account.status == CfsAccountStatus.INACTIVE.value
-    assert updated_cfs_account.status == CfsAccountStatus.ACTIVE.value
+    assert updated_cfs_account.status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value
     assert updated_cfs_account.payment_instrument_number

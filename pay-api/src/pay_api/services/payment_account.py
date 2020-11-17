@@ -410,7 +410,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @staticmethod
     def _calculate_activation_date():
         """Find the activation date."""
-        account_activation_wait_period: int = current_app.config.get('PAD_ACTIVATION_WAIT_PERIOD_IN_DAYS')
+        account_activation_wait_period: int = current_app.config.get('PAD_CONFIRMATION_PERIOD_IN_DAYS')
         date_after_wait_period = datetime.today() + timedelta(account_activation_wait_period)
         # activation date is inclusive of last day as well.So set to 11.59 PM of that day
         round_to_full_day = date_after_wait_period.replace(minute=59, hour=23, second=59)
