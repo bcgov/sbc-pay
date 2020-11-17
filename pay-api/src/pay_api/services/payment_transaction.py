@@ -36,7 +36,7 @@ from .payment import Payment
 from .queue_publisher import publish_response
 
 
-class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
+class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Service to manage Payment transaction operations."""
 
     def __init__(self):
@@ -208,7 +208,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
             payment = Payment.create(payment_method=pay_system_service.get_payment_method_code(),
                                      payment_system=pay_system_service.get_payment_system_code(),
                                      payment_status=pay_system_service.get_default_payment_status(),
-                                     invoice_number=invoice_reference.invoice_number)
+                                     invoice_number=invoice_reference.invoice_number,
+                                     invoice_amount=invoice.total)
 
         # Cannot start transaction on completed payment
         if payment.payment_status_code in (PaymentStatus.COMPLETED.value, PaymentStatus.DELETED.value):
@@ -336,7 +337,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
             receipt = PaymentTransaction.__save_receipt(invoice, receipt_details)
 
             invoice.paid = receipt.receipt_amount
-            payment.amount = receipt.receipt_amount
+            payment.paid_amount = receipt.receipt_amount
 
             if invoice.paid == invoice.total:
                 payment.payment_status_code = PaymentStatus.COMPLETED.value
@@ -416,13 +417,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
         else:
             status_code = 'TRANSACTION_FAILED'
 
-        payload = {
-            'paymentToken': {
-                'id': invoice.id,
-                'statusCode': status_code,
-                'filingIdentifier': invoice.filing_id
-            }
-        }
+        payload = PaymentTransaction.create_event_payload(invoice, status_code)
 
         try:
             publish_response(payload=payload)
@@ -433,3 +428,15 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes
                 e)
             transaction_dao.status_code = TransactionStatus.EVENT_FAILED.value
         current_app.logger.debug('>publish_status')
+
+    @staticmethod
+    def create_event_payload(invoice, status_code):
+        """Create event payload for payment events."""
+        payload = {
+            'paymentToken': {
+                'id': invoice.id,
+                'statusCode': status_code,
+                'filingIdentifier': invoice.filing_id
+            }
+        }
+        return payload

@@ -101,5 +101,5 @@ class PadService(PaymentSystemService, CFSService):
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Get the receipt details by calling PayBC web service."""
 
-    def complete_post_invoice(self, invoice_id: int, invoice_reference: InvoiceReference) -> None:
+    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""

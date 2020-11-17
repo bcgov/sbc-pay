@@ -83,5 +83,5 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Return the default status for payment when created."""
 
     @abstractmethod
-    def complete_post_invoice(self, invoice_id: int, invoice_reference: InvoiceReference) -> None:
+    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""

@@ -73,6 +73,13 @@
                   "name": "${NAME}-${TAG_NAME}-cron-configuration",
                   "defaultMode": 420
                 }
+              },
+              {
+                "name": "sftp-private-key",
+                "configMap": {
+                  "name": "${NAME}-${TAG_NAME}-sftp-configuration",
+                  "defaultMode": 420
+                }
               }
             ],
             "containers": [
@@ -90,6 +97,11 @@
                     "name": "cron-config",
                     "readOnly": true,
                     "mountPath": "/ftp-poller/cron/"
+                  },
+                  {
+                    "name": "sftp-private-key",
+                    "readOnly": true,
+                    "mountPath": "/ftp-poller/key/"
                   }
                 ],
                 "env": [

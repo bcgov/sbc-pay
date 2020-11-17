@@ -45,7 +45,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self._payment_account_id: int = None
         self._invoice_number: str = None
         self._completed_on: datetime = None
-        self._amount: Decimal = None
+        self._created_on: datetime = None
+        self._invoice_amount: Decimal = None
+        self._paid_amount: Decimal = None
 
     @property
     def _dao(self):
@@ -63,7 +65,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self.payment_account_id: int = self._dao.payment_account_id
         self.invoice_number: str = self._dao.invoice_number
         self.completed_on: datetime = self._dao.completed_on
-        self.amount: Decimal = self._dao.amount
+        self.created_on: datetime = self._dao.created_on
+        self.invoice_amount: Decimal = self._dao.invoice_amount
+        self.paid_amount: Decimal = self._dao.paid_amount
 
     @property
     def id(self):
@@ -143,15 +147,37 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self._dao.completed_on = value
 
     @property
-    def amount(self):
-        """Return the amount."""
-        return self._amount
+    def created_on(self):
+        """Return the created_on."""
+        return self._created_on
 
-    @amount.setter
-    def amount(self, value: Decimal):
+    @created_on.setter
+    def created_on(self, value: datetime):
+        """Set the created_on."""
+        self._created_on = value
+        self._dao.created_on = value
+
+    @property
+    def invoice_amount(self):
+        """Return the invoice_amount."""
+        return self._invoice_amount
+
+    @invoice_amount.setter
+    def invoice_amount(self, value: Decimal):
         """Set the amount."""
-        self._amount = value
-        self._dao.amount = value
+        self._invoice_amount = value
+        self._dao.invoice_amount = value
+
+    @property
+    def paid_amount(self):
+        """Return the paid_amount."""
+        return self._paid_amount
+
+    @paid_amount.setter
+    def paid_amount(self, value: Decimal):
+        """Set the amount."""
+        self._paid_amount = value
+        self._dao.paid_amount = value
 
     def commit(self):
         """Save the information to the DB."""
@@ -176,8 +202,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return d
 
     @staticmethod
-    def create(payment_method: str, payment_system: str, payment_status=PaymentStatus.CREATED.value,
-               invoice_number: str = None):
+    def create(payment_method: str, payment_system: str,  # pylint:disable=too-many-arguments
+               payment_status=PaymentStatus.CREATED.value,
+               invoice_number: str = None, invoice_amount: float = None, payment_account_id: int = None):
         """Create payment record."""
         current_app.logger.debug('<create_payment')
         p = Payment()
@@ -186,6 +213,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         p.payment_status_code = payment_status
         p.payment_system_code = payment_system
         p.invoice_number = invoice_number
+        p.invoice_amount = invoice_amount
+        p.created_on = datetime.now()
+        p.payment_account_id = payment_account_id
         pay_dao = p.save()
         p = Payment()
         p._dao = pay_dao  # pylint: disable=protected-access

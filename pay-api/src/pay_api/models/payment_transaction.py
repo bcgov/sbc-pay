@@ -21,7 +21,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 
 from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
-from pay_api.utils.enums import InvoiceReferenceStatus, TransactionStatus
+from pay_api.utils.enums import InvoiceReferenceStatus, PaymentMethod, TransactionStatus
 from .base_model import BaseModel
 from .base_schema import BaseSchema
 from .db import db
@@ -116,11 +116,18 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods
 
         Used in the batch job to find orphan records which are untouched for a time.
         """
+        # pylint: disable=import-outside-toplevel, cyclic-import
+        from .payment import Payment
+
         oldest_transaction_time = datetime.now() - (timedelta(days=days, hours=hours, minutes=minutes))
         completed_status = [TransactionStatus.COMPLETED.value, TransactionStatus.CANCELLED.value,
                             TransactionStatus.FAILED.value]
-        return cls.query.filter(PaymentTransaction.status_code.notin_(completed_status)). \
-            filter(PaymentTransaction.transaction_start_time < oldest_transaction_time).all()
+        return db.session.query(PaymentTransaction)\
+            .join(Payment, Payment.id == PaymentTransaction.payment_id)\
+            .filter(PaymentTransaction.status_code.notin_(completed_status))\
+            .filter(PaymentTransaction.transaction_start_time < oldest_transaction_time) \
+            .filter(Payment.payment_method_code.in_([PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value])) \
+            .all()
 
 
 class PaymentTransactionSchema(BaseSchema):  # pylint: disable=too-many-ancestors
