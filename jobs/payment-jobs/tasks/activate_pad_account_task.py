@@ -34,7 +34,7 @@ class ActivatePadAccountTask:  # pylint: disable=too-few-public-methods
         2. Activate them.
         """
         # Pass payment method if offline account creation has be restricted based on payment method.
-        pending_pad_activation_accounts: List[CfsAccountModel] = PaymentAccountModel.find_all_accounts_with_status(
+        pending_pad_activation_accounts: List[CfsAccountModel] = CfsAccountModel.find_all_accounts_with_status(
             status=CfsAccountStatus.PENDING_PAD_ACTIVATION.value)
         current_app.logger.info(
             f'Found {len(pending_pad_activation_accounts)} CFS Accounts to be pending PAD activation.')

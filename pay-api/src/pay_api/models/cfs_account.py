@@ -38,7 +38,7 @@ class CfsAccount(VersionedModel):  # pylint:disable=too-many-instance-attributes
     bank_branch_number = db.Column(db.String(50), nullable=True, index=True)
     bank_account_number = db.Column(db.String(50), nullable=True, index=True)
 
-    status = db.Column(db.String(20), ForeignKey('cfs_account_status_code.code'), nullable=True)
+    status = db.Column(db.String(40), ForeignKey('cfs_account_status_code.code'), nullable=True)
 
     account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True, index=True)
 

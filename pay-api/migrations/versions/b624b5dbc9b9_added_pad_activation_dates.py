@@ -40,6 +40,16 @@ def upgrade():
         ]
     )
 
+    op.alter_column('cfs_account', 'status',
+                    existing_type=sa.VARCHAR(length=20),
+                    type_=sa.String(length=40),
+                    existing_nullable=True)
+    op.alter_column('cfs_account_version', 'status',
+                    existing_type=sa.VARCHAR(length=20),
+                    type_=sa.String(length=40),
+                    existing_nullable=True,
+                    autoincrement=False)
+
     # ### end Alembic commands ###
 
 
@@ -51,4 +61,13 @@ def downgrade():
     op.drop_column('cfs_account_version', 'pad_tos_accepted_by')
     op.drop_column('cfs_account', 'pad_tos_accepted_date')
     op.drop_column('cfs_account', 'pad_tos_accepted_by')
+    op.alter_column('cfs_account_version', 'status',
+                    existing_type=sa.String(length=40),
+                    type_=sa.VARCHAR(length=20),
+                    existing_nullable=True,
+                    autoincrement=False)
+    op.alter_column('cfs_account', 'status',
+                    existing_type=sa.String(length=40),
+                    type_=sa.VARCHAR(length=20),
+                    existing_nullable=True)
     # ### end Alembic commands ###
