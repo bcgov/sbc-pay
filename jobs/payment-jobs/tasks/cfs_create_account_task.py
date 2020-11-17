@@ -111,8 +111,10 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                 continue
 
             # If the account has an activation time set , before that it shud be set to the  PENDING_PAD_ACTIVATION status.
-            is_account_in_pad_confirmation_period = pay_account.pad_activation_date is not None and pay_account.pad_activation_date > datetime.today()
-            pending_account.status = CfsAccountStatus.PENDING_PAD_ACTIVATION.value if is_account_in_pad_confirmation_period else CfsAccountStatus.ACTIVE.value
+            is_account_in_pad_confirmation_period = pay_account.pad_activation_date is not None and \
+                pay_account.pad_activation_date > datetime.today()
+            pending_account.status = CfsAccountStatus.PENDING_PAD_ACTIVATION.value if is_account_in_pad_confirmation_period \
+                else CfsAccountStatus.ACTIVE.value
             pending_account.save()
 
             # Publish message to the Queue, saying account has been created. Using the event spec.

@@ -354,7 +354,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return cls.find_by_id(account.id)
 
     @staticmethod
-    def _get_payment_based_on_pad_activation(payment_method: str, account: PaymentAccountModel) -> Tuple[str, str]:
+    def _get_payment_based_on_pad_activation(account: PaymentAccountModel) -> Tuple[str, str]:
         """Infer the payment method."""
         is_first_time_pad = not account.pad_activation_date
         is_unlinked_premium = not account.bcol_account
