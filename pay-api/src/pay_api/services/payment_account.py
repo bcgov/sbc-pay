@@ -359,7 +359,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         is_first_time_pad = not account.pad_activation_date
         is_unlinked_premium = not account.bcol_account
         # default it. If ever was in PAD , no new activation date needed
-        new_payment_method = payment_method
         new_activation_date = account.pad_activation_date
         if is_first_time_pad:
             new_payment_method = PaymentMethod.PAD.value if is_unlinked_premium else PaymentMethod.DRAWDOWN.value

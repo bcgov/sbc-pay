@@ -33,7 +33,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
     """Create CFS Account."""
 
     @classmethod
-    def create_accounts(cls):
+    def create_accounts(cls):  # pylint: disable=too-many-locals
         """Find all pending accounts to be created in CFS.
 
         Steps:
@@ -52,7 +52,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
         for pending_account in pending_accounts:
             is_create_account: bool = True
             # Find the payment account and create the pay system instance.
-            pay_account:PaymentAccountModel = PaymentAccountModel.find_by_id(pending_account.account_id)
+            pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(pending_account.account_id)
             current_app.logger.info(
                 f'Creating pay system instance for {pay_account.payment_method} for account {pay_account.id}.')
 
