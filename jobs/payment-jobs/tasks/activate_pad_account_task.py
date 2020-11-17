@@ -19,7 +19,7 @@ from typing import List
 from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.utils.enums import CfsAccountStatus
+from pay_api.utils.enums import CfsAccountStatus, PaymentMethod
 
 
 class ActivatePadAccountTask:  # pylint: disable=too-few-public-methods
@@ -33,7 +33,6 @@ class ActivatePadAccountTask:  # pylint: disable=too-few-public-methods
         1. Find all accounts with pending PAD account activation status.
         2. Activate them.
         """
-        # Pass payment method if offline account creation has be restricted based on payment method.
         pending_pad_activation_accounts: List[CfsAccountModel] = CfsAccountModel.find_all_accounts_with_status(
             status=CfsAccountStatus.PENDING_PAD_ACTIVATION.value)
         current_app.logger.info(
@@ -42,7 +41,6 @@ class ActivatePadAccountTask:  # pylint: disable=too-few-public-methods
             return
 
         for pending_account in pending_pad_activation_accounts:
-            # Find the payment account and create the pay system instance.
             pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(pending_account.account_id)
 
             # check is still in the pad activation period
@@ -53,3 +51,7 @@ class ActivatePadAccountTask:  # pylint: disable=too-few-public-methods
             if is_activation_period_over:
                 pending_account.status = CfsAccountStatus.ACTIVE.value
                 pending_account.save()
+                # If account was in BCOL , change it to PAD
+                if pay_account.payment_method != PaymentMethod.PAD.value:
+                    pay_account.payment_method = PaymentMethod.PAD.value
+                    pay_account.save()

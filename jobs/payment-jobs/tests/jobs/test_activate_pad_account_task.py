@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 from flask import current_app
 from freezegun import freeze_time
 from pay_api.models import CfsAccount, PaymentAccount
-from pay_api.utils.enums import CfsAccountStatus
+from pay_api.utils.enums import CfsAccountStatus, PaymentMethod
 
 from tasks.activate_pad_account_task import ActivatePadAccountTask
 from tasks.cfs_create_account_task import CreateAccountTask
@@ -34,20 +34,52 @@ def test_activate_pad_accounts(session):
     assert True
 
 
-def test_activate_pad_accounts_with_data(session):
+def test_activate_pad_accounts_with_time_check(session):
     """Test Activate account."""
     # Create a pending account first, then call the job
     account = factory_create_pad_account(auth_account_id='1')
     CreateAccountTask.create_accounts()
-    account = PaymentAccount.find_by_id(account.id)
+    account: PaymentAccount = PaymentAccount.find_by_id(account.id)
     cfs_account: CfsAccount = CfsAccount.find_effective_by_account_id(account.id)
     assert cfs_account.status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value, 'Created account has pending pad status'
+    assert account.payment_method == PaymentMethod.PAD.value
+
     ActivatePadAccountTask.activate_pad_accounts()
     cfs_account: CfsAccount = CfsAccount.find_effective_by_account_id(account.id)
     assert cfs_account.status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value, \
         'Same day Job runs and shouldnt change anything.'
+
+    time_delay = current_app.config['PAD_CONFIRMATION_PERIOD_IN_DAYS']
+    with freeze_time(datetime.today() + timedelta(days=time_delay, minutes=1)):
+        ActivatePadAccountTask.activate_pad_accounts()
+        account: PaymentAccount = PaymentAccount.find_by_id(account.id)
+        cfs_account: CfsAccount = CfsAccount.find_effective_by_account_id(account.id)
+        assert cfs_account.status == CfsAccountStatus.ACTIVE.value, \
+            'After the confirmation period is over , status should be active'
+        assert account.payment_method == PaymentMethod.PAD.value
+
+
+def test_activate_bcol_change_to_pad(session):
+    """Test Activate account."""
+    # Create a pending account first, then call the job
+    account = factory_create_pad_account(auth_account_id='1', payment_method=PaymentMethod.DRAWDOWN.value)
+    CreateAccountTask.create_accounts()
+    account = PaymentAccount.find_by_id(account.id)
+    cfs_account: CfsAccount = CfsAccount.find_effective_by_account_id(account.id)
+    assert cfs_account.status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value, 'Created account has pending pad status'
+    assert account.payment_method == PaymentMethod.DRAWDOWN.value
+
+    ActivatePadAccountTask.activate_pad_accounts()
+    cfs_account: CfsAccount = CfsAccount.find_effective_by_account_id(account.id)
+    assert cfs_account.status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value, \
+        'Same day Job runs and shouldnt change anything.'
+    account = PaymentAccount.find_by_id(account.id)
+    assert account.payment_method == PaymentMethod.DRAWDOWN.value
+
     time_delay = current_app.config['PAD_CONFIRMATION_PERIOD_IN_DAYS']
     with freeze_time(datetime.today() + timedelta(days=time_delay, minutes=1)):
         ActivatePadAccountTask.activate_pad_accounts()
         assert cfs_account.status == CfsAccountStatus.ACTIVE.value, \
             'After the confirmation period is over , status should be active'
+        account = PaymentAccount.find_by_id(account.id)
+        assert account.payment_method == PaymentMethod.PAD.value
