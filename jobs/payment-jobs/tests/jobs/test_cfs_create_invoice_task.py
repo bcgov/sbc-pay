@@ -54,7 +54,7 @@ def test_create_pad_invoice_single_transaction(session):
     CreateInvoiceTask.create_invoices()
 
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
-    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.\
+    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
         find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
     payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
 
@@ -108,13 +108,13 @@ def test_create_pad_invoice_before_cutoff(session):
     CreateInvoiceTask.create_invoices()
 
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
-    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.\
+    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
         find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
     payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
 
-    assert inv_ref is None
-    assert payment is None
-    assert updated_invoice.invoice_status_code == InvoiceStatus.CREATED.value
+    assert inv_ref is not None  # As PAD will be summed up for all outstanding invoices
+    assert payment is not None  # As PAD will be summed up for all outstanding invoices
+    assert updated_invoice.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
 
 
 def test_create_online_banking_transaction(session):
@@ -134,7 +134,7 @@ def test_create_online_banking_transaction(session):
     CreateInvoiceTask.create_invoices()
 
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
-    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.\
+    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
         find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
     payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
 

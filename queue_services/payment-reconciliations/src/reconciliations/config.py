@@ -80,7 +80,7 @@ class _Config():  # pylint: disable=too-few-public-methods
 
     NATS_CONNECTION_OPTIONS = {
         'servers': os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(','),
-        'name': os.getenv('NATS_PAYMENT_RECONCILIATIONS_CLIENT_NAME', 'account.reconciliations.worker')
+        'name': os.getenv('NATS_PAYMENT_RECONCILIATIONS_CLIENT_NAME', 'payment.reconciliations.worker')
 
     }
     STAN_CONNECTION_OPTIONS = {
@@ -91,10 +91,26 @@ class _Config():  # pylint: disable=too-few-public-methods
     }
 
     SUBSCRIPTION_OPTIONS = {
-        'subject': os.getenv('NATS_PAYMENT_RECONCILIATIONS_SUBJECT', 'account.reconciliations'),
-        'queue': os.getenv('NATS_PAYMENT_RECONCILIATIONS_QUEUE', 'account-reconciliations-worker'),
-        'durable_name': os.getenv('NATS_PAYMENT_RECONCILIATIONS_QUEUE', 'account-reconciliations-worker') + '_durable',
+        'subject': os.getenv('NATS_PAYMENT_RECONCILIATIONS_SUBJECT', 'payment.reconciliations'),
+        'queue': os.getenv('NATS_PAYMENT_RECONCILIATIONS_QUEUE', 'payment-reconciliations-worker'),
+        'durable_name': os.getenv('NATS_PAYMENT_RECONCILIATIONS_QUEUE', 'payment-reconciliations-worker') + '_durable',
     }
+
+    # Minio configuration values
+    MINIO_ENDPOINT = os.getenv('MINIO_ENDPOINT')
+    MINIO_ACCESS_KEY = os.getenv('MINIO_ACCESS_KEY')
+    MINIO_ACCESS_SECRET = os.getenv('MINIO_ACCESS_SECRET')
+    MINIO_SECURE = os.getenv('MINIO_SECURE', 'True').lower() == 'true'
+
+    # NATS Config
+    NATS_SERVERS = os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(',')
+    NATS_CLUSTER_ID = os.getenv('NATS_CLUSTER_ID', 'test-cluster')
+    NATS_PAYMENT_CLIENT_NAME = os.getenv('NATS_PAYMENT_CLIENT_NAME', 'entity.filing.worker')
+    NATS_PAYMENT_SUBJECT = os.getenv('NATS_PAYMENT_SUBJECT', 'entity.filings')
+    NATS_MAILER_CLIENT_NAME = os.getenv('NATS_MAILER_CLIENT_NAME', 'account.mailer.worker')
+    NATS_MAILER_SUBJECT = os.getenv('NATS_MAILER_SUBJECT', 'account.mailer')
+    NATS_ACCOUNT_CLIENT_NAME = os.getenv('NATS_ACCOUNT_CLIENT_NAME', 'account.events.worker')
+    NATS_ACCOUNT_SUBJECT = os.getenv('NATS_ACCOUNT_SUBJECT', 'account.events')
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
@@ -125,8 +141,15 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
         ),
     )
 
-    STAN_CLUSTER_NAME = 'test-cluster'
     TEST_NATS_DOCKER = os.getenv('TEST_NATS_DOCKER', None)
+    USE_DOCKER_MOCK = os.getenv('USE_DOCKER_MOCK', None)
+
+    # Minio variables
+    MINIO_ENDPOINT = 'localhost:9000'
+    MINIO_ACCESS_KEY = 'minio'
+    MINIO_ACCESS_SECRET = 'minio123'
+    MINIO_BUCKET_NAME = 'payment-sftp'
+    MINIO_SECURE = False
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
