@@ -144,8 +144,10 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
     @staticmethod
     def _validate_and_throw_error(payment_method: str, payment_account: PaymentAccount):
-        is_in_pad_confirmation_period = (payment_method == PaymentMethod.PAD.value and payment_account.pad_activation_date > datetime.now())
-        if is_in_pad_confirmation_period or payment_account.cfs_account_status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value:
+        is_in_pad_confirmation_period = (payment_method == PaymentMethod.PAD.value and
+                                         payment_account.pad_activation_date > datetime.now())
+        if is_in_pad_confirmation_period or \
+                payment_account.cfs_account_status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value:
             raise BusinessException(Error.ACCOUNT_IN_PAD_CONFIRMATION_PERIOD)
 
     @classmethod

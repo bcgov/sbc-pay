@@ -245,7 +245,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self._pad_activation_date = value
         self._dao.pad_activation_date = value
 
-
     @property
     def bcol_account(self):
         """Return the bcol_account."""
@@ -371,7 +370,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             new_payment_method = PaymentMethod.PAD.value if is_previous_pad_activated else PaymentMethod.DRAWDOWN.value
 
         return new_payment_method, new_activation_date
-
 
     @staticmethod
     def _persist_default_statement_frequency(payment_account_id):
