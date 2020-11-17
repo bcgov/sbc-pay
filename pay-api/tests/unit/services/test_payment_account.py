@@ -61,9 +61,12 @@ def test_premium_account_saved_from_new(session):
 def test_create_pad_account(session):
     """Assert that pad account details are created."""
     pad_account = PaymentAccountService.create(get_pad_account_payload_without_bcol())
-    assert pad_account.bank_number == get_pad_account_payload_without_bcol().get('paymentInfo').get('bankInstitutionNumber')
-    assert pad_account.bank_account_number == get_pad_account_payload_without_bcol().get('paymentInfo').get('bankAccountNumber')
-    assert pad_account.bank_branch_number == get_pad_account_payload_without_bcol().get('paymentInfo').get('bankTransitNumber')
+    assert pad_account.bank_number == get_pad_account_payload_without_bcol().get('paymentInfo').\
+        get('bankInstitutionNumber')
+    assert pad_account.bank_account_number == get_pad_account_payload_without_bcol().\
+        get('paymentInfo').get('bankAccountNumber')
+    assert pad_account.bank_branch_number == get_pad_account_payload_without_bcol().\
+        get('paymentInfo').get('bankTransitNumber')
     assert pad_account.payment_method == PaymentMethod.PAD.value
     assert pad_account.cfs_account_id
     assert pad_account.cfs_account is None

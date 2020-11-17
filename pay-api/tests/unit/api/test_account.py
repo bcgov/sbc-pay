@@ -29,7 +29,7 @@ from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import Role, PaymentMethod
 from tests.utilities.base_test import (
     get_claims, get_payment_request, get_basic_account_payload, get_premium_account_payload, token_header,
-    get_pad_account_payload, get_unlinked_pad_account_payload)
+    get_unlinked_pad_account_payload)
 
 
 def test_account_purchase_history(session, client, jwt, app):
