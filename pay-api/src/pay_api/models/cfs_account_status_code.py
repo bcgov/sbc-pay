@@ -22,7 +22,7 @@ class CfsAccountStatusCode(db.Model, CodeTable):
 
     __tablename__ = 'cfs_account_status_code'
 
-    code = db.Column(db.String(20), primary_key=True)
+    code = db.Column(db.String(40), primary_key=True)
     description = db.Column('description', db.String(200), nullable=False)
 
 
