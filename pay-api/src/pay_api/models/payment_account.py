@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Payment Account data."""
+from datetime import datetime
+
 from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey
 
@@ -44,10 +46,21 @@ class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attri
     credit = db.Column(db.Float, nullable=True)
     billable = db.Column(Boolean(), default=True)
 
+    # before this date , the account shouldn't get used
+    pad_activation_date = db.Column(db.DateTime, nullable=True)
+
     @classmethod
     def find_by_auth_account_id(cls, auth_account_id: str):
         """Return a Account by id."""
         return cls.query.filter_by(auth_account_id=auth_account_id).one_or_none()
+
+    @classmethod
+    def find_pending_activation_pad_accounts(cls, pad_activation_date=datetime.now()):
+        """Return pending pad accounts by their activation dates."""
+        query = cls.query.filter(
+            PaymentAccount.pad_activation_date.isnot(None), pad_activation_date < pad_activation_date)
+
+        return query.all()
 
 
 class PaymentAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
