@@ -321,7 +321,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         # -  If the account was on DRAWDOWN and switching to PAD, and active CFS account is not present
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id) \
             if payment_account.id else None
-        print('------payment_method---**********-',payment_method)
         pay_system = PaymentSystemFactory.create_from_payment_method(payment_method=payment_method)
         if pay_system.get_payment_system_code() == PaymentSystem.PAYBC.value:
             if cfs_account is None:
