@@ -19,7 +19,6 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 
 from datetime import datetime, timedelta
 
-from flask import current_app
 from pay_api.models import (
     CfsAccount, DistributionCode, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem,
     StatementSettings)

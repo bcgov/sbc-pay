@@ -21,14 +21,11 @@ from datetime import datetime, timedelta
 from flask import current_app
 from freezegun import freeze_time
 from pay_api.models import CfsAccount, PaymentAccount
-from pay_api.services.online_banking_service import OnlineBankingService
-from pay_api.services.pad_service import PadService
 from pay_api.utils.enums import CfsAccountStatus
 
 from tasks.activate_pad_account_task import ActivatePadAccountTask
 from tasks.cfs_create_account_task import CreateAccountTask
-
-from .factory import factory_create_online_banking_account, factory_create_pad_account
+from .factory import factory_create_pad_account
 
 
 def test_activate_pad_accounts(session):
@@ -47,8 +44,10 @@ def test_activate_pad_accounts_with_data(session):
     assert cfs_account.status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value, 'Created account has pending pad status'
     ActivatePadAccountTask.activate_pad_accounts()
     cfs_account: CfsAccount = CfsAccount.find_effective_by_account_id(account.id)
-    assert cfs_account.status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value, 'Same day Job runs and shouldnt change anything.'
+    assert cfs_account.status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value, \
+        'Same day Job runs and shouldnt change anything.'
     time_delay = current_app.config['PAD_CONFIRMATION_PERIOD_IN_DAYS']
     with freeze_time(datetime.today() + timedelta(days=time_delay, minutes=1)):
         ActivatePadAccountTask.activate_pad_accounts()
-        assert cfs_account.status == CfsAccountStatus.ACTIVE.value, 'After the confirmation period is over , status should be active'
+        assert cfs_account.status == CfsAccountStatus.ACTIVE.value, \
+            'After the confirmation period is over , status should be active'
