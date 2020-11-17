@@ -547,23 +547,6 @@ def get_pad_account_payload(account_id: int = randrange(999999), bank_number: st
     }
 
 
-def get_pad_account_payload_without_bcol(account_id: int = randrange(999999), bank_number: str = '001',
-                                         transit_number='999',
-                                         bank_account='1234567890'):
-    """Return a pad payment account object."""
-    return {
-        'accountId': account_id,
-        'accountName': 'Test Account',
-        'paymentInfo': {
-            'methodOfPayment': PaymentMethod.PAD.value,
-            'billable': True,
-            'bankTransitNumber': transit_number,
-            'bankInstitutionNumber': bank_number,
-            'bankAccountNumber': bank_account
-        }
-    }
-
-
 def get_unlinked_pad_account_payload(account_id: int = randrange(999999), bank_number: str = '001',
                                      transit_number='999',
                                      bank_account='1234567890'):
