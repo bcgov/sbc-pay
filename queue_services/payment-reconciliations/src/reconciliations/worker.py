@@ -82,9 +82,10 @@ async def cb_subscription_handler(msg: nats.aio.client.Msg):
         event_message = json.loads(msg.data.decode('utf-8'))
         logger.debug('Event Message Received: %s', event_message)
         await process_event(event_message, FLASK_APP)
-    except Exception:  # pylint: disable=broad-except
+    except Exception as e:  # pylint: disable=broad-except
         # Catch Exception so that any error is still caught and the message is removed from the queue
         logger.error('Queue Error: %s', json.dumps(event_message), exc_info=True)
+        logger.error(e)
 
 
 async def _update_payment_details(msg: Dict[str, any]):
@@ -172,8 +173,7 @@ async def _process_paid_invoices(inv_references, payment, row):
         capture_message('Invoice amount received {paid_amount}, but expected {exp_amount}.'.format(
             paid_amount=paid_amount, exp_amount=payment.invoice_amount), level='error')
 
-        raise Exception('Invalid Account Number')
-
+        raise Exception('Invalid Amount')
     payment.payment_status_code = PaymentStatus.COMPLETED.value
     payment.paid_amount = paid_amount
     receipt_date: datetime = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%m%d%Y')
@@ -187,6 +187,7 @@ async def _process_paid_invoices(inv_references, payment, row):
         inv_ref.status_code = InvoiceReferenceStatus.COMPLETED.value
         # Find invoice, update status
         inv: InvoiceModel = InvoiceModel.find_by_id(inv_ref.invoice_id)
+
         _validate_account(inv, row)
 
         logger.debug('PAID Invoice. Invoice Reference ID : %s, invoice ID : %s', inv_ref.id, inv_ref.invoice_id)
@@ -223,14 +224,12 @@ def _process_partial_payments(inv_references, payment, row):
     txn = _find_or_create_active_transaction(payment)
     txn.status_code = TransactionStatus.COMPLETED.value
     txn.transaction_end_time = datetime.now()
-
     for inv_ref in inv_references:
         inv: InvoiceModel = InvoiceModel.find_by_id(inv_ref.invoice_id)
         _validate_account(inv, row)
         logger.debug('Partial Invoice. Invoice Reference ID : %s, invoice ID : %s', inv_ref.id, inv_ref.invoice_id)
         inv.invoice_status_code = InvoiceStatus.PARTIAL.value
         inv.paid = payment.paid_amount
-
         # Create Receipt records
         receipt: ReceiptModel = ReceiptModel()
         receipt.receipt_date = receipt_date
@@ -245,9 +244,9 @@ def _process_partial_payments(inv_references, payment, row):
     pending_payment.payment_status_code = PaymentStatus.CREATED.value
     pending_payment.payment_system_code = payment.payment_system_code
     pending_payment.invoice_number = payment.invoice_number
-    pending_payment.invoice_amount = payment.invoice_amount - payment.paid_amount
+    pending_payment.invoice_amount = float(payment.invoice_amount) - float(payment.paid_amount)
     pending_payment.created_on = datetime.now()
-    pending_payment.payment_account_id = payment.payment_account_id
+    # pending_payment.payment_account_id = payment.payment_account_id
     db.session.add(pending_payment)
 
 
@@ -271,7 +270,7 @@ def _get_payment_account(row) -> PaymentAccountModel:
     payment_account: PaymentAccountModel = db.session.query(PaymentAccountModel) \
         .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
         .filter(CfsAccountModel.cfs_account == account_number) \
-        .filter(CfsAccountModel.status == CfsAccountStatus.value).one_or_none()
+        .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value).one_or_none()
     return payment_account
 
 
@@ -314,7 +313,6 @@ async def _publish_mailer_events(message_type: str, pay_account: PaymentAccountM
     """Publish payment message to the mailer queue."""
     # Publish message to the Queue, saying account has been created. Using the event spec.
     payload = _create_event_payload(message_type, pay_account, row)
-
     try:
         await publish(payload=payload,
                       client_name=APP_CONFIG.NATS_MAILER_CLIENT_NAME,

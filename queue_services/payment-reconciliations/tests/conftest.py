@@ -177,6 +177,13 @@ def stan_server(docker_services):
     # return dsn
 
 
+@pytest.fixture(scope='session', autouse=True)
+def auto(docker_services, app):
+    """Spin up docker containers."""
+    if app.config['USE_DOCKER_MOCK']:
+        docker_services.start('minio')
+
+
 @pytest.fixture(scope='function')
 @pytest.mark.asyncio
 async def stan(event_loop, client_id):
@@ -207,7 +214,7 @@ async def events_stan(app, event_loop, client_id):
 
     await nc.connect(io_loop=event_loop)
 
-    cluster_name = os.getenv('STAN_CLUSTER_NAME')
+    cluster_name = os.getenv('STAN_CLUSTER_NAME', 'test-cluster')
 
     if not cluster_name:
         raise ValueError('Missing env variable: STAN_CLUSTER_NAME')

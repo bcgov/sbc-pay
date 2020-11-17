@@ -100,7 +100,7 @@ class _Config():  # pylint: disable=too-few-public-methods
     MINIO_ENDPOINT = os.getenv('MINIO_ENDPOINT')
     MINIO_ACCESS_KEY = os.getenv('MINIO_ACCESS_KEY')
     MINIO_ACCESS_SECRET = os.getenv('MINIO_ACCESS_SECRET')
-    MINIO_SECURE = True
+    MINIO_SECURE = os.getenv('MINIO_SECURE', 'True').lower() == 'true'
 
     # NATS Config
     NATS_SERVERS = os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(',')
@@ -141,8 +141,15 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
         ),
     )
 
-    STAN_CLUSTER_NAME = 'test-cluster'
     TEST_NATS_DOCKER = os.getenv('TEST_NATS_DOCKER', None)
+    USE_DOCKER_MOCK = os.getenv('USE_DOCKER_MOCK', None)
+
+    # Minio variables
+    MINIO_ENDPOINT = 'localhost:9000'
+    MINIO_ACCESS_KEY = 'minio'
+    MINIO_ACCESS_SECRET = 'minio123'
+    MINIO_BUCKET_NAME = 'payment-sftp'
+    MINIO_SECURE = False
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
