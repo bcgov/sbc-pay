@@ -58,6 +58,11 @@ class CfsAccount(VersionedModel):  # pylint:disable=too-many-instance-attributes
         """Find all pending accounts to be created in CFS."""
         return cls.query.filter_by(status=CfsAccountStatus.PENDING.value).all()
 
+    @classmethod
+    def find_all_accounts_with_status(cls, status: str):
+        """Find all pending accounts to be created in CFS."""
+        return cls.query.filter_by(status=status).all()
+
 
 class CfsAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the CFS Account."""
