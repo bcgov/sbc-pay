@@ -14,7 +14,8 @@
 """Service to manage Payment Account model related operations."""
 from __future__ import annotations
 
-from typing import Any, Dict, Union
+from datetime import datetime, timedelta
+from typing import Any, Dict, Union, Tuple
 
 from flask import current_app
 
@@ -37,6 +38,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self._auth_account_id: Union[None, str] = None
         self._auth_account_name: Union[None, str] = None
         self._payment_method: Union[None, str] = None
+        self._auth_account_name: Union[None, str] = None
+        self._pad_activation_date: Union[None, str] = None
 
         self._cfs_account: Union[None, str] = None
         self._cfs_party: Union[None, str] = None
@@ -69,6 +72,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self.payment_method: str = self._dao.payment_method
         self.bcol_user_id: str = self._dao.bcol_user_id
         self.bcol_account: str = self._dao.bcol_account
+        self.pad_activation_date: str = self._dao.pad_activation_date
 
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(self.id)
         if cfs_account:
@@ -231,6 +235,17 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self._dao.bcol_user_id = value
 
     @property
+    def pad_activation_date(self):
+        """Return the bcol_user_id."""
+        return self._pad_activation_date
+
+    @pad_activation_date.setter
+    def pad_activation_date(self, value: int):
+        """Set the bcol_user_id."""
+        self._pad_activation_date = value
+        self._dao.pad_activation_date = value
+
+    @property
     def bcol_account(self):
         """Return the bcol_account."""
         return self._bcol_account
@@ -278,7 +293,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         # pylint:disable=cyclic-import, import-outside-toplevel
         from pay_api.factory.payment_system_factory import PaymentSystemFactory
         # If the payment method is CC, set the payment_method as DIRECT_PAY
-        payment_method = get_str_by_path(account_request, 'paymentInfo/methodOfPayment')
+        payment_method: str = get_str_by_path(account_request, 'paymentInfo/methodOfPayment')
         if not payment_method or payment_method == PaymentMethod.CC.value:
             payment_method = PaymentMethod.DIRECT_PAY.value
 
@@ -287,6 +302,11 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         payment_account.auth_account_name = account_request.get('accountName', None)
         payment_account.bcol_account = account_request.get('bcolAccountNumber', None)
         payment_account.bcol_user_id = account_request.get('bcolUserId', None)
+
+        if not payment_method or payment_method == PaymentMethod.PAD.value:
+            payment_method, activation_date = PaymentAccount._get_payment_based_on_pad_activation(payment_account)
+            payment_account.pad_activation_date = activation_date
+            payment_account.payment_method = payment_method
 
         payment_info = account_request.get('paymentInfo')
         billable = payment_info.get('billable', True)
@@ -333,6 +353,23 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return cls.find_by_id(account.id)
 
     @staticmethod
+    def _get_payment_based_on_pad_activation(account: PaymentAccountModel) -> Tuple[str, str]:
+        """Infer the payment method."""
+        is_first_time_pad = not account.pad_activation_date
+        is_unlinked_premium = not account.bcol_account
+        # default it. If ever was in PAD , no new activation date needed
+        new_activation_date = account.pad_activation_date
+        if is_first_time_pad:
+            new_payment_method = PaymentMethod.PAD.value if is_unlinked_premium else PaymentMethod.DRAWDOWN.value
+            new_activation_date = PaymentAccount._calculate_activation_date()
+        else:
+            # Handle repeated changing of pad to bcol ;then to pad again
+            is_previous_pad_activated = account.pad_activation_date < datetime.now()
+            new_payment_method = PaymentMethod.PAD.value if is_previous_pad_activated else PaymentMethod.DRAWDOWN.value
+
+        return new_payment_method, new_activation_date
+
+    @staticmethod
     def _persist_default_statement_frequency(payment_account_id):
         statement_settings_model = StatementSettingsModel(
             frequency=StatementFrequency.default_frequency().value,
@@ -369,6 +406,15 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
         current_app.logger.debug('>find_by_id')
         return account
+
+    @staticmethod
+    def _calculate_activation_date():
+        """Find the activation date."""
+        account_activation_wait_period: int = current_app.config.get('PAD_ACTIVATION_WAIT_PERIOD_IN_DAYS')
+        date_after_wait_period = datetime.today() + timedelta(account_activation_wait_period)
+        # activation date is inclusive of last day as well.So set to 11.59 PM of that day
+        round_to_full_day = date_after_wait_period.replace(minute=59, hour=23, second=59)
+        return round_to_full_day
 
     def asdict(self):
         """Return the Account as a python dict."""

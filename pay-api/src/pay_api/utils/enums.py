@@ -153,6 +153,7 @@ class CfsAccountStatus(Enum):
     """Cfs Account Status."""
 
     PENDING = 'PENDING'
+    PENDING_PAD_ACTIVATION = 'PENDING_PAD_ACTIVATION'
     ACTIVE = 'ACTIVE'
     INACTIVE = 'INACTIVE'
     FREEZE = 'FREEZE'

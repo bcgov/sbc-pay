@@ -44,6 +44,9 @@ class CfsAccount(VersionedModel):  # pylint:disable=too-many-instance-attributes
 
     payment_account = relationship('PaymentAccount', foreign_keys=[account_id], lazy='select')
 
+    pad_tos_accepted_date = db.Column(db.DateTime, nullable=True)
+    pad_tos_accepted_by = db.Column(db.String(50), nullable=True)
+
     @classmethod
     def find_effective_by_account_id(cls, account_id: str):
         """Return a Account by id."""
@@ -54,6 +57,11 @@ class CfsAccount(VersionedModel):  # pylint:disable=too-many-instance-attributes
     def find_all_pending_accounts(cls):
         """Find all pending accounts to be created in CFS."""
         return cls.query.filter_by(status=CfsAccountStatus.PENDING.value).all()
+
+    @classmethod
+    def find_all_accounts_with_status(cls, status: str):
+        """Find all pending accounts to be created in CFS."""
+        return cls.query.filter_by(status=status).all()
 
 
 class CfsAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors

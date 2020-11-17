@@ -70,6 +70,7 @@ def run(job_name):
     from tasks.stale_payment_task import StalePaymentTask
     from tasks.statement_notification_task import StatementNotificationTask
     from tasks.statement_task import StatementTask
+    from tasks.activate_pad_account_task import ActivatePadAccountTask
 
     application = create_app()
 
@@ -92,6 +93,10 @@ def run(job_name):
     elif job_name == 'CREATE_INVOICES':
         CreateInvoiceTask.create_invoices()
         application.logger.info(f'<<<< Completed creating cfs invoices >>>>')
+    elif job_name == 'ACTIVATE_PAD_ACCOUNTS':
+        ActivatePadAccountTask.activate_pad_accounts()
+        application.logger.info(f'<<<< Completed Activating PAD accounts >>>>')
+
     else:
         application.logger.debug('No valid args passed.Exiting job without running any ***************')
 
