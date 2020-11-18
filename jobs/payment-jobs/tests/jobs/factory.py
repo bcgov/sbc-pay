@@ -17,7 +17,7 @@
 Test-Suite to ensure that the /payments endpoint is working as expected.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from pay_api.models import (
     CfsAccount, DistributionCode, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem,
@@ -115,10 +115,13 @@ def factory_create_online_banking_account(auth_account_id='1234', status=CfsAcco
 
 
 def factory_create_pad_account(auth_account_id='1234', bank_number='001', bank_branch='004', bank_account='1234567890',
-                               status=CfsAccountStatus.PENDING.value):
+                               status=CfsAccountStatus.PENDING.value, payment_method=PaymentMethod.PAD.value,
+                               confirmation_period: int = 3):
     """Return Factory."""
+    date_after_wait_period = datetime.today() + timedelta(confirmation_period)
     account = PaymentAccount(auth_account_id=auth_account_id,
-                             payment_method=PaymentMethod.PAD.value,
+                             payment_method=payment_method,
+                             pad_activation_date=date_after_wait_period,
                              auth_account_name=f'Test {auth_account_id}').save()
     CfsAccount(status=status, account_id=account.id, bank_number=bank_number,
                bank_branch_number=bank_branch, bank_account_number=bank_account).save()

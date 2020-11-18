@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to Payment."""
-
 from threading import Thread
 from typing import Any, Dict, Tuple
 
@@ -67,6 +66,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         payment_account = cls._find_payment_account(authorization)
 
         payment_method = _get_payment_method(payment_request, payment_account)
+
         bcol_account = cls._get_bcol_account(account_info, payment_account)
 
         # Calculate the fees
@@ -79,7 +79,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             payment_method=payment_method,
             corp_type=corp_type,
             fees=sum(fee.total for fee in fees),
-            account_info=account_info
+            account_info=account_info,
+            payment_account=payment_account
         )
 
         pay_system_invoice: Dict[str, any] = None

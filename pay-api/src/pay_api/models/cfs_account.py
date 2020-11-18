@@ -38,7 +38,7 @@ class CfsAccount(VersionedModel):  # pylint:disable=too-many-instance-attributes
     bank_branch_number = db.Column(db.String(50), nullable=True, index=True)
     bank_account_number = db.Column(db.String(50), nullable=True, index=True)
 
-    status = db.Column(db.String(20), ForeignKey('cfs_account_status_code.code'), nullable=True)
+    status = db.Column(db.String(40), ForeignKey('cfs_account_status_code.code'), nullable=True)
 
     account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True, index=True)
 
@@ -54,6 +54,11 @@ class CfsAccount(VersionedModel):  # pylint:disable=too-many-instance-attributes
     def find_all_pending_accounts(cls):
         """Find all pending accounts to be created in CFS."""
         return cls.query.filter_by(status=CfsAccountStatus.PENDING.value).all()
+
+    @classmethod
+    def find_all_accounts_with_status(cls, status: str):
+        """Find all pending accounts to be created in CFS."""
+        return cls.query.filter_by(status=status).all()
 
 
 class CfsAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors

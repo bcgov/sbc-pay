@@ -130,6 +130,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
 
     TESTING = False
     DEBUG = True
+    PAD_CONFIRMATION_PERIOD_IN_DAYS = int(os.getenv('PAD_CONFIRMATION_PERIOD_IN_DAYS', '3'))
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
