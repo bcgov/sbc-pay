@@ -47,6 +47,8 @@ class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attri
 
     # before this date , the account shouldn't get used
     pad_activation_date = db.Column(db.DateTime, nullable=True)
+    pad_tos_accepted_date = db.Column(db.DateTime, nullable=True)
+    pad_tos_accepted_by = db.Column(db.String(50), nullable=True)
 
     @classmethod
     def find_by_auth_account_id(cls, auth_account_id: str):

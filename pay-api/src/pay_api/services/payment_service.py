@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to Payment."""
-from datetime import datetime
 from threading import Thread
 from typing import Any, Dict, Tuple
 
@@ -22,7 +21,7 @@ from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.enums import PaymentStatus, InvoiceStatus, LineItemStatus, InvoiceReferenceStatus, \
-    PaymentMethod, CfsAccountStatus
+    PaymentMethod
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_str_by_path
 from .base_payment_system import PaymentSystemService
@@ -67,7 +66,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         payment_account = cls._find_payment_account(authorization)
 
         payment_method = _get_payment_method(payment_request, payment_account)
-        PaymentService._validate_and_throw_error(payment_method, payment_account)
 
         bcol_account = cls._get_bcol_account(account_info, payment_account)
 
@@ -81,7 +79,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             payment_method=payment_method,
             corp_type=corp_type,
             fees=sum(fee.total for fee in fees),
-            account_info=account_info
+            account_info=account_info,
+            payment_account=payment_account
         )
 
         pay_system_invoice: Dict[str, any] = None
@@ -141,14 +140,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         current_app.logger.debug('>create_invoice')
 
         return invoice.asdict()
-
-    @staticmethod
-    def _validate_and_throw_error(payment_method: str, payment_account: PaymentAccount):
-        is_in_pad_confirmation_period = (payment_method == PaymentMethod.PAD.value and
-                                         payment_account.pad_activation_date > datetime.now())
-        if is_in_pad_confirmation_period or \
-                payment_account.cfs_account_status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value:
-            raise BusinessException(Error.ACCOUNT_IN_PAD_CONFIRMATION_PERIOD)
 
     @classmethod
     def _find_payment_account(cls, authorization):
