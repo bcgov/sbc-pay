@@ -38,6 +38,7 @@ class PaymentStatus(Enum):
     COMPLETED = 'COMPLETED'
     DELETED = 'DELETED'
     REFUNDED = 'REFUNDED'
+    FAILED = 'FAILED'
 
 
 class InvoiceStatus(Enum):

@@ -27,17 +27,18 @@ import random
 import signal
 import sys
 
+
 from nats.aio.client import Client as NATS  # noqa N814; by convention the name is NATS
 from stan.aio.client import Client as STAN  # noqa N814; by convention the name is STAN
 
-from entity_queue_common.service_utils import error_cb, logger, signal_handler
 
-
-async def run(loop, old_identifier, new_identifier):  # pylint: disable=too-many-locals
+async def run(loop, file_name: str, location: str = 'payment-sftp'):  # pylint: disable=too-many-locals
     """Run the main application loop for the service.
 
     This runs the main top level service functions for working with the Queue.
     """
+    from entity_queue_common.service_utils import error_cb, logger, signal_handler
+
     # NATS client connections
     nc = NATS()
     sc = STAN()
@@ -53,7 +54,7 @@ async def run(loop, old_identifier, new_identifier):  # pylint: disable=too-many
             'servers': os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(','),
             'io_loop': loop,
             'error_cb': error_cb,
-            'name': os.getenv('NATS_ENTITY_EVENTS_CLIENT_NAME', 'entity.events.worker')
+            'name': os.getenv('NATS_PAYMENT_RECONCILIATIONS_CLIENT_NAME', 'account.reconciliations.worker')
         }
 
     def stan_connection_options():
@@ -65,9 +66,10 @@ async def run(loop, old_identifier, new_identifier):  # pylint: disable=too-many
 
     def subscription_options():
         return {
-            'subject': os.getenv('NATS_ENTITY_EVENTS_SUBJECT', 'entity.events'),
-            'queue': os.getenv('NATS_ENTITY_EVENTS_QUEUE', 'events-worker'),
-            'durable_name': os.getenv('NATS_ENTITY_EVENTS_QUEUE', 'events-worker') + '_durable'
+            'subject': os.getenv('NATS_PAYMENT_RECONCILIATIONS_SUBJECT', 'account.reconciliations'),
+            'queue': os.getenv('NATS_PAYMENT_RECONCILIATIONS_QUEUE', 'account-reconciliations-worker'),
+            'durable_name': os.getenv('NATS_PAYMENT_RECONCILIATIONS_QUEUE',
+                                      'account-reconciliations-worker') + '_durable'
         }
 
     try:
@@ -83,18 +85,16 @@ async def run(loop, old_identifier, new_identifier):  # pylint: disable=too-many
 
         payload = {
             'specversion': '1.x-wip',
-            'type': 'bc.registry.business.incorporationApplication',
+            'type': 'bc.registry.payment.casSettlementUploaded',
             'source': 'https://api.business.bcregistry.gov.bc.ca/v1/business/BC1234567/filing/12345678',
             'id': 'C234-1234-1234',
             'time': '2020-08-28T17:37:34.651294+00:00',
             'datacontenttype': 'application/json',
-            'identifier': new_identifier,
-            'tempidentifier': old_identifier,
             'data': {
-                'filing': {
-                    'header': {'filingId': '12345678'},
-                    'business': {'identifier': 'BC1234567'}
-                }
+                'fileName': file_name,
+                'source': 'MINIO',
+                'location': location
+
             }
         }
 
@@ -110,20 +110,17 @@ async def run(loop, old_identifier, new_identifier):  # pylint: disable=too-many
 
 if __name__ == '__main__':
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "ho:n:", ["oldid=", "newid="])
+        opts, args = getopt.getopt(sys.argv[1:], "hf:l:", ["file=", "location="])
     except getopt.GetoptError:
-        print('q_cli.py -o <old_identifier> -n <new_identifier>')
         sys.exit(2)
 
     for opt, arg in opts:
         if opt == '-h':
-            print('q_cli.py -o <old_identifier> -n <new_identifier>')
             sys.exit()
-        elif opt in ("-o", "--oldid"):
-            old_id = arg
-        elif opt in ("-n", "--newid"):
-            new_id = arg
+        elif opt in ("-f", "--file"):
+            file = arg
+        elif opt in ("-l", "--location"):
+            location = arg
 
-    print('publish:', old_id, new_id)
     event_loop = asyncio.get_event_loop()
-    event_loop.run_until_complete(run(event_loop, old_id, new_id))
+    event_loop.run_until_complete(run(event_loop, file, location))
