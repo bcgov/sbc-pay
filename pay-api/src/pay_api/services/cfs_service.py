@@ -25,7 +25,8 @@ from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import (
-    CFS_BATCH_SOURCE, CFS_CUST_TRX_TYPE, CFS_LINE_TYPE, CFS_TERM_NAME, DEFAULT_ADDRESS_LINE_1,
+    CFS_BATCH_SOURCE, CFS_CUSTOMER_PROFILE_CLASS, CFS_CUST_TRX_TYPE, CFS_LINE_TYPE, CFS_TERM_NAME,
+    DEFAULT_ADDRESS_LINE_1,
     DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE)
 from pay_api.utils.enums import (
     AuthHeaderType, ContentType)
@@ -132,7 +133,8 @@ class CFSService(OAuthService):
         account_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/'.format(
             party.get('party_number', None))
         account: Dict[str, Any] = {
-            'account_description': current_app.config.get('CFS_ACCOUNT_DESCRIPTION')
+            'account_description': current_app.config.get('CFS_ACCOUNT_DESCRIPTION'),
+            'customer_profile_class': CFS_CUSTOMER_PROFILE_CLASS
         }
 
         account_response = OAuthService.post(account_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
