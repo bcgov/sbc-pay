@@ -20,6 +20,7 @@ autopep8
 coverage
 pylint
 pylint-flask
+FreezeGun
 #attrs==19.1.0
 
 # docker

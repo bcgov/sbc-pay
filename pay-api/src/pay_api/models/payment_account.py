@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Payment Account data."""
+
 from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey
 
@@ -43,6 +44,11 @@ class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attri
     running_balance = db.Column(db.Float, nullable=True)
     credit = db.Column(db.Float, nullable=True)
     billable = db.Column(Boolean(), default=True)
+
+    # before this date , the account shouldn't get used
+    pad_activation_date = db.Column(db.DateTime, nullable=True)
+    pad_tos_accepted_date = db.Column(db.DateTime, nullable=True)
+    pad_tos_accepted_by = db.Column(db.String(50), nullable=True)
 
     @classmethod
     def find_by_auth_account_id(cls, auth_account_id: str):
