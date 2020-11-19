@@ -158,7 +158,8 @@ class CFSService(OAuthService):
             'province': get_non_null_value(contact_info.get('province'), DEFAULT_JURISDICTION),
             'country': get_non_null_value(contact_info.get('country'), DEFAULT_COUNTRY),
             'customer_site_id': '1',
-            'primary_bill_to': 'Y'
+            'primary_bill_to': 'Y',
+            'customer_profile_class': CFS_CUSTOMER_PROFILE_CLASS
         }
         if receipt_method:
             site['receipt_method'] = receipt_method
