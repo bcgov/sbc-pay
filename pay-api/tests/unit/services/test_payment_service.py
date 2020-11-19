@@ -30,7 +30,7 @@ from pay_api.utils.enums import PaymentStatus, InvoiceStatus, PaymentMethod
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
     factory_payment_transaction, get_auth_basic_user, get_auth_premium_user, get_payment_request,
-    get_payment_request_with_payment_method, get_zero_dollar_payment_request)
+    get_payment_request_with_payment_method, get_payment_request_with_service_fees, get_zero_dollar_payment_request)
 
 test_user_token = {'preferred_username': 'test'}
 
@@ -187,7 +187,7 @@ def test_create_bcol_payment(session, public_user_mock):
 def test_create_payment_record_with_service_charge(session, public_user_mock):
     """Assert that the payment records are created."""
     # Create a payment request for corp type BC
-    payment_response = PaymentService.create_invoice(get_payment_request(corp_type='BC', second_filing_type='OTFDR'),
+    payment_response = PaymentService.create_invoice(get_payment_request_with_service_fees(),
                                                      get_auth_basic_user())
     account_model = PaymentAccount.find_by_auth_account_id(get_auth_basic_user().get('account').get('id'))
     account_id = account_model.id

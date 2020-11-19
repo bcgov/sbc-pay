@@ -92,7 +92,7 @@ def get_payment_request(business_identifier: str = 'CP0001234', corp_type: str =
     }
 
 
-def get_payment_request_with_service_fees(business_identifier: str = 'CP0001234', corp_type: str = 'BC',
+def get_payment_request_with_service_fees(business_identifier: str = 'CP0001234', corp_type: str = 'BEN',
                                           filing_type: str = 'BCINC'):
     """Return a payment request object."""
     return {
