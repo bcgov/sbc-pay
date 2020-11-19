@@ -52,7 +52,7 @@ class DistributionTask:
             paybc_ref_number: str = current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')
             paybc_svc_base_url = current_app.config.get('PAYBC_DIRECT_PAY_BASE_URL')
             for gl_updated_invoice in gl_updated_invoices:
-                payment: PaymentModel = PaymentModel.find_by_id(gl_updated_invoice.payment_id)
+                payment: PaymentModel = PaymentModel.find_payment_for_invoice(gl_updated_invoice.id)
                 # For now handle only GL updates for Direct Pay, more to come in future
                 if payment.payment_method_code != PaymentMethod.DIRECT_PAY.value:
                     cls.__update_invoice_status(gl_updated_invoice, InvoiceStatus.PAID.value)
