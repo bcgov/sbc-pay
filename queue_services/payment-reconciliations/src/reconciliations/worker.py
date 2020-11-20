@@ -177,7 +177,7 @@ async def _process_paid_invoices(inv_references, payment, row):
         raise Exception('Invalid Amount')
     payment.payment_status_code = PaymentStatus.COMPLETED.value
     payment.paid_amount = paid_amount
-    receipt_date: datetime = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%m%d%Y')
+    receipt_date: datetime = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%d-%b-%y')
     receipt_number: str = _get_row_value(row, Column.SOURCE_TXN_NO)
 
     txn: PaymentTransactionModel = _find_or_create_active_transaction(payment)
