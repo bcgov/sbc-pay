@@ -19,9 +19,21 @@ class SourceTransaction(Enum):
     """Source Transaction types."""
 
     PAD = 'BCR-PAD Daily'
-    ONLINE_BANKING = 'BCR-BOL'
+    ONLINE_BANKING = 'BCR Online Banking Payments'
     CREDIT_MEMO = 'CM'
     ADJUSTMENT = 'BCR-ADJ'
+
+
+class RecordType(Enum):
+    """Record types."""
+
+    PAD = 'PADP'
+    PAYR = 'PAYR'
+    BOLP = 'BOLP'
+    CMAP = 'CMAP'
+    ADJS = 'ADJS'
+    ONAC = 'ONAC'
+    ONAP = 'ONAP'
 
 
 class Column(Enum):
@@ -46,10 +58,10 @@ class Column(Enum):
 class Status(Enum):
     """Target Transaction Status."""
 
-    PAID = 'PAID'
-    NOT_PAID = 'NOT PAID'
-    ON_ACC = 'ON ACCOUNT'
-    PARTIAL = 'PARTIALLY PAID'
+    PAID = 'Fully Paid'
+    NOT_PAID = 'Not paid'
+    ON_ACC = 'On Account'
+    PARTIAL = 'Partially Paid'
 
 
 class TargetTransaction(Enum):

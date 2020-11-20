@@ -52,7 +52,7 @@ from sentry_sdk import capture_message
 from reconciliations import config
 from reconciliations.minio import get_object
 
-from .enums import Column, SourceTransaction, Status, TargetTransaction
+from .enums import Column, RecordType, SourceTransaction, Status, TargetTransaction
 
 
 qsm = QueueServiceManager()  # pylint: disable=invalid-name
@@ -141,7 +141,8 @@ async def _update_payment_details(msg: Dict[str, any]):
                 _process_partial_payments(inv_references, payment, row)
                 await _publish_mailer_events('PartiallyPaid', payment_account, row)
 
-        elif target_txn == TargetTransaction.RECEIPT.value and target_txn_status == Status.ON_ACC.value:
+        elif target_txn == TargetTransaction.RECEIPT.value \
+                and _get_row_value(row, Column.RECORD_TYPE) == RecordType.ONAC.value:
             payment_account = _get_payment_account(row)
             logger.info('Applying credit to account %s.', payment_account.auth_account_id)
             # Apply credit to the account
@@ -177,7 +178,7 @@ async def _process_paid_invoices(inv_references, payment, row):
     payment.payment_status_code = PaymentStatus.COMPLETED.value
     payment.paid_amount = paid_amount
     receipt_date: datetime = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%m%d%Y')
-    receipt_number: str = _get_row_value(row, Column.APP_ID)
+    receipt_number: str = _get_row_value(row, Column.SOURCE_TXN_NO)
 
     txn: PaymentTransactionModel = _find_or_create_active_transaction(payment)
     txn.status_code = TransactionStatus.COMPLETED.value
@@ -203,7 +204,7 @@ async def _process_paid_invoices(inv_references, payment, row):
         db.session.add(receipt)
 
         # Publish to the queue if it's an Online Banking payment
-        if _get_row_value(row, Column.SOURCE_TXN) == SourceTransaction.ONLINE_BANKING.value:
+        if _get_row_value(row, Column.RECORD_TYPE) == RecordType.BOLP.value:
             logger.debug('Publishing payment event for OB. Invoice : %s', inv.id)
             await _publish_payment_event(inv)
 
@@ -263,6 +264,7 @@ def _process_failed_payments(payment, row):
 def _process_account_credits(payment_account: PaymentAccountModel, row: Dict[str, str]):
     """Apply credit to the account."""
     payment_account.credit = float(_get_row_value(row, Column.TARGET_TXN_OUTSTANDING))
+    # TODO handle credits based on CAS feedback. Also add over payment to receipt table.
 
 
 def _get_payment_account(row) -> PaymentAccountModel:
@@ -271,6 +273,7 @@ def _get_payment_account(row) -> PaymentAccountModel:
         .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
         .filter(CfsAccountModel.cfs_account == account_number) \
         .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value).one_or_none()
+
     return payment_account
 
 
