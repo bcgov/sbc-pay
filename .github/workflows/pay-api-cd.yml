@@ -38,7 +38,7 @@ jobs:
         with:
           WORKING_DIRECTORY: "./pay-api"
           APP_NAME: "pay-api"
-          VAULTS: '[{ \"vault\": \"shared\", \"application\": [\"keycloak\", \"nats\"]}, {\"vault\": \"relationship\",\"application\": [\"postgres-pay\", \"pay-api\", \"sentry\", \"jwt\"]}]'
+          VAULTS: '[{ \"vault\": \"shared\", \"application\": [\"keycloak\", \"nats\"]}, {\"vault\": \"relationship\",\"application\": [\"postgres-pay\", \"pay-api\", \"sentry\", \"jwt\", \"account-mailer\"]}]'
           SKIP_OP: "false"
           OP_PARAMETERS: ${{ secrets.OP_PARAMETERS }}
           OPENSHIFT_LOGIN_REGISTRY: ${{ secrets.OPENSHIFT_LOGIN_REGISTRY }}

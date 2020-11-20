@@ -18,14 +18,17 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, Union, Tuple
 
 from flask import current_app
+from sentry_sdk import capture_message
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel, PaymentAccountSchema
 from pay_api.models import StatementSettings as StatementSettingsModel
+from pay_api.services.queue_publisher import publish_response
 from pay_api.utils.enums import PaymentSystem, StatementFrequency, PaymentMethod
 from pay_api.utils.errors import Error
-from pay_api.utils.util import get_str_by_path
+from pay_api.utils.user_context import user_context, UserContext
+from pay_api.utils.util import get_local_formatted_date_time, get_str_by_path
 
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -39,7 +42,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self._auth_account_name: Union[None, str] = None
         self._payment_method: Union[None, str] = None
         self._auth_account_name: Union[None, str] = None
-        self._pad_activation_date: Union[None, str] = None
+        self._pad_activation_date: Union[None, datetime] = None
 
         self._cfs_account: Union[None, str] = None
         self._cfs_party: Union[None, str] = None
@@ -72,7 +75,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self.payment_method: str = self._dao.payment_method
         self.bcol_user_id: str = self._dao.bcol_user_id
         self.bcol_account: str = self._dao.bcol_account
-        self.pad_activation_date: str = self._dao.pad_activation_date
+        self.pad_activation_date: datetime = self._dao.pad_activation_date
 
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(self.id)
         if cfs_account:
@@ -240,7 +243,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return self._pad_activation_date
 
     @pad_activation_date.setter
-    def pad_activation_date(self, value: int):
+    def pad_activation_date(self, value: datetime):
         """Set the bcol_user_id."""
         self._pad_activation_date = value
         self._dao.pad_activation_date = value
@@ -416,8 +419,60 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         round_to_full_day = date_after_wait_period.replace(minute=59, hour=23, second=59)
         return round_to_full_day
 
-    def asdict(self):
+    @user_context
+    def asdict(self, **kwargs):
         """Return the Account as a python dict."""
+        user: UserContext = kwargs['user']
         account_schema = PaymentAccountSchema()
         d = account_schema.dump(self._dao)
+        # Add cfs account values based on role and payment method. For system roles, return bank details.
+        if self.payment_method in (PaymentMethod.PAD.value, PaymentMethod.ONLINE_BANKING.value):
+            cfs_account = {
+                'cfsAccountNumber': self.cfs_account,
+                'cfsPartyNumber': self.cfs_party,
+                'cfsSiteNumber': self.cfs_site,
+                'status': self.cfs_account_status
+            }
+            if user.is_system():
+                # TODO apply masking
+                cfs_account['bankAccountNumber'] = self.bank_account_number
+                cfs_account['bankInstitutionNumber'] = self.bank_number
+                cfs_account['bankTransitNumber'] = self.bank_branch_number
+
+            d['cfsAccount'] = cfs_account
+
         return d
+
+    def _publish_account_mailer_event(self):
+        """Publish to account mailer message to send out confirmation email."""
+        payload = {
+            'specversion': '1.x-wip',
+            'type': 'bc.registry.payment.padAccountCreate',
+            'source': f'https://api.pay.bcregistry.gov.bc.ca/v1/accounts/{self.auth_account_id}',
+            'id': f'{self.auth_account_id}',
+            'time': f'{datetime.now()}',
+            'datacontenttype': 'application/json',
+            'data': {
+                'accountId': self.auth_account_id,
+                'accountName': self.auth_account_name,
+                'paymentInfo': {
+                    'bankInstitutionNumber': self.bank_number,
+                    'bankTransitNumber': self.bank_branch_number,
+                    'bankAccountNumber': self.bank_account_number,
+                    'paymentStartDate': get_local_formatted_date_time(self.pad_activation_date),
+                    'bankName': ''  # TODO
+                }
+            }
+        }
+
+        try:
+            publish_response(payload=payload,
+                             client_name=current_app.config['NATS_MAILER_CLIENT_NAME'],
+                             subject=current_app.config['APP_CONFIG.NATS_MAILER_SUBJECT'])
+        except Exception as e:  # pylint: disable=broad-except
+            current_app.logger.error(e)
+            current_app.logger(
+                'Notification to Queue failed for the Account Mailer %s - %s', self.auth_account_id,
+                self.auth_account_name)
+            capture_message('Notification to Queue failed for the Account Mailer on account creation : {msg}.'.format(
+                msg=payload), level='error')
