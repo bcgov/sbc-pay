@@ -287,6 +287,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         payment_account = PaymentAccount()
         payment_account._dao = account  # pylint: disable=protected-access
 
+        payment_account.publish_account_mailer_event()
+
         current_app.logger.debug('>create payment account')
         return payment_account
 
@@ -443,36 +445,37 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
         return d
 
-    def _publish_account_mailer_event(self):
+    def publish_account_mailer_event(self):
         """Publish to account mailer message to send out confirmation email."""
-        payload = {
-            'specversion': '1.x-wip',
-            'type': 'bc.registry.payment.padAccountCreate',
-            'source': f'https://api.pay.bcregistry.gov.bc.ca/v1/accounts/{self.auth_account_id}',
-            'id': f'{self.auth_account_id}',
-            'time': f'{datetime.now()}',
-            'datacontenttype': 'application/json',
-            'data': {
-                'accountId': self.auth_account_id,
-                'accountName': self.auth_account_name,
-                'paymentInfo': {
-                    'bankInstitutionNumber': self.bank_number,
-                    'bankTransitNumber': self.bank_branch_number,
-                    'bankAccountNumber': self.bank_account_number,
-                    'paymentStartDate': get_local_formatted_date_time(self.pad_activation_date),
-                    'bankName': ''  # TODO
+        if self.payment_method == PaymentMethod.PAD.value:
+            payload = {
+                'specversion': '1.x-wip',
+                'type': 'bc.registry.payment.padAccountCreate',
+                'source': f'https://api.pay.bcregistry.gov.bc.ca/v1/accounts/{self.auth_account_id}',
+                'id': f'{self.auth_account_id}',
+                'time': f'{datetime.now()}',
+                'datacontenttype': 'application/json',
+                'data': {
+                    'accountId': self.auth_account_id,
+                    'accountName': self.auth_account_name,
+                    'paymentInfo': {
+                        'bankInstitutionNumber': self.bank_number,
+                        'bankTransitNumber': self.bank_branch_number,
+                        'bankAccountNumber': self.bank_account_number,
+                        'paymentStartDate': get_local_formatted_date_time(self.pad_activation_date)
+                    }
                 }
             }
-        }
 
-        try:
-            publish_response(payload=payload,
-                             client_name=current_app.config['NATS_MAILER_CLIENT_NAME'],
-                             subject=current_app.config['APP_CONFIG.NATS_MAILER_SUBJECT'])
-        except Exception as e:  # pylint: disable=broad-except
-            current_app.logger.error(e)
-            current_app.logger(
-                'Notification to Queue failed for the Account Mailer %s - %s', self.auth_account_id,
-                self.auth_account_name)
-            capture_message('Notification to Queue failed for the Account Mailer on account creation : {msg}.'.format(
-                msg=payload), level='error')
+            try:
+                publish_response(payload=payload,
+                                 client_name=current_app.config['NATS_MAILER_CLIENT_NAME'],
+                                 subject=current_app.config['APP_CONFIG.NATS_MAILER_SUBJECT'])
+            except Exception as e:  # pylint: disable=broad-except
+                current_app.logger.error(e)
+                current_app.logger.error(
+                    'Notification to Queue failed for the Account Mailer %s - %s', self.auth_account_id,
+                    self.auth_account_name)
+                capture_message(
+                    'Notification to Queue failed for the Account Mailer on account creation : {msg}.'.format(
+                        msg=payload), level='error')
