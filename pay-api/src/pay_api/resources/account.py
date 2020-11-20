@@ -93,14 +93,15 @@ class Account(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.SYSTEM.value])
+    @_jwt.requires_auth
     @_tracing.trace()
     def get(account_number: str):
-        """Create the payment account records."""
-        current_app.logger.info('<Account.post')
-
+        """Get payment account details."""
+        current_app.logger.info('<Account.get')
+        # Check if user is authorized to perform this action
+        check_auth(business_identifier=None, account_id=account_number, contains_role=EDIT_ROLE)
         response, status = PaymentAccountService.find_by_auth_account_id(account_number).asdict(), HTTPStatus.OK
-        current_app.logger.debug('>Account.post')
+        current_app.logger.debug('>Account.get')
         return jsonify(response), status
 
 
