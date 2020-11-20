@@ -22,6 +22,7 @@ class SourceTransaction(Enum):
     ONLINE_BANKING = 'BCR Online Banking Payments'
     CREDIT_MEMO = 'CM'
     ADJUSTMENT = 'BCR-ADJ'
+    EFT_WIRE = 'BC REG EFT Wire Cheque'
 
 
 class RecordType(Enum):
