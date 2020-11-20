@@ -29,7 +29,7 @@ from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus
 
-from reconciliations.enums import SourceTransaction, Status, TargetTransaction
+from reconciliations.enums import RecordType, SourceTransaction, Status, TargetTransaction
 
 from .factory import (
     factory_create_online_banking_account, factory_create_pad_account, factory_invoice, factory_invoice_reference,
@@ -72,7 +72,7 @@ async def test_online_banking_reconciliations(session, app, stan_server, event_l
     file_name: str = 'cas_settlement_file.csv'
     # Settlement row
     date = datetime.now().strftime('%m%d%Y')
-    row = ['BOLP', SourceTransaction.ONLINE_BANKING.value, 100001, 1234567890, date, payment.invoice_amount, '1234',
+    row = [RecordType.BOLP.value, SourceTransaction.ONLINE_BANKING.value, 100001, 1234567890, date, payment.invoice_amount, '1234',
            TargetTransaction.INV.value, invoice_number,
            payment.invoice_amount, 0, Status.PAID.value]
     create_and_upload_settlement_file(file_name, [row])
@@ -125,7 +125,7 @@ async def test_online_banking_under_payment(session, app, stan_server, event_loo
     paid_amount = 10
     # Settlement row
     date = datetime.now().strftime('%m%d%Y')
-    row = ['BOLP', SourceTransaction.ONLINE_BANKING.value, 100001, 1234567890, date, paid_amount, '1234',
+    row = [RecordType.BOLP.value, SourceTransaction.ONLINE_BANKING.value, 100001, 1234567890, date, paid_amount, '1234',
            TargetTransaction.INV.value, invoice_number,
            payment.invoice_amount, payment.invoice_amount - paid_amount, Status.PARTIAL.value]
     create_and_upload_settlement_file(file_name, [row])
@@ -192,9 +192,9 @@ async def test_pad_reconciliations(session, app, stan_server, event_loop, client
     # Settlement row
     receipt_number = 1234567890
     date = datetime.now().strftime('%m%d%Y')
-    row = ['PADP', SourceTransaction.PAD.value, 100001, receipt_number, date, payment.invoice_amount, '1234',
+    row = [RecordType.PAD.value, SourceTransaction.PAD.value, 100001, receipt_number, date, payment.invoice_amount, '1234',
            'INV', invoice_number,
-           payment.invoice_amount, 0, 'PAID']
+           payment.invoice_amount, 0, Status.PAID.value]
     create_and_upload_settlement_file(file_name, [row])
     await helper_add_event_to_queue(events_stan, file_name=file_name)
 
