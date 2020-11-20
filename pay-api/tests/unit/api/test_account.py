@@ -240,7 +240,7 @@ def test_premium_duplicate_account_creation(session, client, jwt, app):
 
 def test_premium_account_update(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
-    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.post('/api/v1/accounts', data=json.dumps(get_premium_account_payload()),
@@ -379,3 +379,38 @@ def test_update_online_banking_account_when_cfs_up(session, client, jwt, app):
                     headers=headers)
 
     assert rv.status_code == 202
+
+
+def test_account_get_by_system(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_unlinked_pad_account_payload()),
+                     headers=headers)
+
+    auth_account_id = rv.json.get('authAccountId')
+
+    rv = client.get(f'/api/v1/accounts/{auth_account_id}', headers=headers)
+    assert rv.json.get('cfsAccount').get('bankTransitNumber')
+    assert rv.json.get('cfsAccount').get('bankAccountNumber')
+    assert rv.json.get('cfsAccount').get('bankInstitutionNumber')
+
+
+def test_account_get_by_user(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_unlinked_pad_account_payload()),
+                     headers=headers)
+
+    auth_account_id = rv.json.get('authAccountId')
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.get(f'/api/v1/accounts/{auth_account_id}', headers=headers)
+    assert rv.json.get('cfsAccount').get('bankTransitNumber') is None
+    assert rv.json.get('cfsAccount').get('bankAccountNumber') is None
+    assert rv.json.get('cfsAccount').get('bankInstitutionNumber') is None
