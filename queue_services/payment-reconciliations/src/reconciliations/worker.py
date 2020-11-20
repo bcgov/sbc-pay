@@ -263,7 +263,10 @@ def _process_failed_payments(payment, row):
 
 def _process_account_credits(payment_account: PaymentAccountModel, row: Dict[str, str]):
     """Apply credit to the account."""
-    payment_account.credit = float(_get_row_value(row, Column.TARGET_TXN_OUTSTANDING))
+    logger.info('Current credit for account %s is %s', payment_account.auth_account_id, payment_account.credit)
+    credit_amount: float = payment_account.credit or 0
+    credit_amount += float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL))
+    payment_account.credit = credit_amount
     # TODO handle credits based on CAS feedback. Also add over payment to receipt table.
 
 
