@@ -16,9 +16,12 @@
 
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
+
+from flask import current_app
+from freezegun import freeze_time
+
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.enums import PaymentMethod
-
 from tests.utilities.base_test import (
     factory_payment_account, factory_premium_payment_account, get_auth_basic_user, get_auth_premium_user,
     get_pad_account_payload, get_premium_account_payload, get_basic_account_payload,
@@ -72,6 +75,16 @@ def test_create_pad_account(session):
     assert pad_account.cfs_account is None
     assert pad_account.cfs_party is None
     assert pad_account.cfs_site is None
+
+
+@freeze_time('2020-11-11 2:00:02')
+def test_create_pad_account_with_fixed_date(session):
+    """Assert that pad activation date is after 3 days."""
+    pad_account = PaymentAccountService.create(get_unlinked_pad_account_payload())
+    assert current_app.config.get(
+        'PAD_CONFIRMATION_PERIOD_IN_DAYS') == 3, 'confirmation period is not 3.so fix the below date'
+    assert pad_account.pad_activation_date.strftime(
+        '%Y-%m-%d %H:%M:%S') == '2020-11-15 07:59:59', 'compares with the utc time after 3 full days'
 
 
 def test_create_pad_account_but_drawdown_is_active(session):
