@@ -17,9 +17,6 @@
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
 
-from flask import current_app
-from freezegun import freeze_time
-
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.enums import PaymentMethod
 from tests.utilities.base_test import (
