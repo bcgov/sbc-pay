@@ -28,7 +28,7 @@ from pay_api.services.queue_publisher import publish_response
 from pay_api.utils.enums import PaymentSystem, StatementFrequency, PaymentMethod
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context, UserContext
-from pay_api.utils.util import get_local_formatted_date_time, get_str_by_path, current_local_time, \
+from pay_api.utils.util import get_str_by_path, current_local_time, \
     get_local_formatted_date
 
 
