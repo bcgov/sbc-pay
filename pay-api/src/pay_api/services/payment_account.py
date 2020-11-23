@@ -416,7 +416,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def _calculate_activation_date():
         """Find the activation date in local time.Convert it to UTC before returning."""
         account_activation_wait_period: int = current_app.config.get('PAD_CONFIRMATION_PERIOD_IN_DAYS')
-        date_after_wait_period = current_local_time() + timedelta(account_activation_wait_period)
+        date_after_wait_period = current_local_time() + timedelta(days=account_activation_wait_period)
         # activation date is inclusive of last day as well.So set to 11.59 PM of that day
         round_to_full_day = date_after_wait_period.replace(minute=59, hour=23, second=59)
         utc_time = round_to_full_day.astimezone(timezone.utc)
