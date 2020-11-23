@@ -471,7 +471,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             try:
                 publish_response(payload=payload,
                                  client_name=current_app.config['NATS_MAILER_CLIENT_NAME'],
-                                 subject=current_app.config['APP_CONFIG.NATS_MAILER_SUBJECT'])
+                                 subject=current_app.config['NATS_MAILER_SUBJECT'])
             except Exception as e:  # pylint: disable=broad-except
                 current_app.logger.error(e)
                 current_app.logger.error(
