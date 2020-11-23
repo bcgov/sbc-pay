@@ -240,6 +240,44 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return payment
 
     @staticmethod
+    def search_account_payments(auth_account_id: str, status: str, page: int, limit: int):
+        """Search account payments."""
+        current_app.logger.debug('<search_account_payments')
+        results, total = PaymentModel.search_account_payments(auth_account_id=auth_account_id,
+                                                              payment_status=status, page=page, limit=limit)
+
+        data = {
+            'total': total,
+            'page': page,
+            'limit': limit,
+            'items': []
+        }
+
+        # Result is tuple of payment and invoice records.
+        # Iterate the results and group all invoices for the same payment by keeping the last payment object to compare.
+        last_payment_iter = None
+        payment_dict = None
+
+        for result in results:
+            payment = result[0]
+            invoice = result[1]
+            if last_payment_iter is None or payment.id != last_payment_iter.id:  # Payment doesn't exist in array yet
+                payment_schema = PaymentSchema()
+                payment_dict = payment_schema.dump(payment)
+                payment_dict['invoices'] = []
+                inv_schema = InvoiceSchema(exclude=('receipts', 'payment_line_items', 'references', '_links'))
+                payment_dict['invoices'] = [inv_schema.dump(invoice)]
+                data['items'].append(payment_dict)
+            else:
+                inv_schema = InvoiceSchema(exclude=('receipts', 'payment_line_items', 'references', '_links'))
+                payment_dict['invoices'].append(inv_schema.dump(invoice))
+
+            last_payment_iter = payment
+
+        current_app.logger.debug('>search_account_payments')
+        return data
+
+    @staticmethod
     def search_all_purchase_history(auth_account_id: str, search_filter: Dict):
         """Return all results for the purchase history."""
         return Payment.search_purchase_history(auth_account_id, search_filter, 0, 0, True)
