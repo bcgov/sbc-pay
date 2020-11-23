@@ -125,18 +125,18 @@ async def _update_payment_details(msg: Dict[str, any]):
 
             payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(payment.payment_account_id)
 
-            if target_txn_status == Status.PAID.value:
+            if target_txn_status.lower() == Status.PAID.value.lower():
                 logger.debug('Fully PAID payment.')
                 await _process_paid_invoices(inv_references, payment, row)
                 await _publish_mailer_events('PaymentSuccess', payment_account, row)
-            elif target_txn_status == Status.NOT_PAID.value:
+            elif target_txn_status.lower() == Status.NOT_PAID.value.lower():
                 logger.info('NOT PAID. NSF identified.')
                 # NSF Condition. Publish to account events for NSF.
                 _process_failed_payments(payment, row)
                 # Send mailer and account events to update status and send email notification
                 await _publish_account_events('PaymentFailed', payment_account, row)
                 await _publish_mailer_events('PaymentFailed', payment_account, row)
-            elif target_txn_status == Status.PARTIAL.value:
+            elif target_txn_status.lower() == Status.PARTIAL.value.lower():
                 logger.info('Partially PAID.')
                 _process_partial_payments(inv_references, payment, row)
                 await _publish_mailer_events('PartiallyPaid', payment_account, row)
@@ -177,7 +177,7 @@ async def _process_paid_invoices(inv_references, payment, row):
         raise Exception('Invalid Amount')
     payment.payment_status_code = PaymentStatus.COMPLETED.value
     payment.paid_amount = paid_amount
-    receipt_date: datetime = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%m%d%Y')
+    receipt_date: datetime = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%d-%b-%y')
     receipt_number: str = _get_row_value(row, Column.SOURCE_TXN_NO)
 
     txn: PaymentTransactionModel = _find_or_create_active_transaction(payment)
