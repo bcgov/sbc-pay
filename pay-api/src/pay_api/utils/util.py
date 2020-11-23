@@ -128,6 +128,11 @@ def get_local_formatted_date_time(date_val: datetime):
     return get_local_time(date_val).strftime('%Y-%m-%d %H:%M:%S')
 
 
+def get_local_formatted_date(date_val: datetime):
+    """Return formatted local time."""
+    return get_local_time(date_val).strftime('%m-%d-%Y')
+
+
 def generate_transaction_number(inv_id: int) -> str:
     """Return transaction number for invoices."""
     prefix = current_app.config.get('CFS_INVOICE_PREFIX')
