@@ -294,16 +294,19 @@ def factory_payment(
         payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC',
         payment_status_code: str = PaymentStatus.CREATED.value,
         created_on: datetime = datetime.now(),
-        invoice_number: str = None
+        invoice_number: str = None,
+        payment_account_id: str = None
 ):
     """Return Factory."""
-    return Payment(
+    payment: Payment = Payment(
         payment_system_code=payment_system_code,
         payment_method_code=payment_method_code,
         payment_status_code=payment_status_code,
         created_on=created_on,
-        invoice_number=invoice_number
+        invoice_number=invoice_number,
+        payment_account_id=payment_account_id
     )
+    return payment
 
 
 def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.value,

@@ -23,18 +23,16 @@ from sqlalchemy import ForeignKey
 from sqlalchemy import func
 from sqlalchemy.orm import relationship
 
-from pay_api.utils.enums import InvoiceReferenceStatus
+from pay_api.utils.enums import InvoiceReferenceStatus, PaymentStatus
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
 from .base_model import BaseModel
 from .base_schema import BaseSchema
-from .db import db, ma
+from .db import db
 from .invoice import Invoice
-from .invoice import InvoiceSchema
 from .payment_account import PaymentAccount
 from .payment_method import PaymentMethod
 from .payment_status_code import PaymentStatusCode
 from .payment_system import PaymentSystem
-from .payment_transaction import PaymentTransactionSchema
 from .invoice_reference import InvoiceReference
 
 
@@ -57,7 +55,6 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
 
     payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='select', innerjoin=True)
     payment_status = relationship(PaymentStatusCode, foreign_keys=[payment_status_code], lazy='select', innerjoin=True)
-    transactions = relationship('PaymentTransaction')
 
     @classmethod
     def find_payment_method_by_payment_id(cls, identifier: int):
@@ -79,6 +76,30 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                     in_([InvoiceReferenceStatus.ACTIVE.value, InvoiceReferenceStatus.COMPLETED.value]))
 
         return query.one_or_none()
+
+    @classmethod
+    def search_account_payments(cls, auth_account_id: str, payment_status: str, page: int, limit: int):
+        """Search payment records created for the account."""
+        query = db.session.query(Payment, Invoice) \
+            .join(PaymentAccount, PaymentAccount.id == Payment.payment_account_id) \
+            .outerjoin(InvoiceReference, InvoiceReference.invoice_number == Payment.invoice_number) \
+            .outerjoin(Invoice, InvoiceReference.invoice_id == Invoice.id) \
+            .filter(InvoiceReference.status_code.
+                    in_([InvoiceReferenceStatus.ACTIVE.value, InvoiceReferenceStatus.COMPLETED.value])) \
+            .filter(PaymentAccount.auth_account_id == auth_account_id)
+
+        # TODO handle other status and conditions gracefully.
+        if payment_status:
+            query = query.filter(Payment.payment_status_code == payment_status)
+            if payment_status == PaymentStatus.FAILED.value:
+                # If call is to get NSF payments, get only active failed payments.
+                # Exclude any payments which failed first and paid later.
+                query = query.filter(InvoiceReference.status_code == InvoiceReferenceStatus.ACTIVE.value)
+
+        query = query.order_by(Payment.id.asc())
+        pagination = query.paginate(per_page=limit, page=page)
+        result, count = pagination.items, pagination.total
+        return result, count
 
     @classmethod
     def search_purchase_history(cls,  # pylint:disable=too-many-arguments, too-many-locals, too-many-branches
@@ -153,19 +174,8 @@ class PaymentSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Payment
-        exclude = ['payment_system', 'payment_status']
+        exclude = ['payment_system', 'payment_status', 'payment_account_id', 'id', 'invoice_amount', 'paid_amount']
 
     payment_system_code = fields.String(data_key='payment_system')
     payment_method_code = fields.String(data_key='payment_method')
     payment_status_code = fields.String(data_key='status_code')
-
-    # pylint: disable=no-member
-    invoices = ma.Nested(InvoiceSchema, many=True, exclude=('payment_line_items', 'receipts'))
-    transactions = ma.Nested(PaymentTransactionSchema, many=True)
-
-    _links = ma.Hyperlinks({
-        'self': ma.URLFor('API.payments_payments', invoice_id='<id>'),
-        'collection': ma.URLFor('API.payments_payment'),
-        'invoices': ma.URLFor('API.invoices_invoices', invoice_id='<id>'),
-        'transactions': ma.URLFor('API.transactions_transaction', invoice_id='<id>')
-    })

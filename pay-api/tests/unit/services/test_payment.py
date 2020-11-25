@@ -22,7 +22,7 @@ import pytz
 
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.services.payment import Payment as Payment_service
-from pay_api.utils.enums import InvoiceStatus
+from pay_api.utils.enums import InvoiceStatus, InvoiceReferenceStatus
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account)
 
@@ -275,3 +275,80 @@ def test_search_payment_history_with_tz(session):
     assert results is not None
     assert results.get('items') is not None
     assert results.get('total') == 2
+
+
+def test_search_search_account_payments(session):
+    """Assert that the search account payments is working."""
+    inv_number = 'REG00001'
+    payment_account = factory_payment_account().save()
+
+    invoice_1 = factory_invoice(payment_account)
+    invoice_1.save()
+    factory_invoice_reference(invoice_1.id, invoice_number=inv_number).save()
+
+    payment_created_on = datetime.now()
+    payment_1 = factory_payment(payment_status_code='CREATED', created_on=payment_created_on,
+                                payment_account_id=payment_account.id, invoice_number=inv_number)
+    payment_1.save()
+
+    auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
+
+    results = Payment_service.search_account_payments(auth_account_id=auth_account_id,
+                                                      status=None, limit=1, page=1)
+    assert results is not None
+    assert results.get('items') is not None
+    assert results.get('total') == 1
+
+
+def test_search_search_account_failed_payments(session):
+    """Assert that the search account payments is working."""
+    inv_number_1 = 'REG00001'
+    payment_account = factory_payment_account().save()
+
+    invoice_1 = factory_invoice(payment_account)
+    invoice_1.save()
+    inv_ref_1 = factory_invoice_reference(invoice_1.id, invoice_number=inv_number_1).save()
+
+    payment_1 = factory_payment(payment_status_code='FAILED',
+                                payment_account_id=payment_account.id, invoice_number=inv_number_1)
+    payment_1.save()
+
+    auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
+
+    results = Payment_service.search_account_payments(auth_account_id=auth_account_id,
+                                                      status='FAILED', limit=1, page=1)
+    assert results.get('items')
+    assert results.get('total') == 1
+
+    # Create one more payment with failed status.
+    inv_number_2 = 'REG00002'
+    invoice_2 = factory_invoice(payment_account)
+    invoice_2.save()
+    inv_ref_2 = factory_invoice_reference(invoice_2.id, invoice_number=inv_number_2).save()
+
+    payment_2 = factory_payment(payment_status_code='FAILED',
+                                payment_account_id=payment_account.id, invoice_number=inv_number_1)
+    payment_2.save()
+
+    auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
+
+    results = Payment_service.search_account_payments(auth_account_id=auth_account_id,
+                                                      status='FAILED', limit=1, page=1)
+    assert results.get('items')
+    assert results.get('total') == 2
+
+    # Now combine both payments into one, by setting status to invoice reference. - NSF payments
+    inv_ref_1.status_code = InvoiceReferenceStatus.CANCELLED.value
+    inv_ref_2.status_code = InvoiceReferenceStatus.CANCELLED.value
+    inv_ref_1.save()
+    inv_ref_2.save()
+
+    # Now create new invoice reference for consolidated invoice
+    inv_number_3 = 'REG00003'
+    inv_ref_1 = factory_invoice_reference(invoice_1.id, invoice_number=inv_number_3).save()
+    inv_ref_2 = factory_invoice_reference(invoice_2.id, invoice_number=inv_number_3).save()
+    results = Payment_service.search_account_payments(auth_account_id=auth_account_id,
+                                                      status='FAILED', limit=1, page=1)
+    # Now there are no active failed payments, so it should return zero records
+    assert not results.get('items')
+    assert results.get('total') == 0

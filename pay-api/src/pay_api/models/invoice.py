@@ -117,8 +117,8 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
     references = ma.Nested(InvoiceReferenceSchema, many=True, data_key='references')
 
     _links = ma.Hyperlinks({
-        'self': ma.URLFor('API.payments_invoice', invoice_id='<id>'),
-        'collection': ma.URLFor('API.payments_invoices', invoice_id='<id>')
+        'self': ma.URLFor('API.invoice_invoice', invoice_id='<id>'),
+        'collection': ma.URLFor('API.invoice_invoices', invoice_id='<id>')
     })
 
     @post_dump

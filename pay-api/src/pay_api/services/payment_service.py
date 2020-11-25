@@ -184,17 +184,15 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         _update_active_transactions(invoice_id)
 
         invoice: Invoice = Invoice.find_by_id(invoice_id, skip_auth_check=True)
-        _check_if_payment_is_completed(invoice)
 
         # Create the payment system implementation
         pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(invoice.payment_method_code)
 
         # set payment status as deleted
         payment = Payment.find_payment_for_invoice(invoice_id)
-        if payment:
-            if payment.payment_status_code in (PaymentStatus.COMPLETED, PaymentStatus.DELETED):
-                raise BusinessException(Error.COMPLETED_PAYMENT)
+        _check_if_invoice_can_be_deleted(invoice, payment)
 
+        if payment:
             payment.payment_status_code = PaymentStatus.DELETED.value
             payment.flush()
 
@@ -221,7 +219,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         current_app.logger.debug('<accept_delete')
         invoice: Invoice = Invoice.find_by_id(invoice_id, one_of_roles=[EDIT_ROLE])
 
-        _check_if_payment_is_completed(invoice)
+        _check_if_invoice_can_be_deleted(invoice)
         invoice.payment_status_code = InvoiceStatus.DELETE_ACCEPTED.value
         invoice.save()
 
@@ -267,8 +265,11 @@ def _update_active_transactions(invoice_id: int):
         PaymentTransaction.update_transaction(transaction.id, pay_response_url=None)
 
 
-def _check_if_payment_is_completed(invoice: Invoice):
-    if invoice.invoice_status_code in (InvoiceStatus.PAID.value, InvoiceStatus.DELETED.value):
+def _check_if_invoice_can_be_deleted(invoice: Invoice, payment: Payment = None):
+    if invoice.invoice_status_code in (InvoiceStatus.PAID.value, InvoiceStatus.DELETED.value,
+                                       InvoiceStatus.SETTLEMENT_SCHEDULED.value):
+        raise BusinessException(Error.COMPLETED_PAYMENT)
+    if payment and payment.payment_status_code in (PaymentStatus.COMPLETED.value, PaymentStatus.DELETED.value):
         raise BusinessException(Error.COMPLETED_PAYMENT)
 
 
