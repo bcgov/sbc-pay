@@ -137,3 +137,17 @@ def generate_transaction_number(inv_id: int) -> str:
     """Return transaction number for invoices."""
     prefix = current_app.config.get('CFS_INVOICE_PREFIX')
     return f'{prefix}{inv_id:08}'
+
+
+def mask(raw: str, mask_length: int = 0) -> str:
+    """
+    Mask the input string by the given number of characters starting from the front.
+
+    If no mask length is given, use the entire length of the input.
+    """
+    if mask_length == 0:
+        mask_length = len(raw)
+    else:
+        mask_length = min(mask_length, len(raw))
+    tail = raw[:(len(raw) - mask_length)]
+    return ('X' * mask_length) + tail

@@ -29,7 +29,7 @@ from pay_api.utils.enums import PaymentSystem, StatementFrequency, PaymentMethod
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context, UserContext
 from pay_api.utils.util import get_str_by_path, current_local_time, \
-    get_local_formatted_date
+    get_local_formatted_date, mask
 
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -438,8 +438,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 'status': self.cfs_account_status
             }
             if user.is_system():
-                # TODO apply masking
-                cfs_account['bankAccountNumber'] = self.bank_account_number
+                # TODO apply masking based on user permissions passed from auth
+                cfs_account['bankAccountNumber'] = mask(self.bank_account_number, len(self.bank_account_number) - 3) if self.bank_account_number is not None else None
                 cfs_account['bankInstitutionNumber'] = self.bank_number
                 cfs_account['bankTransitNumber'] = self.bank_branch_number
 
