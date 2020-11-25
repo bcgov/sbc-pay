@@ -22,9 +22,9 @@ import pytz
 
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.services.payment import Payment as Payment_service
-from pay_api.utils.enums import InvoiceStatus, InvoiceReferenceStatus
+from pay_api.utils.enums import InvoiceStatus, InvoiceReferenceStatus, PaymentMethod
 from tests.utilities.base_test import (
-    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account)
+    factory_invoice, factory_payment_line_item, factory_invoice_reference, factory_payment, factory_payment_account)
 
 
 def test_payment_saved_from_new(session):
@@ -36,7 +36,7 @@ def test_payment_saved_from_new(session):
     invoice = factory_invoice(payment_account)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
-    p = Payment_service.find_by_id(payment.id, skip_auth_check=True)
+    p = Payment_service.find_by_id(payment.id)
 
     assert p is not None
     assert p.id is not None
@@ -47,7 +47,7 @@ def test_payment_saved_from_new(session):
 
 def test_payment_invalid_lookup(session):
     """Test invalid lookup."""
-    p = Payment_service.find_by_id(999, skip_auth_check=True)
+    p = Payment_service.find_by_id(999)
 
     assert p is not None
     assert p.id is None
@@ -62,7 +62,7 @@ def test_payment_with_no_active_invoice(session):
     invoice = factory_invoice(payment_account, InvoiceStatus.DELETED.value)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
-    p = Payment_service.find_by_id(payment.id, skip_auth_check=True)
+    p = Payment_service.find_by_id(payment.id)
 
     assert p is not None
     assert p.id is not None
@@ -277,7 +277,7 @@ def test_search_payment_history_with_tz(session):
     assert results.get('total') == 2
 
 
-def test_search_search_account_payments(session):
+def test_search_account_payments(session):
     """Assert that the search account payments is working."""
     inv_number = 'REG00001'
     payment_account = factory_payment_account().save()
@@ -288,7 +288,8 @@ def test_search_search_account_payments(session):
 
     payment_created_on = datetime.now()
     payment_1 = factory_payment(payment_status_code='CREATED', created_on=payment_created_on,
-                                payment_account_id=payment_account.id, invoice_number=inv_number)
+                                payment_account_id=payment_account.id, invoice_number=inv_number,
+                                payment_method_code=PaymentMethod.PAD.value)
     payment_1.save()
 
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
@@ -300,7 +301,7 @@ def test_search_search_account_payments(session):
     assert results.get('total') == 1
 
 
-def test_search_search_account_failed_payments(session):
+def test_search_account_failed_payments(session):
     """Assert that the search account payments is working."""
     inv_number_1 = 'REG00001'
     payment_account = factory_payment_account().save()
@@ -310,7 +311,8 @@ def test_search_search_account_failed_payments(session):
     inv_ref_1 = factory_invoice_reference(invoice_1.id, invoice_number=inv_number_1).save()
 
     payment_1 = factory_payment(payment_status_code='FAILED',
-                                payment_account_id=payment_account.id, invoice_number=inv_number_1)
+                                payment_account_id=payment_account.id, invoice_number=inv_number_1,
+                                payment_method_code=PaymentMethod.PAD.value)
     payment_1.save()
 
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
@@ -327,7 +329,8 @@ def test_search_search_account_failed_payments(session):
     inv_ref_2 = factory_invoice_reference(invoice_2.id, invoice_number=inv_number_2).save()
 
     payment_2 = factory_payment(payment_status_code='FAILED',
-                                payment_account_id=payment_account.id, invoice_number=inv_number_1)
+                                payment_account_id=payment_account.id, invoice_number=inv_number_2,
+                                payment_method_code=PaymentMethod.PAD.value)
     payment_2.save()
 
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
@@ -345,10 +348,178 @@ def test_search_search_account_failed_payments(session):
 
     # Now create new invoice reference for consolidated invoice
     inv_number_3 = 'REG00003'
-    inv_ref_1 = factory_invoice_reference(invoice_1.id, invoice_number=inv_number_3).save()
-    inv_ref_2 = factory_invoice_reference(invoice_2.id, invoice_number=inv_number_3).save()
+    factory_invoice_reference(invoice_1.id, invoice_number=inv_number_3).save()
+    factory_invoice_reference(invoice_2.id, invoice_number=inv_number_3).save()
     results = Payment_service.search_account_payments(auth_account_id=auth_account_id,
                                                       status='FAILED', limit=1, page=1)
     # Now there are no active failed payments, so it should return zero records
     assert not results.get('items')
     assert results.get('total') == 0
+
+
+def test_create_account_payments_for_one_failed_payment(session):
+    """Assert that the create account payments is working."""
+    inv_number_1 = 'REG00001'
+    payment_account = factory_payment_account().save()
+    invoice_1 = factory_invoice(payment_account)
+    invoice_1.save()
+    factory_invoice_reference(invoice_1.id, invoice_number=inv_number_1).save()
+    payment_1 = factory_payment(payment_status_code='FAILED',
+                                payment_account_id=payment_account.id, invoice_number=inv_number_1,
+                                payment_method_code=PaymentMethod.PAD.value)
+    payment_1.save()
+
+    auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
+
+    results = Payment_service.search_account_payments(auth_account_id=auth_account_id,
+                                                      status='FAILED', limit=1, page=1)
+    assert results.get('total') == 1
+
+    new_payment = Payment_service.create_account_payment(auth_account_id=auth_account_id, is_retry_payment=True)
+    old_payment = Payment_service.find_by_id(payment_1.id)
+    # Assert new payment invoice number is same as old payment as there is only one failed payment.
+    assert new_payment.invoice_number == old_payment.invoice_number
+
+
+def test_create_account_payments_for_multiple_failed_payments(session):
+    """Assert that the create account payments is working."""
+    inv_number_1 = 'REG00001'
+    payment_account = factory_payment_account().save()
+    invoice_1 = factory_invoice(payment_account, total=100)
+    invoice_1.save()
+    factory_payment_line_item(invoice_id=invoice_1.id, fee_schedule_id=1).save()
+    factory_invoice_reference(invoice_1.id, invoice_number=inv_number_1).save()
+    payment_1 = factory_payment(payment_status_code='FAILED',
+                                payment_account_id=payment_account.id,
+                                invoice_number=inv_number_1,
+                                invoice_amount=100,
+                                payment_method_code=PaymentMethod.PAD.value)
+    payment_1.save()
+
+    # Create one more payment with failed status.
+    inv_number_2 = 'REG00002'
+    invoice_2 = factory_invoice(payment_account, total=100)
+    invoice_2.save()
+    factory_payment_line_item(invoice_id=invoice_2.id, fee_schedule_id=1).save()
+    factory_invoice_reference(invoice_2.id, invoice_number=inv_number_2).save()
+
+    payment_2 = factory_payment(payment_status_code='FAILED',
+                                payment_account_id=payment_account.id,
+                                invoice_number=inv_number_2,
+                                invoice_amount=100,
+                                payment_method_code=PaymentMethod.PAD.value)
+    payment_2.save()
+
+    auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
+
+    results = Payment_service.search_account_payments(auth_account_id=auth_account_id,
+                                                      status='FAILED', limit=10, page=1)
+    assert results.get('total') == 2
+
+    new_payment = Payment_service.create_account_payment(auth_account_id=auth_account_id, is_retry_payment=True)
+    payment_1 = Payment_service.find_by_id(payment_1.id)
+    payment_2 = Payment_service.find_by_id(payment_2.id)
+    # Assert new payment invoice number is different from old payment as there are more than one failed payments.
+    assert new_payment.invoice_number != payment_1.invoice_number
+    assert new_payment.invoice_number != payment_2.invoice_number
+    assert payment_1.cons_inv_number == new_payment.invoice_number
+    assert payment_2.cons_inv_number == new_payment.invoice_number
+    assert new_payment.invoice_amount == payment_1.invoice_amount + payment_2.invoice_amount
+
+
+def test_create_account_payments_after_consolidation(session):
+    """Assert creating account payments after consolidation yields same payment record."""
+    inv_number_1 = 'REG00001'
+    payment_account = factory_payment_account().save()
+    invoice_1 = factory_invoice(payment_account, total=100)
+    invoice_1.save()
+    factory_payment_line_item(invoice_id=invoice_1.id, fee_schedule_id=1).save()
+    factory_invoice_reference(invoice_1.id, invoice_number=inv_number_1).save()
+    payment_1 = factory_payment(payment_status_code='FAILED',
+                                payment_account_id=payment_account.id,
+                                invoice_number=inv_number_1,
+                                invoice_amount=100,
+                                payment_method_code=PaymentMethod.PAD.value)
+    payment_1.save()
+
+    # Create one more payment with failed status.
+    inv_number_2 = 'REG00002'
+    invoice_2 = factory_invoice(payment_account, total=100)
+    invoice_2.save()
+    factory_payment_line_item(invoice_id=invoice_2.id, fee_schedule_id=1).save()
+    factory_invoice_reference(invoice_2.id, invoice_number=inv_number_2).save()
+    payment_2 = factory_payment(payment_status_code='FAILED',
+                                payment_account_id=payment_account.id,
+                                invoice_number=inv_number_2,
+                                invoice_amount=100,
+                                payment_method_code=PaymentMethod.PAD.value)
+    payment_2.save()
+
+    auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
+
+    results = Payment_service.search_account_payments(auth_account_id=auth_account_id,
+                                                      status='FAILED', limit=10, page=1)
+    assert results.get('total') == 2
+
+    new_payment_1 = Payment_service.create_account_payment(auth_account_id=auth_account_id, is_retry_payment=True)
+    # Create account payment again and assert both payments returns same.
+    new_payment_2 = Payment_service.create_account_payment(auth_account_id=auth_account_id, is_retry_payment=True)
+
+    assert new_payment_1.id == new_payment_2.id
+
+
+def test_failed_payment_after_consolidation(session):
+    """Assert creating account payments after consolidation works."""
+    # Create 2 failed payments, consolidate it, and then again create another failed payment.
+    # Consolidate it and make sure amount matches.
+    inv_number_1 = 'REG00001'
+    payment_account = factory_payment_account().save()
+    invoice_1 = factory_invoice(payment_account, total=100)
+    invoice_1.save()
+    factory_payment_line_item(invoice_id=invoice_1.id, fee_schedule_id=1).save()
+    factory_invoice_reference(invoice_1.id, invoice_number=inv_number_1).save()
+    payment_1 = factory_payment(payment_status_code='FAILED',
+                                payment_account_id=payment_account.id,
+                                invoice_number=inv_number_1,
+                                invoice_amount=100,
+                                payment_method_code=PaymentMethod.PAD.value)
+    payment_1.save()
+
+    # Create one more payment with failed status.
+    inv_number_2 = 'REG00002'
+    invoice_2 = factory_invoice(payment_account, total=100)
+    invoice_2.save()
+    factory_payment_line_item(invoice_id=invoice_2.id, fee_schedule_id=1).save()
+    factory_invoice_reference(invoice_2.id, invoice_number=inv_number_2).save()
+    payment_2 = factory_payment(payment_status_code='FAILED',
+                                payment_account_id=payment_account.id,
+                                invoice_number=inv_number_2,
+                                invoice_amount=100,
+                                payment_method_code=PaymentMethod.PAD.value)
+    payment_2.save()
+
+    auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
+
+    results = Payment_service.search_account_payments(auth_account_id=auth_account_id,
+                                                      status='FAILED', limit=10, page=1)
+    assert results.get('total') == 2
+
+    new_payment_1 = Payment_service.create_account_payment(auth_account_id=auth_account_id, is_retry_payment=True)
+
+    # Create another failed payment.
+    inv_number_3 = 'REG00003'
+    invoice_3 = factory_invoice(payment_account, total=100)
+    invoice_3.save()
+    factory_payment_line_item(invoice_id=invoice_3.id, fee_schedule_id=1).save()
+    factory_invoice_reference(invoice_3.id, invoice_number=inv_number_3).save()
+    payment_3 = factory_payment(payment_status_code='FAILED',
+                                payment_account_id=payment_account.id,
+                                invoice_number=inv_number_3,
+                                invoice_amount=100,
+                                payment_method_code=PaymentMethod.PAD.value)
+    payment_3.save()
+
+    new_payment_2 = Payment_service.create_account_payment(auth_account_id=auth_account_id, is_retry_payment=True)
+    assert new_payment_1.id != new_payment_2.id
+    assert new_payment_2.invoice_amount == payment_1.invoice_amount + payment_2.invoice_amount + \
+           payment_3.invoice_amount

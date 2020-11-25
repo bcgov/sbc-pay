@@ -23,6 +23,7 @@ from requests import HTTPError
 from pay_api.exceptions import ServiceUnavailableException
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import (
     CFS_BATCH_SOURCE, CFS_CUSTOMER_PROFILE_CLASS, CFS_CUST_TRX_TYPE, CFS_LINE_TYPE, CFS_TERM_NAME,
@@ -317,6 +318,17 @@ class CFSService(OAuthService):
                 )
 
         return lines
+
+    @staticmethod
+    def reverse_invoice(payment_account: PaymentAccount, inv_number: str):
+        """Adjust the invoice to zero."""
+        current_app.logger.debug('<paybc_service_Getting token')
+        access_token: str = CFSService.get_token().json().get('access_token')
+        cfs_base: str = current_app.config.get('CFS_BASE_URL')
+        invoice_url = f'{cfs_base}/cfs/parties/{payment_account.cfs_party}/accs/{payment_account.cfs_account}/' \
+                      f'sites/{payment_account.cfs_site}/invs/{inv_number}/creditbalance/'
+
+        CFSService.post(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, {})
 
 
 def get_non_null_value(value: str, default_value: str):

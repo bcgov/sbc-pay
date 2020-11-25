@@ -112,7 +112,7 @@ class PaybcService(PaymentSystemService, CFSService):
         1. Adjust the existing invoice to zero
         2. Create a new invoice
         """
-        self.cancel_invoice(payment_account, paybc_inv_number)
+        self.reverse_invoice(payment_account, paybc_inv_number)
         return self.create_invoice(payment_account=payment_account,
                                    line_items=line_items,
                                    invoice=None,
@@ -122,15 +122,7 @@ class PaybcService(PaymentSystemService, CFSService):
     def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
         """Adjust the invoice to zero."""
         current_app.logger.debug('<paybc_service_Getting token')
-        access_token: str = CFSService.get_token().json().get('access_token')
-        invoice = self.__get_invoice(payment_account, inv_number, access_token)
-        for line in invoice.get('lines'):
-            amount: float = line.get('unit_price') * line.get('quantity')
-
-            current_app.logger.debug('Adding asjustment for line item : {} -- {}'
-                                     .format(line.get('line_number'), amount))
-            self.__add_adjustment(payment_account, inv_number, 'Cancelling Invoice',
-                                  0 - amount, line=line.get('line_number'), access_token=access_token)
+        self.reverse_invoice(payment_account, inv_number)
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Get receipt from paybc for the receipt number or get receipt against invoice number."""
