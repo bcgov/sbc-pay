@@ -27,8 +27,8 @@ from pay_api.utils.util import cors_preflight
 API = Namespace('payment', description='Payment System - Payments')
 
 
-@cors_preflight('GET')
-@API.route('', methods=['GET', 'OPTIONS'])
+@cors_preflight('GET,POST')
+@API.route('', methods=['GET', 'POST', 'OPTIONS'])
 class Payments(Resource):
     """Endpoint resource to create and return an account payments."""
 
@@ -46,5 +46,25 @@ class Payments(Resource):
         status: str = request.args.get('status', None)
         response, status = PaymentService.search_account_payments(auth_account_id=account_id, status=status,
                                                                   page=page, limit=limit), HTTPStatus.OK
-        current_app.logger.debug('>Account.get')
+        current_app.logger.debug('>Payments.get')
+        return jsonify(response), status
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.requires_auth
+    @_tracing.trace()
+    def post(account_id: str):
+        """Create account payments."""
+        current_app.logger.info('<Payments.post')
+        # Check if user is authorized to perform this action
+        check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE)
+        is_retry_payment: bool = (request.args.get('retryFailedPayment', 'false').lower() == 'true')
+        # valid_format, errors = schema_utils.validate(request_json, 'payment')
+
+        response, status = PaymentService.create_account_payment(
+            auth_account_id=account_id,
+            is_retry_payment=is_retry_payment
+        ).asdict(), HTTPStatus.CREATED
+
+        current_app.logger.debug('>Payments.post')
         return jsonify(response), status

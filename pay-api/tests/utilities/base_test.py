@@ -26,7 +26,7 @@ from pay_api.models import (CfsAccount,
                             PaymentAccount, PaymentLineItem, PaymentTransaction, DistributionCode, StatementSettings,
                             Statement,
                             StatementInvoices, Receipt)
-from pay_api.utils.enums import PaymentSystem, Role, PaymentStatus, InvoiceReferenceStatus, \
+from pay_api.utils.enums import CfsAccountStatus, PaymentSystem, Role, PaymentStatus, InvoiceReferenceStatus, \
     LineItemStatus, InvoiceStatus, PaymentMethod
 
 token_header = {
@@ -271,7 +271,9 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
 
     CfsAccount(cfs_party='11111',
                cfs_account=account_number,
-               cfs_site='29921', payment_account=account).save()
+               cfs_site='29921',
+               account_id=account.id,
+               status=CfsAccountStatus.ACTIVE.value).save()
 
     if payment_system_code == PaymentSystem.BCOL.value:
         account.payment_method = PaymentMethod.DRAWDOWN.value
@@ -295,7 +297,8 @@ def factory_payment(
         payment_status_code: str = PaymentStatus.CREATED.value,
         created_on: datetime = datetime.now(),
         invoice_number: str = None,
-        payment_account_id: str = None
+        payment_account_id: str = None,
+        invoice_amount=0
 ):
     """Return Factory."""
     payment: Payment = Payment(
@@ -304,7 +307,8 @@ def factory_payment(
         payment_status_code=payment_status_code,
         created_on=created_on,
         invoice_number=invoice_number,
-        payment_account_id=payment_account_id
+        payment_account_id=payment_account_id,
+        invoice_amount=invoice_amount
     )
     return payment
 

@@ -300,7 +300,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         if transaction_dao.status_code == TransactionStatus.COMPLETED.value:
             raise BusinessException(Error.INVALID_TRANSACTION)
 
-        payment: Payment = Payment.find_by_id(transaction_dao.payment_id, skip_auth_check=True)
+        payment: Payment = Payment.find_by_id(transaction_dao.payment_id)
         payment_account: PaymentAccount = PaymentAccount.find_by_id(payment.payment_account_id)
 
         # For transactions other than Credit Card, there could be more than one invoice per payment.
