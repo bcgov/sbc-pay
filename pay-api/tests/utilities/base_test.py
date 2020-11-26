@@ -259,7 +259,8 @@ def get_waive_fees_payment_request(business_identifier: str = 'CP0001234'):
 
 def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC', account_number='4101',
                             bcol_user_id='test',
-                            auth_account_id: str = '1234'):
+                            auth_account_id: str = '1234',
+                            cfs_account_status: str = CfsAccountStatus.ACTIVE.value):
     """Return Factory."""
     # Create a payment account
     account = PaymentAccount(
@@ -273,7 +274,7 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
                cfs_account=account_number,
                cfs_site='29921',
                account_id=account.id,
-               status=CfsAccountStatus.ACTIVE.value).save()
+               status=cfs_account_status).save()
 
     if payment_system_code == PaymentSystem.BCOL.value:
         account.payment_method = PaymentMethod.DRAWDOWN.value

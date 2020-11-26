@@ -17,7 +17,7 @@ from marshmallow import fields, post_dump
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
-from pay_api.utils.enums import InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
+from pay_api.utils.enums import InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus, InvoiceReferenceStatus
 from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
 from .db import db, ma
@@ -88,6 +88,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         query = db.session.query(Invoice) \
             .join(InvoiceReference, InvoiceReference.invoice_id == Invoice.id) \
             .join(Payment, InvoiceReference.invoice_number == Payment.invoice_number) \
+            .filter(InvoiceReference.status_code == InvoiceReferenceStatus.ACTIVE.value) \
             .filter(Payment.id == payment_id)
 
         return query.all()

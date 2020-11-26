@@ -132,7 +132,8 @@ class PaybcService(PaymentSystemService, CFSService):
         parsed_url = parse_url_params(pay_response_url)
         receipt_number: str = parsed_url.get('receipt_number') if 'receipt_number' in parsed_url else None
         if not receipt_number:  # Find all receipts for the site and then match with invoice number
-            receipts_response = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+            receipts_response = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                         retry_on_failure=True).json()
             for receipt in receipts_response.get('items'):
                 expanded_receipt = self.__get_receipt_by_number(access_token, receipt_url,
                                                                 receipt.get('receipt_number'))

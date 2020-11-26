@@ -77,6 +77,7 @@ class Transaction(Resource):
 
 @cors_preflight('PATCH,GET')
 @API.route('/payment-requests/<int:invoice_id>/transactions/<uuid:transaction_id>', methods=['GET', 'PATCH', 'OPTIONS'])
+@API.route('/payments/<int:payment_id>/transactions/<uuid:transaction_id>', methods=['GET', 'PATCH', 'OPTIONS'])
 class Transactions(Resource):
     """Endpoint resource to get transaction."""
 
@@ -84,12 +85,13 @@ class Transactions(Resource):
     @cors.crossdomain(origin='*')
     @_jwt.requires_auth
     @_tracing.trace()
-    def get(invoice_id, transaction_id):
+    def get(invoice_id: int = None, payment_id: int = None, transaction_id=None):
         """Get the Transaction record."""
-        current_app.logger.info(
-            f'<Transaction.get for invoice : {invoice_id}, and transaction {transaction_id}')
+        current_app.logger.info('<Transaction.get for invoice : %s, payment : %s, transaction %s',
+                                invoice_id, payment_id, transaction_id)
         try:
             response, status = TransactionService.find_by_id(transaction_id).asdict(), HTTPStatus.OK
+
         except BusinessException as exception:
             return exception.response()
         current_app.logger.debug('>Transaction.get')
@@ -98,10 +100,10 @@ class Transactions(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_tracing.trace()
-    def patch(invoice_id, transaction_id):
+    def patch(invoice_id: int = None, payment_id: int = None, transaction_id=None):
         """Update the transaction record by querying payment system."""
-        current_app.logger.info(
-            f'<Transaction.post for payment : {invoice_id}, and transaction {transaction_id}')
+        current_app.logger.info('<Transaction.patch for invoice : %s, payment : %s, transaction %s',
+                                invoice_id, payment_id, transaction_id)
         pay_response_url: str = request.get_json().get('payResponseUrl', None)
 
         try:
