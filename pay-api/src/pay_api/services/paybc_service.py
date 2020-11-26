@@ -23,6 +23,7 @@ from pay_api.models import CfsAccount as CfsAccountModel, PaymentLineItem as Pay
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
+from pay_api.services.payment import Payment
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import (
@@ -36,13 +37,10 @@ from .payment_line_item import PaymentLineItem
 class PaybcService(PaymentSystemService, CFSService):
     """Service to manage PayBC integration."""
 
-    def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
+    def get_payment_system_url_for_invoice(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
         current_app.logger.debug('<get_payment_system_url')
-        paybc_url = current_app.config.get('PAYBC_PORTAL_URL')
-        pay_system_url = f'{paybc_url}?inv_number={inv_ref.invoice_number}&pbc_ref_number={inv_ref.reference_number}'
-        encoded_return_url = urllib.parse.quote(return_url, '')
-        pay_system_url += f'&redirect_uri={encoded_return_url}'
+        pay_system_url = self._build_payment_url(inv_ref, return_url)
 
         current_app.logger.debug('>get_payment_system_url')
         return pay_system_url
@@ -194,6 +192,22 @@ class PaybcService(PaymentSystemService, CFSService):
         invoice_response = self.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
         current_app.logger.debug('>__get_invoice')
         return invoice_response.json()
+
+    def get_payment_system_url_for_payment(self, payment: Payment, inv_ref: InvoiceReference, return_url: str):
+        """Return the payment system url."""
+        current_app.logger.debug('<get_payment_system_url_for_payment')
+        pay_system_url = self._build_payment_url(inv_ref, return_url)
+
+        current_app.logger.debug('>get_payment_system_url_for_payment')
+        return pay_system_url
+
+    @staticmethod
+    def _build_payment_url(inv_ref, return_url):
+        paybc_url = current_app.config.get('PAYBC_PORTAL_URL')
+        pay_system_url = f'{paybc_url}?inv_number={inv_ref.invoice_number}&pbc_ref_number={inv_ref.reference_number}'
+        encoded_return_url = urllib.parse.quote(return_url, '')
+        pay_system_url += f'&redirect_uri={encoded_return_url}'
+        return pay_system_url
 
 
 def get_non_null_value(value: str, default_value: str):

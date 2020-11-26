@@ -32,12 +32,6 @@ def test_create_account(session):
     assert not account
 
 
-def test_get_payment_system_url(session):
-    """Test get_payment_system_url."""
-    url = bcol_service.get_payment_system_url(None, None, None)
-    assert url is None
-
-
 def test_get_payment_system_code(session):
     """Test get_payment_system_code."""
     code = bcol_service.get_payment_system_code()

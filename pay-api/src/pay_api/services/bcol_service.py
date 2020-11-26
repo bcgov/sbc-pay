@@ -45,10 +45,6 @@ class BcolService(PaymentSystemService, OAuthService):
     def update_account(self, name: str, cfs_account: any, payment_info: Dict[str, Any]) -> any:
         """No BCOL account update."""
 
-    def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
-        """Return the payment system url."""
-        return None
-
     def get_payment_system_code(self):
         """Return PAYBC as the system code."""
         return PaySystemCode.BCOL.value

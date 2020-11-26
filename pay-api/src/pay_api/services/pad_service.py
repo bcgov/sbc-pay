@@ -29,10 +29,6 @@ from .payment_line_item import PaymentLineItem
 class PadService(PaymentSystemService, CFSService):
     """Service to manage pre authorized debits."""
 
-    def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
-        """Return the payment system url."""
-        return ''
-
     def get_payment_method_code(self):
         """Return PAD as the system code."""
         return PaymentMethod.PAD.value

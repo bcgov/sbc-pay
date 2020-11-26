@@ -50,7 +50,7 @@ def test_get_payment_system_url(session, public_user_mock):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
     direct_pay_service = DirectPayService()
-    payment_response_url = direct_pay_service.get_payment_system_url(invoice, invoice_ref, 'google.com')
+    payment_response_url = direct_pay_service.get_payment_system_url_for_invoice(invoice, invoice_ref, 'google.com')
     url_param_dict = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(payment_response_url).query))
     assert url_param_dict['trnDate'] == today
     assert url_param_dict['glDate'] == today
@@ -100,7 +100,7 @@ def test_get_payment_system_url_service_fees(session, public_user_mock):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, service_fees=service_fee)
     line.save()
     direct_pay_service = DirectPayService()
-    payment_response_url = direct_pay_service.get_payment_system_url(invoice, invoice_ref, 'google.com')
+    payment_response_url = direct_pay_service.get_payment_system_url_for_invoice(invoice, invoice_ref, 'google.com')
     url_param_dict = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(payment_response_url).query))
     assert url_param_dict['trnDate'] == today
     assert url_param_dict['glDate'] == today

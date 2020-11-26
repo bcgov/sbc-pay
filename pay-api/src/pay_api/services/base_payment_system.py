@@ -17,6 +17,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict
 
 from pay_api.services.invoice import Invoice
+from pay_api.services.payment import Payment
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.models import CfsAccount as CfsAccountModel
@@ -62,9 +63,17 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Get receipt from payment system."""
 
-    @abstractmethod
-    def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
+    def get_payment_system_url_for_invoice(self, invoice: Invoice,  # pylint:disable=unused-argument, no-self-use
+                                           inv_ref: InvoiceReference,  # pylint:disable=unused-argument
+                                           return_url: str) -> str:  # pylint:disable=unused-argument
         """Return the payment system portal URL for payment."""
+        return None
+
+    def get_payment_system_url_for_payment(self, payment: Payment,  # pylint:disable=unused-argument, no-self-use
+                                           inv_ref: InvoiceReference,  # pylint:disable=unused-argument
+                                           return_url: str) -> str:  # pylint:disable=unused-argument
+        """Return the payment system portal URL for payment."""
+        return None
 
     @abstractmethod
     def get_payment_system_code(self):
