@@ -29,10 +29,6 @@ from .payment_line_item import PaymentLineItem
 class OnlineBankingService(PaymentSystemService, CFSService):
     """Service to manage online banking."""
 
-    def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
-        """Return the payment system url."""
-        return ''
-
     def get_payment_system_code(self):
         """Return PAYBC as the system code."""
         return PaymentSystem.PAYBC.value
