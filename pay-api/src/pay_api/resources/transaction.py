@@ -25,19 +25,19 @@ from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
 from pay_api.utils.errors import Error
 
-
-API = Namespace('transactions', description='Payment System - Transactions')
+API = Namespace('', description='Payment System - Transactions')
 
 
 @cors_preflight('POST,GET')
-@API.route('', methods=['GET', 'POST', 'OPTIONS'])
+@API.route('/payment-requests/<int:invoice_id>/transactions', methods=['GET', 'POST', 'OPTIONS'])
+@API.route('/payments/<int:payment_id>/transactions', methods=['GET', 'POST', 'OPTIONS'])
 class Transaction(Resource):
     """Endpoint resource to create transaction."""
 
     @staticmethod
     @cors.crossdomain(origin='*')
     @_tracing.trace()
-    def post(invoice_id):
+    def post(invoice_id: int = None, payment_id: int = None):
         """Create the Transaction records."""
         current_app.logger.info('<Transaction.post')
         request_json = request.get_json()
@@ -49,7 +49,15 @@ class Transaction(Resource):
             return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
         try:
-            response, status = TransactionService.create(invoice_id, request_json).asdict(), HTTPStatus.CREATED
+            if invoice_id:
+                response, status = TransactionService.create_transaction_for_invoice(
+                    invoice_id, request_json
+                ).asdict(), HTTPStatus.CREATED
+            elif payment_id:
+                response, status = TransactionService.create_transaction_for_payment(
+                    payment_id, request_json
+                ).asdict(), HTTPStatus.CREATED
+
         except BusinessException as exception:
             return exception.response()
         current_app.logger.debug('>Transaction.post')
@@ -68,7 +76,7 @@ class Transaction(Resource):
 
 
 @cors_preflight('PATCH,GET')
-@API.route('/<uuid:transaction_id>', methods=['GET', 'PATCH', 'OPTIONS'])
+@API.route('/payment-requests/<int:invoice_id>/transactions/<uuid:transaction_id>', methods=['GET', 'PATCH', 'OPTIONS'])
 class Transactions(Resource):
     """Endpoint resource to get transaction."""
 

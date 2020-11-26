@@ -151,9 +151,11 @@ class BcolService(PaymentSystemService, OAuthService):
                        invoice_number=invoice_reference.invoice_number,
                        invoice_amount=invoice.total,
                        payment_account_id=invoice.payment_account_id)
-        transaction: PaymentTransaction = PaymentTransaction.create(invoice.id,
-                                                                    {
-                                                                        'clientSystemUrl': '',
-                                                                        'payReturnUrl': ''
-                                                                    })
+        transaction: PaymentTransaction = PaymentTransaction.create_transaction_for_invoice(
+            invoice.id,
+            {
+                'clientSystemUrl': '',
+                'payReturnUrl': ''
+            }
+        )
         transaction.update_transaction(transaction.id, pay_response_url=None)
