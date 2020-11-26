@@ -439,7 +439,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             }
             if user.is_system():
                 # TODO apply masking based on user permissions passed from auth
-                cfs_account['bankAccountNumber'] = mask(self.bank_account_number, len(self.bank_account_number) - 3) if self.bank_account_number is not None else None
+                cfs_account['bankAccountNumber'] = mask(self.bank_account_number,
+                                                        len(self.bank_account_number) - 3) \
+                                                        if self.bank_account_number is not None else None
                 cfs_account['bankInstitutionNumber'] = self.bank_number
                 cfs_account['bankTransitNumber'] = self.bank_branch_number
 
