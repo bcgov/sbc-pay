@@ -14,7 +14,7 @@
 """Service to manage Payment Account model related operations."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Union, Tuple
 
 from flask import current_app
@@ -28,7 +28,8 @@ from pay_api.services.queue_publisher import publish_response
 from pay_api.utils.enums import PaymentSystem, StatementFrequency, PaymentMethod
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context, UserContext
-from pay_api.utils.util import get_local_formatted_date_time, get_str_by_path
+from pay_api.utils.util import get_str_by_path, current_local_time, \
+    get_local_formatted_date
 
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -414,12 +415,13 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
     @staticmethod
     def _calculate_activation_date():
-        """Find the activation date."""
+        """Find the activation date in local time.Convert it to UTC before returning."""
         account_activation_wait_period: int = current_app.config.get('PAD_CONFIRMATION_PERIOD_IN_DAYS')
-        date_after_wait_period = datetime.today() + timedelta(account_activation_wait_period)
-        # activation date is inclusive of last day as well.So set to 11.59 PM of that day
-        round_to_full_day = date_after_wait_period.replace(minute=59, hour=23, second=59)
-        return round_to_full_day
+        date_after_wait_period = current_local_time() + timedelta(days=account_activation_wait_period + 1)
+        # reset the day to the beginning of the day.
+        round_to_full_day = date_after_wait_period.replace(minute=0, hour=0, second=0)
+        utc_time = round_to_full_day.astimezone(timezone.utc)
+        return utc_time
 
     @user_context
     def asdict(self, **kwargs):
@@ -462,7 +464,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                         'bankInstitutionNumber': self.bank_number,
                         'bankTransitNumber': self.bank_branch_number,
                         'bankAccountNumber': self.bank_account_number,
-                        'paymentStartDate': get_local_formatted_date_time(self.pad_activation_date)
+                        'paymentStartDate': get_local_formatted_date(self.pad_activation_date)
                     }
                 }
             }
@@ -470,7 +472,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             try:
                 publish_response(payload=payload,
                                  client_name=current_app.config['NATS_MAILER_CLIENT_NAME'],
-                                 subject=current_app.config['APP_CONFIG.NATS_MAILER_SUBJECT'])
+                                 subject=current_app.config['NATS_MAILER_SUBJECT'])
             except Exception as e:  # pylint: disable=broad-except
                 current_app.logger.error(e)
                 current_app.logger.error(

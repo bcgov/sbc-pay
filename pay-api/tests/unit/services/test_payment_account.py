@@ -16,9 +16,9 @@
 
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
+
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.enums import PaymentMethod
-
 from tests.utilities.base_test import (
     factory_payment_account, factory_premium_payment_account, get_auth_basic_user, get_auth_premium_user,
     get_pad_account_payload, get_premium_account_payload, get_basic_account_payload,
