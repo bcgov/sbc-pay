@@ -83,7 +83,7 @@ def test_transaction_create_from_new(session):
 
     payment = factory_payment(invoice_number=invoice_reference.invoice_number).save()
 
-    transaction = PaymentTransactionService.create(invoice.id, get_paybc_transaction_request())
+    transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
 
     assert transaction is not None
     assert transaction.id is not None
@@ -110,7 +110,7 @@ def test_transaction_for_direct_pay_create_from_new(session):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    transaction = PaymentTransactionService.create(invoice.id, get_paybc_transaction_request())
+    transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
 
     assert transaction is not None
     assert transaction.id is not None
@@ -137,7 +137,7 @@ def test_transaction_create_from_invalid_payment(session):
     line.save()
 
     with pytest.raises(BusinessException) as excinfo:
-        PaymentTransactionService.create(999, get_paybc_transaction_request())
+        PaymentTransactionService.create_transaction_for_invoice(999, get_paybc_transaction_request())
     assert excinfo.value.code == Error.INVALID_INVOICE_ID.name
 
 
@@ -155,7 +155,7 @@ def test_transaction_update(session, stan_server, public_user_mock):
 
     factory_payment(invoice_number=invoice_reference.invoice_number).save()
 
-    transaction = PaymentTransactionService.create(invoice.id, get_paybc_transaction_request())
+    transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
     transaction = PaymentTransactionService.update_transaction(transaction.id,
                                                                pay_response_url='receipt_number=123451')
 
@@ -184,7 +184,7 @@ def test_transaction_update_with_no_receipt(session, stan_server):
 
     factory_payment(invoice_number=invoice_reference.invoice_number).save()
 
-    transaction = PaymentTransactionService.create(invoice.id, get_paybc_transaction_request())
+    transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
     transaction = PaymentTransactionService.update_transaction(transaction.id, pay_response_url=None)
 
     assert transaction is not None
@@ -213,7 +213,7 @@ def test_transaction_update_completed(session, stan_server, public_user_mock):
 
     factory_payment(invoice_number=invoice_reference.invoice_number).save()
 
-    transaction = PaymentTransactionService.create(invoice.id, get_paybc_transaction_request())
+    transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
     transaction = PaymentTransactionService.update_transaction(transaction.id,
                                                                pay_response_url='receipt_number=123451')
 
@@ -238,7 +238,7 @@ def test_transaction_create_new_on_completed_payment(session):
                     payment_status_code=PaymentStatus.COMPLETED.value).save()
 
     with pytest.raises(BusinessException) as excinfo:
-        PaymentTransactionService.create(invoice.id, get_paybc_transaction_request())
+        PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
     assert excinfo.value.code == Error.COMPLETED_PAYMENT.name
 
 
@@ -253,9 +253,9 @@ def test_multiple_transactions_for_single_payment(session):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    PaymentTransactionService.create(invoice.id, get_paybc_transaction_request())
-    PaymentTransactionService.create(invoice.id, get_paybc_transaction_request())
-    transaction = PaymentTransactionService.create(invoice.id, get_paybc_transaction_request())
+    PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
+    PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
+    transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
 
     assert transaction is not None
     assert transaction.id is not None
@@ -379,7 +379,7 @@ def test_transaction_update_on_paybc_connection_error(session, stan_server):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    transaction = PaymentTransactionService.create(invoice.id, get_paybc_transaction_request())
+    transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
 
     from unittest.mock import patch
     from requests.exceptions import ConnectTimeout, ConnectionError
@@ -424,14 +424,14 @@ def test_update_transaction_for_direct_pay_with_response_url(session):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    transaction = PaymentTransactionService.create(invoice.id, get_paybc_transaction_request())
+    transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
 
     # Update transaction with invalid hash
     transaction = PaymentTransactionService.update_transaction(transaction.id, f'{response_url}1234567890')
     assert transaction.status_code == TransactionStatus.FAILED.value
 
     # Update transaction with valid hash
-    transaction = PaymentTransactionService.create(invoice.id, get_paybc_transaction_request())
+    transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
     transaction = PaymentTransactionService.update_transaction(transaction.id,
                                                                f'{response_url}{valid_hash}')
     assert transaction.status_code == TransactionStatus.COMPLETED.value
@@ -453,7 +453,7 @@ def test_update_transaction_for_direct_pay_without_response_url(session):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    transaction = PaymentTransactionService.create(invoice.id, get_paybc_transaction_request())
+    transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
 
     # Update transaction without response url, which should update the receipt
     transaction = PaymentTransactionService.update_transaction(transaction.id, None)
@@ -478,7 +478,7 @@ def test_event_failed_transactions(session, public_user_mock, stan_server, monke
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    transaction = PaymentTransactionService.create(invoice.id, get_paybc_transaction_request())
+    transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
 
     def get_receipt(cls, payment_account, pay_response_url: str,
                     invoice_reference):  # pylint: disable=unused-argument; mocks of library methods
@@ -512,3 +512,71 @@ def test_event_failed_transactions(session, public_user_mock, stan_server, monke
     assert transaction.transaction_start_time is not None
     assert transaction.transaction_end_time is not None
     assert transaction.status_code == TransactionStatus.COMPLETED.value
+
+
+def test_create_transaction_for_nsf_payment(session):
+    """Assert that the payment is saved to the table."""
+    # Create a FAILED payment (NSF), then clone the payment to create another one for CC payment
+    # Create a transaction and assert it's success.
+    inv_number_1 = 'REG00001'
+    payment_account = factory_payment_account().save()
+    invoice_1 = factory_invoice(payment_account, total=100)
+    invoice_1.save()
+    factory_payment_line_item(invoice_id=invoice_1.id, fee_schedule_id=1).save()
+    factory_invoice_reference(invoice_1.id, invoice_number=inv_number_1).save()
+    payment_1 = factory_payment(payment_status_code='FAILED',
+                                payment_account_id=payment_account.id,
+                                invoice_number=inv_number_1,
+                                invoice_amount=100,
+                                payment_method_code=PaymentMethod.PAD.value)
+    payment_1.save()
+
+    # Create payment for NSF payment.
+    payment_2 = factory_payment(payment_account_id=payment_account.id,
+                                invoice_number=inv_number_1,
+                                invoice_amount=100,
+                                payment_method_code=PaymentMethod.CC.value)
+    payment_2.save()
+
+    transaction = PaymentTransactionService.create_transaction_for_payment(payment_2.id,
+                                                                           get_paybc_transaction_request())
+
+    assert transaction is not None
+    assert transaction.id is not None
+    assert transaction.status_code is not None
+    assert transaction.payment_id is not None
+    assert transaction.client_system_url is not None
+    assert transaction.pay_system_url is not None
+    assert transaction.transaction_start_time is not None
+    assert transaction.asdict() is not None
+
+
+def test_create_transaction_for_completed_nsf_payment(session):
+    """Assert that the payment is saved to the table."""
+    # Create a FAILED payment (NSF), then clone the payment to create another one for CC payment
+    # Create a transaction and assert it's success.
+    inv_number_1 = 'REG00001'
+    payment_account = factory_payment_account().save()
+    invoice_1 = factory_invoice(payment_account, total=100)
+    invoice_1.save()
+    factory_payment_line_item(invoice_id=invoice_1.id, fee_schedule_id=1).save()
+    factory_invoice_reference(invoice_1.id, invoice_number=inv_number_1).save()
+    payment_1 = factory_payment(payment_status_code='FAILED',
+                                payment_account_id=payment_account.id,
+                                invoice_number=inv_number_1,
+                                invoice_amount=100,
+                                payment_method_code=PaymentMethod.PAD.value)
+    payment_1.save()
+
+    # Create payment for NSF payment.
+    payment_2 = factory_payment(payment_status_code='COMPLETED',
+                                payment_account_id=payment_account.id,
+                                invoice_number=inv_number_1,
+                                invoice_amount=100,
+                                payment_method_code=PaymentMethod.CC.value)
+    payment_2.save()
+
+    with pytest.raises(BusinessException) as excinfo:
+        PaymentTransactionService.create_transaction_for_payment(payment_2.id, get_paybc_transaction_request())
+
+    assert excinfo.value.code == Error.INVALID_PAYMENT_ID.name

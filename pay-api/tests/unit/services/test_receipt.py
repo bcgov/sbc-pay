@@ -86,7 +86,7 @@ def test_create_receipt_with_invoice(session, public_user_mock):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    transaction = PaymentTransactionService.create(invoice.id, get_paybc_transaction_request())
+    transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
     PaymentTransactionService.update_transaction(transaction.id, '')
 
     input_data = {

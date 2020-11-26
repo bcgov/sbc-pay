@@ -16,6 +16,7 @@
 from marshmallow import fields
 from sqlalchemy import ForeignKey
 
+from pay_api.utils.enums import InvoiceReferenceStatus
 from .base_model import BaseModel
 from .base_schema import BaseSchema
 from .db import db
@@ -37,6 +38,12 @@ class InvoiceReference(BaseModel):  # pylint: disable=too-many-instance-attribut
     def find_reference_by_invoice_id_and_status(cls, invoice_id: int, status_code: str):
         """Return aactive Invoice Reference by invoice id."""
         return cls.query.filter_by(invoice_id=invoice_id).filter_by(status_code=status_code).one_or_none()
+
+    @classmethod
+    def find_any_active_reference_by_invoice_number(cls, invoice_number: str):
+        """Return any active Invoice Reference by invoice number."""
+        return cls.query.filter_by(invoice_number=invoice_number) \
+            .filter_by(status_code=InvoiceReferenceStatus.ACTIVE.value).first()
 
 
 class InvoiceReferenceSchema(BaseSchema):  # pylint: disable=too-many-ancestors

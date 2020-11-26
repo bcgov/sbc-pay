@@ -195,9 +195,9 @@ class PaybcService(PaymentSystemService, CFSService):
 
     def get_payment_system_url_for_payment(self, payment: Payment, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
-        current_app.logger.debug('<get_payment_system_url_for_payment')
+        current_app.logger.debug('<get_payment_system_url_for_payment ID: %s, Inv Number: %s',
+                                 payment.id, payment.invoice_number)
         pay_system_url = self._build_payment_url(inv_ref, return_url)
-
         current_app.logger.debug('>get_payment_system_url_for_payment')
         return pay_system_url
 
