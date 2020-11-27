@@ -491,9 +491,13 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @staticmethod
     def unlock_frozen_accounts(account_id: int):
         """Unlock frozen accounts."""
+        from pay_api.services.cfs_service import CFSService  # pylint: disable=import-outside-toplevel,cyclic-import
         pay_account: PaymentAccount = PaymentAccount.find_by_id(account_id)
         if pay_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
+            # update CSF
             cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account.id)
+            CFSService.unsuspend_cfs_account(cfs_account=cfs_account)
+
             cfs_account.status = CfsAccountStatus.ACTIVE.value
             cfs_account.save()
 

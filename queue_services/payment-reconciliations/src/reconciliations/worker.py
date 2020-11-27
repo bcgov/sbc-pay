@@ -36,17 +36,22 @@ from entity_queue_common.service import QueueServiceManager
 from entity_queue_common.service_utils import QueueException, logger
 from flask import Flask
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import DistributionCode as DistributionCodeModel
+from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
+from pay_api.services.cfs_service import CFSService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.services.queue_publisher import publish
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus)
+    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
+    TransactionStatus)
 from sentry_sdk import capture_message
 
 from reconciliations import config
@@ -111,6 +116,7 @@ async def _update_payment_details(msg: Dict[str, any]):
         target_txn_status = _get_row_value(row, Column.TARGET_TXN_STATUS)
         # Handle invoices
         if (target_txn := _get_row_value(row, Column.TARGET_TXN)) == TargetTransaction.INV.value:
+
             inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
             logger.debug('Processing invoice :  %s', inv_number)
             payment: PaymentModel = db.session.query(PaymentModel). \
@@ -134,8 +140,8 @@ async def _update_payment_details(msg: Dict[str, any]):
                 # NSF Condition. Publish to account events for NSF.
                 _process_failed_payments(payment, row)
                 # Send mailer and account events to update status and send email notification
-                await _publish_account_events('PaymentFailed', payment_account, row)
-                await _publish_mailer_events('PaymentFailed', payment_account, row)
+                await _publish_account_events('lockAccount', payment_account, row)
+                await _publish_mailer_events('lockAccount', payment_account, row)
             elif target_txn_status.lower() == Status.PARTIAL.value.lower():
                 logger.info('Partially PAID.')
                 _process_partial_payments(inv_references, payment, row)
@@ -175,22 +181,20 @@ async def _process_paid_invoices(inv_references, payment, row):
             paid_amount=paid_amount, exp_amount=payment.invoice_amount), level='error')
 
         raise Exception('Invalid Amount')
+
     payment.payment_status_code = PaymentStatus.COMPLETED.value
     payment.paid_amount = paid_amount
+    payment.completed_on = datetime.now()
     receipt_date: datetime = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%d-%b-%y')
     receipt_number: str = _get_row_value(row, Column.SOURCE_TXN_NO)
-
     txn: PaymentTransactionModel = _find_or_create_active_transaction(payment)
     txn.status_code = TransactionStatus.COMPLETED.value
     txn.transaction_end_time = datetime.now()
-
     for inv_ref in inv_references:
         inv_ref.status_code = InvoiceReferenceStatus.COMPLETED.value
         # Find invoice, update status
         inv: InvoiceModel = InvoiceModel.find_by_id(inv_ref.invoice_id)
-
         _validate_account(inv, row)
-
         logger.debug('PAID Invoice. Invoice Reference ID : %s, invoice ID : %s', inv_ref.id, inv_ref.invoice_id)
 
         inv.invoice_status_code = InvoiceStatus.PAID.value
@@ -202,7 +206,6 @@ async def _process_paid_invoices(inv_references, payment, row):
         receipt.invoice_id = inv.id
         receipt.receipt_number = receipt_number
         db.session.add(receipt)
-
         # Publish to the queue if it's an Online Banking payment
         if _get_row_value(row, Column.RECORD_TYPE) == RecordType.BOLP.value:
             logger.debug('Publishing payment event for OB. Invoice : %s', inv.id)
@@ -219,9 +222,10 @@ def _process_partial_payments(inv_references, payment, row):
     # Can occur for Online Banking and EFT/Wire. Handling only Online Banking, may need change when EFT is implemented.
     payment.payment_status_code = PaymentStatus.COMPLETED.value
     payment.paid_amount = float(_get_row_value(row, Column.APP_AMOUNT))
-    receipt_date: datetime = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%m%d%Y')
-    receipt_number: str = _get_row_value(row, Column.APP_ID)
+    payment.completed_on = datetime.now()
 
+    receipt_date: datetime = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%d-%b-%y')
+    receipt_number: str = _get_row_value(row, Column.APP_ID)
     txn = _find_or_create_active_transaction(payment)
     txn.status_code = TransactionStatus.COMPLETED.value
     txn.transaction_end_time = datetime.now()
@@ -238,7 +242,6 @@ def _process_partial_payments(inv_references, payment, row):
         receipt.invoice_id = inv.id
         receipt.receipt_number = receipt_number
         db.session.add(receipt)
-
     # Create another payment record for the remaining amount.
     pending_payment = PaymentModel()
     pending_payment.payment_method_code = payment.payment_method_code
@@ -252,13 +255,33 @@ def _process_partial_payments(inv_references, payment, row):
 
 
 def _process_failed_payments(payment, row):
-    """Update the payment status as Failed."""
+    """Handle failed payments."""
+    # 1. Update the payment status as FAILED.
+    # 2. Set the cfs_account status as FREEZE.
+    # 3. Call cfs api to Stop further PAD on this account.
+    # 4. Create an NSF invoice for this account.
+    # 5. Create invoice reference for the newly created NSF invoice.
+    # 6. Adjust invoice in CFS to include NSF fees.
+
     payment.payment_status_code = PaymentStatus.FAILED.value
     payment.paid_amount = float(_get_row_value(row, Column.APP_AMOUNT))
+    payment.completed_on = datetime.now()
 
     txn: PaymentTransactionModel = _find_or_create_active_transaction(payment)
     txn.status_code = TransactionStatus.FAILED.value
     txn.transaction_end_time = datetime.now()
+    # Set CFS Account Status.
+    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(payment.payment_account_id)
+    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment.payment_account_id)
+    logger.info('setting payment account id : %s status as FREEZE', payment.payment_account_id)
+    cfs_account.status = CfsAccountStatus.FREEZE.value
+    # Call CFS to stop any further PAD transactions on this account.
+    CFSService.suspend_cfs_account(cfs_account)
+    # Create an invoice for NSF for this account
+    invoice = _create_nsf_invoice(cfs_account, payment, payment_account)
+    # Adjust CFS invoice
+    CFSService.add_nsf_adjustment(cfs_account=cfs_account, inv_number=payment.invoice_number,
+                                  amount=invoice.total)
 
 
 def _process_account_credits(payment_account: PaymentAccountModel, row: Dict[str, str]):
@@ -382,3 +405,52 @@ def _convert_payment_method(cfs_method: str) -> str:
 def _get_row_value(row: Dict[str, str], key: Column) -> str:
     """Return row value from the row dictionary."""
     return row.get(key.value.lower())
+
+
+def _create_nsf_invoice(cfs_account: CfsAccountModel, payment: PaymentModel,
+                        payment_account: PaymentAccountModel) -> InvoiceModel:
+    """Create Invoice, line item and invoice referwnce records."""
+    fee_schedule: FeeScheduleModel = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type_code='BCR',
+                                                                                        filing_type_code='NSF')
+    invoice = InvoiceModel(
+        bcol_account=payment_account.bcol_account,
+        payment_account_id=payment_account.id,
+        cfs_account_id=cfs_account.id,
+        invoice_status_code=InvoiceStatus.CREATED.value,
+        total=fee_schedule.fee.amount,
+        service_fees=0,
+        paid=0,
+        payment_method_code=PaymentMethod.CC.value,
+        corp_type_code='BCR',
+        created_on=datetime.now(),
+        created_by='SYSTEM'
+    )
+    invoice = invoice.save()
+    distribution: DistributionCodeModel = DistributionCodeModel.find_by_active_for_fee_schedule(
+        fee_schedule.fee_schedule_id)
+
+    line_item = PaymentLineItemModel(
+        invoice_id=invoice.id,
+        total=invoice.total,
+        fee_schedule_id=fee_schedule.fee_schedule_id,
+        description=fee_schedule.filing_type.description,
+        filing_fees=invoice.total,
+        gst=0,
+        priority_fees=0,
+        pst=0,
+        future_effective_fees=0,
+        line_item_status_code=LineItemStatus.ACTIVE.value,
+        service_fees=0,
+        fee_distribution_id=distribution.distribution_code_id if distribution else 1)  # TODO
+    line_item.save()
+
+    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel(
+        invoice_id=invoice.id,
+        invoice_number=payment.invoice_number,
+        reference_number=InvoiceReferenceModel.find_any_active_reference_by_invoice_number(
+            invoice_number=payment.invoice_number).reference_number,
+        status_code=InvoiceReferenceStatus.ACTIVE.value
+    )
+    inv_ref.save()
+
+    return invoice

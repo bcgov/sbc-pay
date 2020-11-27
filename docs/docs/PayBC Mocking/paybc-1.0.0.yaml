@@ -1975,7 +1975,6 @@ paths:
     parameters:
       - name: party_number
         in: path
-        required: true
         schema:
           format: string
           type: string
@@ -1986,6 +1985,8 @@ paths:
             value: 11111
           rcpt_info3:
             value: 11111
+        required: true
+        description: ''
       - name: account_number
         in: path
         required: true
@@ -2025,6 +2026,62 @@ paths:
             value: 123452
           rcpt_info3:
             value: 123453
+  '/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/':
+    parameters:
+      - schema:
+          type: string
+        name: party_number
+        in: path
+        required: true
+      - schema:
+          type: string
+        name: account_number
+        in: path
+        required: true
+      - schema:
+          type: string
+        name: site_number
+        in: path
+        required: true
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses: {}
+      operationId: get-cfs-parties-party_number-accs-account_number-sites-site_number
+    post:
+      summary: ''
+      operationId: post-cfs-parties-party_number-accs-account_number-sites-site_number
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+    put:
+      summary: ''
+      operationId: put-cfs-parties-party_number-accs-account_number-sites-site_number
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
 components:
   schemas:
     ErrorResponse:
