@@ -25,10 +25,10 @@ import pytest
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
-from pay_api.models import FeeSchedule
+from pay_api.models import FeeSchedule, Payment, Invoice, CfsAccount
 from pay_api.services.hashing import HashingService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
-from pay_api.utils.enums import PaymentStatus, TransactionStatus, PaymentMethod
+from pay_api.utils.enums import PaymentStatus, TransactionStatus, PaymentMethod, CfsAccountStatus
 from pay_api.utils.errors import Error
 from tests import skip_in_pod
 from tests.utilities.base_test import (
@@ -580,3 +580,48 @@ def test_create_transaction_for_completed_nsf_payment(session):
         PaymentTransactionService.create_transaction_for_payment(payment_2.id, get_paybc_transaction_request())
 
     assert excinfo.value.code == Error.INVALID_PAYMENT_ID.name
+
+
+def test_patch_transaction_for_nsf_payment(session, monkeypatch):
+    """Assert that the payment is saved to the table."""
+    # Create a FAILED payment (NSF), then clone the payment to create another one for CC payment
+    # Create a transaction and assert it's success.
+    # Patch transaction and check the status of records
+    inv_number_1 = 'REG00001'
+    payment_account = factory_payment_account(cfs_account_status=CfsAccountStatus.FREEZE.value,
+                                              payment_method_code='PAD').save()
+    invoice_1 = factory_invoice(payment_account, total=100)
+    invoice_1.save()
+    factory_payment_line_item(invoice_id=invoice_1.id, fee_schedule_id=1).save()
+    factory_invoice_reference(invoice_1.id, invoice_number=inv_number_1).save()
+    payment_1 = factory_payment(payment_status_code='FAILED',
+                                payment_account_id=payment_account.id,
+                                invoice_number=inv_number_1,
+                                invoice_amount=100,
+                                payment_method_code=PaymentMethod.PAD.value)
+    payment_1.save()
+
+    # Create payment for NSF payment.
+    payment_2 = factory_payment(payment_status_code='CREATED',
+                                payment_account_id=payment_account.id,
+                                invoice_number=inv_number_1,
+                                invoice_amount=100,
+                                payment_method_code=PaymentMethod.CC.value)
+    payment_2.save()
+
+    def get_receipt(cls, payment_account, pay_response_url: str,
+                    invoice_reference):  # pylint: disable=unused-argument; mocks of library methods
+        return '1234567890', datetime.now(), 100.00
+
+    monkeypatch.setattr('pay_api.services.paybc_service.PaybcService.get_receipt', get_receipt)
+
+    txn = PaymentTransactionService.create_transaction_for_payment(payment_2.id, get_paybc_transaction_request())
+    txn = PaymentTransactionService.update_transaction(txn.id, pay_response_url='receipt_number=123451')
+
+    assert txn.status_code == 'COMPLETED'
+    payment_2 = Payment.find_by_id(payment_2.id)
+    assert payment_2.payment_status_code == 'COMPLETED'
+    invoice_1: Invoice = Invoice.find_by_id(invoice_1.id)
+    assert invoice_1.invoice_status_code == 'PAID'
+    cfs_account = CfsAccount.find_effective_by_account_id(payment_account.id)
+    assert cfs_account.status == 'ACTIVE'

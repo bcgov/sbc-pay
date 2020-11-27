@@ -20,7 +20,7 @@ from flask_restplus import Namespace, Resource, cors
 from pay_api.services import Payment as PaymentService
 from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
-from pay_api.utils.constants import EDIT_ROLE
+from pay_api.utils.constants import MAKE_PAYMENT
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
 
@@ -40,7 +40,7 @@ class Payments(Resource):
         """Get account payments."""
         current_app.logger.info('<Payments.get')
         # Check if user is authorized to perform this action
-        check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE)
+        check_auth(business_identifier=None, account_id=account_id, contains_role=MAKE_PAYMENT)
         page: int = int(request.args.get('page', '1'))
         limit: int = int(request.args.get('limit', '10'))
         status: str = request.args.get('status', None)
@@ -57,7 +57,7 @@ class Payments(Resource):
         """Create account payments."""
         current_app.logger.info('<Payments.post')
         # Check if user is authorized to perform this action
-        check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE)
+        check_auth(business_identifier=None, account_id=account_id, contains_role=MAKE_PAYMENT)
         is_retry_payment: bool = (request.args.get('retryFailedPayment', 'false').lower() == 'true')
         # valid_format, errors = schema_utils.validate(request_json, 'payment')
 

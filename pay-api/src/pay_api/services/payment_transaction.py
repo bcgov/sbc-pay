@@ -14,11 +14,13 @@
 """Service to manage Fee Calculation."""
 
 from __future__ import annotations
+
 import uuid
 from datetime import datetime
 from typing import Dict
 
 from flask import current_app
+from sentry_sdk import capture_message
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
@@ -298,7 +300,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
     def find_by_id(transaction_id: uuid):
         """Find transaction by id."""
         current_app.logger.debug(f'>find_by_id {transaction_id}')
-        transaction_dao = PaymentTransactionModel.find_by_id_and_payment_id(transaction_id)
+        transaction_dao = PaymentTransactionModel.find_by_id(transaction_id)
         if not transaction_dao:
             raise BusinessException(Error.INVALID_TRANSACTION_ID)
 
@@ -343,14 +345,13 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
 
         # For transactions other than Credit Card, there could be more than one invoice per payment.
         invoices: [Invoice] = Invoice.find_invoices_for_payment(transaction_dao.payment_id)
-        # TODO handles only one invoice for now.
-        invoice: Invoice = invoices[0]
 
         if payment.payment_status_code == PaymentStatus.COMPLETED.value:
             # if the transaction status is EVENT_FAILED then publish to queue and return, else raise error
             if transaction_dao.status_code == TransactionStatus.EVENT_FAILED.value:
                 # Publish status to Queue
-                PaymentTransaction.publish_status(transaction_dao, invoice)
+                for invoice in invoices:
+                    PaymentTransaction.publish_status(transaction_dao, invoice)
 
                 transaction_dao.status_code = TransactionStatus.COMPLETED.value
                 return PaymentTransaction.__wrap_dao(transaction_dao.save())
@@ -362,7 +363,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             payment_method=payment.payment_method_code
         )
 
-        invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
+        invoice_reference = InvoiceReference.find_any_active_reference_by_invoice_number(payment.invoice_number)
         try:
             receipt_details = pay_system_service.get_receipt(payment_account, pay_response_url, invoice_reference)
             txn_reason_code = None
@@ -371,41 +372,49 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             receipt_details = None
 
         if receipt_details:
-            # Find if a receipt exists with same receipt_number for the invoice
-            receipt = PaymentTransaction.__save_receipt(invoice, receipt_details)
-
-            invoice.paid = receipt.receipt_amount
-            payment.paid_amount = receipt.receipt_amount
-
-            if invoice.paid == invoice.total:
-                payment.payment_status_code = PaymentStatus.COMPLETED.value
-                payment.completed_on = datetime.now()
-                payment.flush()
-
-                invoice.invoice_status_code = InvoiceStatus.PAID.value
-                invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
-                invoice_reference.flush()
-
-            invoice.flush()
-
-            transaction_dao.status_code = TransactionStatus.COMPLETED.value
+            PaymentTransaction._update_receipt_details(invoices, payment, receipt_details, transaction_dao)
         else:
             transaction_dao.status_code = TransactionStatus.FAILED.value
 
-        transaction_dao.transaction_end_time = datetime.now()
-
-        # Publish status to Queue
-        PaymentTransaction.publish_status(transaction_dao, invoice)
-
         # Save response URL
+        transaction_dao.transaction_end_time = datetime.now()
         transaction_dao.pay_response_url = pay_response_url
         transaction_dao = transaction_dao.save()
+
+        # Publish message to unlock account if account is locked.
+        PaymentAccount.unlock_frozen_accounts(payment.payment_account_id)
 
         transaction = PaymentTransaction.__wrap_dao(transaction_dao)
         transaction.pay_system_reason_code = txn_reason_code
 
         current_app.logger.debug('>update_transaction')
         return transaction
+
+    @staticmethod
+    def _update_receipt_details(invoices, payment, receipt_details, transaction_dao):
+        """Update receipt details to invoice."""
+        payment.paid_amount = receipt_details[2]
+        payment.completed_on = datetime.now()
+        transaction_dao.status_code = TransactionStatus.COMPLETED.value
+
+        if payment.paid_amount != payment.invoice_amount:
+            current_app.logger.critical('ALERT : Paid Amount is less than owed amount.  Paid : %s, Owed- %s',
+                                        payment.paid_amount, payment.invoice_amount)
+            capture_message(f'ALERT : Paid Amount is less than owed amount.  Paid : {payment.paid_amount}, '
+                            f'Owed: {payment.invoice_amount}', level='error')
+        else:
+            payment.payment_status_code = PaymentStatus.COMPLETED.value
+
+            for invoice in invoices:
+                # Save receipt details for each invoice
+                PaymentTransaction.__save_receipt(invoice, receipt_details)
+                invoice.paid = invoice.total  # set the paid amount as total
+                invoice.invoice_status_code = InvoiceStatus.PAID.value
+                invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
+                invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
+                # TODO If it's not PAD, publish message. Refactor and move to pay system service later.
+                if invoice.payment_method_code != PaymentMethod.PAD.value:
+                    PaymentTransaction.publish_status(transaction_dao, invoice)
 
     @staticmethod
     def __wrap_dao(transaction_dao):

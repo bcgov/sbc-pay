@@ -106,11 +106,6 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods
         return query.all()
 
     @classmethod
-    def find_by_id_and_payment_id(cls, identifier: uuid):
-        """Return Payment Transactions by payment identifier."""
-        return cls.query.filter_by(id=identifier).one_or_none()
-
-    @classmethod
     def find_stale_records(cls, days: int = 0, hours: int = 0, minutes: int = 0):
         """Return old records who elapsed a certain time and is not complete.
 
