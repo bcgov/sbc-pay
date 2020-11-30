@@ -81,7 +81,7 @@ class CFSService(OAuthService):
         site_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/' \
                    f'sites/{cfs_account.cfs_site}/'
         site_update_response = OAuthService.post(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
-                                                 pad_stop_payload)
+                                                 pad_stop_payload, is_put=True)
         return site_update_response.json()
 
     @staticmethod
