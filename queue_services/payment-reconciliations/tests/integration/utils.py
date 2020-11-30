@@ -70,7 +70,5 @@ def upload_to_minio(value_as_bytes, file_name: str):
                          secure=current_app.config['MINIO_SECURE'])
 
     value_as_stream = io.BytesIO(value_as_bytes)
-    print(minio_endpoint, minio_key, minio_secret, minio_client)
-    print(current_app.config['MINIO_BUCKET_NAME'], file_name, value_as_stream, os.stat(file_name).st_size)
     minio_client.put_object(current_app.config['MINIO_BUCKET_NAME'], file_name, value_as_stream,
                             os.stat(file_name).st_size)

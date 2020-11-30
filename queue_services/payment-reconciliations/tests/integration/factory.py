@@ -113,21 +113,26 @@ def factory_payment_transaction(payment_id: int):
         transaction_start_time=datetime.now()).save()
 
 
-def factory_create_online_banking_account(auth_account_id='1234', status=CfsAccountStatus.PENDING.value):
+def factory_create_online_banking_account(auth_account_id='1234', status=CfsAccountStatus.PENDING.value,
+                                          cfs_account='1234'):
     """Return Factory."""
     account = PaymentAccount(auth_account_id=auth_account_id,
                              payment_method=PaymentMethod.ONLINE_BANKING.value,
                              auth_account_name=f'Test {auth_account_id}').save()
-    CfsAccount(status=status, account_id=account.id, cfs_account='1234').save()
+    CfsAccount(status=status, account_id=account.id, cfs_account=cfs_account).save()
     return account
 
 
 def factory_create_pad_account(auth_account_id='1234', bank_number='001', bank_branch='004', bank_account='1234567890',
-                               status=CfsAccountStatus.PENDING.value):
+                               status=CfsAccountStatus.PENDING.value, account_number='4101'):
     """Return Factory."""
     account = PaymentAccount(auth_account_id=auth_account_id,
                              payment_method=PaymentMethod.PAD.value,
                              auth_account_name=f'Test {auth_account_id}').save()
     CfsAccount(status=status, account_id=account.id, bank_number=bank_number,
-               bank_branch_number=bank_branch, bank_account_number=bank_account, cfs_account='1234').save()
+               bank_branch_number=bank_branch, bank_account_number=bank_account,
+               cfs_party='11111',
+               cfs_account=account_number,
+               cfs_site='29921',
+               ).save()
     return account
