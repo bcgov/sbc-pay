@@ -141,7 +141,6 @@ async def _update_payment_details(msg: Dict[str, any]):
                 _process_failed_payments(payment, row)
                 # Send mailer and account events to update status and send email notification
                 await _publish_account_events('lockAccount', payment_account, row)
-                await _publish_mailer_events('lockAccount', payment_account, row)
             elif target_txn_status.lower() == Status.PARTIAL.value.lower():
                 logger.info('Partially PAID.')
                 _process_partial_payments(inv_references, payment, row)

@@ -11,7 +11,7 @@ click==7.1.2
 configparser==5.0.1
 itsdangerous==1.1.0
 jsonschema==3.2.0
-minio==6.0.0
+minio==6.0.2
 protobuf==3.14.0
 pycountry==20.7.3
 pyrsistent==0.17.3
