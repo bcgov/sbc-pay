@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Invoice."""
+from __future__ import annotations
+
+from typing import List
 
 from marshmallow import fields, post_dump
 from sqlalchemy import ForeignKey
@@ -79,7 +82,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         return cls.query.filter_by(business_identifier=business_identifier).all()
 
     @classmethod
-    def find_invoices_for_payment(cls, payment_id: int):
+    def find_invoices_for_payment(cls, payment_id: int) -> List[Invoice]:
         """Find all invoice records created for the payment."""
         # pylint: disable=import-outside-toplevel, cyclic-import
         from .invoice_reference import InvoiceReference
