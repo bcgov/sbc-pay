@@ -480,13 +480,27 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             payments: List[PaymentModel] = PaymentModel.find_payments_to_consolidate(auth_account_id=auth_account_id)
 
             if len(payments) == 1:
+                failed_payment = payments[0]
+                # Find if there is a payment for the same invoice number, with status CREATED.
+                # If yes, use that record
+                # Else create new one.
+                stale_payments = PaymentModel.find_payment_by_invoice_number_and_status(
+                    inv_number=failed_payment.invoice_number, payment_status=PaymentStatus.CREATED.value)
+                # pick the first one. Ideally only one will be there, but a race condition can cause multiple.
+                if len(stale_payments) > 0:
+                    payment = Payment._populate(stale_payments[0])
+
                 # For consolidated payment status will be CREATED, if so don't create another payment record.
-                if (failed_payment := payments[0]).payment_status_code == PaymentStatus.FAILED.value:
+                elif failed_payment.payment_status_code == PaymentStatus.FAILED.value:
+                    invoice_total = 0
+                    for inv in InvoiceModel.find_invoices_for_payment(payment_id=failed_payment.id):
+                        invoice_total += inv.total
+
                     payment = Payment.create(
                         payment_method=PaymentMethod.CC.value,
                         payment_system=PaymentSystem.PAYBC.value,
                         invoice_number=failed_payment.invoice_number,
-                        invoice_amount=failed_payment.invoice_amount,
+                        invoice_amount=invoice_total,
                         payment_account_id=failed_payment.payment_account_id)
                 else:
                     payment = Payment._populate(failed_payment)

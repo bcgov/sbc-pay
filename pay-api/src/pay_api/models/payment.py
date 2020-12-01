@@ -67,6 +67,14 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query.one_or_none()
 
     @classmethod
+    def find_payment_by_invoice_number_and_status(cls, inv_number: str, payment_status: str):
+        """Return a Payment by invoice_number and status."""
+        query = db.session.query(Payment) \
+            .filter(Payment.invoice_number == inv_number) \
+            .filter(Payment.payment_status_code == payment_status)
+        return query.all()
+
+    @classmethod
     def find_payment_for_invoice(cls, invoice_id: int):
         """Find payment records created for the invoice."""
         query = db.session.query(Payment) \
