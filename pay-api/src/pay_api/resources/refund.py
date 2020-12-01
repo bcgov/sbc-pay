@@ -39,9 +39,9 @@ class Refund(Resource):
     def post(invoice_id):
         """Create the Refund for the Invoice."""
         current_app.logger.info('<Refund.post')
-        request_json = request.get_json()
+        request_json = request.get_json(silent=True)
         try:
-            valid_format, errors = schema_utils.validate(request_json, 'refund')
+            valid_format, errors = schema_utils.validate(request_json, 'refund') if request_json else (True, None)
             if not valid_format:
                 return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
