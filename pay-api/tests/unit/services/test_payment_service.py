@@ -194,3 +194,29 @@ def test_create_payment_record_with_service_charge(session, public_user_mock):
     assert account_id is not None
     assert payment_response.get('id') is not None
     assert payment_response.get('service_fees') == 1.50
+
+
+def test_create_pad_payment(session, public_user_mock):
+    """Assert that the payment records are created."""
+    factory_payment_account(payment_method_code=PaymentMethod.PAD.value).save()
+
+    payment_response = PaymentService.create_invoice(
+        get_payment_request_with_service_fees(
+            business_identifier='CP0002000'),
+        get_auth_premium_user())
+    assert payment_response is not None
+    assert payment_response.get('payment_method') == 'PAD'
+    assert payment_response.get('status_code') == 'CREATED'
+
+
+def test_create_online_banking_payment(session, public_user_mock):
+    """Assert that the payment records are created."""
+    factory_payment_account(payment_method_code=PaymentMethod.ONLINE_BANKING.value).save()
+
+    payment_response = PaymentService.create_invoice(
+        get_payment_request_with_service_fees(
+            business_identifier='CP0002000'),
+        get_auth_premium_user())
+    assert payment_response is not None
+    assert payment_response.get('payment_method') == 'ONLINE_BANKING'
+    assert payment_response.get('status_code') == 'CREATED'
