@@ -36,7 +36,8 @@ class OAuthService:
     def post(endpoint, token, auth_header_type: AuthHeaderType,  # pylint: disable=too-many-arguments
              content_type: ContentType, data,
              raise_for_error: bool = True,
-             additional_headers: Dict = None):
+             additional_headers: Dict = None,
+             is_put: bool = False):
         """POST service."""
         current_app.logger.debug('<post')
 
@@ -56,8 +57,12 @@ class OAuthService:
         current_app.logger.debug('data : {}'.format(data))
         response = None
         try:
-            response = requests.post(endpoint, data=data, headers=headers,
-                                     timeout=current_app.config.get('CONNECT_TIMEOUT'))
+            if is_put:
+                response = requests.put(endpoint, data=data, headers=headers,
+                                        timeout=current_app.config.get('CONNECT_TIMEOUT'))
+            else:
+                response = requests.post(endpoint, data=data, headers=headers,
+                                         timeout=current_app.config.get('CONNECT_TIMEOUT'))
             if raise_for_error:
                 response.raise_for_status()
         except (ReqConnectionError, ConnectTimeout) as exc:

@@ -26,7 +26,7 @@ from pay_api.models import (CfsAccount,
                             PaymentAccount, PaymentLineItem, PaymentTransaction, DistributionCode, StatementSettings,
                             Statement,
                             StatementInvoices, Receipt)
-from pay_api.utils.enums import PaymentSystem, Role, PaymentStatus, InvoiceReferenceStatus, \
+from pay_api.utils.enums import CfsAccountStatus, PaymentSystem, Role, PaymentStatus, InvoiceReferenceStatus, \
     LineItemStatus, InvoiceStatus, PaymentMethod
 
 token_header = {
@@ -259,7 +259,8 @@ def get_waive_fees_payment_request(business_identifier: str = 'CP0001234'):
 
 def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC', account_number='4101',
                             bcol_user_id='test',
-                            auth_account_id: str = '1234'):
+                            auth_account_id: str = '1234',
+                            cfs_account_status: str = CfsAccountStatus.ACTIVE.value):
     """Return Factory."""
     # Create a payment account
     account = PaymentAccount(
@@ -271,7 +272,9 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
 
     CfsAccount(cfs_party='11111',
                cfs_account=account_number,
-               cfs_site='29921', payment_account=account).save()
+               cfs_site='29921',
+               account_id=account.id,
+               status=cfs_account_status).save()
 
     if payment_system_code == PaymentSystem.BCOL.value:
         account.payment_method = PaymentMethod.DRAWDOWN.value
@@ -294,16 +297,21 @@ def factory_payment(
         payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC',
         payment_status_code: str = PaymentStatus.CREATED.value,
         created_on: datetime = datetime.now(),
-        invoice_number: str = None
+        invoice_number: str = None,
+        payment_account_id: str = None,
+        invoice_amount=0
 ):
     """Return Factory."""
-    return Payment(
+    payment: Payment = Payment(
         payment_system_code=payment_system_code,
         payment_method_code=payment_method_code,
         payment_status_code=payment_status_code,
         created_on=created_on,
-        invoice_number=invoice_number
+        invoice_number=invoice_number,
+        payment_account_id=payment_account_id,
+        invoice_amount=invoice_amount
     )
+    return payment
 
 
 def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.value,

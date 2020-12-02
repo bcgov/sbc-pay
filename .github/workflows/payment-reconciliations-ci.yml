@@ -26,6 +26,9 @@ jobs:
       MINIO_ACCESS_SECRET: "minio123"
       MINIO_BUCKET_NAME: "payment-sftp"
       MINIO_SECURE: False
+      CFS_BASE_URL: "http://localhost:8080/paybc-api"
+      CFS_CLIENT_ID: "TEST"
+      CFS_CLIENT_SECRET: "TEST"
 
     strategy:
       matrix:

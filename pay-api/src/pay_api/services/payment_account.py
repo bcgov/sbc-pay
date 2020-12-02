@@ -25,7 +25,7 @@ from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel, PaymentAccountSchema
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.services.queue_publisher import publish_response
-from pay_api.utils.enums import PaymentSystem, StatementFrequency, PaymentMethod
+from pay_api.utils.enums import PaymentSystem, StatementFrequency, PaymentMethod, CfsAccountStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context, UserContext
 from pay_api.utils.util import get_str_by_path, current_local_time, \
@@ -450,24 +450,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def publish_account_mailer_event(self):
         """Publish to account mailer message to send out confirmation email."""
         if self.payment_method == PaymentMethod.PAD.value:
-            payload = {
-                'specversion': '1.x-wip',
-                'type': 'bc.registry.payment.padAccountCreate',
-                'source': f'https://api.pay.bcregistry.gov.bc.ca/v1/accounts/{self.auth_account_id}',
-                'id': f'{self.auth_account_id}',
-                'time': f'{datetime.now()}',
-                'datacontenttype': 'application/json',
-                'data': {
-                    'accountId': self.auth_account_id,
-                    'accountName': self.auth_account_name,
-                    'paymentInfo': {
-                        'bankInstitutionNumber': self.bank_number,
-                        'bankTransitNumber': self.bank_branch_number,
-                        'bankAccountNumber': self.bank_account_number,
-                        'paymentStartDate': get_local_formatted_date(self.pad_activation_date)
-                    }
-                }
-            }
+            payload = self._create_account_event_payload('bc.registry.payment.padAccountCreate', include_pay_info=True)
 
             try:
                 publish_response(payload=payload,
@@ -480,4 +463,57 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                     self.auth_account_name)
                 capture_message(
                     'Notification to Queue failed for the Account Mailer on account creation : {msg}.'.format(
+                        msg=payload), level='error')
+
+    def _create_account_event_payload(self, event_type: str, include_pay_info: bool = False):
+        """Return event payload for account."""
+        payload: Dict[str, any] = {
+            'specversion': '1.x-wip',
+            'type': event_type,
+            'source': f'https://api.pay.bcregistry.gov.bc.ca/v1/accounts/{self.auth_account_id}',
+            'id': f'{self.auth_account_id}',
+            'time': f'{datetime.now()}',
+            'datacontenttype': 'application/json',
+            'data': {
+                'accountId': self.auth_account_id,
+                'accountName': self.auth_account_name,
+            }
+        }
+
+        if include_pay_info:
+            payload['data']['paymentInfo'] = dict(
+                bankInstitutionNumber=self.bank_number,
+                bankTransitNumber=self.bank_branch_number,
+                bankAccountNumber=self.bank_account_number,
+                paymentStartDate=get_local_formatted_date(self.pad_activation_date))
+        return payload
+
+    @staticmethod
+    def unlock_frozen_accounts(account_id: int):
+        """Unlock frozen accounts."""
+        from pay_api.services.cfs_service import CFSService  # pylint: disable=import-outside-toplevel,cyclic-import
+        pay_account: PaymentAccount = PaymentAccount.find_by_id(account_id)
+        if pay_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
+            # update CSF
+            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account.id)
+            CFSService.unsuspend_cfs_account(cfs_account=cfs_account)
+
+            cfs_account.status = CfsAccountStatus.ACTIVE.value
+            cfs_account.save()
+
+            payload = pay_account._create_account_event_payload(  # pylint:disable=protected-access
+                'bc.registry.payment.unlockAccount'
+            )
+
+            try:
+                publish_response(payload=payload,
+                                 client_name=current_app.config['NATS_ACCOUNT_CLIENT_NAME'],
+                                 subject=current_app.config['NATS_ACCOUNT_SUBJECT'])
+            except Exception as e:  # pylint: disable=broad-except
+                current_app.logger.error(e)
+                current_app.logger.error(
+                    'Notification to Queue failed for the Unlock Account %s - %s', pay_account.auth_account_id,
+                    pay_account.auth_account_name)
+                capture_message(
+                    'Notification to Queue failed for the Unlock Account : {msg}.'.format(
                         msg=payload), level='error')

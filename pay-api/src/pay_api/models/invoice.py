@@ -12,12 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Invoice."""
+from __future__ import annotations
+
+from typing import List
 
 from marshmallow import fields, post_dump
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
-from pay_api.utils.enums import InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
+from pay_api.utils.enums import InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus, InvoiceReferenceStatus
 from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
 from .db import db, ma
@@ -79,7 +82,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         return cls.query.filter_by(business_identifier=business_identifier).all()
 
     @classmethod
-    def find_invoices_for_payment(cls, payment_id: int):
+    def find_invoices_for_payment(cls, payment_id: int) -> List[Invoice]:
         """Find all invoice records created for the payment."""
         # pylint: disable=import-outside-toplevel, cyclic-import
         from .invoice_reference import InvoiceReference
@@ -88,6 +91,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         query = db.session.query(Invoice) \
             .join(InvoiceReference, InvoiceReference.invoice_id == Invoice.id) \
             .join(Payment, InvoiceReference.invoice_number == Payment.invoice_number) \
+            .filter(InvoiceReference.status_code == InvoiceReferenceStatus.ACTIVE.value) \
             .filter(Payment.id == payment_id)
 
         return query.all()
@@ -117,8 +121,8 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
     references = ma.Nested(InvoiceReferenceSchema, many=True, data_key='references')
 
     _links = ma.Hyperlinks({
-        'self': ma.URLFor('API.payments_invoice', invoice_id='<id>'),
-        'collection': ma.URLFor('API.payments_invoices', invoice_id='<id>')
+        'self': ma.URLFor('API.invoice_invoice', invoice_id='<id>'),
+        'collection': ma.URLFor('API.invoice_invoices', invoice_id='<id>')
     })
 
     @post_dump

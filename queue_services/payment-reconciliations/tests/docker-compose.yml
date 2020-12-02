@@ -21,3 +21,17 @@ services:
           - MINIO_ACCESS_KEY=minio
           - MINIO_SECRET_KEY=minio123
           - MINIO_DEFAULT_BUCKETS=payment-sftp
+
+    proxy:
+        image: nginx:alpine
+        volumes:
+          - ./nginx.conf:/etc/nginx/nginx.conf
+        ports:
+          - '8080:80'
+        depends_on:
+          - paybc
+    paybc:
+        image: stoplight/prism:3.3.0
+        command: >
+          mock -p 4010 --host 0.0.0.0
+          https://raw.githubusercontent.com/sumesh-aot/sbc-pay/nsf_reconciliations/docs/docs/PayBC%20Mocking/paybc-1.0.0.yaml

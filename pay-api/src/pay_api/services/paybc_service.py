@@ -23,6 +23,7 @@ from pay_api.models import CfsAccount as CfsAccountModel, PaymentLineItem as Pay
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
+from pay_api.services.payment import Payment
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import (
@@ -36,13 +37,10 @@ from .payment_line_item import PaymentLineItem
 class PaybcService(PaymentSystemService, CFSService):
     """Service to manage PayBC integration."""
 
-    def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
+    def get_payment_system_url_for_invoice(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
         current_app.logger.debug('<get_payment_system_url')
-        paybc_url = current_app.config.get('PAYBC_PORTAL_URL')
-        pay_system_url = f'{paybc_url}?inv_number={inv_ref.invoice_number}&pbc_ref_number={inv_ref.reference_number}'
-        encoded_return_url = urllib.parse.quote(return_url, '')
-        pay_system_url += f'&redirect_uri={encoded_return_url}'
+        pay_system_url = self._build_payment_url(inv_ref, return_url)
 
         current_app.logger.debug('>get_payment_system_url')
         return pay_system_url
@@ -112,7 +110,7 @@ class PaybcService(PaymentSystemService, CFSService):
         1. Adjust the existing invoice to zero
         2. Create a new invoice
         """
-        self.cancel_invoice(payment_account, paybc_inv_number)
+        self.reverse_invoice(payment_account, paybc_inv_number)
         return self.create_invoice(payment_account=payment_account,
                                    line_items=line_items,
                                    invoice=None,
@@ -122,15 +120,7 @@ class PaybcService(PaymentSystemService, CFSService):
     def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
         """Adjust the invoice to zero."""
         current_app.logger.debug('<paybc_service_Getting token')
-        access_token: str = CFSService.get_token().json().get('access_token')
-        invoice = self.__get_invoice(payment_account, inv_number, access_token)
-        for line in invoice.get('lines'):
-            amount: float = line.get('unit_price') * line.get('quantity')
-
-            current_app.logger.debug('Adding asjustment for line item : {} -- {}'
-                                     .format(line.get('line_number'), amount))
-            self.__add_adjustment(payment_account, inv_number, 'Cancelling Invoice',
-                                  0 - amount, line=line.get('line_number'), access_token=access_token)
+        self.reverse_invoice(payment_account, inv_number)
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Get receipt from paybc for the receipt number or get receipt against invoice number."""
@@ -142,7 +132,8 @@ class PaybcService(PaymentSystemService, CFSService):
         parsed_url = parse_url_params(pay_response_url)
         receipt_number: str = parsed_url.get('receipt_number') if 'receipt_number' in parsed_url else None
         if not receipt_number:  # Find all receipts for the site and then match with invoice number
-            receipts_response = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+            receipts_response = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                         retry_on_failure=True).json()
             for receipt in receipts_response.get('items'):
                 expanded_receipt = self.__get_receipt_by_number(access_token, receipt_url,
                                                                 receipt.get('receipt_number'))
@@ -202,6 +193,22 @@ class PaybcService(PaymentSystemService, CFSService):
         invoice_response = self.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
         current_app.logger.debug('>__get_invoice')
         return invoice_response.json()
+
+    def get_payment_system_url_for_payment(self, payment: Payment, inv_ref: InvoiceReference, return_url: str):
+        """Return the payment system url."""
+        current_app.logger.debug('<get_payment_system_url_for_payment ID: %s, Inv Number: %s',
+                                 payment.id, payment.invoice_number)
+        pay_system_url = self._build_payment_url(inv_ref, return_url)
+        current_app.logger.debug('>get_payment_system_url_for_payment')
+        return pay_system_url
+
+    @staticmethod
+    def _build_payment_url(inv_ref, return_url):
+        paybc_url = current_app.config.get('PAYBC_PORTAL_URL')
+        pay_system_url = f'{paybc_url}?inv_number={inv_ref.invoice_number}&pbc_ref_number={inv_ref.reference_number}'
+        encoded_return_url = urllib.parse.quote(return_url, '')
+        pay_system_url += f'&redirect_uri={encoded_return_url}'
+        return pay_system_url
 
 
 def get_non_null_value(value: str, default_value: str):

@@ -76,17 +76,18 @@ def test_receipt_invalid_lookup(session):
 def test_create_receipt_with_invoice(session, public_user_mock):
     """Try creating a receipt with invoice number."""
     payment_account = factory_payment_account()
-    payment = factory_payment()
     payment_account.save()
-    payment.save()
-    invoice = factory_invoice(payment_account, service_fees=1.5)
+
+    invoice = factory_invoice(payment_account, total=50)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
+    payment = factory_payment(invoice_amount=50)
+    payment.save()
 
-    transaction = PaymentTransactionService.create(invoice.id, get_paybc_transaction_request())
+    transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
     PaymentTransactionService.update_transaction(transaction.id, '')
 
     input_data = {

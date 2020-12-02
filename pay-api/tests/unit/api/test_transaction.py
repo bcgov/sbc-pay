@@ -26,6 +26,8 @@ from requests.exceptions import ConnectionError
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import PaymentMethod
 from tests import skip_in_pod
+from tests.utilities.base_test import (
+    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item)
 from tests.utilities.base_test import get_claims, get_payment_request, token_header, \
     get_payment_request_with_payment_method
 
@@ -328,3 +330,42 @@ def test_transaction_patch_direct_pay(session, client, jwt, app):
     # Get payment details
     rv = client.get(f'/api/v1/payment-requests/{invoice_id}', headers=headers)
     assert rv.json.get('statusCode') == 'COMPLETED'
+
+
+def test_transaction_post_for_nsf_payment(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    inv_number_1 = 'REG00001'
+    payment_account = factory_payment_account().save()
+    invoice_1 = factory_invoice(payment_account, total=100)
+    invoice_1.save()
+    factory_payment_line_item(invoice_id=invoice_1.id, fee_schedule_id=1).save()
+    factory_invoice_reference(invoice_1.id, invoice_number=inv_number_1).save()
+    payment_1 = factory_payment(payment_status_code='FAILED',
+                                payment_account_id=payment_account.id,
+                                invoice_number=inv_number_1,
+                                invoice_amount=100,
+                                payment_method_code=PaymentMethod.PAD.value)
+    payment_1.save()
+
+    # Create payment for NSF payment.
+    payment_2 = factory_payment(payment_status_code='CREATED',
+                                payment_account_id=payment_account.id,
+                                invoice_number=inv_number_1,
+                                invoice_amount=100,
+                                payment_method_code=PaymentMethod.CC.value)
+    payment_2.save()
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    data = {
+        'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
+        'payReturnUrl': 'http://localhost:8080/pay-web'
+    }
+    rv = client.post(f'/api/v1/payments/{payment_2.id}/transactions', data=json.dumps(data),
+                     headers=headers)
+
+    assert rv.status_code == 201
+    assert rv.json.get('paymentId') == payment_2.id
+
+    assert schema_utils.validate(rv.json, 'transaction')[0]

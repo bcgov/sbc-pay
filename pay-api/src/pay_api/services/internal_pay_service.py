@@ -34,10 +34,6 @@ from .payment_line_item import PaymentLineItem
 class InternalPayService(PaymentSystemService, OAuthService):
     """Service to manage internal payment."""
 
-    def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
-        """Return the payment system url."""
-        return None
-
     def get_payment_system_code(self):
         """Return INTERNAL as the system code."""
         return PaymentSystem.INTERNAL.value
@@ -99,9 +95,11 @@ class InternalPayService(PaymentSystemService, OAuthService):
                        invoice_amount=invoice.total,
                        payment_account_id=invoice.payment_account_id)
 
-        transaction: PaymentTransaction = PaymentTransaction.create(invoice.id,
-                                                                    {
-                                                                        'clientSystemUrl': '',
-                                                                        'payReturnUrl': ''
-                                                                    })
+        transaction: PaymentTransaction = PaymentTransaction.create_transaction_for_invoice(
+            invoice.id,
+            {
+                'clientSystemUrl': '',
+                'payReturnUrl': ''
+            }
+        )
         transaction.update_transaction(transaction.id, pay_response_url=None)

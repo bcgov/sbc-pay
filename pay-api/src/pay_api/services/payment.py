@@ -12,20 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Payment model related operations."""
+from __future__ import annotations
+
 from datetime import datetime
 from decimal import Decimal
-from typing import Tuple, Dict
+from typing import Tuple, Dict, List
 
 from dateutil import parser
 from flask import current_app
 
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
+from pay_api.models.base_model import BaseModel
 from pay_api.models.invoice import InvoiceSchema
+from pay_api.models.invoice_reference import InvoiceReference as InvoiceReferenceModel
 from pay_api.models.payment import PaymentSchema
 from pay_api.models.payment_line_item import PaymentLineItem, PaymentLineItemSchema
-from pay_api.services.auth import check_auth
-from pay_api.utils.constants import ALL_ALLOWED_ROLES
-from pay_api.utils.enums import ContentType, AuthHeaderType, Code
+from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
+from pay_api.utils.enums import ContentType, AuthHeaderType, Code, InvoiceReferenceStatus, PaymentMethod, PaymentSystem
 from pay_api.utils.enums import PaymentStatus
 from pay_api.utils.user_context import user_context
 from .code import Code as CodeService
@@ -44,6 +48,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self._payment_status_code: str = None
         self._payment_account_id: int = None
         self._invoice_number: str = None
+        self._cons_inv_number: str = None
         self._completed_on: datetime = None
         self._created_on: datetime = None
         self._invoice_amount: Decimal = None
@@ -64,6 +69,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self.payment_status_code: str = self._dao.payment_status_code
         self.payment_account_id: int = self._dao.payment_account_id
         self.invoice_number: str = self._dao.invoice_number
+        self.cons_inv_number: str = self._dao.cons_inv_number
         self.completed_on: datetime = self._dao.completed_on
         self.created_on: datetime = self._dao.created_on
         self.invoice_amount: Decimal = self._dao.invoice_amount
@@ -136,6 +142,17 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self._dao.invoice_number = value
 
     @property
+    def cons_inv_number(self):
+        """Return the cons_inv_number."""
+        return self._cons_inv_number
+
+    @cons_inv_number.setter
+    def cons_inv_number(self, value: str):
+        """Set the cons_inv_number."""
+        self._cons_inv_number = value
+        self._dao.cons_inv_number = value
+
+    @property
     def completed_on(self):
         """Return the completed_on."""
         return self._completed_on
@@ -204,7 +221,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
     @staticmethod
     def create(payment_method: str, payment_system: str,  # pylint:disable=too-many-arguments
                payment_status=PaymentStatus.CREATED.value,
-               invoice_number: str = None, invoice_amount: float = None, payment_account_id: int = None):
+               invoice_number: str = None, invoice_amount: float = None, payment_account_id: int = None) -> Payment:
         """Create payment record."""
         current_app.logger.debug('<create_payment')
         p = Payment()
@@ -217,27 +234,55 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         p.created_on = datetime.now()
         p.payment_account_id = payment_account_id
         pay_dao = p.save()
-        p = Payment()
-        p._dao = pay_dao  # pylint: disable=protected-access
+
+        p = Payment._populate(pay_dao)
         current_app.logger.debug('>create_payment')
         return p
 
     @staticmethod
-    def find_by_id(identifier: int, skip_auth_check: bool = False,
-                   one_of_roles: Tuple = ALL_ALLOWED_ROLES):
+    def find_by_id(identifier: int) -> Payment:
         """Find payment by id."""
         payment_dao = PaymentModel.find_by_id(identifier)
-
-        # Check if user is authorized to view the payment
-        if not skip_auth_check and payment_dao:
-            for invoice in payment_dao.invoices:
-                check_auth(invoice.business_identifier, one_of_roles=one_of_roles)
-
-        payment = Payment()
-        payment._dao = payment_dao  # pylint: disable=protected-access
-
         current_app.logger.debug('>find_by_id')
-        return payment
+        return Payment._populate(payment_dao)
+
+    @staticmethod
+    def search_account_payments(auth_account_id: str, status: str, page: int, limit: int):
+        """Search account payments."""
+        current_app.logger.debug('<search_account_payments')
+        results, total = PaymentModel.search_account_payments(auth_account_id=auth_account_id,
+                                                              payment_status=status, page=page, limit=limit)
+
+        data = {
+            'total': total,
+            'page': page,
+            'limit': limit,
+            'items': []
+        }
+
+        # Result is tuple of payment and invoice records.
+        # Iterate the results and group all invoices for the same payment by keeping the last payment object to compare.
+        last_payment_iter = None
+        payment_dict = None
+
+        for result in results:
+            payment = result[0]
+            invoice = result[1]
+            if last_payment_iter is None or payment.id != last_payment_iter.id:  # Payment doesn't exist in array yet
+                payment_schema = PaymentSchema()
+                payment_dict = payment_schema.dump(payment)
+                payment_dict['invoices'] = []
+                inv_schema = InvoiceSchema(exclude=('receipts', 'references', '_links'))
+                payment_dict['invoices'] = [inv_schema.dump(invoice)]
+                data['items'].append(payment_dict)
+            else:
+                inv_schema = InvoiceSchema(exclude=('receipts', 'references', '_links'))
+                payment_dict['invoices'].append(inv_schema.dump(invoice))
+
+            last_payment_iter = payment
+
+        current_app.logger.debug('>search_account_payments')
+        return data
 
     @staticmethod
     def search_all_purchase_history(auth_account_id: str, search_filter: Dict):
@@ -419,8 +464,120 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         payment_dao = PaymentModel.find_payment_for_invoice(invoice_id)
         payment: Payment = None
         if payment_dao:
-            payment = Payment()
-            payment._dao = payment_dao  # pylint: disable=protected-access
+            payment = Payment._populate(payment_dao)
 
         current_app.logger.debug('>find_payment_for_invoice')
+        return payment
+
+    @staticmethod
+    def create_account_payment(auth_account_id: str, is_retry_payment: bool) -> Payment:
+        """Create a payment record for the account."""
+        payment: Payment = None
+        if is_retry_payment:
+            # If there are multiple failed payments, consolidate them
+            # Else clone failed payment
+            # Find all failed payments.
+            payments: List[PaymentModel] = PaymentModel.find_payments_to_consolidate(auth_account_id=auth_account_id)
+
+            if len(payments) == 1:
+                failed_payment = payments[0]
+                # Find if there is a payment for the same invoice number, with status CREATED.
+                # If yes, use that record
+                # Else create new one.
+                stale_payments = PaymentModel.find_payment_by_invoice_number_and_status(
+                    inv_number=failed_payment.invoice_number, payment_status=PaymentStatus.CREATED.value)
+                # pick the first one. Ideally only one will be there, but a race condition can cause multiple.
+                if len(stale_payments) > 0:
+                    payment = Payment._populate(stale_payments[0])
+
+                # For consolidated payment status will be CREATED, if so don't create another payment record.
+                elif failed_payment.payment_status_code == PaymentStatus.FAILED.value:
+                    invoice_total = 0
+                    for inv in InvoiceModel.find_invoices_for_payment(payment_id=failed_payment.id):
+                        invoice_total += inv.total
+
+                    payment = Payment.create(
+                        payment_method=PaymentMethod.CC.value,
+                        payment_system=PaymentSystem.PAYBC.value,
+                        invoice_number=failed_payment.invoice_number,
+                        invoice_amount=invoice_total,
+                        payment_account_id=failed_payment.payment_account_id)
+                else:
+                    payment = Payment._populate(failed_payment)
+
+            else:  # Consolidate invoices into a single payment.
+                payment = Payment._consolidate_payments(auth_account_id, payments)
+
+        current_app.logger.debug('>create_account_payment')
+        return payment
+
+    @staticmethod
+    def _populate(dao: PaymentModel):
+        payment = Payment()
+        payment._dao = dao  # pylint: disable=protected-access
+        return payment
+
+    @classmethod
+    def _consolidate_payments(cls, auth_account_id: str, failed_payments: List[PaymentModel]) -> Payment:
+        # If the payment is for consolidating failed payments,
+        # 1. Cancel the invoices in CFS
+        # 2. Update status of invoice_reference to CANCELLED
+        # 3. Create new consolidated invoice in CFS.
+        # 4. Create new invoice reference records.
+        # 5. Create new payment records for the invoice as CREATED.
+        from pay_api.services import CFSService  # pylint:disable=import-outside-toplevel, cyclic-import
+
+        pay_account = PaymentAccountService.find_by_auth_account_id(auth_account_id)
+
+        consolidated_invoices: List[InvoiceModel] = []
+        consolidated_line_items: List[PaymentLineItem] = []
+        invoice_total: float = 0
+        for failed_payment in failed_payments:
+            # Reverse invoice balance
+            CFSService.reverse_invoice(payment_account=pay_account, inv_number=failed_payment.invoice_number)
+            # Find all invoices for this payment.
+            # Add all line items to the array
+            for invoice in InvoiceModel.find_invoices_for_payment(payment_id=failed_payment.id):
+                consolidated_invoices.append(invoice)
+                invoice_total += invoice.total
+                consolidated_line_items.append(*invoice.payment_line_items)
+
+        # Create consolidated invoice
+        invoice_response = CFSService.create_account_invoice(
+            transaction_number=str(consolidated_invoices[-1].id) + '-C',  # TODO confirm this
+            line_items=consolidated_line_items,
+            payment_account=pay_account)
+
+        invoice_number: str = invoice_response.json().get('invoice_number')
+
+        # Mark all invoice references to status CANCELLED, and create a new one for the new invoice number.
+        for invoice in consolidated_invoices:
+            inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
+                invoice_id=invoice.id, status_code=InvoiceReferenceStatus.ACTIVE.value)
+            inv_ref.status_code = InvoiceReferenceStatus.CANCELLED.value
+            # print(inv_ref)
+
+            InvoiceReferenceModel(
+                invoice_id=invoice.id,
+                status_code=InvoiceReferenceStatus.ACTIVE.value,
+                invoice_number=invoice_number,
+                reference_number=invoice_response.json().get('pbc_ref_number')).flush()
+
+        payment = Payment.create(
+            payment_method=PaymentMethod.CC.value,
+            payment_system=PaymentSystem.PAYBC.value,
+            invoice_number=invoice_number,
+            invoice_amount=invoice_total,
+            payment_account_id=pay_account.id)
+
+        # Update all failed payment with consolidated invoice number.
+        for failed_payment in failed_payments:
+            failed_payment.cons_inv_number = invoice_number
+            # If the payment status is CREATED, which means we consolidated one payment which was already consolidated.
+            # Set the status as DELETED
+            if failed_payment.payment_status_code == PaymentStatus.CREATED.value:
+                failed_payment.payment_status_code = PaymentStatus.DELETED.value
+
+        # commit transaction
+        BaseModel.commit()
         return payment

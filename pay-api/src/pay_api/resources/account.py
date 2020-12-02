@@ -108,7 +108,7 @@ class Account(Resource):
 @cors_preflight('POST')
 @API.route('/<string:account_number>/payments/queries', methods=['POST', 'OPTIONS'])
 class AccountPurchaseHistory(Resource):
-    """Endpoint resource to create payment."""
+    """Endpoint resource to query payment."""
 
     @staticmethod
     @cors.crossdomain(origin='*')

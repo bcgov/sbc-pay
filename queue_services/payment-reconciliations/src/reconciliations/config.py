@@ -112,6 +112,12 @@ class _Config():  # pylint: disable=too-few-public-methods
     NATS_ACCOUNT_CLIENT_NAME = os.getenv('NATS_ACCOUNT_CLIENT_NAME', 'account.events.worker')
     NATS_ACCOUNT_SUBJECT = os.getenv('NATS_ACCOUNT_SUBJECT', 'account.events')
 
+    # CFS API Settings
+    CFS_BASE_URL = os.getenv('CFS_BASE_URL')
+    CFS_CLIENT_ID = os.getenv('CFS_CLIENT_ID')
+    CFS_CLIENT_SECRET = os.getenv('CFS_CLIENT_SECRET')
+    CONNECT_TIMEOUT = int(os.getenv('CONNECT_TIMEOUT', '10'))
+
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     """Creates the Development Config object."""
@@ -150,6 +156,10 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     MINIO_ACCESS_SECRET = 'minio123'
     MINIO_BUCKET_NAME = 'payment-sftp'
     MINIO_SECURE = False
+
+    CFS_BASE_URL = 'http://localhost:8080/paybc-api'
+    CFS_CLIENT_ID = 'TEST'
+    CFS_CLIENT_SECRET = 'TEST'
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

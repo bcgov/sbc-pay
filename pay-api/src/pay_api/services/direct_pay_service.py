@@ -40,7 +40,7 @@ STATUS_PAID = 'PAID'
 class DirectPayService(PaymentSystemService, OAuthService):
     """Service to manage internal payment."""
 
-    def get_payment_system_url(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
+    def get_payment_system_url_for_invoice(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
         today = current_local_time().strftime(PAYBC_DATE_FORMAT)
 

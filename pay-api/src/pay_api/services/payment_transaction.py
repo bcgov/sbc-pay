@@ -13,11 +13,14 @@
 # limitations under the License.
 """Service to manage Fee Calculation."""
 
+from __future__ import annotations
+
 import uuid
 from datetime import datetime
 from typing import Dict
 
 from flask import current_app
+from sentry_sdk import capture_message
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
@@ -180,23 +183,36 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         return self._dao.flush()
 
     @staticmethod
-    def create(invoice_id: str, request_json: Dict):
-        """Create transaction record."""
+    def create_transaction_for_payment(payment_id: int, request_json: Dict) -> PaymentTransaction:
+        """Create transaction record for payment."""
+        payment: Payment = Payment.find_by_id(payment_id)
+        if not payment.id or payment.payment_status_code != PaymentStatus.CREATED.value:
+            raise BusinessException(Error.INVALID_PAYMENT_ID)
+
+        # Check if return url is valid
+        PaymentTransaction._validate_redirect_url_and_throw_error(
+            payment.payment_method_code, request_json.get('clientSystemUrl')
+        )
+
+        transaction = PaymentTransaction._create_transaction(payment, request_json)
+        return transaction
+
+    @staticmethod
+    def create_transaction_for_invoice(invoice_id: int, request_json: Dict) -> PaymentTransaction:
+        """Create transaction record for invoice, by creating a payment record if doesn't exist."""
         current_app.logger.debug('<create transaction')
         # Lookup invoice record
         invoice: Invoice = Invoice.find_by_id(invoice_id, skip_auth_check=True)
+        if not invoice.id:
+            raise BusinessException(Error.INVALID_INVOICE_ID)
 
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
             payment_method=invoice.payment_method_code
         )
-
         # Check if return url is valid
-        return_url = request_json.get('clientSystemUrl')
-
-        PaymentTransaction.validate_redirect_url_and_throw_error(invoice, return_url)
-
-        if not invoice.id:
-            raise BusinessException(Error.INVALID_INVOICE_ID)
+        PaymentTransaction._validate_redirect_url_and_throw_error(
+            invoice.payment_method_code, request_json.get('clientSystemUrl')
+        )
 
         # Check if there is a payment created. If not, create a payment record with status CREATED
         payment: Payment = Payment.find_payment_for_invoice(invoice_id)
@@ -211,56 +227,80 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                                      invoice_number=invoice_reference.invoice_number,
                                      invoice_amount=invoice.total)
 
-        # Cannot start transaction on completed payment
-        if payment.payment_status_code in (PaymentStatus.COMPLETED.value, PaymentStatus.DELETED.value):
-            raise BusinessException(Error.COMPLETED_PAYMENT)
-
-        # If there are active transactions (status=CREATED), then invalidate all of them and create a new one.
-        existing_transaction = PaymentTransactionModel.find_active_by_invoice_id(invoice_id)
-        if existing_transaction and existing_transaction.status_code != TransactionStatus.CANCELLED.value:
-            existing_transaction.status_code = TransactionStatus.CANCELLED.value
-            existing_transaction.transaction_end_time = datetime.now()
-            existing_transaction.save()
-
-        transaction = PaymentTransaction()
-        transaction.payment_id = payment.id
-        transaction.client_system_url = return_url
-        transaction.status_code = TransactionStatus.CREATED.value
-        transaction_dao = transaction.flush()
-        transaction._dao = transaction_dao  # pylint: disable=protected-access
-        transaction.pay_system_url = transaction.build_pay_system_url(invoice, pay_system_service, transaction.id,
-                                                                      request_json.get('payReturnUrl'))
-        transaction_dao = transaction.save()
-
-        transaction = PaymentTransaction.__wrap_dao(transaction_dao)
+        transaction = PaymentTransaction._create_transaction(payment, request_json, invoice=invoice)
         current_app.logger.debug('>create transaction')
 
         return transaction
 
     @staticmethod
-    def validate_redirect_url_and_throw_error(invoice: Invoice, return_url):
+    def _create_transaction(payment: Payment, request_json: Dict, invoice: Invoice = None):
+        # Cannot start transaction on completed payment
+        if payment.payment_status_code in (PaymentStatus.COMPLETED.value, PaymentStatus.DELETED.value):
+            raise BusinessException(Error.COMPLETED_PAYMENT)
+
+        pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
+            payment_method=payment.payment_method_code
+        )
+
+        # If there are active transactions (status=CREATED), then invalidate all of them and create a new one.
+        existing_transaction = PaymentTransactionModel.find_active_by_payment_id(payment.id)
+        if existing_transaction and existing_transaction.status_code != TransactionStatus.CANCELLED.value:
+            existing_transaction.status_code = TransactionStatus.CANCELLED.value
+            existing_transaction.transaction_end_time = datetime.now()
+            existing_transaction.save()
+        transaction = PaymentTransaction()
+        transaction.payment_id = payment.id
+        transaction.client_system_url = request_json.get('clientSystemUrl')
+        transaction.status_code = TransactionStatus.CREATED.value
+        transaction_dao = transaction.flush()
+        transaction._dao = transaction_dao  # pylint: disable=protected-access
+        if invoice:
+            transaction.pay_system_url = PaymentTransaction._build_pay_system_url_for_invoice(
+                invoice, pay_system_service, transaction.id, request_json.get('payReturnUrl')
+            )
+        else:
+            transaction.pay_system_url = PaymentTransaction._build_pay_system_url_for_payment(
+                payment, pay_system_service, transaction.id, request_json.get('payReturnUrl')
+            )
+        transaction_dao = transaction.save()
+        transaction = PaymentTransaction.__wrap_dao(transaction_dao)
+        return transaction
+
+    @staticmethod
+    def _validate_redirect_url_and_throw_error(payment_method: str, return_url: str):
         """Check and Throw if the return_url is not a valid url."""
-        is_validity_check_needed = invoice.payment_method_code in (
+        is_validity_check_needed = payment_method in (
             PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value)
         if is_validity_check_needed and not is_valid_redirect_url(return_url):
             raise BusinessException(Error.INVALID_REDIRECT_URI)
 
     @staticmethod
-    def build_pay_system_url(invoice: Invoice, pay_system_service: PaymentSystemService, transaction_id: uuid,
-                             pay_return_url: str):
+    def _build_pay_system_url_for_invoice(invoice: Invoice, pay_system_service: PaymentSystemService,
+                                          transaction_id: uuid, pay_return_url: str):
         """Build pay system url which will be used to redirect to the payment system."""
         current_app.logger.debug('<build_pay_system_url')
         invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
         return_url = f'{pay_return_url}/{invoice.id}/transaction/{transaction_id}'
 
         current_app.logger.debug('>build_pay_system_url')
-        return pay_system_service.get_payment_system_url(invoice, invoice_reference, return_url)
+        return pay_system_service.get_payment_system_url_for_invoice(invoice, invoice_reference, return_url)
+
+    @staticmethod
+    def _build_pay_system_url_for_payment(payment: Payment, pay_system_service: PaymentSystemService,
+                                          transaction_id: uuid, pay_return_url: str):
+        """Build pay system url which will be used to redirect to the payment system."""
+        current_app.logger.debug('<build_pay_system_url')
+        invoice_reference = InvoiceReference.find_any_active_reference_by_invoice_number(payment.invoice_number)
+        return_url = f'{pay_return_url}/{payment.id}/transaction/{transaction_id}'
+
+        current_app.logger.debug('>build_pay_system_url')
+        return pay_system_service.get_payment_system_url_for_payment(payment, invoice_reference, return_url)
 
     @staticmethod
     def find_by_id(transaction_id: uuid):
         """Find transaction by id."""
         current_app.logger.debug(f'>find_by_id {transaction_id}')
-        transaction_dao = PaymentTransactionModel.find_by_id_and_payment_id(transaction_id)
+        transaction_dao = PaymentTransactionModel.find_by_id(transaction_id)
         if not transaction_dao:
             raise BusinessException(Error.INVALID_TRANSACTION_ID)
 
@@ -300,19 +340,18 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         if transaction_dao.status_code == TransactionStatus.COMPLETED.value:
             raise BusinessException(Error.INVALID_TRANSACTION)
 
-        payment: Payment = Payment.find_by_id(transaction_dao.payment_id, skip_auth_check=True)
+        payment: Payment = Payment.find_by_id(transaction_dao.payment_id)
         payment_account: PaymentAccount = PaymentAccount.find_by_id(payment.payment_account_id)
 
         # For transactions other than Credit Card, there could be more than one invoice per payment.
         invoices: [Invoice] = Invoice.find_invoices_for_payment(transaction_dao.payment_id)
-        # TODO handles only one invoice for now.
-        invoice: Invoice = invoices[0]
 
         if payment.payment_status_code == PaymentStatus.COMPLETED.value:
             # if the transaction status is EVENT_FAILED then publish to queue and return, else raise error
             if transaction_dao.status_code == TransactionStatus.EVENT_FAILED.value:
                 # Publish status to Queue
-                PaymentTransaction.publish_status(transaction_dao, invoice)
+                for invoice in invoices:
+                    PaymentTransaction.publish_status(transaction_dao, invoice)
 
                 transaction_dao.status_code = TransactionStatus.COMPLETED.value
                 return PaymentTransaction.__wrap_dao(transaction_dao.save())
@@ -324,7 +363,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             payment_method=payment.payment_method_code
         )
 
-        invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
+        invoice_reference = InvoiceReference.find_any_active_reference_by_invoice_number(payment.invoice_number)
         try:
             receipt_details = pay_system_service.get_receipt(payment_account, pay_response_url, invoice_reference)
             txn_reason_code = None
@@ -333,41 +372,49 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             receipt_details = None
 
         if receipt_details:
-            # Find if a receipt exists with same receipt_number for the invoice
-            receipt = PaymentTransaction.__save_receipt(invoice, receipt_details)
-
-            invoice.paid = receipt.receipt_amount
-            payment.paid_amount = receipt.receipt_amount
-
-            if invoice.paid == invoice.total:
-                payment.payment_status_code = PaymentStatus.COMPLETED.value
-                payment.completed_on = datetime.now()
-                payment.flush()
-
-                invoice.invoice_status_code = InvoiceStatus.PAID.value
-                invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
-                invoice_reference.flush()
-
-            invoice.flush()
-
-            transaction_dao.status_code = TransactionStatus.COMPLETED.value
+            PaymentTransaction._update_receipt_details(invoices, payment, receipt_details, transaction_dao)
         else:
             transaction_dao.status_code = TransactionStatus.FAILED.value
 
-        transaction_dao.transaction_end_time = datetime.now()
-
-        # Publish status to Queue
-        PaymentTransaction.publish_status(transaction_dao, invoice)
-
         # Save response URL
+        transaction_dao.transaction_end_time = datetime.now()
         transaction_dao.pay_response_url = pay_response_url
         transaction_dao = transaction_dao.save()
+
+        # Publish message to unlock account if account is locked.
+        PaymentAccount.unlock_frozen_accounts(payment.payment_account_id)
 
         transaction = PaymentTransaction.__wrap_dao(transaction_dao)
         transaction.pay_system_reason_code = txn_reason_code
 
         current_app.logger.debug('>update_transaction')
         return transaction
+
+    @staticmethod
+    def _update_receipt_details(invoices, payment, receipt_details, transaction_dao):
+        """Update receipt details to invoice."""
+        payment.paid_amount = receipt_details[2]
+        payment.completed_on = datetime.now()
+        transaction_dao.status_code = TransactionStatus.COMPLETED.value
+
+        if payment.paid_amount != payment.invoice_amount:
+            current_app.logger.critical('ALERT : Paid Amount is less than owed amount.  Paid : %s, Owed- %s',
+                                        payment.paid_amount, payment.invoice_amount)
+            capture_message(f'ALERT : Paid Amount is less than owed amount.  Paid : {payment.paid_amount}, '
+                            f'Owed: {payment.invoice_amount}', level='error')
+        else:
+            payment.payment_status_code = PaymentStatus.COMPLETED.value
+
+            for invoice in invoices:
+                # Save receipt details for each invoice
+                PaymentTransaction.__save_receipt(invoice, receipt_details)
+                invoice.paid = invoice.total  # set the paid amount as total
+                invoice.invoice_status_code = InvoiceStatus.PAID.value
+                invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
+                invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
+                # TODO If it's not PAD, publish message. Refactor and move to pay system service later.
+                if invoice.payment_method_code != PaymentMethod.PAD.value:
+                    PaymentTransaction.publish_status(transaction_dao, invoice)
 
     @staticmethod
     def __wrap_dao(transaction_dao):

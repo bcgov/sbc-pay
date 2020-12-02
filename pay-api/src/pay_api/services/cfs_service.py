@@ -23,11 +23,15 @@ from requests import HTTPError
 from pay_api.exceptions import ServiceUnavailableException
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.models import CfsAccount as CfsAccountModel
+
 from pay_api.services.oauth_service import OAuthService
+from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import (
     CFS_BATCH_SOURCE, CFS_CUSTOMER_PROFILE_CLASS, CFS_CUST_TRX_TYPE, CFS_LINE_TYPE, CFS_TERM_NAME,
     DEFAULT_ADDRESS_LINE_1,
-    DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE)
+    DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
+    RECEIPT_METHOD_PAD_STOP, RECEIPT_METHOD_PAD_DAILY)
 from pay_api.utils.enums import (
     AuthHeaderType, ContentType)
 from pay_api.utils.util import current_local_time, generate_transaction_number
@@ -56,6 +60,29 @@ class CFSService(OAuthService):
                                                           site.get('site_number'), payment_info))
 
         return account_details
+
+    @classmethod
+    def suspend_cfs_account(cls, cfs_account: CfsAccountModel) -> Dict[str, any]:
+        """Suspend a CFS PAD Account from any further PAD transactions."""
+        return cls._update_site(cfs_account, receipt_method=RECEIPT_METHOD_PAD_STOP)
+
+    @classmethod
+    def unsuspend_cfs_account(cls, cfs_account: CfsAccountModel) -> Dict[str, any]:
+        """Unuspend a CFS PAD Account from any further PAD transactions."""
+        return cls._update_site(cfs_account, receipt_method=RECEIPT_METHOD_PAD_DAILY)
+
+    @classmethod
+    def _update_site(cls, cfs_account: CfsAccountModel, receipt_method: str):
+        access_token = CFSService.get_token().json().get('access_token')
+        pad_stop_payload = {
+            'receipt_method': receipt_method
+        }
+        cfs_base: str = current_app.config.get('CFS_BASE_URL')
+        site_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/' \
+                   f'sites/{cfs_account.cfs_site}/'
+        site_update_response = OAuthService.post(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                                 pad_stop_payload, is_put=True)
+        return site_update_response.json()
 
     @staticmethod
     def validate_bank_account(bank_details: Tuple[Dict[str, Any]]) -> Dict[str, str]:
@@ -222,7 +249,7 @@ class CFSService(OAuthService):
     def get_token():
         """Generate oauth token from payBC which will be used for all communication."""
         current_app.logger.debug('<Getting token')
-        token_url = current_app.config.get('CFS_BASE_URL') + '/oauth/token'
+        token_url = current_app.config.get('CFS_BASE_URL', None) + '/oauth/token'
         basic_auth_encoded = base64.b64encode(
             bytes(current_app.config.get('CFS_CLIENT_ID') + ':' + current_app.config.get('CFS_CLIENT_SECRET'),
                   'utf-8')).decode('utf-8')
@@ -267,9 +294,17 @@ class CFSService(OAuthService):
         index: int = 0
         for line_item in payment_line_items:
             # Find the distribution from the above list
-            distribution_code = [dist for dist in distribution_codes
-                                 if dist.distribution_code_id == line_item.fee_distribution_id][0]
+            distribution_code = [dist for dist in distribution_codes if
+                                 dist.distribution_code_id == line_item.fee_distribution_id][0] \
+                if line_item.fee_distribution_id else None
             index = index + 1
+            distribution = [dict(
+                dist_line_number=index,
+                amount=line_item.total,
+                account=f'{distribution_code.client}.{distribution_code.responsibility_centre}.'
+                        f'{distribution_code.service_line}.{distribution_code.stob}.'
+                        f'{distribution_code.project_code}.000000.0000'
+            )] if distribution_code else None
             lines.append(
                 {
                     'line_number': index,
@@ -279,15 +314,7 @@ class CFSService(OAuthService):
                     'quantity': 1,
                     'attribute1': line_item.invoice_id,
                     'attribute2': line_item.id,
-                    'distribution': [
-                        {
-                            'dist_line_number': index,
-                            'amount': line_item.total,
-                            'account': f'{distribution_code.client}.{distribution_code.responsibility_centre}.'
-                                       f'{distribution_code.service_line}.{distribution_code.stob}.'
-                                       f'{distribution_code.project_code}.000000.0000'
-                        }
-                    ]
+                    'distribution': distribution
                 }
             )
 
@@ -317,6 +344,44 @@ class CFSService(OAuthService):
                 )
 
         return lines
+
+    @staticmethod
+    def reverse_invoice(payment_account: PaymentAccount, inv_number: str):
+        """Adjust the invoice to zero."""
+        current_app.logger.debug('<paybc_service_Getting token')
+        access_token: str = CFSService.get_token().json().get('access_token')
+        cfs_base: str = current_app.config.get('CFS_BASE_URL')
+        invoice_url = f'{cfs_base}/cfs/parties/{payment_account.cfs_party}/accs/{payment_account.cfs_account}/' \
+                      f'sites/{payment_account.cfs_site}/invs/{inv_number}/creditbalance/'
+
+        CFSService.post(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, {})
+
+    @classmethod
+    def add_nsf_adjustment(cls, cfs_account: CfsAccountModel, inv_number: str, amount: float):
+        """Add adjustment to the invoice."""
+        current_app.logger.debug('>Creating NSF Adjustment for Invoice: %s', inv_number)
+        access_token: str = CFSService.get_token().json().get('access_token')
+        cfs_base: str = current_app.config.get('CFS_BASE_URL')
+        adjustment_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/sites/' \
+                         f'{cfs_account.cfs_site}/invs/{inv_number}/adjs/'
+        current_app.logger.debug('Adjustment URL %s', adjustment_url)
+
+        adjustment = dict(
+            comment='Non sufficient funds charge for rejected PAD Payment',
+            lines=[
+                {
+                    'line_number': '1',
+                    'adjustment_amount': str(amount),
+                    'activity_name': 'BC Registries - NSF Charge'
+                }
+            ]
+        )
+
+        adjustment_response = cls.post(adjustment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                       adjustment)
+
+        current_app.logger.debug('>Created CFS Invoice NSF Adjustment')
+        return adjustment_response.json()
 
 
 def get_non_null_value(value: str, default_value: str):

@@ -85,13 +85,14 @@ def test_update_distribution(session, public_user_mock, stan_server, monkeypatch
     line.save()
 
     factory_payment(invoice_number=invoice_reference.invoice_number,
-                    payment_method_code=PaymentMethod.DIRECT_PAY.value).save()
+                    payment_method_code=PaymentMethod.DIRECT_PAY.value,
+                    invoice_amount=30).save()
 
     distribution_id = line.fee_distribution_id
 
     distribution_code = distribution_code_svc.find_by_id(distribution_id)
 
-    transaction = PaymentTransactionService.create(invoice.id, get_paybc_transaction_request())
+    transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
 
     def get_receipt(cls, payment_account, pay_response_url: str,
                     invoice_reference):  # pylint: disable=unused-argument; mocks of library methods

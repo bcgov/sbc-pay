@@ -20,21 +20,19 @@ import pytz
 from flask import current_app
 from marshmallow import fields
 from sqlalchemy import ForeignKey
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from sqlalchemy.orm import relationship
 
-from pay_api.utils.enums import InvoiceReferenceStatus
+from pay_api.utils.enums import InvoiceReferenceStatus, PaymentMethod as PaymentMethodEnum, PaymentStatus
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
 from .base_model import BaseModel
 from .base_schema import BaseSchema
-from .db import db, ma
+from .db import db
 from .invoice import Invoice
-from .invoice import InvoiceSchema
 from .payment_account import PaymentAccount
 from .payment_method import PaymentMethod
 from .payment_status_code import PaymentStatusCode
 from .payment_system import PaymentSystem
-from .payment_transaction import PaymentTransactionSchema
 from .invoice_reference import InvoiceReference
 
 
@@ -49,6 +47,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     payment_method_code = db.Column(db.String(15), ForeignKey('payment_method.code'), nullable=False)
     payment_status_code = db.Column(db.String(20), ForeignKey('payment_status_code.code'), nullable=True)
     invoice_number = db.Column(db.String(50), nullable=True, index=True)
+    cons_inv_number = db.Column(db.String(50), nullable=True, index=True)
     invoice_amount = db.Column(db.Numeric(), nullable=True)
     paid_amount = db.Column(db.Numeric(), nullable=True)
 
@@ -57,7 +56,6 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
 
     payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='select', innerjoin=True)
     payment_status = relationship(PaymentStatusCode, foreign_keys=[payment_status_code], lazy='select', innerjoin=True)
-    transactions = relationship('PaymentTransaction')
 
     @classmethod
     def find_payment_method_by_payment_id(cls, identifier: int):
@@ -67,6 +65,14 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             .filter(PaymentMethod.code == Payment.payment_method_code) \
             .filter(Payment.id == identifier)
         return query.one_or_none()
+
+    @classmethod
+    def find_payment_by_invoice_number_and_status(cls, inv_number: str, payment_status: str):
+        """Return a Payment by invoice_number and status."""
+        query = db.session.query(Payment) \
+            .filter(Payment.invoice_number == inv_number) \
+            .filter(Payment.payment_status_code == payment_status)
+        return query.all()
 
     @classmethod
     def find_payment_for_invoice(cls, invoice_id: int):
@@ -79,6 +85,53 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                     in_([InvoiceReferenceStatus.ACTIVE.value, InvoiceReferenceStatus.COMPLETED.value]))
 
         return query.one_or_none()
+
+    @classmethod
+    def search_account_payments(cls, auth_account_id: str, payment_status: str, page: int, limit: int):
+        """Search payment records created for the account."""
+        query = db.session.query(Payment, Invoice) \
+            .join(PaymentAccount, PaymentAccount.id == Payment.payment_account_id) \
+            .outerjoin(InvoiceReference, InvoiceReference.invoice_number == Payment.invoice_number) \
+            .outerjoin(Invoice, InvoiceReference.invoice_id == Invoice.id) \
+            .filter(PaymentAccount.auth_account_id == auth_account_id)
+
+        # TODO handle other status and conditions gracefully.
+        if payment_status:
+            query = query.filter(Payment.payment_status_code == payment_status)
+            if payment_status == PaymentStatus.FAILED.value:
+                consolidated_inv_subquery = db.session.query(Payment.invoice_number) \
+                    .filter(Payment.payment_status_code == PaymentStatus.CREATED.value) \
+                    .filter(Payment.payment_method_code == PaymentMethodEnum.CC.value) \
+                    .subquery()
+
+                # If call is to get NSF payments, get only active failed payments.
+                # Exclude any payments which failed first and paid later.
+                query = query.filter(or_(InvoiceReference.status_code == InvoiceReferenceStatus.ACTIVE.value,
+                                         Payment.cons_inv_number.in_(consolidated_inv_subquery)))
+
+        query = query.order_by(Payment.id.asc())
+        pagination = query.paginate(per_page=limit, page=page)
+        result, count = pagination.items, pagination.total
+
+        return result, count
+
+    @classmethod
+    def find_payments_to_consolidate(cls, auth_account_id: str):
+        """Find payments to be consolidated."""
+        consolidated_inv_subquery = db.session.query(Payment.cons_inv_number)\
+            .filter(Payment.payment_status_code == PaymentStatus.FAILED.value)\
+            .filter(Payment.payment_method_code == PaymentMethodEnum.PAD.value)\
+            .subquery()
+
+        query = db.session.query(Payment) \
+            .join(PaymentAccount, PaymentAccount.id == Payment.payment_account_id) \
+            .outerjoin(InvoiceReference, InvoiceReference.invoice_number == Payment.invoice_number) \
+            .filter(InvoiceReference.status_code == InvoiceReferenceStatus.ACTIVE.value) \
+            .filter(PaymentAccount.auth_account_id == auth_account_id) \
+            .filter(or_(Payment.payment_status_code == PaymentStatus.FAILED.value,
+                        Payment.invoice_number.in_(consolidated_inv_subquery)))
+
+        return query.all()
 
     @classmethod
     def search_purchase_history(cls,  # pylint:disable=too-many-arguments, too-many-locals, too-many-branches
@@ -153,19 +206,9 @@ class PaymentSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Payment
-        exclude = ['payment_system', 'payment_status']
+        exclude = ['payment_system', 'payment_status', 'payment_account_id', 'invoice_amount', 'paid_amount',
+                   'cons_inv_number']
 
     payment_system_code = fields.String(data_key='payment_system')
     payment_method_code = fields.String(data_key='payment_method')
     payment_status_code = fields.String(data_key='status_code')
-
-    # pylint: disable=no-member
-    invoices = ma.Nested(InvoiceSchema, many=True, exclude=('payment_line_items', 'receipts'))
-    transactions = ma.Nested(PaymentTransactionSchema, many=True)
-
-    _links = ma.Hyperlinks({
-        'self': ma.URLFor('API.payments_payments', invoice_id='<id>'),
-        'collection': ma.URLFor('API.payments_payment'),
-        'invoices': ma.URLFor('API.invoices_invoices', invoice_id='<id>'),
-        'transactions': ma.URLFor('API.transactions_transaction', invoice_id='<id>')
-    })

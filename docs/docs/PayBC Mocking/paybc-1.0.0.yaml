@@ -468,7 +468,7 @@ paths:
         examples:
           inv_info:
             value: 10021
-  '/cfs/validatepayins/':
+  /cfs/validatepayins/:
     post:
       tags:
         - Bank Validation
@@ -490,11 +490,11 @@ paths:
                 '0001':
                   value:
                     bank_number: '0001'
-                    bank_name: 'BANK OF MONTREAL'
+                    bank_name: BANK OF MONTREAL
                     branch_number: '00720'
                     transit_address: 'DATA CENTRE,PRINCE ANDREW CENTRE,,DON MILLS,ON,M3C 2H4'
                     account_number: '1234567'
-                    CAS-Returned-Messages: 'VALID'
+                    CAS-Returned-Messages: VALID
                 '0002':
                   value:
                     bank_number: '0002'
@@ -502,7 +502,7 @@ paths:
                     branch_number: '00720'
                     transit_address: ''
                     account_number: '1234567'
-                    CAS-Returned-Messages: '0001 - Bank Number is Invalid.'
+                    CAS-Returned-Messages: 0001 - Bank Number is Invalid.
                 '0003':
                   value:
                     bank_number: '0003'
@@ -510,7 +510,7 @@ paths:
                     branch_number: '00720'
                     transit_address: ''
                     account_number: '1234567'
-                    CAS-Returned-Messages: '0003 - Account number has invalid characters.0005 - Account number has non-numeric characters.0006 - Account number length is not valid for this bank.'
+                    CAS-Returned-Messages: 0003 - Account number has invalid characters.0005 - Account number has non-numeric characters.0006 - Account number length is not valid for this bank.
         '400':
           description: BadRequest
           content:
@@ -1147,6 +1147,67 @@ paths:
         examples:
           inv_info:
             value: 29921
+  '/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/invs/{inv_number}/creditbalance/':
+    post:
+      tags:
+        - Invs
+      summary: Credit Balance on invoice
+      description: Credit Balance on invoice.
+      operationId: Credit_POST
+      responses:
+        '200':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inv'
+              examples:
+                inv_info:
+                  value:
+                    credit_memo: '10020'
+                    CAS-Returned-Messages: SUCCESS
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+      - name: party_number
+        in: path
+        required: true
+        schema:
+          format: string
+          type: string
+        examples:
+          inv_info:
+            value: 11111
+      - name: account_number
+        in: path
+        required: true
+        schema:
+          format: string
+          type: string
+        examples:
+          inv_info:
+            value: 4101
+      - name: site_number
+        in: path
+        required: true
+        schema:
+          format: string
+          type: string
+        examples:
+          inv_info:
+            value: 29921
+      - schema:
+          type: string
+        name: inv_number
+        in: path
+        required: true
+        examples:
+          inv_info:
+            value: REG00001
   '/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/payment/':
     post:
       tags:
@@ -1914,7 +1975,6 @@ paths:
     parameters:
       - name: party_number
         in: path
-        required: true
         schema:
           format: string
           type: string
@@ -1925,6 +1985,8 @@ paths:
             value: 11111
           rcpt_info3:
             value: 11111
+        required: true
+        description: ''
       - name: account_number
         in: path
         required: true
@@ -1964,6 +2026,62 @@ paths:
             value: 123452
           rcpt_info3:
             value: 123453
+  '/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/':
+    parameters:
+      - schema:
+          type: string
+        name: party_number
+        in: path
+        required: true
+      - schema:
+          type: string
+        name: account_number
+        in: path
+        required: true
+      - schema:
+          type: string
+        name: site_number
+        in: path
+        required: true
+    get:
+      summary: Your GET endpoint
+      tags: []
+      responses: {}
+      operationId: get-cfs-parties-party_number-accs-account_number-sites-site_number
+    post:
+      summary: ''
+      operationId: post-cfs-parties-party_number-accs-account_number-sites-site_number
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
+    put:
+      summary: ''
+      operationId: put-cfs-parties-party_number-accs-account_number-sites-site_number
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties: {}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties: {}
 components:
   schemas:
     ErrorResponse:

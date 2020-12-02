@@ -34,12 +34,6 @@ def test_create_account(session):
     assert account.bank_number == payment_info.get('bankInstitutionNumber')
 
 
-def test_get_payment_system_url(session):
-    """Test get_payment_system_url."""
-    url = pad_service.get_payment_system_url(None, None, None)
-    assert url == ''
-
-
 def test_get_payment_system_code(session):
     """Test get_payment_system_code."""
     code = pad_service.get_payment_system_code()

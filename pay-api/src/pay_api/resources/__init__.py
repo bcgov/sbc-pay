@@ -32,14 +32,15 @@ from .code import API as CODES_API
 from .distributions import API as DISTRIBUTION_API
 from .fee import API as FEE_API
 from .fee_schedule import API as FEE_SCHEDULE_API
-from .invoice import API as INVOICE_API
+from .invoices import API as INVOICES_API
 from .invoice_receipt import API as INVOICE_RECEIPT_API
 from .meta import API as META_API
 from .ops import API as OPS_API
-from .payment import API as PAY_API
+from .invoice import API as INVOICE_API
 from .transaction import API as TRANSACTION_API
 from .bank_accounts import API as BANK_ACCOUNTS_API
 from .refund import API as REFUND_API
+from .payment import API as PAYMENT_API
 
 __all__ = ('API_BLUEPRINT', 'OPS_BLUEPRINT')
 
@@ -74,18 +75,19 @@ API = Api(
 HANDLER = ExceptionHandler(API)
 
 API.add_namespace(META_API, path='/meta')
-API.add_namespace(PAY_API, path='/payment-requests')
+API.add_namespace(INVOICE_API, path='/payment-requests')
 API.add_namespace(FEE_API, path='/fees')
 API.add_namespace(FEE_SCHEDULE_API, '/fees/schedules')
 API.add_namespace(DISTRIBUTION_API, '/fees/distributions')
-API.add_namespace(TRANSACTION_API, path='/payment-requests/<int:invoice_id>/transactions')
+API.add_namespace(TRANSACTION_API, path='')
 API.add_namespace(INVOICE_RECEIPT_API, path='/payment-requests/<int:invoice_id>')
-API.add_namespace(INVOICE_API, path='/payment-requests/<int:invoice_id>/invoices')
+API.add_namespace(INVOICES_API, path='/payment-requests/<int:invoice_id>/invoices')
 API.add_namespace(ACCOUNTS_API, path='/accounts')
 API.add_namespace(ACCOUNT_STATEMENTS_API, path='/accounts/<string:account_id>/statements')
 API.add_namespace(ACCOUNT_STATEMENTS_SETTINGS_API, path='/accounts/<string:account_id>/statements/settings')
 API.add_namespace(ACCOUNT_STATEMENT_NOTIFICATIONS_API, path='/accounts/<string:account_id>/statements/notifications')
 API.add_namespace(BANK_ACCOUNTS_API, path='/bank-accounts/verifications')
 API.add_namespace(REFUND_API, path='/payment-requests/<int:invoice_id>')
+API.add_namespace(PAYMENT_API, path='/accounts/<string:account_id>/payments')
 
 API.add_namespace(CODES_API, path='/codes')
