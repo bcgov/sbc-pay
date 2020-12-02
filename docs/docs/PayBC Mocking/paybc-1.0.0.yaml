@@ -1147,7 +1147,7 @@ paths:
         examples:
           inv_info:
             value: 29921
-  '/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/invs/{inv_number}/creditbalance/':
+  '/cfs/parties/invs/{inv_number}/creditbalance/':
     post:
       tags:
         - Invs
@@ -1173,33 +1173,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
     parameters:
-      - name: party_number
-        in: path
-        required: true
-        schema:
-          format: string
-          type: string
-        examples:
-          inv_info:
-            value: 11111
-      - name: account_number
-        in: path
-        required: true
-        schema:
-          format: string
-          type: string
-        examples:
-          inv_info:
-            value: 4101
-      - name: site_number
-        in: path
-        required: true
-        schema:
-          format: string
-          type: string
-        examples:
-          inv_info:
-            value: 29921
       - schema:
           type: string
         name: inv_number

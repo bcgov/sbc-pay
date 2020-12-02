@@ -15,6 +15,7 @@
 from typing import Any, Dict
 
 from flask import current_app
+from sentry_sdk import capture_message
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.services.base_payment_system import PaymentSystemService
@@ -22,7 +23,8 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentSystem, PaymentStatus, CfsAccountStatus
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentSystem, PaymentStatus, CfsAccountStatus, \
+    TransactionStatus
 from .payment_line_item import PaymentLineItem
 
 
@@ -99,3 +101,15 @@ class PadService(PaymentSystemService, CFSService):
 
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
+        # Publish message to the queue with payment token, so that they can release records on their side.
+        from .payment_transaction import PaymentTransaction, \
+            publish_response  # pylint:disable=import-outside-toplevel,cyclic-import
+
+        payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
+        try:
+            publish_response(payload=payload)
+        except Exception as e:  # pylint: disable=broad-except
+            current_app.logger.error(e)
+            current_app.logger.error('Notification to Queue failed for the Payment Event %s', payload)
+            capture_message('Notification to Queue failed for the Payment Event : {msg}.'.format(msg=payload),
+                            level='error')

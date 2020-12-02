@@ -267,7 +267,8 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
         auth_account_id=auth_account_id,
         bcol_user_id=bcol_user_id,
         bcol_account='TEST',
-        payment_method=payment_method_code
+        payment_method=payment_method_code,
+        pad_activation_date=datetime.now()
     ).save()
 
     CfsAccount(cfs_party='11111',
