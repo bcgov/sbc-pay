@@ -26,7 +26,6 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentStatus
 
 from tasks.cfs_create_invoice_task import CreateInvoiceTask
-
 from .factory import (
     factory_create_online_banking_account, factory_create_pad_account, factory_invoice, factory_payment_line_item)
 
@@ -61,6 +60,32 @@ def test_create_pad_invoice_single_transaction(session):
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
     assert payment.payment_status_code == PaymentStatus.CREATED.value
+
+
+def test_create_pad_invoice_for_frozen_accounts(session):
+    """Assert PAD invoices are created."""
+    # Create an account and an invoice for the account
+    account = factory_create_pad_account(auth_account_id='1', status=CfsAccountStatus.FREEZE.value)
+    previous_day = datetime.now() - timedelta(days=1)
+    # Create an invoice for this account
+    invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10, payment_method_code=None)
+
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
+
+    CreateInvoiceTask.create_invoices()
+
+    updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
+    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
+        find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+    payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
+
+    assert inv_ref is None
+    assert updated_invoice.invoice_status_code == InvoiceStatus.CREATED.value
+    assert payment is None
 
 
 def test_create_pad_invoice_multiple_transactions(session):
