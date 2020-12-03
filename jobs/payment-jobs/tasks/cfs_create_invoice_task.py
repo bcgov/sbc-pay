@@ -16,6 +16,8 @@
 from typing import List
 
 from flask import current_app
+from pay_api.models import CfsAccount as CfsAccountModel
+
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
@@ -51,12 +53,16 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
     def _create_pad_invoices(cls):  # pylint: disable=too-many-locals
         """Create PAD invoices in to CFS system."""
         # Find all accounts which have done a transaction with PAD transactions
+
         inv_subquery = db.session.query(InvoiceModel.payment_account_id) \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.PAD.value) \
             .filter(InvoiceModel.invoice_status_code == PaymentStatus.CREATED.value).subquery()
 
-        pad_accounts: List[PaymentAccountModel] = PaymentAccountModel.query.filter(
-            PaymentAccountModel.id.in_(inv_subquery)).all()
+        # Exclude the accounts which are in FREEZE state.
+        pad_accounts: List[PaymentAccountModel] = db.session.query(PaymentAccountModel) \
+            .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
+            .filter(CfsAccountModel.status != CfsAccountStatus.FREEZE.value) \
+            .filter(PaymentAccountModel.id.in_(inv_subquery)).all()
 
         current_app.logger.info(f'Found {len(pad_accounts)} with PAD transactions.')
 

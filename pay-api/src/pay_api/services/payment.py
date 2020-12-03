@@ -534,7 +534,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         invoice_total: float = 0
         for failed_payment in failed_payments:
             # Reverse invoice balance
-            CFSService.reverse_invoice(payment_account=pay_account, inv_number=failed_payment.invoice_number)
+            CFSService.reverse_invoice(inv_number=failed_payment.invoice_number)
             # Find all invoices for this payment.
             # Add all line items to the array
             for invoice in InvoiceModel.find_invoices_for_payment(payment_id=failed_payment.id):
