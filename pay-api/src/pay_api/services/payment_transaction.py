@@ -358,8 +358,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
 
             raise BusinessException(Error.COMPLETED_PAYMENT)
 
-        pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_system_code(
-            payment_system=payment.payment_system_code,
+        pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
             payment_method=payment.payment_method_code
         )
 
