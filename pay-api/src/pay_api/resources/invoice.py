@@ -65,8 +65,8 @@ class Invoice(Resource):
         return jsonify(response), status
 
 
-@cors_preflight(['GET', 'PUT', 'DELETE'])
-@API.route('/<int:invoice_id>', methods=['GET', 'PUT', 'DELETE', 'OPTIONS'])
+@cors_preflight(['GET', 'PUT', 'DELETE', 'PATCH'])
+@API.route('/<int:invoice_id>', methods=['GET', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'])
 class Invoices(Resource):
     """Endpoint resource to create payment request."""
 
@@ -99,4 +99,27 @@ class Invoices(Resource):
             return exception.response()
 
         current_app.logger.debug('>Payment.delete')
+        return jsonify(response), status
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_tracing.trace()
+    def patch(invoice_id: int = None):
+        """Update the payment method for an online banking ."""
+        current_app.logger.info('<Invoice.patch for invoice : %s', invoice_id)
+
+        request_json = request.get_json()
+        current_app.logger.debug(request_json)
+        # Validate the input request
+        valid_format, errors = schema_utils.validate(request_json, 'payment_request')
+
+        if not valid_format:
+            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+
+        try:
+            response, status = PaymentService.update_invoice(invoice_id,
+                                                             request_json).asdict(), HTTPStatus.OK
+        except BusinessException as exception:
+            return exception.response()
+        current_app.logger.debug('>Transaction.post')
         return jsonify(response), status
