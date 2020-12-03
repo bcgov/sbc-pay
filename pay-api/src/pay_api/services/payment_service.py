@@ -190,10 +190,10 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         if invoice_reference:
             invoice.payment_method_code = PaymentMethod.CC.value
         else:
-            invoice.payment_method_code = PaymentMethod.ONLINE_BANKING.value
-
+            invoice.payment_method_code = PaymentMethod.DIRECT_PAY.value
         invoice.save()
         current_app.logger.debug('>update_invoice')
+        return invoice.asdict()
 
     @classmethod
     def delete_invoice(cls, invoice_id: int):  # pylint: disable=too-many-locals,too-many-statements
