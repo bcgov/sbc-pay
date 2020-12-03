@@ -171,13 +171,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
     @classmethod
     def update_invoice(cls, invoice_id: int, payment_request: Tuple[Dict[str, Any]]):
-        """Update invoice related records.
-
-        Does the following;
-        1. Check if payment is eligible to be deleted.
-        2. Mark the payment and invoices records as deleted.
-        3. Publish message to queue
-        """
+        """Update invoice related records."""
         current_app.logger.debug('<update_invoice')
 
         invoice: Invoice = Invoice.find_by_id(invoice_id, skip_auth_check=False)
