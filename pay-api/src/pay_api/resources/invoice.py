@@ -103,6 +103,7 @@ class Invoices(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
+    @_jwt.requires_auth
     @_tracing.trace()
     def patch(invoice_id: int = None):
         """Update the payment method for an online banking ."""
