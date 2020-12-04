@@ -192,7 +192,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         else:
             pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
                 PaymentMethod.DIRECT_PAY.value)
-            invoice = invoice.find_by_id(invoice_id)
             payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
             pay_service.create_invoice(payment_account, invoice.payment_line_items, invoice,
                                        corp_type_code=invoice.corp_type_code)
