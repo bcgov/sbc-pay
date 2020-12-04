@@ -190,6 +190,13 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         if invoice_reference:
             invoice.payment_method_code = PaymentMethod.CC.value
         else:
+            pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
+                PaymentMethod.DIRECT_PAY.value)
+            invoice = invoice.find_by_id(invoice_id)
+            payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+            pay_service.create_invoice(payment_account, invoice.payment_line_items, invoice,
+                                       corp_type_code=invoice.corp_type_code)
+
             invoice.payment_method_code = PaymentMethod.DIRECT_PAY.value
         invoice.save()
         current_app.logger.debug('>update_invoice')
