@@ -170,6 +170,32 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         return bcol_account
 
     @classmethod
+    def update_invoice(cls, invoice_id: int, payment_request: Tuple[Dict[str, Any]]):
+        """Update invoice related records."""
+        current_app.logger.debug('<update_invoice')
+
+        invoice: Invoice = Invoice.find_by_id(invoice_id, skip_auth_check=False)
+        payment_method = get_str_by_path(payment_request, 'paymentInfo/methodOfPayment')
+
+        is_not_currently_on_ob = invoice.payment_method_code != PaymentMethod.ONLINE_BANKING.value
+        is_not_changing_to_cc = payment_method not in (PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value)
+        # can patch only if the current payment method is OB
+        if is_not_currently_on_ob or is_not_changing_to_cc:
+            raise BusinessException(Error.INVALID_REQUEST)
+
+        # check if it has any invoice references already created
+        # if there is any invoice ref , send them to the invoiced credit card flow
+
+        invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
+        if invoice_reference:
+            invoice.payment_method_code = PaymentMethod.CC.value
+        else:
+            invoice.payment_method_code = PaymentMethod.DIRECT_PAY.value
+        invoice.save()
+        current_app.logger.debug('>update_invoice')
+        return invoice.asdict()
+
+    @classmethod
     def delete_invoice(cls, invoice_id: int):  # pylint: disable=too-many-locals,too-many-statements
         """Delete invoice related records.
 
