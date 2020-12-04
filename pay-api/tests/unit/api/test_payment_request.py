@@ -423,13 +423,6 @@ def test_premium_payment_creation_with_payment_method_ob_cc(session, client, jwt
                      headers={'content-type': 'application/json'})
     assert rv.status_code == 201
 
-    rv = client.patch(f'/api/v1/payment-requests/{invoice_id}', data=json.dumps(
-        {'paymentInfo': {'methodOfPayment': 'CC'}}),
-                      headers=headers)
-
-    assert rv.status_code == 200
-    assert rv.json.get('paymentMethod') == 'CC'
-
 
 def test_cc_payment_with_no_contact_info(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
