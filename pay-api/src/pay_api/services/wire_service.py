@@ -21,5 +21,5 @@ class WireService(DepositService):
     """Service to manage wire transfers."""
 
     def get_payment_method_code(self):
-        """Return EFT as the system code."""
+        """Return WIRE as the system code."""
         return PaymentMethod.WIRE.value

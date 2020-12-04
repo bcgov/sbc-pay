@@ -137,7 +137,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
 
         refund: RefundService = RefundService()
         refund.invoice_id = invoice_id
-        refund.reason = request.get('refund', None)
+        refund.reason = request.get('reason', None) if request else None
         refund.requested_by = kwargs['user'].user_name
         refund.requested_date = datetime.now()
         refund.flush()
