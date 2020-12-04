@@ -25,11 +25,15 @@ from freezegun import freeze_time
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.bcol_service import BcolService
 from pay_api.services.direct_pay_service import DirectPayService
+from pay_api.services.eft_service import EftService
+from pay_api.services.wire_service import WireService
+from pay_api.services.deposit_service import DepositService
+
 from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.services.pad_service import PadService
 from pay_api.services.paybc_service import PaybcService
-from pay_api.utils.enums import PaymentSystem, PaymentMethod
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
+from pay_api.utils.enums import PaymentMethod
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import get_unlinked_pad_account_payload
 
@@ -54,23 +58,35 @@ def test_paybc_system_factory(session, public_user_mock):
     assert isinstance(instance, PaymentSystemService)
 
     # Test for PAYBC Service
-    instance = PaymentSystemFactory.create_from_system_code(PaymentSystem.PAYBC.value, PaymentMethod.CC.value)
+    instance = PaymentSystemFactory.create_from_payment_method(PaymentMethod.CC.value)
     assert isinstance(instance, PaybcService)
     assert isinstance(instance, PaymentSystemService)
 
-    # Test for Internal Service
-    instance = PaymentSystemFactory.create_from_system_code(PaymentSystem.PAYBC.value, PaymentMethod.DIRECT_PAY.value)
+    # Test for Direct Pay Service
+    instance = PaymentSystemFactory.create_from_payment_method(PaymentMethod.DIRECT_PAY.value)
     assert isinstance(instance, DirectPayService)
     assert isinstance(instance, PaymentSystemService)
 
     # Test for Internal Service
-    instance = PaymentSystemFactory.create_from_system_code(PaymentSystem.INTERNAL.value, PaymentMethod.INTERNAL.value)
+    instance = PaymentSystemFactory.create_from_payment_method(PaymentMethod.INTERNAL.value)
     assert isinstance(instance, InternalPayService)
     assert isinstance(instance, PaymentSystemService)
 
     # Test for BCOL Service
-    instance = PaymentSystemFactory.create_from_system_code(PaymentSystem.BCOL.value, PaymentMethod.DRAWDOWN.value)
+    instance = PaymentSystemFactory.create_from_payment_method(PaymentMethod.DRAWDOWN.value)
     assert isinstance(instance, BcolService)
+    assert isinstance(instance, PaymentSystemService)
+
+    # Test for EFT Service
+    instance = PaymentSystemFactory.create_from_payment_method(PaymentMethod.EFT.value)
+    assert isinstance(instance, EftService)
+    assert isinstance(instance, DepositService)
+    assert isinstance(instance, PaymentSystemService)
+
+    # Test for WIRE Service
+    instance = PaymentSystemFactory.create_from_payment_method(PaymentMethod.WIRE.value)
+    assert isinstance(instance, WireService)
+    assert isinstance(instance, DepositService)
     assert isinstance(instance, PaymentSystemService)
 
 
@@ -136,8 +152,4 @@ def test_invalid_pay_system(session, public_user_mock):
 
     with pytest.raises(BusinessException) as excinfo:
         PaymentSystemFactory.create(payment_method='XXX', corp_type='XXX')
-    assert excinfo.value.code == Error.INVALID_CORP_OR_FILING_TYPE.name
-
-    with pytest.raises(BusinessException) as excinfo:
-        PaymentSystemFactory.create_from_system_code('XXX', 'XXXX')
     assert excinfo.value.code == Error.INVALID_CORP_OR_FILING_TYPE.name

@@ -263,3 +263,29 @@ def test_patch_online_banking_payment_to_cc(session, public_user_mock):
 
     invoice_response = PaymentService.update_invoice(invoice_id, request)
     assert invoice_response.get('payment_method') == PaymentMethod.CC.value
+
+
+def test_create_eft_payment(session, public_user_mock):
+    """Assert that the payment records are created."""
+    factory_payment_account(payment_method_code=PaymentMethod.EFT.value).save()
+
+    payment_response = PaymentService.create_invoice(
+        get_payment_request_with_service_fees(
+            business_identifier='CP0002000'),
+        get_auth_premium_user())
+    assert payment_response is not None
+    assert payment_response.get('payment_method') == PaymentMethod.EFT.value
+    assert payment_response.get('status_code') == 'CREATED'
+
+
+def test_create_wire_payment(session, public_user_mock):
+    """Assert that the payment records are created."""
+    factory_payment_account(payment_method_code=PaymentMethod.WIRE.value).save()
+
+    payment_response = PaymentService.create_invoice(
+        get_payment_request_with_service_fees(
+            business_identifier='CP0002000'),
+        get_auth_premium_user())
+    assert payment_response is not None
+    assert payment_response.get('payment_method') == PaymentMethod.WIRE.value
+    assert payment_response.get('status_code') == 'CREATED'
