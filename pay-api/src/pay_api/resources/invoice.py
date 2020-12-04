@@ -119,7 +119,7 @@ class Invoices(Resource):
 
         try:
             response, status = PaymentService.update_invoice(invoice_id,
-                                                             request_json).asdict(), HTTPStatus.OK
+                                                             request_json), HTTPStatus.OK
         except BusinessException as exception:
             return exception.response()
         current_app.logger.debug('>Transaction.post')
