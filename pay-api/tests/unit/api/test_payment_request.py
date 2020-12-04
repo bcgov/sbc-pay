@@ -396,6 +396,34 @@ def test_premium_payment_creation_with_payment_method_ob(session, client, jwt, a
     assert rv.json.get('paymentMethod') == 'DIRECT_PAY'
 
 
+def test_premium_payment_creation_with_payment_method_ob_cc(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(
+        get_payment_request_with_payment_method(business_identifier='CP0002000', payment_method='ONLINE_BANKING')),
+                     headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('paymentMethod') == 'ONLINE_BANKING'
+    invoice_id = rv.json.get('id')
+
+    rv = client.patch(f'/api/v1/payment-requests/{invoice_id}', data=json.dumps(
+        {'paymentInfo': {'methodOfPayment': 'CC'}}),
+                      headers=headers)
+
+    assert rv.status_code == 200
+    assert rv.json.get('paymentMethod') == 'DIRECT_PAY'
+
+    data = {
+        'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
+        'payReturnUrl': 'http://localhost:8080/pay-web'
+    }
+    rv = client.post(f'/api/v1/payment-requests/{invoice_id}/transactions', data=json.dumps(data),
+                     headers={'content-type': 'application/json'})
+    assert rv.status_code == 201
+
+
 def test_cc_payment_with_no_contact_info(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(), token_header)
