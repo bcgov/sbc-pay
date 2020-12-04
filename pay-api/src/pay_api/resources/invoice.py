@@ -103,6 +103,7 @@ class Invoices(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
+    @_jwt.requires_auth
     @_tracing.trace()
     def patch(invoice_id: int = None):
         """Update the payment method for an online banking ."""
@@ -111,14 +112,14 @@ class Invoices(Resource):
         request_json = request.get_json()
         current_app.logger.debug(request_json)
         # Validate the input request
-        valid_format, errors = schema_utils.validate(request_json, 'payment_request')
+        valid_format, errors = schema_utils.validate(request_json, 'payment_info')
 
         if not valid_format:
             return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
         try:
             response, status = PaymentService.update_invoice(invoice_id,
-                                                             request_json).asdict(), HTTPStatus.OK
+                                                             request_json), HTTPStatus.OK
         except BusinessException as exception:
             return exception.response()
         current_app.logger.debug('>Transaction.post')
