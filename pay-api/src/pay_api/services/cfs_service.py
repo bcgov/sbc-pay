@@ -26,11 +26,12 @@ from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import CfsAccount as CfsAccountModel
 
 from pay_api.services.oauth_service import OAuthService
+from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import (
     CFS_BATCH_SOURCE, CFS_CUSTOMER_PROFILE_CLASS, CFS_CUST_TRX_TYPE, CFS_LINE_TYPE, CFS_TERM_NAME,
     DEFAULT_ADDRESS_LINE_1,
     DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
-    RECEIPT_METHOD_PAD_STOP, RECEIPT_METHOD_PAD_DAILY)
+    RECEIPT_METHOD_PAD_STOP, RECEIPT_METHOD_PAD_DAILY, CFS_RCPT_EFT_WIRE)
 from pay_api.utils.enums import (
     AuthHeaderType, ContentType)
 from pay_api.utils.util import current_local_time, generate_transaction_number
@@ -380,6 +381,27 @@ class CFSService(OAuthService):
 
         current_app.logger.debug('>Created CFS Invoice NSF Adjustment')
         return adjustment_response.json()
+
+    @staticmethod
+    def create_eft_wire_receipt(payment_account: PaymentAccount,
+                                rcpt_number: str,
+                                rcpt_date: str,
+                                amount: float) -> Dict[str, str]:
+        """Create Eft Wire receipt for the account."""
+        current_app.logger.debug('<create_credits')
+        access_token: str = CFSService.get_token().json().get('access_token')
+        cfs_base: str = current_app.config.get('CFS_BASE_URL')
+        receipt_url = f'{cfs_base}/cfs/parties/{payment_account.cfs_party}/accs/{payment_account.cfs_account}/' \
+                      f'sites/rcpts/'
+        payload = {
+            'receipt_number': rcpt_number,
+            'receipt_date': rcpt_date,
+            'receipt_amount': str(amount),
+            'payment_method': CFS_RCPT_EFT_WIRE,
+            'comments': ''
+        }
+
+        return CFSService.post(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload).json()
 
 
 def get_non_null_value(value: str, default_value: str):
