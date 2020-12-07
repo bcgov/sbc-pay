@@ -14,13 +14,17 @@
 """Resource for Account payments endpoints."""
 from http import HTTPStatus
 
-from flask import current_app, jsonify, request
+from flask import current_app, jsonify, request, g
 from flask_restplus import Namespace, Resource, cors
 
+from pay_api.exceptions import error_to_response
+from pay_api.schemas import utils as schema_utils
 from pay_api.services import Payment as PaymentService
 from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import MAKE_PAYMENT
+from pay_api.utils.enums import Role, PaymentMethod
+from pay_api.utils.errors import Error
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
 
@@ -58,13 +62,26 @@ class Payments(Resource):
         current_app.logger.info('<Payments.post')
         # Check if user is authorized to perform this action
         check_auth(business_identifier=None, account_id=account_id, contains_role=MAKE_PAYMENT)
-        is_retry_payment: bool = (request.args.get('retryFailedPayment', 'false').lower() == 'true')
-        # valid_format, errors = schema_utils.validate(request_json, 'payment')
+        # If it's a staff user, then create credits.
+        if set([Role.STAFF.value, Role.CREATE_CREDITS.value]).issubset(set(g.jwt_oidc_token_info.get('roles'))):
+            credit_request = request.get_json()
+            # Valid payment payload.
+            valid_format, errors = schema_utils.validate(credit_request, 'payment')
+            if not valid_format:
+                return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
-        response, status = PaymentService.create_account_payment(
-            auth_account_id=account_id,
-            is_retry_payment=is_retry_payment
-        ).asdict(), HTTPStatus.CREATED
+            if credit_request.get('paymentMethod') in (PaymentMethod.EFT.value, PaymentMethod.WIRE.value):
+                response, status = PaymentService.create_payment_receipt(
+                    auth_account_id=account_id,
+                    credit_request=credit_request
+                ).asdict(), HTTPStatus.CREATED
+        else:
+            is_retry_payment: bool = (request.args.get('retryFailedPayment', 'false').lower() == 'true')
+
+            response, status = PaymentService.create_account_payment(
+                auth_account_id=account_id,
+                is_retry_payment=is_retry_payment
+            ).asdict(), HTTPStatus.CREATED
 
         current_app.logger.debug('>Payments.post')
         return jsonify(response), status

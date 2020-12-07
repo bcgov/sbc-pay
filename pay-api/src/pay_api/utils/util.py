@@ -137,3 +137,9 @@ def generate_transaction_number(txn_number: str) -> str:
     """Return transaction number for invoices."""
     prefix = current_app.config.get('CFS_INVOICE_PREFIX')
     return f'{prefix}{txn_number:0>8}'
+
+
+def generate_receipt_number(payment_id: str) -> str:
+    """Return receipt number for payments."""
+    prefix = current_app.config.get('CFS_RECEIPT_PREFIX')
+    return f'{prefix}{payment_id:0>8}'
