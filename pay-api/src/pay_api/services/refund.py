@@ -28,7 +28,7 @@ from pay_api.services.queue_publisher import publish_response
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus, InvoiceReferenceStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import get_local_formatted_date_time
+from pay_api.utils.util import get_local_formatted_date_time, get_str_by_path
 
 
 class RefundService:  # pylint: disable=too-many-instance-attributes
@@ -137,7 +137,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
 
         refund: RefundService = RefundService()
         refund.invoice_id = invoice_id
-        refund.reason = request.get('refund', None)
+        refund.reason = get_str_by_path(request, 'reason')
         refund.requested_by = kwargs['user'].user_name
         refund.requested_date = datetime.now()
         refund.flush()

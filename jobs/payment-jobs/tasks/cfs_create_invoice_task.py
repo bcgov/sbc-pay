@@ -24,7 +24,7 @@ from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice_reference import InvoiceReference
-from pay_api.services.online_banking_service import OnlineBankingService
+from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.services.pad_service import PadService
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
@@ -48,6 +48,8 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         """
         cls._create_pad_invoices()
         cls._create_online_banking_invoices()
+        cls._create_eft_invoices()
+        cls._create_wire_invoices()
 
     @classmethod
     def _create_pad_invoices(cls):  # pylint: disable=too-many-locals
@@ -140,12 +142,27 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _create_online_banking_invoices(cls):
         """Create online banking invoices to CFS system."""
-        online_banking_invoices = InvoiceModel.query \
-            .filter_by(payment_method_code=PaymentMethod.ONLINE_BANKING.value) \
+        cls._create_single_invoice_per_purchase(PaymentMethod.ONLINE_BANKING)
+
+    @classmethod
+    def _create_eft_invoices(cls):
+        """Create EFT invoices to CFS system."""
+        cls._create_single_invoice_per_purchase(PaymentMethod.EFT)
+
+    @classmethod
+    def _create_wire_invoices(cls):
+        """Create Wire invoices to CFS system."""
+        cls._create_single_invoice_per_purchase(PaymentMethod.WIRE)
+
+    @classmethod
+    def _create_single_invoice_per_purchase(cls, payment_method: PaymentMethod):
+        """Create one CFS invoice per purchase."""
+        invoices = InvoiceModel.query \
+            .filter_by(payment_method_code=payment_method.value) \
             .filter_by(invoice_status_code=InvoiceStatus.CREATED.value).all()
 
-        current_app.logger.info(f'Found {len(online_banking_invoices)} to be created in CFS.')
-        for invoice in online_banking_invoices:
+        current_app.logger.info(f'Found {len(invoices)} to be created in CFS.')
+        for invoice in invoices:
             # Get cfs account
             payment_account: PaymentAccountService = PaymentAccountService.find_by_id(invoice.payment_account_id)
 
@@ -166,10 +183,11 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 invoice_id=invoice.id,
                 invoice_number=invoice_response.json().get('invoice_number'),
                 reference_number=invoice_response.json().get('pbc_ref_number', None))
-            online_banking_service = OnlineBankingService()
-            payment = Payment.create(payment_method=online_banking_service.get_payment_method_code(),
-                                     payment_system=online_banking_service.get_payment_system_code(),
-                                     payment_status=online_banking_service.get_default_payment_status(),
+
+            pay_service = PaymentSystemFactory.create_from_payment_method(payment_method.value)
+            payment = Payment.create(payment_method=pay_service.get_payment_method_code(),
+                                     payment_system=pay_service.get_payment_system_code(),
+                                     payment_status=pay_service.get_default_payment_status(),
                                      invoice_number=invoice_reference.invoice_number,
                                      invoice_amount=invoice.total,
                                      payment_account_id=payment_account.id)
