@@ -134,6 +134,19 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     SFTP_VERIFY_HOST = 'False'
     CAS_SFTP_PORT = 2222
 
+    # POSTGRESQL
+    DB_USER = os.getenv('DATABASE_TEST_USERNAME', default='postgres')
+    DB_PASSWORD = os.getenv('DATABASE_TEST_PASSWORD', default='postgres')
+    DB_NAME = os.getenv('DATABASE_TEST_NAME', default='paytestdb')
+    DB_HOST = os.getenv('DATABASE_TEST_HOST', default='localhost')
+    DB_PORT = os.getenv('DATABASE_TEST_PORT', default='5432')
+    SQLALCHEMY_DATABASE_URI = os.getenv(
+        'DATABASE_TEST_URL',
+        default='postgresql://{user}:{password}@{host}:{port}/{name}'.format(
+            user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=int(DB_PORT), name=DB_NAME
+        ),
+    )
+
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
     """Production environment configuration."""
