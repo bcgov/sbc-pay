@@ -28,10 +28,12 @@ from pay_api.models.invoice import InvoiceSchema
 from pay_api.models.invoice_reference import InvoiceReference as InvoiceReferenceModel
 from pay_api.models.payment import PaymentSchema
 from pay_api.models.payment_line_item import PaymentLineItem, PaymentLineItemSchema
+from pay_api.services.cfs_service import CFSService
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
-from pay_api.utils.enums import ContentType, AuthHeaderType, Code, InvoiceReferenceStatus, PaymentMethod, PaymentSystem
-from pay_api.utils.enums import PaymentStatus
+from pay_api.utils.enums import ContentType, AuthHeaderType, Code, InvoiceReferenceStatus, PaymentMethod
+from pay_api.utils.enums import PaymentStatus, PaymentSystem
 from pay_api.utils.user_context import user_context
+from pay_api.utils.util import generate_receipt_number
 from .code import Code as CodeService
 from .oauth_service import OAuthService
 
@@ -53,6 +55,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self._created_on: datetime = None
         self._invoice_amount: Decimal = None
         self._paid_amount: Decimal = None
+        self._receipt_number: str = None
+        self._created_by: str = None
 
     @property
     def _dao(self):
@@ -74,6 +78,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self.created_on: datetime = self._dao.created_on
         self.invoice_amount: Decimal = self._dao.invoice_amount
         self.paid_amount: Decimal = self._dao.paid_amount
+        self.receipt_number: str = self._dao.receipt_number
+        self.created_by: str = self._dao.created_by
 
     @property
     def id(self):
@@ -142,6 +148,17 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self._dao.invoice_number = value
 
     @property
+    def receipt_number(self):
+        """Return the receipt_number."""
+        return self._receipt_number
+
+    @receipt_number.setter
+    def receipt_number(self, value: str):
+        """Set the receipt_number."""
+        self._receipt_number = value
+        self._dao.receipt_number = value
+
+    @property
     def cons_inv_number(self):
         """Return the cons_inv_number."""
         return self._cons_inv_number
@@ -195,6 +212,17 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         """Set the amount."""
         self._paid_amount = value
         self._dao.paid_amount = value
+
+    @property
+    def created_by(self):
+        """Return the created_by."""
+        return self._created_by
+
+    @created_by.setter
+    def created_by(self, value: str):
+        """Set the created_by."""
+        self._created_by = value
+        self._dao.created_by = value
 
     def commit(self):
         """Save the information to the DB."""
@@ -525,8 +553,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         # 3. Create new consolidated invoice in CFS.
         # 4. Create new invoice reference records.
         # 5. Create new payment records for the invoice as CREATED.
-        from pay_api.services import CFSService  # pylint:disable=import-outside-toplevel, cyclic-import
-
         pay_account = PaymentAccountService.find_by_auth_account_id(auth_account_id)
 
         consolidated_invoices: List[InvoiceModel] = []
@@ -580,4 +606,31 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
         # commit transaction
         BaseModel.commit()
+        return payment
+
+    @staticmethod
+    @user_context
+    def create_payment_receipt(auth_account_id: str, credit_request: Dict[str, str], **kwargs) -> Payment:
+        """Create a payment record for the account."""
+        pay_account = PaymentAccountService.find_by_auth_account_id(auth_account_id)
+        # Create a payment record
+        # Create a receipt in CFS for the  amount.
+        payment = Payment.create(
+            payment_method=pay_account.payment_method,
+            payment_system=PaymentSystem.PAYBC.value,
+            payment_account_id=pay_account.id)
+        receipt_number: str = generate_receipt_number(payment.id)
+        receipt_date = credit_request.get('completedOn')
+        amount = credit_request.get('paidAmount')
+
+        receipt_response = CFSService.create_eft_wire_receipt(payment_account=pay_account,
+                                                              rcpt_number=receipt_number,
+                                                              rcpt_date=receipt_date,
+                                                              amount=amount)
+
+        payment.receipt_number = receipt_response.get('receipt_number', receipt_number)
+        payment.paid_amount = amount
+        payment.created_by = kwargs['user'].user_name
+        payment.save()
+
         return payment

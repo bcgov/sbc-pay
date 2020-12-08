@@ -105,6 +105,7 @@ class _Config():  # pylint: disable=too-few-public-methods
     GENERATE_RANDOM_INVOICE_NUMBER = _get_config('CFS_GENERATE_RANDOM_INVOICE_NUMBER', default='False')
     CFS_ACCOUNT_DESCRIPTION = _get_config('CFS_ACCOUNT_DESCRIPTION', default='BCR')
     CFS_INVOICE_PREFIX = os.getenv('CFS_INVOICE_PREFIX', 'REG')
+    CFS_RECEIPT_PREFIX = os.getenv('CFS_RECEIPT_PREFIX', 'RCPT')
 
     # PAYBC Direct Pay Settings
     PAYBC_DIRECT_PAY_REF_NUMBER = _get_config('PAYBC_DIRECT_PAY_REF_NUMBER')

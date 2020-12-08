@@ -225,7 +225,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                                      payment_system=pay_system_service.get_payment_system_code(),
                                      payment_status=pay_system_service.get_default_payment_status(),
                                      invoice_number=invoice_reference.invoice_number,
-                                     invoice_amount=invoice.total)
+                                     invoice_amount=invoice.total,
+                                     payment_account_id=invoice.payment_account_id)
 
         transaction = PaymentTransaction._create_transaction(payment, request_json, invoice=invoice)
         current_app.logger.debug('>create transaction')
@@ -239,7 +240,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             raise BusinessException(Error.COMPLETED_PAYMENT)
 
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
-            payment_method=payment.payment_method_code
+            # todo Remove this and use payment.payment_method_code when payment methods are not created upfront
+            payment_method=invoice.payment_method_code if invoice else payment.payment_method_code
         )
 
         # If there are active transactions (status=CREATED), then invalidate all of them and create a new one.

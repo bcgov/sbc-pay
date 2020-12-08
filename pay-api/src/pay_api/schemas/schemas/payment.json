@@ -1,116 +1,45 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/payment_response",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/payment",
   "type": "object",
-  "title": "Payment Response",
+  "title": "Payment Request",
   "required": [
-    "_links",
-    "id",
-    "invoices",
     "paymentMethod",
-    "paymentSystem",
-    "statusCode",
-    "createdBy",
-    "createdOn"
+    "completedOn",
+    "paidAmount"
   ],
   "properties": {
-    "_links": {
-      "oneOf": [
-        {
-          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/links"
-        }
-      ]
-    },
-    "createdBy": {
-      "$id": "#/properties/createdBy",
-      "type": "string",
-      "title": "Created By",
-      "default": "",
-      "examples": [
-        "CP0001219"
-      ],
-      "pattern": "^(.*)$"
-    },
-    "createdOn": {
-      "$id": "#/properties/createdOn",
-      "type": "string",
-      "title": "Created On",
-      "default": "",
-      "examples": [
-        "2019-06-05T11:23:03.191477+00:00"
-      ],
-      "pattern": "^(.*)$"
-    },
-    "updatedBy": {
-      "$id": "#/properties/updatedBy",
-      "type": "string",
-      "title": "Updated By",
-      "default": "",
-      "examples": [
-        "CP0001219"
-      ],
-      "pattern": "^(.*)$"
-    },
-    "updatedOn": {
-      "$id": "#/properties/updatedOn",
-      "type": "string",
-      "title": "Updated On",
-      "default": "",
-      "examples": [
-        "2019-06-05T11:23:03.191477+00:00"
-      ],
-      "pattern": "^(.*)$"
-    },
-    "id": {
-      "$id": "#/properties/id",
-      "type": "integer",
-      "title": "Payment Identifier",
-      "default": 0,
-      "examples": [
-        1
-      ]
-    },
     "paymentMethod": {
       "$id": "#/properties/paymentMethod",
       "type": "string",
-      "title": "Payment Method",
-      "default": "",
+      "title": "Source of Payment",
+      "enum": [
+        "EFT",
+        "WIRE",
+        "REFUND"
+      ],
       "examples": [
-        "CC"
+        "EFT",
+        "WIRE",
+        "REFUND"
       ],
       "pattern": "^(.*)$"
     },
-    "paymentSystem": {
-      "$id": "#/properties/paymentSystem",
+    "completedOn": {
+      "$id": "#/properties/completedOn",
       "type": "string",
-      "title": "Payment System",
+      "title": "Date of Payment",
       "default": "",
       "examples": [
-        "PAYBC", "INTERNAL"
+        "2019-06-05T11:23:03.191477+00:00"
       ],
       "pattern": "^(.*)$"
     },
-    "statusCode": {
-      "$id": "#/properties/statusCode",
-      "type": "string",
-      "title": "Payment Status",
-      "default": "",
-      "examples": [
-        "CREATED", "COMPLETED"
-      ],
-      "pattern": "^(.*)$"
-    },
-    "invoices": {
-      "type": "array",
-      "items": {
-        "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/invoice"
-      }
-    },
-    "transactions": {
-      "type": "array",
-      "items": {
-        "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/transaction"
-      }
+    "paidAmount": {
+      "$id": "#/properties/paidAmount",
+      "type": "number",
+      "title": "Payment Amount",
+      "default": 0
     }
   }
 }

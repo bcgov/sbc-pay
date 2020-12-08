@@ -57,7 +57,12 @@ def get_claims(app_request=None, role: str = Role.EDITOR.value, username: str = 
             },
         'preferred_username': username,
         'username': username,
-        'loginSource': login_source
+        'loginSource': login_source,
+        'roles':
+            [
+                '{}'.format(role),
+                *roles
+            ]
     }
     return claim
 

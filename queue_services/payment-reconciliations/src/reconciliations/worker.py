@@ -249,7 +249,7 @@ def _process_partial_payments(inv_references, payment, row):
     pending_payment.invoice_number = payment.invoice_number
     pending_payment.invoice_amount = float(payment.invoice_amount) - float(payment.paid_amount)
     pending_payment.created_on = datetime.now()
-    # pending_payment.payment_account_id = payment.payment_account_id
+    pending_payment.payment_account_id = payment.payment_account_id
     db.session.add(pending_payment)
 
 
