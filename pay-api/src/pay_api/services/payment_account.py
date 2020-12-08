@@ -308,6 +308,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         payment_account.auth_account_name = account_request.get('accountName', None)
         payment_account.bcol_account = account_request.get('bcolAccountNumber', None)
         payment_account.bcol_user_id = account_request.get('bcolUserId', None)
+        payment_account.pad_tos_accepted_by = account_request.get('padTosAcceptedBy', None)
+        payment_account.pad_tos_accepted_date = datetime.now()
 
         if not payment_method or payment_method == PaymentMethod.PAD.value:
             payment_method, activation_date = PaymentAccount._get_payment_based_on_pad_activation(payment_account)

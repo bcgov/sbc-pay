@@ -59,6 +59,15 @@
       ],
       "pattern": "^(.*)$"
     },
+    "padTosAcceptedBy": {
+      "$id": "#/properties/padTosAcceptedBy",
+      "type": "string",
+      "title": "PAD TOS Accepted users Id",
+      "examples": [
+        "1"
+      ],
+      "pattern": "^(.*)$"
+    },
     "contactInfo": {
       "oneOf": [
         {
