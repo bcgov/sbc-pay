@@ -392,7 +392,8 @@ class CFSService(OAuthService):
         access_token: str = CFSService.get_token().json().get('access_token')
         cfs_base: str = current_app.config.get('CFS_BASE_URL')
         receipt_url = f'{cfs_base}/cfs/parties/{payment_account.cfs_party}/accs/{payment_account.cfs_account}/' \
-                      f'sites/rcpts/'
+                      f'sites/{payment_account.cfs_site}/rcpts/'
+
         payload = {
             'receipt_number': rcpt_number,
             'receipt_date': rcpt_date,
