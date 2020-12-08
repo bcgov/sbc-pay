@@ -37,9 +37,10 @@ def upgrade():
         pay_id = result[0]
         invoice_number = result[1]
         res = conn.execute(f"select payment_account_id from invoice where id=(select invoice_id from invoice_reference where invoice_number='{invoice_number}');")
-        payment_account_id = res.fetchall()[0][0]
-
-        op.execute(f"update payment set payment_account_id={payment_account_id} where id = {pay_id}")
+        payment_account_id_result = res.fetchall()
+        if payment_account_id_result:
+            payment_account_id = payment_account_id_result[0][0]
+            op.execute(f"update payment set payment_account_id={payment_account_id} where id = {pay_id}")
 
 
 def downgrade():
