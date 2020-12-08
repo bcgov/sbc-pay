@@ -244,12 +244,12 @@ def test_create_payment_report_pdf(session, rest_call_mock):
 def test_search_payment_history_with_tz(session):
     """Assert that the search payment history is working."""
     payment_account = factory_payment_account()
-    payment_created_on = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    payment_created_on = payment_created_on.astimezone(pytz.utc)
-    payment = factory_payment(payment_status_code='CREATED', created_on=payment_created_on)
+    invoice_created_on = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    invoice_created_on = invoice_created_on.astimezone(pytz.utc)
+    payment = factory_payment(payment_status_code='CREATED')
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment_account)
+    invoice = factory_invoice(payment_account, created_on=invoice_created_on)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
@@ -261,12 +261,12 @@ def test_search_payment_history_with_tz(session):
     assert results.get('total') == 1
 
     # Add one more payment
-    payment_created_on = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-    payment_created_on = payment_created_on.astimezone(pytz.utc)
-    payment = factory_payment(payment_status_code='CREATED', created_on=payment_created_on)
+    invoice_created_on = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+    invoice_created_on = invoice_created_on.astimezone(pytz.utc)
+    payment = factory_payment(payment_status_code='CREATED')
     payment_account.save()
     payment.save()
-    invoice = factory_invoice(payment_account)
+    invoice = factory_invoice(payment_account, created_on=invoice_created_on)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
 
@@ -287,7 +287,7 @@ def test_search_account_payments(session):
     factory_invoice_reference(invoice_1.id, invoice_number=inv_number).save()
 
     payment_created_on = datetime.now()
-    payment_1 = factory_payment(payment_status_code='CREATED', created_on=payment_created_on,
+    payment_1 = factory_payment(payment_status_code='CREATED',
                                 payment_account_id=payment_account.id, invoice_number=inv_number,
                                 payment_method_code=PaymentMethod.PAD.value)
     payment_1.save()
