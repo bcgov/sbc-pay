@@ -373,7 +373,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             new_activation_date = PaymentAccount._calculate_activation_date()
         else:
             # Handle repeated changing of pad to bcol ;then to pad again etc
-            new_activation_date = account.pad_activation_date # was already in pad ;no need to extend
+            new_activation_date = account.pad_activation_date  # was already in pad ;no need to extend
             is_previous_pad_activated = account.pad_activation_date < datetime.now()
             if is_previous_pad_activated:
                 # was in PAD ; so no need of activation period wait time and no need to be in bcol..so use PAD again
