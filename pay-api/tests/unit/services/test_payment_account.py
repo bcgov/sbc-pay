@@ -80,6 +80,7 @@ def test_create_pad_account_but_drawdown_is_active(session):
     pad_account = PaymentAccountService.create(get_pad_account_payload())
     # Update this payment account with drawdown and assert payment method
     assert pad_account.payment_method == PaymentMethod.DRAWDOWN.value
+    assert pad_account.cfs_account_id
 
 
 def test_create_pad_account_to_drawdown(session):
