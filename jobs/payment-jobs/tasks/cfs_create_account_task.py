@@ -24,6 +24,7 @@ from pay_api.services.oauth_service import OAuthService
 from pay_api.services.queue_publisher import publish_response
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_DAILY
 from pay_api.utils.enums import AuthHeaderType, CfsAccountStatus, ContentType
+from pay_api.utils.util import mask
 from sentry_sdk import capture_message
 
 from utils.auth import get_token
@@ -119,6 +120,8 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
             pending_account.save()
 
             # Publish message to the Queue, saying account has been created. Using the event spec.
+            payment_info.update(
+                {'bankAccountNumber': mask(pending_account.bank_account_number, current_app.config.get('MASK_LEN'))})
             queue_data = {
                 'accountId': pay_account.auth_account_id,
                 'accountName': pay_account.auth_account_name,
