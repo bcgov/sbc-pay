@@ -402,7 +402,8 @@ def test_account_get_by_user(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post('/api/v1/accounts', data=json.dumps(get_unlinked_pad_account_payload()),
+    account = get_unlinked_pad_account_payload()
+    rv = client.post('/api/v1/accounts', data=json.dumps(account),
                      headers=headers)
 
     auth_account_id = rv.json.get('authAccountId')
@@ -411,6 +412,7 @@ def test_account_get_by_user(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.get(f'/api/v1/accounts/{auth_account_id}', headers=headers)
-    assert rv.json.get('cfsAccount').get('bankTransitNumber') is None
-    assert rv.json.get('cfsAccount').get('bankAccountNumber') is None
-    assert rv.json.get('cfsAccount').get('bankInstitutionNumber') is None
+    assert rv.json.get('cfsAccount').get('bankTransitNumber')
+    expected_bank_number = len(account.get('paymentInfo').get('bankAccountNumber')) * 'X'
+    assert rv.json.get('cfsAccount').get('bankAccountNumber') == expected_bank_number
+    assert rv.json.get('cfsAccount').get('bankInstitutionNumber')
