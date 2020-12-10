@@ -43,7 +43,6 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
         self._product_code: str = token_info.get('product_code', None)
         self._permission = self._permission if hasattr(self, '_permission') else []
 
-
     @property
     def user_name(self) -> str:
         """Return the user_name."""
@@ -108,7 +107,7 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
 
     def can_view_bank_info(self) -> bool:
         """Return True if the user is staff user."""
-        return any(x in ['admin','view', 'view_bank_account_info'] for x in self.permission)
+        return any(x in ['admin', 'view', 'view_bank_account_info'] for x in self.permission)
 
     def can_view_bank_account_number(self) -> bool:
         """Return True if the user is staff user."""
