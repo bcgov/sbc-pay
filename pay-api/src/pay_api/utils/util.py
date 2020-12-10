@@ -150,6 +150,6 @@ def mask(val: str, preserve_length: int = 0) -> str:
     if not val:
         return val
     replace_char = 'X'
-    if preserve_length == 0:  # mask fully
+    if preserve_length is None or preserve_length == 0:  # mask fully
         return replace_char * len(val)
     return val[-preserve_length:].rjust(len(val), replace_char)
