@@ -68,21 +68,13 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
                 if roles:
                     is_authorized = True
             else:  # For activities not specific to a product
-                auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{account_id}'
+                auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{account_id}' \
+                                                                         f'/authorizations?expanded=true'
 
-                org_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+                auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
                 # TODO Create a similar response as in auth response
-                auth_response = {
-                    'orgMembership': '',
-                    'account': {
-                        'id': org_response.get('id', None),
-                        'name': org_response.get('name', None),
-                        'accountType': org_response.get('orgType', None),
-                        'paymentPreference': {}
-                    }
-                }
                 is_authorized = True
-
+                UserContext.permission = auth_response.get('roles')
             # Check if premium flag is required
             if kwargs.get('is_premium', False) and auth_response['account']['accountType'] != AccountType.PREMIUM.value:
                 is_authorized = False

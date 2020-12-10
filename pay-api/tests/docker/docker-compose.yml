@@ -72,7 +72,7 @@ services:
     image: stoplight/prism:3.3.0
     command: >
       mock -p 4010 --host 0.0.0.0
-      https://raw.githubusercontent.com/bcgov/sbc-auth/development/docs/docs/api_contract/auth-api-1.0.0.yaml
+      https://raw.githubusercontent.com/bcgov/sbc-auth/authorisation/docs/docs/api_contract/auth-api-1.0.0.yaml
   notify:
     image: stoplight/prism:3.3.0
     command: >

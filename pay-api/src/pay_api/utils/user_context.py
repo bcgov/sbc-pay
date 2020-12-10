@@ -14,7 +14,7 @@
 """User Context to hold request scoped variables."""
 
 import functools
-from typing import Dict
+from typing import Dict, List
 
 from flask import g, request
 from pay_api.utils.enums import Role
@@ -41,6 +41,8 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
         self._account_id: str = get_auth_account_id()
         self._name: str = '{} {}'.format(token_info.get('firstname', None), token_info.get('lastname', None))
         self._product_code: str = token_info.get('product_code', None)
+        self._permission = self._permission if hasattr(self, '_permission') else []
+
 
     @property
     def user_name(self) -> str:
@@ -82,6 +84,16 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
         return self._account_id
 
     @property
+    def permission(self) -> List:
+        """Return the permission."""
+        return self._permission
+
+    @permission.setter
+    def permission(self, permission):
+        """Permission setter."""
+        self._permission = permission
+
+    @property
     def product_code(self) -> str:
         """Return the product_code."""
         return self._product_code
@@ -93,6 +105,14 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
     def is_staff(self) -> bool:
         """Return True if the user is staff user."""
         return Role.STAFF.value in self._roles if self._roles else False
+
+    def can_view_bank_info(self) -> bool:
+        """Return True if the user is staff user."""
+        return any(x in ['admin','view', 'view_bank_account_info'] for x in self.permission)
+
+    def can_view_bank_account_number(self) -> bool:
+        """Return True if the user is staff user."""
+        return any(x in ['admin', 'view_bank_account_number'] for x in self.permission) if self.permission else False
 
     def is_system(self) -> bool:
         """Return True if the user is system user."""
@@ -106,6 +126,7 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
 
 def user_context(function):
     """Add user context object as an argument to function."""
+
     @functools.wraps(function)
     def wrapper(*func_args, **func_kwargs):
         context = _get_context()

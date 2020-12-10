@@ -143,3 +143,13 @@ def generate_receipt_number(payment_id: str) -> str:
     """Return receipt number for payments."""
     prefix = current_app.config.get('CFS_RECEIPT_PREFIX')
     return f'{prefix}{payment_id:0>8}'
+
+
+def mask(val: str, preserve_length: int = 0) -> str:
+    """Mask the val.only unmask the length specified."""
+    if not val:
+        return val
+    replace_char = 'X'
+    if preserve_length == 0:  # mask fully
+        return replace_char * len(val)
+    return val[-preserve_length:].rjust(len(val), replace_char)
