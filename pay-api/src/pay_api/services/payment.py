@@ -619,6 +619,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         payment.paid_amount = amount
         payment.created_by = kwargs['user'].user_name
         payment.completed_on = parser.parse(receipt_date)
+        payment.payment_status_code = PaymentStatus.COMPLETED.value
         payment.save()
 
         return payment

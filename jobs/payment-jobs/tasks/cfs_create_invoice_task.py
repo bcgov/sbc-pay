@@ -17,18 +17,13 @@ from typing import List
 
 from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
-
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice_reference import InvoiceReference
-from pay_api.factory.payment_system_factory import PaymentSystemFactory
-from pay_api.services.pad_service import PadService
-from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
-from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus
+from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, PaymentStatus
 from sentry_sdk import capture_message
 
 
@@ -110,22 +105,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.error(e)
                 continue
 
-            # # Create payment records
-            # pad_service = PadService()
-            # payment = Payment.create(payment_method=pad_service.get_payment_method_code(),
-            #                          payment_system=pad_service.get_payment_system_code(),
-            #                          payment_status=pad_service.get_default_payment_status(),
-            #                          invoice_number=invoice_response.json().get('invoice_number'),
-            #                          payment_account_id=payment_account.id,
-            #                          invoice_amount=invoice_total)
-            #
-            # # Create a transaction record
-            # transaction: PaymentTransactionModel = PaymentTransactionModel()
-            # transaction.payment_id = payment.id
-            # transaction.client_system_url = None
-            # transaction.status_code = TransactionStatus.CREATED.value
-            # transaction.save()
-
             # Iterate invoice and create invoice reference records
             for invoice in account_invoices:
                 # Create invoice reference, payment record and a payment transaction
@@ -179,7 +158,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 continue
 
             # Create invoice reference, payment record and a payment transaction
-            invoice_reference: InvoiceReference = InvoiceReference.create(
+            InvoiceReference.create(
                 invoice_id=invoice.id,
                 invoice_number=invoice_response.json().get('invoice_number'),
                 reference_number=invoice_response.json().get('pbc_ref_number', None))

@@ -76,6 +76,11 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query.all()
 
     @classmethod
+    def find_payment_by_receipt_number(cls, receipt_number: str):
+        """Return a Payment by receipt_number."""
+        return db.session.query(Payment).filter(Payment.receipt_number == receipt_number).one_or_none()
+
+    @classmethod
     def find_payment_for_invoice(cls, invoice_id: int):
         """Find payment records created for the invoice."""
         query = db.session.query(Payment) \

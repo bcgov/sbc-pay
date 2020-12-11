@@ -44,20 +44,20 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
-from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.services.queue_publisher import publish
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
-    TransactionStatus)
+    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus)
 from sentry_sdk import capture_message
 
 from reconciliations import config
 from reconciliations.minio import get_object
+
 from .enums import Column, RecordType, SourceTransaction, Status, TargetTransaction
+
 
 qsm = QueueServiceManager()  # pylint: disable=invalid-name
 APP_CONFIG = config.get_named_config(os.getenv('DEPLOYMENT_ENV', 'production'))
@@ -103,7 +103,6 @@ def _create_payment_records(csv_content: str):
             source_txns[source_txn_number] = [row]
         else:
             source_txns[source_txn_number].append(row)
-
     # Iterate the grouped source transactions and create payment record.
     # For PAD payments, create one payment record per row
     # For Online Banking payments, add up the ONAC receipts and payments against invoices.
@@ -120,7 +119,6 @@ def _create_payment_records(csv_content: str):
                 status = PaymentStatus.COMPLETED.value \
                     if _get_row_value(row, Column.TARGET_TXN_STATUS).lower() == Status.PAID.value.lower() \
                     else PaymentStatus.FAILED.value
-
                 _save_payment(completed_on, inv_number, invoice_amount, paid_amount, row, status,
                               PaymentMethod.PAD.value,
                               source_txn_number)
@@ -149,21 +147,24 @@ def _create_payment_records(csv_content: str):
                 PaymentModel.receipt_number == source_txn_number).one_or_none()
             payment.payment_status_code = PaymentStatus.COMPLETED.value
 
+        db.session.commit()
 
-def _save_payment(completed_on, inv_number, invoice_amount, paid_amount, row, status, payment_method, receipt_number):
+
+def _save_payment(completed_on, inv_number, invoice_amount,  # pylint: disable=too-many-arguments
+                  paid_amount, row, status, payment_method, receipt_number):
     payment_account = _get_payment_account(row)
     pay_service = PaymentSystemFactory.create_from_payment_method(payment_method)
-    p = PaymentModel()
-    p.payment_method_code = pay_service.get_payment_method_code()
-    p.payment_status_code = status
-    p.payment_system_code = pay_service.get_payment_system_code()
-    p.invoice_number = inv_number
-    p.invoice_amount = invoice_amount
-    p.payment_account_id = payment_account.id
-    p.completed_on = completed_on
-    p.paid_amount = paid_amount
-    p.receipt_number = receipt_number
-    db.session.add(p)
+    payment = PaymentModel()
+    payment.payment_method_code = pay_service.get_payment_method_code()
+    payment.payment_status_code = status
+    payment.payment_system_code = pay_service.get_payment_system_code()
+    payment.invoice_number = inv_number
+    payment.invoice_amount = invoice_amount
+    payment.payment_account_id = payment_account.id
+    payment.completed_on = completed_on
+    payment.paid_amount = paid_amount
+    payment.receipt_number = receipt_number
+    db.session.add(payment)
 
 
 async def _reconcile_payments(msg: Dict[str, any]):
@@ -199,10 +200,8 @@ async def _reconcile_payments(msg: Dict[str, any]):
         elif record_type in (RecordType.BOLP.value, RecordType.EFTP.value):
             # EFT, WIRE and Online Banking are one-to-one invoice. So handle them in same way.
             await _process_unconsolidated_invoices(row)
-        elif record_type == RecordType.ONAC.value:
-            logger.info('On Account receipt received %s.', msg)
-        elif record_type == RecordType.CMAP.value:
-            await _process_credit_memos(row)
+        elif record_type in (RecordType.ONAC.value, RecordType.CMAP.value):
+            await _process_credit_on_invoices(row)
         elif record_type == RecordType.ADJS.value:
             logger.info('Adjustment received for %s.', msg)
         else:
@@ -244,7 +243,7 @@ async def _process_consolidated_invoices(row):
             # Send mailer and account events to update status and send email notification
             await _publish_account_events('lockAccount', payment_account, row)
         else:
-            logger.error('Target Transaction Type is received as %s for PAD, and cannot process %s.', target_txn)
+            logger.error('Target Transaction Type is received as %s for PAD, and cannot process %s.', target_txn, row)
             capture_message(
                 'Target Transaction Type is received as {target_txn} for PAD, and cannot process.'.format(
                     target_txn=target_txn), level='error')
@@ -274,8 +273,8 @@ async def _process_unconsolidated_invoices(row):
                 logger.error('More than one or none invoice reference received for invoice number %s for %s',
                              inv_number, record_type)
                 capture_message(
-                    'More than one or none invoice reference received for invoice number {inv_number} for {record_type}'.format(
-                        inv_number=inv_number, record_type=record_type), level='error')
+                    'More than one or none invoice reference received for invoice number {inv_number} for {record_type}'
+                    .format(inv_number=inv_number, record_type=record_type), level='error')
         else:
             payment_account = _get_payment_account(row)
             # Handle fully PAID and Partially Paid scenarios.
@@ -292,11 +291,11 @@ async def _process_unconsolidated_invoices(row):
                 logger.error('Target Transaction Type is received as %s for %s, and cannot process.',
                              target_txn, record_type)
                 capture_message(
-                    'Target Transaction Type is received as {target_txn} for {record_type}, and cannot process.'.format(
-                        target_txn=target_txn, record_type=record_type), level='error')
+                    'Target Transaction Type is received as {target_txn} for {record_type}, and cannot process.'
+                    .format(target_txn=target_txn, record_type=record_type), level='error')
 
 
-async def _process_credit_memos(row):
+async def _process_credit_on_invoices(row):
     # Credit memo can happen for any type of accounts.
     target_txn_status = _get_row_value(row, Column.TARGET_TXN_STATUS)
     if _get_row_value(row, Column.TARGET_TXN) == TargetTransaction.INV.value:
@@ -330,7 +329,6 @@ async def _process_paid_invoices(inv_references, row):
     """
     receipt_date: datetime = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%d-%b-%y')
     receipt_number: str = _get_row_value(row, Column.SOURCE_TXN_NO)
-
     for inv_ref in inv_references:
         inv_ref.status_code = InvoiceReferenceStatus.COMPLETED.value
         # Find invoice, update status
@@ -384,9 +382,7 @@ def _process_failed_payments(row):
     # 3. Create an NSF invoice for this account.
     # 4. Create invoice reference for the newly created NSF invoice.
     # 5. Adjust invoice in CFS to include NSF fees.
-
     inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
-
     # Set CFS Account Status.
     payment_account: PaymentAccountModel = _get_payment_account(row)
     cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
@@ -414,7 +410,8 @@ def _get_payment_account(row) -> PaymentAccountModel:
     payment_account: PaymentAccountModel = db.session.query(PaymentAccountModel) \
         .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
         .filter(CfsAccountModel.cfs_account == account_number) \
-        .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value).one_or_none()
+        .filter(
+        CfsAccountModel.status.in_([CfsAccountStatus.ACTIVE.value, CfsAccountStatus.FREEZE.value])).one_or_none()
 
     return payment_account
 
@@ -435,8 +432,14 @@ async def _publish_payment_event(inv: InvoiceModel):
     """Publish payment message to the queue."""
     payment_event_payload = PaymentTransactionService.create_event_payload(invoice=inv,
                                                                            status_code=PaymentStatus.COMPLETED.value)
-    await publish(payload=payment_event_payload, client_name=APP_CONFIG.NATS_PAYMENT_CLIENT_NAME,
-                  subject=APP_CONFIG.NATS_PAYMENT_SUBJECT)
+    try:
+        await publish(payload=payment_event_payload, client_name=APP_CONFIG.NATS_PAYMENT_CLIENT_NAME,
+                      subject=APP_CONFIG.NATS_PAYMENT_SUBJECT)
+    except Exception as e:  # pylint: disable=broad-except
+        logger.error(e)
+        logger.warning('Notification to Queue failed for the Payment Event - %s', payment_event_payload)
+        capture_message('Notification to Queue failed for the Payment Event {payment_event_payload}.'.format(
+            payment_event_payload=payment_event_payload), level='error')
 
 
 async def _publish_mailer_events(message_type: str, pay_account: PaymentAccountModel, row: Dict[str, str]):
@@ -449,10 +452,10 @@ async def _publish_mailer_events(message_type: str, pay_account: PaymentAccountM
                       subject=APP_CONFIG.NATS_MAILER_SUBJECT)
     except Exception as e:  # pylint: disable=broad-except
         logger.error(e)
-        logger.warning(
-            'Notification to Queue failed for the Account Mailer %s - %s', pay_account.auth_account_id,
-            pay_account.auth_account_name)
-        raise
+        logger.warning('Notification to Queue failed for the Account Mailer %s - %s', pay_account.auth_account_id,
+                       payload)
+        capture_message('Notification to Queue failed for the Account Mailer {auth_account_id}, {msg}.'.format(
+            auth_account_id=pay_account.auth_account_id, msg=payload), level='error')
 
 
 async def _publish_account_events(message_type: str, pay_account: PaymentAccountModel, row: Dict[str, str]):
@@ -468,7 +471,8 @@ async def _publish_account_events(message_type: str, pay_account: PaymentAccount
         logger.error(e)
         logger.warning('Notification to Queue failed for the Account %s - %s', pay_account.auth_account_id,
                        pay_account.auth_account_name)
-        raise
+        capture_message('Notification to Queue failed for the Account {auth_account_id}, {msg}.'.format(
+            auth_account_id=pay_account.auth_account_id, msg=payload), level='error')
 
 
 def _create_event_payload(message_type, pay_account, row):
@@ -548,8 +552,8 @@ def _create_nsf_invoice(cfs_account: CfsAccountModel, inv_number: str,
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel(
         invoice_id=invoice.id,
         invoice_number=inv_number,
-        reference_number=InvoiceReferenceModel.find_any_active_reference_by_invoice_number(invoice_number=inv_number)
-            .reference_number,
+        reference_number=InvoiceReferenceModel.find_any_active_reference_by_invoice_number(
+            invoice_number=inv_number).reference_number,
         status_code=InvoiceReferenceStatus.ACTIVE.value
     )
     inv_ref.save()
