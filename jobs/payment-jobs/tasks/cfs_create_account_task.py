@@ -49,7 +49,6 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
         auth_token = get_token()
 
         for pending_account in pending_accounts:
-            is_create_account: bool = True
             # Find the payment account and create the pay system instance.
             pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(pending_account.account_id)
             current_app.logger.info(
@@ -82,7 +81,6 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                                                                   site_number=pending_account.cfs_site,
                                                                   payment_info=payment_info)
                     pending_account.payment_instrument_number = bank_details.get('payment_instrument_number', None)
-                    is_create_account = False
                 else:  # It's a new account, now create
                     # If the account have banking information, then create a PAD account else a regular account.
                     if pending_account.bank_number and pending_account.bank_branch_number \
@@ -116,7 +114,6 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
             pending_account.status = CfsAccountStatus.PENDING_PAD_ACTIVATION.value if \
                 is_account_in_pad_confirmation_period else CfsAccountStatus.ACTIVE.value
             pending_account.save()
-
 
     @classmethod
     def _get_account_contact(cls, auth_token: str, auth_account_id: str):
