@@ -9,7 +9,12 @@ on:
 
 jobs:
   report-api-ci:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./report-api
+
     if: github.repository == 'bcgov/sbc-pay'
     env:
       FLASK_ENV: "testing"
@@ -31,25 +36,17 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        working-directory: ./report-api
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r requirements/dev.txt
+          make setup
       - name: Lint with pylint
-        working-directory: ./report-api
         run: |
-          pylint --rcfile=setup.cfg --load-plugins=pylint_flask --disable=C0301,W0511 src/api
+          make lint
       - name: Lint with flake8
-        working-directory: ./report-api
         run: |
-          flake8 src/api tests
+          make flake8
       - name: Test with pytest
-        working-directory: ./report-api
         run: |
-          pip install .
-          export PYTHONPATH=./src/
-          pytest
+          make test
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
@@ -57,3 +54,6 @@ jobs:
           flags: reportapi
           name: codecov-report-api
           fail_ci_if_error: true
+      - name: build to check strictness
+        run: |
+          make build-nc

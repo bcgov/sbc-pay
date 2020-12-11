@@ -1,3 +1,57 @@
-# Just installs the production requirements.
-# some setups need a requirements.txt file at the root level
--r requirements/prod.txt
+-e git+https://github.com/bcgov/sbc-common-components.git@68b5372c8d17c8adcfca6a2b2e9d53da67827ec9#egg=sbc_common_components&subdirectory=python
+-e git+https://github.com/bcgov/sbc-pay.git@b144dcc0b4e4ef753e1ec420dd4b9af62ef44bc3#egg=pay_api&subdirectory=pay-api
+Flask-Caching==1.9.0
+Flask-Migrate==2.5.3
+Flask-Moment==0.10.0
+Flask-OpenTracing==1.1.0
+Flask-SQLAlchemy==2.4.4
+Flask-Script==2.0.6
+Flask==1.1.2
+Jinja2==2.11.2
+Mako==1.1.3
+MarkupSafe==1.1.1
+SQLAlchemy-Continuum==1.3.11
+SQLAlchemy-Utils==0.36.8
+SQLAlchemy==1.3.20
+Werkzeug==0.16.1
+alembic==1.4.3
+aniso8601==8.1.0
+asyncio-nats-client==0.11.4
+asyncio-nats-streaming==0.4.0
+attrs==20.3.0
+blinker==1.4
+certifi==2020.12.5
+chardet==3.0.4
+click==7.1.2
+croniter==0.3.36
+dpath==2.0.1
+ecdsa==0.14.1
+flask-jwt-oidc==0.1.5
+flask-marshmallow==0.11.0
+flask-restplus==0.13.0
+gunicorn==20.0.4
+idna==2.10
+itsdangerous==1.1.0
+jaeger-client==4.3.0
+jsonschema==3.2.0
+marshmallow-sqlalchemy==0.23.1
+marshmallow==3.0.0rc7
+natsort==7.1.0
+opentracing==2.4.0
+protobuf==3.14.0
+psycopg2-binary==2.8.6
+pyasn1==0.4.8
+pyrsistent==0.17.3
+python-dateutil==2.8.1
+python-dotenv==0.15.0
+python-editor==1.0.4
+python-jose==3.2.0
+pytz==2020.4
+requests==2.25.0
+rsa==4.6
+sentry-sdk==0.19.4
+six==1.15.0
+threadloop==1.0.2
+thrift==0.13.0
+tornado==6.1
+urllib3==1.26.2

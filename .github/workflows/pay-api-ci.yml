@@ -9,7 +9,12 @@ on:
 
 jobs:
   pay-api-ci:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    defaults:
+      run:
+        shell: bash
+        working-directory: ./pay-api
+
     if: github.repository == 'bcgov/sbc-pay'
     env:
       FLASK_ENV: "testing"
@@ -53,25 +58,17 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Install dependencies
-        working-directory: ./pay-api
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install -r requirements/dev.txt
+          make setup
       - name: Lint with pylint
-        working-directory: ./pay-api
         run: |
-          pylint --rcfile=setup.cfg --load-plugins=pylint_flask --disable=C0301,W0511 src/pay_api
+          make lint
       - name: Lint with flake8
-        working-directory: ./pay-api
         run: |
-          flake8 src/pay_api tests
+          make flake8
       - name: Test with pytest
-        working-directory: ./pay-api
         run: |
-          pip install .
-          export PYTHONPATH=./src/
-          pytest
+          make test
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
@@ -79,3 +76,6 @@ jobs:
           flags: payapi
           name: codecov-pay-api
           fail_ci_if_error: true
+      - name: build to check strictness
+        run: |
+          make build-nc
