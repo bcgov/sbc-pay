@@ -21,10 +21,8 @@ from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.oauth_service import OAuthService
-from pay_api.services.queue_publisher import publish_response
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_DAILY
 from pay_api.utils.enums import AuthHeaderType, CfsAccountStatus, ContentType
-from pay_api.utils.util import mask
 from sentry_sdk import capture_message
 
 from utils.auth import get_token
@@ -119,38 +117,6 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                 is_account_in_pad_confirmation_period else CfsAccountStatus.ACTIVE.value
             pending_account.save()
 
-            # Publish message to the Queue, saying account has been created. Using the event spec.
-            payment_info.update(
-                {'bankAccountNumber': mask(pending_account.bank_account_number, current_app.config.get('MASK_LEN'))})
-            queue_data = {
-                'accountId': pay_account.auth_account_id,
-                'accountName': pay_account.auth_account_name,
-                'cfsAccountStatus': pending_account.status,
-                'cfsAccountNumber': pending_account.cfs_account,
-                'paymentInfo': payment_info
-            }
-
-            payload = {
-                'specversion': '1.x-wip',
-                'type': 'bc.registry.payment.' + 'cfsAccountCreate' if is_create_account else 'cfsAccountUpdate',
-                'source': f'https://api.pay.bcregistry.gov.bc.ca/v1/accounts/{pay_account.auth_account_id}',
-                'id': f'{pay_account.auth_account_id}',
-                'time': f'{datetime.now()}',
-                'datacontenttype': 'application/json',
-                'data': queue_data
-            }
-
-            try:
-                publish_response(payload=payload,
-                                 client_name=current_app.config.get('NATS_ACCOUNT_CLIENT_NAME'),
-                                 subject=current_app.config.get('NATS_ACCOUNT_SUBJECT'))
-            except Exception as e:  # pylint: disable=broad-except
-                current_app.logger.error(e)
-                current_app.logger.warning(
-                    f'Notification to Queue failed for the Account '
-                    f': {pay_account.auth_account_id} - {pay_account.auth_account_name}',
-                    e)
-                raise
 
     @classmethod
     def _get_account_contact(cls, auth_token: str, auth_account_id: str):
