@@ -52,7 +52,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self._invoice_number: str = None
         self._cons_inv_number: str = None
         self._completed_on: datetime = None
-        self._created_on: datetime = None
         self._invoice_amount: Decimal = None
         self._paid_amount: Decimal = None
         self._receipt_number: str = None
@@ -75,7 +74,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self.invoice_number: str = self._dao.invoice_number
         self.cons_inv_number: str = self._dao.cons_inv_number
         self.completed_on: datetime = self._dao.completed_on
-        self.created_on: datetime = self._dao.created_on
         self.invoice_amount: Decimal = self._dao.invoice_amount
         self.paid_amount: Decimal = self._dao.paid_amount
         self.receipt_number: str = self._dao.receipt_number
@@ -181,17 +179,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self._dao.completed_on = value
 
     @property
-    def created_on(self):
-        """Return the created_on."""
-        return self._created_on
-
-    @created_on.setter
-    def created_on(self, value: datetime):
-        """Set the created_on."""
-        self._created_on = value
-        self._dao.created_on = value
-
-    @property
     def invoice_amount(self):
         """Return the invoice_amount."""
         return self._invoice_amount
@@ -259,7 +246,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         p.payment_system_code = payment_system
         p.invoice_number = invoice_number
         p.invoice_amount = invoice_amount
-        p.created_on = datetime.now()
         p.payment_account_id = payment_account_id
         pay_dao = p.save()
 
@@ -557,6 +543,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
         consolidated_invoices: List[InvoiceModel] = []
         consolidated_line_items: List[PaymentLineItem] = []
+
         invoice_total: float = 0
         for failed_payment in failed_payments:
             # Reverse invoice balance
@@ -631,6 +618,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         payment.receipt_number = receipt_response.get('receipt_number', receipt_number)
         payment.paid_amount = amount
         payment.created_by = kwargs['user'].user_name
+        payment.completed_on = parser.parse(receipt_date)
         payment.save()
 
         return payment

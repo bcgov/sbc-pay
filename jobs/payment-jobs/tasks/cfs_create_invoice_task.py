@@ -110,21 +110,21 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.error(e)
                 continue
 
-            # Create payment records
-            pad_service = PadService()
-            payment = Payment.create(payment_method=pad_service.get_payment_method_code(),
-                                     payment_system=pad_service.get_payment_system_code(),
-                                     payment_status=pad_service.get_default_payment_status(),
-                                     invoice_number=invoice_response.json().get('invoice_number'),
-                                     payment_account_id=payment_account.id,
-                                     invoice_amount=invoice_total)
-
-            # Create a transaction record
-            transaction: PaymentTransactionModel = PaymentTransactionModel()
-            transaction.payment_id = payment.id
-            transaction.client_system_url = None
-            transaction.status_code = TransactionStatus.CREATED.value
-            transaction.save()
+            # # Create payment records
+            # pad_service = PadService()
+            # payment = Payment.create(payment_method=pad_service.get_payment_method_code(),
+            #                          payment_system=pad_service.get_payment_system_code(),
+            #                          payment_status=pad_service.get_default_payment_status(),
+            #                          invoice_number=invoice_response.json().get('invoice_number'),
+            #                          payment_account_id=payment_account.id,
+            #                          invoice_amount=invoice_total)
+            #
+            # # Create a transaction record
+            # transaction: PaymentTransactionModel = PaymentTransactionModel()
+            # transaction.payment_id = payment.id
+            # transaction.client_system_url = None
+            # transaction.status_code = TransactionStatus.CREATED.value
+            # transaction.save()
 
             # Iterate invoice and create invoice reference records
             for invoice in account_invoices:
@@ -183,20 +183,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 invoice_id=invoice.id,
                 invoice_number=invoice_response.json().get('invoice_number'),
                 reference_number=invoice_response.json().get('pbc_ref_number', None))
-
-            pay_service = PaymentSystemFactory.create_from_payment_method(payment_method.value)
-            payment = Payment.create(payment_method=pay_service.get_payment_method_code(),
-                                     payment_system=pay_service.get_payment_system_code(),
-                                     payment_status=pay_service.get_default_payment_status(),
-                                     invoice_number=invoice_reference.invoice_number,
-                                     invoice_amount=invoice.total,
-                                     payment_account_id=payment_account.id)
-
-            transaction: PaymentTransactionModel = PaymentTransactionModel()
-            transaction.payment_id = payment.id
-            transaction.client_system_url = None
-            transaction.status_code = TransactionStatus.CREATED.value
-            transaction.save()
 
             # Misc
             invoice.cfs_account_id = payment_account.cfs_account_id
