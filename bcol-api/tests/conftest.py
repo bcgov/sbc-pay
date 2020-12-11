@@ -59,7 +59,7 @@ def client_ctx(app):
         yield _client
 
 
-@pytest.fixture('function')
+@pytest.fixture(scope='function')
 def client_id():
     """Return a unique client_id that can be used in tests."""
     _id = random.SystemRandom().getrandbits(0x58)

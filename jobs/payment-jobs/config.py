@@ -128,6 +128,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
 
     SENTRY_DSN = os.getenv('SENTRY_DSN', None)
 
+    # The number of characters which can be exposed to admins for a bank account number
+    MASK_LEN = int(os.getenv('MASK_LEN', 3))
+
     TESTING = False
     DEBUG = True
     PAD_CONFIRMATION_PERIOD_IN_DAYS = int(os.getenv('PAD_CONFIRMATION_PERIOD_IN_DAYS', '3'))

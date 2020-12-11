@@ -16,7 +16,7 @@ on:
 
 jobs:
   ftp-poller-cd:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     if: github.repository == 'bcgov/sbc-pay'
     steps:
       - uses: actions/checkout@v2
@@ -34,12 +34,13 @@ jobs:
         run: |
           echo "TAG_NAME=dev" >> $GITHUB_ENV
 
-      - uses: pwei1018/bcrs-cd-action@latest
+      - uses: pwei1018/bcrs-cd-action@versioning
         with:
           WORKING_DIRECTORY: "./jobs/ftp-poller"
           APP_NAME: "ftp-poller"
           VAULTS: '[{ \"vault\": \"shared\", \"application\": [\"minio\", \"nats\"]}, {\"vault\": \"relationship\",\"application\": [\"postgres-pay\", \"pay-api\", \"sentry\", \"jwt\", \"ftp-poller\",\"payment-reconciliations\"]}]'
           SKIP_OP: "false"
+          DEPLOYMENT: "true"
           OP_PARAMETERS: ${{ secrets.OP_PARAMETERS }}
           OPENSHIFT_LOGIN_REGISTRY: ${{ secrets.OPENSHIFT_LOGIN_REGISTRY }}
           OPENSHIFT_DOCKER_REGISTRY: ${{ secrets.OPENSHIFT_DOCKER_REGISTRY }}
