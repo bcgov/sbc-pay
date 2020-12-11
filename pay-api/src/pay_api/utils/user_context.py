@@ -107,7 +107,7 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
 
     def can_view_bank_info(self) -> bool:
         """Return True if the user is staff user."""
-        return any(x in ['admin', 'view', 'view_bank_account_info'] for x in self.permission)
+        return any(x in ['admin', 'view', 'manage_bank_info'] for x in self.permission)
 
     def can_view_bank_account_number(self) -> bool:
         """Return True if the user is staff user."""
