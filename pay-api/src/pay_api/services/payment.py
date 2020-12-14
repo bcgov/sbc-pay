@@ -603,7 +603,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         # Create a payment record
         # Create a receipt in CFS for the  amount.
         payment = Payment.create(
-            payment_method=pay_account.payment_method,
+            payment_method=credit_request.get('paymentMethod'),
             payment_system=PaymentSystem.PAYBC.value,
             payment_account_id=pay_account.id)
         receipt_number: str = generate_receipt_number(payment.id)

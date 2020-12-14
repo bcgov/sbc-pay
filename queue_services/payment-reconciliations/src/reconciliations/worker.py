@@ -127,7 +127,7 @@ def _create_payment_records(csv_content: str):
             paid_amount = 0
             inv_number = None
             invoice_amount = 0
-            completed_on: datetime = None
+            completed_on: datetime = datetime.strptime(_get_row_value(payment_lines[0], Column.APP_DATE), '%d-%b-%y')
             for row in payment_lines:
                 paid_amount += float(_get_row_value(row, Column.APP_AMOUNT))
 
@@ -136,7 +136,6 @@ def _create_payment_records(csv_content: str):
                 row = payment_lines[0]
                 invoice_amount = float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL))
                 inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
-                completed_on = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%d-%b-%y')
 
             _save_payment(completed_on, inv_number, invoice_amount, paid_amount, row, PaymentStatus.COMPLETED.value,
                           PaymentMethod.ONLINE_BANKING.value, source_txn_number)
