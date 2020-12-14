@@ -29,7 +29,7 @@ from pay_api.utils.enums import PaymentSystem, StatementFrequency, PaymentMethod
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context, UserContext
 from pay_api.utils.util import get_str_by_path, current_local_time, \
-    get_local_formatted_date
+    get_local_formatted_date, mask
 
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -311,11 +311,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         payment_account.pad_tos_accepted_by = account_request.get('padTosAcceptedBy', None)
         payment_account.pad_tos_accepted_date = datetime.now()
 
-        if not payment_method or payment_method == PaymentMethod.PAD.value:
-            payment_method, activation_date = PaymentAccount._get_payment_based_on_pad_activation(payment_account)
-            payment_account.pad_activation_date = activation_date
-            payment_account.payment_method = payment_method
-
         payment_info = account_request.get('paymentInfo')
         billable = payment_info.get('billable', True)
         payment_account.billable = billable
@@ -344,6 +339,13 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 pay_system.update_account(name=payment_account.auth_account_name, cfs_account=cfs_account,
                                           payment_info=payment_info)
 
+        is_pad = payment_method == PaymentMethod.PAD.value
+        if is_pad:
+            # override payment method for since pad has 3 days wait period
+            effective_pay_method, activation_date = PaymentAccount._get_payment_based_on_pad_activation(payment_account)
+            payment_account.pad_activation_date = activation_date
+            payment_account.payment_method = effective_pay_method
+
         payment_account.save()
 
     @classmethod
@@ -366,14 +368,19 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         is_first_time_pad = not account.pad_activation_date
         is_unlinked_premium = not account.bcol_account
         # default it. If ever was in PAD , no new activation date needed
-        new_activation_date = account.pad_activation_date
         if is_first_time_pad:
             new_payment_method = PaymentMethod.PAD.value if is_unlinked_premium else PaymentMethod.DRAWDOWN.value
             new_activation_date = PaymentAccount._calculate_activation_date()
         else:
-            # Handle repeated changing of pad to bcol ;then to pad again
+            # Handle repeated changing of pad to bcol ;then to pad again etc
+            new_activation_date = account.pad_activation_date  # was already in pad ;no need to extend
             is_previous_pad_activated = account.pad_activation_date < datetime.now()
-            new_payment_method = PaymentMethod.PAD.value if is_previous_pad_activated else PaymentMethod.DRAWDOWN.value
+            if is_previous_pad_activated:
+                # was in PAD ; so no need of activation period wait time and no need to be in bcol..so use PAD again
+                new_payment_method = PaymentMethod.PAD.value
+            else:
+                # was in pad and not yet activated ;but changed again within activation period
+                new_payment_method = PaymentMethod.PAD.value if is_unlinked_premium else PaymentMethod.DRAWDOWN.value
 
         return new_payment_method, new_activation_date
 
@@ -439,9 +446,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 'cfsSiteNumber': self.cfs_site,
                 'status': self.cfs_account_status
             }
-            if user.is_system():
-                # TODO apply masking
-                cfs_account['bankAccountNumber'] = self.bank_account_number
+            if user.is_system() or user.can_view_bank_info():
+                mask_len = 0 if not user.can_view_bank_account_number() else current_app.config['MASK_LEN']
+                cfs_account['bankAccountNumber'] = mask(self.bank_account_number, mask_len)
                 cfs_account['bankInstitutionNumber'] = self.bank_number
                 cfs_account['bankTransitNumber'] = self.bank_branch_number
 

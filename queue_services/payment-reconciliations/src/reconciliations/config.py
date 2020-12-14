@@ -161,6 +161,16 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     CFS_CLIENT_ID = 'TEST'
     CFS_CLIENT_SECRET = 'TEST'
 
+    # NATS Config
+    NATS_SERVERS = os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(',')
+    NATS_CLUSTER_ID = os.getenv('NATS_CLUSTER_ID', 'test-cluster')
+    NATS_PAYMENT_CLIENT_NAME = os.getenv('NATS_PAYMENT_CLIENT_NAME', 'entity.filing.worker')
+    NATS_PAYMENT_SUBJECT = os.getenv('NATS_PAYMENT_SUBJECT', 'entity.filings')
+    NATS_MAILER_CLIENT_NAME = os.getenv('NATS_MAILER_CLIENT_NAME', 'account.mailer.worker')
+    NATS_MAILER_SUBJECT = os.getenv('NATS_MAILER_SUBJECT', 'account.mailer')
+    NATS_ACCOUNT_CLIENT_NAME = os.getenv('NATS_ACCOUNT_CLIENT_NAME', 'account.events.worker')
+    NATS_ACCOUNT_SUBJECT = os.getenv('NATS_ACCOUNT_SUBJECT', 'account.events')
+
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
     """Production environment configuration."""

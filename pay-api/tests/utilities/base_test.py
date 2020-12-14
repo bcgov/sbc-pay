@@ -302,7 +302,6 @@ def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='123
 def factory_payment(
         payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC',
         payment_status_code: str = PaymentStatus.CREATED.value,
-        created_on: datetime = datetime.now(),
         invoice_number: str = None,
         payment_account_id: str = None,
         invoice_amount=0
@@ -312,7 +311,6 @@ def factory_payment(
         payment_system_code=payment_system_code,
         payment_method_code=payment_method_code,
         payment_status_code=payment_status_code,
-        created_on=created_on,
         invoice_number=invoice_number,
         payment_account_id=payment_account_id,
         invoice_amount=invoice_amount
@@ -324,7 +322,8 @@ def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.va
                     corp_type_code='CP',
                     business_identifier: str = 'CP0001234',
                     service_fees: float = 0.0, total=0,
-                    payment_method_code: str = PaymentMethod.DIRECT_PAY.value):
+                    payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
+                    created_on: datetime = datetime.now()):
     """Return Factory."""
     return Invoice(
         invoice_status_code=status_code,

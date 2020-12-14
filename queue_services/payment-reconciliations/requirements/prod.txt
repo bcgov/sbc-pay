@@ -7,3 +7,5 @@ asyncio-nats-streaming
 pycountry
 Werkzeug<1
 minio
+jaeger-client
+ attrs==19.1.0
