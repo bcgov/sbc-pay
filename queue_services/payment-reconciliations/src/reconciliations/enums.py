@@ -35,6 +35,7 @@ class RecordType(Enum):
     ADJS = 'ADJS'
     ONAC = 'ONAC'
     ONAP = 'ONAP'
+    EFTP = 'EFTP'
 
 
 class Column(Enum):

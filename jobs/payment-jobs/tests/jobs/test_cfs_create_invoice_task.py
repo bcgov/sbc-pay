@@ -22,11 +22,10 @@ from datetime import datetime, timedelta
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
-from pay_api.models import Payment as PaymentModel
-from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentStatus
+# from pay_api.models import Payment as PaymentModel
+from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus
 
 from tasks.cfs_create_invoice_task import CreateInvoiceTask
-
 from .factory import (
     factory_create_eft_account, factory_create_online_banking_account, factory_create_pad_account,
     factory_create_wire_account, factory_invoice, factory_payment_line_item)
@@ -57,11 +56,9 @@ def test_create_pad_invoice_single_transaction(session):
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
         find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
-    payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
 
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
-    assert payment.payment_status_code == PaymentStatus.CREATED.value
 
 
 def test_create_pad_invoice_for_frozen_accounts(session):
@@ -83,11 +80,9 @@ def test_create_pad_invoice_for_frozen_accounts(session):
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
         find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
-    payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
 
     assert inv_ref is None
     assert updated_invoice.invoice_status_code == InvoiceStatus.CREATED.value
-    assert payment is None
 
 
 def test_create_pad_invoice_multiple_transactions(session):
@@ -112,11 +107,6 @@ def test_create_pad_invoice_multiple_transactions(session):
     invoice = InvoiceModel.find_by_id(invoice.id)
     assert invoice2.invoice_status_code == invoice.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
 
-    # Find payment for this invoice and assert single payment is created for both invoices
-    payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
-    payment2: PaymentModel = PaymentModel.find_payment_for_invoice(invoice2.id)
-    assert payment == payment2
-
 
 def test_create_pad_invoice_before_cutoff(session):
     """Assert PAD invoices are created."""
@@ -137,10 +127,8 @@ def test_create_pad_invoice_before_cutoff(session):
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
         find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
-    payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
 
     assert inv_ref is not None  # As PAD will be summed up for all outstanding invoices
-    assert payment is not None  # As PAD will be summed up for all outstanding invoices
     assert updated_invoice.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
 
 
@@ -163,11 +151,9 @@ def test_create_online_banking_transaction(session):
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
         find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
-    payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
 
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
-    assert payment.payment_status_code == PaymentStatus.CREATED.value
 
 
 def test_create_eft_transaction(session):
@@ -189,11 +175,9 @@ def test_create_eft_transaction(session):
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
         find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
-    payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
 
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
-    assert payment.payment_status_code == PaymentStatus.CREATED.value
 
 
 def test_create_wire_transaction(session):
@@ -216,8 +200,6 @@ def test_create_wire_transaction(session):
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
         find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
-    payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
 
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
-    assert payment.payment_status_code == PaymentStatus.CREATED.value

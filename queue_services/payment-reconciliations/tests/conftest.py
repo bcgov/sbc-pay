@@ -249,3 +249,9 @@ def create_mock_coro(mocker, monkeypatch):
         return mock, _coro
 
     return _create_mock_patch_coro
+
+
+@pytest.fixture()
+def mock_publish(monkeypatch):
+    """Mock check_auth."""
+    monkeypatch.setattr('pay_api.services.queue_publisher.publish', lambda *args, **kwargs: None)

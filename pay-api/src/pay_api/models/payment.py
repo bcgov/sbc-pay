@@ -53,8 +53,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     paid_amount = db.Column(db.Numeric(), nullable=True)
     created_by = db.Column(db.String(50), default='SYSTEM')
 
-    created_on = db.Column('created_on', db.DateTime, default=datetime.now)
-    completed_on = db.Column('completed_on', db.DateTime, nullable=True)
+    completed_on = db.Column(db.DateTime, nullable=True)
 
     payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='select', innerjoin=True)
     payment_status = relationship(PaymentStatusCode, foreign_keys=[payment_status_code], lazy='select', innerjoin=True)
@@ -75,6 +74,11 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             .filter(Payment.invoice_number == inv_number) \
             .filter(Payment.payment_status_code == payment_status)
         return query.all()
+
+    @classmethod
+    def find_payment_by_receipt_number(cls, receipt_number: str):
+        """Return a Payment by receipt_number."""
+        return db.session.query(Payment).filter(Payment.receipt_number == receipt_number).one_or_none()
 
     @classmethod
     def find_payment_for_invoice(cls, invoice_id: int):
