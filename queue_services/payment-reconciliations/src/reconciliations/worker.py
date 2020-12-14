@@ -35,7 +35,6 @@ import nats
 from entity_queue_common.service import QueueServiceManager
 from entity_queue_common.service_utils import QueueException, logger
 from flask import Flask
-from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
@@ -46,6 +45,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
+from pay_api.models import Credit as CreditModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.services.queue_publisher import publish
@@ -151,6 +151,9 @@ def _create_payment_records(csv_content: str):
 
 def _save_payment(completed_on, inv_number, invoice_amount,  # pylint: disable=too-many-arguments
                   paid_amount, row, status, payment_method, receipt_number):
+    # pylint: disable=import-outside-toplevel
+    from pay_api.factory.payment_system_factory import PaymentSystemFactory
+
     payment_account = _get_payment_account(row)
     pay_service = PaymentSystemFactory.create_from_payment_method(payment_method)
     payment = PaymentModel()
@@ -216,6 +219,9 @@ async def _reconcile_payments(msg: Dict[str, any]):
     # Create payment records for lines other than PAD
     _create_payment_records(content)
     # Create Credit Records.
+    _create_credit_records(content)
+    # Sync credit memo and on account credits with CFS
+    _sync_credit_records()
 
 
 async def _process_consolidated_invoices(row):
@@ -395,13 +401,24 @@ def _process_failed_payments(row):
     CFSService.add_nsf_adjustment(cfs_account=cfs_account, inv_number=inv_number, amount=invoice.total)
 
 
-def _process_account_credits(payment_account: PaymentAccountModel, row: Dict[str, str]):
-    """Apply credit to the account."""
-    logger.info('Current credit for account %s is %s', payment_account.auth_account_id, payment_account.credit)
-    credit_amount: float = payment_account.credit or 0
-    credit_amount += float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL))
-    payment_account.credit = credit_amount
-    # TODO handle credits based on CAS feedback. Also add over payment to receipt table.
+def _create_credit_records(csv_content: str):
+    """Create credit records and sync them up with CFS."""
+    # Iterate the rows and store any ONAC RECEIPTs to credit table .
+    for row in csv.DictReader(csv_content.splitlines()):
+        # Convert lower case keys to avoid any key mismatch
+        row = dict((k.lower(), v) for k, v in row.items())
+        if _get_row_value(row, Column.TARGET_TXN) == TargetTransaction.RECEIPT.value:
+            receipt_number = _get_row_value(row, Column.SOURCE_TXN_NO)
+            pay_account = _get_payment_account(row)
+            # Create credit if a record doesn't exists for this receipt number.
+            if not CreditModel.find_by_cfs_identifier(cfs_identifier=receipt_number):
+                CreditModel(
+                    cfs_identifier=receipt_number,
+                    is_credit_memo=False,
+                    amount=float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL)),
+                    remaining_amount=float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL)),
+                    account_id=pay_account.id
+                ).save()
 
 
 def _get_payment_account(row) -> PaymentAccountModel:
