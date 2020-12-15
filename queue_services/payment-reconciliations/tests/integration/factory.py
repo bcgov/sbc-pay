@@ -21,7 +21,7 @@ from datetime import datetime
 
 from pay_api.models import (
     CfsAccount, DistributionCode, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem,
-    PaymentTransaction, StatementSettings)
+    PaymentTransaction, Receipt, StatementSettings)
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
     PaymentSystem, TransactionStatus)
@@ -85,24 +85,31 @@ def factory_payment_line_item(invoice_id: str, fee_schedule_id: int = 1, filing_
     ).save()
 
 
-def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021'):
+def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021',
+                              status_code: str = InvoiceReferenceStatus.ACTIVE.value):
     """Return Factory."""
     return InvoiceReference(invoice_id=invoice_id,
-                            status_code=InvoiceReferenceStatus.ACTIVE.value,
+                            status_code=status_code,
                             invoice_number=invoice_number).save()
+
+
+def factory_receipt(invoice_id: int, receipt_number: str = '10021'):
+    """Return Factory."""
+    return Receipt(invoice_id=invoice_id, receipt_number=receipt_number).save()
 
 
 def factory_payment(pay_account: PaymentAccount,
                     invoice_number: str = '10021', status=PaymentStatus.CREATED.value,
                     payment_method_code=PaymentMethod.ONLINE_BANKING.value,
-                    invoice_amount: float = 100, paid_amount: float = 0):
+                    invoice_amount: float = 100, paid_amount: float = 0,
+                    receipt_number: str = ''):
     """Return Factory."""
     return Payment(payment_status_code=status, payment_system_code=PaymentSystem.PAYBC.value,
                    payment_method_code=payment_method_code, payment_account_id=pay_account.id,
                    invoice_amount=invoice_amount,
                    invoice_number=invoice_number,
                    paid_amount=paid_amount,
-                   created_on=datetime.now()).save()
+                   receipt_number=receipt_number).save()
 
 
 def factory_payment_transaction(payment_id: int):
