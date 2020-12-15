@@ -44,6 +44,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self._payment_method: Union[None, str] = None
         self._auth_account_name: Union[None, str] = None
         self._pad_activation_date: Union[None, datetime] = None
+        self._pad_tos_accepted_by: Union[None, str] = None
 
         self._cfs_account: Union[None, str] = None
         self._cfs_party: Union[None, str] = None
@@ -77,6 +78,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self.bcol_user_id: str = self._dao.bcol_user_id
         self.bcol_account: str = self._dao.bcol_account
         self.pad_activation_date: datetime = self._dao.pad_activation_date
+        self.pad_tos_accepted_by: str = self._dao.pad_tos_accepted_by
 
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(self.id)
         if cfs_account:
@@ -240,14 +242,25 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
     @property
     def pad_activation_date(self):
-        """Return the bcol_user_id."""
+        """Return the pad_activation_date."""
         return self._pad_activation_date
 
     @pad_activation_date.setter
     def pad_activation_date(self, value: datetime):
-        """Set the bcol_user_id."""
+        """Set the pad_activation_date."""
         self._pad_activation_date = value
         self._dao.pad_activation_date = value
+
+    @property
+    def pad_tos_accepted_by(self):
+        """Return the pad_tos_accepted_by."""
+        return self._pad_tos_accepted_by
+
+    @pad_tos_accepted_by.setter
+    def pad_tos_accepted_by(self, value: datetime):
+        """Set the pad_tos_accepted_by."""
+        self._pad_tos_accepted_by = value
+        self._dao.pad_tos_accepted_by = value
 
     @property
     def bcol_account(self):
@@ -486,6 +499,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             'data': {
                 'accountId': self.auth_account_id,
                 'accountName': self.auth_account_name,
+                'padTosAcceptedBy': self.pad_tos_accepted_by
             }
         }
 
@@ -493,7 +507,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             payload['data']['paymentInfo'] = dict(
                 bankInstitutionNumber=self.bank_number,
                 bankTransitNumber=self.bank_branch_number,
-                bankAccountNumber=self.bank_account_number,
+                bankAccountNumber=mask(self.bank_account_number, current_app.config['MASK_LEN']),
                 paymentStartDate=get_local_formatted_date(self.pad_activation_date))
         return payload
 
