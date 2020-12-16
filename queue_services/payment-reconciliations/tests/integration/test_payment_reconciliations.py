@@ -27,13 +27,13 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, PaymentStatus
+from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus
 
 from reconciliations.enums import RecordType, SourceTransaction, Status, TargetTransaction
 
 from .factory import (
     factory_create_online_banking_account, factory_create_pad_account, factory_invoice, factory_invoice_reference,
-    factory_payment_line_item)
+    factory_payment, factory_payment_line_item, factory_receipt)
 from .utils import create_and_upload_settlement_file, helper_add_event_to_queue
 
 
@@ -568,6 +568,93 @@ async def test_pad_nsf_reconciliations(session, app, stan_server, event_loop, cl
 
     cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account_id)
     assert cfs_account.status == CfsAccountStatus.FREEZE.value
+
+
+@pytest.mark.asyncio
+async def test_pad_reversal_reconciliations(session, app, stan_server, event_loop, client_id, events_stan, future,
+                                            mock_publish):
+    """Test Reconciliations worker for NSF."""
+    # Call back for the subscription
+    from reconciliations.worker import cb_subscription_handler
+
+    # register the handler to test it
+    await subscribe_to_queue(events_stan,
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
+                             cb_subscription_handler)
+
+    # 1. Create payment account
+    # 2. Create invoices and related records for a completed payment
+    # 3. Create CFS Invoice records
+    # 4. Create a CFS settlement file, and verify the records
+    cfs_account_number = '1234'
+    pay_account: PaymentAccountModel = factory_create_pad_account(status=CfsAccountStatus.ACTIVE.value,
+                                                                  account_number=cfs_account_number)
+    invoice1: InvoiceModel = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                                             payment_method_code=PaymentMethod.PAD.value,
+                                             status_code=InvoiceStatus.PAID.value)
+    factory_payment_line_item(invoice_id=invoice1.id, filing_fees=90.0,
+                              service_fees=10.0, total=90.0)
+
+    invoice2: InvoiceModel = factory_invoice(payment_account=pay_account, total=200, service_fees=10.0,
+                                             payment_method_code=PaymentMethod.PAD.value,
+                                             status_code=InvoiceStatus.PAID.value)
+    factory_payment_line_item(invoice_id=invoice2.id, filing_fees=190.0,
+                              service_fees=10.0, total=190.0)
+
+    invoice_number = '1234567890'
+    receipt_number = '9999999999'
+
+    factory_invoice_reference(invoice_id=invoice1.id, invoice_number=invoice_number,
+                              status_code=InvoiceReferenceStatus.COMPLETED.value)
+    factory_invoice_reference(invoice_id=invoice2.id, invoice_number=invoice_number,
+                              status_code=InvoiceReferenceStatus.COMPLETED.value)
+
+    receipt_id1 = factory_receipt(invoice_id=invoice1.id, receipt_number=receipt_number).save().id
+    receipt_id2 = factory_receipt(invoice_id=invoice2.id, receipt_number=receipt_number).save().id
+
+    invoice1_id = invoice1.id
+    invoice2_id = invoice2.id
+    pay_account_id = pay_account.id
+
+    total = invoice1.total + invoice2.total
+
+    payment = factory_payment(pay_account=pay_account, paid_amount=total, invoice_amount=total,
+                              invoice_number=invoice_number,
+                              receipt_number=receipt_number, status=PaymentStatus.COMPLETED.value)
+    pay_id = payment.id
+
+    # Now publish message saying payment has been reversed.
+    # Create a settlement file and publish.
+    file_name: str = 'cas_settlement_file.csv'
+    # Settlement row
+    date = datetime.now().strftime('%d-%b-%y')
+    row = [RecordType.PADR.value, SourceTransaction.PAD.value, receipt_number, 100001, date, 0, cfs_account_number,
+           'INV', invoice_number,
+           total, total, Status.NOT_PAID.value]
+    create_and_upload_settlement_file(file_name, [row])
+    await helper_add_event_to_queue(events_stan, file_name=file_name)
+
+    # The invoice should be in SETTLEMENT_SCHEDULED status and Payment should be FAILED
+    updated_invoice1 = InvoiceModel.find_by_id(invoice1_id)
+    assert updated_invoice1.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
+    updated_invoice2 = InvoiceModel.find_by_id(invoice2_id)
+    assert updated_invoice2.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
+
+    payment: PaymentModel = PaymentModel.find_by_id(pay_id)
+    assert payment.payment_status_code == PaymentStatus.FAILED.value
+    assert payment.paid_amount == 0
+    assert payment.receipt_number == receipt_number
+    assert payment.payment_method_code == PaymentMethod.PAD.value
+    assert payment.invoice_number == invoice_number
+
+    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account_id)
+    assert cfs_account.status == CfsAccountStatus.FREEZE.value
+
+    # Receipt should be deleted
+    assert ReceiptModel.find_by_id(receipt_id1) is None
+    assert ReceiptModel.find_by_id(receipt_id2) is None
 
 
 @pytest.mark.asyncio
