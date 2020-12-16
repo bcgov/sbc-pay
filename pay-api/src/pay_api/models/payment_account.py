@@ -41,7 +41,6 @@ class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attri
     # when this is enabled , send out the  notifications
     statement_notification_enabled = db.Column('statement_notification_enabled', Boolean(), default=False)
 
-    running_balance = db.Column(db.Float, nullable=True)
     credit = db.Column(db.Float, nullable=True)
     billable = db.Column(Boolean(), default=True)
 
@@ -63,7 +62,6 @@ class PaymentAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestor
         """Returns all the fields from the SQLAlchemy class."""
 
         model = PaymentAccount
-        exclude = ['versions', 'pad_tos_accepted_date', 'pad_tos_accepted_by', 'pad_activation_date', 'running_balance',
-                   'id']
+        exclude = ['versions', 'pad_tos_accepted_date', 'pad_tos_accepted_by', 'pad_activation_date', 'id']
 
     payment_method = fields.String(data_key='payment_method')

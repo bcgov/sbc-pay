@@ -14,11 +14,11 @@
 """Model to handle all operations related to Credit data."""
 from sqlalchemy import Boolean, ForeignKey
 
-from .base_model import VersionedModel
+from .base_model import BaseModel
 from .db import db, ma
 
 
-class Credit(VersionedModel):  # pylint:disable=too-many-instance-attributes
+class Credit(BaseModel):  # pylint:disable=too-many-instance-attributes
     """This class manages all of the base data about Credit."""
 
     __tablename__ = 'credits'

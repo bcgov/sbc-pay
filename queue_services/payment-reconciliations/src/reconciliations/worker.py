@@ -36,6 +36,7 @@ from entity_queue_common.service import QueueServiceManager
 from entity_queue_common.service_utils import QueueException, logger
 from flask import Flask
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import Credit as CreditModel
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Invoice as InvoiceModel
@@ -45,7 +46,6 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
-from pay_api.models import Credit as CreditModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.services.queue_publisher import publish
@@ -428,7 +428,7 @@ def _process_failed_payments(row):
 
     # Create an invoice for NSF for this account
     invoice = _create_nsf_invoice(cfs_account, inv_number, payment_account)
-    # Adjust CFS invoice
+    # Adjust CFS invoicerequirements.txt
     CFSService.add_nsf_adjustment(cfs_account=cfs_account, inv_number=inv_number, amount=invoice.total)
 
 
@@ -450,6 +450,43 @@ def _create_credit_records(csv_content: str):
                     remaining_amount=float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL)),
                     account_id=pay_account.id
                 ).save()
+
+
+def _sync_credit_records():
+    """Sync credit records with CFS."""
+    # 1. Get all credit records with balance > 0
+    # 2. If it's on account receipt call receipt endpoint and calculate balance.
+    # 3. If it's credit memo, call credit memo endpoint and calculate balance.
+    # 4. Roll up the credits to credit field in payment_account.
+    active_credits: List[CreditModel] = db.session.query(CreditModel).filter(CreditModel.remaining_amount > 0).all()
+    logger.info('Found %s credit records', len(active_credits))
+    account_ids: List[int] = []
+    for credit in active_credits:
+        account_ids.append(credit.account_id)
+        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(credit.account_id)
+        if credit.is_credit_memo:
+            credit_memo = CFSService.get_cms(cfs_account=cfs_account, cms_number=credit.cfs_identifier)
+            credit.remaining_amount = abs(float(credit_memo.get('amount_due')))
+        else:
+            receipt = CFSService.get_receipt(cfs_account=cfs_account, receipt_number=credit.cfs_identifier)
+            receipt_amount = float(receipt.get('receipt_amount'))
+            applied_amount: float = 0
+            for invoice in receipt.get('invoices', []):
+                applied_amount += float(invoice.get('amount_applied'))
+            credit.remaining_amount = receipt_amount - applied_amount
+
+        credit.save()
+
+    # Roll up the credits and add up to credit in payment_account.
+    for account_id in set(account_ids):
+        account_credits: List[CreditModel] = db.session.query(CreditModel).filter(
+            CreditModel.remaining_amount > 0).filter(CreditModel.account_id == account_id).all()
+        credit_total: float = 0
+        for account_credit in account_credits:
+            credit_total += account_credit.remaining_amount
+        pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(account_id)
+        pay_account.credit = credit_total
+        pay_account.save()
 
 
 def _get_payment_account(row) -> PaymentAccountModel:

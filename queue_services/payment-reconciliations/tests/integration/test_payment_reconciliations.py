@@ -23,6 +23,7 @@ import pytest
 from entity_queue_common.service_utils import subscribe_to_queue
 from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import Credit as CreditModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
@@ -721,3 +722,87 @@ async def test_eft_wire_reconciliations(session, app, stan_server, event_loop, c
     assert payment.payment_status_code == PaymentStatus.COMPLETED.value
     assert payment.paid_amount == paid_amount
     assert payment.receipt_number == eft_wire_receipt
+
+
+@pytest.mark.asyncio
+async def test_credits(session, app, stan_server, event_loop, client_id, events_stan, future, mock_publish,
+                       monkeypatch):
+    """Test Reconciliations worker."""
+    # Call back for the subscription
+    from reconciliations.worker import cb_subscription_handler
+
+    # Create a Credit Card Payment
+    # register the handler to test it
+    await subscribe_to_queue(events_stan,
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
+                             cb_subscription_handler)
+
+    # 1. Create payment account.
+    # 2. Create EFT/WIRE payment db record.
+    # 3. Create a credit memo db record.
+    # 4. Publish credit in settlement file.
+    # 5. Mock CFS Response for the receipt and credit memo.
+    # 6. Confirm the credit matches the records.
+    cfs_account_number = '1234'
+    pay_account: PaymentAccountModel = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
+                                                                             cfs_account=cfs_account_number)
+    pay_account_id = pay_account.id
+    # invoice_number = '1234567890'
+
+    # Create a payment for EFT Wire
+    eft_wire_receipt = 'RCPT0012345'
+    onac_amount = 100
+    cm_identifier = 1000
+    cm_amount = 100
+    cm_used_amount = 50
+    PaymentModel(payment_method_code=PaymentMethod.EFT.value,
+                 payment_status_code=PaymentStatus.CREATED.value,
+                 payment_system_code='PAYBC',
+                 payment_account_id=pay_account.id,
+                 completed_on=datetime.now(),
+                 paid_amount=onac_amount,
+                 receipt_number=eft_wire_receipt).save()
+
+    credit = CreditModel(cfs_identifier=cm_identifier,
+                         is_credit_memo=True,
+                         amount=cm_amount,
+                         remaining_amount=cm_amount,
+                         account_id=pay_account_id).save()
+    credit_id = credit.id
+
+    # Mock up the Receipt look up
+    def mock_receipt(cfs_account: CfsAccountModel,
+                     receipt_number: str):  # pylint: disable=unused-argument; mocks of library methods
+        return {
+            'receipt_amount': onac_amount
+        }
+
+    # Mock up the Receipt look up
+    def mock_cms(cfs_account: CfsAccountModel,
+                 cms_number: str):  # pylint: disable=unused-argument; mocks of library methods
+        return {
+            'amount_due': cm_amount - cm_used_amount
+        }
+
+    monkeypatch.setattr('pay_api.services.cfs_service.CFSService.get_receipt', mock_receipt)
+    monkeypatch.setattr('pay_api.services.cfs_service.CFSService.get_cms', mock_cms)
+
+    # Create a settlement file and publish.
+    file_name: str = 'cas_settlement_file.csv'
+
+    # Settlement row
+    date = datetime.now().strftime('%d-%b-%y')
+
+    row = [RecordType.ONAC.value, SourceTransaction.EFT_WIRE.value, eft_wire_receipt, 100001, date, onac_amount,
+           cfs_account_number, TargetTransaction.RECEIPT.value, eft_wire_receipt, onac_amount, 0, Status.ON_ACC.value]
+
+    create_and_upload_settlement_file(file_name, [row])
+    await helper_add_event_to_queue(events_stan, file_name=file_name)
+
+    # Look up credit file and make sure the credits are recorded.
+    pay_account = PaymentAccountModel.find_by_id(pay_account_id)
+    assert pay_account.credit == onac_amount + cm_amount - cm_used_amount
+    credit = CreditModel.find_by_id(credit_id)
+    assert credit.remaining_amount == cm_amount - cm_used_amount

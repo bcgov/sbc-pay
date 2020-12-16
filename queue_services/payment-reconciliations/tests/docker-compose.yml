@@ -20,7 +20,7 @@ services:
         environment:
           - MINIO_ACCESS_KEY=minio
           - MINIO_SECRET_KEY=minio123
-          - MINIO_DEFAULT_BUCKETS=payment-sftp
+          - MINIO_DEFAULT_BUCKETS=payment-sftp,test
 
     proxy:
         image: nginx:alpine
