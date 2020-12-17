@@ -25,6 +25,7 @@ from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentSystem, PaymentStatus, CfsAccountStatus, \
     TransactionStatus
+from pay_api.utils.util import get_pay_subject_name
 from .payment_line_item import PaymentLineItem
 
 
@@ -107,7 +108,7 @@ class PadService(PaymentSystemService, CFSService):
 
         payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
         try:
-            publish_response(payload=payload)
+            publish_response(payload=payload, subject=get_pay_subject_name(invoice.corp_type_code))
         except Exception as e:  # pylint: disable=broad-except
             current_app.logger.error(e)
             current_app.logger.error('Notification to Queue failed for the Payment Event %s', payload)
