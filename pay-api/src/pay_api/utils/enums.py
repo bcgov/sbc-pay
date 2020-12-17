@@ -159,3 +159,9 @@ class CfsAccountStatus(Enum):
     ACTIVE = 'ACTIVE'
     INACTIVE = 'INACTIVE'
     FREEZE = 'FREEZE'
+
+
+class CorpType(Enum):
+    """Corp Type."""
+
+    NRO = 'NRO'
