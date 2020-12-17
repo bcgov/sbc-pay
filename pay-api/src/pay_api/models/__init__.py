@@ -51,6 +51,7 @@ from .ejv_batch_link import EjvBatchLink
 from .invoice_batch import InvoiceBatch
 from .invoice_batch_link import InvoiceBatchLink
 from .refund import Refund
+from .credit import Credit
 
 
 event.listen(Engine, 'before_cursor_execute', DBTracing.query_tracing)

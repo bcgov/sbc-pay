@@ -404,6 +404,36 @@ class CFSService(OAuthService):
 
         return CFSService.post(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload).json()
 
+    @classmethod
+    def get_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str) -> Dict[str, any]:
+        """Return receipt details from CFS."""
+        current_app.logger.debug('>Getting receipt: %s', receipt_number)
+        access_token: str = CFSService.get_token().json().get('access_token')
+        cfs_base: str = current_app.config.get('CFS_BASE_URL')
+        receipt_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}' \
+                      f'/sites/{cfs_account.cfs_site}/rcpts/{receipt_number}/'
+        current_app.logger.debug('Receipt URL %s', receipt_url)
+
+        receipt_response = cls.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+
+        current_app.logger.debug('>Received receipt response')
+        return receipt_response.json()
+
+    @classmethod
+    def get_cms(cls, cfs_account: CfsAccountModel, cms_number: str) -> Dict[str, any]:
+        """Return CMS details from CFS."""
+        current_app.logger.debug('>Getting CMS: %s', cms_number)
+        access_token: str = CFSService.get_token().json().get('access_token')
+        cfs_base: str = current_app.config.get('CFS_BASE_URL')
+        cms_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}' \
+                  f'/sites/{cfs_account.cfs_site}/cms/{cms_number}/'
+        current_app.logger.debug('CMS URL %s', cms_url)
+
+        cms_response = cls.get(cms_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+
+        current_app.logger.debug('>Received CMS response')
+        return cms_response.json()
+
 
 def get_non_null_value(value: str, default_value: str):
     """Return non null value for the value by replacing default value."""
