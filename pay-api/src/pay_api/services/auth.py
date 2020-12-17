@@ -72,7 +72,8 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
                 is_authorized = True
             UserContext.permission = auth_response.get('roles')
             # Check if premium flag is required
-            if kwargs.get('is_premium', False) and auth_response['account']['accountType'] != AccountType.PREMIUM.value:
+            if kwargs.get('is_premium', False) and \
+                    auth_response.get('account', {}).get('accountType') != AccountType.PREMIUM.value:
                 is_authorized = False
 
         if Role.SYSTEM.value in user.roles and bool(Role.EDITOR.value in user.roles):
