@@ -35,7 +35,6 @@ import nats
 from entity_queue_common.service import QueueServiceManager
 from entity_queue_common.service_utils import QueueException, logger
 from flask import Flask
-from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
@@ -111,15 +110,17 @@ def _create_payment_records(csv_content: str):
     # For Credit Memos, do nothing.
     for source_txn_number, payment_lines in source_txns.items():
         settlement_type: str = _get_settlement_type(payment_lines)
-        if settlement_type == RecordType.PAD.value:
+        if settlement_type in (RecordType.PAD.value, RecordType.PADR.value, RecordType.PAYR.value):
             for row in payment_lines:
-                paid_amount = float(_get_row_value(row, Column.APP_AMOUNT))
                 inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
                 invoice_amount = float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL))
                 completed_on: datetime = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%d-%b-%y')
                 status = PaymentStatus.COMPLETED.value \
                     if _get_row_value(row, Column.TARGET_TXN_STATUS).lower() == Status.PAID.value.lower() \
                     else PaymentStatus.FAILED.value
+                paid_amount = float(
+                    _get_row_value(row, Column.APP_AMOUNT)) if status == PaymentStatus.COMPLETED.value else 0
+
                 _save_payment(completed_on, inv_number, invoice_amount, paid_amount, row, status,
                               PaymentMethod.PAD.value,
                               source_txn_number)
@@ -152,9 +153,21 @@ def _create_payment_records(csv_content: str):
 
 def _save_payment(completed_on, inv_number, invoice_amount,  # pylint: disable=too-many-arguments
                   paid_amount, row, status, payment_method, receipt_number):
+    # pylint: disable=import-outside-toplevel
+    from pay_api.factory.payment_system_factory import PaymentSystemFactory
+
     payment_account = _get_payment_account(row)
     pay_service = PaymentSystemFactory.create_from_payment_method(payment_method)
-    payment = PaymentModel()
+    # If status is failed, which means NSF. We already have a COMPLETED payment record, find and update iit.
+    payment: PaymentModel = None
+    if status == PaymentStatus.FAILED.value:
+        payment: PaymentModel = db.session.query(PaymentModel) \
+            .filter(PaymentModel.invoice_number == inv_number,
+                    PaymentModel.payment_status_code == PaymentStatus.COMPLETED.value) \
+            .one_or_none()
+
+    if not payment:
+        payment = PaymentModel()
     payment.payment_method_code = pay_service.get_payment_method_code()
     payment.payment_status_code = status
     payment.payment_system_code = pay_service.get_payment_system_code()
@@ -194,7 +207,8 @@ async def _reconcile_payments(msg: Dict[str, any]):
         # If EFT/WIRE, lookup the invoices and set the status:
         # Create payment record by looking the receipt_number
         # PS : Duplicating some code to make the code more readable.
-        if (record_type := _get_row_value(row, Column.RECORD_TYPE)) == RecordType.PAD.value:
+        if (record_type := _get_row_value(row, Column.RECORD_TYPE)) \
+                in (RecordType.PAD.value, RecordType.PADR.value, RecordType.PAYR.value):
             # Handle invoices
             await _process_consolidated_invoices(row)
         elif record_type in (RecordType.BOLP.value, RecordType.EFTP.value):
@@ -379,9 +393,10 @@ def _process_failed_payments(row):
     """Handle failed payments."""
     # 1. Set the cfs_account status as FREEZE.
     # 2. Call cfs api to Stop further PAD on this account.
-    # 3. Create an NSF invoice for this account.
-    # 4. Create invoice reference for the newly created NSF invoice.
-    # 5. Adjust invoice in CFS to include NSF fees.
+    # 3. Reverse the invoice_reference status to ACTIVE, invoice status to SETTLEMENT_SCHED, and delete receipt.
+    # 4. Create an NSF invoice for this account.
+    # 5. Create invoice reference for the newly created NSF invoice.
+    # 6. Adjust invoice in CFS to include NSF fees.
     inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
     # Set CFS Account Status.
     payment_account: PaymentAccountModel = _get_payment_account(row)
@@ -390,6 +405,24 @@ def _process_failed_payments(row):
     cfs_account.status = CfsAccountStatus.FREEZE.value
     # Call CFS to stop any further PAD transactions on this account.
     CFSService.suspend_cfs_account(cfs_account)
+    # Find the invoice_reference for this invoice and mark it as ACTIVE.
+    inv_references: List[InvoiceReferenceModel] = db.session.query(InvoiceReferenceModel). \
+        filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.COMPLETED.value). \
+        filter(InvoiceReferenceModel.invoice_number == inv_number). \
+        all()
+    # Update status to ACTIVE, if it was marked COMPLETED
+    for inv_reference in inv_references:
+        inv_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
+        # Find receipt and delete it.
+        receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(
+            invoice_id=inv_reference.invoice_id
+        )
+        if receipt:
+            db.session.delete(receipt)
+        # Find invoice and update the status to SETTLEMENT_SCHED
+        invoice: InvoiceModel = InvoiceModel.find_by_id(identifier=inv_reference.invoice_id)
+        invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
+
     # Create an invoice for NSF for this account
     invoice = _create_nsf_invoice(cfs_account, inv_number, payment_account)
     # Adjust CFS invoice
@@ -568,7 +601,8 @@ def _get_settlement_type(payment_lines) -> str:
     for row in payment_lines:
         # TODO Add BC Online Drawdown record type.
         if _get_row_value(row, Column.RECORD_TYPE) in \
-                (RecordType.BOLP.value, RecordType.EFTP.value, RecordType.PAD.value):
+                (RecordType.BOLP.value, RecordType.EFTP.value, RecordType.PAD.value, RecordType.PADR.value,
+                 RecordType.PAYR.value):
             settlement_type = _get_row_value(row, Column.RECORD_TYPE)
             break
     return settlement_type

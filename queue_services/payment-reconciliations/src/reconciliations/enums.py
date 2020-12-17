@@ -36,6 +36,7 @@ class RecordType(Enum):
     ONAC = 'ONAC'
     ONAP = 'ONAP'
     EFTP = 'EFTP'
+    PADR = 'PADR'
 
 
 class Column(Enum):
@@ -60,10 +61,10 @@ class Column(Enum):
 class Status(Enum):
     """Target Transaction Status."""
 
-    PAID = 'Fully Paid'
-    NOT_PAID = 'Not paid'
+    PAID = 'Fully PAID'
+    NOT_PAID = 'Not PAID'
     ON_ACC = 'On Account'
-    PARTIAL = 'Partially Paid'
+    PARTIAL = 'Partially PAID'
 
 
 class TargetTransaction(Enum):
