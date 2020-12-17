@@ -31,7 +31,7 @@ from pay_api.utils.constants import (
     CFS_BATCH_SOURCE, CFS_CUSTOMER_PROFILE_CLASS, CFS_CUST_TRX_TYPE, CFS_LINE_TYPE, CFS_TERM_NAME,
     DEFAULT_ADDRESS_LINE_1,
     DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
-    RECEIPT_METHOD_PAD_STOP, RECEIPT_METHOD_PAD_DAILY, CFS_RCPT_EFT_WIRE)
+    RECEIPT_METHOD_PAD_STOP, RECEIPT_METHOD_PAD_DAILY, CFS_RCPT_EFT_WIRE, CFS_CMS_TRX_TYPE)
 from pay_api.utils.enums import (
     AuthHeaderType, ContentType)
 from pay_api.utils.util import current_local_time, generate_transaction_number
@@ -286,7 +286,7 @@ class CFSService(OAuthService):
         return invoice_response
 
     @classmethod
-    def _build_lines(cls, payment_line_items: List[PaymentLineItemModel]):
+    def _build_lines(cls, payment_line_items: List[PaymentLineItemModel], negate: bool = False):
         """Build lines for the invoice."""
         # Fetch all distribution codes to reduce DB hits. Introduce caching if needed later
         distribution_codes: List[DistributionCodeModel] = DistributionCodeModel.find_all()
@@ -300,7 +300,7 @@ class CFSService(OAuthService):
             index = index + 1
             distribution = [dict(
                 dist_line_number=index,
-                amount=line_item.total,
+                amount=cls._get_amount(line_item.total, negate),
                 account=f'{distribution_code.client}.{distribution_code.responsibility_centre}.'
                         f'{distribution_code.service_line}.{distribution_code.stob}.'
                         f'{distribution_code.project_code}.000000.0000'
@@ -310,7 +310,7 @@ class CFSService(OAuthService):
                     'line_number': index,
                     'line_type': CFS_LINE_TYPE,
                     'description': line_item.description,
-                    'unit_price': line_item.total,
+                    'unit_price': cls._get_amount(line_item.total, negate),
                     'quantity': 1,
                     'attribute1': line_item.invoice_id,
                     'attribute2': line_item.id,
@@ -325,14 +325,14 @@ class CFSService(OAuthService):
                         'line_number': index,
                         'line_type': CFS_LINE_TYPE,
                         'description': 'Service Fee',
-                        'unit_price': line_item.service_fees,
+                        'unit_price': cls._get_amount(line_item.service_fees, negate),
                         'quantity': 1,
                         'attribute1': line_item.invoice_id,
                         'attribute2': line_item.id,
                         'distribution': [
                             {
                                 'dist_line_number': index,
-                                'amount': line_item.service_fees,
+                                'amount': cls._get_amount(line_item.service_fees, negate),
                                 'account': f'{distribution_code.service_fee_client}.'
                                            f'{distribution_code.service_fee_responsibility_centre}.'
                                            f'{distribution_code.service_fee_line}.'
@@ -344,6 +344,10 @@ class CFSService(OAuthService):
                 )
 
         return lines
+
+    @classmethod
+    def _get_amount(cls, amount, negate):
+        return -amount if negate else amount
 
     @staticmethod
     def reverse_invoice(inv_number: str):
@@ -430,6 +434,33 @@ class CFSService(OAuthService):
         current_app.logger.debug('CMS URL %s', cms_url)
 
         cms_response = cls.get(cms_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+
+        current_app.logger.debug('>Received CMS response')
+        return cms_response.json()
+
+    @classmethod
+    def create_cms(cls, line_items: List[PaymentLineItemModel], cfs_account: CfsAccountModel) -> Dict[str, any]:
+        """Create CM record in CFS."""
+        current_app.logger.debug('>Creating CMS')
+        access_token: str = CFSService.get_token().json().get('access_token')
+        cfs_base: str = current_app.config.get('CFS_BASE_URL')
+        cms_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}' \
+                  f'/sites/{cfs_account.cfs_site}/cms/'
+        current_app.logger.debug('CMS URL %s', cms_url)
+
+        now = current_local_time()
+        curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        cms_payload = dict(
+            batch_source=CFS_BATCH_SOURCE,
+            cust_trx_type=CFS_CMS_TRX_TYPE,
+            transaction_date=curr_time,
+            gl_date=curr_time,
+            comments='',
+            lines=cls._build_lines(line_items, negate=True)
+        )
+
+        cms_response = CFSService.post(cms_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, cms_payload)
 
         current_app.logger.debug('>Received CMS response')
         return cms_response.json()

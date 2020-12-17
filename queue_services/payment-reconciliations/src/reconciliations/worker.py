@@ -161,10 +161,11 @@ def _save_payment(completed_on, inv_number, invoice_amount,  # pylint: disable=t
     # If status is failed, which means NSF. We already have a COMPLETED payment record, find and update iit.
     payment: PaymentModel = None
     if status == PaymentStatus.FAILED.value:
-        payment: PaymentModel = db.session.query(PaymentModel) \
-            .filter(PaymentModel.invoice_number == inv_number,
-                    PaymentModel.payment_status_code == PaymentStatus.COMPLETED.value) \
-            .one_or_none()
+        payment = _get_payment_by_inv_number_and_status(inv_number, PaymentStatus.COMPLETED.value)
+        # Just to handle duplicate rows in settlement file,
+        # pull out failed payment record if it exists and no COMPLETED payments are present.
+        if not payment:
+            payment = _get_payment_by_inv_number_and_status(inv_number, PaymentStatus.FAILED.value)
 
     if not payment:
         payment = PaymentModel()
@@ -178,6 +179,15 @@ def _save_payment(completed_on, inv_number, invoice_amount,  # pylint: disable=t
     payment.paid_amount = paid_amount
     payment.receipt_number = receipt_number
     db.session.add(payment)
+
+
+def _get_payment_by_inv_number_and_status(inv_number: str, status: str) -> PaymentModel:
+    """Get payment by invoice number and status."""
+    payment: PaymentModel = db.session.query(PaymentModel) \
+        .filter(PaymentModel.invoice_number == inv_number,
+                PaymentModel.payment_status_code == status) \
+        .one_or_none()
+    return payment
 
 
 async def _reconcile_payments(msg: Dict[str, any]):
