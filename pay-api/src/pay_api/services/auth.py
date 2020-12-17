@@ -60,21 +60,17 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
                     'id': f'PASSCODE_ACCOUNT_{business_identifier}'
                 }
         elif account_id:
+            auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{account_id}' \
+                                                                     f'/authorizations?expanded=true'
+            additional_headers = None
             if corp_type_code:
-                auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'accounts/{account_id}/' \
-                    f'products/{corp_type_code}/authorizations?expanded=true'
-                auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
-                roles: list = auth_response.get('roles', [])
-                if roles:
-                    is_authorized = True
-            else:  # For activities not specific to a product
-                auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{account_id}' \
-                                                                         f'/authorizations?expanded=true'
-
-                auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
-                # TODO Create a similar response as in auth response
+                additional_headers = {'corp-type': corp_type_code}
+            auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                            additional_headers).json()
+            roles: list = auth_response.get('roles', [])
+            if roles:
                 is_authorized = True
-                UserContext.permission = auth_response.get('roles')
+            UserContext.permission = auth_response.get('roles')
             # Check if premium flag is required
             if kwargs.get('is_premium', False) and auth_response['account']['accountType'] != AccountType.PREMIUM.value:
                 is_authorized = False

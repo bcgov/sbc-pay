@@ -93,6 +93,7 @@ class OAuthService:
     @staticmethod
     def get(endpoint, token, auth_header_type: AuthHeaderType,  # pylint:disable=too-many-arguments
             content_type: ContentType,
+            additional_headers: Dict = None,
             retry_on_failure: bool = False, return_none_if_404: bool = False):
         """GET service."""
         current_app.logger.debug('<GET')
@@ -101,6 +102,9 @@ class OAuthService:
             'Authorization': auth_header_type.value.format(token),
             'Content-Type': content_type.value
         }
+
+        if additional_headers:
+            headers.update(additional_headers)
 
         current_app.logger.debug('Endpoint : {}'.format(endpoint))
         current_app.logger.debug('headers : {}'.format(headers))
