@@ -25,7 +25,7 @@ from stan.aio.client import Client as STAN  # noqa N814; by convention the name 
 from pay_api.utils.handlers import closed_cb, error_cb  # noq I001; conflict with flake8
 
 
-def publish_response(payload: Dict[str, any], client_name: str = None, subject: str = None):
+def publish_response(payload: Dict[str, any], subject: str, client_name: str = None):
     """Publish payment response to async nats."""
     asyncio.run(publish(payload=payload, client_name=client_name, subject=subject))
 
@@ -50,7 +50,7 @@ def stan_connection_options(nats_con: NATS):
     }
 
 
-async def publish(payload, client_name: str = None, subject: str = None):  # pylint: disable=too-few-public-methods
+async def publish(payload, subject: str, client_name: str = None):  # pylint: disable=too-few-public-methods
     """Service to manage Queue publish operations."""
     current_app.logger.debug('<publish')
     # NATS client connections
@@ -63,6 +63,7 @@ async def publish(payload, client_name: str = None, subject: str = None):  # pyl
         await nats_con.close()
 
     try:
+        current_app.logger.info('Publishing to %s', subject)
         # Connect to the NATS server, and then use that for the streaming connection.
         await nats_con.connect(**nats_connection_options(client_name=client_name), verbose=True, connect_timeout=3,
                                reconnect_time_wait=1)
@@ -70,7 +71,7 @@ async def publish(payload, client_name: str = None, subject: str = None):  # pyl
 
         current_app.logger.debug(payload)
 
-        await stan_con.publish(subject=subject or current_app.config.get('NATS_PAYMENT_SUBJECT'),
+        await stan_con.publish(subject=subject,
                                payload=json.dumps(payload).encode('utf-8'))
 
     except Exception as e:  # pylint: disable=broad-except

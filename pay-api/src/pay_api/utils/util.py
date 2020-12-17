@@ -25,6 +25,8 @@ import pytz
 from dpath import util as dpath_util
 from flask import current_app
 
+from .enums import CorpType
+
 
 def cors_preflight(methods: str = 'GET'):
     """Render an option method on the class."""
@@ -153,3 +155,11 @@ def mask(val: str, preserve_length: int = 0) -> str:
     if preserve_length is None or preserve_length == 0:  # mask fully
         return replace_char * len(val)
     return val[-preserve_length:].rjust(len(val), replace_char)
+
+
+def get_pay_subject_name(corp_type: str, subject_format: str = None):
+    """Return payment subject name."""
+    # TODO Refactor later
+    subject_format = subject_format or current_app.config.get('NATS_PAYMENT_SUBJECT')
+    pay_subject = 'name-request' if corp_type == CorpType.NRO.value else 'filing'
+    return subject_format.format(product=pay_subject)
