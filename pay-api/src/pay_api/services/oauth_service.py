@@ -103,7 +103,7 @@ class OAuthService:
             'Content-Type': content_type.value
         }
 
-        if additional_headers:
+        if additional_headers is not None:
             headers.update(additional_headers)
 
         current_app.logger.debug('Endpoint : {}'.format(endpoint))
