@@ -48,7 +48,7 @@ async def test_publish(app, stan_server, client_id, stan, future, event_loop):
 
         payload = {'paymentToken': {'id': 1, 'statusCode': 'COMPLETED'}}
 
-        await publish(payload=payload)
+        await publish(payload=payload, subject='filing')
 
 
 @pytest.mark.asyncio
@@ -72,7 +72,7 @@ async def test_publish_transaction_failed(app, client_id, stan, future, stan_ser
 
         payload = {'paymentToken': {'id': 100, 'statusCode': 'TRANSACTION_FAILED'}}
 
-        await publish(payload=payload)
+        await publish(payload=payload, subject='filing')
 
 
 @pytest.mark.asyncio
@@ -96,7 +96,7 @@ async def test_publish_transaction_bulk_load(app, client_id, stan, future, stan_
 
         for i in range(10):
             payload = {'paymentToken': {'id': i, 'statusCode': 'COMPLETED'}}
-            await publish(payload=payload)
+            await publish(payload=payload, subject='filing')
 
 
 @pytest.mark.asyncio
@@ -115,5 +115,5 @@ async def test_publish_transaction_nats_down(app, client_id, stan, future, stan_
 
         payload = {'paymentToken': {'id': 10, 'statusCode': 'COMPLETED'}}
         with pytest.raises(Exception):
-            await publish(payload=payload)
+            await publish(payload=payload, subject='filing')
         mock.stop()
