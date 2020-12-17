@@ -425,10 +425,11 @@ def _process_failed_payments(row):
         # Find invoice and update the status to SETTLEMENT_SCHED
         invoice: InvoiceModel = InvoiceModel.find_by_id(identifier=inv_reference.invoice_id)
         invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
+        invoice.paid = 0
 
     # Create an invoice for NSF for this account
     invoice = _create_nsf_invoice(cfs_account, inv_number, payment_account)
-    # Adjust CFS invoicerequirements.txt
+    # Adjust CFS invoice
     CFSService.add_nsf_adjustment(cfs_account=cfs_account, inv_number=inv_number, amount=invoice.total)
 
 
