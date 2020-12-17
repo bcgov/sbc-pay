@@ -93,7 +93,7 @@ class OAuthService:
     @staticmethod
     def get(endpoint, token, auth_header_type: AuthHeaderType,  # pylint:disable=too-many-arguments
             content_type: ContentType,
-            retry_on_failure: bool = False, return_none_if_404: bool = False, additional_headers: Dict = None ):
+            retry_on_failure: bool = False, return_none_if_404: bool = False, additional_headers: Dict = None):
         """GET service."""
         current_app.logger.debug('<GET')
 
