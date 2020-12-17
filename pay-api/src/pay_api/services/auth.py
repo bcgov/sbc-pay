@@ -64,7 +64,7 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
                                                                      f'/authorizations?expanded=true'
             additional_headers = None
             if corp_type_code:
-                additional_headers = {'corp-type': corp_type_code}
+                additional_headers = {'product-type': corp_type_code}
             auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
                                             additional_headers=additional_headers).json()
             roles: list = auth_response.get('roles', [])
