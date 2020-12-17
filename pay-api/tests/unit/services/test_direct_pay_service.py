@@ -15,7 +15,6 @@
 """Tests to assure the Direct Payment Service."""
 
 import urllib.parse
-from datetime import date
 
 from flask import current_app
 
