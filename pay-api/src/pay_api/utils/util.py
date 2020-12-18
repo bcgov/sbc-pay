@@ -147,12 +147,6 @@ def generate_receipt_number(payment_id: str) -> str:
     return f'{prefix}{payment_id:0>8}'
 
 
-def generate_cms_number(txn_number: str) -> str:
-    """Return transaction number for invoices."""
-    prefix = current_app.config.get('CFS_CMS_PREFIX', 'CREDIT')
-    return f'{prefix}{txn_number:0>8}'
-
-
 def mask(val: str, preserve_length: int = 0) -> str:
     """Mask the val.only unmask the length specified."""
     if not val:
