@@ -29,7 +29,7 @@ from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import Role, PaymentMethod
 from tests.utilities.base_test import (get_claims, get_payment_request, get_basic_account_payload,
                                        get_premium_account_payload, token_header,
-                                       get_unlinked_pad_account_payload)
+                                       get_unlinked_pad_account_payload, get_pad_account_payload)
 
 
 def test_account_purchase_history(session, client, jwt, app):
@@ -222,6 +222,38 @@ def test_premium_account_creation(session, client, jwt, app):
                      headers=headers)
 
     assert rv.status_code == 201
+
+
+def test_premium_account_update_bcol_pad(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_premium_account_payload()),
+                     headers=headers)
+
+    auth_account_id = rv.json.get('authAccountId')
+
+    rv = client.get(f'/api/v1/accounts/{auth_account_id}', headers=headers)
+    assert rv.json.get('authAccountId') == auth_account_id
+
+    # assert switching to PAD returns bank details
+    pad_account_details = get_pad_account_payload()
+
+    rv = client.put(f'/api/v1/accounts/{auth_account_id}', data=json.dumps(pad_account_details),
+                    headers=headers)
+
+    assert rv.status_code == 202
+
+    assert rv.json.get('futurePaymentMethod') == PaymentMethod.PAD.value
+    assert rv.json.get('bankTransitNumber') == pad_account_details.get('bankTransitNumber')
+
+    # Assert switching to bcol returns no bank details
+    rv = client.put(f'/api/v1/accounts/{auth_account_id}', data=json.dumps(get_premium_account_payload()),
+                    headers=headers)
+
+    assert rv.json.get('futurePaymentMethod') is None
+    assert rv.json.get('bankTransitNumber') is None
 
 
 def test_premium_duplicate_account_creation(session, client, jwt, app):
