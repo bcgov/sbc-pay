@@ -34,7 +34,7 @@ from pay_api.services.receipt import Receipt
 from pay_api.utils.enums import PaymentStatus, TransactionStatus, InvoiceReferenceStatus, \
     InvoiceStatus, PaymentMethod
 from pay_api.utils.errors import Error
-from pay_api.utils.util import is_valid_redirect_url
+from pay_api.utils.util import get_pay_subject_name, is_valid_redirect_url
 from .payment import Payment
 from .queue_publisher import publish_response
 
@@ -469,7 +469,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         payload = PaymentTransaction.create_event_payload(invoice, status_code)
 
         try:
-            publish_response(payload=payload)
+            publish_response(payload=payload, subject=get_pay_subject_name(invoice.corp_type_code))
         except Exception as e:  # pylint: disable=broad-except
             current_app.logger.error(e)
             current_app.logger.warning(

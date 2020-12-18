@@ -352,6 +352,11 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 pay_system.update_account(name=payment_account.auth_account_name, cfs_account=cfs_account,
                                           payment_info=payment_info)
 
+        elif cfs_account is not None:
+            # if its not PAYBC ,it means switching to either drawdown or internal ,deactivate the cfs account
+            cfs_account.status = CfsAccountStatus.INACTIVE.value
+            cfs_account.flush()
+
         is_pad = payment_method == PaymentMethod.PAD.value
         if is_pad:
             # override payment method for since pad has 3 days wait period
@@ -452,7 +457,12 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         account_schema = PaymentAccountSchema()
         d = account_schema.dump(self._dao)
         # Add cfs account values based on role and payment method. For system roles, return bank details.
-        if self.payment_method in (PaymentMethod.PAD.value, PaymentMethod.ONLINE_BANKING.value):
+        is_ob_or_pad = self.payment_method in (PaymentMethod.PAD.value, PaymentMethod.ONLINE_BANKING.value)
+        # to handle PAD 3 day period..UI needs bank details even if PAD is not activated
+        is_future_pad = (self.payment_method == PaymentMethod.DRAWDOWN.value) and (self._is_pad_in_pending_activation())
+        show_cfs_details = is_ob_or_pad or is_future_pad
+
+        if show_cfs_details:
             cfs_account = {
                 'cfsAccountNumber': self.cfs_account,
                 'cfsPartyNumber': self.cfs_party,
@@ -467,7 +477,14 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
             d['cfsAccount'] = cfs_account
 
+        if is_future_pad:
+            d['futurePaymentMethod'] = PaymentMethod.PAD.value
         return d
+
+    def _is_pad_in_pending_activation(self):
+        """Find if PAD is awaiting activation."""
+        return self.pad_activation_date and self.pad_activation_date > datetime.now() and self.cfs_account_status in \
+            (CfsAccountStatus.PENDING.value, CfsAccountStatus.PENDING_PAD_ACTIVATION.value)
 
     def publish_account_mailer_event(self):
         """Publish to account mailer message to send out confirmation email."""

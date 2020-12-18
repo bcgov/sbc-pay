@@ -51,6 +51,7 @@ from pay_api.services.payment_transaction import PaymentTransaction as PaymentTr
 from pay_api.services.queue_publisher import publish
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus)
+from pay_api.utils.util import get_pay_subject_name
 from sentry_sdk import capture_message
 
 from reconciliations import config
@@ -528,8 +529,9 @@ async def _publish_payment_event(inv: InvoiceModel):
     payment_event_payload = PaymentTransactionService.create_event_payload(invoice=inv,
                                                                            status_code=PaymentStatus.COMPLETED.value)
     try:
+
         await publish(payload=payment_event_payload, client_name=APP_CONFIG.NATS_PAYMENT_CLIENT_NAME,
-                      subject=APP_CONFIG.NATS_PAYMENT_SUBJECT)
+                      subject=get_pay_subject_name(inv.corp_type_code, subject_format=APP_CONFIG.NATS_PAYMENT_SUBJECT))
     except Exception as e:  # pylint: disable=broad-except
         logger.error(e)
         logger.warning('Notification to Queue failed for the Payment Event - %s', payment_event_payload)
