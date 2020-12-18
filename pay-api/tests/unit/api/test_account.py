@@ -238,7 +238,7 @@ def test_premium_account_update_bcol_pad(session, client, jwt, app):
     assert rv.json.get('authAccountId') == auth_account_id
 
     # assert switching to PAD returns bank details
-    pad_account_details = get_pad_account_payload()
+    pad_account_details = get_pad_account_payload(account_id=int(auth_account_id))
 
     rv = client.put(f'/api/v1/accounts/{auth_account_id}', data=json.dumps(pad_account_details),
                     headers=headers)

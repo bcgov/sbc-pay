@@ -352,6 +352,11 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 pay_system.update_account(name=payment_account.auth_account_name, cfs_account=cfs_account,
                                           payment_info=payment_info)
 
+        elif cfs_account is not None:
+            # if its not PAYBC ,it means switching to either drawdown or internal ,deactivate the cfs account
+            cfs_account.status = CfsAccountStatus.INACTIVE.value
+            cfs_account.flush()
+
         is_pad = payment_method == PaymentMethod.PAD.value
         if is_pad:
             # override payment method for since pad has 3 days wait period

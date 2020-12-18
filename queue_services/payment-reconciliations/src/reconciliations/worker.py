@@ -374,7 +374,7 @@ async def _process_paid_invoices(inv_references, row):
         receipt.receipt_number = receipt_number
         db.session.add(receipt)
         # Publish to the queue if it's an Online Banking payment
-        if _get_row_value(row, Column.RECORD_TYPE) == RecordType.BOLP.value:
+        if inv.payment_method_code == PaymentMethod.ONLINE_BANKING.value:
             logger.debug('Publishing payment event for OB. Invoice : %s', inv.id)
             await _publish_payment_event(inv)
 
