@@ -31,7 +31,7 @@ from pay_api.utils.constants import (
     CFS_BATCH_SOURCE, CFS_CUSTOMER_PROFILE_CLASS, CFS_CUST_TRX_TYPE, CFS_LINE_TYPE, CFS_TERM_NAME,
     DEFAULT_ADDRESS_LINE_1,
     DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
-    RECEIPT_METHOD_PAD_STOP, RECEIPT_METHOD_PAD_DAILY, CFS_RCPT_EFT_WIRE, CFS_CMS_TRX_TYPE)
+    RECEIPT_METHOD_PAD_STOP, RECEIPT_METHOD_PAD_DAILY, CFS_RCPT_EFT_WIRE, CFS_CMS_TRX_TYPE, CFS_CM_BATCH_SOURCE)
 from pay_api.utils.enums import (
     AuthHeaderType, ContentType)
 from pay_api.utils.util import current_local_time, generate_transaction_number
@@ -452,7 +452,7 @@ class CFSService(OAuthService):
         curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
         cms_payload = dict(
-            batch_source=CFS_BATCH_SOURCE,
+            batch_source=CFS_CM_BATCH_SOURCE,
             cust_trx_type=CFS_CMS_TRX_TYPE,
             transaction_date=curr_time,
             gl_date=curr_time,
