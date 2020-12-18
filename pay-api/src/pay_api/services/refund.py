@@ -16,14 +16,15 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict
-from typing import Optional
+from typing import Dict, List, Optional
 
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import Refund as RefundModel, Invoice as InvoiceModel, Payment as PaymentModel, \
-    Receipt as ReceiptModel, InvoiceReference as InvoiceReferenceModel, PaymentTransaction as PaymentTransactionModel
+    Receipt as ReceiptModel, InvoiceReference as InvoiceReferenceModel, PaymentTransaction as PaymentTransactionModel, \
+    CfsAccount as CfsAccountModel, PaymentLineItem as PaymentLineItemModel, Credit as CreditModel
+from pay_api.services.cfs_service import CFSService
 from pay_api.services.queue_publisher import publish_response
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus, InvoiceReferenceStatus
 from pay_api.utils.errors import Error
@@ -36,6 +37,8 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
 
     def __init__(self):
         """Return a refund object."""
+        # Waiting Fix : https://github.com/PyCQA/pylint/issues/3882
+        # pylint:disable=unsubscriptable-object
         self.__dao: Optional[RefundModel] = None
         self._id: Optional[int] = None
         self._invoice_id: Optional[int] = None
@@ -92,7 +95,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         self._dao.requested_date = value
 
     @property
-    def reason(self) -> Optional[str]:
+    def reason(self) -> Optional[str]:  # pylint:disable=unsubscriptable-object
         """Return the _reason."""
         return self._reason
 
@@ -103,7 +106,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         self._dao.reason = value
 
     @property
-    def requested_by(self) -> Optional[str]:
+    def requested_by(self) -> Optional[str]:  # pylint:disable=unsubscriptable-object
         """Return the requested_by."""
         return self.requested_by
 
@@ -131,8 +134,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         # Allow refund only for direct pay payments, and only if the status of invoice is PAID/UPDATE_REVENUE_ACCOUNT
         paid_statuses = (InvoiceStatus.PAID.value, InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value)
 
-        if invoice.payment_method_code != PaymentMethod.DIRECT_PAY.value \
-                or invoice.invoice_status_code not in paid_statuses:
+        if invoice.invoice_status_code not in paid_statuses:
             raise BusinessException(Error.INVALID_REQUEST)
 
         refund: RefundService = RefundService()
@@ -142,15 +144,38 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         refund.requested_date = datetime.now()
         refund.flush()
 
-        cls._publish_to_mailer(invoice)
+        cls._process_cfs_refund(invoice)
 
         # set invoice status
         invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
         invoice.refund = invoice.total  # no partial refund
-        invoice.flush()
-        payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice_id)
-        payment.payment_status_code = PaymentStatus.REFUNDED.value
-        payment.save()
+        invoice.save()
+
+    @classmethod
+    def _process_cfs_refund(cls, invoice: InvoiceModel):
+        """Process refund in CFS."""
+        if invoice.payment_method_code == PaymentMethod.DIRECT_PAY.value:
+            cls._publish_to_mailer(invoice)
+            payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
+            payment.payment_status_code = PaymentStatus.REFUNDED.value
+            payment.flush()
+        else:
+            # Create credit memo in CFS.
+            # TODO Refactor this when actual task is done. This is just a quick fix for CFS UAT - Dec 2020
+            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(invoice.payment_account_id)
+            line_items: List[PaymentLineItemModel] = []
+            for line_item in invoice.payment_line_items:
+                line_items.append(PaymentLineItemModel.find_by_id(line_item.id))
+
+            cms_response = CFSService.create_cms(line_items=line_items, cfs_account=cfs_account)
+            # TODO Create a payment record for this to show up on transactions, when the ticket comes.
+            # Create a credit with CM identifier as CMs are not reported in payment interface file
+            # until invoice is applied.
+            CreditModel(cfs_identifier=cms_response.get('credit_memo_number'),
+                        is_credit_memo=True,
+                        amount=invoice.total,
+                        remaining_amount=invoice.total,
+                        account_id=invoice.payment_account_id).save()
 
     @classmethod
     def _publish_to_mailer(cls, invoice):
