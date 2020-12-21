@@ -26,6 +26,8 @@ from pay_api.services.payment_account import PaymentAccount as PaymentAccountSer
 from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, PaymentStatus
 from sentry_sdk import capture_message
 
+from utils import mailer
+
 
 class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
     """Task to create invoices in CFS."""
@@ -104,7 +106,8 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                                 f'auth account : {payment_account.auth_account_id}, ERROR : {str(e)}', level='error')
                 current_app.logger.error(e)
                 continue
-
+            # emit account mailer event
+            mailer.publish_mailer_events('pad.invoiceCreated', payment_account, {'invoice_total': invoice_total})
             # Iterate invoice and create invoice reference records
             for invoice in account_invoices:
                 # Create invoice reference, payment record and a payment transaction

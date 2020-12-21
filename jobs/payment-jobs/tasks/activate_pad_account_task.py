@@ -14,12 +14,17 @@
 """Task to activate accounts with pending activation.Mostly for PAD with 3 day activation period."""
 
 from datetime import datetime
-from typing import List
+from typing import List, Dict
 
 from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import FeeSchedule as FeeScheduleModel
+from pay_api.services.queue_publisher import publish
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod
+from sentry_sdk import capture_message
+
+from utils import mailer
 
 
 class ActivatePadAccountTask:  # pylint: disable=too-few-public-methods
@@ -55,3 +60,6 @@ class ActivatePadAccountTask:  # pylint: disable=too-few-public-methods
                 if pay_account.payment_method != PaymentMethod.PAD.value:
                     pay_account.payment_method = PaymentMethod.PAD.value
                     pay_account.save()
+                mailer.publish_mailer_events('confirmationPeriodOver', pending_account)
+
+
