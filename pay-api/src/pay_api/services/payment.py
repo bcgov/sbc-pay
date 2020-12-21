@@ -610,10 +610,11 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         receipt_date = credit_request.get('completedOn')
         amount = credit_request.get('paidAmount')
 
-        receipt_response = CFSService.create_eft_wire_receipt(payment_account=pay_account,
-                                                              rcpt_number=receipt_number,
-                                                              rcpt_date=receipt_date,
-                                                              amount=amount)
+        receipt_response = CFSService.create_cfs_receipt(payment_account=pay_account,
+                                                         rcpt_number=receipt_number,
+                                                         rcpt_date=receipt_date,
+                                                         amount=amount,
+                                                         payment_method=credit_request.get('paymentMethod'))
 
         payment.receipt_number = receipt_response.get('receipt_number', receipt_number)
         payment.paid_amount = amount
