@@ -21,19 +21,19 @@ from flask import current_app
 from requests import HTTPError
 
 from pay_api.exceptions import ServiceUnavailableException
+from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
-from pay_api.models import CfsAccount as CfsAccountModel
-
 from pay_api.services.oauth_service import OAuthService
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import (
     CFS_BATCH_SOURCE, CFS_CUSTOMER_PROFILE_CLASS, CFS_CUST_TRX_TYPE, CFS_LINE_TYPE, CFS_TERM_NAME,
     DEFAULT_ADDRESS_LINE_1,
     DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
-    RECEIPT_METHOD_PAD_STOP, RECEIPT_METHOD_PAD_DAILY, CFS_RCPT_EFT_WIRE, CFS_CMS_TRX_TYPE, CFS_CM_BATCH_SOURCE)
+    RECEIPT_METHOD_PAD_STOP, RECEIPT_METHOD_PAD_DAILY, CFS_RCPT_EFT_WIRE, CFS_DRAWDOWN_BALANCE, CFS_CMS_TRX_TYPE,
+    CFS_CM_BATCH_SOURCE)
 from pay_api.utils.enums import (
-    AuthHeaderType, ContentType)
+    AuthHeaderType, ContentType, PaymentMethod)
 from pay_api.utils.util import current_local_time, generate_transaction_number
 
 
@@ -387,22 +387,25 @@ class CFSService(OAuthService):
         return adjustment_response.json()
 
     @staticmethod
-    def create_eft_wire_receipt(payment_account: PaymentAccount,
-                                rcpt_number: str,
-                                rcpt_date: str,
-                                amount: float) -> Dict[str, str]:
+    def create_cfs_receipt(payment_account: PaymentAccount,
+                           rcpt_number: str,
+                           rcpt_date: str,
+                           amount: float,
+                           payment_method: str) -> Dict[str, str]:
         """Create Eft Wire receipt for the account."""
         current_app.logger.debug('<create_credits')
+
         access_token: str = CFSService.get_token().json().get('access_token')
         cfs_base: str = current_app.config.get('CFS_BASE_URL')
         receipt_url = f'{cfs_base}/cfs/parties/{payment_account.cfs_party}/accs/{payment_account.cfs_account}/' \
                       f'sites/{payment_account.cfs_site}/rcpts/'
-
+        cfs_payment_method = CFS_DRAWDOWN_BALANCE if payment_method == PaymentMethod.DRAWDOWN.value \
+            else CFS_RCPT_EFT_WIRE
         payload = {
             'receipt_number': rcpt_number,
             'receipt_date': rcpt_date,
             'receipt_amount': str(amount),
-            'payment_method': CFS_RCPT_EFT_WIRE,
+            'payment_method': cfs_payment_method,
             'comments': ''
         }
 
