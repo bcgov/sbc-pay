@@ -16,12 +16,14 @@
       "enum": [
         "EFT",
         "WIRE",
-        "REFUND"
+        "REFUND",
+        "DRAWDOWN"
       ],
       "examples": [
         "EFT",
         "WIRE",
-        "REFUND"
+        "REFUND",
+        "DRAWDOWN"
       ],
       "pattern": "^(.*)$"
     },
