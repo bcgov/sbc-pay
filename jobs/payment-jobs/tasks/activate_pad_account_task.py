@@ -21,6 +21,8 @@ from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod
 
+from utils import mailer
+
 
 class ActivatePadAccountTask:  # pylint: disable=too-few-public-methods
     """Activate a PAD account after confirmation period."""
@@ -55,3 +57,4 @@ class ActivatePadAccountTask:  # pylint: disable=too-few-public-methods
                 if pay_account.payment_method != PaymentMethod.PAD.value:
                     pay_account.payment_method = PaymentMethod.PAD.value
                     pay_account.save()
+                mailer.publish_mailer_events('confirmationPeriodOver', pay_account)
