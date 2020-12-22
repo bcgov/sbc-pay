@@ -138,7 +138,8 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         """Create one CFS invoice per purchase."""
         invoices = InvoiceModel.query \
             .filter_by(payment_method_code=payment_method.value) \
-            .filter_by(invoice_status_code=InvoiceStatus.CREATED.value).all()
+            .filter_by(invoice_status_code=InvoiceStatus.CREATED.value)\
+            .order_by(InvoiceModel.created_on.asc()).all()
 
         current_app.logger.info(f'Found {len(invoices)} to be created in CFS.')
         for invoice in invoices:
