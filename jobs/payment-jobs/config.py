@@ -135,6 +135,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     DEBUG = True
     PAD_CONFIRMATION_PERIOD_IN_DAYS = int(os.getenv('PAD_CONFIRMATION_PERIOD_IN_DAYS', '3'))
 
+    NATS_MAILER_CLIENT_NAME = os.getenv('NATS_MAILER_CLIENT_NAME', 'account.mailer.worker')
+    NATS_MAILER_SUBJECT = os.getenv('NATS_MAILER_SUBJECT', 'account.mailer')
+
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     TESTING = False
