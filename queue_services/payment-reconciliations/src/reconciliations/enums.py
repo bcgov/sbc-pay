@@ -37,6 +37,7 @@ class RecordType(Enum):
     ONAP = 'ONAP'
     EFTP = 'EFTP'
     PADR = 'PADR'
+    DRWP = 'DRWP'
 
 
 class Column(Enum):

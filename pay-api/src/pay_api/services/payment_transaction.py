@@ -384,7 +384,11 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
 
         # Publish message to unlock account if account is locked.
         if payment.payment_status_code == PaymentStatus.COMPLETED.value:
-            PaymentAccount.unlock_frozen_accounts(payment.payment_account_id)
+            active_failed_payments = Payment.search_account_payments(
+                auth_account_id=payment_account.auth_account_id, status=PaymentStatus.FAILED.value, page=1, limit=10
+            )
+            if len(active_failed_payments.get('items')) == 0:
+                PaymentAccount.unlock_frozen_accounts(payment.payment_account_id)
 
         transaction = PaymentTransaction.__wrap_dao(transaction_dao)
         transaction.pay_system_reason_code = txn_reason_code
