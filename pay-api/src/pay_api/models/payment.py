@@ -212,9 +212,10 @@ class PaymentSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Payment
-        exclude = ['payment_system', 'payment_status', 'payment_account_id', 'invoice_amount', 'paid_amount',
-                   'cons_inv_number']
+        exclude = ['payment_system', 'payment_status', 'payment_account_id', 'cons_inv_number']
 
     payment_system_code = fields.String(data_key='payment_system')
     payment_method_code = fields.String(data_key='payment_method')
     payment_status_code = fields.String(data_key='status_code')
+    invoice_amount = fields.Float(data_key='invoice_amount')
+    paid_amount = fields.Float(data_key='paid_amount')

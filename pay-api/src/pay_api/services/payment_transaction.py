@@ -384,7 +384,10 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
 
         # Publish message to unlock account if account is locked.
         if payment.payment_status_code == PaymentStatus.COMPLETED.value:
-            PaymentAccount.unlock_frozen_accounts(payment.payment_account_id)
+            active_failed_payments = Payment.get_failed_payments(auth_account_id=payment_account.auth_account_id)
+            current_app.logger.info('active_failed_payments %s', active_failed_payments)
+            if not active_failed_payments:
+                PaymentAccount.unlock_frozen_accounts(payment.payment_account_id)
 
         transaction = PaymentTransaction.__wrap_dao(transaction_dao)
         transaction.pay_system_reason_code = txn_reason_code
@@ -399,7 +402,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         payment.completed_on = datetime.now()
         transaction_dao.status_code = TransactionStatus.COMPLETED.value
 
-        if payment.paid_amount != payment.invoice_amount:
+        if payment.paid_amount < payment.invoice_amount:
             current_app.logger.critical('ALERT : Paid Amount is less than owed amount.  Paid : %s, Owed- %s',
                                         payment.paid_amount, payment.invoice_amount)
             capture_message(f'ALERT : Paid Amount is less than owed amount.  Paid : {payment.paid_amount}, '

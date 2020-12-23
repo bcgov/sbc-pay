@@ -115,12 +115,16 @@ def _create_payment_records(csv_content: str):
             for row in payment_lines:
                 inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
                 invoice_amount = float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL))
+
                 completed_on: datetime = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%d-%b-%y')
                 status = PaymentStatus.COMPLETED.value \
                     if _get_row_value(row, Column.TARGET_TXN_STATUS).lower() == Status.PAID.value.lower() \
                     else PaymentStatus.FAILED.value
-                paid_amount = float(
-                    _get_row_value(row, Column.APP_AMOUNT)) if status == PaymentStatus.COMPLETED.value else 0
+                paid_amount = 0
+                if status == PaymentStatus.COMPLETED.value:
+                    paid_amount = float(_get_row_value(row, Column.APP_AMOUNT))
+                elif _get_row_value(row, Column.TARGET_TXN_STATUS).lower() == Status.PARTIAL.value.lower():
+                    paid_amount = invoice_amount - float(_get_row_value(row, Column.TARGET_TXN_OUTSTANDING))
 
                 _save_payment(completed_on, inv_number, invoice_amount, paid_amount, row, status,
                               PaymentMethod.PAD.value,
@@ -225,12 +229,12 @@ async def _reconcile_payments(msg: Dict[str, any]):
         elif record_type in (RecordType.BOLP.value, RecordType.EFTP.value):
             # EFT, WIRE and Online Banking are one-to-one invoice. So handle them in same way.
             await _process_unconsolidated_invoices(row)
-        elif record_type in (RecordType.ONAC.value, RecordType.CMAP.value):
+        elif record_type in (RecordType.ONAC.value, RecordType.CMAP.value, RecordType.DRWP.value):
             await _process_credit_on_invoices(row)
         elif record_type == RecordType.ADJS.value:
             logger.info('Adjustment received for %s.', msg)
         else:
-            # For any other transactions like DM, PAYR log error and continue.
+            # For any other transactions like DM log error and continue.
             logger.error('Record Type is received as %s, and cannot process %s.', record_type, msg)
             capture_message('Record Type is received as {record_type}, and cannot process {msg}.'.format(
                 record_type=record_type, msg=msg), level='error')
@@ -251,6 +255,7 @@ async def _process_consolidated_invoices(row):
     target_txn_status = _get_row_value(row, Column.TARGET_TXN_STATUS)
     if (target_txn := _get_row_value(row, Column.TARGET_TXN)) == TargetTransaction.INV.value:
         inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
+        record_type = _get_row_value(row, Column.RECORD_TYPE)
         logger.debug('Processing invoice :  %s', inv_number)
 
         inv_references: List[InvoiceReferenceModel] = db.session.query(InvoiceReferenceModel). \
@@ -264,7 +269,8 @@ async def _process_consolidated_invoices(row):
             logger.debug('Fully PAID payment.')
             await _process_paid_invoices(inv_references, row)
             await _publish_mailer_events('PAD.PaymentSuccess', payment_account, row)
-        elif target_txn_status.lower() == Status.NOT_PAID.value.lower():
+        elif target_txn_status.lower() == Status.NOT_PAID.value.lower() \
+                or record_type in (RecordType.PADR.value, RecordType.PAYR.value):
             logger.info('NOT PAID. NSF identified.')
             # NSF Condition. Publish to account events for NSF.
             _process_failed_payments(row)

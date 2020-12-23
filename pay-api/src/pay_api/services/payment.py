@@ -491,10 +491,21 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             # If there are multiple failed payments, consolidate them
             # Else clone failed payment
             # Find all failed payments.
-            payments: List[PaymentModel] = PaymentModel.find_payments_to_consolidate(auth_account_id=auth_account_id)
-
+            payments = Payment.get_failed_payments(auth_account_id)
+            can_consolidate_invoice: bool = True
             if len(payments) == 1:
+                can_consolidate_invoice = False
                 failed_payment = payments[0]
+            else:
+                # Here iterate the payments and see if there is a failed PARTIAL payment.
+                for payment in payments:
+                    paid_amount = payment.paid_amount or 0
+                    if payment.payment_status_code == PaymentStatus.FAILED.value and paid_amount > 0:
+                        failed_payment = payment
+                        can_consolidate_invoice = False
+                        break
+
+            if not can_consolidate_invoice:
                 # Find if there is a payment for the same invoice number, with status CREATED.
                 # If yes, use that record
                 # Else create new one.
@@ -514,7 +525,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                         payment_method=PaymentMethod.CC.value,
                         payment_system=PaymentSystem.PAYBC.value,
                         invoice_number=failed_payment.invoice_number,
-                        invoice_amount=invoice_total,
+                        invoice_amount=invoice_total - float(failed_payment.paid_amount or 0),
                         payment_account_id=failed_payment.payment_account_id)
                 else:
                     payment = Payment._populate(failed_payment)
@@ -524,6 +535,11 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
         current_app.logger.debug('>create_account_payment')
         return payment
+
+    @staticmethod
+    def get_failed_payments(auth_account_id) -> List[PaymentModel]:
+        """Return active failed payments."""
+        return PaymentModel.find_payments_to_consolidate(auth_account_id=auth_account_id)
 
     @staticmethod
     def _populate(dao: PaymentModel):
@@ -557,7 +573,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
         # Create consolidated invoice
         invoice_response = CFSService.create_account_invoice(
-            transaction_number=str(consolidated_invoices[-1].id) + '-C',  # TODO confirm this
+            transaction_number=str(consolidated_invoices[-1].id) + '-C',
             line_items=consolidated_line_items,
             payment_account=pay_account)
 
