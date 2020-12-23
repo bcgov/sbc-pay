@@ -80,7 +80,8 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 continue
 
             # If the CFS Account status is not ACTIVE, raise error and continue
-            if payment_account.cfs_account_status != CfsAccountStatus.ACTIVE.value:
+            if payment_account.cfs_account_status not in \
+                    (CfsAccountStatus.ACTIVE.value, CfsAccountStatus.INACTIVE.value):
                 capture_message(f'CFS Account status is not ACTIVE. for account {payment_account.auth_account_id} '
                                 f'is {payment_account.cfs_account_status}', level='error')
                 current_app.logger.error(f'CFS status for account {payment_account.auth_account_id} '
