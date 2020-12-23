@@ -79,9 +79,13 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             if len(account_invoices) == 0:
                 continue
 
+            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
+            if cfs_account is None:
+                # Get the last invoice and look up cfs_account for it, as the account might have got upgraded.
+                cfs_account = CfsAccountModel.find_by_id(account_invoices[0].cfs_account_id)
+
             # If the CFS Account status is not ACTIVE, raise error and continue
-            if payment_account.cfs_account_status not in \
-                    (CfsAccountStatus.ACTIVE.value, CfsAccountStatus.INACTIVE.value):
+            if cfs_account.status not in (CfsAccountStatus.ACTIVE.value, CfsAccountStatus.INACTIVE.value):
                 capture_message(f'CFS Account status is not ACTIVE. for account {payment_account.auth_account_id} '
                                 f'is {payment_account.cfs_account_status}', level='error')
                 current_app.logger.error(f'CFS status for account {payment_account.auth_account_id} '
@@ -99,7 +103,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 # Get the first invoice id as the trx number for CFS
                 invoice_response = CFSService.create_account_invoice(transaction_number=account_invoices[0].id,
                                                                      line_items=lines,
-                                                                     payment_account=payment_account)
+                                                                     payment_account=cfs_account)
             except Exception as e:  # pylint: disable=broad-except
                 capture_message(f'Error on creating PAD invoice: account id={payment_account.id}, '
                                 f'auth account : {payment_account.auth_account_id}, ERROR : {str(e)}', level='error')
