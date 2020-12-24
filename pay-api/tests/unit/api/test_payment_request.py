@@ -594,3 +594,17 @@ def test_bcol_payment_creation_by_system(session, client, jwt, app):
     assert not rv.json.get('isPaymentActionRequired')
 
     assert schema_utils.validate(rv.json, 'invoice')[0]
+
+
+def test_invoice_pdf(session, client, jwt, app):
+    """Test invoice pdf generation."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/payment-requests',
+                     data=json.dumps(get_payment_request_with_payment_method(
+                         business_identifier='CP0002000', payment_method='ONLINE_BANKING'
+                     )), headers=headers)
+    invoice_id = rv.json.get('id')
+    client.post(f'/api/v1/payment-requests/{invoice_id}/reports', headers=headers)
+    assert True

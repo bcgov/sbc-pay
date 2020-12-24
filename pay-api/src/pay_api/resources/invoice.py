@@ -14,19 +14,21 @@
 """Resource for Payment Request/Invoice endpoints."""
 from http import HTTPStatus
 
-from flask import current_app, jsonify, request
+from flask import Response, current_app, jsonify, request
 from flask_restplus import Namespace, Resource, cors
 
-from pay_api.exceptions import error_to_response, BusinessException, ServiceUnavailableException
+from pay_api.exceptions import ServiceUnavailableException
+from pay_api.exceptions import error_to_response, BusinessException
 from pay_api.schemas import utils as schema_utils
-from pay_api.services import PaymentService, InvoiceService
+from pay_api.services import PaymentService
 from pay_api.services.auth import check_auth
+from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE
-from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.errors import Error
-from pay_api.utils.util import cors_preflight, get_str_by_path
-
+from pay_api.utils.trace import tracing as _tracing
+from pay_api.utils.util import cors_preflight
+from pay_api.utils.util import get_str_by_path
 
 API = Namespace('invoice', description='Payment System - Invoices')
 
@@ -124,3 +126,30 @@ class Invoices(Resource):
             return exception.response()
         current_app.logger.debug('>Transaction.post')
         return jsonify(response), status
+
+
+@cors_preflight(['POST'])
+@API.route('/<int:invoice_id>/reports', methods=['POST', 'OPTIONS'])
+class InvoiceReport(Resource):
+    """Endpoint resource to create invoice PDF."""
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.requires_auth
+    @_tracing.trace()
+    def post(invoice_id: int = None):
+        """Update the payment method for an online banking ."""
+        current_app.logger.info('<InvoiceReport.post for invoice : %s', invoice_id)
+
+        try:
+            pdf, file_name = InvoiceService.create_invoice_pdf(invoice_id)
+            response = Response(pdf, 201)
+            response.headers.set('Content-Disposition', 'attachment', filename='{}.pdf'.format(file_name))
+            response.headers.set('Content-Type', 'application/pdf')
+            response.headers.set('Access-Control-Expose-Headers', 'Content-Disposition')
+            return response
+
+        except BusinessException as exception:
+            return exception.response()
+        current_app.logger.debug('>Transaction.post')
+        return jsonify(response), 200
