@@ -64,6 +64,16 @@ class PadService(PaymentSystemService, CFSService):
         if str(payment_info.get('bankInstitutionNumber')) != cfs_account.bank_number or \
                 str(payment_info.get('bankTransitNumber')) != cfs_account.bank_branch_number or \
                 str(payment_info.get('bankAccountNumber')) != cfs_account.bank_account_number:
+            # This means, PAD account details have changed. So update banking details for this CFS account
+            # Call cfs service to add new bank info.
+            bank_details = CFSService.update_bank_details(name=cfs_account.payment_account.auth_account_name,
+                                                          party_number=cfs_account.cfs_party,
+                                                          account_number=cfs_account.cfs_account,
+                                                          site_number=cfs_account.cfs_site,
+                                                          payment_info=payment_info)
+
+            instrument_number = bank_details.get('payment_instrument_number', None)
+
             # Make the current CFS Account as INACTIVE in DB
             cfs_account.status = CfsAccountStatus.INACTIVE.value
             cfs_account.flush()
@@ -77,7 +87,8 @@ class PadService(PaymentSystemService, CFSService):
             updated_cfs_account.cfs_party = cfs_account.cfs_party
             updated_cfs_account.cfs_account = cfs_account.cfs_account
             updated_cfs_account.payment_account = cfs_account.payment_account
-            updated_cfs_account.status = CfsAccountStatus.PENDING.value
+            updated_cfs_account.status = CfsAccountStatus.ACTIVE.value
+            updated_cfs_account.payment_instrument_number = instrument_number
             updated_cfs_account.flush()
         return cfs_account
 
