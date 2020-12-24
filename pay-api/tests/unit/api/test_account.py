@@ -364,7 +364,7 @@ def test_create_pad_update_when_cfs_down(session, client, jwt, app):
                         data=json.dumps(get_unlinked_pad_account_payload(bank_account='11111111')),
                         headers=headers)
 
-        assert rv.status_code == 202
+        assert rv.status_code == 503
 
 
 def test_update_pad_account_when_cfs_up(session, client, jwt, app):
@@ -377,7 +377,7 @@ def test_update_pad_account_when_cfs_up(session, client, jwt, app):
                     data=json.dumps(get_unlinked_pad_account_payload(bank_account='11111111')),
                     headers=headers)
 
-    assert rv.status_code == 202
+    assert rv.status_code == 200
 
 
 def test_update_online_banking_account_when_cfs_down(session, client, jwt, app):

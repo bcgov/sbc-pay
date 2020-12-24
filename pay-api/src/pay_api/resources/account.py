@@ -18,7 +18,7 @@ from http import HTTPStatus
 from flask import Response, current_app, jsonify, request
 from flask_restplus import Namespace, Resource, cors
 
-from pay_api.exceptions import BusinessException, error_to_response
+from pay_api.exceptions import BusinessException, error_to_response, ServiceUnavailableException
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import Payment
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
@@ -82,8 +82,11 @@ class Account(Resource):
 
         if not valid_format:
             return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+        try:
+            response = PaymentAccountService.update(account_number, request_json)
+        except ServiceUnavailableException as exception:
+            return exception.response()
 
-        response = PaymentAccountService.update(account_number, request_json)
         status = HTTPStatus.ACCEPTED \
             if response.cfs_account_id and response.cfs_account_status == CfsAccountStatus.PENDING.value \
             else HTTPStatus.OK
