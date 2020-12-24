@@ -20,7 +20,7 @@ from typing import Any, Dict, Union, Tuple
 from flask import current_app
 from sentry_sdk import capture_message
 
-from pay_api.exceptions import BusinessException
+from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel, PaymentAccountSchema
 from pay_api.models import StatementSettings as StatementSettingsModel
@@ -370,12 +370,16 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def update(cls, auth_account_id: str, account_request: Dict[str, Any]) -> PaymentAccount:
         """Create or update payment account record."""
         current_app.logger.debug('<update payment account')
-        account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-        # TODO Remove it later, this is to help migration from auth to pay.
-        if not account:
-            return PaymentAccount.create(account_request)
+        try:
+            account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+            # TODO Remove it later, this is to help migration from auth to pay.
+            if not account:
+                return PaymentAccount.create(account_request)
 
-        PaymentAccount._save_account(account_request, account)
+            PaymentAccount._save_account(account_request, account)
+        except ServiceUnavailableException as e:
+            current_app.logger.error(e)
+            raise
 
         current_app.logger.debug('>create payment account')
         return cls.find_by_id(account.id)
