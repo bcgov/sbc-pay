@@ -130,12 +130,12 @@ def test_delete_payment(session, auth_mock, public_user_mock):
     # payment = factory_payment()
     payment_account.save()
     # payment.save()
-    invoice = factory_invoice(payment_account)
+    invoice = factory_invoice(payment_account, total=10)
     invoice.save()
     invoice_reference = factory_invoice_reference(invoice.id).save()
 
     # Create a payment for this reference
-    payment = factory_payment(invoice_number=invoice_reference.invoice_number).save()
+    payment = factory_payment(invoice_number=invoice_reference.invoice_number, invoice_amount=10).save()
 
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)

@@ -402,7 +402,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         payment.completed_on = datetime.now()
         transaction_dao.status_code = TransactionStatus.COMPLETED.value
 
-        if payment.paid_amount < payment.invoice_amount:
+        if float(payment.paid_amount) < float(payment.invoice_amount):
             current_app.logger.critical('ALERT : Paid Amount is less than owed amount.  Paid : %s, Owed- %s',
                                         payment.paid_amount, payment.invoice_amount)
             capture_message(f'ALERT : Paid Amount is less than owed amount.  Paid : {payment.paid_amount}, '
