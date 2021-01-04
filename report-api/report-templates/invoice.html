@@ -373,7 +373,7 @@
           {% if invoiceNumber %}
           <div class="line-height-reg">
             <div class="account-info-title" style="width: 60%;">INVOICE NUMBER:</div>
-            <div class="account-info-value" style="width: 38%;">#{{invoiceNumber}}</div>
+            <div class="account-info-value" style="width: 38%;">{{invoiceNumber}}</div>
           </div>
           {% endif %}
           {% if createdOn %}
@@ -487,7 +487,7 @@
           </td>
         </tr>
         {% endif %}
-
+        {% endif %}
         <tr>
           <td colspan="2">
             <div class="section-payment-title">
@@ -515,7 +515,7 @@
                 alt="BC registries Logo" class="logo2">
           </div>
           <div class="footer-info">
-            <span>Statement #{{statement.id}}</span>
+            <span>Invoice Number: {{invoiceNumber}}</span>
             <pageinfo>Page i of x</pageinfo>
           </div>
         </td>
