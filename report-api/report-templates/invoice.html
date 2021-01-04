@@ -101,7 +101,7 @@
       }
 
       .bcgov-logo-column {
-        width: 310px;
+        width: 120px;
         padding-top: 16px;
         text-align: left;
         padding-bottom: 24px;
@@ -109,7 +109,7 @@
       }
 
       .bcgov-logo-column img {
-        width: 100px;
+        width: 90px;
         display: inline-block;
         padding: 16px;
         padding-top: 0px;
@@ -447,46 +447,38 @@
             </div>
           </td>
         </tr>
-        {% if fees %}
         <tr>
           <td colspan="2">
             <div class="total-elements">      
               Fees:
-              <span class="total-elements-price">${{"%.2f"|format(fees)}}</span>
+              <span class="total-elements-price">${{"%.2f"|format(fees) if fees else '0.00'}}</span>
             </div>
           </td>
         </tr>
-        {% endif %}
-        {% if gst %}
         <tr>
           <td colspan="2">
             <div class="total-elements">      
               Goods and Service Tax (GST)
-              <span class="total-elements-price">${{"%.2f"|format(gst)}}</span>
+              <span class="total-elements-price">${{"%.2f"|format(gst) if gst else '0.00'}}</span>
             </div>
           </td>
         </tr>
-        {% endif %}
-        {% if serviceFees %}
         <tr>
           <td colspan="2">
             <div class="total-elements">
               Service Fees
-              <span class="total-elements-price">${{"%.2f"|format(serviceFees)}}</span>
+              <span class="total-elements-price">${{"%.2f"|format(serviceFees) if serviceFees else '0.00'}}</span>
             </div>
           </td>
         </tr>
-        {% endif %}
-        {% if total %}
         <tr>
           <td colspan="2">
             <div class="total-elements font-bold">
               Total Amount:
-              <span class="total-elements-price">${{"%.2f"|format(total)}}</span>
+              <span class="total-elements-price">${{"%.2f"|format(total)  if total else '0.00'}}</span>
             </div>
           </td>
         </tr>
-        {% endif %}
         {% endif %}
         <tr>
           <td colspan="2">
@@ -516,7 +508,7 @@
           </div>
           <div class="footer-info">
             <span>Invoice Number: {{invoiceNumber}}</span>
-            <pageinfo>Page i of x</pageinfo>
+            <pageinfo>Page 1 of 1</pageinfo>
           </div>
         </td>
       </tr>
