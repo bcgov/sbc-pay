@@ -273,7 +273,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         if not corp_type and not filing_type_code:
             raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
         if kwargs.get('jurisdiction'):
-            current_app.logger.warning('Not using Jurisdiction now!!!')
+            current_app.logger.debug('Not using Jurisdiction now!!!')
 
         fee_schedule_dao = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type, filing_type_code, valid_date)
 

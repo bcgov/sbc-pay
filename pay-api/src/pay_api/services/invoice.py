@@ -383,10 +383,13 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
 
         filing_types: List[Dict[str, str]] = []
         for line_item in invoice_dao.payment_line_items:
+            business_identifier = invoice_dao.business_identifier \
+                if not invoice_dao.business_identifier.startswith('T') \
+                else ''
             filing_types.append({
                 'folioNumber': invoice_dao.folio_number,
                 'description': line_item.description,
-                'businessIdentifier': invoice_dao.business_identifier,
+                'businessIdentifier': business_identifier,
                 'createdOn': get_local_formatted_date(invoice_dao.created_on),
                 'filingTypeCode': line_item.fee_schedule.filing_type_code,
                 'fee': line_item.total,
@@ -417,7 +420,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
 
         invoice_pdf_dict = {
             'templateName': 'invoice',
-            'reportName': f'{invoice_number}.pdf',
+            'reportName': invoice_number,
             'templateVars': template_vars
         }
         current_app.logger.info('Invoice PDF Dict %s', invoice_pdf_dict)
