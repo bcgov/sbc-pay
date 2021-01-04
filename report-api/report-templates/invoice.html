@@ -234,7 +234,7 @@
       }
 
       .transaction-table {
-        margin: 0px 24px 12px;
+        margin: 0px 24px 8px;
         width: 690px;
       }
 
@@ -279,6 +279,9 @@
         padding: 10px 0;
         font-size: 14px;
         border-bottom: 1px solid #b3bac3;
+      }
+      .blue-border-bottom {
+        border-bottom: 1px solid #234075;
       }
 
       .total-elements-price {
@@ -448,7 +451,7 @@
         </tr>
         <tr>
           <td colspan="2">
-            <div class="section-title mb-0">
+            <div class="section-title mb-0 blue-border-bottom ">
               Totals
             </div>
           </td>
@@ -471,7 +474,7 @@
         </tr>
         <tr>
           <td colspan="2">
-            <div class="total-elements">
+            <div class="total-elements blue-border-bottom ">
               Service Fees
               <span class="total-elements-price">${{"%.2f"|format(serviceFees) if serviceFees else '0.00'}}</span>
             </div>
@@ -479,7 +482,7 @@
         </tr>
         <tr>
           <td colspan="2">
-            <div class="total-elements font-bold">
+            <div class="total-elements font-bold blue-border-bottom ">
               Total Amount:
               <span class="total-elements-price">${{"%.2f"|format(total)  if total else '0.00'}}</span>
             </div>
