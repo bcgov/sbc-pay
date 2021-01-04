@@ -45,6 +45,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self._auth_account_name: Union[None, str] = None
         self._pad_activation_date: Union[None, datetime] = None
         self._pad_tos_accepted_by: Union[None, str] = None
+        self._pad_tos_accepted_date: Union[None, datetime] = None
 
         self._cfs_account: Union[None, str] = None
         self._cfs_party: Union[None, str] = None
@@ -79,6 +80,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self.bcol_account: str = self._dao.bcol_account
         self.pad_activation_date: datetime = self._dao.pad_activation_date
         self.pad_tos_accepted_by: str = self._dao.pad_tos_accepted_by
+        self.pad_tos_accepted_date: datetime = self._dao.pad_tos_accepted_date
 
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(self.id)
         if cfs_account:
@@ -263,6 +265,17 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self._dao.pad_tos_accepted_by = value
 
     @property
+    def pad_tos_accepted_date(self):
+        """Return the pad_tos_accepted_date."""
+        return self._pad_tos_accepted_date
+
+    @pad_tos_accepted_date.setter
+    def pad_tos_accepted_date(self, value: datetime):
+        """Set the pad_tos_accepted_by."""
+        self._pad_tos_accepted_date = value
+        self._dao.pad_tos_accepted_date = value
+
+    @property
     def bcol_account(self):
         """Return the bcol_account."""
         return self._bcol_account
@@ -322,7 +335,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         payment_account.bcol_account = account_request.get('bcolAccountNumber', None)
         payment_account.bcol_user_id = account_request.get('bcolUserId', None)
         payment_account.pad_tos_accepted_by = account_request.get('padTosAcceptedBy', None)
-        payment_account.pad_tos_accepted_date = datetime.now()
+        if payment_account.pad_tos_accepted_by is not None:
+            payment_account.pad_tos_accepted_date = datetime.now()
 
         payment_info = account_request.get('paymentInfo')
         billable = payment_info.get('billable', True)
