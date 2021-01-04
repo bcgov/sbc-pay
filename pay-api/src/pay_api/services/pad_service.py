@@ -75,6 +75,7 @@ class PadService(PaymentSystemService, CFSService):
             instrument_number = bank_details.get('payment_instrument_number', None)
 
             # Make the current CFS Account as INACTIVE in DB
+            current_account_status: str = cfs_account.status
             cfs_account.status = CfsAccountStatus.INACTIVE.value
             cfs_account.flush()
 
@@ -87,7 +88,10 @@ class PadService(PaymentSystemService, CFSService):
             updated_cfs_account.cfs_party = cfs_account.cfs_party
             updated_cfs_account.cfs_account = cfs_account.cfs_account
             updated_cfs_account.payment_account = cfs_account.payment_account
-            updated_cfs_account.status = CfsAccountStatus.ACTIVE.value
+            if current_account_status == CfsAccountStatus.FREEZE.value:
+                updated_cfs_account.status = CfsAccountStatus.FREEZE.value
+            else:
+                updated_cfs_account.status = CfsAccountStatus.ACTIVE.value
             updated_cfs_account.payment_instrument_number = instrument_number
             updated_cfs_account.flush()
         return cfs_account

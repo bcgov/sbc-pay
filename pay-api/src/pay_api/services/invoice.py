@@ -15,15 +15,20 @@
 from __future__ import annotations
 
 from datetime import datetime
+from typing import Dict, List, Tuple
 
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
-from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import Invoice as InvoiceModel, CfsAccount as CfsAccountModel, PaymentAccount as PaymentAccountModel
 from pay_api.models import InvoiceSchema
 from pay_api.services.auth import check_auth
 from pay_api.utils.constants import ALL_ALLOWED_ROLES
+from pay_api.utils.enums import AuthHeaderType, ContentType
 from pay_api.utils.errors import Error
+from pay_api.utils.user_context import user_context
+from pay_api.utils.util import generate_transaction_number, get_local_formatted_date
+from .oauth_service import OAuthService
 
 
 class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
@@ -349,6 +354,83 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
 
         current_app.logger.debug('>find_by_id')
         return invoices
+
+    @staticmethod
+    @user_context
+    def create_invoice_pdf(identifier: int, **kwargs) -> Tuple:
+        """Find invoice by id."""
+        invoice_dao: InvoiceModel = InvoiceModel.find_by_id(identifier)
+
+        if not invoice_dao:
+            raise BusinessException(Error.INVALID_INVOICE_ID)
+
+        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice_dao.payment_account_id)
+        cfs_account: CfsAccountModel = CfsAccountModel.find_by_id(invoice_dao.cfs_account_id)
+        org_response = OAuthService.get(
+            current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{payment_account.auth_account_id}',
+            kwargs['user'].bearer_token, AuthHeaderType.BEARER,
+            ContentType.JSON).json()
+        org_contact_response = OAuthService.get(
+            current_app.config.get(
+                'AUTH_API_ENDPOINT') + f'orgs/{payment_account.auth_account_id}/contacts',
+            kwargs['user'].bearer_token, AuthHeaderType.BEARER,
+            ContentType.JSON).json()
+
+        org_contact = org_contact_response.get('contacts')[0] if org_contact_response.get('contacts', None) else {}
+
+        invoice_number: str = invoice_dao.references[0].invoice_number if invoice_dao.references \
+            else generate_transaction_number(invoice_dao.id)
+
+        filing_types: List[Dict[str, str]] = []
+        for line_item in invoice_dao.payment_line_items:
+            business_identifier = invoice_dao.business_identifier \
+                if not invoice_dao.business_identifier.startswith('T') \
+                else ''
+            filing_types.append({
+                'folioNumber': invoice_dao.folio_number,
+                'description': line_item.description,
+                'businessIdentifier': business_identifier,
+                'createdOn': get_local_formatted_date(invoice_dao.created_on),
+                'filingTypeCode': line_item.fee_schedule.filing_type_code,
+                'fee': line_item.total,
+                'gst': line_item.gst,
+                'serviceFees': line_item.service_fees,
+                'total': line_item.total + line_item.service_fees
+            })
+
+        template_vars: Dict[str, any] = {
+            'invoiceNumber': invoice_number,
+            'createdOn': get_local_formatted_date(invoice_dao.created_on),
+            'accountNumber': cfs_account.cfs_account if cfs_account else None,
+            'total': invoice_dao.total,
+            'gst': 0,
+            'serviceFees': invoice_dao.service_fees,
+            'fees': invoice_dao.total - invoice_dao.service_fees,
+            'filingTypes': filing_types,
+            'accountContact': {
+                'name': org_response.get('name'),
+                'city': org_contact.get('city', None),
+                'country': org_contact.get('country', None),
+                'postalCode': org_contact.get('postalCode', None),
+                'region': org_contact.get('region', None),
+                'street': org_contact.get('street', None),
+                'streetAdditional': org_contact.get('streetAdditional', None)
+            }
+        }
+
+        invoice_pdf_dict = {
+            'templateName': 'invoice',
+            'reportName': invoice_number,
+            'templateVars': template_vars
+        }
+        current_app.logger.info('Invoice PDF Dict %s', invoice_pdf_dict)
+
+        pdf_response = OAuthService.post(current_app.config.get('REPORT_API_BASE_URL'),
+                                         kwargs['user'].bearer_token, AuthHeaderType.BEARER,
+                                         ContentType.JSON, invoice_pdf_dict)
+        current_app.logger.debug('<OAuthService responded to receipt.py')
+
+        return pdf_response, invoice_pdf_dict.get('reportName')
 
     @staticmethod
     def _check_for_auth(dao, one_of_roles=ALL_ALLOWED_ROLES):
