@@ -445,7 +445,8 @@ def get_auth_basic_user(method_of_payment='CC'):
         'orgMembership': 'OWNER',
         'roles': [
             'view',
-            'edit'
+            'edit',
+            'make_payment'
         ],
         'business': {
             'folioNumber': 'MOCK1234',
@@ -470,7 +471,8 @@ def get_auth_premium_user():
         'orgMembership': 'OWNER',
         'roles': [
             'view',
-            'edit'
+            'edit',
+            'make_payment'
         ],
         'business': {
             'folioNumber': 'MOCK1234',
