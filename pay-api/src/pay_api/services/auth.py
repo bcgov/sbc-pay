@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """This manages all of the authorization service."""
-from flask import abort, current_app
+from flask import abort, current_app, g
 
 from pay_api.services.oauth_service import OAuthService as RestService
 from pay_api.utils.enums import AccountType, AuthHeaderType, ContentType, PaymentMethod, Role
@@ -42,42 +42,42 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
 
     if call_auth_svc:
         bearer_token = user.bearer_token
-        if business_identifier:
-            auth_url = current_app.config.get(
-                'AUTH_API_ENDPOINT') + f'entities/{business_identifier}/authorizations?expanded=true'
-            auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
-
-            roles: list = auth_response.get('roles', [])
-            if kwargs.get('one_of_roles', None):
-                is_authorized = list(set(kwargs.get('one_of_roles')) & set(roles)) != []
-            if kwargs.get('contains_role', None):
-                is_authorized = kwargs.get('contains_role') in roles
-
-            # For staff users, if the account is coming as empty add stub data
-            # (businesses which are not affiliated won't have account)
-            if Role.STAFF.value in user.roles and not auth_response.get('account', None):
-                auth_response['account'] = {
-                    'id': f'PASSCODE_ACCOUNT_{business_identifier}'
-                }
-        elif account_id:
+        if account_id:
             if corp_type_code:
                 auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'accounts/{account_id}/' \
                     f'products/{corp_type_code}/authorizations?expanded=true'
                 auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
                 roles: list = auth_response.get('roles', [])
-                if roles:
-                    is_authorized = True
             else:  # For activities not specific to a product
                 auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{account_id}' \
                                                                          f'/authorizations?expanded=true'
 
                 auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
-                # TODO Create a similar response as in auth response
-                is_authorized = True
-                UserContext.permission = auth_response.get('roles')
-            # Check if premium flag is required
-            if kwargs.get('is_premium', False) and auth_response['account']['accountType'] != AccountType.PREMIUM.value:
-                is_authorized = False
+                roles: list = auth_response.get('roles')
+
+        elif business_identifier:
+            auth_url = current_app.config.get(
+                'AUTH_API_ENDPOINT') + f'entities/{business_identifier}/authorizations?expanded=true'
+            auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
+
+            roles: list = auth_response.get('roles', [])
+
+        g.user_permission = auth_response.get('roles')
+        if kwargs.get('one_of_roles', None):
+            is_authorized = list(set(kwargs.get('one_of_roles')) & set(roles)) != []
+        if kwargs.get('contains_role', None):
+            is_authorized = kwargs.get('contains_role') in roles
+
+        # Check if premium flag is required
+        if kwargs.get('is_premium', False) and auth_response['account']['accountType'] != AccountType.PREMIUM.value:
+            is_authorized = False
+
+        # For staff users, if the account is coming as empty add stub data
+        # (businesses which are not affiliated won't have account)
+        if Role.STAFF.value in user.roles and not auth_response.get('account', None):
+            auth_response['account'] = {
+                'id': f'PASSCODE_ACCOUNT_{business_identifier}'
+            }
 
         if Role.SYSTEM.value in user.roles and bool(Role.EDITOR.value in user.roles):
             is_authorized = True
