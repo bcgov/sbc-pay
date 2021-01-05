@@ -137,6 +137,7 @@ def test_create_online_banking_account(session):
     assert online_banking_account.cfs_party is None
     assert online_banking_account.cfs_site is None
     assert online_banking_account.bank_number is None
+    assert online_banking_account.pad_tos_accepted_date is None
 
 
 def test_create_online_credit_account(session):

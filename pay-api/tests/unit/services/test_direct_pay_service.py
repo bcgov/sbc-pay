@@ -15,7 +15,6 @@
 """Tests to assure the Direct Payment Service."""
 
 import urllib.parse
-from datetime import date
 
 from flask import current_app
 
@@ -24,7 +23,7 @@ from pay_api.models import FeeSchedule
 from pay_api.services.direct_pay_service import DirectPayService, PAYBC_DATE_FORMAT, DECIMAL_PRECISION
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.hashing import HashingService
-from pay_api.utils.util import generate_transaction_number
+from pay_api.utils.util import generate_transaction_number, current_local_time
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item)
 from tests.utilities.base_test import get_distribution_code_payload
@@ -32,7 +31,7 @@ from tests.utilities.base_test import get_distribution_code_payload
 
 def test_get_payment_system_url(session, public_user_mock):
     """Assert that the url returned is correct."""
-    today = date.today().strftime(PAYBC_DATE_FORMAT)
+    today = current_local_time().strftime(PAYBC_DATE_FORMAT)
     payment_account = factory_payment_account()
     payment = factory_payment()
     payment_account.save()
@@ -81,7 +80,7 @@ def test_get_payment_system_url(session, public_user_mock):
 
 def test_get_payment_system_url_service_fees(session, public_user_mock):
     """Assert that the url returned is correct."""
-    today = date.today().strftime(PAYBC_DATE_FORMAT)
+    today = current_local_time().strftime(PAYBC_DATE_FORMAT)
     payment_account = factory_payment_account()
     payment = factory_payment()
     payment_account.save()

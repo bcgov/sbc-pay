@@ -43,18 +43,14 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
     if call_auth_svc:
         bearer_token = user.bearer_token
         if account_id:
+            auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{account_id}' \
+                                                                     f'/authorizations?expanded=true'
+            additional_headers = None
             if corp_type_code:
-                auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'accounts/{account_id}/' \
-                    f'products/{corp_type_code}/authorizations?expanded=true'
-                auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
-                roles: list = auth_response.get('roles', [])
-            else:  # For activities not specific to a product
-                auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{account_id}' \
-                                                                         f'/authorizations?expanded=true'
-
-                auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
-                roles: list = auth_response.get('roles')
-
+                additional_headers = {'product-type': corp_type_code}
+            auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                            additional_headers=additional_headers).json()
+            roles: list = auth_response.get('roles', [])
         elif business_identifier:
             auth_url = current_app.config.get(
                 'AUTH_API_ENDPOINT') + f'entities/{business_identifier}/authorizations?expanded=true'
@@ -67,11 +63,9 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
             is_authorized = list(set(kwargs.get('one_of_roles')) & set(roles)) != []
         if kwargs.get('contains_role', None):
             is_authorized = kwargs.get('contains_role') in roles
-
         # Check if premium flag is required
         if kwargs.get('is_premium', False) and auth_response['account']['accountType'] != AccountType.PREMIUM.value:
             is_authorized = False
-
         # For staff users, if the account is coming as empty add stub data
         # (businesses which are not affiliated won't have account)
         if Role.STAFF.value in user.roles and not auth_response.get('account', None):
