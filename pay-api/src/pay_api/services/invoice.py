@@ -24,11 +24,12 @@ from pay_api.models import Invoice as InvoiceModel, CfsAccount as CfsAccountMode
 from pay_api.models import InvoiceSchema
 from pay_api.services.auth import check_auth
 from pay_api.utils.constants import ALL_ALLOWED_ROLES
-from pay_api.utils.enums import AuthHeaderType, ContentType
+from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceStatus, PaymentMethod, Code
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import generate_transaction_number, get_local_formatted_date
 from .oauth_service import OAuthService
+from .code import Code as CodeService
 
 
 class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
@@ -311,10 +312,11 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         """Save the information to the DB."""
         return self._dao.save()
 
-    def asdict(self):
+    def asdict(self, include_dynamic_fields: bool = False):
         """Return the invoice as a python dict."""
         invoice_schema = InvoiceSchema()
         d = invoice_schema.dump(self._dao)
+        self._add_dynamic_fields(d, include_dynamic_fields)
         return d
 
     @staticmethod
@@ -436,3 +438,35 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
     def _check_for_auth(dao, one_of_roles=ALL_ALLOWED_ROLES):
         # Check if user is authorized to perform this action
         check_auth(dao.business_identifier, one_of_roles=one_of_roles)
+
+    @staticmethod
+    def _add_dynamic_fields(invoice: Dict[str, any], calculate_dynamic_fields: bool = False) -> Dict[str, any]:
+        """Add calculated fields to the schema json."""
+        if calculate_dynamic_fields:
+            # Include redirect_for_payment flag
+            redirect_for_payment: bool = False
+            action_required_types = (
+                PaymentMethod.DIRECT_PAY.value,
+                PaymentMethod.CC.value,
+                PaymentMethod.ONLINE_BANKING.value
+            )
+            if invoice.get('status_code') == InvoiceStatus.CREATED.value and \
+                    invoice.get('payment_method') in action_required_types:
+                redirect_for_payment = True
+
+            invoice['is_payment_action_required'] = redirect_for_payment
+
+            # Include is online banking allowed
+            if invoice.get('payment_method') == PaymentMethod.ONLINE_BANKING.value:
+                online_banking_allowed = CodeService.find_code_value_by_type_and_code(
+                    Code.CORP_TYPE.value, invoice.get('corp_type_code')
+                ).get('is_online_banking_allowed', True)
+
+                if online_banking_allowed:  # Check if it's a future effective filing
+                    for line_item in invoice.get('line_items'):
+                        if line_item.get('future_effective_fees', 0) != 0:
+                            online_banking_allowed = False
+
+                invoice['is_online_banking_allowed'] = online_banking_allowed
+
+        return invoice

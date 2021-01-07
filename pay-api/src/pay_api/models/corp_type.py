@@ -13,6 +13,8 @@
 # limitations under the License.
 """Model to handle all operations related to Corp type master data."""
 
+from sqlalchemy import Boolean
+
 from .code_table import CodeTable
 from .db import db, ma
 
@@ -29,6 +31,7 @@ class CorpType(db.Model, CodeTable):
     description = db.Column('description', db.String(200), nullable=False)
     bcol_fee_code = db.Column(db.String(20), nullable=True)
     bcol_staff_fee_code = db.Column(db.String(20), nullable=True)
+    is_online_banking_allowed = db.Column(Boolean(), default=True)
 
     def save(self):
         """Save corp type."""

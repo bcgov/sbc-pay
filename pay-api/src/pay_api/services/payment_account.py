@@ -513,7 +513,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 publish_response(payload=payload,
                                  client_name=current_app.config['NATS_MAILER_CLIENT_NAME'],
                                  subject=current_app.config['NATS_MAILER_SUBJECT'])
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception as e:  # NOQA pylint: disable=broad-except
                 current_app.logger.error(e)
                 current_app.logger.error(
                     'Notification to Queue failed for the Account Mailer %s - %s', self.auth_account_id,
@@ -567,7 +567,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 publish_response(payload=payload,
                                  client_name=current_app.config['NATS_ACCOUNT_CLIENT_NAME'],
                                  subject=current_app.config['NATS_ACCOUNT_SUBJECT'])
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception as e:  # NOQA pylint: disable=broad-except
                 current_app.logger.error(e)
                 current_app.logger.error(
                     'Notification to Queue failed for the Unlock Account %s - %s', pay_account.auth_account_id,

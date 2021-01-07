@@ -124,7 +124,7 @@ class PadService(PaymentSystemService, CFSService):
         payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
         try:
             publish_response(payload=payload, subject=get_pay_subject_name(invoice.corp_type_code))
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(e)
             current_app.logger.error('Notification to Queue failed for the Payment Event %s', payload)
             capture_message('Notification to Queue failed for the Payment Event : {msg}.'.format(msg=payload),

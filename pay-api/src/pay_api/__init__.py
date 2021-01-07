@@ -104,6 +104,6 @@ def build_cache(app):
             try:
                 from pay_api.services.code import Code as CodeService  # pylint: disable=import-outside-toplevel
                 CodeService.build_all_codes_cache()
-            except Exception as e:  # pylint:disable=broad-except
+            except Exception as e:  # NOQA pylint:disable=broad-except
                 app.logger.error('Error on caching ')
                 app.logger.error(e)
