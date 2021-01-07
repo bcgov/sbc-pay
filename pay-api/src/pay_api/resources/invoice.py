@@ -24,7 +24,7 @@ from pay_api.services import PaymentService
 from pay_api.services.auth import check_auth
 from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.utils.auth import jwt as _jwt
-from pay_api.utils.constants import EDIT_ROLE
+from pay_api.utils.constants import MAKE_PAYMENT
 from pay_api.utils.errors import Error
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
@@ -58,7 +58,7 @@ class Invoice(Resource):
         corp_type_code = get_str_by_path(request_json, 'businessInfo/corpType')
 
         authorization = check_auth(business_identifier=business_identifier, corp_type_code=corp_type_code,
-                                   contains_role=EDIT_ROLE)
+                                   contains_role=MAKE_PAYMENT)
         try:
             response, status = PaymentService.create_invoice(request_json, authorization), HTTPStatus.CREATED
         except (BusinessException, ServiceUnavailableException) as exception:

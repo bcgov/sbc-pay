@@ -24,7 +24,7 @@ from pay_api.services import Payment
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
-from pay_api.utils.constants import EDIT_ROLE
+from pay_api.utils.constants import EDIT_ROLE, VIEW_ROLE
 from pay_api.utils.enums import ContentType, Role, CfsAccountStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.trace import tracing as _tracing
@@ -102,7 +102,7 @@ class Account(Resource):
         """Get payment account details."""
         current_app.logger.info('<Account.get')
         # Check if user is authorized to perform this action
-        check_auth(business_identifier=None, account_id=account_number, contains_role=EDIT_ROLE)
+        check_auth(business_identifier=None, account_id=account_number, one_of_roles=[EDIT_ROLE, VIEW_ROLE])
         response, status = PaymentAccountService.find_by_auth_account_id(account_number).asdict(), HTTPStatus.OK
         current_app.logger.debug('>Account.get')
         return jsonify(response), status

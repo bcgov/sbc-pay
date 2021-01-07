@@ -41,7 +41,7 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
         self._account_id: str = get_auth_account_id()
         self._name: str = '{} {}'.format(token_info.get('firstname', None), token_info.get('lastname', None))
         self._product_code: str = token_info.get('product_code', None)
-        self._permission = self._permission if hasattr(self, '_permission') else []
+        self._permission = _get_permission()
 
     @property
     def user_name(self) -> str:
@@ -83,14 +83,9 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
         return self._account_id
 
     @property
-    def permission(self) -> List:
+    def permission(self) -> List[str]:
         """Return the permission."""
         return self._permission
-
-    @permission.setter
-    def permission(self, permission):
-        """Permission setter."""
-        self._permission = permission
 
     @property
     def product_code(self) -> str:
@@ -137,6 +132,10 @@ def user_context(function):
 
 def _get_token_info() -> Dict:
     return g.jwt_oidc_token_info if g and 'jwt_oidc_token_info' in g else {}
+
+
+def _get_permission() -> Dict:
+    return g.user_permission if g and 'user_permission' in g else []
 
 
 def _get_token() -> str:
