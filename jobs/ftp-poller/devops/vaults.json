@@ -1,0 +1,24 @@
+[
+    {
+        "vault": "minio",
+        "application": [
+            "base",
+            "payment-reconciliations",
+            "ftp-poller"
+        ]
+    },
+    {
+        "vault": "nats",
+        "application": [
+            "base",
+            "payment-reconciliations"
+        ]
+    },
+    {
+        "vault": "relationship",
+        "application": [
+            "postgres-pay",
+            "ftp-poller"
+        ]
+    }
+]

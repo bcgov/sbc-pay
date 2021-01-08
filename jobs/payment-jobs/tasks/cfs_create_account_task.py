@@ -100,7 +100,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                     pending_account.cfs_site = cfs_account_details.get('site_number')
                     pending_account.cfs_party = cfs_account_details.get('party_number')
 
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(f'Error on creating CFS Account: account id={pay_account.id}, '
                                 f'auth account : {pay_account.auth_account_id}, ERROR : {str(e)}', level='error')
                 current_app.logger.error(e)

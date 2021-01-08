@@ -115,9 +115,6 @@ class _Config():  # pylint: disable=too-few-public-methods
     PAYBC_DIRECT_PAY_CLIENT_ID = _get_config('PAYBC_DIRECT_PAY_CLIENT_ID')
     PAYBC_DIRECT_PAY_CLIENT_SECRET = _get_config('PAYBC_DIRECT_PAY_CLIENT_SECRET')
 
-    # REPORT API Settings
-    REPORT_API_BASE_URL = _get_config('REPORT_API_BASE_URL')
-
     # NATS Config
     NATS_SERVERS = _get_config('NATS_SERVERS', default='nats://127.0.0.1:4222').split(',')
     NATS_CLUSTER_ID = _get_config('NATS_CLUSTER_ID', default='test-cluster')
@@ -133,19 +130,22 @@ class _Config():  # pylint: disable=too-few-public-methods
     # Auth API Endpoint
     AUTH_API_ENDPOINT = _get_config('AUTH_API_ENDPOINT')
 
-    # Sentry Config
-    SENTRY_DSN = _get_config('SENTRY_DSN', default=None)
+    # REPORT API Settings
+    REPORT_API_BASE_URL = f'{_get_config("REPORT_API_URL")}/reports'
 
     # BCOL Service
     BCOL_API_ENDPOINT = _get_config('BCOL_API_ENDPOINT')
+
+    # Sentry Config
+    SENTRY_DSN = _get_config('SENTRY_DSN', default=None)
 
     # Valid Payment redirect URLs
     VALID_REDIRECT_URLS = [(val.strip() if val != '' else None)
                            for val in _get_config('VALID_REDIRECT_URLS', default='').split(',')]
 
     # Service account details
-    KEYCLOAK_SERVICE_ACCOUNT_ID = _get_config('KEYCLOAK_SERVICE_ACCOUNT_ID')
-    KEYCLOAK_SERVICE_ACCOUNT_SECRET = _get_config('KEYCLOAK_SERVICE_ACCOUNT_SECRET')
+    KEYCLOAK_SERVICE_ACCOUNT_ID = _get_config('SBC_AUTH_ADMIN_CLIENT_ID')
+    KEYCLOAK_SERVICE_ACCOUNT_SECRET = _get_config('SBC_AUTH_ADMIN_CLIENT_SECRET')
 
     # Default number of transactions to be returned for transaction reporting
     TRANSACTION_REPORT_DEFAULT_TOTAL = int(_get_config('TRANSACTION_REPORT_DEFAULT_TOTAL', default=50))

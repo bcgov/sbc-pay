@@ -57,7 +57,7 @@ class PollFtpTask:  # pylint:disable=too-few-public-methods
             if len(payment_file_list) > 0:
                 PollFtpTask._post_process(payment_file_list)
 
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:  # NOQA # pylint: disable=broad-except
             current_app.logger.error(e)
         finally:
             SFTPService.get_connection().close()
@@ -72,7 +72,7 @@ class PollFtpTask:  # pylint:disable=too-few-public-methods
             value_as_bytes = f.read()
             try:
                 put_object(value_as_bytes, file.filename, file.st_size)
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception as e:  # NOQA # pylint: disable=broad-except
                 current_app.logger.error(e)
                 current_app.logger.error(f'upload to minio failed for the file: {file_full_name}')
                 raise
@@ -125,7 +125,7 @@ class PollFtpTask:  # pylint:disable=too-few-public-methods
                 publish_response(payload=payload,
                                  client_name=current_app.config.get('NATS_PAYMENT_RECONCILIATIONS_CLIENT_NAME'),
                                  subject=current_app.config.get('NATS_PAYMENT_RECONCILIATIONS_SUBJECT'))
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception as e:  # NOQA # pylint: disable=broad-except
                 current_app.logger.error(e)
                 current_app.logger.warning(
                     f'Notification to Queue failed for the file {file_name}',
