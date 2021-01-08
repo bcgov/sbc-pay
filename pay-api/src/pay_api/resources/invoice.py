@@ -79,7 +79,7 @@ class Invoices(Resource):
     def get(invoice_id):
         """Get the invoice records."""
         try:
-            response, status = InvoiceService.find_by_id(invoice_id).asdict(), HTTPStatus.OK
+            response, status = InvoiceService.find_by_id(invoice_id).asdict(include_dynamic_fields=True), HTTPStatus.OK
         except BusinessException as exception:
             return exception.response()
         return jsonify(response), status

@@ -18,6 +18,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from pay_api.models.error_code import ErrorCode, ErrorCodeSchema
 from pay_api.models.invoice_status_code import InvoiceStatusCode, InvoiceStatusCodeSchema
+from pay_api.models.corp_type import CorpType, CorpTypeSchema
 from pay_api.utils.cache import cache
 from pay_api.utils.enums import Code as CodeValue
 
@@ -54,7 +55,10 @@ class Code:
                 codes_models = InvoiceStatusCode.find_all()
                 code_schema = InvoiceStatusCodeSchema()
                 codes_response = code_schema.dump(codes_models, many=True)
-
+            elif code_type == CodeValue.CORP_TYPE.value:
+                codes_models = CorpType.find_all()
+                code_schema = CorpTypeSchema()
+                codes_response = code_schema.dump(codes_models, many=True)
             cache.set(code_type, codes_response)
 
         response['codes'] = codes_response
@@ -71,7 +75,7 @@ class Code:
         current_app.logger.debug(f'<find_code_value_by_type_and_code : {code_type} - {code}')
         code_response = {}
         if cache.get(code_type):
-            filtered_codes = [cd for cd in cache.get(code_type) if cd.get('type') == code]
+            filtered_codes = [cd for cd in cache.get(code_type) if cd.get('type') == code or cd.get('code') == code]
             if filtered_codes:
                 code_response = filtered_codes[0]
         else:
@@ -82,6 +86,10 @@ class Code:
             elif code_type == CodeValue.INVOICE_STATUS.value:
                 codes_model = InvoiceStatusCode.find_by_code(code)
                 schema = InvoiceStatusCodeSchema()
+                code_response = schema.dump(codes_model, many=False)
+            elif code_type == CodeValue.CORP_TYPE.value:
+                codes_model = CorpType.find_by_code(code)
+                schema = CorpTypeSchema()
                 code_response = schema.dump(codes_model, many=False)
         current_app.logger.debug('>find_code_value_by_type_and_code')
         return code_response

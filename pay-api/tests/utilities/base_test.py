@@ -185,7 +185,8 @@ def get_payment_request_with_payment_method(business_identifier: str = 'CP000123
     }
 
 
-def get_payment_request_with_no_contact_info(payment_method: str = 'CC', corp_type: str = 'CP'):
+def get_payment_request_with_no_contact_info(payment_method: str = 'CC', corp_type: str = 'CP',
+                                             filing_type_code: str = 'SERCH', future_effective: bool = False):
     """Return a payment request object."""
     return {
         'paymentInfo': {
@@ -197,7 +198,8 @@ def get_payment_request_with_no_contact_info(payment_method: str = 'CC', corp_ty
         'filingInfo': {
             'filingTypes': [
                 {
-                    'filingTypeCode': 'SERCH'
+                    'filingTypeCode': filing_type_code,
+                    'futureEffective': future_effective
                 }
             ]
         }

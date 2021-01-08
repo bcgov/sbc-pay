@@ -125,7 +125,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
             invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
 
-        except Exception as e:
+        except Exception as e: # NOQA pylint: disable=broad-except
             current_app.logger.error('Rolling back as error occured!')
             current_app.logger.error(e)
             if invoice:
@@ -139,7 +139,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
         current_app.logger.debug('>create_invoice')
 
-        return invoice.asdict()
+        return invoice.asdict(include_dynamic_fields=True)
 
     @classmethod
     def _find_payment_account(cls, authorization):
