@@ -205,6 +205,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         invoice: Invoice = Invoice.find_by_id(invoice_id, skip_auth_check=True)
         if not invoice.id:
             raise BusinessException(Error.INVALID_INVOICE_ID)
+        if invoice.payment_method_code == PaymentMethod.PAD.value:  # No transaction needed for PAD invoices.
+            raise BusinessException(Error.INVALID_TRANSACTION)
 
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
             payment_method=invoice.payment_method_code
@@ -473,7 +475,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
 
         try:
             publish_response(payload=payload, subject=get_pay_subject_name(invoice.corp_type_code))
-        except Exception as e:  # pylint: disable=broad-except
+        except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(e)
             current_app.logger.warning(
                 f'Notification to Queue failed, marking the transaction : {transaction_dao.id} as EVENT_FAILED',

@@ -18,18 +18,20 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 """
 
 import json
+from datetime import datetime
 from unittest.mock import patch
 
 from flask import current_app
 from requests.exceptions import ConnectionError
 
+from pay_api.models import CfsAccount as CfsAccountModel, PaymentAccount as PaymentAccountModel
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import PaymentMethod, Role
 from tests.utilities.base_test import (
     get_claims, get_payment_request, get_payment_request_with_folio_number,
     get_payment_request_with_service_fees,
     get_payment_request_with_no_contact_info, get_payment_request_with_payment_method, get_waive_fees_payment_request,
-    get_zero_dollar_payment_request, token_header, get_basic_account_payload)
+    get_zero_dollar_payment_request, token_header, get_basic_account_payload, get_unlinked_pad_account_payload)
 
 
 def test_payment_creation(session, client, jwt, app):
@@ -406,6 +408,7 @@ def test_premium_payment_creation_with_payment_method_ob_cc(session, client, jwt
                      headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('paymentMethod') == 'ONLINE_BANKING'
+    assert rv.json.get('isOnlineBankingAllowed')
     invoice_id = rv.json.get('id')
 
     rv = client.patch(f'/api/v1/payment-requests/{invoice_id}', data=json.dumps(
@@ -608,3 +611,78 @@ def test_invoice_pdf(session, client, jwt, app):
     invoice_id = rv.json.get('id')
     client.post(f'/api/v1/payment-requests/{invoice_id}/reports', headers=headers)
     assert True
+
+
+def test_premium_payment_creation_with_ob_disabled(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': '1'}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(
+        get_payment_request_with_no_contact_info(corp_type='NRO', filing_type_code='NM620',
+                                                 payment_method='ONLINE_BANKING')),
+                     headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('paymentMethod') == 'ONLINE_BANKING'
+    assert not rv.json.get('isOnlineBankingAllowed')
+
+
+def test_future_effective_premium_payment_creation_with_ob_disabled(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': '1'}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(
+        get_payment_request_with_no_contact_info(corp_type='BEN', filing_type_code='BCINC',
+                                                 payment_method='ONLINE_BANKING', future_effective=True)),
+                     headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('paymentMethod') == 'ONLINE_BANKING'
+    assert not rv.json.get('isOnlineBankingAllowed')
+
+
+def test_create_pad_payment_request_when_account_is_pending(session, client, jwt, app):
+    """Assert payment request works for PAD accounts."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    # Create account first
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_unlinked_pad_account_payload(account_id=1234)),
+                     headers=headers)
+    auth_account_id = rv.json.get('authAccountId')
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': auth_account_id}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(
+        get_payment_request_with_no_contact_info(corp_type='BEN', filing_type_code='BCINC',
+                                                 payment_method=PaymentMethod.PAD.value)),
+                     headers=headers)
+    assert rv.status_code == 400
+    assert rv.json.get('type') == 'ACCOUNT_IN_PAD_CONFIRMATION_PERIOD'
+
+
+def test_create_pad_payment_request(session, client, jwt, app):
+    """Assert payment request works for PAD accounts."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    # Create account first
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_unlinked_pad_account_payload(account_id=1234)),
+                     headers=headers)
+    auth_account_id = rv.json.get('authAccountId')
+    # Update the payment account as ACTIVE
+    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+    payment_account.pad_activation_date = datetime.now()
+    payment_account.save()
+    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
+    cfs_account.status = 'ACTIVE'
+    cfs_account.save()
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': auth_account_id}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(
+        get_payment_request_with_no_contact_info(corp_type='BEN', filing_type_code='BCINC',
+                                                 payment_method=PaymentMethod.PAD.value)),
+                     headers=headers)
+    assert rv.json.get('paymentMethod') == PaymentMethod.PAD.value
+    assert not rv.json.get('isOnlineBankingAllowed')

@@ -215,6 +215,9 @@ async def _reconcile_payments(msg: Dict[str, any]):
         # Convert lower case keys to avoid any key mismatch
         row = dict((k.lower(), v) for k, v in row.items())
         logger.debug('Processing %s', row)
+        # Ignore the row if applied amount is zero.
+        if float(_get_row_value(row, Column.APP_AMOUNT)) == 0:
+            continue
 
         # If PAD, lookup the payment table and mark status based on the payment status
         # If BCOL, lookup the invoices and set the status:
@@ -222,6 +225,7 @@ async def _reconcile_payments(msg: Dict[str, any]):
         # If EFT/WIRE, lookup the invoices and set the status:
         # Create payment record by looking the receipt_number
         # PS : Duplicating some code to make the code more readable.
+
         if (record_type := _get_row_value(row, Column.RECORD_TYPE)) \
                 in (RecordType.PAD.value, RecordType.PADR.value, RecordType.PAYR.value):
             # Handle invoices
