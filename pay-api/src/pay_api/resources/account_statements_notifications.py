@@ -22,7 +22,7 @@ from pay_api.services import StatementRecipients
 from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.errors import Error
-from pay_api.utils.constants import EDIT_ROLE
+from pay_api.utils.constants import EDIT_ROLE, CHANGE_STATEMENT_SETTINGS
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
 
@@ -64,7 +64,7 @@ class AccountStatementsNotifications(Resource):
         current_app.logger.debug(request_json)
         # TODO add valid formatting
         # Check if user is authorized to perform this action
-        check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE, is_premium=True)
+        check_auth(business_identifier=None, account_id=account_id, contains_role=CHANGE_STATEMENT_SETTINGS, is_premium=True)
 
         try:
             StatementRecipients.update_statement_notification_details(
