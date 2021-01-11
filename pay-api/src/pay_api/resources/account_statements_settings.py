@@ -59,7 +59,8 @@ class AccountStatementsSettings(Resource):
         # TODO add valid formatting
         frequency = request_json.get('frequency')
         # Check if user is authorized to perform this action
-        check_auth(business_identifier=None, account_id=account_id, contains_role=CHANGE_STATEMENT_SETTINGS, is_premium=True)
+        check_auth(business_identifier=None, account_id=account_id,
+                   contains_role=CHANGE_STATEMENT_SETTINGS, is_premium=True)
 
         try:
             response, status = (

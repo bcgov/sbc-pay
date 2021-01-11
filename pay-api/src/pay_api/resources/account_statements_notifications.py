@@ -64,7 +64,8 @@ class AccountStatementsNotifications(Resource):
         current_app.logger.debug(request_json)
         # TODO add valid formatting
         # Check if user is authorized to perform this action
-        check_auth(business_identifier=None, account_id=account_id, contains_role=CHANGE_STATEMENT_SETTINGS, is_premium=True)
+        check_auth(business_identifier=None, account_id=account_id,
+                   contains_role=CHANGE_STATEMENT_SETTINGS, is_premium=True)
 
         try:
             StatementRecipients.update_statement_notification_details(
