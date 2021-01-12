@@ -29,7 +29,7 @@ import csv
 import json
 import os
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 import nats
 from entity_queue_common.service import QueueServiceManager
@@ -86,13 +86,13 @@ async def cb_subscription_handler(msg: nats.aio.client.Msg):
         event_message = json.loads(msg.data.decode('utf-8'))
         logger.debug('Event Message Received: %s', event_message)
         await process_event(event_message, FLASK_APP)
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:  # NOQA pylint: disable=broad-except
         # Catch Exception so that any error is still caught and the message is removed from the queue
         logger.error('Queue Error: %s', json.dumps(event_message), exc_info=True)
         logger.error(e)
 
 
-def _create_payment_records(csv_content: str):
+async def _create_payment_records(csv_content: str):
     """Create payment records by grouping the lines with target transaction number."""
     # Iterate the rows and create a dict with key as the source transaction number.
     source_txns: Dict[str, List[Dict[str, str]]] = {}
@@ -146,6 +146,8 @@ def _create_payment_records(csv_content: str):
 
             _save_payment(completed_on, inv_number, invoice_amount, paid_amount, row, PaymentStatus.COMPLETED.value,
                           PaymentMethod.ONLINE_BANKING.value, source_txn_number)
+            # publish email event.
+            _publish_online_banking_mailer_events(payment_lines, paid_amount)
 
         elif settlement_type == RecordType.EFTP.value:
             # Find the payment using receipt_number and mark it as COMPLETED
@@ -215,8 +217,11 @@ async def _reconcile_payments(msg: Dict[str, any]):
         # Convert lower case keys to avoid any key mismatch
         row = dict((k.lower(), v) for k, v in row.items())
         logger.debug('Processing %s', row)
-        # Ignore the row if applied amount is zero.
-        if float(_get_row_value(row, Column.APP_AMOUNT)) == 0:
+
+        # IF not PAD and application amount is zero, continue
+        record_type = _get_row_value(row, Column.RECORD_TYPE)
+        pad_record_types: Tuple[str] = (RecordType.PAD.value, RecordType.PADR.value, RecordType.PAYR.value)
+        if float(_get_row_value(row, Column.APP_AMOUNT)) == 0 and record_type not in pad_record_types:
             continue
 
         # If PAD, lookup the payment table and mark status based on the payment status
@@ -225,9 +230,7 @@ async def _reconcile_payments(msg: Dict[str, any]):
         # If EFT/WIRE, lookup the invoices and set the status:
         # Create payment record by looking the receipt_number
         # PS : Duplicating some code to make the code more readable.
-
-        if (record_type := _get_row_value(row, Column.RECORD_TYPE)) \
-                in (RecordType.PAD.value, RecordType.PADR.value, RecordType.PAYR.value):
+        if record_type in pad_record_types:
             # Handle invoices
             await _process_consolidated_invoices(row)
         elif record_type in (RecordType.BOLP.value, RecordType.EFTP.value):
@@ -246,9 +249,8 @@ async def _reconcile_payments(msg: Dict[str, any]):
 
         # Commit the transaction and process next row.
         db.session.commit()
-
     # Create payment records for lines other than PAD
-    _create_payment_records(content)
+    await _create_payment_records(content)
     # Create Credit Records.
     _create_credit_records(content)
     # Sync credit memo and on account credits with CFS
@@ -314,17 +316,14 @@ async def _process_unconsolidated_invoices(row):
                     'More than one or none invoice reference received for invoice number {inv_number} for {record_type}'
                     .format(inv_number=inv_number, record_type=record_type), level='error')
         else:
-            payment_account = _get_payment_account(row)
             # Handle fully PAID and Partially Paid scenarios.
             if target_txn_status.lower() == Status.PAID.value.lower():
                 logger.debug('Fully PAID payment.')
                 await _process_paid_invoices(inv_references, row)
-                await _publish_mailer_events('OnlineBanking.PaymentSuccess', payment_account, row)
             elif target_txn_status.lower() == Status.PARTIAL.value.lower():
                 logger.info('Partially PAID.')
                 # As per validation above, get first and only inv ref
                 _process_partial_paid_invoices(inv_references[0], row)
-                await _publish_mailer_events('OnlineBanking.PartiallyPaid', payment_account, row)
             else:
                 logger.error('Target Transaction Type is received as %s for %s, and cannot process.',
                              target_txn, record_type)
@@ -542,7 +541,7 @@ async def _publish_payment_event(inv: InvoiceModel):
 
         await publish(payload=payment_event_payload, client_name=APP_CONFIG.NATS_PAYMENT_CLIENT_NAME,
                       subject=get_pay_subject_name(inv.corp_type_code, subject_format=APP_CONFIG.NATS_PAYMENT_SUBJECT))
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:  # NOQA pylint: disable=broad-except
         logger.error(e)
         logger.warning('Notification to Queue failed for the Payment Event - %s', payment_event_payload)
         capture_message('Notification to Queue failed for the Payment Event {payment_event_payload}.'.format(
@@ -557,7 +556,56 @@ async def _publish_mailer_events(message_type: str, pay_account: PaymentAccountM
         await publish(payload=payload,
                       client_name=APP_CONFIG.NATS_MAILER_CLIENT_NAME,
                       subject=APP_CONFIG.NATS_MAILER_SUBJECT)
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:  # NOQA pylint: disable=broad-except
+        logger.error(e)
+        logger.warning('Notification to Queue failed for the Account Mailer %s - %s', pay_account.auth_account_id,
+                       payload)
+        capture_message('Notification to Queue failed for the Account Mailer {auth_account_id}, {msg}.'.format(
+            auth_account_id=pay_account.auth_account_id, msg=payload), level='error')
+
+
+async def _publish_online_banking_mailer_events(rows: List[Dict[str, str]], paid_amount: float):
+    """Publish payment message to the mailer queue."""
+    # Publish message to the Queue, saying account has been created. Using the event spec.
+    pay_account = _get_payment_account(rows[0])  # All rows are for same account.
+    # Check for credit, or fully paid or under paid payment
+    credit_rows = list(
+        filter(lambda r: (_get_row_value(r, Column.TARGET_TXN) == TargetTransaction.RECEIPT.value), rows))
+    under_pay_rows = list(
+        filter(lambda r: (_get_row_value(r, Column.TARGET_TXN_STATUS).lower() == Status.PARTIAL.value.lower()), rows))
+
+    credit_amount: float = 0
+    if credit_rows:
+        message_type = 'bc.registry.payment.OverPaid'
+        for row in credit_rows:
+            credit_amount += float(_get_row_value(row, Column.APP_AMOUNT))
+    elif under_pay_rows:
+        message_type = 'bc.registry.payment.UnderPaid'
+    else:
+        message_type = 'bc.registry.payment.Payment'
+
+    queue_data = {
+        'accountId': pay_account.auth_account_id,
+        'paymentMethod': PaymentMethod.ONLINE_BANKING.value,
+        'amount': '{:.2f}'.format(paid_amount),
+        'creditAmount': '{:.2f}'.format(credit_amount)
+    }
+
+    payload = {
+        'specversion': '1.x-wip',
+        'type': message_type,
+        'source': f'https://api.pay.bcregistry.gov.bc.ca/v1/accounts/{pay_account.auth_account_id}',
+        'id': f'{pay_account.auth_account_id}',
+        'time': f'{datetime.now()}',
+        'datacontenttype': 'application/json',
+        'data': queue_data
+    }
+
+    try:
+        await publish(payload=payload,
+                      client_name=APP_CONFIG.NATS_MAILER_CLIENT_NAME,
+                      subject=APP_CONFIG.NATS_MAILER_SUBJECT)
+    except Exception as e:  # NOQA pylint: disable=broad-except
         logger.error(e)
         logger.warning('Notification to Queue failed for the Account Mailer %s - %s', pay_account.auth_account_id,
                        payload)
@@ -574,7 +622,7 @@ async def _publish_account_events(message_type: str, pay_account: PaymentAccount
         await publish(payload=payload,
                       client_name=APP_CONFIG.NATS_ACCOUNT_CLIENT_NAME,
                       subject=APP_CONFIG.NATS_ACCOUNT_SUBJECT)
-    except Exception as e:  # pylint: disable=broad-except
+    except Exception as e:  # NOQA pylint: disable=broad-except
         logger.error(e)
         logger.warning('Notification to Queue failed for the Account %s - %s', pay_account.auth_account_id,
                        pay_account.auth_account_name)
