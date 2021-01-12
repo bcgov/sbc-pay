@@ -1,0 +1,15 @@
+[
+    {
+        "vault": "keycloak",
+        "application": [
+            "jwt-base"
+        ]
+    },
+    {
+        "vault": "relationship",
+        "application": [
+            "sentry",
+            "jwt"
+        ]
+    }
+]

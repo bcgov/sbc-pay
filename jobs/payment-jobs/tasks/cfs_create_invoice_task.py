@@ -106,7 +106,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 invoice_response = CFSService.create_account_invoice(transaction_number=account_invoices[0].id,
                                                                      line_items=lines,
                                                                      payment_account=cfs_account)
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(f'Error on creating PAD invoice: account id={payment_account.id}, '
                                 f'auth account : {payment_account.auth_account_id}, ERROR : {str(e)}', level='error')
                 current_app.logger.error(e)
@@ -160,7 +160,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 invoice_response = CFSService.create_account_invoice(transaction_number=invoice.id,
                                                                      line_items=invoice.payment_line_items,
                                                                      payment_account=payment_account)
-            except Exception as e:  # pylint: disable=broad-except
+            except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(f'Error on creating Online Banking invoice: account id={payment_account.id}, '
                                 f'auth account : {payment_account.auth_account_id}, ERROR : {str(e)}', level='error')
                 current_app.logger.error(e)

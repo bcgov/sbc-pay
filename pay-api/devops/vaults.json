@@ -1,0 +1,40 @@
+[
+    {
+        "vault": "shared",
+        "application": [
+            "api-endpoints"
+        ]
+    },
+    {
+        "vault": "keycloak",
+        "application": [
+            "jwt-base",
+            "sbc-auth-admin"
+        ]
+    },
+    {
+        "vault": "nats",
+        "application": [
+            "base",
+            "account-events-listener",
+            "account-mailer",
+            "payment"
+        ]
+    },
+    {
+        "vault": "payment-external-services",
+        "application": [
+            "paybc",
+            "cfs"
+        ]
+    },
+    {
+        "vault": "relationship",
+        "application": [
+            "postgres-pay",
+            "pay-api",
+            "sentry",
+            "jwt"
+        ]
+    }
+]

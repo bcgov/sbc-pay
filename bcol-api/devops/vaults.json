@@ -1,0 +1,21 @@
+[
+    {
+        "vault": "keycloak",
+        "application": [
+            "jwt-base"
+        ]
+    },
+    {
+        "vault": "payment-external-services",
+        "application": [
+            "bcol"
+        ]
+    },
+    {
+        "vault": "relationship",
+        "application": [
+            "sentry",
+            "jwt"
+        ]
+    }
+]

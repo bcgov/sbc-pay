@@ -38,7 +38,6 @@ jobs:
         with:
           WORKING_DIRECTORY: "./pay-api"
           APP_NAME: "pay-api"
-          VAULTS: '[{ \"vault\": \"shared\", \"application\": [\"keycloak\", \"nats\"]}, {\"vault\": \"relationship\",\"application\": [\"postgres-pay\", \"pay-api\", \"sentry\", \"jwt\", \"account-mailer\", \"account-events-listener\"]}]'
           SKIP_OP: "false"
           DEPLOYMENT: "true"
           OP_PARAMETERS: ${{ secrets.OP_PARAMETERS }}

@@ -124,5 +124,5 @@ def test_update_pad_account(session):
     assert updated_cfs_account.bank_number == new_payment_details.get('bankInstitutionNumber')
 
     assert cfs_account.status == CfsAccountStatus.INACTIVE.value
-    assert updated_cfs_account.status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value
+    assert updated_cfs_account.status == CfsAccountStatus.ACTIVE.value
     assert updated_cfs_account.payment_instrument_number

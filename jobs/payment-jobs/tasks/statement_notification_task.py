@@ -80,7 +80,7 @@ class StatementNotificationTask:  # pylint:disable=too-few-public-methods
             # params.update({'url': params['url'].replace('orgId', payment_account.auth_account_id)})
             try:
                 notify_response = cls.send_email(token, to_emails, template.render(params))
-            except Exception as e:  # pylint:disable=broad-except
+            except Exception as e: # NOQA # pylint:disable=broad-except
                 current_app.logger.error('<notification failed')
                 current_app.logger.error(e)
                 notify_response = False
