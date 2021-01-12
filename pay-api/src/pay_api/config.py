@@ -128,13 +128,13 @@ class _Config():  # pylint: disable=too-few-public-methods
     NATS_ACCOUNT_SUBJECT = os.getenv('NATS_ACCOUNT_SUBJECT', 'account.events')
 
     # Auth API Endpoint
-    AUTH_API_ENDPOINT = _get_config('AUTH_API_ENDPOINT')
+    AUTH_API_ENDPOINT = f'{_get_config("AUTH_API_URL")}/'
 
     # REPORT API Settings
     REPORT_API_BASE_URL = f'{_get_config("REPORT_API_URL")}/reports'
 
     # BCOL Service
-    BCOL_API_ENDPOINT = _get_config('BCOL_API_ENDPOINT')
+    BCOL_API_ENDPOINT = _get_config('BCOL_API_URL')
 
     # Sentry Config
     SENTRY_DSN = _get_config('SENTRY_DSN', default=None)
