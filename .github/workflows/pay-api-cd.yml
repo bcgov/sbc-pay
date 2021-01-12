@@ -34,11 +34,10 @@ jobs:
         run: |
           echo "TAG_NAME=dev" >> $GITHUB_ENV
 
-      - uses: pwei1018/bcrs-cd-action@versioning
+      - uses: pwei1018/bcrs-cd-action@vaults
         with:
           WORKING_DIRECTORY: "./pay-api"
           APP_NAME: "pay-api"
-          VAULTS: '[{ \"vault\": \"shared\", \"application\": [\"keycloak\", \"nats\"]}, {\"vault\": \"relationship\",\"application\": [\"postgres-pay\", \"pay-api\", \"sentry\", \"jwt\", \"account-mailer\", \"account-events-listener\"]}]'
           SKIP_OP: "false"
           DEPLOYMENT: "true"
           OP_PARAMETERS: ${{ secrets.OP_PARAMETERS }}

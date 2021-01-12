@@ -96,7 +96,7 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
                                    code=self.__get(parsed_fault_detail, 'returnCode'))
         except BusinessException as e:
             raise e
-        except Exception as e:
+        except Exception as e:  # NOQA
             current_app.logger.error(e)
             raise BusinessException(Error.SYSTEM_ERROR)
 
@@ -122,7 +122,7 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
                 user_id
             )
             ldap_conn.simple_bind_s(username, password)
-        except Exception as error:
+        except Exception as error:  # NOQA
             current_app.logger.warning(error)
             raise BusinessException(Error.INVALID_CREDENTIALS)
         finally:

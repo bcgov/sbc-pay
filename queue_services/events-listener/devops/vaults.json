@@ -1,0 +1,16 @@
+[
+    {
+        "vault": "nats",
+        "application": [
+            "base",
+            "entity-events-listener"
+        ]
+    },
+    {
+        "vault": "relationship",
+        "application": [
+            "postgres-pay",
+            "jwt"
+        ]
+    }
+]

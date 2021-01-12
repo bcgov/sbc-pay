@@ -80,7 +80,7 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
                                    code=self.__get(parsed_fault_detail, 'returnCode'))
         except BusinessException as e:
             raise e
-        except Exception as e:
+        except Exception as e:  # NOQA
             current_app.logger.error(e)
             raise BusinessException(Error.PAYMENT_ERROR)
 

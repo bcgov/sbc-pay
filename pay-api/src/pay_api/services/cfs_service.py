@@ -89,10 +89,12 @@ class CFSService(OAuthService):
         """Validate bank details by invoking CFS validation Service."""
         current_app.logger.debug('<Validating bank account details')
         validation_url = current_app.config.get('CFS_BASE_URL') + '/cfs/validatepayins/'
+        bank_number = str(bank_details.get('bankInstitutionNumber', None))
+        branch_number = str(bank_details.get('bankTransitNumber', None))
         bank_details: Dict[str, str] = {
             'accountNumber': bank_details.get('bankAccountNumber', None),
-            'branchNumber': bank_details.get('bankTransitNumber', None),
-            'bankNumber': bank_details.get('bankInstitutionNumber', None),
+            'branchNumber': f'{branch_number:0>5}',
+            'bankNumber': f'{bank_number:0>4}',
         }
         try:
             access_token = CFSService.get_token().json().get('access_token')
@@ -214,10 +216,13 @@ class CFSService(OAuthService):
         site_payment_url = current_app.config.get(
             'CFS_BASE_URL') + f'/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/payment/'
 
+        bank_number = str(payment_info.get('bankInstitutionNumber'))
+        branch_number = str(payment_info.get('bankTransitNumber'))
+
         payment_details: Dict[str, str] = {
             'bank_account_name': name,
-            'bank_number': str(payment_info.get('bankInstitutionNumber')),
-            'branch_number': str(payment_info.get('bankTransitNumber')),
+            'bank_number': f'{bank_number:0>4}',
+            'branch_number': f'{branch_number:0>5}',
             'bank_account_number': str(payment_info.get('bankAccountNumber')),
             'country_code': DEFAULT_COUNTRY,
             'currency_code': DEFAULT_CURRENCY
@@ -228,8 +233,8 @@ class CFSService(OAuthService):
 
         payment_details = {
             'bank_account_number': payment_info.get('bankAccountNumber'),
-            'bank_number': payment_info.get('bankInstitutionNumber'),
-            'bank_branch_number': payment_info.get('bankTransitNumber'),
+            'bank_number': bank_number,
+            'bank_branch_number': branch_number,
             'payment_instrument_number': site_payment_response.get('payment_instrument_number')
         }
 

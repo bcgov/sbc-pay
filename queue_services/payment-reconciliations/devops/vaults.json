@@ -1,0 +1,31 @@
+[
+    {
+        "vault": "minio",
+        "application": [
+            "base",
+            "payment-reconciliations"
+        ]
+    },
+    {
+        "vault": "nats",
+        "application": [
+            "base",
+            "account-events-listener",
+            "account-mailer",
+            "payment",
+            "payment-reconciliations"
+        ]
+    },
+    {
+        "vault": "payment-external-services",
+        "application": [
+            "cfs"
+        ]
+    },
+    {
+        "vault": "relationship",
+        "application": [
+            "postgres-pay"
+        ]
+    }
+]

@@ -487,7 +487,7 @@ paths:
           content:
             application/json:
               examples:
-                '0001':
+                '1234567':
                   value:
                     bank_number: '0001'
                     bank_name: BANK OF MONTREAL
@@ -495,7 +495,7 @@ paths:
                     transit_address: 'DATA CENTRE,PRINCE ANDREW CENTRE,,DON MILLS,ON,M3C 2H4'
                     account_number: '1234567'
                     CAS-Returned-Messages: VALID
-                '0002':
+                '12345678':
                   value:
                     bank_number: '0002'
                     bank_name: ''
@@ -503,7 +503,7 @@ paths:
                     transit_address: ''
                     account_number: '1234567'
                     CAS-Returned-Messages: 0001 - Bank Number is Invalid.
-                '0003':
+                '123456789':
                   value:
                     bank_number: '0003'
                     bank_name: ''

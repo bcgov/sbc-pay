@@ -113,6 +113,7 @@ class DevConfig(_Config):  # pylint: disable=too-few-public-methods
 
 class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     """In support of testing only used by the py.test suite."""
+
     DEBUG = True
     TESTING = True
     # POSTGRESQL
