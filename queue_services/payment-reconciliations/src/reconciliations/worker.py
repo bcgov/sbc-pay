@@ -147,7 +147,7 @@ async def _create_payment_records(csv_content: str):
             _save_payment(completed_on, inv_number, invoice_amount, paid_amount, row, PaymentStatus.COMPLETED.value,
                           PaymentMethod.ONLINE_BANKING.value, source_txn_number)
             # publish email event.
-            _publish_online_banking_mailer_events(payment_lines, paid_amount)
+            await _publish_online_banking_mailer_events(payment_lines, paid_amount)
 
         elif settlement_type == RecordType.EFTP.value:
             # Find the payment using receipt_number and mark it as COMPLETED
