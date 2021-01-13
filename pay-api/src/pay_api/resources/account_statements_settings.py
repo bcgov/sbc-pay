@@ -20,7 +20,7 @@ from pay_api.exceptions import BusinessException
 from pay_api.services import StatementSettings as StatementSettingsService
 from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
-from pay_api.utils.constants import EDIT_ROLE
+from pay_api.utils.constants import EDIT_ROLE, CHANGE_STATEMENT_SETTINGS
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
 
@@ -59,7 +59,8 @@ class AccountStatementsSettings(Resource):
         # TODO add valid formatting
         frequency = request_json.get('frequency')
         # Check if user is authorized to perform this action
-        check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE, is_premium=True)
+        check_auth(business_identifier=None, account_id=account_id,
+                   contains_role=CHANGE_STATEMENT_SETTINGS, is_premium=True)
 
         try:
             response, status = (
