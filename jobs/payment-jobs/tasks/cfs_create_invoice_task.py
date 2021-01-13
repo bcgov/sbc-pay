@@ -98,7 +98,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             lines = []
             invoice_total: float = 0
             for invoice in account_invoices:
-                lines.append(*invoice.payment_line_items)
+                lines.extend(invoice.payment_line_items)
                 invoice_total += invoice.total
 
             try:
