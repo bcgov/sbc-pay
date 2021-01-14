@@ -118,8 +118,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     NATS_PAYMENT_SUBJECT = os.getenv('NATS_PAYMENT_SUBJECT', 'entity.filing.payment')
 
     # Auth API Endpoint
-    AUTH_API_ENDPOINT = os.getenv('AUTH_API_URL')
-
+    AUTH_API_ENDPOINT = f'{os.getenv("AUTH_API_URL")}/'
+    
     CFS_ACCOUNT_DESCRIPTION = os.getenv('CFS_ACCOUNT_DESCRIPTION', 'BCR')
     CFS_INVOICE_PREFIX = os.getenv('CFS_INVOICE_PREFIX', 'REG')
 
