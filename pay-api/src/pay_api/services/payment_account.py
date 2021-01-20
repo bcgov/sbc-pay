@@ -51,9 +51,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self._cfs_party: Union[None, str] = None
         self._cfs_site: Union[None, str] = None
 
-        self._bank_name: Union[None, str] = None
         self._bank_number: Union[None, str] = None
-        self._bank_branch: Union[None, str] = None
         self._bank_branch_number: Union[None, str] = None
         self._bank_account_number: Union[None, str] = None
 
@@ -88,9 +86,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             self.cfs_party: str = cfs_account.cfs_party
             self.cfs_site: str = cfs_account.cfs_site
 
-            self.bank_name: str = cfs_account.bank_name
             self.bank_number: str = cfs_account.bank_number
-            self.bank_branch: str = cfs_account.bank_branch
             self.bank_branch_number: str = cfs_account.bank_branch_number
             self.bank_account_number: str = cfs_account.bank_account_number
             self.cfs_account_id: int = cfs_account.id
@@ -182,16 +178,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self._cfs_site = value
 
     @property
-    def bank_name(self):
-        """Return the bank_name."""
-        return self._bank_name
-
-    @bank_name.setter
-    def bank_name(self, value: int):
-        """Set the bank_name."""
-        self._bank_name = value
-
-    @property
     def bank_number(self):
         """Return the bank_number."""
         return self._bank_number
@@ -200,16 +186,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def bank_number(self, value: int):
         """Set the bank_number."""
         self._bank_number = value
-
-    @property
-    def bank_branch(self):
-        """Return the bank_branch."""
-        return self._bank_branch
-
-    @bank_branch.setter
-    def bank_branch(self, value: int):
-        """Set the bank_branch."""
-        self._bank_branch = value
 
     @property
     def bank_branch_number(self):
