@@ -12,8 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to PayBC Account data."""
+from flask import current_app
 from sqlalchemy import ForeignKey
+from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
+from sqlalchemy.types import String
+from sqlalchemy_utils.types.encrypted.encrypted_type import AesEngine, StringEncryptedType
 
 from pay_api.utils.enums import CfsAccountStatus
 from .base_model import VersionedModel
@@ -32,17 +36,25 @@ class CfsAccount(VersionedModel):  # pylint:disable=too-many-instance-attributes
     cfs_site = db.Column(db.String(50), nullable=True)
     payment_instrument_number = db.Column(db.String(50), nullable=True)
     contact_party = db.Column(db.String(50), nullable=True)
-    bank_name = db.Column(db.String(50), nullable=True, index=True)
     bank_number = db.Column(db.String(50), nullable=True, index=True)
-    bank_branch = db.Column(db.String(50), nullable=True, index=True)
     bank_branch_number = db.Column(db.String(50), nullable=True, index=True)
-    bank_account_number = db.Column(db.String(50), nullable=True, index=True)
 
     status = db.Column(db.String(40), ForeignKey('cfs_account_status_code.code'), nullable=True)
 
     account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True, index=True)
 
     payment_account = relationship('PaymentAccount', foreign_keys=[account_id], lazy='select')
+
+    @declared_attr
+    def bank_account_number(cls):  # pylint:disable=no-self-argument, # noqa: N805
+        """Declare attribute for bank account number."""
+        return db.Column('bank_account_number', StringEncryptedType(String, cls._get_enc_secret, AesEngine, 'pkcs5'),
+                         nullable=True, index=True)
+
+    @staticmethod
+    def _get_enc_secret():
+        """Return account secret key for encryption."""
+        return current_app.config.get('ACCOUNT_SECRET_KEY')
 
     @classmethod
     def find_effective_by_account_id(cls, account_id: str):
