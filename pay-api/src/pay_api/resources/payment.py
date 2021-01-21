@@ -22,7 +22,7 @@ from pay_api.schemas import utils as schema_utils
 from pay_api.services import Payment as PaymentService
 from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
-from pay_api.utils.constants import MAKE_PAYMENT
+from pay_api.utils.constants import MAKE_PAYMENT, EDIT_ROLE, VIEW_ROLE
 from pay_api.utils.enums import Role, PaymentMethod
 from pay_api.utils.errors import Error
 from pay_api.utils.trace import tracing as _tracing
@@ -44,7 +44,7 @@ class Payments(Resource):
         """Get account payments."""
         current_app.logger.info('<Payments.get')
         # Check if user is authorized to perform this action
-        check_auth(business_identifier=None, account_id=account_id, contains_role=MAKE_PAYMENT)
+        check_auth(business_identifier=None, account_id=account_id, one_of_roles=[MAKE_PAYMENT, EDIT_ROLE, VIEW_ROLE])
         page: int = int(request.args.get('page', '1'))
         limit: int = int(request.args.get('limit', '10'))
         status: str = request.args.get('status', None)
