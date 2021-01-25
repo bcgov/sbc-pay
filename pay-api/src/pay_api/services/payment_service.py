@@ -125,7 +125,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
             invoice = Invoice.find_by_id(invoice.id, skip_auth_check=True)
 
-        except Exception as e: # NOQA pylint: disable=broad-except
+        except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error('Rolling back as error occured!')
             current_app.logger.error(e)
             if invoice:
@@ -170,34 +170,48 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         return bcol_account
 
     @classmethod
-    def update_invoice(cls, invoice_id: int, payment_request: Tuple[Dict[str, Any]]):
+    def update_invoice(cls, invoice_id: int, payment_request: Tuple[Dict[str, Any]], is_apply_credit: bool = False):
         """Update invoice related records."""
         current_app.logger.debug('<update_invoice')
 
         invoice: Invoice = Invoice.find_by_id(invoice_id, skip_auth_check=False)
-        payment_method = get_str_by_path(payment_request, 'paymentInfo/methodOfPayment')
+        # If the call is to apply credit, apply credit and release records.
+        if is_apply_credit:
+            credit_balance: float = 0
+            payment_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
+            if (payment_account.credit or 0) >= invoice.total:
+                pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
+                    invoice.payment_method_code)
+                # Only release records, as the actual status change should happen during reconciliation.
+                pay_service.apply_credit(invoice)
+                credit_balance = payment_account.credit - invoice.total
 
-        is_not_currently_on_ob = invoice.payment_method_code != PaymentMethod.ONLINE_BANKING.value
-        is_not_changing_to_cc = payment_method not in (PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value)
-        # can patch only if the current payment method is OB
-        if is_not_currently_on_ob or is_not_changing_to_cc:
-            raise BusinessException(Error.INVALID_REQUEST)
-
-        # check if it has any invoice references already created
-        # if there is any invoice ref , send them to the invoiced credit card flow
-
-        invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
-        if invoice_reference:
-            invoice.payment_method_code = PaymentMethod.CC.value
+            payment_account.credit = credit_balance
+            payment_account.save()
         else:
-            pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
-                PaymentMethod.DIRECT_PAY.value)
-            payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
-            pay_service.create_invoice(payment_account, invoice.payment_line_items, invoice,
-                                       corp_type_code=invoice.corp_type_code)
+            payment_method = get_str_by_path(payment_request, 'paymentInfo/methodOfPayment')
 
-            invoice.payment_method_code = PaymentMethod.DIRECT_PAY.value
-        invoice.save()
+            is_not_currently_on_ob = invoice.payment_method_code != PaymentMethod.ONLINE_BANKING.value
+            is_not_changing_to_cc = payment_method not in (PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value)
+            # can patch only if the current payment method is OB
+            if is_not_currently_on_ob or is_not_changing_to_cc:
+                raise BusinessException(Error.INVALID_REQUEST)
+
+            # check if it has any invoice references already created
+            # if there is any invoice ref , send them to the invoiced credit card flow
+
+            invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
+            if invoice_reference:
+                invoice.payment_method_code = PaymentMethod.CC.value
+            else:
+                pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
+                    PaymentMethod.DIRECT_PAY.value)
+                payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+                pay_service.create_invoice(payment_account, invoice.payment_line_items, invoice,
+                                           corp_type_code=invoice.corp_type_code)
+
+                invoice.payment_method_code = PaymentMethod.DIRECT_PAY.value
+            invoice.save()
         current_app.logger.debug('>update_invoice')
         return invoice.asdict()
 

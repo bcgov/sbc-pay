@@ -19,17 +19,18 @@ from typing import Any, Dict, List
 from dateutil import parser
 from flask import current_app
 
-from pay_api.models import CfsAccount as CfsAccountModel, PaymentLineItem as PaymentLineItemModel
+from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
-from pay_api.services.payment import Payment
 from pay_api.services.invoice_reference import InvoiceReference
+from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import (
     CFS_ADJ_ACTIVITY_NAME)
-from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem, PaymentMethod, InvoiceStatus, \
-    PaymentStatus, CfsAccountStatus
+from pay_api.utils.enums import AuthHeaderType, ContentType
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentSystem, PaymentStatus, CfsAccountStatus
 from pay_api.utils.util import parse_url_params
 from .payment_line_item import PaymentLineItem
 

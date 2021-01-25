@@ -46,6 +46,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self._pad_activation_date: Union[None, datetime] = None
         self._pad_tos_accepted_by: Union[None, str] = None
         self._pad_tos_accepted_date: Union[None, datetime] = None
+        self._credit: Union[None, float] = None
 
         self._cfs_account: Union[None, str] = None
         self._cfs_party: Union[None, str] = None
@@ -79,6 +80,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self.pad_activation_date: datetime = self._dao.pad_activation_date
         self.pad_tos_accepted_by: str = self._dao.pad_tos_accepted_by
         self.pad_tos_accepted_date: datetime = self._dao.pad_tos_accepted_date
+        self.credit: float = self._dao.credit
 
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(self.id)
         if cfs_account:
@@ -272,6 +274,21 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         """Set the cfs_account_status."""
         self._cfs_account_status = value
         self._dao.cfs_account_status = value
+
+    @property
+    def credit(self):
+        """Return the credit."""
+        return self._credit
+
+    @credit.setter
+    def credit(self, value: float):
+        """Set the credit."""
+        self._credit = value
+        self._dao.credit = value
+
+    def save(self):
+        """Save the information to the DB."""
+        return self._dao.save()
 
     @classmethod
     def create(cls, account_request: Dict[str, Any] = None) -> PaymentAccount:

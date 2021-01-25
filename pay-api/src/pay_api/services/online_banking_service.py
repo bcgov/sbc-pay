@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage CFS Online Banking Payments."""
+
 from typing import Any, Dict
 
 from flask import current_app
@@ -22,7 +23,7 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import PaymentSystem, PaymentMethod, InvoiceStatus, PaymentStatus, CfsAccountStatus
+from pay_api.utils.enums import (CfsAccountStatus, InvoiceStatus, PaymentMethod, PaymentSystem, PaymentStatus)
 from .payment_line_item import PaymentLineItem
 
 
@@ -80,3 +81,7 @@ class OnlineBankingService(PaymentSystemService, CFSService):
 
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
+
+    def apply_credit(self, invoice: Invoice) -> None:
+        """Apply credit to the invoice."""
+        self._release_payment(invoice=invoice)

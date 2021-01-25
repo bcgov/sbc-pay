@@ -686,3 +686,44 @@ def test_create_pad_payment_request(session, client, jwt, app):
                      headers=headers)
     assert rv.json.get('paymentMethod') == PaymentMethod.PAD.value
     assert not rv.json.get('isOnlineBankingAllowed')
+
+
+def test_payment_request_online_banking_with_credit(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/accounts',
+                     data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
+                     headers=headers)
+    auth_account_id = rv.json.get('authAccountId')
+
+    # Update the payment account as ACTIVE
+    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+    payment_account.credit = 51
+    payment_account.save()
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(
+        get_payment_request_with_payment_method(business_identifier='CP0002000', payment_method='ONLINE_BANKING')),
+                     headers=headers)
+    invoice_id = rv.json.get('id')
+
+    rv = client.patch(f'/api/v1/payment-requests/{invoice_id}?applyCredit=true', data=json.dumps({}), headers=headers)
+
+    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+    assert payment_account.credit == 1
+
+    # Now set the credit less than the total of invoice.
+    payment_account.credit = 49
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(
+        get_payment_request_with_payment_method(business_identifier='CP0002000', payment_method='ONLINE_BANKING')),
+                     headers=headers)
+    invoice_id = rv.json.get('id')
+
+    rv = client.patch(f'/api/v1/payment-requests/{invoice_id}?applyCredit=true', data=json.dumps({}), headers=headers)
+    # Credit won't be applied as the invoice total is 50 and the credit should remain as 0.
+    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+    assert payment_account.credit == 0
