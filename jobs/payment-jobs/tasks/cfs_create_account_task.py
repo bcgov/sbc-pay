@@ -107,7 +107,9 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                 capture_message(f'Error on creating CFS Account: account id={pay_account.id}, '
                                 f'auth account : {pay_account.auth_account_id}, ERROR : {str(e)}', level='error')
                 current_app.logger.error(e)
-                pending_account.rollback()
+                # pending_account.rollback()
+                pending_account.status = CfsAccountStatus.INACTIVE.value
+                pending_account.save()
                 continue
 
             # If the account has an activation time set ,

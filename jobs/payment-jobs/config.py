@@ -138,6 +138,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     NATS_MAILER_CLIENT_NAME = os.getenv('NATS_MAILER_CLIENT_NAME', 'account.mailer.worker')
     NATS_MAILER_SUBJECT = os.getenv('NATS_MAILER_SUBJECT', 'account.mailer')
 
+    # Secret key for encrypting bank account
+    ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY')
+
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     TESTING = False
