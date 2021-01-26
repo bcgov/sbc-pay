@@ -25,11 +25,9 @@ depends_on = None
 ###
 # get_pk_constraint
 
-table_mapping = {'bcol_payment_account ': 'bcol_payment_accounts',
-                 'cfs_account': 'cfs_accounts',
+table_mapping = {'cfs_account': 'cfs_accounts',
                  'cfs_account_status_code': 'cfs_account_status_codes',
                  'corp_type': 'corp_types',
-                 'credit_payment_account': 'credit_payment_accounts',
                  'daily_payment_batch': 'daily_payment_batches',
                  'daily_payment_batch_link': 'daily_payment_batch_links',
                  'distribution_code': 'distribution_codes',
@@ -40,7 +38,6 @@ table_mapping = {'bcol_payment_account ': 'bcol_payment_accounts',
                  'fee_code': 'fee_codes',
                  'fee_schedule': 'fee_schedules',
                  'filing_type': 'filing_types',
-                 'internal_payment_account': 'internal_payment_accounts',
                  'invoice': 'invoices',
                  'invoice_batch': 'invoice_batches',
                  'invoice_batch_link': 'invoice_batch_links',
@@ -58,7 +55,6 @@ table_mapping = {'bcol_payment_account ': 'bcol_payment_accounts',
                  'payment_transaction': 'payment_transactions',
                  'receipt': 'receipts',
                  'statement': 'statements',
-                 'transaction': 'transactions',
                  'transaction_status_code': 'transaction_status_codes'
                  }
 
