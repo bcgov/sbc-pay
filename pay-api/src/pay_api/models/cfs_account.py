@@ -27,7 +27,7 @@ from .db import db, ma
 class CfsAccount(VersionedModel):  # pylint:disable=too-many-instance-attributes
     """This class manages all of the base data about PayBC Account."""
 
-    __tablename__ = 'cfs_account'
+    __tablename__ = 'cfs_accounts'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
@@ -39,9 +39,9 @@ class CfsAccount(VersionedModel):  # pylint:disable=too-many-instance-attributes
     bank_number = db.Column(db.String(50), nullable=True, index=True)
     bank_branch_number = db.Column(db.String(50), nullable=True, index=True)
 
-    status = db.Column(db.String(40), ForeignKey('cfs_account_status_code.code'), nullable=True)
+    status = db.Column(db.String(40), ForeignKey('cfs_account_status_codes.code'), nullable=True)
 
-    account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True, index=True)
+    account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
 
     payment_account = relationship('PaymentAccount', foreign_keys=[account_id], lazy='select')
 

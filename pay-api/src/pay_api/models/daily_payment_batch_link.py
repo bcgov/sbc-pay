@@ -22,8 +22,8 @@ from .db import db
 class DailyPaymentBatchLink(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about payment reconciliation."""
 
-    __tablename__ = 'daily_payment_batch_link'
+    __tablename__ = 'daily_payment_batch_links'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
-    batch_id = db.Column(db.Integer, ForeignKey('daily_payment_batch.id'), nullable=False)
+    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
+    batch_id = db.Column(db.Integer, ForeignKey('daily_payment_batches.id'), nullable=False)

@@ -20,7 +20,7 @@ from .db import db, ma
 class PaymentSystem(db.Model, CodeTable):
     """This class manages all of the base data about a Payment System Code."""
 
-    __tablename__ = 'payment_system'
+    __tablename__ = 'payment_systems'
 
     code = db.Column(db.String(10), primary_key=True)
     description = db.Column('description', db.String(200), nullable=False)

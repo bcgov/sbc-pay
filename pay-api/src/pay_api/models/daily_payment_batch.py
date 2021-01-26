@@ -22,7 +22,7 @@ from .db import db
 class DailyPaymentBatch(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about reconciliation."""
 
-    __tablename__ = 'daily_payment_batch'
+    __tablename__ = 'daily_payment_batches'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     received_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)

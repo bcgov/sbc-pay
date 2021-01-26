@@ -27,18 +27,18 @@ from .payment_account import PaymentAccount
 class Statement(BaseModel):
     """This class manages the statements related data."""
 
-    __tablename__ = 'statement'
+    __tablename__ = 'statements'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
     frequency = db.Column(db.String(50), nullable=True, index=True)
     statement_settings_id = db.Column(db.Integer, ForeignKey('statement_settings.id'), nullable=True, index=True)
-    payment_account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True, index=True)
+    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
     from_date = db.Column(db.Date, default=None, nullable=False)
     to_date = db.Column(db.Date, default=None, nullable=True)
 
     created_on = db.Column(db.Date, default=None, nullable=False)
-    notification_status_code = db.Column(db.String(20), ForeignKey('notification_status_code.code'), nullable=True)
+    notification_status_code = db.Column(db.String(20), ForeignKey('notification_status_codes.code'), nullable=True)
     notification_date = db.Column(db.Date, default=None, nullable=True)
 
     @classmethod

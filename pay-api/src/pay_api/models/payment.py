@@ -39,13 +39,13 @@ from .invoice_reference import InvoiceReference
 class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Payment ."""
 
-    __tablename__ = 'payment'
+    __tablename__ = 'payments'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    payment_system_code = db.Column(db.String(10), ForeignKey('payment_system.code'), nullable=False)
-    payment_account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True)
-    payment_method_code = db.Column(db.String(15), ForeignKey('payment_method.code'), nullable=False)
-    payment_status_code = db.Column(db.String(20), ForeignKey('payment_status_code.code'), nullable=True)
+    payment_system_code = db.Column(db.String(10), ForeignKey('payment_systems.code'), nullable=False)
+    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True)
+    payment_method_code = db.Column(db.String(15), ForeignKey('payment_methods.code'), nullable=False)
+    payment_status_code = db.Column(db.String(20), ForeignKey('payment_status_codes.code'), nullable=True)
     invoice_number = db.Column(db.String(50), nullable=True, index=True)
     receipt_number = db.Column(db.String(50), nullable=True, index=True)
     cons_inv_number = db.Column(db.String(50), nullable=True, index=True)

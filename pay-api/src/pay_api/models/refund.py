@@ -25,7 +25,7 @@ class Refund(BaseModel):
     __tablename__ = 'refunds'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
+    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
     requested_date = db.Column(db.DateTime)
     reason = db.Column(db.String(250))
     requested_by = db.Column(db.String(50))

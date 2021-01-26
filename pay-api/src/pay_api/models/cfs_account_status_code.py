@@ -20,7 +20,7 @@ from .db import db, ma
 class CfsAccountStatusCode(db.Model, CodeTable):
     """This class manages all of the base data about a Invoice Status Code."""
 
-    __tablename__ = 'cfs_account_status_code'
+    __tablename__ = 'cfs_account_status_codes'
 
     code = db.Column(db.String(40), primary_key=True)
     description = db.Column('description', db.String(200), nullable=False)

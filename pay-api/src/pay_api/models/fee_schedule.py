@@ -30,20 +30,20 @@ class FeeSchedule(db.Model):
     Fee schedule holds the data related to filing type and fee code which is used to calculate the fees for a filing
     """
 
-    __tablename__ = 'fee_schedule'
+    __tablename__ = 'fee_schedules'
     __table_args__ = (
         db.UniqueConstraint('filing_type_code', 'corp_type_code', 'fee_code', name='unique_fee_sched_1'),
     )
 
     fee_schedule_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    filing_type_code = db.Column(db.String(10), ForeignKey('filing_type.code'), nullable=False)
-    corp_type_code = db.Column(db.String(10), ForeignKey('corp_type.code'), nullable=False)
-    fee_code = db.Column(db.String(10), ForeignKey('fee_code.code'), nullable=False)
+    filing_type_code = db.Column(db.String(10), ForeignKey('filing_types.code'), nullable=False)
+    corp_type_code = db.Column(db.String(10), ForeignKey('corp_types.code'), nullable=False)
+    fee_code = db.Column(db.String(10), ForeignKey('fee_codes.code'), nullable=False)
     fee_start_date = db.Column('fee_start_date', db.Date, default=date.today(), nullable=False)
     fee_end_date = db.Column('fee_end_date', db.Date, default=None, nullable=True)
-    future_effective_fee_code = db.Column(db.String(10), ForeignKey('fee_code.code'), nullable=True)
-    priority_fee_code = db.Column(db.String(10), ForeignKey('fee_code.code'), nullable=True)
-    service_fee_code = db.Column(db.String(10), ForeignKey('fee_code.code'), nullable=True)
+    future_effective_fee_code = db.Column(db.String(10), ForeignKey('fee_codes.code'), nullable=True)
+    priority_fee_code = db.Column(db.String(10), ForeignKey('fee_codes.code'), nullable=True)
+    service_fee_code = db.Column(db.String(10), ForeignKey('fee_codes.code'), nullable=True)
 
     filing_type = relationship(FilingType, foreign_keys=[filing_type_code], lazy='joined', innerjoin=True)
     corp_type = relationship(CorpType, foreign_keys=[corp_type_code], lazy='joined', innerjoin=True)
