@@ -31,7 +31,7 @@ class StatementSettings(BaseModel):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
     frequency = db.Column(db.String(50), nullable=True, index=True)
-    payment_account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True, index=True)
+    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
     from_date = db.Column(db.Date, default=date.today(), nullable=False)
     to_date = db.Column(db.Date, default=None, nullable=True)
 

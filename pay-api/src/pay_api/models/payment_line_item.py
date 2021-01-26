@@ -25,12 +25,12 @@ from .fee_schedule import FeeSchedule
 class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Payment Line Item."""
 
-    __tablename__ = 'payment_line_item'
+    __tablename__ = 'payment_line_items'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
+    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
     filing_fees = db.Column(db.Float, nullable=False)
-    fee_schedule_id = db.Column(db.Integer, ForeignKey('fee_schedule.fee_schedule_id'), nullable=False)
+    fee_schedule_id = db.Column(db.Integer, ForeignKey('fee_schedules.fee_schedule_id'), nullable=False)
     quantity = db.Column(db.Integer, nullable=True)
     priority_fees = db.Column(db.Float, nullable=True)
     future_effective_fees = db.Column(db.Float, nullable=True)
@@ -38,12 +38,12 @@ class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attribute
     gst = db.Column(db.Float, nullable=True)
     pst = db.Column(db.Float, nullable=True)
     total = db.Column(db.Float, nullable=False)
-    line_item_status_code = db.Column(db.String(20), ForeignKey('line_item_status_code.code'), nullable=False)
+    line_item_status_code = db.Column(db.String(20), ForeignKey('line_item_status_codes.code'), nullable=False)
     waived_fees = db.Column(db.Float, nullable=True)
     waived_by = db.Column(db.String(50), nullable=True, default=None)
     service_fees = db.Column(db.Float, nullable=True)
 
-    fee_distribution_id = db.Column(db.Integer, ForeignKey('distribution_code.distribution_code_id'), nullable=False)
+    fee_distribution_id = db.Column(db.Integer, ForeignKey('distribution_codes.distribution_code_id'), nullable=False)
 
     fee_schedule = relationship(FeeSchedule, foreign_keys=[fee_schedule_id], lazy='joined', innerjoin=True)
 

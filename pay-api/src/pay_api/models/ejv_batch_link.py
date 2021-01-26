@@ -22,8 +22,8 @@ from .db import db
 class EjvBatchLink(BaseModel):  # pylint: disable=too-few-public-methods
     """This class manages linkages between EJV and invoices."""
 
-    __tablename__ = 'ejv_batch_link'
+    __tablename__ = 'ejv_batch_links'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
-    batch_id = db.Column(db.Integer, ForeignKey('ejv_batch.id'), nullable=False)
+    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
+    batch_id = db.Column(db.Integer, ForeignKey('ejv_batches.id'), nullable=False)

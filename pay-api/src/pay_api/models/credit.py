@@ -30,7 +30,7 @@ class Credit(BaseModel):  # pylint:disable=too-many-instance-attributes
     amount = db.Column(db.Float, nullable=False)
     remaining_amount = db.Column(db.Float, nullable=False)
 
-    account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True, index=True)
+    account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
 
     @classmethod
     def find_by_cfs_identifier(cls, cfs_identifier: str, credit_memo: bool = False):
