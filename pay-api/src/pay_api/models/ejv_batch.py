@@ -24,7 +24,7 @@ from .db import db
 class EjvBatch(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about EJV distributions and payment."""
 
-    __tablename__ = 'ejv_batch'
+    __tablename__ = 'ejv_batches'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)

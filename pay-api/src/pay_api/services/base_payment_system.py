@@ -16,11 +16,16 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
-from pay_api.services.invoice import Invoice
-from pay_api.services.payment import Payment
-from pay_api.services.invoice_reference import InvoiceReference
-from pay_api.services.payment_account import PaymentAccount
+from flask import current_app
+from sentry_sdk import capture_message
+
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.services.invoice import Invoice
+from pay_api.services.invoice_reference import InvoiceReference
+from pay_api.services.payment import Payment
+from pay_api.services.payment_account import PaymentAccount
+from pay_api.utils.enums import TransactionStatus
+from pay_api.utils.util import get_pay_subject_name
 from .payment_line_item import PaymentLineItem
 
 
@@ -94,3 +99,22 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     @abstractmethod
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
+
+    def apply_credit(self, invoice: Invoice) -> None:  # pylint:disable=unused-argument, no-self-use
+        """Apply credit on invoice."""
+        return None
+
+    @staticmethod
+    def _release_payment(invoice: Invoice):
+        """Release record."""
+        from .payment_transaction import PaymentTransaction, \
+            publish_response  # pylint:disable=import-outside-toplevel,cyclic-import
+
+        payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
+        try:
+            publish_response(payload=payload, subject=get_pay_subject_name(invoice.corp_type_code))
+        except Exception as e:  # NOQA pylint: disable=broad-except
+            current_app.logger.error(e)
+            current_app.logger.error('Notification to Queue failed for the Payment Event %s', payload)
+            capture_message('Notification to Queue failed for the Payment Event : {msg}.'.format(msg=payload),
+                            level='error')

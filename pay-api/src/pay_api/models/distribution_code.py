@@ -28,11 +28,11 @@ class DistributionCodeLink(BaseModel):
     Distribution code holds details on the codes for how the collected payment is going to be distributed.
     """
 
-    __tablename__ = 'distribution_code_link'
+    __tablename__ = 'distribution_code_links'
 
     distribution_link_id = db.Column(db.Integer, primary_key=True)
-    fee_schedule_id = db.Column(db.Integer, ForeignKey('fee_schedule.fee_schedule_id'))
-    distribution_code_id = db.Column(db.Integer, ForeignKey('distribution_code.distribution_code_id'))
+    fee_schedule_id = db.Column(db.Integer, ForeignKey('fee_schedules.fee_schedule_id'))
+    distribution_code_id = db.Column(db.Integer, ForeignKey('distribution_codes.distribution_code_id'))
 
     @classmethod
     def find_fee_schedules_by_distribution_id(cls, distribution_code_id: int):
@@ -55,7 +55,7 @@ class DistributionCode(Audit):  # pylint:disable=too-many-instance-attributes
     Distribution code holds details on the codes for how the collected payment is going to be distributed.
     """
 
-    __tablename__ = 'distribution_code'
+    __tablename__ = 'distribution_codes'
 
     distribution_code_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 

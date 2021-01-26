@@ -30,11 +30,11 @@ from .db import db
 class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods
     """This class manages all of the base data about Payment Transaction."""
 
-    __tablename__ = 'payment_transaction'
+    __tablename__ = 'payment_transactions'
 
     id = db.Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    status_code = db.Column(db.String(20), ForeignKey('transaction_status_code.code'), nullable=False)
-    payment_id = db.Column(db.Integer, ForeignKey('payment.id'), nullable=False)
+    status_code = db.Column(db.String(20), ForeignKey('transaction_status_codes.code'), nullable=False)
+    payment_id = db.Column(db.Integer, ForeignKey('payments.id'), nullable=False)
     client_system_url = db.Column(db.String(500), nullable=True)
     pay_system_url = db.Column(db.String(2000), nullable=True)
     pay_response_url = db.Column(db.String(2000), nullable=True)

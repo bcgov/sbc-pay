@@ -118,6 +118,9 @@ class _Config():  # pylint: disable=too-few-public-methods
     CFS_CLIENT_SECRET = os.getenv('CFS_CLIENT_SECRET')
     CONNECT_TIMEOUT = int(os.getenv('CONNECT_TIMEOUT', '10'))
 
+    # Secret key for encrypting bank account
+    ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY')
+
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     """Creates the Development Config object."""

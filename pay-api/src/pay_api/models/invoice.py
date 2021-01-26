@@ -32,16 +32,16 @@ from .receipt import ReceiptSchema
 class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Invoice."""
 
-    __tablename__ = 'invoice'
+    __tablename__ = 'invoices'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
-    invoice_status_code = db.Column(db.String(20), ForeignKey('invoice_status_code.code'), nullable=False)
-    payment_account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True)
-    cfs_account_id = db.Column(db.Integer, ForeignKey('cfs_account.id'), nullable=True)
-    payment_method_code = db.Column(db.String(15), ForeignKey('payment_method.code'), nullable=False)
+    invoice_status_code = db.Column(db.String(20), ForeignKey('invoice_status_codes.code'), nullable=False)
+    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True)
+    cfs_account_id = db.Column(db.Integer, ForeignKey('cfs_accounts.id'), nullable=True)
+    payment_method_code = db.Column(db.String(15), ForeignKey('payment_methods.code'), nullable=False)
 
-    corp_type_code = db.Column(db.String(10), ForeignKey('corp_type.code'), nullable=True)
+    corp_type_code = db.Column(db.String(10), ForeignKey('corp_types.code'), nullable=True)
     business_identifier = db.Column(db.String(20), nullable=True)
 
     total = db.Column(db.Float, nullable=False)

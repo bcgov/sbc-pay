@@ -116,12 +116,13 @@ class Invoices(Resource):
         # Validate the input request
         valid_format, errors = schema_utils.validate(request_json, 'payment_info')
 
+        is_apply_credit = request.args.get('applyCredit', 'false').lower() == 'true'
+
         if not valid_format:
             return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
         try:
-            response, status = PaymentService.update_invoice(invoice_id,
-                                                             request_json), HTTPStatus.OK
+            response, status = PaymentService.update_invoice(invoice_id, request_json, is_apply_credit), HTTPStatus.OK
         except BusinessException as exception:
             return exception.response()
         current_app.logger.debug('>Transaction.post')

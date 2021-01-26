@@ -23,7 +23,7 @@ class FilingType(db.Model, CodeTable):
     Filing type indicates the filing operation on the entity
     """
 
-    __tablename__ = 'filing_type'
+    __tablename__ = 'filing_types'
 
     code = db.Column(db.String(10), primary_key=True)
     description = db.Column('description', db.String(200), nullable=False)

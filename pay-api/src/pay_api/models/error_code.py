@@ -24,7 +24,7 @@ class ErrorCode(db.Model, CodeTable):
     Error Codes holds the error details produced by the API.
     """
 
-    __tablename__ = 'error_code'
+    __tablename__ = 'error_codes'
 
     code = db.Column(db.String(50), primary_key=True)
     title = db.Column(db.String(100))

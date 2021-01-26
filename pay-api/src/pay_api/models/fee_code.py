@@ -23,7 +23,7 @@ class FeeCode(db.Model, CodeTable):
     Fee Codes holds the fee amount
     """
 
-    __tablename__ = 'fee_code'
+    __tablename__ = 'fee_codes'
 
     code = db.Column(db.String(10), primary_key=True)
     amount = db.Column('amount', db.Float, nullable=False)

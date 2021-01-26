@@ -31,7 +31,7 @@ class StatementRecipients(BaseModel):  # pylint: disable=too-many-instance-attri
     firstname = db.Column('first_name', String(200))
     lastname = db.Column('last_name', String(200))
     email = db.Column('email', String(200))
-    payment_account_id = db.Column(db.Integer, ForeignKey('payment_account.id'), nullable=True, index=True)
+    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
 
     @classmethod
     def find_all_recipients(cls, auth_account_id: str):

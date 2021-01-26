@@ -29,8 +29,8 @@ class StatementInvoices(BaseModel):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
-    statement_id = db.Column(db.Integer, ForeignKey('statement.id'), nullable=False, index=True)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
+    statement_id = db.Column(db.Integer, ForeignKey('statements.id'), nullable=False, index=True)
+    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
 
     @classmethod
     def find_all_invoices_for_statement(cls, statement_identifier: str):

@@ -22,8 +22,8 @@ from .db import db
 class InvoiceBatchLink(BaseModel):  # pylint: disable=too-few-public-methods
     """This class manages linkages between invoices and nightly roll up."""
 
-    __tablename__ = 'invoice_batch_link'
+    __tablename__ = 'invoice_batch_links'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
-    batch_id = db.Column(db.Integer, ForeignKey('invoice_batch.id'), nullable=False)
+    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
+    batch_id = db.Column(db.Integer, ForeignKey('invoice_batches.id'), nullable=False)

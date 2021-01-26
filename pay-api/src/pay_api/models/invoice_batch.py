@@ -22,7 +22,7 @@ from .db import db
 class InvoiceBatch(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data nightly transactions roll up."""
 
-    __tablename__ = 'invoice_batch'
+    __tablename__ = 'invoice_batches'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)

@@ -23,7 +23,7 @@ from .db import db, ma
 class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Payment Account."""
 
-    __tablename__ = 'payment_account'
+    __tablename__ = 'payment_accounts'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
@@ -33,7 +33,7 @@ class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attri
     # used for sending out notifications.The statement emails needs account name
     auth_account_name = db.Column(db.String(250), nullable=True, index=False)
 
-    payment_method = db.Column(db.String(15), ForeignKey('payment_method.code'), nullable=True)
+    payment_method = db.Column(db.String(15), ForeignKey('payment_methods.code'), nullable=True)
 
     bcol_user_id = db.Column(db.String(50), nullable=True, index=True)
     bcol_account = db.Column(db.String(50), nullable=True, index=True)

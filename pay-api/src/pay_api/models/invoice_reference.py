@@ -25,14 +25,14 @@ from .db import db
 class InvoiceReference(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Invoice."""
 
-    __tablename__ = 'invoice_reference'
+    __tablename__ = 'invoice_references'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
+    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
 
     invoice_number = db.Column(db.String(50), nullable=True, index=True)
     reference_number = db.Column(db.String(50), nullable=True)
-    status_code = db.Column(db.String(20), ForeignKey('invoice_reference_status_code.code'), nullable=False)
+    status_code = db.Column(db.String(20), ForeignKey('invoice_reference_status_codes.code'), nullable=False)
 
     @classmethod
     def find_reference_by_invoice_id_and_status(cls, invoice_id: int, status_code: str):

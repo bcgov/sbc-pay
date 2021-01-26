@@ -25,7 +25,7 @@ class CorpType(db.Model, CodeTable):
     Corp types are different types of corporation the payment system supports
     """
 
-    __tablename__ = 'corp_type'
+    __tablename__ = 'corp_types'
 
     code = db.Column('code', db.String(10), primary_key=True)
     description = db.Column('description', db.String(200), nullable=False)
