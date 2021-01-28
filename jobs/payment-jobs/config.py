@@ -141,6 +141,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY')
 
+    # The number of characters which can be exposed to admins for a bank account number
+    NOTIFY_AFTER_DAYS = int(os.getenv('NOTIFY_AFTER_DAYS', 7))
+
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     TESTING = False
