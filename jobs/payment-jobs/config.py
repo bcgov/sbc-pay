@@ -178,6 +178,9 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     CFS_CLIENT_SECRET = 'TEST'
     USE_DOCKER_MOCK = os.getenv('USE_DOCKER_MOCK', None)
 
+    # Secret key for encrypting bank account
+    ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY', '1234')
+
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
     """Production environment configuration."""
