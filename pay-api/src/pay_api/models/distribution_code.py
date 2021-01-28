@@ -15,6 +15,7 @@
 
 from datetime import date
 
+from marshmallow import fields
 from sqlalchemy import ForeignKey
 
 from .audit import Audit, AuditSchema, BaseModel
@@ -59,20 +60,16 @@ class DistributionCode(Audit):  # pylint:disable=too-many-instance-attributes
 
     distribution_code_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
-    memo_name = db.Column(db.String(50), nullable=True)
-    service_fee_memo_name = db.Column(db.String(50), nullable=True)
-
+    name = db.Column(db.String(50), nullable=True)
     client = db.Column(db.String(50), nullable=True)
     responsibility_centre = db.Column(db.String(50), nullable=True)
     service_line = db.Column(db.String(50), nullable=True)
     stob = db.Column(db.String(50), nullable=True)
     project_code = db.Column(db.String(50), nullable=True)
-
-    service_fee_client = db.Column(db.String(50), nullable=True)
-    service_fee_responsibility_centre = db.Column(db.String(50), nullable=True)
-    service_fee_line = db.Column(db.String(50), nullable=True)
-    service_fee_stob = db.Column(db.String(50), nullable=True)
-    service_fee_project_code = db.Column(db.String(50), nullable=True)
+    service_fee_distribution_code_id = db.Column(db.Integer, ForeignKey('distribution_codes.distribution_code_id'),
+                                                 nullable=True)
+    disbursement_distribution_code_id = db.Column(db.Integer, ForeignKey('distribution_codes.distribution_code_id'),
+                                                  nullable=True)
 
     start_date = db.Column(db.Date, default=date.today(), nullable=False)
     end_date = db.Column(db.Date, default=None, nullable=True)
@@ -82,9 +79,16 @@ class DistributionCode(Audit):  # pylint:disable=too-many-instance-attributes
         """Find all distribution codes."""
         valid_date = date.today()
         query = cls.query.filter(DistributionCode.start_date <= valid_date). \
-            filter((DistributionCode.end_date.is_(None)) | (DistributionCode.end_date >= valid_date))
+            filter((DistributionCode.end_date.is_(None)) | (DistributionCode.end_date >= valid_date)). \
+            order_by(DistributionCode.name.asc())
 
         return query.all()
+
+    @classmethod
+    def find_by_service_fee_distribution_id(cls, service_fee_distribution_code_id):
+        """Find by service fee distribution id."""
+        return cls.query.filter(
+            DistributionCode.service_fee_distribution_code_id == service_fee_distribution_code_id).all()
 
     @classmethod
     def find_by_active_for_fee_schedule(cls, fee_schedule_id: int):
@@ -107,6 +111,7 @@ class DistributionCodeLinkSchema(ma.ModelSchema):  # pylint: disable=too-many-an
         """Returns all the fields from the SQLAlchemy class."""
 
         model = DistributionCodeLink
+        exclude = ['disbursement']
 
 
 class DistributionCodeSchema(AuditSchema, ma.ModelSchema):  # pylint: disable=too-many-ancestors
@@ -116,3 +121,6 @@ class DistributionCodeSchema(AuditSchema, ma.ModelSchema):  # pylint: disable=to
         """Returns all the fields from the SQLAlchemy class."""
 
         model = DistributionCode
+
+    service_fee_distribution_code_id = fields.String(data_key='service_fee_distribution_code_id')
+    disbursement_distribution_code_id = fields.String(data_key='disbursement_distribution_code_id')

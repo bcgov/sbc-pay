@@ -11,19 +11,23 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Model to handle linking invoices with reconciliation."""
+"""Model to handle Electronic Journal Voucher distributions and payment."""
 
-from sqlalchemy import ForeignKey
+from datetime import datetime
+
+from sqlalchemy import Boolean
 
 from .base_model import BaseModel
 from .db import db
 
 
-class DailyPaymentBatchLink(BaseModel):  # pylint: disable=too-many-instance-attributes
-    """This class manages all of the base data about payment reconciliation."""
+class EjvFile(BaseModel):  # pylint: disable=too-many-instance-attributes
+    """This class manages all of the base data about EJV distributions and payment."""
 
-    __tablename__ = 'daily_payment_batch_links'
+    __tablename__ = 'ejv_files'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
-    batch_id = db.Column(db.Integer, ForeignKey('daily_payment_batches.id'), nullable=False)
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
+    completed_on = db.Column('completed_on', db.DateTime, nullable=True)
+    is_distribution = db.Column('is_distribution', Boolean(), default=True)
+    file_ref = db.Column('file_ref', db.String, nullable=False, index=True)

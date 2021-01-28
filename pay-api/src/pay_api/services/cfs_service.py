@@ -324,6 +324,8 @@ class CFSService(OAuthService):
             )
 
             if line_item.service_fees > 0:
+                service_fee_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
+                    distribution_code.service_fee_distribution_code_id)
                 index = index + 1
                 lines.append(
                     {
@@ -338,11 +340,11 @@ class CFSService(OAuthService):
                             {
                                 'dist_line_number': index,
                                 'amount': cls._get_amount(line_item.service_fees, negate),
-                                'account': f'{distribution_code.service_fee_client}.'
-                                           f'{distribution_code.service_fee_responsibility_centre}.'
-                                           f'{distribution_code.service_fee_line}.'
-                                           f'{distribution_code.service_fee_stob}.'
-                                           f'{distribution_code.service_fee_project_code}.000000.0000'
+                                'account': f'{service_fee_distribution.client}.'
+                                           f'{service_fee_distribution.responsibility_centre}.'
+                                           f'{service_fee_distribution.service_line}.'
+                                           f'{service_fee_distribution.stob}.'
+                                           f'{service_fee_distribution.project_code}.000000.0000'
                             }
                         ]
                     }
