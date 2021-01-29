@@ -20,7 +20,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod
 from sentry_sdk import capture_message
-from sqlalchemy import and_
+from sqlalchemy import Date, and_, cast
 
 from utils import mailer
 
@@ -50,15 +50,16 @@ class UnpaidInvoiceNotifyTask:  # pylint:disable=too-few-public-methods
             InvoiceStatus.SETTLEMENT_SCHEDULED.value, InvoiceStatus.PARTIAL.value, InvoiceStatus.CREATED.value)
         notification_date = datetime.today() - timedelta(days=current_app.config.get('NOTIFY_AFTER_DAYS'))
         notification_pending_invoices = InvoiceModel.query.filter(and_(
-            InvoiceModel.invoice_status_code in unpaid_status,
+            InvoiceModel.invoice_status_code.in_(unpaid_status),
             InvoiceModel.payment_method_code == PaymentMethod.ONLINE_BANKING.value,
-            InvoiceModel.created_on < notification_date
+            # cast is used to get the exact match stripping the timestamp from date
+            cast(InvoiceModel.created_on, Date) == notification_date.date()
         )).all()
         current_app.logger.debug(f'Found {len(notification_pending_invoices)} invoices to notify admins.')
         for invoice in notification_pending_invoices:
             # Find all PAD invoices for this account
             try:
-                pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice.account_id)
+                pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice.payment_account_id)
                 cfs_account = CfsAccountModel.find_by_id(invoice.cfs_account_id)
 
                 # emit account mailer event

@@ -67,7 +67,9 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
                     business_identifier: str = 'CP0001234',
                     service_fees: float = 0.0, total=0,
                     payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
-                    created_on: datetime = datetime.now()):
+                    created_on: datetime = datetime.now(),
+                    cfs_account_id: str = '1234'
+                    ):
     """Return Factory."""
     return Invoice(
         invoice_status_code=status_code,
@@ -80,6 +82,7 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
         folio_number='1234567890',
         service_fees=service_fees,
         bcol_account=payment_account.bcol_account,
+        cfs_account_id=cfs_account_id,
         payment_method_code=payment_method_code or payment_account.payment_method
     ).save()
 
@@ -105,12 +108,13 @@ def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021'):
                             invoice_number=invoice_number).save()
 
 
-def factory_create_online_banking_account(auth_account_id='1234', status=CfsAccountStatus.PENDING.value):
+def factory_create_online_banking_account(auth_account_id='1234', status=CfsAccountStatus.PENDING.value,
+                                          cfs_account='12356'):
     """Return Factory."""
     account = PaymentAccount(auth_account_id=auth_account_id,
                              payment_method=PaymentMethod.ONLINE_BANKING.value,
                              auth_account_name=f'Test {auth_account_id}').save()
-    CfsAccount(status=status, account_id=account.id).save()
+    CfsAccount(status=status, account_id=account.id, cfs_account=cfs_account).save()
     return account
 
 
