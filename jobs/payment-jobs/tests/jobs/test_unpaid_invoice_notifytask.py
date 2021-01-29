@@ -32,7 +32,7 @@ from .factory import factory_create_online_banking_account, factory_create_pad_a
 
 
 def test_unpaid_one_invoice(session):
-    """Assert PAD invoices are created."""
+    """Assert events are being sent."""
     # Create an account and an invoice for the account
     account = factory_create_online_banking_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value,
                                                     cfs_account='1111')
@@ -73,7 +73,7 @@ def test_unpaid_one_invoice(session):
 
 
 def test_unpaid_multiple_invoice(session):
-    """Assert PAD invoices are created."""
+    """Assert events are being sent."""
     # Create an account and an invoice for the account
     account = factory_create_online_banking_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value,
                                                     cfs_account='1111')
@@ -108,7 +108,7 @@ def test_unpaid_multiple_invoice(session):
 
 
 def test_unpaid_invoice_pad(session):
-    """Assert PAD invoices are created."""
+    """Assert events are being sent."""
     # Create an account and an invoice for the account
     account = factory_create_pad_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
     # Create an invoice for this account

@@ -34,18 +34,13 @@ class UnpaidInvoiceNotifyTask:  # pylint:disable=too-few-public-methods
 
         Steps:
         1. Find all pending invoices from invoice table for Online Banking.
-        1. check have they elapsed the given time.
-        2. Find all invoices from invoice table for PAD payment accounts.
-        2.1 Roll up all transactions and create one invoice in CFS.
-        3. Update the invoice status as IN TRANSIT
+        1. Notify mailer
         """
         cls._notify_for_ob()
 
     @classmethod
     def _notify_for_ob(cls):  # pylint: disable=too-many-locals
-        """Create PAD invoices in to CFS system."""
-        # Find all accounts which have done a transaction with PAD transactions
-
+        """Notify for online banking."""
         unpaid_status = (
             InvoiceStatus.SETTLEMENT_SCHEDULED.value, InvoiceStatus.PARTIAL.value, InvoiceStatus.CREATED.value)
         notification_date = datetime.today() - timedelta(days=current_app.config.get('NOTIFY_AFTER_DAYS'))
