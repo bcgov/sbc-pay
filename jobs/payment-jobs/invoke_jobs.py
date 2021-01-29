@@ -71,6 +71,7 @@ def run(job_name):
     from tasks.statement_notification_task import StatementNotificationTask
     from tasks.statement_task import StatementTask
     from tasks.activate_pad_account_task import ActivatePadAccountTask
+    from tasks.unpaid_invoice_notify_task import UnpaidInvoiceNotifyTask
 
     application = create_app()
 
@@ -96,6 +97,9 @@ def run(job_name):
     elif job_name == 'ACTIVATE_PAD_ACCOUNTS':
         ActivatePadAccountTask.activate_pad_accounts()
         application.logger.info(f'<<<< Completed Activating PAD accounts >>>>')
+    elif job_name == 'NOTIFY_UNPAID_INVOICE_OB':
+        UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
+        application.logger.info(f'<<<< Completed Sending notification for OB inovices >>>>')
 
     else:
         application.logger.debug('No valid args passed.Exiting job without running any ***************')

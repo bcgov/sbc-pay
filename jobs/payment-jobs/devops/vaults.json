@@ -34,7 +34,8 @@
             "postgres-pay",
             "pay-api",
             "sentry",
-            "jwt"
+            "jwt",
+            "payment-jobs"
         ]
     }
 ]

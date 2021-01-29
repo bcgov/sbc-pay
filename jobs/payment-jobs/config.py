@@ -119,7 +119,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
 
     # Auth API Endpoint
     AUTH_API_ENDPOINT = f'{os.getenv("AUTH_API_URL")}/'
-    
+
     CFS_ACCOUNT_DESCRIPTION = os.getenv('CFS_ACCOUNT_DESCRIPTION', 'BCR')
     CFS_INVOICE_PREFIX = os.getenv('CFS_INVOICE_PREFIX', 'REG')
 
@@ -140,6 +140,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
 
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY')
+
+    # the day on which mail to get.put 1 to get mail next day of creation.put 2 to get mails day after tomorrow.
+    NOTIFY_AFTER_DAYS = int(os.getenv('NOTIFY_AFTER_DAYS', 8))  # to get full 7 days tp pass, u need to put 8.
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
@@ -174,6 +177,9 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     CFS_CLIENT_ID = 'TEST'
     CFS_CLIENT_SECRET = 'TEST'
     USE_DOCKER_MOCK = os.getenv('USE_DOCKER_MOCK', None)
+
+    # Secret key for encrypting bank account
+    ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY', '1234')
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
