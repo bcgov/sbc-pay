@@ -68,10 +68,10 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
                     service_fees: float = 0.0, total=0,
                     payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
                     created_on: datetime = datetime.now(),
-                    cfs_account_id: str = '1234'
+                    cfs_account_id: int = 0
                     ):
     """Return Factory."""
-    return Invoice(
+    invoice = Invoice(
         invoice_status_code=status_code,
         payment_account_id=payment_account.id,
         total=total,
@@ -82,9 +82,13 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
         folio_number='1234567890',
         service_fees=service_fees,
         bcol_account=payment_account.bcol_account,
-        cfs_account_id=cfs_account_id,
         payment_method_code=payment_method_code or payment_account.payment_method
-    ).save()
+    )
+    if cfs_account_id != 0:
+        invoice.cfs_account_id = cfs_account_id
+
+    invoice.save()
+    return invoice
 
 
 def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees: int = 10, total: int = 10,
