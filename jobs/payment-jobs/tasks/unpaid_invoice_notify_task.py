@@ -58,9 +58,10 @@ class UnpaidInvoiceNotifyTask:  # pylint:disable=too-few-public-methods
                 cfs_account = CfsAccountModel.find_by_id(invoice.cfs_account_id)
 
                 # emit account mailer event
+
                 addition_params_to_mailer = {'transactionAmount': invoice.total,
                                              'cfsAccountId': cfs_account.cfs_account}
-                mailer.publish_mailer_events('ob.invoicePending', pay_account, addition_params_to_mailer)
+                mailer.publish_mailer_events('ob.outstandingInvoice', pay_account, addition_params_to_mailer)
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(f'Error on notifying mailer  OB Pending invoice: account id={pay_account.id}, '
