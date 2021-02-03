@@ -60,20 +60,20 @@ def test_get_payment_system_url(session, public_user_mock):
     assert url_param_dict['paymentMethod'] == 'CC'
     assert url_param_dict['redirectUri'] == 'google.com'
     revenue_str = f"1:{distribution_code_payload['client']}." \
-        f"{distribution_code_payload['responsibilityCentre']}." \
-        f"{distribution_code_payload['serviceLine']}." \
-        f"{distribution_code_payload['stob']}." \
-        f"{distribution_code_payload['projectCode']}." \
-        f'000000.0000:10.00'
+                  f"{distribution_code_payload['responsibilityCentre']}." \
+                  f"{distribution_code_payload['serviceLine']}." \
+                  f"{distribution_code_payload['stob']}." \
+                  f"{distribution_code_payload['projectCode']}." \
+                  f'000000.0000:10.00'
     assert url_param_dict['revenue'] == revenue_str
     urlstring = f"trnDate={today}&pbcRefNumber={current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')}&" \
-        f'glDate={today}&description=Direct_Sale&' \
-        f'trnNumber={generate_transaction_number(invoice.id)}&' \
-        f'trnAmount={invoice.total}&' \
-        f'paymentMethod=CC&' \
-        f'redirectUri=google.com&' \
-        f'currency=CAD&' \
-        f'revenue={revenue_str}'
+                f'glDate={today}&description=Direct_Sale&' \
+                f'trnNumber={generate_transaction_number(invoice.id)}&' \
+                f'trnAmount={invoice.total}&' \
+                f'paymentMethod=CC&' \
+                f'redirectUri=google.com&' \
+                f'currency=CAD&' \
+                f'revenue={revenue_str}'
     expected_hash_str = HashingService.encode(urlstring)
     assert expected_hash_str == url_param_dict['hashValue']
 
@@ -90,11 +90,15 @@ def test_get_payment_system_url_service_fees(session, public_user_mock):
     invoice_ref = factory_invoice_reference(invoice.id).save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     distribution_code = DistributionCodeModel.find_by_active_for_fee_schedule(fee_schedule.fee_schedule_id)
+
     distribution_code_svc = DistributionCode()
     distribution_code_payload = get_distribution_code_payload()
+    # Set service fee distribution
+    distribution_code_payload.update({'serviceFeeDistributionCodeId': distribution_code.distribution_code_id})
     # update the existing gl code with new values
     distribution_code_svc.save_or_update(distribution_code_payload,
                                          distribution_code.distribution_code_id)
+
     service_fee = 100
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, service_fees=service_fee)
     line.save()
@@ -110,27 +114,27 @@ def test_get_payment_system_url_service_fees(session, public_user_mock):
     assert url_param_dict['paymentMethod'] == 'CC'
     assert url_param_dict['redirectUri'] == 'google.com'
     revenue_str = f"1:{distribution_code_payload['client']}." \
-        f"{distribution_code_payload['responsibilityCentre']}." \
-        f"{distribution_code_payload['serviceLine']}." \
-        f"{distribution_code_payload['stob']}." \
-        f"{distribution_code_payload['projectCode']}." \
-        f'000000.0000:10.00'
-    revenue_str_service_fee = f"2:{distribution_code_payload['serviceFeeClient']}." \
-        f"{distribution_code_payload['serviceFeeResponsibilityCentre']}." \
-        f"{distribution_code_payload['serviceFeeLine']}." \
-        f"{distribution_code_payload['serviceFeeStob']}." \
-        f"{distribution_code_payload['serviceFeeProjectCode']}." \
-        f'000000.0000:{format(service_fee, DECIMAL_PRECISION)}'
+                  f"{distribution_code_payload['responsibilityCentre']}." \
+                  f"{distribution_code_payload['serviceLine']}." \
+                  f"{distribution_code_payload['stob']}." \
+                  f"{distribution_code_payload['projectCode']}." \
+                  f'000000.0000:10.00'
+    revenue_str_service_fee = f"2:{distribution_code_payload['client']}." \
+                              f"{distribution_code_payload['responsibilityCentre']}." \
+                              f"{distribution_code_payload['serviceLine']}." \
+                              f"{distribution_code_payload['stob']}." \
+                              f"{distribution_code_payload['projectCode']}." \
+                              f'000000.0000:{format(service_fee, DECIMAL_PRECISION)}'
     assert url_param_dict['revenue'] == f'{revenue_str}|{revenue_str_service_fee}'
     urlstring = f"trnDate={today}&pbcRefNumber={current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')}&" \
-        f'glDate={today}&description=Direct_Sale&' \
-        f'trnNumber={generate_transaction_number(invoice.id)}&' \
-        f'trnAmount={invoice.total}&' \
-        f'paymentMethod=CC&' \
-        f'redirectUri=google.com&' \
-        f'currency=CAD&' \
-        f'revenue={revenue_str}|' \
-        f'{revenue_str_service_fee}'
+                f'glDate={today}&description=Direct_Sale&' \
+                f'trnNumber={generate_transaction_number(invoice.id)}&' \
+                f'trnAmount={invoice.total}&' \
+                f'paymentMethod=CC&' \
+                f'redirectUri=google.com&' \
+                f'currency=CAD&' \
+                f'revenue={revenue_str}|' \
+                f'{revenue_str_service_fee}'
     expected_hash_str = HashingService.encode(urlstring)
 
     assert expected_hash_str == url_param_dict['hashValue']

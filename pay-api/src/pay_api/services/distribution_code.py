@@ -15,6 +15,7 @@
 
 from datetime import date
 from typing import Dict
+
 from dateutil import parser
 from flask import current_app
 from sbc_common_components.tracing.service_tracing import ServiceTracing
@@ -26,15 +27,15 @@ from pay_api.models.fee_schedule import FeeScheduleSchema
 
 
 @ServiceTracing.trace(ServiceTracing.enable_tracing, ServiceTracing.should_be_tracing)
-class DistributionCode:  # pylint: disable=too-many-instance-attributes
+class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Service to manage distribution code related operations."""
 
     def __init__(self):
         """Return a Service object."""
         self.__dao = None
         self._distribution_code_id: int = None
-        self._memo_name: str = None
-        self._service_fee_memo_name: str = None
+        self._name: str = None
+        self._service_fee_name: str = None
 
         self._client: str = None
         self._responsibility_centre: str = None
@@ -50,6 +51,8 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes
 
         self._start_date: date = None
         self._end_date: date = None
+        self._service_fee_distribution_code_id: int = None
+        self._disbursement_distribution_code_id: int = None
 
     @property
     def _dao(self):
@@ -62,8 +65,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes
         self.__dao = value
 
         self._distribution_code_id: int = self._dao.distribution_code_id
-        self._memo_name: str = self._dao.memo_name
-        self._service_fee_memo_name: str = self._dao.service_fee_memo_name
+        self._name: str = self._dao.name
 
         self._client: str = self._dao.client
         self._responsibility_centre: str = self._dao.responsibility_centre
@@ -71,19 +73,48 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes
         self._stob: str = self._dao.stob
         self._project_code: str = self._dao.project_code
 
-        self._service_fee_client: str = self._dao.service_fee_client
-        self._service_fee_responsibility_centre: str = self._dao.service_fee_responsibility_centre
-        self._service_fee_line: str = self._dao.service_fee_line
-        self._service_fee_stob: str = self._dao.service_fee_stob
-        self._service_fee_project_code: str = self._dao.service_fee_project_code
+        if self._dao.service_fee_distribution_code_id:
+            _service_fee: DistributionCodeModel = DistributionCodeModel.find_by_id(
+                self._dao.service_fee_distribution_code_id)
+
+            self._service_fee_name: str = _service_fee.name
+            self._service_fee_client: str = _service_fee.client
+            self._service_fee_responsibility_centre: str = _service_fee.responsibility_centre
+            self._service_fee_line: str = _service_fee.service_line
+            self._service_fee_stob: str = _service_fee.stob
+            self._service_fee_project_code: str = _service_fee.project_code
 
         self._start_date: date = self._dao.start_date
         self._end_date: date = self._dao.end_date
+        self._service_fee_distribution_code_id = self._dao.service_fee_distribution_code_id
+        self._disbursement_distribution_code_id = self._dao.disbursement_distribution_code_id
 
     @property
     def distribution_code_id(self):
         """Return the distribution_code_id."""
         return self._distribution_code_id
+
+    @property
+    def service_fee_distribution_code_id(self):
+        """Return the service_fee_distribution_code_id."""
+        return self._service_fee_distribution_code_id
+
+    @service_fee_distribution_code_id.setter
+    def service_fee_distribution_code_id(self, value: int):
+        """Set the service_fee_distribution_code_id."""
+        self._service_fee_distribution_code_id = value
+        self._dao.service_fee_distribution_code_id = value
+
+    @property
+    def disbursement_distribution_code_id(self):
+        """Return the disbursement_distribution_code_id."""
+        return self._disbursement_distribution_code_id
+
+    @disbursement_distribution_code_id.setter
+    def disbursement_distribution_code_id(self, value: int):
+        """Set the disbursement_distribution_code_id."""
+        self._disbursement_distribution_code_id = value
+        self._dao.disbursement_distribution_code_id = value
 
     @property
     def end_date(self):
@@ -108,6 +139,17 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes
         self._dao.start_date = value
 
     @property
+    def name(self):
+        """Return the name."""
+        return self._name
+
+    @name.setter
+    def name(self, value: str):
+        """Set the name."""
+        self._name = value
+        self._dao.name = value
+
+    @property
     def service_fee_stob(self):
         """Return the _service_fee_stob."""
         return self._service_fee_stob
@@ -116,7 +158,6 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes
     def service_fee_stob(self, value: str):
         """Set the service_fee_stob."""
         self._service_fee_stob = value
-        self._dao.service_fee_stob = value
 
     @property
     def service_fee_line(self):
@@ -127,29 +168,26 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes
     def service_fee_line(self, value: str):
         """Set the service_fee_line."""
         self._service_fee_line = value
-        self._dao.service_fee_line = value
 
     @property
     def service_fee_responsibility_centre(self):
-        """Return the service_fee_memo_name."""
+        """Return the service_fee_responsibility_centre."""
         return self._service_fee_responsibility_centre
 
     @service_fee_responsibility_centre.setter
     def service_fee_responsibility_centre(self, value: str):
         """Set the service_fee_responsibility_centre."""
         self._service_fee_responsibility_centre = value
-        self._dao.service_fee_responsibility_centre = value
 
     @property
-    def service_fee_memo_name(self):
-        """Return the service_fee_memo_name."""
-        return self._service_fee_memo_name
+    def service_fee_name(self):
+        """Return the service_fee_name."""
+        return self._service_fee_name
 
-    @service_fee_memo_name.setter
-    def service_fee_memo_name(self, value: str):
-        """Set the service_fee_memo_name."""
-        self._service_fee_memo_name = value
-        self._dao.service_fee_memo_name = value
+    @service_fee_name.setter
+    def service_fee_name(self, value: str):
+        """Set the service_fee_name."""
+        self._service_fee_name = value
 
     @property
     def stob(self):
@@ -215,7 +253,6 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes
     def service_fee_client(self, value: str):
         """Set the service_fee_client."""
         self._service_fee_client = value
-        self._dao.service_fee_client = value
 
     @property
     def service_fee_project_code(self):
@@ -226,7 +263,6 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes
     def service_fee_project_code(self, value: str):
         """Set the service_fee_project_code."""
         self._service_fee_project_code = value
-        self._dao.service_fee_project_code = value
 
     def save(self):
         """Save the distribution code information and commit."""
@@ -287,22 +323,29 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes
         else:
             dist_code_svc.start_date = date.today()
 
+        _has_code_changes: bool = dist_code_svc.client != distribution_details.get('client', None) \
+            or dist_code_svc.responsibility_centre != distribution_details.get('responsibilityCentre', None) \
+            or dist_code_svc.service_line != distribution_details.get('serviceLine', None) \
+            or dist_code_svc.project_code != distribution_details.get('projectCode', None) \
+            or dist_code_svc.service_fee_distribution_code_id != \
+            distribution_details.get('serviceFeeDistributionCodeId', None)
+
         dist_code_svc.client = distribution_details.get('client', None)
+        dist_code_svc.name = distribution_details.get('name', None)
         dist_code_svc.responsibility_centre = distribution_details.get('responsibilityCentre', None)
         dist_code_svc.service_line = distribution_details.get('serviceLine', None)
         dist_code_svc.stob = distribution_details.get('stob', None)
         dist_code_svc.project_code = distribution_details.get('projectCode', None)
-
-        dist_code_svc.service_fee_client = distribution_details.get('serviceFeeClient', None)
-        dist_code_svc.service_fee_responsibility_centre = distribution_details.get('serviceFeeResponsibilityCentre',
+        dist_code_svc.service_fee_distribution_code_id = distribution_details.get('serviceFeeDistributionCodeId', None)
+        dist_code_svc.disbursement_distribution_code_id = distribution_details.get('disbursementDistributionCodeId',
                                                                                    None)
-        dist_code_svc.service_fee_line = distribution_details.get('serviceFeeLine', None)
-        dist_code_svc.service_fee_stob = distribution_details.get('serviceFeeStob', None)
-        dist_code_svc.service_fee_project_code = distribution_details.get('serviceFeeProjectCode', None)
 
-        if dist_id is not None:
+        if _has_code_changes and dist_id is not None:
             # Update all invoices which used this distribution for updating revenue account details
+            # If this is a service fee distribution, then find all distribution which uses this and update them.
             InvoiceModel.update_invoices_for_revenue_updates(dist_id)
+            for dist in DistributionCodeModel.find_by_service_fee_distribution_id(dist_id):
+                InvoiceModel.update_invoices_for_revenue_updates(dist.distribution_code_id)
 
         dist_code_dao = dist_code_svc.save()
 

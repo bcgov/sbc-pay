@@ -61,6 +61,7 @@ def test_create_distribution_with_valid_data(session, client, jwt, app):
     assert rv.status_code == 201
 
     rv = client.get('/api/v1/fees/distributions', headers=headers)
+
     assert rv.status_code == 200
     assert rv.json is not None
 
