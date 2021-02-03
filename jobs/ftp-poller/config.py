@@ -95,6 +95,27 @@ class _Config(object):  # pylint: disable=too-few-public-methods
                                                          'payment.reconciliations.worker')
     NATS_PAYMENT_RECONCILIATIONS_SUBJECT = os.getenv('NATS_SUBJECT', 'payment.reconciliations')
 
+    SFTP_CONFIGS = {
+        'BRDPAY': {
+            'SFTP_HOST': CAS_SFTP_HOST,
+            'SFTP_USERNAME': CAS_SFTP_USER_NAME,
+            'SFTP_PASSWORD': CAS_SFTP_PASSWORD,
+            'SFTP_VERIFY_HOST': SFTP_VERIFY_HOST,
+            'SFTP_HOST_KEY': CAS_SFTP_HOST_KEY,
+            'FTP_PRIVATE_KEY_LOCATION': BCREG_FTP_PRIVATE_KEY_LOCATION,
+            'BCREG_FTP_PRIVATE_KEY_PASSPHRASE': BCREG_FTP_PRIVATE_KEY_PASSPHRASE
+        },
+        'F350': {
+            'SFTP_HOST': os.getenv('CAS_SFTP_HOST', 'localhost'),
+            'SFTP_USERNAME': os.getenv('CAS_SFTP_USER_NAME', 'foo'),
+            'SFTP_PASSWORD': os.getenv('CAS_SFTP_PASSWORD', ''),
+            'SFTP_VERIFY_HOST': os.getenv('SFTP_VERIFY_HOST', 'True'),
+            'SFTP_HOST_KEY': os.getenv('CAS_SFTP_HOST_KEY', ''),
+            'FTP_PRIVATE_KEY_LOCATION': BCREG_FTP_PRIVATE_KEY_LOCATION,
+            'BCREG_FTP_PRIVATE_KEY_PASSPHRASE': BCREG_FTP_PRIVATE_KEY_PASSPHRASE
+        }
+    }
+
     # Minio configuration values
     MINIO_ENDPOINT = os.getenv('MINIO_ENDPOINT')
     MINIO_ACCESS_KEY = os.getenv('MINIO_ACCESS_KEY')

@@ -14,24 +14,23 @@
 """This module is a wrapper for SFTP Connection object."""
 import json
 from base64 import decodebytes
+from typing import Dict
 
 import paramiko
 from flask import current_app
 from pysftp import Connection, CnOpts
 
+from utils.enums import FTPServer
+
 
 class SFTPService:  # pylint: disable=too-few-public-methods
     """SFTP  Service class."""
 
-    __instance: Connection = None
-
     @staticmethod
-    def get_connection() -> Connection:
+    def get_connection(server_name: str = FTPServer.PAYBC.value) -> Connection:
         """Return a SFTP connection."""
         # pylint: disable=protected-access
-        if not SFTPService.__instance or not SFTPService.__instance._sftp_live:
-            SFTPService.__instance = SFTPService._connect()
-        return SFTPService.__instance
+        return SFTPService._connect()
 
     @staticmethod
     def _connect() -> Connection:
@@ -42,7 +41,6 @@ class SFTPService:  # pylint: disable=too-few-public-methods
         if current_app.config.get('SFTP_VERIFY_HOST').lower() == 'false':
             cnopts.hostkeys = None
         else:
-            host_key = current_app.config.get('CAS_SFTP_HOST_KEY')
             ftp_host_key_data = current_app.config.get('CAS_SFTP_HOST_KEY').encode()
             key = paramiko.RSAKey(data=decodebytes(ftp_host_key_data))
             cnopts.hostkeys.add(sftp_host, 'ssh-rsa', key)
