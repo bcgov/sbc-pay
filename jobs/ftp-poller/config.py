@@ -102,7 +102,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
             'SFTP_PASSWORD': CAS_SFTP_PASSWORD,
             'SFTP_VERIFY_HOST': SFTP_VERIFY_HOST,
             'SFTP_HOST_KEY': CAS_SFTP_HOST_KEY,
-            'SFTP_PORT':CAS_SFTP_PORT,
+            'SFTP_PORT': CAS_SFTP_PORT,
             'FTP_PRIVATE_KEY_LOCATION': BCREG_FTP_PRIVATE_KEY_LOCATION,
             'BCREG_FTP_PRIVATE_KEY_PASSPHRASE': BCREG_FTP_PRIVATE_KEY_PASSPHRASE
         },
@@ -157,6 +157,16 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     CAS_SFTP_BACKUP_DIRECTORY = 'backup'
     SFTP_VERIFY_HOST = 'False'
     CAS_SFTP_PORT = 2222
+
+    SFTP_CONFIGS = {
+        'BRDPAY': {
+            'SFTP_HOST': CAS_SFTP_HOST,
+            'SFTP_USERNAME': CAS_SFTP_USER_NAME,
+            'SFTP_PASSWORD': CAS_SFTP_PASSWORD,
+            'SFTP_VERIFY_HOST': SFTP_VERIFY_HOST,
+            'SFTP_PORT': CAS_SFTP_PORT
+        }
+    }
 
     # POSTGRESQL
     DB_USER = os.getenv('DATABASE_TEST_USERNAME', default='postgres')
