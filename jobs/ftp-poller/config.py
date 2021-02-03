@@ -102,6 +102,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
             'SFTP_PASSWORD': CAS_SFTP_PASSWORD,
             'SFTP_VERIFY_HOST': SFTP_VERIFY_HOST,
             'SFTP_HOST_KEY': CAS_SFTP_HOST_KEY,
+            'SFTP_PORT':CAS_SFTP_PORT,
             'FTP_PRIVATE_KEY_LOCATION': BCREG_FTP_PRIVATE_KEY_LOCATION,
             'BCREG_FTP_PRIVATE_KEY_PASSPHRASE': BCREG_FTP_PRIVATE_KEY_PASSPHRASE
         },
@@ -111,6 +112,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
             'SFTP_PASSWORD': os.getenv('CAS_SFTP_PASSWORD', ''),
             'SFTP_VERIFY_HOST': os.getenv('SFTP_VERIFY_HOST', 'True'),
             'SFTP_HOST_KEY': os.getenv('CAS_SFTP_HOST_KEY', ''),
+            'SFTP_PORT': CAS_SFTP_PORT,
             'FTP_PRIVATE_KEY_LOCATION': BCREG_FTP_PRIVATE_KEY_LOCATION,
             'BCREG_FTP_PRIVATE_KEY_PASSPHRASE': BCREG_FTP_PRIVATE_KEY_PASSPHRASE
         }
