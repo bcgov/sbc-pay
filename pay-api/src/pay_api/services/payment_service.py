@@ -179,12 +179,18 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         if is_apply_credit:
             credit_balance: float = 0
             payment_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
-            if (payment_account.credit or 0) >= invoice.total:
+            invoice_balance = invoice.total - (invoice.paid or 0)
+            if (payment_account.credit or 0) >= invoice_balance:
                 pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
                     invoice.payment_method_code)
                 # Only release records, as the actual status change should happen during reconciliation.
                 pay_service.apply_credit(invoice)
-                credit_balance = payment_account.credit - invoice.total
+                credit_balance = payment_account.credit - invoice_balance
+                invoice.paid = invoice.total
+                invoice.save()
+            elif (payment_account.credit or 0) <= invoice_balance:
+                invoice.paid = (invoice.paid or 0) + payment_account.credit
+                invoice.save()
 
             payment_account.credit = credit_balance
             payment_account.save()

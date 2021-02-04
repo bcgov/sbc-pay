@@ -72,6 +72,7 @@ def run(job_name):
     from tasks.statement_task import StatementTask
     from tasks.activate_pad_account_task import ActivatePadAccountTask
     from tasks.cgi_ejv_task import CgiEjvTask
+    from tasks.unpaid_invoice_notify_task import UnpaidInvoiceNotifyTask
 
     application = create_app()
 
@@ -100,6 +101,9 @@ def run(job_name):
     elif job_name == 'CGI_EJV':
         CgiEjvTask.create_ejv_file()
         application.logger.info(f'<<<< Completed Creating EJV File >>>>')
+    elif job_name == 'NOTIFY_UNPAID_INVOICE_OB':
+        UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
+        application.logger.info(f'<<<< Completed Sending notification for OB inovices >>>>')
 
     else:
         application.logger.debug('No valid args passed.Exiting job without running any ***************')
