@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Model to link invoices with Electronic Journal Voucher."""
+"""Model to handle Electronic Journal Voucher distributions and payment."""
 
 from sqlalchemy import ForeignKey
 
@@ -19,11 +19,13 @@ from .base_model import BaseModel
 from .db import db
 
 
-class EjvInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
-    """This class manages linkages between EJV and invoices."""
+class EjvHeader(BaseModel):  # pylint: disable=too-many-instance-attributes
+    """This class manages all of the base data about EJV Header."""
 
-    __tablename__ = 'ejv_invoice_links'
+    __tablename__ = 'ejv_headers'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
-    ejv_header_id = db.Column(db.Integer, ForeignKey('ejv_headers.id'), nullable=False)
+    disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
+    ejv_file_id = db.Column(db.Integer, ForeignKey('ejv_files.id'), nullable=False)
+    partner_code = db.Column(db.String(10), ForeignKey('corp_types.code'), nullable=True)  # For partners
+    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True)  # For gov accounts

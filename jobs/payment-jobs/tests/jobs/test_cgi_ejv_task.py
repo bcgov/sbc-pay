@@ -17,7 +17,7 @@
 Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
 from pay_api.models import CorpType as CorpTypeModel
-from pay_api.models import DistributionCode, EjvFile, EjvInvoiceLink, FeeSchedule, Invoice, db
+from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvInvoiceLink, FeeSchedule, Invoice, db
 from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, PaymentMethod
 
 from tasks.cgi_ejv_task import CgiEjvTask
@@ -76,6 +76,11 @@ def test_disbursement_for_partners(session):
 
     ejv_inv_link = db.session.query(EjvInvoiceLink).filter(EjvInvoiceLink.invoice_id == invoice.id).first()
     assert ejv_inv_link
-    ejv_file = EjvFile.find_by_id(ejv_inv_link.ejv_file_id)
+
+    ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_inv_link.ejv_header_id).first()
+    assert ejv_header.disbursement_status_code == DisbursementStatus.UPLOADED.value
+    assert ejv_header
+
+    ejv_file = EjvFile.find_by_id(ejv_header.ejv_file_id)
     assert ejv_file
     assert ejv_file.disbursement_status_code == DisbursementStatus.UPLOADED.value

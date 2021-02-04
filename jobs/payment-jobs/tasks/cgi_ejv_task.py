@@ -17,11 +17,13 @@ import os
 import tempfile
 from datetime import datetime
 from typing import List
+import time
 
 from flask import current_app
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import EjvFile as EjvFileModel
+from pay_api.models import EjvHeader as EjvHeaderModel
 from pay_api.models import EjvInvoiceLink as EjvInvoiceLinkModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
@@ -56,6 +58,9 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
     @classmethod
     def _create_ejv_file_for_partner(cls, batch_type: str):
         """Create EJV file for the partner and upload."""
+        ejv_content: str = ''
+        batch_total: float = 0
+        control_total: int = 0
         today = datetime.now()
         disbursement_desc = current_app.config.get('CGI_DISBURSEMENT_DESC'). \
             format(today.strftime('%B').upper(), f'{today.day:0>2}')[:100]
@@ -70,40 +75,39 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
         file_name: str = f'INBOX.F{feeder_number}.{date_time}'
         current_app.logger.info('file_name %s', file_name)
 
-        # Get partner list.
-        partners: List[CorpTypeModel] = db.session.query(CorpTypeModel.code).filter(
-            CorpTypeModel.batch_type == batch_type).all()
+        # Create Batch Header.
+        # Create a ejv file model record.
+        ejv_file_model: EjvFileModel = EjvFileModel(
+            is_distribution=True,
+            file_ref=file_name,
+            disbursement_status_code=DisbursementStatus.UPLOADED.value
+        ).flush()
+        batch_number = f'{ejv_file_model.id:0>9}'
+        journal_batch_name: str = f'{ministry}{batch_number}{EMPTY:<14}'
+
+        # Get partner list. Each of the partner will go as a JV Header and transactions as JV Details.
+        partners: List[CorpTypeModel] = db.session.query(CorpTypeModel.code)\
+            .filter(CorpTypeModel.batch_type == batch_type).all()
+
+        # JV Batch Header
+        batch_header: str = f'{feeder_number}{batch_type}BH{DELIMITER}{feeder_number}{fiscal_year}' \
+                            f'{batch_number}{message_version}{DELIMITER}{os.linesep}'
 
         for partner in partners:
             # Find all invoices for the partner to disburse.
             invoices = cls._get_invoices_for_disbursement(partner)
-
             # If no invoices continue.
             if not invoices:
                 continue
 
-            # Create a ejv file model record.
-            ejv_file_model: EjvFileModel = EjvFileModel(
-                is_distribution=True,
-                file_ref=file_name,
-                disbursement_status_code=DisbursementStatus.UPLOADED.value
-            ).flush()
-
-            ejv_content: str = ''
-            batch_number = f'{ejv_file_model.id:0>9}'
             effective_date: str = cls._get_effective_date()
-            # Construct journal name, not CGI requirement, using prefix+partner code and fill space for 10 characters.
-            journal_name: str = f'{ministry}{partner.code}'
-            journal_name = f'{journal_name:<10}'
-
-            # Construct journal name, not CGI requirement, using prefix+batch number and fill space for 10 characters.
-            journal_batch_name: str = f'{ministry}{batch_number}{EMPTY:<14}'
-            batch_total: float = 0
-            control_unit: int = 0
-
-            # JV Batch Header
-            ejv_content = f'{ejv_content}{feeder_number}{batch_type}BH{DELIMITER}{feeder_number}{fiscal_year}' \
-                          f'{batch_number}{message_version}{DELIMITER}{os.linesep}'
+            # Construct journal name
+            ejv_header_model: EjvFileModel = EjvHeaderModel(
+                partner_code=partner.code,
+                disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                ejv_file_id=ejv_file_model.id
+            ).flush()
+            journal_name: str = f'{ministry}{ejv_header_model.id:0>8}'
 
             # To populate JV Header and JV Details, group these invoices by the distribution
             # and create one JV Header and detail for each.
@@ -112,7 +116,7 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
             for inv in invoices:
                 invoice_id_list.append(inv.id)
                 # Create Ejv file link and flush
-                EjvInvoiceLinkModel(invoice_id=inv.id, ejv_file_id=ejv_file_model.id).flush()
+                EjvInvoiceLinkModel(invoice_id=inv.id, ejv_header_id=ejv_header_model.id).flush()
                 # Set distribution status to invoice
                 inv.disbursement_status_code = DisbursementStatus.UPLOADED.value
                 inv.flush()
@@ -140,8 +144,6 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
                               f'{journal_batch_name}{cls._format_amount(total)}ACAD{EMPTY:<100}{EMPTY:<110}' \
                               f'{DELIMITER}{os.linesep}'
 
-                control_unit += 1
-
                 line_number: int = 0
                 for line in line_items:
                     # JV Details
@@ -158,27 +160,34 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
                                   f'{cls._format_amount(line.total)}D{disbursement_desc}{EMPTY:<110}' \
                                   f'{DELIMITER}{os.linesep}'
 
-                    control_unit += 2
+                    control_total += 1
+        if not ejv_content:
+            db.session.rollback()
+            return
 
-            # JV Batch Trailer
-            ejv_content = f'{ejv_content}{feeder_number}{batch_type}BT{DELIMITER}{feeder_number}{fiscal_year}' \
-                          f'{batch_number}{control_unit:0>15}{cls._format_amount(batch_total)}{DELIMITER}{os.linesep}'
+        # JV Batch Trailer
+        batch_trailer: str = f'{feeder_number}{batch_type}BT{DELIMITER}{feeder_number}{fiscal_year}{batch_number}' \
+                             f'{control_total:0>15}{cls._format_amount(batch_total)}{DELIMITER}{os.linesep}'
 
-            # Create a file add this content.
-            file_path: str = tempfile.gettempdir()
-            with open(f'{file_path}/{file_name}', 'a+') as jv_file:
-                jv_file.write(ejv_content)
-                jv_file.close()
+        ejv_content = f'{batch_header}{ejv_content}{batch_trailer}'
+        # Create a file add this content.
+        file_path: str = tempfile.gettempdir()
+        with open(f'{file_path}/{file_name}', 'a+') as jv_file:
+            jv_file.write(ejv_content)
+            jv_file.close()
 
-            # Upload to MINIO
-            cls._upload_to_minio(content=ejv_content.encode(),
-                                 file_name=file_name,
-                                 file_size=os.stat(f'{file_path}/{file_name}').st_size)
+        # Upload to MINIO
+        cls._upload_to_minio(content=ejv_content.encode(),
+                             file_name=file_name,
+                             file_size=os.stat(f'{file_path}/{file_name}').st_size)
 
-            # TODO Upload to FTP
+        # TODO Upload to FTP
 
-            # commit changes to DB
-            db.session.commit()
+        # commit changes to DB
+        db.session.commit()
+
+        # Add a sleep to prevent collision on file name.
+        time.sleep(1)
 
     @classmethod
     def _find_line_items_by_invoice_and_distribution(cls, distribution_code_id, invoice_id_list):
@@ -221,6 +230,7 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
     def _upload_to_minio(cls, content, file_name, file_size):
         """Upload to minio."""
         try:
+            print(file_name, file_size)
             put_object(content, file_name, file_size)
         except Exception as e:  # NOQA # pylint: disable=broad-except
             current_app.logger.error(e)
