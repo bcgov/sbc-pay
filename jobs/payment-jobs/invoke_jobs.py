@@ -71,6 +71,7 @@ def run(job_name):
     from tasks.statement_notification_task import StatementNotificationTask
     from tasks.statement_task import StatementTask
     from tasks.activate_pad_account_task import ActivatePadAccountTask
+    from tasks.cgi_ejv_task import CgiEjvTask
 
     application = create_app()
 
@@ -96,6 +97,9 @@ def run(job_name):
     elif job_name == 'ACTIVATE_PAD_ACCOUNTS':
         ActivatePadAccountTask.activate_pad_accounts()
         application.logger.info(f'<<<< Completed Activating PAD accounts >>>>')
+    elif job_name == 'CGI_EJV':
+        CgiEjvTask.create_ejv_file()
+        application.logger.info(f'<<<< Completed Creating EJV File >>>>')
 
     else:
         application.logger.debug('No valid args passed.Exiting job without running any ***************')

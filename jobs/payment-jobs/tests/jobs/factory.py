@@ -85,8 +85,11 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
 
 
 def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees: int = 10, total: int = 10,
-                              service_fees: int = 0, status: str = LineItemStatus.ACTIVE.value):
+                              service_fees: int = 0, status: str = LineItemStatus.ACTIVE.value,
+                              fee_dist_id=None):
     """Return Factory."""
+    if not fee_dist_id:
+        fee_dist_id = DistributionCode.find_by_active_for_fee_schedule(fee_schedule_id).distribution_code_id
     return PaymentLineItem(
         invoice_id=invoice_id,
         fee_schedule_id=fee_schedule_id,
@@ -94,7 +97,7 @@ def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees
         total=total,
         service_fees=service_fees,
         line_item_status_code=status,
-        fee_distribution_id=DistributionCode.find_by_active_for_fee_schedule(fee_schedule_id).distribution_code_id
+        fee_distribution_id=fee_dist_id
     ).save()
 
 
@@ -144,3 +147,19 @@ def factory_create_wire_account(auth_account_id='1234', status=CfsAccountStatus.
                              auth_account_name=f'Test {auth_account_id}').save()
     CfsAccount(status=status, account_id=account.id).save()
     return account
+
+
+def factory_distribution(name: str, client: str = '111', reps_centre: str = '22222', service_line: str = '33333',
+                         stob: str = '4444', project_code: str = '5555555', service_fee_dist_id: int = None,
+                         disbursement_dist_id: int = None):
+    """Return Factory."""
+    return DistributionCode(name=name,
+                            client=client,
+                            responsibility_centre=reps_centre,
+                            service_line=service_line,
+                            stob=stob,
+                            project_code=project_code,
+                            service_fee_distribution_code_id=service_fee_dist_id,
+                            disbursement_distribution_code_id=disbursement_dist_id,
+                            start_date=datetime.today().date(),
+                            created_by='test').save()

@@ -141,6 +141,19 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY')
 
+    # EJV config variables
+    CGI_FEEDER_NUMBER = os.getenv('CGI_FEEDER_NUMBER')
+    CGI_MINISTRY_PREFIX = os.getenv('CGI_MINISTRY_PREFIX')
+    CGI_DISBURSEMENT_DESC = os.getenv('CGI_DISBURSEMENT_DESC', 'BCREGISTRIES {} {} DISBURSEMENTS')
+    CGI_MESSAGE_VERSION = os.getenv('CGI_MESSAGE_VERSION', '4010')
+
+    # Minio configuration values
+    MINIO_ENDPOINT = os.getenv('MINIO_ENDPOINT')
+    MINIO_ACCESS_KEY = os.getenv('MINIO_ACCESS_KEY')
+    MINIO_ACCESS_SECRET = os.getenv('MINIO_ACCESS_SECRET')
+    MINIO_BUCKET_NAME = os.getenv('MINIO_EJV_BUCKET_NAME', 'cgi-ejv')
+    MINIO_SECURE = True
+
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     TESTING = False
@@ -174,6 +187,9 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     CFS_CLIENT_ID = 'TEST'
     CFS_CLIENT_SECRET = 'TEST'
     USE_DOCKER_MOCK = os.getenv('USE_DOCKER_MOCK', None)
+
+    # Secret key for encrypting bank account
+    ACCOUNT_SECRET_KEY = 'mysecretkeyforbank'
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

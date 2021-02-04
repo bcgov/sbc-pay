@@ -16,6 +16,7 @@
 from datetime import datetime
 
 from sqlalchemy import Boolean
+from sqlalchemy import ForeignKey
 
 from .base_model import BaseModel
 from .db import db
@@ -31,3 +32,5 @@ class EjvFile(BaseModel):  # pylint: disable=too-many-instance-attributes
     completed_on = db.Column('completed_on', db.DateTime, nullable=True)
     is_distribution = db.Column('is_distribution', Boolean(), default=True)
     file_ref = db.Column('file_ref', db.String, nullable=False, index=True)
+    disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
+    feedback_file_ref = db.Column('feedback_file_ref', db.String, nullable=True)

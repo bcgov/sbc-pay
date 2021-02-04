@@ -32,6 +32,7 @@ class CorpType(db.Model, CodeTable):
     bcol_fee_code = db.Column(db.String(20), nullable=True)
     bcol_staff_fee_code = db.Column(db.String(20), nullable=True)
     is_online_banking_allowed = db.Column(Boolean(), default=True)
+    batch_type = db.Column(db.String(2), nullable=True)
 
     def save(self):
         """Save corp type."""

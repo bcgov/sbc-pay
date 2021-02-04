@@ -6,7 +6,6 @@ Flask-Moment
 Flask-SQLAlchemy
 Flask-RESTplus
 flask-marshmallow==0.11.0
-flask-jwt-oidc>=0.1.5
 python-dotenv
 psycopg2-binary
 marshmallow==3.0.0.rc7
@@ -15,9 +14,11 @@ jsonschema
 requests
 Werkzeug==0.16.1
 jaeger-client
+minio
+pysftp
 
 -e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
--e git+https://github.com/bcgov/sbc-pay.git#egg=pay-api&subdirectory=pay-api
-# -e git+https://github.com/sumesh-aot/sbc-pay.git@pad_settlement#egg=pay-api&subdirectory=pay-api
+# -e git+https://github.com/bcgov/sbc-pay.git#egg=pay-api&subdirectory=pay-api
+-e git+https://github.com/sumesh-aot/sbc-pay.git@ejv_file_job#egg=pay-api&subdirectory=pay-api
 # -e git+https://github.com/bcgov/sbc-pay.git@development#egg=pay-api&subdirectory=pay-api
 # -e git+https://github.com/saravanpa-aot/sbc-pay.git@development#egg=pay-api&subdirectory=pay-api
