@@ -64,16 +64,16 @@ def register_shellcontext(app):
 
 
 def run(job_name):
-    from tasks.poll_ftp_task import PollFtpTask
+    from tasks.cas_poller_ftp import CASPollerFtpTask
 
     application = create_app()
 
     application.app_context().push()
     if job_name == 'FTP_POLLER':
-        PollFtpTask.poll_ftp()
+        CASPollerFtpTask.poll_ftp()
         application.logger.info(f'<<<< Completed Polling FTP >>>>')
     else:
-        PollFtpTask.poll_ftp()
+        CASPollerFtpTask.poll_ftp()
         application.logger.debug('No valid args passed.Exiting job without running any ***************')
 
 
