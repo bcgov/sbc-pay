@@ -97,7 +97,7 @@ def test_unpaid_multiple_invoice(session):
     with freeze_time(day_after_time_delay):
         with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
             UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
-            assert mock_mailer.call_count == 2
+            assert mock_mailer.call_count == 1
 
     # created one invoice yesterday ; so assert one
     day_after_time_delay = datetime.today() + timedelta(days=time_delay - 1)
@@ -125,3 +125,69 @@ def test_unpaid_invoice_pad(session):
         with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
             UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
             mock_mailer.assert_not_called()
+
+
+def test_unpaid_single_invoice_total(session):
+    """Assert events are being sent."""
+    # Create an account and an invoice for the account
+    account = factory_create_online_banking_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value,
+                                                    cfs_account='1111')
+    # Create an invoice for this account
+    cfs_account = CfsAccountModel.find_effective_by_account_id(account.id)
+    # invoice amount
+    total_invoice1 = 100
+    total_invoice2 = 200
+
+    invoice = factory_invoice(payment_account=account, created_on=datetime.now(), total=total_invoice1,
+                              payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
+    assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
+
+    previous_day = datetime.now() - timedelta(days=1)
+    factory_invoice(payment_account=account, created_on=previous_day, total=total_invoice2,
+                    payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
+
+    # created two invoices ; so two events
+    time_delay = current_app.config['NOTIFY_AFTER_DAYS']
+    day_after_time_delay = datetime.today() + timedelta(days=time_delay)
+    with freeze_time(day_after_time_delay):
+        with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
+            UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
+            assert mock_mailer.call_args.args[2].get('transactionAmount') == total_invoice1
+
+    # created one invoice yesterday ; so assert one
+    day_after_time_delay = datetime.today() + timedelta(days=time_delay - 1)
+    with freeze_time(day_after_time_delay):
+        with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
+            UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
+            assert mock_mailer.call_count == 1
+            assert mock_mailer.call_args.args[2].get('transactionAmount') == total_invoice2
+
+
+
+def test_unpaid_multiple_invoice_total(session):
+    """Assert events are being sent."""
+    # Create an account and an invoice for the account
+    account = factory_create_online_banking_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value,
+                                                    cfs_account='1111')
+    # Create an invoice for this account
+    cfs_account = CfsAccountModel.find_effective_by_account_id(account.id)
+    # invoice amount
+    total_invoice1 = 100
+    total_invoice2 = 200
+
+    invoice = factory_invoice(payment_account=account, created_on=datetime.now(), total=total_invoice1,
+                              payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
+    assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
+
+    factory_invoice(payment_account=account, created_on=datetime.now(), total=total_invoice2,
+                    payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
+
+
+    # created two invoices ; so two events
+    time_delay = current_app.config['NOTIFY_AFTER_DAYS']
+    day_after_time_delay = datetime.today() + timedelta(days=time_delay)
+    with freeze_time(day_after_time_delay):
+        with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
+            UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
+            assert mock_mailer.call_count == 1
+            assert mock_mailer.call_args.args[2].get('transactionAmount') == total_invoice1 + total_invoice2
