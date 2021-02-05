@@ -40,7 +40,7 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.info(f'Found {len(file_list)} to be processed.')
                 for file in file_list:
                     # process only trigger files.other files are derived from trigger files
-                    if not CGIFeededPollerTask._is_a_valid_trigger_file(file.filename):
+                    if not cls._is_a_valid_trigger_file(file.filename):
                         continue
                     trg_file_name = file.filename
                     data_file_name = cls._get_data_file_name_from_trigger_file(trg_file_name)
