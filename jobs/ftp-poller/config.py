@@ -85,6 +85,19 @@ class _Config(object):  # pylint: disable=too-few-public-methods
                                                '/ftp-poller/key/sftp_priv_key')  # full path to the privatey key
     BCREG_FTP_PRIVATE_KEY_PASSPHRASE = os.getenv('BCREG_FTP_PRIVATE_KEY_PASSPHRASE', '')
 
+    # CGI FTP CONFIG
+    BCREG_CGI_FTP_PRIVATE_KEY_LOCATION = os.getenv('BCREG_CGI_FTP_PRIVATE_KEY_LOCATION',
+                                                   '/ftp-poller/key/cgi_sftp_priv_key')  # full path to the privatey key
+    BCREG_CGI_FTP_PRIVATE_KEY_PASSPHRASE = os.getenv('BCREG_CGI_FTP_PRIVATE_KEY_PASSPHRASE', '')
+    CGI_SFTP_USER_NAME = os.getenv('CAS_SFTP_USER_NAME', 'foo')
+    CGI_SFTP_BACKUP_DIRECTORY = os.getenv('CGI_SFTP_BACKUP_DIRECTORY', '/data')
+    CGI_SFTP_DIRECTORY = os.getenv('CGI_SFTP_DIRECTORY', '/backup')
+
+    # CGI File specific configs
+    CGI_TRIGGER_FILE_SUFFIX = os.getenv('CGI_TRIGGER_FILE_SUFFIX', '.TRG')
+    CGI_ACK_FILE_PREFIX = os.getenv('CGI_ACK_FILE_PREFIX', 'ACK')
+    CGI_FEEDBACK_FILE_PREFIX = os.getenv('CGI_FEEDBACK_FILE_PREFIX', 'FEEDBACK')
+
     # NATS Config
     NATS_SERVERS = os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(',')
     NATS_CLUSTER_ID = os.getenv('NATS_CLUSTER_ID', 'test-cluster')
@@ -96,7 +109,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     NATS_PAYMENT_RECONCILIATIONS_SUBJECT = os.getenv('NATS_SUBJECT', 'payment.reconciliations')
 
     SFTP_CONFIGS = {
-        'BRDPAY': {
+        'CAS': {
             'SFTP_HOST': CAS_SFTP_HOST,
             'SFTP_USERNAME': CAS_SFTP_USER_NAME,
             'SFTP_PASSWORD': CAS_SFTP_PASSWORD,
@@ -106,15 +119,16 @@ class _Config(object):  # pylint: disable=too-few-public-methods
             'FTP_PRIVATE_KEY_LOCATION': BCREG_FTP_PRIVATE_KEY_LOCATION,
             'BCREG_FTP_PRIVATE_KEY_PASSPHRASE': BCREG_FTP_PRIVATE_KEY_PASSPHRASE
         },
-        'F350': {
-            'SFTP_HOST': os.getenv('CAS_SFTP_HOST', 'localhost'),
-            'SFTP_USERNAME': os.getenv('CAS_SFTP_USER_NAME', 'foo'),
-            'SFTP_PASSWORD': os.getenv('CAS_SFTP_PASSWORD', ''),
-            'SFTP_VERIFY_HOST': os.getenv('SFTP_VERIFY_HOST', 'True'),
-            'SFTP_HOST_KEY': os.getenv('CAS_SFTP_HOST_KEY', ''),
-            'SFTP_PORT': CAS_SFTP_PORT,
-            'FTP_PRIVATE_KEY_LOCATION': BCREG_FTP_PRIVATE_KEY_LOCATION,
-            'BCREG_FTP_PRIVATE_KEY_PASSPHRASE': BCREG_FTP_PRIVATE_KEY_PASSPHRASE
+        # between CGI and CAS , only account name and private key changes.So reusing most of the information.
+        'CGI': {
+            'SFTP_HOST': os.getenv('CAS_SFTP_HOST', 'localhost'),  # same as CAS
+            'SFTP_USERNAME': os.getenv('CGI_SFTP_USER_NAME', 'foo'),  # different user.so not same as CAS
+            'SFTP_PASSWORD': os.getenv('CAS_SFTP_PASSWORD', ''),  # same as CAS
+            'SFTP_VERIFY_HOST': os.getenv('SFTP_VERIFY_HOST', 'True'),  # same as CAS
+            'SFTP_HOST_KEY': os.getenv('CAS_SFTP_HOST_KEY', ''),  # same as CAS
+            'SFTP_PORT': CAS_SFTP_PORT,  # same as CAS
+            'FTP_PRIVATE_KEY_LOCATION': BCREG_CGI_FTP_PRIVATE_KEY_LOCATION,  # different user.so not same as CAS
+            'BCREG_FTP_PRIVATE_KEY_PASSPHRASE': BCREG_CGI_FTP_PRIVATE_KEY_PASSPHRASE
         }
     }
 
@@ -159,7 +173,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     CAS_SFTP_PORT = 2222
 
     SFTP_CONFIGS = {
-        'BRDPAY': {
+        'CAS': {
             'SFTP_HOST': CAS_SFTP_HOST,
             'SFTP_USERNAME': CAS_SFTP_USER_NAME,
             'SFTP_PASSWORD': CAS_SFTP_PASSWORD,

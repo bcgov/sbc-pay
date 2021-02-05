@@ -71,8 +71,8 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
 
     @classmethod
     def _move_file_to_backup(cls, sftp_client, backup_file_list):
-        ftp_backup_dir: str = current_app.config.get('CAS_SFTP_BACKUP_DIRECTORY')
-        ftp_dir: str = current_app.config.get('CAS_SFTP_DIRECTORY')
+        ftp_backup_dir: str = current_app.config.get('CGI_SFTP_BACKUP_DIRECTORY')
+        ftp_dir: str = current_app.config.get('CGI_SFTP_DIRECTORY')
         for file_name in backup_file_list:
             sftp_client.rename(ftp_dir + '/' + file_name, ftp_backup_dir + '/' + file_name)
 
@@ -82,16 +82,17 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
 
     @classmethod
     def _is_a_valid_trigger_file(cls, file_name: str):
-        return file_name.endswith('.TRG')
+        return file_name.endswith(current_app.config.get('CGI_TRIGGER_FILE_SUFFIX'))
 
     @classmethod
     def _is_ack_file(cls, file_name: str):
-        return file_name.startswith('ACK')
+        return file_name.startswith(current_app.config.get('CGI_ACK_FILE_PREFIX'))
 
     @classmethod
     def _is_feedback_file(cls, file_name: str):
-        return file_name.startswith('FEEDBACK')
+        return file_name.startswith(current_app.config.get('CGI_FEEDBACK_FILE_PREFIX'))
 
     @classmethod
     def _get_data_file_name_from_trigger_file(cls, file_name: str) -> str:
-        return file_name.replace('.TRG', '')
+        # Remove suffix from the file should yield data file name
+        return file_name.replace(current_app.config.get('CGI_TRIGGER_FILE_SUFFIX'), '')

@@ -26,7 +26,7 @@ from utils.enums import FTPServer
 class SFTPService:  # pylint: disable=too-few-public-methods
     """SFTP  Service class."""
 
-    DEFAUILT_CONNECT_SERVER = 'BRDPAY'
+    DEFAUILT_CONNECT_SERVER = 'CAS'
 
     @staticmethod
     def get_connection(server_name: str = FTPServer.PAYBC.value) -> Connection:
@@ -38,6 +38,7 @@ class SFTPService:  # pylint: disable=too-few-public-methods
     def _connect(server_name: str) -> Connection:
 
         sftp_configs = current_app.config.get('SFTP_CONFIGS')
+        # if not passed , connect to CAS server always. to make the existing code work
         if not server_name or server_name not in sftp_configs.keys():
             server_name = SFTPService.DEFAUILT_CONNECT_SERVER
 
