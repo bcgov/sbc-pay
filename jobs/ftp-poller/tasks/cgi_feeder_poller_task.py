@@ -18,6 +18,7 @@ from flask import current_app
 from paramiko.sftp_attr import SFTPAttributes
 
 from services.sftp import SFTPService
+from utils.constants import CGI_ACK_MESSAGE_TYPE, CGI_FEEDBACK_MESSAGE_TYPE
 from utils.utils import publish_to_queue, upload_to_minio
 
 
@@ -30,44 +31,42 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
 
         Steps:
         1. List Files.
-        2. If TRG , find its assoicated data file and do the operations.
+        2. If TRG , find its associated data file and do the operations.
         """
-        payment_file_list: List[str] = []
         with SFTPService.get_connection() as sftp_client:
             try:
-                ftp_dir: str = current_app.config.get('EJV_SFTP_DIRECTORY')
+                ftp_dir: str = current_app.config.get('CGI_SFTP_DIRECTORY')
                 file_list: List[SFTPAttributes] = sftp_client.listdir_attr(ftp_dir)
-                current_app.logger.info(f'Found {len(file_list)} to be processed.')
+                is_trigger_file_present: bool = cls._is_trigger_file_present(sftp_client, file_list)
+                if not is_trigger_file_present:
+                    current_app.logger.info('No Trigger file Found to be processed.Not reading any files.')
+                    return
+
+                current_app.logger.info(
+                    f'Found {len(file_list)} to be processed.This inlcudes all files in the folder.')
                 for file in file_list:
-                    # process only trigger files.other files are derived from trigger files
-                    if not cls._is_a_valid_trigger_file(file.filename):
+                    file_name = file.filename
+                    file_full_name = ftp_dir + '/' + file_name
+                    if not sftp_client.isfile(file_full_name):  # skip directories
+                        current_app.logger.info(
+                            f'Skipping directory {file_name}.')
                         continue
-                    trg_file_name = file.filename
-                    data_file_name = cls._get_data_file_name_from_trigger_file(trg_file_name)
-                    data_file_full_name = ftp_dir + '/' + data_file_name
-                    file_exists = sftp_client.exists(data_file_full_name) and sftp_client.isfile(
-                        data_file_full_name)
-                    if file_exists:
-                        # ACK file Trigger events and move the files
-                        if cls._is_ack_file(data_file_name):
-                            # ACK files dont need to be copied to mino.
-                            # publish to queue and add to back up list
-                            publish_to_queue([data_file_name])
-                            cls._move_file_to_backup(sftp_client, [trg_file_name, data_file_name])
-                        if cls._is_feedback_file(data_file_name):
-                            # feedback files ;copy to minio .publish to queu.back up list
-                            data_file_attributes = sftp_client.stat(data_file_full_name)
-                            upload_to_minio(data_file_attributes, data_file_full_name, sftp_client)
-                            publish_to_queue([data_file_name])
-                            cls._move_file_to_backup(sftp_client, [trg_file_name, data_file_name])
+                    if cls._is_ack_file(file_name):
+                        publish_to_queue([file_name], CGI_ACK_MESSAGE_TYPE)
+                        cls._move_file_to_backup(sftp_client, [file_name])
+                    elif cls._is_feedback_file(file_name):
+                        bucket_name = current_app.config.get('MINIO_CGI_BUCKET_NAME')
+                        upload_to_minio(file, file_full_name, sftp_client, bucket_name)
+                        publish_to_queue([file_name], CGI_FEEDBACK_MESSAGE_TYPE, location=bucket_name)
+                        cls._move_file_to_backup(sftp_client, [file_name])
+                    elif cls._is_a_trigger_file(file_name):
+                        cls._move_file_to_backup(sftp_client, [file_name])
                     else:
                         current_app.logger.warning(
-                            f'No data file as {data_file_full_name} exists for the trigger file {trg_file_name}.')
-
+                            f'File found which is not trigger , ACK or feed back {file_name}.')
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 current_app.logger.error(e)
-        return payment_file_list
 
     @classmethod
     def _move_file_to_backup(cls, sftp_client, backup_file_list):
@@ -77,11 +76,16 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
             sftp_client.rename(ftp_dir + '/' + file_name, ftp_backup_dir + '/' + file_name)
 
     @classmethod
-    def _is_valid_payment_file(cls, sftp_client, file_name):
-        return sftp_client.isfile(file_name)
+    def _is_trigger_file_present(cls, sftp_client, file_list):
+        for file in file_list:
+            ftp_dir: str = current_app.config.get('EJV_SFTP_DIRECTORY')
+            file_full_name = ftp_dir + '/' + file.filename
+            if cls._is_a_trigger_file(file.filename) and sftp_client.isfile(file_full_name):
+                return True
+        return False
 
     @classmethod
-    def _is_a_valid_trigger_file(cls, file_name: str):
+    def _is_a_trigger_file(cls, file_name: str):
         return file_name.endswith(current_app.config.get('CGI_TRIGGER_FILE_SUFFIX'))
 
     @classmethod
@@ -91,8 +95,3 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _is_feedback_file(cls, file_name: str):
         return file_name.startswith(current_app.config.get('CGI_FEEDBACK_FILE_PREFIX'))
-
-    @classmethod
-    def _get_data_file_name_from_trigger_file(cls, file_name: str) -> str:
-        # Remove suffix from the file should yield data file name
-        return file_name.replace(current_app.config.get('CGI_TRIGGER_FILE_SUFFIX'), '')

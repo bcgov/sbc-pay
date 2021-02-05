@@ -46,7 +46,7 @@ class CASPollerFtpTask:  # pylint:disable=too-few-public-methods
                     file_full_name = ftp_dir + '/' + file_name
                     current_app.logger.info(f'Processing file  {file_full_name} started-----.')
                     if CASPollerFtpTask._is_valid_payment_file(sftp_client, file_full_name):
-                        upload_to_minio(file, file_full_name, sftp_client)
+                        upload_to_minio(file, file_full_name, sftp_client, current_app.config['MINIO_BUCKET_NAME'])
                         payment_file_list.append(file_name)
 
                 if len(payment_file_list) > 0:

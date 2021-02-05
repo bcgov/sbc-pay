@@ -12,11 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Enum definitions."""
-from enum import Enum
 
-
-class FTPServer(Enum):
-    """Access Types."""
-
-    PAYBC = 'PAYBC'
-    EJV = 'EJV'
+CAS_MESSAGE_TYPE = 'bc.registry.payment.casSettlementUploaded'
+CGI_ACK_MESSAGE_TYPE = 'bc.registry.payment.cgi.ACKReceived'
+CGI_FEEDBACK_MESSAGE_TYPE = 'bc.registry.payment.cgi.ACKReceived'

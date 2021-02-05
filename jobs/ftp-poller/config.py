@@ -137,6 +137,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     MINIO_ACCESS_KEY = os.getenv('MINIO_ACCESS_KEY')
     MINIO_ACCESS_SECRET = os.getenv('MINIO_ACCESS_SECRET')
     MINIO_BUCKET_NAME = os.getenv('MINIO_BUCKET_NAME', 'payment-sftp')
+    MINIO_CGI_BUCKET_NAME = os.getenv('MINIO_CGI_BUCKET_NAME', 'cgi-sftp')
     MINIO_SECURE = True
 
     TESTING = False

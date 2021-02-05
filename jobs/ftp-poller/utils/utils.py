@@ -19,21 +19,23 @@ from flask import current_app
 from paramiko import SFTPFile
 from pay_api.services.queue_publisher import publish_response
 
+from utils.constants import CAS_MESSAGE_TYPE
 from utils.minio import put_object
 
 
-def publish_to_queue(payment_file_list: List[str]):
+def publish_to_queue(payment_file_list: List[str], message_type=CAS_MESSAGE_TYPE, location: str = ''
+                     ):
     """Publish message to the Queue, saying file has been uploaded. Using the event spec."""
     queue_data = {
         'fileSource': 'MINIO',
-        'location': current_app.config['MINIO_BUCKET_NAME']
+        'location': location or current_app.config['MINIO_BUCKET_NAME']
     }
     for file_name in payment_file_list:
         queue_data['fileName'] = file_name
 
         payload = {
             'specversion': '1.x-wip',
-            'type': 'bc.registry.payment.casSettlementUploaded',
+            'type': message_type,
             'source': file_name,
             'id': file_name,
             'time': f'{datetime.now()}',
@@ -53,14 +55,14 @@ def publish_to_queue(payment_file_list: List[str]):
             raise
 
 
-def upload_to_minio(file, file_full_name, sftp_client):
+def upload_to_minio(file, file_full_name, sftp_client, bucket_name):
     """Upload to minio."""
     f: SFTPFile
     with sftp_client.open(file_full_name) as f:
         f.prefetch()
         value_as_bytes = f.read()
         try:
-            put_object(value_as_bytes, file.filename, file.st_size)
+            put_object(value_as_bytes, file.filename, bucket_name, file.st_size, )
         except Exception as e:  # NOQA # pylint: disable=broad-except
             current_app.logger.error(e)
             current_app.logger.error(f'upload to minio failed for the file: {file_full_name}')

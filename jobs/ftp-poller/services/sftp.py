@@ -20,8 +20,6 @@ import paramiko
 from flask import current_app
 from pysftp import Connection, CnOpts
 
-from utils.enums import FTPServer
-
 
 class SFTPService:  # pylint: disable=too-few-public-methods
     """SFTP  Service class."""
@@ -29,7 +27,7 @@ class SFTPService:  # pylint: disable=too-few-public-methods
     DEFAUILT_CONNECT_SERVER = 'CAS'
 
     @staticmethod
-    def get_connection(server_name: str = FTPServer.PAYBC.value) -> Connection:
+    def get_connection(server_name: str = DEFAUILT_CONNECT_SERVER) -> Connection:
         """Return a SFTP connection."""
         # pylint: disable=protected-access
         return SFTPService._connect(server_name)
