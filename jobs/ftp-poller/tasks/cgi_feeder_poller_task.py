@@ -19,7 +19,7 @@ from paramiko.sftp_attr import SFTPAttributes
 
 from services.sftp import SFTPService
 from utils.constants import CGI_ACK_MESSAGE_TYPE, CGI_FEEDBACK_MESSAGE_TYPE
-from utils.utils import publish_to_queue, upload_to_minio
+from utils import utils
 
 
 class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
@@ -36,8 +36,11 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
         with SFTPService.get_connection() as sftp_client:
             try:
                 ftp_dir: str = current_app.config.get('CGI_SFTP_DIRECTORY')
+                print('---------------ftp_dir----****************************************--',ftp_dir)
                 file_list: List[SFTPAttributes] = sftp_client.listdir_attr(ftp_dir)
+                print('*******file_list************',file_list)
                 is_trigger_file_present: bool = cls._is_trigger_file_present(sftp_client, file_list)
+                print('--------is_trigger_file_present---------------------------',is_trigger_file_present)
                 if not is_trigger_file_present:
                     current_app.logger.info('No Trigger file Found to be processed.Not reading any files.')
                     return
@@ -52,12 +55,12 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
                             f'Skipping directory {file_name}.')
                         continue
                     if cls._is_ack_file(file_name):
-                        publish_to_queue([file_name], CGI_ACK_MESSAGE_TYPE)
+                        utils.publish_to_queue([file_name], CGI_ACK_MESSAGE_TYPE)
                         cls._move_file_to_backup(sftp_client, [file_name])
                     elif cls._is_feedback_file(file_name):
                         bucket_name = current_app.config.get('MINIO_CGI_BUCKET_NAME')
-                        upload_to_minio(file, file_full_name, sftp_client, bucket_name)
-                        publish_to_queue([file_name], CGI_FEEDBACK_MESSAGE_TYPE, location=bucket_name)
+                        utils.upload_to_minio(file, file_full_name, sftp_client, bucket_name)
+                        utils.publish_to_queue([file_name], CGI_FEEDBACK_MESSAGE_TYPE, location=bucket_name)
                         cls._move_file_to_backup(sftp_client, [file_name])
                     elif cls._is_a_trigger_file(file_name):
                         cls._move_file_to_backup(sftp_client, [file_name])
@@ -78,7 +81,7 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _is_trigger_file_present(cls, sftp_client, file_list):
         for file in file_list:
-            ftp_dir: str = current_app.config.get('EJV_SFTP_DIRECTORY')
+            ftp_dir: str = current_app.config.get('CGI_SFTP_DIRECTORY')
             file_full_name = ftp_dir + '/' + file.filename
             if cls._is_a_trigger_file(file.filename) and sftp_client.isfile(file_full_name):
                 return True

@@ -90,8 +90,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
                                                    '/ftp-poller/key/cgi_sftp_priv_key')  # full path to the privatey key
     BCREG_CGI_FTP_PRIVATE_KEY_PASSPHRASE = os.getenv('BCREG_CGI_FTP_PRIVATE_KEY_PASSPHRASE', '')
     CGI_SFTP_USER_NAME = os.getenv('CAS_SFTP_USER_NAME', 'foo')
-    CGI_SFTP_BACKUP_DIRECTORY = os.getenv('CGI_SFTP_BACKUP_DIRECTORY', '/data')
-    CGI_SFTP_DIRECTORY = os.getenv('CGI_SFTP_DIRECTORY', '/backup')
+    CGI_SFTP_BACKUP_DIRECTORY = os.getenv('CGI_SFTP_BACKUP_DIRECTORY', '/backup')
+    CGI_SFTP_DIRECTORY = os.getenv('CGI_SFTP_DIRECTORY', '/data')
 
     # CGI File specific configs
     CGI_TRIGGER_FILE_SUFFIX = os.getenv('CGI_TRIGGER_FILE_SUFFIX', '.TRG')
