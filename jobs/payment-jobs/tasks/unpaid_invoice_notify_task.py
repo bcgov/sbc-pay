@@ -55,15 +55,16 @@ class UnpaidInvoiceNotifyTask:  # pylint:disable=too-few-public-methods
 
         for invoice in notification_pending_invoices:
             if invoice.payment_account_id in invoice_by_payment_accounts:
-                invoice_by_payment_accounts[invoice.payment_account_id].total = invoice_by_payment_accounts[invoice.payment_account_id].total + invoice.total
+                invoice_by_payment_accounts[invoice.payment_account_id].total = \
+                    invoice_by_payment_accounts[invoice.payment_account_id].total + invoice.total
             else:
                 invoice_by_payment_accounts[invoice.payment_account_id] = invoice
 
-
-        for key, consolidated_invoice  in invoice_by_payment_accounts.items(): # pylint:disable=unused-variable
+        for key, consolidated_invoice in invoice_by_payment_accounts.items():  # pylint:disable=unused-variable
             # Find all PAD invoices for this account
             try:
-                pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(consolidated_invoice.payment_account_id)
+                pay_account: PaymentAccountModel = \
+                    PaymentAccountModel.find_by_id(consolidated_invoice.payment_account_id)
                 cfs_account = CfsAccountModel.find_by_id(consolidated_invoice.cfs_account_id)
 
                 # emit account mailer event

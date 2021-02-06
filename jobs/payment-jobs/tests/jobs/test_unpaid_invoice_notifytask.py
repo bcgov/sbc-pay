@@ -163,7 +163,6 @@ def test_unpaid_single_invoice_total(session):
             assert mock_mailer.call_args.args[2].get('transactionAmount') == total_invoice2
 
 
-
 def test_unpaid_multiple_invoice_total(session):
     """Assert events are being sent."""
     # Create an account and an invoice for the account
@@ -181,7 +180,6 @@ def test_unpaid_multiple_invoice_total(session):
 
     factory_invoice(payment_account=account, created_on=datetime.now(), total=total_invoice2,
                     payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
-
 
     # created two invoices ; so two events
     time_delay = current_app.config['NOTIFY_AFTER_DAYS']
