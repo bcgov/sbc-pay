@@ -61,8 +61,8 @@ class UnpaidInvoiceNotifyTask:  # pylint:disable=too-few-public-methods
 
 
         for key, consolidated_invoice  in invoice_by_payment_accounts.items(): # pylint:disable=unused-variable
-
-            try:                
+            # Find all PAD invoices for this account
+            try:
                 pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(consolidated_invoice.payment_account_id)
                 cfs_account = CfsAccountModel.find_by_id(consolidated_invoice.cfs_account_id)
 
