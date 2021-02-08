@@ -68,14 +68,19 @@ class DirectPayService(PaymentSystemService, OAuthService):
         index: int = 0
         revenue_item = []
         for payment_line_item in payment_line_items:
-            distribution_code = DistributionCodeModel.find_by_id(payment_line_item.fee_distribution_id)
+            distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
+                payment_line_item.fee_distribution_id)
+
             index = index + 1
             revenue_string = DirectPayService._get_gl_coding(distribution_code, payment_line_item.total)
+
             revenue_item.append(f'{index}:{revenue_string}')
             if payment_line_item.service_fees is not None and payment_line_item.service_fees > 0:
                 index = index + 1
-                revenue_service_fee_string = DirectPayService._get_gl_coding_for_service_fee(
-                    distribution_code, payment_line_item.service_fees)
+                service_fee: DistributionCodeModel = DistributionCodeModel.find_by_id(
+                    distribution_code.service_fee_distribution_code_id)
+                revenue_service_fee_string = DirectPayService._get_gl_coding(service_fee,
+                                                                             payment_line_item.service_fees)
                 revenue_item.append(f'{index}:{revenue_service_fee_string}')
 
         return PAYBC_REVENUE_SEPARATOR.join(revenue_item)
@@ -83,18 +88,9 @@ class DirectPayService(PaymentSystemService, OAuthService):
     @staticmethod
     def _get_gl_coding(distribution_code: DistributionCodeModel, total):
         return f'{distribution_code.client}.{distribution_code.responsibility_centre}.' \
-            f'{distribution_code.service_line}.{distribution_code.stob}.{distribution_code.project_code}' \
-            f'.000000.0000' \
-            f':{format(total, DECIMAL_PRECISION)}'
-
-    @staticmethod
-    def _get_gl_coding_for_service_fee(distribution_code: DistributionCodeModel, sevice_fee):
-        return f'{distribution_code.service_fee_client}.{distribution_code.service_fee_responsibility_centre}.' \
-            f'{distribution_code.service_fee_line}.{distribution_code.service_fee_stob}.' \
-            f'{distribution_code.service_fee_project_code}.' \
-            f'000000.0000' \
-            f':{format(sevice_fee, DECIMAL_PRECISION)}'
-        # todo is it the right place to pad the number with traling zeros
+               f'{distribution_code.service_line}.{distribution_code.stob}.{distribution_code.project_code}' \
+               f'.000000.0000' \
+               f':{format(total, DECIMAL_PRECISION)}'
 
     def get_payment_system_code(self):
         """Return DIRECT_PAY as the system code."""
@@ -180,7 +176,6 @@ class DirectPayService(PaymentSystemService, OAuthService):
             if response_json.get('paymentstatus') == STATUS_PAID:
                 return response_json.get('trnorderid'), parser.parse(
                     response_json.get('trndate')), float(response_json.get('trnamount')),
-
         return None
 
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:

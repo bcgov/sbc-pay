@@ -497,15 +497,9 @@ def get_distribution_code_payload(client: str = '100'):
     """Return distribution code payload."""
     return {
         'client': client,
-        'memoName': 'Test Memo Line',
+        'name': 'Test Memo Line',
         'projectCode': '1111111',
         'responsibilityCentre': '22222',
-        'serviceFeeClient': '101',
-        'serviceFeeLine': '1111111',
-        'serviceFeeMemoName': 'Test Memo Line Service Fee',
-        'serviceFeeProjectCode': '1111111',
-        'serviceFeeResponsibilityCentre': '22222',
-        'serviceFeeStob': '9001',
         'stob': '9000',
         'serviceLine': '20244',
         'startDate': '2020-07-29'

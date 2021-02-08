@@ -107,6 +107,7 @@ def test_update_distribution(session, public_user_mock, stan_server, monkeypatch
     assert invoice.invoice_status_code == InvoiceStatus.PAID.value
 
     # Update distribution code
+    distribution_code['client'] = '000'
     distribution_code_svc.save_or_update(distribution_code, distribution_id)
     invoice = InvoiceModel.find_by_id(invoice.id)
     assert invoice.invoice_status_code == InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value

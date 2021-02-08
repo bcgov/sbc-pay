@@ -15,12 +15,6 @@
       "memoName": "Test Memo Line",
       "projectCode": "1111111",
       "responsibilityCentre": "22222",
-      "serviceFeeClient": "101",
-      "serviceFeeLine": "1111111",
-      "serviceFeeMemoName": "Test Memo Line Service Fee",
-      "serviceFeeProjectCode": "1111111",
-      "serviceFeeResponsibilityCentre": "22222",
-      "serviceFeeStob": "9001",
       "serviceLine": "1111111",
       "startDate": "2020-07-27",
       "stob": "9000"
@@ -30,11 +24,6 @@
     "client",
     "projectCode",
     "responsibilityCentre",
-    "serviceFeeClient",
-    "serviceFeeLine",
-    "serviceFeeProjectCode",
-    "serviceFeeResponsibilityCentre",
-    "serviceFeeStob",
     "serviceLine",
     "stob"
   ],
@@ -49,36 +38,6 @@
         "100"
       ]
     },
-    "createdBy": {
-      "$id": "#/properties/createdBy",
-      "type": "string",
-      "title": "createdBy",
-      "description": "Creator's id.",
-      "default": "",
-      "examples": [
-        "SKARIYIL@IDIR"
-      ]
-    },
-    "createdName": {
-      "$id": "#/properties/createdName",
-      "type": "string",
-      "title": "createdName",
-      "description": "Creator's name.",
-      "default": "",
-      "examples": [
-        "Sumesh Kariyil"
-      ]
-    },
-    "createdOn": {
-      "$id": "#/properties/createdOn",
-      "type": "string",
-      "title": "createdOn",
-      "description": "Created time.",
-      "default": "",
-      "examples": [
-        "2020-07-27T11:09:36.610122+00:00"
-      ]
-    },
     "distributionCodeId": {
       "$id": "#/properties/distributionCodeId",
       "type": "integer",
@@ -86,20 +45,21 @@
       "description": "Unique identifier for distribution code.",
       "default": 0,
       "examples": [
-        1,2
+        1,
+        2
       ]
     },
     "endDate": {
       "$id": "#/properties/endDate",
-      "type": "string",
+      "type": ["string", "null"],
       "title": "endDate",
       "description": "End date for the distribution code."
     },
-    "memoName": {
-      "$id": "#/properties/memoName",
-      "type": "string",
-      "title": "memo name",
-      "description": "Memo name used for CFS.",
+    "name": {
+      "$id": "#/properties/name",
+      "type": ["string", "null"],
+      "title": "name",
+      "description": "Name.",
       "default": ""
     },
     "projectCode": {
@@ -122,60 +82,6 @@
         "R10000"
       ]
     },
-    "serviceFeeClient": {
-      "$id": "#/properties/serviceFeeClient",
-      "type": "string",
-      "title": "The serviceFeeClient schema",
-      "description": "Service Fee client code.",
-      "default": "",
-      "examples": [
-        "C1000"
-      ]
-    },
-    "serviceFeeLine": {
-      "$id": "#/properties/serviceFeeLine",
-      "type": "string",
-      "title": "serviceFeeLine",
-      "description": "service line value for the service fee.",
-      "default": "",
-      "examples": [
-        "S10000"
-      ]
-    },
-    "serviceFeeMemoName": {
-      "$id": "#/properties/serviceFeeMemoName",
-      "type": "string",
-      "title": "The serviceFeeMemoName schema",
-      "description": "CFS Memo name for the service fee.",
-      "default": ""
-    },
-    "serviceFeeProjectCode": {
-      "$id": "#/properties/serviceFeeProjectCode",
-      "type": "string",
-      "title": "The serviceFeeProjectCode schema",
-      "description": "Project code for the service fee.",
-      "default": ""
-    },
-    "serviceFeeResponsibilityCentre": {
-      "$id": "#/properties/serviceFeeResponsibilityCentre",
-      "type": "string",
-      "title": "The serviceFeeResponsibilityCentre schema",
-      "description": "Responsibility centre for service fee.",
-      "default": "",
-      "examples": [
-        "R10000"
-      ]
-    },
-    "serviceFeeStob": {
-      "$id": "#/properties/serviceFeeStob",
-      "type": "string",
-      "title": "serviceFeeStob",
-      "description": "STOB value for service fee.",
-      "default": "",
-      "examples": [
-        "ST10000"
-      ]
-    },
     "serviceLine": {
       "$id": "#/properties/serviceLine",
       "type": "string",
@@ -188,7 +94,7 @@
     },
     "startDate": {
       "$id": "#/properties/startDate",
-      "type": "string",
+      "type": ["string", "null"],
       "title": "The startDate schema",
       "description": "Effective start date for the distribution.",
       "default": "",
@@ -206,23 +112,17 @@
         "ST10000"
       ]
     },
-    "updatedBy": {
-      "$id": "#/properties/updatedBy",
-      "type": "string",
-      "title": "The updatedBy schema",
-      "description": "Updated by id."
+    "serviceFeeDistributionCodeId": {
+      "$id": "#/properties/serviceFeeDistributionCodeId",
+      "type": ["integer", "null"],
+      "title": "serviceFeeDistributionCodeId",
+      "description": "Identifier for service distribution code."
     },
-    "updatedName": {
-      "$id": "#/properties/updatedName",
-      "type": "string",
-      "title": "The updatedName schema",
-      "description": "Updated user's name."
-    },
-    "updatedOn": {
-      "$id": "#/properties/updatedOn",
-      "type": "string",
-      "title": "The updatedOn schema",
-      "description": "updated date value."
+    "disbursementDistributionCodeId": {
+      "$id": "#/properties/disbursementDistributionCodeId",
+      "type": ["integer", "null"],
+      "title": "disbursementDistributionCodeId",
+      "description": "Identifier for disbursement distribution code."
     }
   },
   "additionalProperties": true

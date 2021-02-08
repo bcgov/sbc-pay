@@ -182,6 +182,9 @@ def auto(docker_services, app):
     """Spin up docker containers."""
     if app.config['USE_DOCKER_MOCK']:
         docker_services.start('minio')
+        docker_services.start('proxy')
+        docker_services.start('paybc')
+        docker_services.start('nats')
 
 
 @pytest.fixture(scope='function')

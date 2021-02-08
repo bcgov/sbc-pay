@@ -433,8 +433,7 @@ def test_cc_payment_with_no_contact_info(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': '1234'}
 
     rv = client.post('/api/v1/payment-requests', data=json.dumps(
-        get_payment_request_with_no_contact_info(payment_method='CC', corp_type='PPR')),
-                     headers=headers)
+        get_payment_request_with_no_contact_info(payment_method='CC', filing_type_code='OTANN')), headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
     assert schema_utils.validate(rv.json, 'invoice')[0]
