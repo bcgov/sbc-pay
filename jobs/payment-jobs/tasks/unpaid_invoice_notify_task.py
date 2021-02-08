@@ -55,21 +55,22 @@ class UnpaidInvoiceNotifyTask:  # pylint:disable=too-few-public-methods
 
         for invoice in notification_pending_invoices:
             if invoice.payment_account_id in invoice_by_payment_accounts:
-                invoice_by_payment_accounts[invoice.payment_account_id].total = \
-                    invoice_by_payment_accounts[invoice.payment_account_id].total + invoice.total
+                invoice_by_payment_accounts[invoice.payment_account_id] = \
+                    invoice_by_payment_accounts[invoice.payment_account_id] + invoice.total
             else:
-                invoice_by_payment_accounts[invoice.payment_account_id] = invoice
+                invoice_by_payment_accounts[invoice.payment_account_id] = invoice.total
 
-        for key, consolidated_invoice in invoice_by_payment_accounts.items():  # pylint:disable=unused-variable
+
+        for payment_account_id, consolidated_invoice in invoice_by_payment_accounts.items():  # pylint:disable=unused-variable
             # Find all PAD invoices for this account
             try:
                 pay_account: PaymentAccountModel = \
-                    PaymentAccountModel.find_by_id(consolidated_invoice.payment_account_id)
-                cfs_account = CfsAccountModel.find_by_id(consolidated_invoice.cfs_account_id)
+                    PaymentAccountModel.find_by_id(payment_account_id)
 
+                cfs_account =  CfsAccountModel.find_effective_by_account_id(payment_account_id)
+                
                 # emit account mailer event
-
-                addition_params_to_mailer = {'transactionAmount': consolidated_invoice.total,
+                addition_params_to_mailer = {'transactionAmount': consolidated_invoice,
                                              'cfsAccountId': cfs_account.cfs_account,
                                              'authAccountId': pay_account.auth_account_id,
                                              }
