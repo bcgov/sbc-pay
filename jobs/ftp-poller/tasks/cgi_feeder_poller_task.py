@@ -36,17 +36,14 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
         with SFTPService.get_connection() as sftp_client:
             try:
                 ftp_dir: str = current_app.config.get('CGI_SFTP_DIRECTORY')
-                print('---------------ftp_dir----****************************************--',ftp_dir)
                 file_list: List[SFTPAttributes] = sftp_client.listdir_attr(ftp_dir)
-                print('*******file_list************',file_list)
                 is_trigger_file_present: bool = cls._is_trigger_file_present(sftp_client, file_list)
-                print('--------is_trigger_file_present---------------------------',is_trigger_file_present)
                 if not is_trigger_file_present:
                     current_app.logger.info('No Trigger file Found to be processed.Not reading any files.')
                     return
 
                 current_app.logger.info(
-                    f'Found {len(file_list)} to be processed.This inlcudes all files in the folder.')
+                    f'Found {len(file_list)} to be processed.This includes all files in the folder.')
                 for file in file_list:
                     file_name = file.filename
                     file_full_name = ftp_dir + '/' + file_name
