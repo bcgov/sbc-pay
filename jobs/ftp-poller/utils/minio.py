@@ -19,12 +19,12 @@ from minio import Minio
 from urllib3 import HTTPResponse
 
 
-def put_object(value_as_bytes, file_name: str, file_size: int = 0):
+def put_object(value_as_bytes, file_name: str, bucket_name, file_size: int = 0):
     """Return a pre-signed URL for new doc upload."""
     current_app.logger.debug(f'Creating pre-signed URL for {file_name}')
     minio_client: Minio = _get_client()
     value_as_stream = io.BytesIO(value_as_bytes)
-    minio_client.put_object(current_app.config['MINIO_BUCKET_NAME'], file_name, value_as_stream, file_size)
+    minio_client.put_object(bucket_name, file_name, value_as_stream, file_size)
 
 
 def get_object(file_name: str) -> HTTPResponse:
