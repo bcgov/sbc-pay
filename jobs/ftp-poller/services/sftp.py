@@ -14,6 +14,7 @@
 """This module is a wrapper for SFTP Connection object."""
 import json
 from base64 import decodebytes
+from typing import Dict
 
 import paramiko
 from flask import current_app
@@ -23,40 +24,44 @@ from pysftp import Connection, CnOpts
 class SFTPService:  # pylint: disable=too-few-public-methods
     """SFTP  Service class."""
 
-    __instance: Connection = None
+    DEFAUILT_CONNECT_SERVER = 'CAS'
 
     @staticmethod
-    def get_connection() -> Connection:
+    def get_connection(server_name: str = DEFAUILT_CONNECT_SERVER) -> Connection:
         """Return a SFTP connection."""
         # pylint: disable=protected-access
-        if not SFTPService.__instance or not SFTPService.__instance._sftp_live:
-            SFTPService.__instance = SFTPService._connect()
-        return SFTPService.__instance
+        return SFTPService._connect(server_name)
 
     @staticmethod
-    def _connect() -> Connection:
+    def _connect(server_name: str) -> Connection:
 
-        sftp_host: str = current_app.config.get('CAS_SFTP_HOST')
+        sftp_configs = current_app.config.get('SFTP_CONFIGS')
+        # if not passed , connect to CAS server always. to make the existing code work
+        if not server_name or server_name not in sftp_configs.keys():
+            server_name = SFTPService.DEFAUILT_CONNECT_SERVER
+
+        connect_configs = sftp_configs.get(server_name)
+
+        sftp_host: str = connect_configs.get('SFTP_HOST')
         cnopts = CnOpts()
         # only for local development set this to false .
-        if current_app.config.get('SFTP_VERIFY_HOST').lower() == 'false':
+        if connect_configs.get('SFTP_VERIFY_HOST').lower() == 'false':
             cnopts.hostkeys = None
         else:
-            host_key = current_app.config.get('CAS_SFTP_HOST_KEY')
-            ftp_host_key_data = current_app.config.get('CAS_SFTP_HOST_KEY').encode()
+            ftp_host_key_data = connect_configs.get('SFTP_HOST_KEY').encode()
             key = paramiko.RSAKey(data=decodebytes(ftp_host_key_data))
             cnopts.hostkeys.add(sftp_host, 'ssh-rsa', key)
 
-        sftp_port: int = current_app.config.get('CAS_SFTP_PORT')
+        sftp_port: int = connect_configs.get('SFTP_PORT')
         sft_credentials = {
-            'username': current_app.config.get('CAS_SFTP_USER_NAME'),
+            'username': connect_configs.get('SFTP_USERNAME'),
             # private_key should be the absolute path to where private key file lies since sftp
-            'private_key': current_app.config.get('BCREG_FTP_PRIVATE_KEY_LOCATION'),
-            'private_key_pass': current_app.config.get('BCREG_FTP_PRIVATE_KEY_PASSPHRASE')
+            'private_key': connect_configs.get('FTP_PRIVATE_KEY_LOCATION'),
+            'private_key_pass': connect_configs.get('BCREG_FTP_PRIVATE_KEY_PASSPHRASE')
         }
 
         # to support local testing. SFTP CAS server should run in private key mode
-        if password := current_app.config.get('CAS_SFTP_PASSWORD'):
+        if password := connect_configs.get('SFTP_PASSWORD'):
             sft_credentials['password'] = password
 
         sftp_connection = Connection(host=sftp_host, **sft_credentials, cnopts=cnopts, port=sftp_port)
