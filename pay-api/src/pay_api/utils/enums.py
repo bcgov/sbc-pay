@@ -166,3 +166,12 @@ class CorpType(Enum):
     """Corp Type."""
 
     NRO = 'NRO'
+
+
+class DisbursementStatus(Enum):
+    """Disbursement status codes."""
+
+    UPLOADED = 'UPLOADED'
+    ACKNOWLEDGED = 'ACKNOWLEDGED'
+    ERRORED = 'ERRORED'
+    COMPLETED = 'COMPLETED'

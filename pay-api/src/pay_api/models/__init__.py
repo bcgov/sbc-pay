@@ -45,6 +45,7 @@ from .statement_invoices import StatementInvoices, StatementInvoicesSchema
 from .statement_recipients import StatementRecipients, StatementRecipientsSchema
 from .notification_status_code import NotificationStatusCode, NotificationStatusCodeSchema
 from .ejv_file import EjvFile
+from .ejv_header import EjvHeader
 from .ejv_invoice_link import EjvInvoiceLink
 from .invoice_batch import InvoiceBatch
 from .invoice_batch_link import InvoiceBatchLink

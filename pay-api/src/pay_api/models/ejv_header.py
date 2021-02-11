@@ -13,24 +13,19 @@
 # limitations under the License.
 """Model to handle Electronic Journal Voucher distributions and payment."""
 
-from datetime import datetime
-
-from sqlalchemy import Boolean
 from sqlalchemy import ForeignKey
 
 from .base_model import BaseModel
 from .db import db
 
 
-class EjvFile(BaseModel):  # pylint: disable=too-many-instance-attributes
-    """This class manages all of the base data about EJV distributions and payment."""
+class EjvHeader(BaseModel):  # pylint: disable=too-many-instance-attributes
+    """This class manages all of the base data about EJV Header."""
 
-    __tablename__ = 'ejv_files'
+    __tablename__ = 'ejv_headers'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
-    completed_on = db.Column('completed_on', db.DateTime, nullable=True)
-    is_distribution = db.Column('is_distribution', Boolean(), default=True)
-    file_ref = db.Column('file_ref', db.String, nullable=False, index=True)
     disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
-    feedback_file_ref = db.Column('feedback_file_ref', db.String, nullable=True)
+    ejv_file_id = db.Column(db.Integer, ForeignKey('ejv_files.id'), nullable=False)
+    partner_code = db.Column(db.String(10), ForeignKey('corp_types.code'), nullable=True)  # For partners
+    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True)  # For gov accounts

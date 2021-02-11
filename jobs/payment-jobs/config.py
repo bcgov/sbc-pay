@@ -141,6 +141,19 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY')
 
+    # EJV config variables
+    CGI_FEEDER_NUMBER = os.getenv('CGI_FEEDER_NUMBER')
+    CGI_MINISTRY_PREFIX = os.getenv('CGI_MINISTRY_PREFIX')
+    CGI_DISBURSEMENT_DESC = os.getenv('CGI_DISBURSEMENT_DESC', 'BCREGISTRIES {} {} DISBURSEMENTS')
+    CGI_MESSAGE_VERSION = os.getenv('CGI_MESSAGE_VERSION', '4010')
+
+    # Minio configuration values
+    MINIO_ENDPOINT = os.getenv('MINIO_ENDPOINT')
+    MINIO_ACCESS_KEY = os.getenv('MINIO_ACCESS_KEY')
+    MINIO_ACCESS_SECRET = os.getenv('MINIO_ACCESS_SECRET')
+    MINIO_BUCKET_NAME = os.getenv('MINIO_EJV_BUCKET_NAME', 'cgi-ejv')
+    MINIO_SECURE = True
+
     # the day on which mail to get.put 1 to get mail next day of creation.put 2 to get mails day after tomorrow.
     NOTIFY_AFTER_DAYS = int(os.getenv('NOTIFY_AFTER_DAYS', 8))  # to get full 7 days tp pass, u need to put 8.
 
