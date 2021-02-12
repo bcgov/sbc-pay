@@ -15,9 +15,9 @@
 
 import os
 import tempfile
+import time
 from datetime import datetime
 from typing import List
-import time
 
 from flask import current_app
 from pay_api.models import CorpType as CorpTypeModel
@@ -32,7 +32,7 @@ from pay_api.utils.enums import DisbursementStatus, InvoiceStatus
 from pay_api.utils.util import get_fiscal_year, get_local_formatted_date_time
 
 from utils.minio import put_object
-
+from utils.sftp import upload_to_ftp
 
 DELIMITER = chr(29)  # '<0x1d>'
 EMPTY = ''
@@ -172,16 +172,24 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
         ejv_content = f'{batch_header}{ejv_content}{batch_trailer}'
         # Create a file add this content.
         file_path: str = tempfile.gettempdir()
-        with open(f'{file_path}/{file_name}', 'a+') as jv_file:
+        file_path_with_name = f'{file_path}/{file_name}'
+        trg_file_path = f'{file_path_with_name}.TRG'
+        with open(file_path_with_name, 'a+') as jv_file:
             jv_file.write(ejv_content)
             jv_file.close()
+
+        # TRG File
+        with open(trg_file_path, 'a+') as trg_file:
+            trg_file.write('')
+            trg_file.close()
+
+        # Upload file and trg to FTP
+        upload_to_ftp(file_path_with_name, trg_file_path)
 
         # Upload to MINIO
         cls._upload_to_minio(content=ejv_content.encode(),
                              file_name=file_name,
-                             file_size=os.stat(f'{file_path}/{file_name}').st_size)
-
-        # TODO Upload to FTP
+                             file_size=os.stat(file_path_with_name).st_size)
 
         # commit changes to DB
         db.session.commit()
@@ -230,7 +238,6 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
     def _upload_to_minio(cls, content, file_name, file_size):
         """Upload to minio."""
         try:
-            print(file_name, file_size)
             put_object(content, file_name, file_size)
         except Exception as e:  # NOQA # pylint: disable=broad-except
             current_app.logger.error(e)

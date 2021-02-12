@@ -35,7 +35,8 @@
             "pay-api",
             "sentry",
             "jwt",
-            "payment-jobs"
+            "payment-jobs",
+            "ftp-poller"
         ]
     },
     {

@@ -78,3 +78,11 @@ services:
     command: >
       mock -p 4010 --host 0.0.0.0
       https://raw.githubusercontent.com/bcgov/sbc-auth/development/docs/docs/api_contract/notify-api-1.0.0.yaml
+  sftp:
+    image: atmoz/sftp
+    volumes:
+      - ./ftp/:/home/ftp_user/data
+      - ./ftp-backup:/home/ftp_user/backup
+    ports:
+      - "2222:22"
+    command: ftp_user:ftp_pass:1002

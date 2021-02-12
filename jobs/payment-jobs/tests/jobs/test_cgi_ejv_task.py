@@ -27,7 +27,7 @@ from .factory import (
     factory_payment_line_item)
 
 
-def test_disbursement_for_partners(session):
+def test_disbursement_for_partners(session, monkeypatch):
     """Test disbursement for partners.
 
     Steps:
@@ -36,6 +36,7 @@ def test_disbursement_for_partners(session):
     3) Create paid invoices for these partners.
     4) Run the job and assert results.
     """
+    monkeypatch.setattr('pysftp.Connection.put', lambda *args, **kwargs: None)
     corp_type: CorpTypeModel = CorpTypeModel.find_by_code('VS')
     corp_type.batch_type = 'GI'
     corp_type.save()
