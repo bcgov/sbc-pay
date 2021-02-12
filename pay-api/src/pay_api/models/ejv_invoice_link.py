@@ -26,4 +26,4 @@ class EjvInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
-    ejv_file_id = db.Column(db.Integer, ForeignKey('ejv_files.id'), nullable=False)
+    ejv_header_id = db.Column(db.Integer, ForeignKey('ejv_headers.id'), nullable=False)

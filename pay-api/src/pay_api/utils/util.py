@@ -125,9 +125,9 @@ def get_local_time(date_val: datetime):
     return date_val
 
 
-def get_local_formatted_date_time(date_val: datetime):
+def get_local_formatted_date_time(date_val: datetime, dt_format: str = '%Y-%m-%d %H:%M:%S'):
     """Return formatted local time."""
-    return get_local_time(date_val).strftime('%Y-%m-%d %H:%M:%S')
+    return get_local_time(date_val).strftime(dt_format)
 
 
 def get_local_formatted_date(date_val: datetime):
@@ -139,6 +139,14 @@ def generate_transaction_number(txn_number: str) -> str:
     """Return transaction number for invoices."""
     prefix = current_app.config.get('CFS_INVOICE_PREFIX')
     return f'{prefix}{txn_number:0>8}'
+
+
+def get_fiscal_year(date_val: datetime = datetime.now()) -> int:
+    """Return fiscal year for the date."""
+    fiscal_year: int = date_val.year
+    if date_val.month <= 3:  # Up to March 31, use the previous year.
+        fiscal_year = fiscal_year - 1
+    return fiscal_year
 
 
 def generate_receipt_number(payment_id: str) -> str:
