@@ -174,6 +174,9 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     NATS_ACCOUNT_CLIENT_NAME = os.getenv('NATS_ACCOUNT_CLIENT_NAME', 'account.events.worker')
     NATS_ACCOUNT_SUBJECT = os.getenv('NATS_ACCOUNT_SUBJECT', 'account.events')
 
+    # Secret key for encrypting bank account
+    ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY', 'test')
+
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
     """Production environment configuration."""

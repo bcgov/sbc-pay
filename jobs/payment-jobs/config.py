@@ -19,7 +19,6 @@ import sys
 
 from dotenv import find_dotenv, load_dotenv
 
-
 # this will load all the envars from a .env file located in the project root (api)
 load_dotenv(find_dotenv())
 
@@ -157,6 +156,21 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # the day on which mail to get.put 1 to get mail next day of creation.put 2 to get mails day after tomorrow.
     NOTIFY_AFTER_DAYS = int(os.getenv('NOTIFY_AFTER_DAYS', 8))  # to get full 7 days tp pass, u need to put 8.
 
+    # CGI FTP Configuration
+    CGI_SFTP_HOST = os.getenv('CAS_SFTP_HOST', 'localhost')
+    CGI_SFTP_USERNAME = os.getenv('CGI_SFTP_USER_NAME')
+    CGI_SFTP_PASSWORD = os.getenv('CGI_SFTP_PASSWORD')
+    CGI_SFTP_VERIFY_HOST = os.getenv('SFTP_VERIFY_HOST', 'True')
+    CGI_SFTP_HOST_KEY = os.getenv('CAS_SFTP_HOST_KEY', '')
+    CGI_SFTP_PORT = int(os.getenv('CAS_SFTP_PORT', 22))
+    BCREG_CGI_FTP_PRIVATE_KEY_LOCATION = os.getenv('BCREG_CGI_FTP_PRIVATE_KEY_LOCATION',
+                                                   '/payment-jobs/key/cgi_sftp_priv_key')
+    BCREG_FTP_PRIVATE_KEY_PASSPHRASE = os.getenv('BCREG_CGI_FTP_PRIVATE_KEY_PASSPHRASE')
+    CGI_SFTP_DIRECTORY = os.getenv('CGI_SFTP_DIRECTORY', '/data')
+
+    # CGI File specific configs
+    CGI_TRIGGER_FILE_SUFFIX = os.getenv('CGI_TRIGGER_FILE_SUFFIX', '.TRG')
+
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     TESTING = False
@@ -193,6 +207,14 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
 
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY', '1234')
+
+    # Setting values from the sftp docker container
+    CGI_SFTP_VERIFY_HOST = 'false'
+    CGI_SFTP_USERNAME = 'ftp_user'
+    CGI_SFTP_PASSWORD = 'ftp_pass'
+    CGI_SFTP_PORT = 2222
+    CGI_SFTP_DIRECTORY = '/data/'
+    CGI_SFTP_HOST = 'localhost'
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
