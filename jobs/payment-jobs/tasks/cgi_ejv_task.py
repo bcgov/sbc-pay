@@ -69,6 +69,7 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
         fiscal_year = get_fiscal_year(today)
         feeder_number = current_app.config.get('CGI_FEEDER_NUMBER')
         ministry = current_app.config.get('CGI_MINISTRY_PREFIX')
+        trg_suffix = current_app.config.get('CGI_TRIGGER_FILE_SUFFIX')
 
         # Create file name
         date_time = get_local_formatted_date_time(datetime.now(), dt_format='%Y%m%d%H%M%S')
@@ -173,7 +174,7 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
         # Create a file add this content.
         file_path: str = tempfile.gettempdir()
         file_path_with_name = f'{file_path}/{file_name}'
-        trg_file_path = f'{file_path_with_name}.TRG'
+        trg_file_path = f'{file_path_with_name}.{trg_suffix}'
         with open(file_path_with_name, 'a+') as jv_file:
             jv_file.write(ejv_content)
             jv_file.close()
