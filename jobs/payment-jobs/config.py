@@ -172,8 +172,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CGI_TRIGGER_FILE_SUFFIX = os.getenv('CGI_TRIGGER_FILE_SUFFIX', '.TRG')
 
     HOLIDAYS_LIST = os.getenv('HOLIDAYS_LIST', default='2021-Jan-01,2021-Feb-15,2021-Apr-02,2021-May-24,2021-Jul-1, '
-                                                  '2021-Jul-1, 2021-Aug-2, 2021-Sep-6,2021-Oct-11, 2021-Nov-11, '
-                                                  '2021-Dec-25')
+                                                       '2021-Jul-1, 2021-Aug-2, 2021-Sep-6,2021-Oct-11, 2021-Nov-11, '
+                                                       '2021-Dec-25')
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
