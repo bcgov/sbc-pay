@@ -1,5 +1,5 @@
 -e git+https://github.com/bcgov/sbc-common-components.git@e58dc66d58f0c783ffad5452673d9d4f110cb376#egg=sbc_common_components&subdirectory=python
--e git+https://github.com/bcgov/sbc-pay.git@6ed3adfd48bad3e1f735a570effe0c9f6c9e41c0#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-pay.git@50572c45ae9cf24739968f49a63cfa9209ff5f65#egg=pay_api&subdirectory=pay-api
 Flask-Caching==1.9.0
 Flask-Migrate==2.6.0
 Flask-Moment==0.11.0
@@ -28,7 +28,7 @@ cffi==1.14.5
 chardet==4.0.0
 click==7.1.2
 croniter==1.0.6
-cryptography==3.4.4
+cryptography==3.4.6
 dpath==2.0.1
 ecdsa==0.14.1
 flask-jwt-oidc==0.2.0
@@ -58,8 +58,8 @@ python-editor==1.0.4
 python-jose==3.2.0
 pytz==2021.1
 requests==2.25.1
-rsa==4.7
-sentry-sdk==0.20.1
+rsa==4.7.1
+sentry-sdk==0.20.2
 six==1.15.0
 threadloop==1.0.2
 thrift==0.13.0
