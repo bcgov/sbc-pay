@@ -1,5 +1,5 @@
--e git+https://github.com/bcgov/sbc-common-components.git@43886aaebe52d89cc8eda2d50b2035cb66659143#egg=sbc_common_components&subdirectory=python
--e git+https://github.com/sumesh-aot/sbc-pay.git@cb72a4df0f105ec90a4296b61bb17b7043b4582c#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-common-components.git@e58dc66d58f0c783ffad5452673d9d4f110cb376#egg=sbc_common_components&subdirectory=python
+-e git+https://github.com/bcgov/sbc-pay.git@6ed3adfd48bad3e1f735a570effe0c9f6c9e41c0#egg=pay_api&subdirectory=pay-api
 Flask-Caching==1.9.0
 Flask-Migrate==2.6.0
 Flask-Moment==0.11.0
@@ -24,11 +24,11 @@ bcrypt==3.2.0
 blinker==1.4
 cachelib==0.1.1
 certifi==2020.12.5
-cffi==1.14.4
+cffi==1.14.5
 chardet==4.0.0
 click==7.1.2
 croniter==1.0.6
-cryptography==3.3.1
+cryptography==3.4.4
 dpath==2.0.1
 ecdsa==0.14.1
 flask-jwt-oidc==0.2.0
@@ -42,7 +42,7 @@ jaeger-client==4.4.0
 jsonschema==3.2.0
 marshmallow-sqlalchemy==0.23.1
 marshmallow==3.0.0rc7
-minio==7.0.1
+minio==7.0.2
 natsort==7.1.1
 opentracing==2.4.0
 paramiko==2.7.2
@@ -59,7 +59,7 @@ python-jose==3.2.0
 pytz==2021.1
 requests==2.25.1
 rsa==4.7
-sentry-sdk==0.19.5
+sentry-sdk==0.20.1
 six==1.15.0
 threadloop==1.0.2
 thrift==0.13.0
