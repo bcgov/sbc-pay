@@ -18,7 +18,6 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from typing import Dict
-from urllib.parse import unquote_plus
 
 from flask import current_app
 from sentry_sdk import capture_message
@@ -35,10 +34,9 @@ from pay_api.services.receipt import Receipt
 from pay_api.utils.enums import PaymentStatus, TransactionStatus, InvoiceReferenceStatus, \
     InvoiceStatus, PaymentMethod
 from pay_api.utils.errors import Error
-from pay_api.utils.util import get_pay_subject_name, is_valid_redirect_url, parse_url_params
+from pay_api.utils.util import get_pay_subject_name, is_valid_redirect_url
 from .payment import Payment
 from .queue_publisher import publish_response
-from ..utils.paybc_transaction_error_message import PAYBC_TRANSACTION_ERROR_MESSAGE_DICT
 
 
 class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -383,15 +381,9 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             transaction_dao.status_code = TransactionStatus.FAILED.value
 
         # check if the pay_response_url contains any failure status
-        if pay_response_url is not None and 'trnApproved' in pay_response_url and not txn_reason_code:
-            parsed_args = parse_url_params(pay_response_url)
-            trn_approved: str = parsed_args.get('trnApproved')
-            # Check if trnApproved is 1=Success, 0=Declined
-            if trn_approved != '1':
-                # map the error code
-                message_text = unquote_plus(parsed_args.get('messageText'))
-                pay_system_reason_code = PAYBC_TRANSACTION_ERROR_MESSAGE_DICT.get(message_text, 'GENERIC_ERROR')
-                transaction_dao.pay_system_reason_code = pay_system_reason_code
+        if not txn_reason_code:
+            pay_system_reason_code = pay_system_service.get_pay_system_reason_code(pay_response_url)
+            transaction_dao.pay_system_reason_code = pay_system_reason_code
 
         # Save response URL
         transaction_dao.transaction_end_time = datetime.now()
