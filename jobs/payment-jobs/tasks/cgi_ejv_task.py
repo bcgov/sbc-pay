@@ -29,7 +29,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import db
 from pay_api.utils.enums import DisbursementStatus, InvoiceStatus
-from pay_api.utils.util import get_fiscal_year, get_local_formatted_date_time
+from pay_api.utils.util import get_fiscal_year, get_nearest_business_day
 
 from utils.minio import put_object
 from utils.sftp import upload_to_ftp
@@ -72,7 +72,7 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
         trg_suffix = current_app.config.get('CGI_TRIGGER_FILE_SUFFIX')
 
         # Create file name
-        date_time = get_local_formatted_date_time(datetime.now(), dt_format='%Y%m%d%H%M%S')
+        date_time = get_nearest_business_day(datetime.now()).strftime('%Y%m%d%H%M%S')
         file_name: str = f'INBOX.F{feeder_number}.{date_time}'
         current_app.logger.info('file_name %s', file_name)
 
@@ -227,7 +227,7 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
     def _get_effective_date(cls):
         """Return effective date.."""
         # TODO Use current date now, need confirmation
-        return datetime.now().strftime('%Y%m%d')
+        return get_nearest_business_day(datetime.now()).strftime('%Y%m%d')
 
     @classmethod
     def _format_amount(cls, amount: float):
