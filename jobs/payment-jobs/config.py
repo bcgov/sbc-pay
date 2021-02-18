@@ -169,7 +169,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CGI_SFTP_DIRECTORY = os.getenv('CGI_SFTP_DIRECTORY', '/data')
 
     # CGI File specific configs
-    CGI_TRIGGER_FILE_SUFFIX = os.getenv('CGI_TRIGGER_FILE_SUFFIX', '.TRG')
+    CGI_TRIGGER_FILE_SUFFIX = os.getenv('CGI_TRIGGER_FILE_SUFFIX', 'TRG')
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
