@@ -14,6 +14,8 @@
 """Error definitions."""
 
 PAYBC_TRANSACTION_ERROR_MESSAGE_DICT = {
+    # code , value. the value is used by UI to do the mapping.
+    # maps message from paybc to a code.
     'PLEASE TRY AGAIN': 'PLEASE_TRY_AGAIN',
     'DECLINED': 'DECLINED',
     'INVALID CARD NUMBER': 'INVALID_CARD_NUMBER',
