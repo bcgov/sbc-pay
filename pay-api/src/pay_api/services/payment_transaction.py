@@ -18,6 +18,7 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from typing import Dict
+from urllib.parse import unquote_plus
 
 from flask import current_app
 from sentry_sdk import capture_message
@@ -34,9 +35,10 @@ from pay_api.services.receipt import Receipt
 from pay_api.utils.enums import PaymentStatus, TransactionStatus, InvoiceReferenceStatus, \
     InvoiceStatus, PaymentMethod
 from pay_api.utils.errors import Error
-from pay_api.utils.util import get_pay_subject_name, is_valid_redirect_url
+from pay_api.utils.util import get_pay_subject_name, is_valid_redirect_url, parse_url_params
 from .payment import Payment
 from .queue_publisher import publish_response
+from ..utils.paybc_transaction_error_message import PAYBC_TRANSACTION_ERROR_MESSAGE_DICT
 
 
 class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -70,6 +72,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         self.pay_system_url: str = self._dao.pay_system_url
         self.transaction_start_time: datetime = self._dao.transaction_start_time
         self.transaction_end_time: datetime = self._dao.transaction_end_time
+        self.pay_system_reason_code: str = self._dao.pay_system_reason_code
 
     @property
     def id(self):
@@ -157,13 +160,12 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
     def pay_system_reason_code(self, value: str):
         """Set the pay_system_reason_code."""
         self._pay_system_reason_code = value
+        self._dao.pay_system_reason_code = value
 
     def asdict(self):
         """Return the invoice as a python dict."""
         txn_schema = PaymentTransactionSchema()
         d = txn_schema.dump(self._dao)
-        if self.pay_system_reason_code:
-            d['pay_system_reason_code'] = self.pay_system_reason_code
 
         return d
 
@@ -372,12 +374,24 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             txn_reason_code = None
         except ServiceUnavailableException as exc:
             txn_reason_code = exc.status
+            transaction_dao.pay_system_reason_code = txn_reason_code
             receipt_details = None
 
         if receipt_details:
             PaymentTransaction._update_receipt_details(invoices, payment, receipt_details, transaction_dao)
         else:
             transaction_dao.status_code = TransactionStatus.FAILED.value
+
+        # check if the pay_response_url contains any failure status
+        if pay_response_url is not None and 'trnApproved' in pay_response_url and not txn_reason_code:
+            parsed_args = parse_url_params(pay_response_url)
+            trn_approved: str = parsed_args.get('trnApproved')
+            # Check if trnApproved is 1=Success, 0=Declined
+            if trn_approved != '1':
+                # map the error code
+                message_text = unquote_plus(parsed_args.get('messageText'))
+                pay_system_reason_code = PAYBC_TRANSACTION_ERROR_MESSAGE_DICT.get(message_text, 'GENERIC_ERROR')
+                transaction_dao.pay_system_reason_code = pay_system_reason_code
 
         # Save response URL
         transaction_dao.transaction_end_time = datetime.now()
@@ -392,7 +406,6 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                 PaymentAccount.unlock_frozen_accounts(payment.payment_account_id)
 
         transaction = PaymentTransaction.__wrap_dao(transaction_dao)
-        transaction.pay_system_reason_code = txn_reason_code
 
         current_app.logger.debug('>update_transaction')
         return transaction
