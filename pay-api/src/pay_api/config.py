@@ -171,9 +171,7 @@ class _Config():  # pylint: disable=too-few-public-methods
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY')
 
-    HOLIDAYS_LIST = os.getenv('HOLIDAYS', default='2021-Jan-01,2021-Feb-15,2021-Apr-02,2021-May-24,2021-Jul-1, '
-                                                  '2021-Jul-1, 2021-Aug-2, 2021-Sep-6,2021-Oct-11, 2021-Nov-11, '
-                                                  '2021-Dec-25')
+    HOLIDAYS_LIST = os.getenv('HOLIDAYS_LIST')
 
     TESTING = False
     DEBUG = True
