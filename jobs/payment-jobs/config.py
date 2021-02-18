@@ -165,7 +165,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CGI_SFTP_PORT = int(os.getenv('CAS_SFTP_PORT', 22))
     BCREG_CGI_FTP_PRIVATE_KEY_LOCATION = os.getenv('BCREG_CGI_FTP_PRIVATE_KEY_LOCATION',
                                                    '/payment-jobs/key/cgi_sftp_priv_key')
-    BCREG_FTP_PRIVATE_KEY_PASSPHRASE = os.getenv('BCREG_CGI_FTP_PRIVATE_KEY_PASSPHRASE')
+    BCREG_CGI_FTP_PRIVATE_KEY_PASSPHRASE = os.getenv('BCREG_CGI_FTP_PRIVATE_KEY_PASSPHRASE')
     CGI_SFTP_DIRECTORY = os.getenv('CGI_SFTP_DIRECTORY', '/data')
 
     # CGI File specific configs
