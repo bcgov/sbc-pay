@@ -53,6 +53,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         self._end_date: date = None
         self._service_fee_distribution_code_id: int = None
         self._disbursement_distribution_code_id: int = None
+        self._stop_ejv: bool = False
 
     @property
     def _dao(self):
@@ -88,6 +89,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         self._end_date: date = self._dao.end_date
         self._service_fee_distribution_code_id = self._dao.service_fee_distribution_code_id
         self._disbursement_distribution_code_id = self._dao.disbursement_distribution_code_id
+        self._stop_ejv: bool = self._dao.stop_ejv
 
     @property
     def distribution_code_id(self):
@@ -264,6 +266,17 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         """Set the service_fee_project_code."""
         self._service_fee_project_code = value
 
+    @property
+    def stop_ejv(self):
+        """Return the stop ejv flag."""
+        return self._stop_ejv
+
+    @stop_ejv.setter
+    def stop_ejv(self, value: bool):
+        """Set the stop_ejv."""
+        self._stop_ejv = value
+        self._dao.stop_ejv = value
+
     def save(self):
         """Save the distribution code information and commit."""
         return self._dao.save()
@@ -347,6 +360,8 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
             for dist in DistributionCodeModel.find_by_service_fee_distribution_id(dist_id):
                 InvoiceModel.update_invoices_for_revenue_updates(dist.distribution_code_id)
 
+        # Reset stop jv for every dave.
+        dist_code_svc.stop_ejv = False
         dist_code_dao = dist_code_svc.save()
 
         distribution_code_schema = DistributionCodeSchema()

@@ -27,12 +27,11 @@ import random
 import signal
 import sys
 
-
 from nats.aio.client import Client as NATS  # noqa N814; by convention the name is NATS
 from stan.aio.client import Client as STAN  # noqa N814; by convention the name is STAN
 
 
-async def run(loop, file_name: str, location: str = 'payment-sftp'):  # pylint: disable=too-many-locals
+async def run(loop, file_name: str, location: str, message_type: str):  # pylint: disable=too-many-locals
     """Run the main application loop for the service.
 
     This runs the main top level service functions for working with the Queue.
@@ -66,10 +65,10 @@ async def run(loop, file_name: str, location: str = 'payment-sftp'):  # pylint: 
 
     def subscription_options():
         return {
-            'subject': os.getenv('NATS_PAYMENT_RECONCILIATIONS_SUBJECT', 'account.reconciliations'),
-            'queue': os.getenv('NATS_PAYMENT_RECONCILIATIONS_QUEUE', 'account-reconciliations-worker'),
+            'subject': os.getenv('NATS_PAYMENT_RECONCILIATIONS_SUBJECT', 'payment.reconciliations'),
+            'queue': os.getenv('NATS_PAYMENT_RECONCILIATIONS_QUEUE', 'payment-reconciliations-worker'),
             'durable_name': os.getenv('NATS_PAYMENT_RECONCILIATIONS_QUEUE',
-                                      'account-reconciliations-worker') + '_durable'
+                                      'payment-reconciliations-worker') + '_durable'
         }
 
     try:
@@ -85,7 +84,7 @@ async def run(loop, file_name: str, location: str = 'payment-sftp'):  # pylint: 
 
         payload = {
             'specversion': '1.x-wip',
-            'type': 'bc.registry.payment.casSettlementUploaded',
+            'type': f'{message_type}',
             'source': 'https://api.business.bcregistry.gov.bc.ca/v1/business/BC1234567/filing/12345678',
             'id': 'C234-1234-1234',
             'time': '2020-08-28T17:37:34.651294+00:00',
@@ -99,6 +98,7 @@ async def run(loop, file_name: str, location: str = 'payment-sftp'):  # pylint: 
         }
 
         print('payload-->', payload)
+        print(subscription_options())
 
         await sc.publish(subject=subscription_options().get('subject'),
                          payload=json.dumps(payload).encode('utf-8'))
@@ -110,7 +110,7 @@ async def run(loop, file_name: str, location: str = 'payment-sftp'):  # pylint: 
 
 if __name__ == '__main__':
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "hf:l:", ["file=", "location="])
+        opts, args = getopt.getopt(sys.argv[1:], "hf:l:m:", ["file=", "location=", "message="])
     except getopt.GetoptError:
         sys.exit(2)
 
@@ -121,6 +121,12 @@ if __name__ == '__main__':
             file = arg
         elif opt in ("-l", "--location"):
             location = arg
+            if not location:
+                location = 'payment-sftp'
+        elif opt in ("-m", "--message"):
+            message = arg
+            if not message:
+                message = 'bc.registry.payment.casSettlementUploaded'
 
     event_loop = asyncio.get_event_loop()
-    event_loop.run_until_complete(run(event_loop, file, location))
+    event_loop.run_until_complete(run(event_loop, file, location, message))

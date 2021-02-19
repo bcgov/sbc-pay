@@ -43,6 +43,26 @@ async def helper_add_event_to_queue(stan_client: stan.aio.client.Client,
                               payload=json.dumps(payload).encode('utf-8'))
 
 
+async def helper_add_ejv_event_to_queue(stan_client: stan.aio.client.Client, file_name: str,
+                                        message_type: str = 'ACKReceived'):
+    """Add event to the Queue."""
+    payload = {
+        'specversion': '1.x-wip',
+        'type': f'bc.registry.payment.cgi.{message_type}',
+        'source': 'https://api.business.bcregistry.gov.bc.ca/v1/accounts/1/',
+        'id': 'C234-1234-1234',
+        'time': '2020-08-28T17:37:34.651294+00:00',
+        'datacontenttype': 'application/json',
+        'data': {
+            'fileName': file_name,
+            'location': current_app.config['MINIO_BUCKET_NAME']
+        }
+    }
+
+    await stan_client.publish(subject=current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
+                              payload=json.dumps(payload).encode('utf-8'))
+
+
 def create_and_upload_settlement_file(file_name: str, rows: List[List]):
     """Create settlement file, upload to minio and send event."""
     headers = ['Record type', 'Source Transaction Type', 'Source Transaction Number',

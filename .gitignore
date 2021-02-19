@@ -121,3 +121,6 @@ node_modules
 package-lock.json
 cas_settlement_file.csv
 jobs/payment-jobs/tests/docker/ftp
+ACK.INBOX.F12022020202
+queue_services/payment-reconciliations/ACK.*
+queue_services/payment-reconciliations/FEEDBACK.*

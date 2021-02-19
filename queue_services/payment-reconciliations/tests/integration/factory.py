@@ -143,3 +143,19 @@ def factory_create_pad_account(auth_account_id='1234', bank_number='001', bank_b
                cfs_site='29921',
                ).save()
     return account
+
+
+def factory_distribution(name: str, client: str = '111', reps_centre: str = '22222', service_line: str = '33333',
+                         stob: str = '4444', project_code: str = '5555555', service_fee_dist_id: int = None,
+                         disbursement_dist_id: int = None):
+    """Return Factory."""
+    return DistributionCode(name=name,
+                            client=client,
+                            responsibility_centre=reps_centre,
+                            service_line=service_line,
+                            stob=stob,
+                            project_code=project_code,
+                            service_fee_distribution_code_id=service_fee_dist_id,
+                            disbursement_distribution_code_id=disbursement_dist_id,
+                            start_date=datetime.today().date(),
+                            created_by='test').save()
