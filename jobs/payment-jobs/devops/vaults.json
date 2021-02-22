@@ -44,5 +44,11 @@
         "application": [
             "payment-jobs"
         ]
+    },
+     {
+        "vault": "minio",
+        "application": [
+            "base"
+        ]
     }
 ]

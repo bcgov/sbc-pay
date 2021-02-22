@@ -27,7 +27,7 @@ from .base_schema import BaseSchema
 from .db import db
 
 
-class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods
+class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods, too-many-instance-attributes
     """This class manages all of the base data about Payment Transaction."""
 
     __tablename__ = 'payment_transactions'
@@ -38,6 +38,7 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods
     client_system_url = db.Column(db.String(500), nullable=True)
     pay_system_url = db.Column(db.String(2000), nullable=True)
     pay_response_url = db.Column(db.String(2000), nullable=True)
+    pay_system_reason_code = db.Column(db.String(2000), nullable=True)
 
     transaction_start_time = db.Column(db.DateTime, default=datetime.now, nullable=False)
     transaction_end_time = db.Column(db.DateTime, nullable=True)

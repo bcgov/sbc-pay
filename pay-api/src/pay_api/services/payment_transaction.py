@@ -70,6 +70,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         self.pay_system_url: str = self._dao.pay_system_url
         self.transaction_start_time: datetime = self._dao.transaction_start_time
         self.transaction_end_time: datetime = self._dao.transaction_end_time
+        self.pay_system_reason_code: str = self._dao.pay_system_reason_code
 
     @property
     def id(self):
@@ -157,13 +158,12 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
     def pay_system_reason_code(self, value: str):
         """Set the pay_system_reason_code."""
         self._pay_system_reason_code = value
+        self._dao.pay_system_reason_code = value
 
     def asdict(self):
         """Return the invoice as a python dict."""
         txn_schema = PaymentTransactionSchema()
         d = txn_schema.dump(self._dao)
-        if self.pay_system_reason_code:
-            d['pay_system_reason_code'] = self.pay_system_reason_code
 
         return d
 
@@ -372,12 +372,18 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             txn_reason_code = None
         except ServiceUnavailableException as exc:
             txn_reason_code = exc.status
+            transaction_dao.pay_system_reason_code = txn_reason_code
             receipt_details = None
 
         if receipt_details:
             PaymentTransaction._update_receipt_details(invoices, payment, receipt_details, transaction_dao)
         else:
             transaction_dao.status_code = TransactionStatus.FAILED.value
+
+        # check if the pay_response_url contains any failure status
+        if not txn_reason_code:
+            pay_system_reason_code = pay_system_service.get_pay_system_reason_code(pay_response_url)
+            transaction_dao.pay_system_reason_code = pay_system_reason_code
 
         # Save response URL
         transaction_dao.transaction_end_time = datetime.now()
@@ -392,7 +398,6 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                 PaymentAccount.unlock_frozen_accounts(payment.payment_account_id)
 
         transaction = PaymentTransaction.__wrap_dao(transaction_dao)
-        transaction.pay_system_reason_code = txn_reason_code
 
         current_app.logger.debug('>update_transaction')
         return transaction

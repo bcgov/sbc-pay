@@ -22,7 +22,7 @@ from sbc_common_components.utils.camel_case_response import camelcase_dict
 from pay_api.exceptions import BusinessException
 from pay_api.models import PaymentMethod as PaymentMethodModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem
+from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem, PaymentMethod, InvoiceStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from .invoice import Invoice
@@ -174,7 +174,9 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         # invoice number mandatory
         invoice_data = Invoice.find_by_id(invoice_identifier, skip_auth_check=skip_auth_check)
 
-        if not invoice_data.receipts:
+        is_pending_pad_invoice = invoice_data.payment_method_code == PaymentMethod.PAD.value and \
+            invoice_data.invoice_status_code != InvoiceStatus.PAID.value
+        if not is_pending_pad_invoice and not invoice_data.receipts:
             raise BusinessException(Error.INVALID_REQUEST)
 
         invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(invoice_data.id)
@@ -182,7 +184,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         receipt_details['invoiceNumber'] = invoice_reference.invoice_number
         if invoice_data.payment_method_code == PaymentSystem.INTERNAL.value and invoice_data.routing_slip:
             receipt_details['routingSlipNumber'] = invoice_data.routing_slip
-        receipt_details['receiptNumber'] = invoice_data.receipts[0].receipt_number
+        receipt_details['receiptNumber'] = None if is_pending_pad_invoice else invoice_data.receipts[0].receipt_number
         receipt_details['filingIdentifier'] = filing_data.get('filingIdentifier', invoice_data.filing_id)
         receipt_details['bcOnlineAccountNumber'] = invoice_data.bcol_account
 

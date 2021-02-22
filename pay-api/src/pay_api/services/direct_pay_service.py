@@ -30,6 +30,7 @@ from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem, Paym
 from pay_api.utils.util import current_local_time, parse_url_params, generate_transaction_number
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
+from ..utils.paybc_transaction_error_message import PAYBC_TRANSACTION_ERROR_MESSAGE_DICT
 
 PAYBC_DATE_FORMAT = '%Y-%m-%d'
 PAYBC_REVENUE_SEPARATOR = '|'
@@ -138,6 +139,19 @@ class DirectPayService(PaymentSystemService, OAuthService):
     def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
         # TODO not sure if direct pay can be cancelled
         """Adjust the invoice to zero."""
+
+    def get_pay_system_reason_code(self, pay_response_url: str) -> str:  # pylint:disable=unused-argument
+        """Return the Pay system reason code."""
+        if pay_response_url is not None and 'trnApproved' in pay_response_url:
+            parsed_args = parse_url_params(pay_response_url)
+            trn_approved: str = parsed_args.get('trnApproved')
+            # Check if trnApproved is 1=Success, 0=Declined
+            if trn_approved != '1':
+                # map the error code
+                message_text = unquote_plus(parsed_args.get('messageText')).upper()
+                pay_system_reason_code = PAYBC_TRANSACTION_ERROR_MESSAGE_DICT.get(message_text, 'GENERIC_ERROR')
+                return pay_system_reason_code
+        return None
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Get the receipt details by calling PayBC web service."""
