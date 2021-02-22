@@ -206,7 +206,7 @@ def test_create_pad_payment(session, public_user_mock):
         get_auth_premium_user())
     assert payment_response is not None
     assert payment_response.get('payment_method') == 'PAD'
-    assert payment_response.get('status_code') == 'CREATED'
+    assert payment_response.get('status_code') == 'COMPLETED'  # TODO
 
 
 def test_create_online_banking_payment(session, public_user_mock):
