@@ -18,10 +18,15 @@ Test-Suite to ensure that the /receipt endpoint is working as expected.
 """
 
 import json
+from datetime import datetime
 
 import pytest
+from pay_api.utils.enums import Role, PaymentMethod
 
-from tests.utilities.base_test import get_claims, get_payment_request, get_zero_dollar_payment_request, token_header
+from pay_api.models import CfsAccount as CfsAccountModel, PaymentAccount as PaymentAccountModel
+
+from tests.utilities.base_test import get_claims, get_payment_request, get_zero_dollar_payment_request, token_header, \
+    get_payment_request_with_no_contact_info, get_unlinked_pad_account_payload
 
 
 @pytest.fixture
@@ -87,6 +92,43 @@ def test_receipt_creation_with_invoice(session, client, jwt, app):
         'fileName': 'director-change'
     }
     rv = client.post(f'/api/v1/payment-requests/{inovice_id}/receipts', data=json.dumps(filing_data),
+                     headers=headers)
+    assert rv.status_code == 201
+
+
+def test_create_pad_payment_receipt(session, client, jwt, app):
+    """Assert payment request works for PAD accounts."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    # Create account first
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_unlinked_pad_account_payload(account_id=1234)),
+                     headers=headers)
+    auth_account_id = rv.json.get('authAccountId')
+    # Update the payment account as ACTIVE
+    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+    payment_account.pad_activation_date = datetime.now()
+    payment_account.save()
+    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
+    cfs_account.status = 'ACTIVE'
+    cfs_account.save()
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': auth_account_id}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(
+        get_payment_request_with_no_contact_info(corp_type='BEN', filing_type_code='BCINC',
+                                                 payment_method=PaymentMethod.PAD.value)),
+                     headers=headers)
+    assert rv.json.get('paymentMethod') == PaymentMethod.PAD.value
+
+    inv_id = rv.json.get('id')
+    filing_data = {
+        'corpName': 'CP0001234',
+        'filingDateTime': 'June 27, 2019',
+        'fileName': 'director-change'
+    }
+
+    rv = client.post(f'/api/v1/payment-requests/{inv_id}/receipts', data=json.dumps(filing_data),
                      headers=headers)
     assert rv.status_code == 201
 

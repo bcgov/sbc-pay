@@ -22,6 +22,7 @@ from typing import Dict
 from urllib.parse import parse_qsl
 
 import pytz
+from dateutil.parser import parse
 from dpath import util as dpath_util
 from flask import current_app
 
@@ -171,3 +172,39 @@ def get_pay_subject_name(corp_type: str, subject_format: str = None):
     subject_format = subject_format or current_app.config.get('NATS_PAYMENT_SUBJECT')
     pay_subject = 'name-request' if corp_type == CorpType.NRO.value else 'filing'
     return subject_format.format(product=pay_subject)
+
+
+def get_nearest_business_day(date_val: datetime, include_today: bool = True) -> datetime:
+    """Return nearest business day to the date.
+
+    include_today= true ; inclusive of today.If today is business , just returns it
+    include_today= false; exclude today. Returns the business day from date+1
+    """
+    if not include_today:
+        date_val = get_next_day(date_val)
+    if not is_holiday(date_val):
+        return date_val
+    # just a recursive call to get the next business day.
+    return get_nearest_business_day(get_next_day(date_val))
+
+
+def is_holiday(val: datetime) -> bool:
+    """Return receipt number for payments.
+
+    saturday or sunday check
+    check the BC holidays
+    """
+    week_number: int = val.weekday()
+    if week_number > 4:  # 5- saturday 6 sunday
+        return True
+    holidays_list = current_app.config.get('HOLIDAYS_LIST')
+    holidays_dates_list = [parse(date).date() for date in holidays_list.split(',')]
+    if val.date() in holidays_dates_list:
+        return True
+    return False
+
+
+def get_next_day(val: datetime):
+    """Return previous day."""
+    # index: 0 (current week), 1 (last week) and so on
+    return val + timedelta(days=1)

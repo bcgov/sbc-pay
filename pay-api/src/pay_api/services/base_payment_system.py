@@ -80,6 +80,10 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Return the payment system portal URL for payment."""
         return None
 
+    def get_pay_system_reason_code(self, pay_response_url: str) -> str:  # pylint:disable=unused-argument, no-self-use
+        """Return the Pay system reason code."""
+        return None
+
     @abstractmethod
     def get_payment_system_code(self):
         """Return the payment system code. E.g, PAYBC, BCOL etc."""

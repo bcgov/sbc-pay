@@ -324,12 +324,15 @@ def test_transaction_patch_direct_pay(session, client, jwt, app):
     assert rv.status_code == 201
     assert rv.json.get('paymentId')
 
-    client.patch(f'/api/v1/payment-requests/{invoice_id}/transactions/{txn_id}', data=json.dumps({}),
-                 headers={'content-type': 'application/json'})
+    url = 'trnApproved=0&messageText=Duplicate%20Order%20Number%20-%20This%20order%20number%20has%20already%20been' \
+          '%20processed&trnOrderId=169124&trnAmount=31.50&paymentMethod=CC&cardType=MC&authCode=null&trnDate=2020-12' \
+          '-17&pbcTxnNumber=REG00001593&hashValue=a5a48bf399af4e18c2233078ebabff73'
+    param = {'payResponseUrl': url}
 
+    rv = client.patch(f'/api/v1/payment-requests/{invoice_id}/transactions/{txn_id}', data=json.dumps(param),
+                      headers={'content-type': 'application/json'})
+    assert rv.json.get('paySystemReasonCode') == 'DUPLICATE_ORDER_NUMBER'
     # Get payment details
-    rv = client.get(f'/api/v1/payment-requests/{invoice_id}', headers=headers)
-    assert rv.json.get('statusCode') == 'COMPLETED'
 
 
 def test_transaction_post_for_nsf_payment(session, client, jwt, app):
