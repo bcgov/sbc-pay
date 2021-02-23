@@ -1,16 +1,16 @@
 """jv_feedback_changes
 
-Revision ID: 5fbc9aaa34a1
-Revises: ebee125e6877
-Create Date: 2021-02-19 15:05:03.741562
+Revision ID: 073b9f59b447
+Revises: 1803b51e5689
+Create Date: 2021-02-23 09:02:09.797138
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = '5fbc9aaa34a1'
-down_revision = 'ebee125e6877'
+revision = '073b9f59b447'
+down_revision = '1803b51e5689'
 branch_labels = None
 depends_on = None
 
