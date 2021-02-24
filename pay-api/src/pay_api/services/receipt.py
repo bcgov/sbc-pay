@@ -190,7 +190,8 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
 
         payment_method = PaymentMethodModel.find_by_code(invoice_data.payment_method_code)
 
+        receipt_details['paymentMethod'] = payment_method.code
         if invoice_data.payment_method_code != PaymentSystem.INTERNAL.value:
-            receipt_details['paymentMethod'] = payment_method.description
+            receipt_details['paymentMethodDescription'] = payment_method.description
         receipt_details['invoice'] = camelcase_dict(invoice_data.asdict(), {})
         return receipt_details
