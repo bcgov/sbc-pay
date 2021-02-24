@@ -173,6 +173,7 @@ def test_unpaid_multiple_invoice_total(session):
     # invoice amount
     total_invoice1 = 100
     total_invoice2 = 200
+    total_invoice3 = 300
 
     invoice = factory_invoice(payment_account=account, created_on=datetime.now(), total=total_invoice1,
                               payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
@@ -181,11 +182,24 @@ def test_unpaid_multiple_invoice_total(session):
     factory_invoice(payment_account=account, created_on=datetime.now(), total=total_invoice2,
                     payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
 
+    # this is future invoice
+    factory_invoice(payment_account=account, created_on=datetime.now() + timedelta(days=1), total=total_invoice3,
+                    payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
+
     # created two invoices ; so two events
     time_delay = current_app.config['NOTIFY_AFTER_DAYS']
     day_after_time_delay = datetime.today() + timedelta(days=time_delay)
+    total_amount = total_invoice1 + total_invoice2 + total_invoice3
+    # total amount is the same for any day invocation
     with freeze_time(day_after_time_delay):
         with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
             UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
             assert mock_mailer.call_count == 1
-            assert mock_mailer.call_args.args[2].get('transactionAmount') == total_invoice1 + total_invoice2
+            assert mock_mailer.call_args.args[2].get('transactionAmount') == total_amount
+
+    one_more_day_delay = datetime.today() + timedelta(days=time_delay + 1)
+    with freeze_time(one_more_day_delay):
+        with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
+            UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
+            assert mock_mailer.call_count == 1
+            assert mock_mailer.call_args.args[2].get('transactionAmount') == total_amount

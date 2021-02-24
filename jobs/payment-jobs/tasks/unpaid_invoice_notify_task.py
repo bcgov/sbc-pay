@@ -41,10 +41,16 @@ class UnpaidInvoiceNotifyTask:  # pylint:disable=too-few-public-methods
 
     @classmethod
     def _notify_for_ob(cls):  # pylint: disable=too-many-locals
-        """Notify for online banking."""
+        """Notify for online banking.
+
+        1) Find the accounts with pending invoices
+        2) get total remaining for that account
+
+        """
         unpaid_status = (
             InvoiceStatus.SETTLEMENT_SCHEDULED.value, InvoiceStatus.PARTIAL.value, InvoiceStatus.CREATED.value)
         notification_date = datetime.today() - timedelta(days=current_app.config.get('NOTIFY_AFTER_DAYS'))
+        # Get distinct accounts with pending invoices for that exact day
         notification_pending_accounts = db.session.query(InvoiceModel.payment_account_id).distinct().filter(and_(
             InvoiceModel.invoice_status_code.in_(unpaid_status),
             InvoiceModel.payment_method_code == PaymentMethod.ONLINE_BANKING.value,
