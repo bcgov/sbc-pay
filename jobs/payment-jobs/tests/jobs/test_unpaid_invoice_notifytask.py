@@ -152,7 +152,7 @@ def test_unpaid_single_invoice_total(session):
     with freeze_time(day_after_time_delay):
         with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
             UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
-            assert mock_mailer.call_args.args[2].get('transactionAmount') == total_invoice1
+            assert mock_mailer.call_args.args[2].get('transactionAmount') == total_invoice1 + total_invoice2
 
     # created one invoice yesterday ; so assert one
     day_after_time_delay = datetime.today() + timedelta(days=time_delay - 1)
@@ -160,7 +160,7 @@ def test_unpaid_single_invoice_total(session):
         with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
             UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
             assert mock_mailer.call_count == 1
-            assert mock_mailer.call_args.args[2].get('transactionAmount') == total_invoice2
+            assert mock_mailer.call_args.args[2].get('transactionAmount') == total_invoice1 + total_invoice2
 
 
 def test_unpaid_multiple_invoice_total(session):
