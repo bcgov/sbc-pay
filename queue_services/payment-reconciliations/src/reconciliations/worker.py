@@ -35,6 +35,7 @@ from flask import Flask
 from pay_api.models import db
 
 from reconciliations import config
+from reconciliations.ejv_reconciliations import reconcile_distributions
 from reconciliations.payment_reconciliations import reconcile_payments
 
 
@@ -51,8 +52,12 @@ async def process_event(event_message, flask_app):
         raise QueueException('Flask App not available.')
 
     with flask_app.app_context():
-        if event_message.get('type', None) == 'bc.registry.payment.casSettlementUploaded':
+        if (message_type := event_message.get('type', None)) == 'bc.registry.payment.casSettlementUploaded':
             await reconcile_payments(event_message)
+        elif message_type == 'bc.registry.payment.cgi.ACKReceived':
+            await reconcile_distributions(event_message)
+        elif message_type == 'bc.registry.payment.cgi.FEEDBACKReceived':
+            await reconcile_distributions(event_message, is_feedback=True)
         else:
             raise Exception('Invalid type')
 

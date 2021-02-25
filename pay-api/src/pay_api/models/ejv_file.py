@@ -33,4 +33,5 @@ class EjvFile(BaseModel):  # pylint: disable=too-many-instance-attributes
     is_distribution = db.Column('is_distribution', Boolean(), default=True)
     file_ref = db.Column('file_ref', db.String, nullable=False, index=True)
     disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
+    message = db.Column('message', db.String, nullable=True, index=False)
     feedback_file_ref = db.Column('feedback_file_ref', db.String, nullable=True)
