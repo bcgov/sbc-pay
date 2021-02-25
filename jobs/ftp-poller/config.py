@@ -97,6 +97,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CGI_TRIGGER_FILE_SUFFIX = os.getenv('CGI_TRIGGER_FILE_SUFFIX', '.TRG')
     CGI_ACK_FILE_PREFIX = os.getenv('CGI_ACK_FILE_PREFIX', 'ACK')
     CGI_FEEDBACK_FILE_PREFIX = os.getenv('CGI_FEEDBACK_FILE_PREFIX', 'FEEDBACK')
+    CGI_INBOX_FILE_PREFIX = os.getenv('CGI_FEEDBACK_FILE_PREFIX', 'INBOX')
 
     # NATS Config
     NATS_SERVERS = os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(',')
