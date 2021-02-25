@@ -116,16 +116,17 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
             invoice_id_list = []
             for inv in invoices:
                 invoice_id_list.append(inv.id)
-                # Create Ejv file link and flush
-                EjvInvoiceLinkModel(invoice_id=inv.id, ejv_header_id=ejv_header_model.id).flush()
-                # Set distribution status to invoice
-                inv.disbursement_status_code = DisbursementStatus.UPLOADED.value
-                inv.flush()
                 for line_item in inv.payment_line_items:
                     distribution_code_set.add(line_item.fee_distribution_id)
 
             for distribution_code_id in list(distribution_code_set):
                 distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(distribution_code_id)
+                credit_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
+                    distribution_code.disbursement_distribution_code_id
+                )
+                if credit_distribution_code.stop_ejv:
+                    continue
+
                 line_items = cls._find_line_items_by_invoice_and_distribution(distribution_code_id, invoice_id_list)
 
                 total: float = 0
@@ -135,9 +136,6 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
                 batch_total += total
 
                 debit_distribution = cls._get_distribution_string(distribution_code)  # Debit from BCREG GL
-                credit_distribution_code = DistributionCodeModel.find_by_id(
-                    distribution_code.disbursement_distribution_code_id
-                )
                 credit_distribution = cls._get_distribution_string(credit_distribution_code)  # Credit to partner GL
 
                 # JV Header
@@ -149,19 +147,31 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
                 for line in line_items:
                     # JV Details
                     line_number += 1
+                    # Flow Through add it as the invoice id.
+                    flow_through = f'{line.invoice_id:<110}'
                     # Line for credit.
                     ejv_content = f'{ejv_content}{feeder_number}{batch_type}JD{DELIMITER}{journal_name}' \
                                   f'{line_number:0>5}{effective_date}{credit_distribution}{EMPTY:<9}' \
-                                  f'{cls._format_amount(line.total)}C{disbursement_desc}{EMPTY:<110}' \
+                                  f'{cls._format_amount(line.total)}C{disbursement_desc}{flow_through}' \
                                   f'{DELIMITER}{os.linesep}'
                     line_number += 1
                     # Add a line here for debit too
                     ejv_content = f'{ejv_content}{feeder_number}{batch_type}JD{DELIMITER}{journal_name}' \
                                   f'{line_number:0>5}{effective_date}{debit_distribution}{EMPTY:<9}' \
-                                  f'{cls._format_amount(line.total)}D{disbursement_desc}{EMPTY:<110}' \
+                                  f'{cls._format_amount(line.total)}D{disbursement_desc}{flow_through}' \
                                   f'{DELIMITER}{os.linesep}'
 
                     control_total += 1
+
+            # Create ejv invoice link records and set invoice status
+            for inv in invoices:
+                # Create Ejv file link and flush
+                EjvInvoiceLinkModel(invoice_id=inv.id, ejv_header_id=ejv_header_model.id,
+                                    disbursement_status_code=DisbursementStatus.UPLOADED.value).flush()
+                # Set distribution status to invoice
+                inv.disbursement_status_code = DisbursementStatus.UPLOADED.value
+                inv.flush()
+
         if not ejv_content:
             db.session.rollback()
             return

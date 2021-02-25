@@ -29,3 +29,4 @@ class EjvHeader(BaseModel):  # pylint: disable=too-many-instance-attributes
     ejv_file_id = db.Column(db.Integer, ForeignKey('ejv_files.id'), nullable=False)
     partner_code = db.Column(db.String(10), ForeignKey('corp_types.code'), nullable=True)  # For partners
     payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True)  # For gov accounts
+    message = db.Column('message', db.String, nullable=True, index=False)

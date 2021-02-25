@@ -1,7 +1,7 @@
--e git+https://github.com/bcgov/sbc-common-components.git@e58dc66d58f0c783ffad5452673d9d4f110cb376#egg=sbc_common_components&subdirectory=python
--e git+https://github.com/saravanpa-aot/sbc-pay.git@e38e9798dd62125856a95ee2e6b7253a5fd8beae#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-common-components.git@c212629a2a73901e7e64a069aba6ec148b241213#egg=sbc_common_components&subdirectory=python
+-e git+https://github.com/sumesh-aot/sbc-pay.git@058d4e924568c48a7e6244d28dfadefb348a4834#egg=pay_api&subdirectory=pay-api
 Flask-Caching==1.9.0
-Flask-Migrate==2.6.0
+Flask-Migrate==2.7.0
 Flask-Moment==0.11.0
 Flask-OpenTracing==1.1.0
 Flask-SQLAlchemy==2.4.4
@@ -15,8 +15,8 @@ SQLAlchemy-Continuum==1.3.11
 SQLAlchemy-Utils==0.36.8
 SQLAlchemy==1.3.23
 Werkzeug==0.16.1
-alembic==1.5.4
-aniso8601==8.1.1
+alembic==1.5.5
+aniso8601==9.0.0
 asyncio-nats-client==0.11.4
 asyncio-nats-streaming==0.4.0
 attrs==20.3.0
@@ -46,7 +46,7 @@ minio==7.0.2
 natsort==7.1.1
 opentracing==2.4.0
 paramiko==2.7.2
-protobuf==3.14.0
+protobuf==3.15.2
 psycopg2-binary==2.8.6
 pyasn1==0.4.8
 pycparser==2.20
@@ -58,8 +58,8 @@ python-editor==1.0.4
 python-jose==3.2.0
 pytz==2021.1
 requests==2.25.1
-rsa==4.7.1
-sentry-sdk==0.20.2
+rsa==4.7.2
+sentry-sdk==0.20.3
 six==1.15.0
 threadloop==1.0.2
 thrift==0.13.0
