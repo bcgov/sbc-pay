@@ -78,7 +78,7 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _remove_file(cls, sftp_client, file_name: str):
         ftp_dir: str = current_app.config.get('CGI_SFTP_DIRECTORY')
-        current_app.logger.info(f'Removing file:', ftp_dir + '/' + file_name)
+        current_app.logger.info(f'Removing file:{ftp_dir}/{file_name}')
         sftp_client.remove(ftp_dir + '/' + file_name)
 
     @classmethod
