@@ -18,5 +18,5 @@ minio
 pysftp
 
 -e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
--e git+https://github.com/sumesh-aot/sbc-pay.git@reconciliations#egg=pay-api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-pay.git#egg=pay-api&subdirectory=pay-api
 # -e git+https://github.com/bcgov/sbc-pay.git@development#egg=pay-api&subdirectory=pay-api
