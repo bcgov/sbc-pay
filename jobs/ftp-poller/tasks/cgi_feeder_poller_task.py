@@ -63,7 +63,7 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
                         cls._remove_file(sftp_client, file_name)
                     else:
                         current_app.logger.warning(
-                            f'File found which is not trigger , ACK or feed back {file_name}.')
+                            f'File found which is not trigger , ACK or feed back {file_name}.Ignoring')
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 current_app.logger.error(e)
@@ -92,7 +92,9 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
 
     @classmethod
     def _is_a_trigger_file(cls, file_name: str):
-        return file_name.endswith(current_app.config.get('CGI_TRIGGER_FILE_SUFFIX'))
+        return file_name.endswith(current_app.config.get('CGI_TRIGGER_FILE_SUFFIX')) and \
+            not file_name.startswith(
+                current_app.config.get('CGI_INBOX_FILE_PREFIX'))  # INBOX TRG is for them to listen
 
     @classmethod
     def _is_ack_file(cls, file_name: str):
