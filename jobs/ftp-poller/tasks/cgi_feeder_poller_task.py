@@ -33,7 +33,7 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
         1. List Files.
         2. If TRG , find its associated data file and do the operations.
         """
-        with SFTPService.get_connection() as sftp_client:
+        with SFTPService.get_connection('CGI') as sftp_client:
             try:
                 ftp_dir: str = current_app.config.get('CGI_SFTP_DIRECTORY')
                 file_list: List[SFTPAttributes] = sftp_client.listdir_attr(ftp_dir)
