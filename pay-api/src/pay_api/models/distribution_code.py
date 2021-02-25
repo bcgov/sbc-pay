@@ -16,7 +16,7 @@
 from datetime import date
 
 from marshmallow import fields
-from sqlalchemy import ForeignKey
+from sqlalchemy import Boolean, ForeignKey
 
 from .audit import Audit, AuditSchema, BaseModel
 from .db import db, ma
@@ -73,6 +73,7 @@ class DistributionCode(Audit):  # pylint:disable=too-many-instance-attributes
 
     start_date = db.Column(db.Date, default=date.today(), nullable=False)
     end_date = db.Column(db.Date, default=None, nullable=True)
+    stop_ejv = db.Column('stop_ejv', Boolean(), default=False)
 
     @classmethod
     def find_all(cls):

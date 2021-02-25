@@ -15,4 +15,4 @@
 
 CAS_MESSAGE_TYPE = 'bc.registry.payment.casSettlementUploaded'
 CGI_ACK_MESSAGE_TYPE = 'bc.registry.payment.cgi.ACKReceived'
-CGI_FEEDBACK_MESSAGE_TYPE = 'bc.registry.payment.cgi.ACKReceived'
+CGI_FEEDBACK_MESSAGE_TYPE = 'bc.registry.payment.cgi.FEEDBACKReceived'
