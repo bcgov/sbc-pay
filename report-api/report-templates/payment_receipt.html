@@ -213,10 +213,9 @@
       }
 
       .bottom-row-line {
-        margin-top: 30px;
-        padding-bottom: 30px;
-        border-bottom: 1px solid #bbb;
-        margin-bottom: 0;
+        margin-top: 20px;
+        border: 1px solid #bbb;
+        margin-bottom: 20px;
       }
 
       .receipt-fee-summary .fee-summary-label {
@@ -305,7 +304,7 @@
         </td>
         <td class="r-heading">
           {% if paymentMethod == 'PAD' and not receiptNumber %}
-          <div class="r-title">Payment Authorization</div>
+          <div class="r-title">Payment<br/> Authorization</div>
           {% else %}
           <div class="r-title">Receipt</div>
           {% endif %}
@@ -388,8 +387,7 @@
           <div class="receipt-message">
             This payment is pending
           </div>
-          <div class="receipt-message">
-          <p>The payment status of invoice {{ invoiceNumber if invoiceNumber else '' }} is pending. It will take approximately<strong> 1-2 business days for</strong> the 
+          <div class="receipt-pending-message">          <p>The payment status of invoice {{ invoiceNumber if invoiceNumber else '' }} is pending. It will take approximately<strong> 1-2 business days for</strong> the 
             payment to be received after the filling date. The receipt will be generated when the payment is processed.</p>
             <p>* Any payment dishonoured by the payor’s financial institution may result in a dishonoured banking instrument 
               service fee. To avoid this result please monitor your pre-authorized debit account balance availability. </p>
