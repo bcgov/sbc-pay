@@ -145,13 +145,9 @@ def generate_transaction_number(txn_number: str) -> str:
 
 def get_fiscal_year(date_val: datetime = datetime.now()) -> int:
     """Return fiscal year for the date."""
-    # TODO remove after confirmation from CAS.
-    if os.getenv('FISCAL_YEAR', None):
-        return int(os.getenv('FISCAL_YEAR'))
-
     fiscal_year: int = date_val.year
-    if date_val.month <= 3:  # Up to March 31, use the previous year.
-        fiscal_year = fiscal_year - 1
+    if date_val.month > 3:  # Up to March 31, use the current year.
+        fiscal_year = fiscal_year + 1
     return fiscal_year
 
 
