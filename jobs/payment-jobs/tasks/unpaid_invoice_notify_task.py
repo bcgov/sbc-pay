@@ -18,9 +18,10 @@ from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import db
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod
 from sentry_sdk import capture_message
-from sqlalchemy import Date, and_, cast
+from sqlalchemy import Date, and_, cast, func
 
 from utils import mailer
 
@@ -40,41 +41,42 @@ class UnpaidInvoiceNotifyTask:  # pylint:disable=too-few-public-methods
 
     @classmethod
     def _notify_for_ob(cls):  # pylint: disable=too-many-locals
-        """Notify for online banking."""
+        """Notify for online banking.
+
+        1) Find the accounts with pending invoices
+        2) get total remaining for that account
+
+        """
         unpaid_status = (
             InvoiceStatus.SETTLEMENT_SCHEDULED.value, InvoiceStatus.PARTIAL.value, InvoiceStatus.CREATED.value)
         notification_date = datetime.today() - timedelta(days=current_app.config.get('NOTIFY_AFTER_DAYS'))
-        notification_pending_invoices = InvoiceModel.query.filter(and_(
+        # Get distinct accounts with pending invoices for that exact day
+        notification_pending_accounts = db.session.query(InvoiceModel.payment_account_id).distinct().filter(and_(
             InvoiceModel.invoice_status_code.in_(unpaid_status),
             InvoiceModel.payment_method_code == PaymentMethod.ONLINE_BANKING.value,
             # cast is used to get the exact match stripping the timestamp from date
             cast(InvoiceModel.created_on, Date) == notification_date.date()
         )).all()
-        current_app.logger.debug(f'Found {len(notification_pending_invoices)} invoices to notify admins.')
-        invoice_by_payment_accounts = {}
-
-        for invoice in notification_pending_invoices:
-            if invoice.payment_account_id in invoice_by_payment_accounts:
-                invoice_by_payment_accounts[invoice.payment_account_id] = \
-                    invoice_by_payment_accounts[invoice.payment_account_id] + invoice.total
-            else:
-                invoice_by_payment_accounts[invoice.payment_account_id] = invoice.total
-
-        for payment_account_id, pay_total in invoice_by_payment_accounts.items():  # pylint:disable=unused-variable
-            # Find all PAD invoices for this account
+        current_app.logger.debug(f'Found {len(notification_pending_accounts)} invoices to notify admins.')
+        for payment_account in notification_pending_accounts:
             try:
+                payment_account_id = payment_account[0]
+                total = db.session.query(func.sum(InvoiceModel.total).label('total')).filter(and_(
+                    InvoiceModel.invoice_status_code.in_(unpaid_status),
+                    InvoiceModel.payment_account_id == payment_account_id,
+                    InvoiceModel.payment_method_code == PaymentMethod.ONLINE_BANKING.value
+                )).group_by(InvoiceModel.payment_account_id).all()
                 pay_account: PaymentAccountModel = \
                     PaymentAccountModel.find_by_id(payment_account_id)
 
                 cfs_account = CfsAccountModel.find_effective_by_account_id(payment_account_id)
 
                 # emit account mailer event
-                addition_params_to_mailer = {'transactionAmount': pay_total,
+                addition_params_to_mailer = {'transactionAmount': total[0][0],
                                              'cfsAccountId': cfs_account.cfs_account,
                                              'authAccountId': pay_account.auth_account_id,
                                              }
                 mailer.publish_mailer_events('ob.outstandingInvoice', pay_account, addition_params_to_mailer)
-
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(f'Error on notifying mailer  OB Pending invoice: account id={pay_account.id}, '
                                 f'auth account : {pay_account.auth_account_id}, ERROR : {str(e)}', level='error')
