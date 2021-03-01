@@ -161,7 +161,7 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
                                   f'{cls._format_amount(line.total)}D{disbursement_desc}{flow_through}' \
                                   f'{DELIMITER}{os.linesep}'
 
-                    control_total += 1
+                    control_total += 2
 
             # Create ejv invoice link records and set invoice status
             for inv in invoices:
