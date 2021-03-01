@@ -37,10 +37,6 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
             try:
                 ftp_dir: str = current_app.config.get('CGI_SFTP_DIRECTORY')
                 file_list: List[SFTPAttributes] = sftp_client.listdir_attr(ftp_dir)
-                is_trigger_file_present: bool = cls._is_trigger_file_present(sftp_client, file_list)
-                if not is_trigger_file_present:
-                    current_app.logger.info('No Trigger file Found to be processed.Not reading any files.')
-                    return
 
                 current_app.logger.info(
                     f'Found {len(file_list)} to be processed.This includes all files in the folder.')
@@ -80,15 +76,6 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
         ftp_dir: str = current_app.config.get('CGI_SFTP_DIRECTORY')
         current_app.logger.info(f'Removing file:{ftp_dir}/{file_name}')
         sftp_client.remove(ftp_dir + '/' + file_name)
-
-    @classmethod
-    def _is_trigger_file_present(cls, sftp_client, file_list):
-        for file in file_list:
-            ftp_dir: str = current_app.config.get('CGI_SFTP_DIRECTORY')
-            file_full_name = ftp_dir + '/' + file.filename
-            if cls._is_a_trigger_file(file.filename) and sftp_client.isfile(file_full_name):
-                return True
-        return False
 
     @classmethod
     def _is_a_trigger_file(cls, file_name: str):
