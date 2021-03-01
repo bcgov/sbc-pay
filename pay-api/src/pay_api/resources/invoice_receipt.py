@@ -65,8 +65,10 @@ class InvoiceReceipt(Resource):
         """Return the receipt details."""
         current_app.logger.info('<Receipt.post')
         try:
-            response = ReceiptService.get_receipt_details({}, invoice_id, skip_auth_check=False)
+            receipt_details = ReceiptService.get_receipt_details({}, invoice_id, skip_auth_check=False)
+            receipt_details.pop('paymentMethodDescription', None)
+
         except BusinessException as exception:
             return exception.response()
         current_app.logger.debug('>Transaction.post')
-        return jsonify(response), 200
+        return jsonify(receipt_details), 200
