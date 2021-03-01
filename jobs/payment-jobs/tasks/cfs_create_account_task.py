@@ -25,8 +25,8 @@ from pay_api.utils.constants import RECEIPT_METHOD_PAD_DAILY
 from pay_api.utils.enums import AuthHeaderType, CfsAccountStatus, ContentType, PaymentMethod
 from sentry_sdk import capture_message
 
-from utils.auth import get_token
 from utils import mailer
+from utils.auth import get_token
 
 
 class CreateAccountTask:  # pylint: disable=too-few-public-methods
