@@ -17,6 +17,7 @@ from typing import List
 
 from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import db
@@ -144,7 +145,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _create_single_invoice_per_purchase(cls, payment_method: PaymentMethod):
         """Create one CFS invoice per purchase."""
-        invoices = InvoiceModel.query \
+        invoices: List[InvoiceModel] = InvoiceModel.query \
             .filter_by(payment_method_code=payment_method.value) \
             .filter_by(invoice_status_code=InvoiceStatus.CREATED.value)\
             .order_by(InvoiceModel.created_on.asc()).all()
@@ -153,6 +154,12 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         for invoice in invoices:
             # Get cfs account
             payment_account: PaymentAccountService = PaymentAccountService.find_by_id(invoice.payment_account_id)
+
+            # Check for corp type and see if online banking is allowed.
+            if invoice.payment_method_code == PaymentMethod.ONLINE_BANKING.value:
+                corp_type: CorpTypeModel = CorpTypeModel.find_by_code(invoice.corp_type_code)
+                if not corp_type.is_online_banking_allowed:
+                    continue
 
             # Create a CFS invoice
             current_app.logger.debug(f'Creating cfs invoice for invoice {invoice.id}')
