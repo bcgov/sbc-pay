@@ -67,7 +67,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         current_app.logger.info(f'Found {len(pad_accounts)} with PAD transactions.')
 
         invoice_ref_subquery = db.session.query(InvoiceReferenceModel.invoice_id). \
-            filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.ACTIVE.value)
+            filter(InvoiceReferenceModel.status_code.in_((InvoiceReferenceStatus.ACTIVE.value,)))
 
         for account in pad_accounts:
             # Find all PAD invoices for this account
