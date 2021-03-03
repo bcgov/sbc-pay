@@ -142,6 +142,7 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
                 ejv_content = f'{ejv_content}{feeder_number}{batch_type}JH{DELIMITER}{journal_name}' \
                               f'{journal_batch_name}{cls._format_amount(total)}ACAD{EMPTY:<100}{EMPTY:<110}' \
                               f'{DELIMITER}{os.linesep}'
+                control_total += 1
 
                 line_number: int = 0
                 for line in line_items:
@@ -155,13 +156,15 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
                                   f'{cls._format_amount(line.total)}C{disbursement_desc}{flow_through}' \
                                   f'{DELIMITER}{os.linesep}'
                     line_number += 1
+                    control_total += 1
+
                     # Add a line here for debit too
                     ejv_content = f'{ejv_content}{feeder_number}{batch_type}JD{DELIMITER}{journal_name}' \
                                   f'{line_number:0>5}{effective_date}{debit_distribution}{EMPTY:<9}' \
                                   f'{cls._format_amount(line.total)}D{disbursement_desc}{flow_through}' \
                                   f'{DELIMITER}{os.linesep}'
 
-                    control_total += 2
+                    control_total += 1
 
             # Create ejv invoice link records and set invoice status
             for inv in invoices:
