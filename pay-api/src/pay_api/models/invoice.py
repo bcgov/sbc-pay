@@ -141,7 +141,4 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
         # TODO remove it later, adding this here to make non-breaking changes for other teams
         if data.get('status_code') == InvoiceStatus.PAID.value:
             data['status_code'] = PaymentStatus.COMPLETED.value
-        elif data.get('status_code') in (InvoiceStatus.CREATED.value, InvoiceStatus.SETTLEMENT_SCHEDULED.value) \
-                and data.get('payment_method') == PaymentMethod.PAD.value:
-            data['status_code'] = PaymentStatus.COMPLETED.value
         return data
