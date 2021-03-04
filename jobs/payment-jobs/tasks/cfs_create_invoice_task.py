@@ -19,12 +19,13 @@ from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
-from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, PaymentStatus
+from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
 from sentry_sdk import capture_message
 
 from utils import mailer
@@ -56,7 +57,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
         inv_subquery = db.session.query(InvoiceModel.payment_account_id) \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.PAD.value) \
-            .filter(InvoiceModel.invoice_status_code == PaymentStatus.CREATED.value).subquery()
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value).subquery()
 
         # Exclude the accounts which are in FREEZE state.
         pad_accounts: List[PaymentAccountModel] = db.session.query(PaymentAccountModel) \
@@ -66,12 +67,16 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
         current_app.logger.info(f'Found {len(pad_accounts)} with PAD transactions.')
 
+        invoice_ref_subquery = db.session.query(InvoiceReferenceModel.invoice_id). \
+            filter(InvoiceReferenceModel.status_code.in_((InvoiceReferenceStatus.ACTIVE.value,)))
+
         for account in pad_accounts:
             # Find all PAD invoices for this account
             account_invoices = db.session.query(InvoiceModel) \
                 .filter(InvoiceModel.payment_account_id == account.id) \
                 .filter(InvoiceModel.payment_method_code == PaymentMethod.PAD.value) \
-                .filter(InvoiceModel.invoice_status_code == InvoiceStatus.CREATED.value) \
+                .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value) \
+                .filter(InvoiceModel.id.notin_(invoice_ref_subquery)) \
                 .order_by(InvoiceModel.created_on.desc()).all()
 
             # Get cfs account
@@ -124,7 +129,8 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
                 # Misc
                 invoice.cfs_account_id = payment_account.cfs_account_id
-                invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
+                # no longer set to settlement sceduled
+                # invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
                 invoice.save()
 
     @classmethod
@@ -147,7 +153,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         """Create one CFS invoice per purchase."""
         invoices: List[InvoiceModel] = InvoiceModel.query \
             .filter_by(payment_method_code=payment_method.value) \
-            .filter_by(invoice_status_code=InvoiceStatus.CREATED.value)\
+            .filter_by(invoice_status_code=InvoiceStatus.CREATED.value) \
             .order_by(InvoiceModel.created_on.asc()).all()
 
         current_app.logger.info(f'Found {len(invoices)} to be created in CFS.')

@@ -71,6 +71,7 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
                     cfs_account_id: int = 0
                     ):
     """Return Factory."""
+    status_code = InvoiceStatus.APPROVED.value if payment_method_code == PaymentMethod.PAD.value else status_code
     invoice = Invoice(
         invoice_status_code=status_code,
         payment_account_id=payment_account.id,
