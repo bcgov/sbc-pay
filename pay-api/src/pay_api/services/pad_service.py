@@ -39,7 +39,7 @@ class PadService(PaymentSystemService, CFSService):
 
     def get_default_invoice_status(self) -> str:
         """Return CREATED as the default invoice status."""
-        return InvoiceStatus.CREATED.value
+        return InvoiceStatus.APPROVED.value
 
     def get_default_payment_status(self) -> str:
         """Return the default status for payment when created."""

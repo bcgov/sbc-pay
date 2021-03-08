@@ -20,7 +20,7 @@ from marshmallow import fields, post_dump
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
-from pay_api.utils.enums import InvoiceStatus, LineItemStatus, PaymentStatus, InvoiceReferenceStatus, PaymentMethod
+from pay_api.utils.enums import InvoiceStatus, LineItemStatus, PaymentStatus, InvoiceReferenceStatus
 from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
 from .db import db, ma
@@ -140,8 +140,5 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
 
         # TODO remove it later, adding this here to make non-breaking changes for other teams
         if data.get('status_code') == InvoiceStatus.PAID.value:
-            data['status_code'] = PaymentStatus.COMPLETED.value
-        elif data.get('status_code') in (InvoiceStatus.CREATED.value, InvoiceStatus.SETTLEMENT_SCHEDULED.value) \
-                and data.get('payment_method') == PaymentMethod.PAD.value:
             data['status_code'] = PaymentStatus.COMPLETED.value
         return data

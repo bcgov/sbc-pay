@@ -27,7 +27,6 @@ from dpath import util as dpath_util
 from flask import current_app
 
 from .enums import CorpType
-import os
 
 
 def cors_preflight(methods: str = 'GET'):

@@ -45,6 +45,7 @@ class InvoiceStatus(Enum):
     """Invoice status codes."""
 
     CREATED = 'CREATED'
+    APPROVED = 'APPROVED'
     PAID = 'PAID'
     DELETED = 'DELETED'
     UPDATE_REVENUE_ACCOUNT = 'GL_UPDATED'
