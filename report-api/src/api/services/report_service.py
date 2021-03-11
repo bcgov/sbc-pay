@@ -49,6 +49,7 @@ class ReportService:
         bc_logo_url = url_for('static', filename='images/bcgov-logo-vert.jpg')
         registries_url = url_for('static', filename='images/reg_logo.png')
         html_out = template.render(template_args, bclogoUrl=bc_logo_url, registriesurl=registries_url)
+        print('html_out ', html_out)
         return ReportService.generate_pdf(html_out, generate_page_number)
 
     @classmethod
