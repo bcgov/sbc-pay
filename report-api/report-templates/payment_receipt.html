@@ -667,7 +667,7 @@
         <td colspan="2">
           <div class="total-elements">
             Fees:
-            <span class="total-elements-price">${{"%.2f"|format(invoice.total-invoice.serviceFees) if invoice.total else '0.00'}}</span>
+            <span class="total-elements-price font-bold">${{"%.2f"|format(invoice.total-invoice.serviceFees) if invoice.total else '0.00'}}</span>
           </div>
         </td>
       </tr>
@@ -675,7 +675,7 @@
         <td colspan="2">
           <div class="total-elements">
             Goods and Service Tax (GST)
-            <span class="total-elements-price">${{'0.00'}}</span>
+            <span class="total-elements-price font-bold">${{'0.00'}}</span>
           </div>
         </td>
       </tr>
@@ -683,7 +683,7 @@
         <td colspan="2">
           <div class="total-elements blue-border-bottom ">
             Service Fees
-            <span class="total-elements-price">${{"%.2f"|format(invoice.serviceFees) if invoice.serviceFees else '0.00'}}</span>
+            <span class="total-elements-price font-bold">${{"%.2f"|format(invoice.serviceFees) if invoice.serviceFees else '0.00'}}</span>
           </div>
         </td>
       </tr>
@@ -691,7 +691,7 @@
         <td colspan="2">
           <div class="total-elements font-bold blue-border-bottom ">
             TOTAL AMOUNT:
-            <span class="total-elements-price">${{"%.2f"|format(invoice.total)  if invoice.total else '0.00'}}</span>
+            <span class="total-elements-price font-bold">${{"%.2f"|format(invoice.total)  if invoice.total else '0.00'}}</span>
           </div>
         </td>
       </tr>
