@@ -632,10 +632,12 @@
                 <td>{{invoice.get('folioNumber', '')}}</td>
                 <td class="product-purchased">
                   {{item.description}}
-                  <br/>#{{invoice.businessIdentifier}}
+                  {% if invoice.businessIdentifier %}
+                    <br/>#{{invoice.businessIdentifier}}
+                  {% endif %}
                 </td>
                 <td>{{invoice.createdOn|format_datetime}}</td>
-                <td>{{invoice.get('filingIdentifier', filingIdentifier)}}</td>
+                <td>{{filingIdentifier}}</td>
                 <td>${{"%.2f"|format((item.filingFees+item.futureEffectiveFees+item.priorityFees)) if (item.total) else '0.00'}}</td>
                 <td>${{"%.2f"|format(item.gst) if item.gst else '0.00'}}</td>
                 <td>${{"%.2f"|format(item.serviceFees) if item.serviceFees else '0.00'}}</td>
