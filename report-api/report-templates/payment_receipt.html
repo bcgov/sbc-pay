@@ -169,6 +169,7 @@
       .receipt-details-body {
         background: #e2e7ed;
         padding: 18px 24px;
+        margin-bottom: 20px;
       }
 
       .receipt-details-body .detail-row {
@@ -179,7 +180,7 @@
       .receipt-details-body .detail-label {
         font-weight: 600;
         display: inline-block;
-        width: 210px;
+        min-width: 240px;
       }
 
       .receipt-details-body .detail-value {
@@ -187,9 +188,11 @@
       }
 
       .receipt-message {
-        padding: 24px;
+        padding: 15px 24px;
         font-weight: 600;
         color: #234075;
+        margin-top: 10px;
+        font-size: 16px;
       }
       .receipt-pending-message {
         padding: 0 24px;
@@ -268,9 +271,10 @@
 
       .receipt-footer .footer-info span {
         padding: 2px 10px;
-        border-right: 1px solid #bcbcbc;
+        border-right: 1px solid #234075;
         display: inline-block;
         text-align: right;
+        color: #234075;
       }
 
       .receipt-footer .footer-info span:last-child {
@@ -372,6 +376,7 @@
         font-size: 18px;
         color: #234075;
         border-bottom: 1px solid #b3bac3;
+        font-weight: 'bold';
       }
 
       .section-payment-title {
@@ -401,7 +406,8 @@
 
       .transaction-table {
         margin: 0px 24px 8px;
-        width: 690px;
+        /* width: 690px; */
+        min-width: 600px;
       }
 
       .transaction-table thead tr,
@@ -417,7 +423,7 @@
         text-align: left;
         vertical-align: top;
         font-family: 'BCSans-Bold', sans-serif;
-        font-weight: normal;
+        /* font-weight: normal; */
         padding-bottom: 2px;
       }
       .transaction-table thead th:last-child {
