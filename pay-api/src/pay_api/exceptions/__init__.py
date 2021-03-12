@@ -55,7 +55,7 @@ class BusinessException(Exception):
 
     def __init__(self, error: Error, *args, **kwargs):
         """Return a valid BusinessException."""
-        super().__init__(*args, **kwargs)
+        super(BusinessException, self).__init__(*args, **kwargs)  # pylint:disable=super-with-arguments
         self.code = error.code
         self.status = error.status
 
@@ -74,7 +74,7 @@ class ServiceUnavailableException(Exception):
 
     def __init__(self, error, *args, **kwargs):
         """Return a valid BusinessException."""
-        super().__init__(*args, **kwargs)
+        super(ServiceUnavailableException, self).__init__(*args, **kwargs)  # pylint:disable=super-with-arguments
         self.error = error
         self.status = Error.SERVICE_UNAVAILABLE.name
 

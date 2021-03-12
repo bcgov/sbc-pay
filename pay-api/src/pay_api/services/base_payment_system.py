@@ -37,9 +37,9 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     Any payment system service SHOULD implement this class and implement the abstract methods.
     """
 
-    def __init__(self):
+    def __init__(self):  # pylint:disable=useless-super-delegation
         """Initialize."""
-        super().__init__(self)
+        super(PaymentSystemService, self).__init__()  # pylint:disable=super-with-arguments
 
     def create_account(self, name: str, contact_info: Dict[str, Any],  # pylint: disable=unused-argument, no-self-use
                        payment_info: Dict[str, Any],  # pylint: disable=unused-argument
