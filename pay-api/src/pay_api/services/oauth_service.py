@@ -19,12 +19,13 @@ from typing import Dict
 import requests
 from flask import current_app
 from requests.adapters import HTTPAdapter  # pylint:disable=ungrouped-imports
-from requests.exceptions import ConnectTimeout, HTTPError
 from requests.exceptions import ConnectionError as ReqConnectionError  # pylint:disable=ungrouped-imports
+from requests.exceptions import ConnectTimeout, HTTPError
 from urllib3.util.retry import Retry
 
 from pay_api.exceptions import ServiceUnavailableException
 from pay_api.utils.enums import AuthHeaderType, ContentType
+
 
 RETRY_ADAPTER = HTTPAdapter(max_retries=Retry(total=5, backoff_factor=1, status_forcelist=[404]))
 
@@ -68,12 +69,12 @@ class OAuthService:
         except (ReqConnectionError, ConnectTimeout) as exc:
             current_app.logger.error('---Error on POST---')
             current_app.logger.error(exc)
-            raise ServiceUnavailableException(exc)
+            raise ServiceUnavailableException(exc) from exc
         except HTTPError as exc:
             current_app.logger.error(
                 'HTTPError on POST with status code {}'.format(response.status_code if response else ''))
             if response and response.status_code >= 500:
-                raise ServiceUnavailableException(exc)
+                raise ServiceUnavailableException(exc) from exc
             raise exc
         finally:
             OAuthService.__log_response(response)
@@ -117,13 +118,13 @@ class OAuthService:
         except (ReqConnectionError, ConnectTimeout) as exc:
             current_app.logger.error('---Error on POST---')
             current_app.logger.error(exc)
-            raise ServiceUnavailableException(exc)
+            raise ServiceUnavailableException(exc) from exc
         except HTTPError as exc:
             current_app.logger.error(
                 'HTTPError on POST with status code {}'.format(response.status_code if response else ''))
             if response is not None:
                 if response.status_code >= 500:
-                    raise ServiceUnavailableException(exc)
+                    raise ServiceUnavailableException(exc) from exc
                 if return_none_if_404 and response.status_code == 404:
                     return None
             raise exc

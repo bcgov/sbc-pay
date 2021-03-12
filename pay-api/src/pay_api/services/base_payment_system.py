@@ -24,8 +24,9 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import TransactionStatus
+from pay_api.utils.enums import InvoiceStatus, PaymentStatus, TransactionStatus
 from pay_api.utils.util import get_pay_subject_name
+
 from .payment_line_item import PaymentLineItem
 
 
@@ -36,47 +37,53 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     Any payment system service SHOULD implement this class and implement the abstract methods.
     """
 
-    def __init__(self):  # pylint: disable=useless-super-delegation
+    def __init__(self):
         """Initialize."""
-        super(PaymentSystemService, self).__init__()
+        super().__init__(self)
 
-    @abstractmethod
-    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
+    def create_account(self, name: str, contact_info: Dict[str, Any],  # pylint: disable=unused-argument, no-self-use
+                       payment_info: Dict[str, Any],  # pylint: disable=unused-argument
                        **kwargs) -> CfsAccountModel:
         """Create account in payment system."""
+        return None
 
-    @abstractmethod
-    def update_account(self, name: str, cfs_account: CfsAccountModel, payment_info: Dict[str, Any]) -> CfsAccountModel:
+    def update_account(self, name: str, cfs_account: CfsAccountModel,  # pylint: disable=unused-argument, no-self-use
+                       payment_info: Dict[str, Any]) -> CfsAccountModel:  # pylint: disable=unused-argument
         """Update account in payment system."""
+        return None
 
     @abstractmethod
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
         """Create invoice in payment system."""
 
-    @abstractmethod
-    def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
-                       line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0,
+    def update_invoice(self,  # pylint:disable=too-many-arguments,no-self-use,unused-argument
+                       payment_account: PaymentAccount,  # pylint: disable=unused-argument
+                       line_items: [PaymentLineItem], invoice_id: int,  # pylint: disable=unused-argument
+                       paybc_inv_number: str, reference_count: int = 0,  # pylint: disable=unused-argument
                        **kwargs):
         """Update invoice in payment system."""
+        return None
 
-    @abstractmethod
-    def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
+    def cancel_invoice(self, payment_account: PaymentAccount,  # pylint:disable=unused-argument, no-self-use
+                       inv_number: str):  # pylint: disable=unused-argument
         """Cancel invoice in payment system."""
+        return None
 
-    @abstractmethod
-    def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
+    def get_receipt(self, payment_account: PaymentAccount,  # pylint:disable=unused-argument, no-self-use
+                    pay_response_url: str, invoice_reference: InvoiceReference):  # pylint: disable=unused-argument
         """Get receipt from payment system."""
+        return None
 
     def get_payment_system_url_for_invoice(self, invoice: Invoice,  # pylint:disable=unused-argument, no-self-use
-                                           inv_ref: InvoiceReference,  # pylint:disable=unused-argument
-                                           return_url: str) -> str:  # pylint:disable=unused-argument
+                                           inv_ref: InvoiceReference,  # pylint: disable=unused-argument
+                                           return_url: str) -> str:  # pylint: disable=unused-argument
         """Return the payment system portal URL for payment."""
         return None
 
     def get_payment_system_url_for_payment(self, payment: Payment,  # pylint:disable=unused-argument, no-self-use
-                                           inv_ref: InvoiceReference,  # pylint:disable=unused-argument
-                                           return_url: str) -> str:  # pylint:disable=unused-argument
+                                           inv_ref: InvoiceReference,  # pylint: disable=unused-argument
+                                           return_url: str) -> str:  # pylint: disable=unused-argument
         """Return the payment system portal URL for payment."""
         return None
 
@@ -92,17 +99,18 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def get_payment_method_code(self):
         """Return the payment method code. E.g, CC, DRAWDOWN etc."""
 
-    @abstractmethod
-    def get_default_invoice_status(self) -> str:
+    def get_default_invoice_status(self) -> str:  # pylint: disable=no-self-use
         """Return the default status for invoice when created."""
+        return InvoiceStatus.CREATED.value
 
-    @abstractmethod
-    def get_default_payment_status(self) -> str:
+    def get_default_payment_status(self) -> str:  # pylint: disable=no-self-use
         """Return the default status for payment when created."""
+        return PaymentStatus.CREATED.value
 
-    @abstractmethod
-    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
+    def complete_post_invoice(self, invoice: Invoice,  # pylint: disable=unused-argument, no-self-use
+                              invoice_reference: InvoiceReference) -> None:  # pylint: disable=unused-argument
         """Complete any post invoice activities if needed."""
+        return None
 
     def apply_credit(self, invoice: Invoice) -> None:  # pylint:disable=unused-argument, no-self-use
         """Apply credit on invoice."""
@@ -111,8 +119,8 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def _release_payment(invoice: Invoice):
         """Release record."""
-        from .payment_transaction import PaymentTransaction, \
-            publish_response  # pylint:disable=import-outside-toplevel,cyclic-import
+        from .payment_transaction import publish_response  # pylint:disable=import-outside-toplevel,cyclic-import
+        from .payment_transaction import PaymentTransaction  # pylint:disable=import-outside-toplevel,cyclic-import
 
         payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
         try:

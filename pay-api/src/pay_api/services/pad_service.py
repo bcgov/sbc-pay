@@ -22,7 +22,8 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentSystem, PaymentStatus, CfsAccountStatus
+from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, PaymentSystem
+
 from .payment_line_item import PaymentLineItem
 
 
@@ -40,10 +41,6 @@ class PadService(PaymentSystemService, CFSService):
     def get_default_invoice_status(self) -> str:
         """Return CREATED as the default invoice status."""
         return InvoiceStatus.APPROVED.value
-
-    def get_default_payment_status(self) -> str:
-        """Return the default status for payment when created."""
-        return PaymentStatus.CREATED.value
 
     def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
                        **kwargs) -> CfsAccountModel:
@@ -98,19 +95,6 @@ class PadService(PaymentSystemService, CFSService):
         """Return a static invoice number for direct pay."""
         current_app.logger.debug('<create_invoice_pad_service')
         # Do nothing here as the invoice references are created later.
-
-    def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
-                       line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0,
-                       **kwargs):
-        """Update invoice on completion."""
-        # TODO implement the logic
-
-    def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
-        # TODO not sure if direct pay can be cancelled
-        """Adjust the invoice to zero."""
-
-    def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
-        """Get the receipt details by calling PayBC web service."""
 
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""

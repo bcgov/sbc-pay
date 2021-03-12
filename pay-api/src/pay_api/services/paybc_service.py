@@ -27,11 +27,10 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.constants import (
-    CFS_ADJ_ACTIVITY_NAME)
-from pay_api.utils.enums import AuthHeaderType, ContentType
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentSystem, PaymentStatus, CfsAccountStatus
+from pay_api.utils.constants import CFS_ADJ_ACTIVITY_NAME
+from pay_api.utils.enums import AuthHeaderType, CfsAccountStatus, ContentType, PaymentMethod, PaymentSystem
 from pay_api.utils.util import parse_url_params
+
 from .payment_line_item import PaymentLineItem
 
 
@@ -54,14 +53,6 @@ class PaybcService(PaymentSystemService, CFSService):
         """Return CC as the method code."""
         return PaymentMethod.CC.value
 
-    def get_default_invoice_status(self) -> str:
-        """Return CREATED as the default invoice status."""
-        return InvoiceStatus.CREATED.value
-
-    def get_default_payment_status(self) -> str:
-        """Return the default status for payment when created."""
-        return PaymentStatus.CREATED.value
-
     def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs) -> any:
         """Create account in PayBC."""
         # Create CFS Account model instance and store the bank details
@@ -74,12 +65,6 @@ class PaybcService(PaymentSystemService, CFSService):
         cfs_account.cfs_party = cfs_account_details.get('party_number')
         cfs_account.status = CfsAccountStatus.ACTIVE.value
         return cfs_account
-
-    def update_account(self, name: str, cfs_account: any, payment_info: Dict[str, Any]) -> any:
-        """No CFS account update."""
-
-    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
-        """Complete any post invoice activities if needed."""
 
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
                        line_items: [PaymentLineItem], invoice: Invoice, **kwargs) -> InvoiceReference:
