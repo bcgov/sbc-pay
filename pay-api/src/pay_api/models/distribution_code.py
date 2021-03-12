@@ -66,22 +66,27 @@ class DistributionCode(Audit):  # pylint:disable=too-many-instance-attributes
     service_line = db.Column(db.String(50), nullable=True)
     stob = db.Column(db.String(50), nullable=True)
     project_code = db.Column(db.String(50), nullable=True)
-    service_fee_distribution_code_id = db.Column(db.Integer, ForeignKey('distribution_codes.distribution_code_id'),
-                                                 nullable=True)
-    disbursement_distribution_code_id = db.Column(db.Integer, ForeignKey('distribution_codes.distribution_code_id'),
-                                                  nullable=True)
 
     start_date = db.Column(db.Date, default=date.today(), nullable=False)
     end_date = db.Column(db.Date, default=None, nullable=True)
     stop_ejv = db.Column('stop_ejv', Boolean(), default=False)
 
+    service_fee_distribution_code_id = db.Column(db.Integer, ForeignKey('distribution_codes.distribution_code_id'),
+                                                 nullable=True)
+    disbursement_distribution_code_id = db.Column(db.Integer, ForeignKey('distribution_codes.distribution_code_id'),
+                                                  nullable=True)
+    account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
+
     @classmethod
-    def find_all(cls):
+    def find_all(cls, include_gov_account_gl_codes: bool = False):
         """Find all distribution codes."""
         valid_date = date.today()
         query = cls.query.filter(DistributionCode.start_date <= valid_date). \
             filter((DistributionCode.end_date.is_(None)) | (DistributionCode.end_date >= valid_date)). \
             order_by(DistributionCode.name.asc())
+
+        query = query.filter(DistributionCode.account_id.isnot(None)) if include_gov_account_gl_codes \
+            else query.filter(DistributionCode.account_id.is_(None))
 
         return query.all()
 
@@ -98,6 +103,18 @@ class DistributionCode(Audit):  # pylint:disable=too-many-instance-attributes
         query = db.session.query(DistributionCode). \
             join(DistributionCodeLink). \
             filter(DistributionCodeLink.fee_schedule_id == fee_schedule_id). \
+            filter(DistributionCode.start_date <= valid_date). \
+            filter((DistributionCode.end_date.is_(None)) | (DistributionCode.end_date >= valid_date))
+
+        distribution_code = query.one_or_none()
+        return distribution_code
+
+    @classmethod
+    def find_by_active_for_account(cls, account_id: int):
+        """Return active distribution for account."""
+        valid_date = date.today()
+        query = db.session.query(DistributionCode). \
+            filter(DistributionCode.account_id == account_id). \
             filter(DistributionCode.start_date <= valid_date). \
             filter((DistributionCode.end_date.is_(None)) | (DistributionCode.end_date >= valid_date))
 

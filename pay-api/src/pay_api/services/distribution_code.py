@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Fee Calculation."""
+from __future__ import annotations
 
 from datetime import date
 from typing import Dict
@@ -20,7 +21,8 @@ from dateutil import parser
 from flask import current_app
 from sbc_common_components.tracing.service_tracing import ServiceTracing
 
-from pay_api.models import DistributionCode as DistributionCodeModel, DistributionCodeLink as DistributionCodeLinkModel
+from pay_api.models import DistributionCode as DistributionCodeModel
+from pay_api.models import DistributionCodeLink as DistributionCodeLinkModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models.distribution_code import DistributionCodeSchema
 from pay_api.models.fee_schedule import FeeScheduleSchema
@@ -54,6 +56,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         self._service_fee_distribution_code_id: int = None
         self._disbursement_distribution_code_id: int = None
         self._stop_ejv: bool = False
+        self._account_id: int = None
 
     @property
     def _dao(self):
@@ -90,6 +93,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         self._service_fee_distribution_code_id = self._dao.service_fee_distribution_code_id
         self._disbursement_distribution_code_id = self._dao.disbursement_distribution_code_id
         self._stop_ejv: bool = self._dao.stop_ejv
+        self._account_id: int = self._dao.account_id
 
     @property
     def distribution_code_id(self):
@@ -277,6 +281,17 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         self._stop_ejv = value
         self._dao.stop_ejv = value
 
+    @property
+    def account_id(self):
+        """Return the account id."""
+        return self._account_id
+
+    @account_id.setter
+    def account_id(self, value: int):
+        """Set the account id."""
+        self._account_id = value
+        self._dao.account_id = value
+
     def save(self):
         """Save the distribution code information and commit."""
         return self._dao.save()
@@ -302,6 +317,16 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         distribution_code_schema = DistributionCodeSchema()
         current_app.logger.debug('>find_by_id')
         return distribution_code_schema.dump(distribution_code, many=False)
+
+    @staticmethod
+    def find_active_by_account_id(account_id: int) -> DistributionCode:
+        """Find active distribution code by account_id."""
+        current_app.logger.debug('<find_active_by_account_id, {}'.format(account_id))
+        distribution_code = DistributionCodeModel.find_by_active_for_account(account_id)
+        dist_code_svc = DistributionCode()
+        dist_code_svc._dao = distribution_code  # pylint: disable=protected-access
+        current_app.logger.debug('>find_active_by_account_id')
+        return dist_code_svc
 
     @staticmethod
     def find_fee_schedules_by_distribution_id(distribution_id: int):
@@ -352,6 +377,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         dist_code_svc.service_fee_distribution_code_id = distribution_details.get('serviceFeeDistributionCodeId', None)
         dist_code_svc.disbursement_distribution_code_id = distribution_details.get('disbursementDistributionCodeId',
                                                                                    None)
+        dist_code_svc.account_id = distribution_details.get('accountId', None)
 
         if _has_code_changes and dist_id is not None:
             # Update all invoices which used this distribution for updating revenue account details
@@ -381,3 +407,9 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
 
         DistributionCodeLinkModel.bulk_save_links(links)
         current_app.logger.debug('>create_link')
+
+    def asdict(self):
+        """Return the distribution code as a python dict."""
+        distribution_schema = DistributionCodeSchema()
+        d = distribution_schema.dump(self._dao)
+        return d

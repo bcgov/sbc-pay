@@ -26,10 +26,11 @@ from pay_api.exceptions import ServiceUnavailableException
 from pay_api.models.invoice import Invoice
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.schemas import utils as schema_utils
-from pay_api.utils.enums import Role, PaymentMethod
-from tests.utilities.base_test import (get_claims, get_payment_request, get_basic_account_payload,
-                                       get_premium_account_payload, token_header,
-                                       get_unlinked_pad_account_payload, get_pad_account_payload)
+from pay_api.utils.enums import PaymentMethod, Role
+from tests.utilities.base_test import (
+    get_basic_account_payload, get_claims, get_pad_account_payload, get_payment_request, get_premium_account_payload,
+    get_unlinked_pad_account_payload, get_gov_account_payload, get_gov_account_payload_with_no_revenue_account,
+    token_header)
 
 
 def test_account_purchase_history(session, client, jwt, app):
@@ -289,18 +290,6 @@ def test_premium_account_update(session, client, jwt, app):
     assert rv.status_code == 200
 
 
-def test_premium_account_update_with_no_create(session, client, jwt, app):
-    """Assert that the endpoint returns 200."""
-    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    auth_account_id = 100000
-    rv = client.put(f'/api/v1/accounts/{auth_account_id}',
-                    data=json.dumps(get_premium_account_payload(account_id=auth_account_id)),
-                    headers=headers)
-
-    assert rv.status_code == 200
-
-
 def test_create_pad_account_when_cfs_down(session, client, jwt, app):
     """Assert that the payment records are created with 202."""
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
@@ -448,3 +437,42 @@ def test_account_get_by_user(session, client, jwt, app):
     expected_bank_number = len(account.get('paymentInfo').get('bankAccountNumber')) * 'X'
     assert rv.json.get('cfsAccount').get('bankAccountNumber') == expected_bank_number
     assert rv.json.get('cfsAccount').get('bankInstitutionNumber')
+
+
+def test_create_gov_accounts(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_gov_account_payload()),
+                     headers=headers)
+
+    assert rv.status_code == 201
+
+
+def test_update_gov_accounts(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    account_id = 123
+    rv = client.post('/api/v1/accounts',
+                     data=json.dumps(get_gov_account_payload_with_no_revenue_account(account_id=account_id)),
+                     headers=headers)
+    assert rv.status_code == 201
+
+    project_code = '1111111'
+    rv = client.put(f'/api/v1/accounts/{account_id}',
+                    data=json.dumps(get_gov_account_payload(account_id=account_id, project_code=project_code)),
+                    headers=headers)
+
+    assert rv.status_code == 200
+    assert rv.json['revenueAccount']['projectCode'] == project_code
+
+    # update again with new JV details
+    project_code = '2222222'
+    rv = client.put(f'/api/v1/accounts/{account_id}',
+                    data=json.dumps(get_gov_account_payload(account_id=account_id, project_code=project_code)),
+                    headers=headers)
+
+    assert rv.status_code == 200
+    assert rv.json['revenueAccount']['projectCode'] == project_code

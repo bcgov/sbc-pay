@@ -21,13 +21,14 @@ from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.bcol_service import BcolService  # noqa: I001
 from pay_api.services.direct_pay_service import DirectPayService
 from pay_api.services.eft_service import EftService
+from pay_api.services.ejv_pay_service import EjvPayService
 from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.services.online_banking_service import OnlineBankingService
 from pay_api.services.pad_service import PadService
 from pay_api.services.paybc_service import PaybcService
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.wire_service import WireService
-from pay_api.utils.enums import Role, PaymentMethod, CfsAccountStatus  # noqa: I001
+from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, Role  # noqa: I001
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 
@@ -59,6 +60,8 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
             _instance = EftService()
         elif payment_method == PaymentMethod.WIRE.value:
             _instance = WireService()
+        elif payment_method == PaymentMethod.EJV.value:
+            _instance = EjvPayService()
 
         if not _instance:
             raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
