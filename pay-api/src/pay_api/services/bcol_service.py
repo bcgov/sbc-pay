@@ -14,19 +14,19 @@
 """Service to manage PayBC interaction."""
 
 from datetime import datetime
-from typing import Any, Dict
+from typing import Dict
 
 from flask import current_app
 from requests.exceptions import HTTPError
 
 from pay_api.exceptions import BusinessException, Error
 from pay_api.models.corp_type import CorpType
-from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceStatus, PaymentStatus
-from pay_api.utils.enums import PaymentSystem as PaySystemCode, PaymentMethod
+from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod
+from pay_api.utils.enums import PaymentSystem as PaySystemCode
 from pay_api.utils.errors import get_bcol_error
-from pay_api.utils.user_context import UserContext
-from pay_api.utils.user_context import user_context
+from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import generate_transaction_number
+
 from .base_payment_system import PaymentSystemService
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
@@ -38,24 +38,9 @@ from .payment_line_item import PaymentLineItem
 class BcolService(PaymentSystemService, OAuthService):
     """Service to manage BCOL integration."""
 
-    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
-                       **kwargs) -> any:
-        """Return an empty value since we don't create BC Online account."""
-
-    def update_account(self, name: str, cfs_account: any, payment_info: Dict[str, Any]) -> any:
-        """No BCOL account update."""
-
     def get_payment_system_code(self):
         """Return PAYBC as the system code."""
         return PaySystemCode.BCOL.value
-
-    def get_default_invoice_status(self) -> str:
-        """Return CREATED as the default invoice status."""
-        return InvoiceStatus.CREATED.value
-
-    def get_default_payment_status(self) -> str:
-        """Return the default status for payment when created."""
-        return PaymentStatus.CREATED.value
 
     @user_context
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
@@ -105,23 +90,13 @@ class BcolService(PaymentSystemService, OAuthService):
                 error = get_bcol_error(int(error_type))
             else:
                 error = Error.BCOL_ERROR
-            raise BusinessException(error)
+            raise BusinessException(error) from bol_err
 
         invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id, response_json.get('key'),
                                                                       response_json.get('sequenceNo'))
 
         current_app.logger.debug('>create_invoice')
         return invoice_reference
-
-    def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
-                       line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0,
-                       **kwargs):
-        """Adjust the invoice."""
-        current_app.logger.debug('<update_invoice')
-
-    def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
-        """Adjust the invoice to zero."""
-        current_app.logger.debug('<cancel_invoice')
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Get receipt from bcol for the receipt number or get receipt against invoice number."""
@@ -141,8 +116,8 @@ class BcolService(PaymentSystemService, OAuthService):
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post payment activities if needed."""
         # pylint: disable=cyclic-import,import-outside-toplevel
-        from .payment_transaction import PaymentTransaction
         from .payment import Payment
+        from .payment_transaction import PaymentTransaction
 
         # Create a payment record
         Payment.create(payment_method=self.get_payment_method_code(),
