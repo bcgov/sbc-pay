@@ -9,3 +9,4 @@ Werkzeug<1
 minio
 jaeger-client
 attrs==19.1.0
+sqlalchemy<1.4
