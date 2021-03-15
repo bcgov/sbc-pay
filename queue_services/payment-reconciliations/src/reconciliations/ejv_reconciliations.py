@@ -122,13 +122,14 @@ async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-loca
 
             invoice_return_code = line[315:319]
             invoice_return_message = line[319:469]
-            invoice_link.disbursement_status_code = _get_disbursement_status(invoice_return_code)
-            invoice_link.message = invoice_return_message
-            invoice.disbursement_status_code = _get_disbursement_status(invoice_return_code)
             # If the JV process failed, then mark the GL code against the invoice to be stopped
             # for further JV process for the credit GL.
             is_credit: bool = line[104:105] == 'C'
             if is_credit:
+                invoice_link.disbursement_status_code = _get_disbursement_status(invoice_return_code)
+                invoice_link.message = invoice_return_message
+                invoice.disbursement_status_code = _get_disbursement_status(invoice_return_code)
+
                 line_items: List[PaymentLineItemModel] = invoice.payment_line_items
                 for line_item in line_items:
                     # Line debit distribution
