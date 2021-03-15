@@ -13,7 +13,6 @@
 # limitations under the License.
 """Service to manage Direct Pay PAYBC Payments."""
 import base64
-from typing import Any, Dict
 from urllib.parse import unquote_plus, urlencode
 
 from dateutil import parser
@@ -26,11 +25,13 @@ from pay_api.services.hashing import HashingService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentSystem, PaymentMethod, InvoiceStatus, PaymentStatus
-from pay_api.utils.util import current_local_time, parse_url_params, generate_transaction_number
+from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentSystem
+from pay_api.utils.util import current_local_time, generate_transaction_number, parse_url_params
+
+from ..utils.paybc_transaction_error_message import PAYBC_TRANSACTION_ERROR_MESSAGE_DICT
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
-from ..utils.paybc_transaction_error_message import PAYBC_TRANSACTION_ERROR_MESSAGE_DICT
+
 
 PAYBC_DATE_FORMAT = '%Y-%m-%d'
 PAYBC_REVENUE_SEPARATOR = '|'
@@ -101,21 +102,6 @@ class DirectPayService(PaymentSystemService, OAuthService):
         """Return DIRECT_PAY as the system code."""
         return PaymentMethod.DIRECT_PAY.value
 
-    def get_default_invoice_status(self) -> str:
-        """Return CREATED as the default invoice status."""
-        return InvoiceStatus.CREATED.value
-
-    def get_default_payment_status(self) -> str:
-        """Return the default status for payment when created."""
-        return PaymentStatus.CREATED.value
-
-    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
-                       **kwargs) -> any:
-        """No Account needed for direct pay."""
-
-    def update_account(self, name: str, cfs_account: any, payment_info: Dict[str, Any]) -> any:
-        """No Account needed for direct pay."""
-
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number for direct pay."""
@@ -135,10 +121,6 @@ class DirectPayService(PaymentSystemService, OAuthService):
             'invoice_number': f'{invoice_id}'
         }
         return invoice
-
-    def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
-        # TODO not sure if direct pay can be cancelled
-        """Adjust the invoice to zero."""
 
     def get_pay_system_reason_code(self, pay_response_url: str) -> str:  # pylint:disable=unused-argument
         """Return the Pay system reason code."""
@@ -189,11 +171,8 @@ class DirectPayService(PaymentSystemService, OAuthService):
             response_json = transaction_response.json()
             if response_json.get('paymentstatus') == STATUS_PAID:
                 return response_json.get('trnorderid'), parser.parse(
-                    response_json.get('trndate')), float(response_json.get('trnamount')),
+                    response_json.get('trndate')), float(response_json.get('trnamount'))
         return None
-
-    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
-        """Complete any post invoice activities if needed."""
 
     def __get_token(self):
         """Generate oauth token from payBC which will be used for all communication."""

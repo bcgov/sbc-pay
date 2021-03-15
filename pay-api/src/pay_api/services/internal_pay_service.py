@@ -17,7 +17,6 @@ There are conditions where the payment will be handled internally. For e.g, zero
 """
 
 from datetime import datetime
-from typing import Any, Dict
 
 from flask import current_app
 
@@ -25,8 +24,9 @@ from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import PaymentSystem, PaymentMethod, InvoiceStatus, PaymentStatus
+from pay_api.utils.enums import PaymentMethod, PaymentSystem
 from pay_api.utils.util import generate_transaction_number
+
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -37,13 +37,6 @@ class InternalPayService(PaymentSystemService, OAuthService):
     def get_payment_system_code(self):
         """Return INTERNAL as the system code."""
         return PaymentSystem.INTERNAL.value
-
-    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
-                       **kwargs) -> any:
-        """No Account needed for internal pay."""
-
-    def update_account(self, name: str, cfs_account: any, payment_info: Dict[str, Any]) -> any:
-        """No Account needed for direct pay."""
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
@@ -56,14 +49,6 @@ class InternalPayService(PaymentSystemService, OAuthService):
         current_app.logger.debug('>create_invoice')
         return invoice_reference
 
-    def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
-                       line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0,
-                       **kwargs):
-        """Do nothing as internal payments cannot be updated as it will be completed on creation."""
-
-    def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
-        """Adjust the invoice to zero."""
-
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Create a static receipt."""
         # Find the invoice using the invoice_number
@@ -74,20 +59,14 @@ class InternalPayService(PaymentSystemService, OAuthService):
         """Return CC as the method code."""
         return PaymentMethod.INTERNAL.value
 
-    def get_default_invoice_status(self) -> str:
-        """Return CREATED as the default invoice status."""
-        return InvoiceStatus.CREATED.value
-
-    def get_default_payment_status(self) -> str:
-        """Return the default status for payment when created."""
-        return PaymentStatus.CREATED.value
-
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
         # pylint: disable=import-outside-toplevel, cyclic-import
-        from .payment_transaction import PaymentTransaction
         from .payment import Payment
+        from .payment_transaction import PaymentTransaction
+
         # Create a payment record
+        current_app.logger.debug('Created payment record')
         Payment.create(payment_method=self.get_payment_method_code(),
                        payment_system=self.get_payment_system_code(),
                        payment_status=self.get_default_payment_status(),

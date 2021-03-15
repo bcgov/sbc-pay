@@ -38,10 +38,10 @@
        ],
        "pattern": "^(.*)$"
      },
-      "recognitionDateTime": {
-       "$id": "#/properties/recognitionDateTime",
+      "effectiveDateTime": {
+       "$id": "#/properties/effectiveDateTime",
        "type": "string",
-       "title": "Recognition Date Time",
+       "title": "Effective Date Time",
        "default": "",
        "examples": [
          "1234567890"

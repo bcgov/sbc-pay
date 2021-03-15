@@ -23,7 +23,8 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import (CfsAccountStatus, InvoiceStatus, PaymentMethod, PaymentSystem, PaymentStatus)
+from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, PaymentSystem
+
 from .payment_line_item import PaymentLineItem
 
 
@@ -33,14 +34,6 @@ class OnlineBankingService(PaymentSystemService, CFSService):
     def get_payment_system_code(self):
         """Return PAYBC as the system code."""
         return PaymentSystem.PAYBC.value
-
-    def get_default_invoice_status(self) -> str:
-        """Return CREATED as the default invoice status."""
-        return InvoiceStatus.CREATED.value
-
-    def get_default_payment_status(self) -> str:
-        """Return the default status for payment when created."""
-        return PaymentStatus.CREATED.value
 
     def get_payment_method_code(self):
         """Return ONLINE_BANKING as the system code."""
@@ -55,32 +48,14 @@ class OnlineBankingService(PaymentSystemService, CFSService):
 
         return cfs_account
 
-    def update_account(self, name: str, cfs_account: CfsAccountModel, payment_info: Dict[str, Any]) -> CfsAccountModel:
-        """No CFS update needed for online banking account update yet."""
-
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number for direct pay."""
         current_app.logger.debug('<create_invoice_online_banking')
         # Do nothing here as the roll up happens later after creation of invoice.
 
-    def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
-                       line_items: [PaymentLineItem], invoice_id: int, paybc_inv_number: str, reference_count: int = 0,
-                       **kwargs):
-        """Update invoice on completion."""
-        # TODO implement the logic
-
-    def cancel_invoice(self, payment_account: PaymentAccount, inv_number: str):
-        # TODO not sure if direct pay can be cancelled
-        """Adjust the invoice to zero."""
-
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Get the receipt details by calling PayBC web service."""
-
-    # TODO implement this method
-
-    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
-        """Complete any post invoice activities if needed."""
 
     def apply_credit(self, invoice: Invoice) -> None:
         """Apply credit to the invoice."""
