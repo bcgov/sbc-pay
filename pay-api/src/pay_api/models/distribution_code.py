@@ -142,3 +142,4 @@ class DistributionCodeSchema(AuditSchema, ma.ModelSchema):  # pylint: disable=to
 
     service_fee_distribution_code_id = fields.String(data_key='service_fee_distribution_code_id')
     disbursement_distribution_code_id = fields.String(data_key='disbursement_distribution_code_id')
+    account_id = fields.String(data_key='account_id')
