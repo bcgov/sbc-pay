@@ -75,6 +75,7 @@ class DistributionCode(Audit):  # pylint:disable=too-many-instance-attributes
                                                  nullable=True)
     disbursement_distribution_code_id = db.Column(db.Integer, ForeignKey('distribution_codes.distribution_code_id'),
                                                   nullable=True)
+    # account id for distribution codes for gov account. None for distribution codes for filing types
     account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
 
     @classmethod
