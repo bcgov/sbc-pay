@@ -86,6 +86,7 @@ class PaymentSystem(Enum):
     PAYBC = 'PAYBC'
     BCOL = 'BCOL'
     INTERNAL = 'INTERNAL'
+    CGI = 'CGI'
 
 
 class PaymentMethod(Enum):
