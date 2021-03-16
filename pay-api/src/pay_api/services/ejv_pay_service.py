@@ -36,7 +36,7 @@ class EjvPayService(PaymentSystemService, OAuthService):
         return PaymentSystem.CGI.value
 
     def get_payment_method_code(self):
-        """Return CC as the method code."""
+        """Return EJV as the method code."""
         return PaymentMethod.EJV.value
 
     def get_default_invoice_status(self) -> str:
