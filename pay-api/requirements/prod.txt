@@ -25,3 +25,4 @@ Werkzeug==0.16.1
 SQLAlchemy-Continuum
 cryptography
 sqlalchemy_utils
+sqlalchemy<1.4
