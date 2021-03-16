@@ -252,7 +252,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
 
-        pay_service.cancel_invoice(payment_account=payment_account, inv_number=invoice_reference.invoice_number)
+        if invoice_reference:
+            pay_service.cancel_invoice(payment_account=payment_account, inv_number=invoice_reference.invoice_number)
         invoice.invoice_status_code = InvoiceStatus.DELETED.value
 
         for line in invoice.payment_line_items:
@@ -319,7 +320,7 @@ def _update_active_transactions(invoice_id: int):
 
 def _check_if_invoice_can_be_deleted(invoice: Invoice, payment: Payment = None):
     if invoice.invoice_status_code in (InvoiceStatus.PAID.value, InvoiceStatus.DELETED.value,
-                                       InvoiceStatus.SETTLEMENT_SCHEDULED.value):
+                                       InvoiceStatus.APPROVED.value):
         raise BusinessException(Error.COMPLETED_PAYMENT)
     if payment and payment.payment_status_code in (PaymentStatus.COMPLETED.value, PaymentStatus.DELETED.value):
         raise BusinessException(Error.COMPLETED_PAYMENT)
