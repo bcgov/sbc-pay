@@ -24,14 +24,16 @@ from unittest.mock import patch
 from flask import current_app
 from requests.exceptions import ConnectionError
 
-from pay_api.models import CfsAccount as CfsAccountModel, PaymentAccount as PaymentAccountModel
+from pay_api.models import CfsAccount as CfsAccountModel, PaymentAccount as PaymentAccountModel, \
+    DistributionCode as DistributionCodeModel
 from pay_api.schemas import utils as schema_utils
-from pay_api.utils.enums import PaymentMethod, Role
+from pay_api.utils.enums import PaymentMethod, Role, InvoiceStatus
 from tests.utilities.base_test import (
     get_claims, get_payment_request, get_payment_request_with_folio_number,
     get_payment_request_with_service_fees,
     get_payment_request_with_no_contact_info, get_payment_request_with_payment_method, get_waive_fees_payment_request,
-    get_zero_dollar_payment_request, token_header, get_basic_account_payload, get_unlinked_pad_account_payload)
+    get_zero_dollar_payment_request, token_header, get_basic_account_payload, get_unlinked_pad_account_payload,
+    get_gov_account_payload)
 
 
 def test_payment_creation(session, client, jwt, app):
@@ -726,3 +728,26 @@ def test_payment_request_online_banking_with_credit(session, client, jwt, app):
     # Credit won't be applied as the invoice total is 50 and the credit should remain as 0.
     payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
     assert payment_account.credit == 0
+
+
+def test_create_ejv_payment_request(session, client, jwt, app):
+    """Assert payment request works for EJV accounts."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    # Create account first
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_gov_account_payload(account_id=1234)),
+                     headers=headers)
+    auth_account_id = rv.json.get('authAccountId')
+
+    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+    dist_code: DistributionCodeModel = DistributionCodeModel.find_by_active_for_account(payment_account.id)
+
+    assert dist_code
+    assert dist_code.account_id == payment_account.id
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': auth_account_id}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    assert rv.json.get('paymentMethod') == PaymentMethod.EJV.value
+    assert rv.json.get('statusCode') == InvoiceStatus.APPROVED.value

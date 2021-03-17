@@ -48,6 +48,13 @@
       "title": "Billable Account",
       "pattern": "^(.*)$",
       "default": true
+    },
+    "revenueAccount": {
+      "oneOf": [
+        {
+          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/distribution_code"
+        }
+      ]
     }
   }
 }

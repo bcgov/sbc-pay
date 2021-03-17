@@ -21,8 +21,7 @@ from pay_api.services.payment_account import PaymentAccount as PaymentAccountSer
 from pay_api.utils.enums import PaymentMethod
 from tests.utilities.base_test import (
     factory_payment_account, factory_premium_payment_account, get_auth_basic_user, get_auth_premium_user,
-    get_pad_account_payload, get_premium_account_payload, get_basic_account_payload,
-    get_unlinked_pad_account_payload)
+    get_basic_account_payload, get_pad_account_payload, get_premium_account_payload, get_unlinked_pad_account_payload)
 
 
 def test_account_saved_from_new(session):
@@ -111,17 +110,23 @@ def test_create_bcol_account_to_pad(session):
 def test_create_pad_to_bcol_to_pad(session):
     """Assert that update from BCOL to PAD works."""
     # Create a PAD Account first
-    pad_account_1 = PaymentAccountService.create(get_unlinked_pad_account_payload(bank_number='009'))
+    auth_account_id = '123'
+    pad_account_1 = PaymentAccountService.create(get_unlinked_pad_account_payload(
+        account_id=auth_account_id, bank_number='009')
+    )
     assert pad_account_1.bank_number == '009'
 
     # Update this payment account with drawdown and assert payment method
-    bcol_account = PaymentAccountService.update(pad_account_1.auth_account_id, get_premium_account_payload())
+    bcol_account = PaymentAccountService.update(
+        pad_account_1.auth_account_id, get_premium_account_payload(account_id=auth_account_id)
+    )
     assert bcol_account.auth_account_id == bcol_account.auth_account_id
     assert bcol_account.payment_method == PaymentMethod.DRAWDOWN.value
 
     # Update to PAD again
-    pad_account_2 = PaymentAccountService.update(pad_account_1.auth_account_id,
-                                                 get_unlinked_pad_account_payload(bank_number='010'))
+    pad_account_2 = PaymentAccountService.update(
+        pad_account_1.auth_account_id, get_unlinked_pad_account_payload(account_id=auth_account_id, bank_number='010')
+    )
     assert pad_account_2.bank_number == '010'
     assert pad_account_2.payment_method == PaymentMethod.PAD.value
     assert pad_account_2.cfs_account_id != pad_account_1.cfs_account_id

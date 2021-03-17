@@ -79,8 +79,9 @@ def _update_acknowledgement():
             invoice.disbursement_status_code = DisbursementStatus.ACKNOWLEDGED.value
 
 
-async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-locals
+async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-locals, too-many-statements
     # Read the file and find records from the database, and update status.
+    has_errors: bool = False
     file_name: str = msg.get('data').get('fileName')
     minio_location: str = msg.get('data').get('location')
     file = get_object(minio_location, file_name)
@@ -102,7 +103,8 @@ async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-loca
             return_message = line[11:161]
             ejv_file.disbursement_status_code = _get_disbursement_status(return_code)
             ejv_file.message = return_message
-            await _publish_mailer_events(file_name, minio_location)
+            if ejv_file.disbursement_status_code == DisbursementStatus.ERRORED.value:
+                has_errors = True
         elif is_jv_header:
             journal_name: str = line[7:17]  # {ministry}{ejv_header_model.id:0>8}
             ejv_header_model_id = int(journal_name[2:])
@@ -111,6 +113,8 @@ async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-loca
             ejv_header.disbursement_status_code = _get_disbursement_status(ejv_header_return_code)
             ejv_header_error_message = line[275:425]
             ejv_header.message = ejv_header_error_message
+            if ejv_header.disbursement_status_code == DisbursementStatus.ERRORED.value:
+                has_errors = True
         elif is_jv_detail:
             journal_name: str = line[7:17]  # {ministry}{ejv_header_model.id:0>8}
             ejv_header_model_id = int(journal_name[2:])
@@ -130,6 +134,9 @@ async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-loca
                 invoice_link.message = invoice_return_message
                 invoice.disbursement_status_code = _get_disbursement_status(invoice_return_code)
 
+                if invoice_link.disbursement_status_code == DisbursementStatus.ERRORED.value:
+                    has_errors = True
+
                 line_items: List[PaymentLineItemModel] = invoice.payment_line_items
                 for line_item in line_items:
                     # Line debit distribution
@@ -139,6 +146,8 @@ async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-loca
                         .find_by_id(debit_distribution.disbursement_distribution_code_id)
                     credit_distribution.stop_ejv = True
 
+    if has_errors:
+        await _publish_mailer_events(file_name, minio_location)
     db.session.commit()
 
 

@@ -15,21 +15,22 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
-from typing import Any, Dict, Union, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from flask import current_app
 from sentry_sdk import capture_message
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import PaymentAccount as PaymentAccountModel, PaymentAccountSchema
+from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import PaymentAccountSchema
 from pay_api.models import StatementSettings as StatementSettingsModel
+from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.queue_publisher import publish_response
-from pay_api.utils.enums import PaymentSystem, StatementFrequency, PaymentMethod, CfsAccountStatus
+from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, PaymentSystem, StatementFrequency
 from pay_api.utils.errors import Error
-from pay_api.utils.user_context import user_context, UserContext
-from pay_api.utils.util import get_str_by_path, current_local_time, \
-    get_local_formatted_date, mask
+from pay_api.utils.user_context import UserContext, user_context
+from pay_api.utils.util import current_local_time, get_local_formatted_date, get_str_by_path, mask
 
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -38,29 +39,30 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def __init__(self):
         """Initialize service."""
         self.__dao = None
-        self._id: Union[None, int] = None
-        self._auth_account_id: Union[None, str] = None
-        self._auth_account_name: Union[None, str] = None
-        self._payment_method: Union[None, str] = None
-        self._auth_account_name: Union[None, str] = None
-        self._pad_activation_date: Union[None, datetime] = None
-        self._pad_tos_accepted_by: Union[None, str] = None
-        self._pad_tos_accepted_date: Union[None, datetime] = None
-        self._credit: Union[None, float] = None
+        self._id: Optional[int] = None
+        self._auth_account_id: Optional[str] = None
+        self._auth_account_name: Optional[str] = None
+        self._payment_method: Optional[str] = None
+        self._auth_account_name: Optional[str] = None
+        self._pad_activation_date: Optional[datetime] = None
+        self._pad_tos_accepted_by: Optional[str] = None
+        self._pad_tos_accepted_date: Optional[datetime] = None
+        self._credit: Optional[float] = None
 
-        self._cfs_account: Union[None, str] = None
-        self._cfs_party: Union[None, str] = None
-        self._cfs_site: Union[None, str] = None
+        self._cfs_account: Optional[str] = None
+        self._cfs_party: Optional[str] = None
+        self._cfs_site: Optional[str] = None
 
-        self._bank_number: Union[None, str] = None
-        self._bank_branch_number: Union[None, str] = None
-        self._bank_account_number: Union[None, str] = None
+        self._bank_number: Optional[str] = None
+        self._bank_branch_number: Optional[str] = None
+        self._bank_account_number: Optional[str] = None
 
-        self._bcol_user_id: Union[None, str] = None
-        self._bcol_account: Union[None, str] = None
+        self._bcol_user_id: Optional[str] = None
+        self._bcol_account: Optional[str] = None
 
-        self._cfs_account_id: Union[None, int] = None
-        self._cfs_account_status: Union[None, str] = None
+        self._cfs_account_id: Optional[int] = None
+        self._cfs_account_status: Optional[str] = None
+        self._billable: Optional[bool] = None
 
     @property
     def _dao(self):
@@ -81,6 +83,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self.pad_tos_accepted_by: str = self._dao.pad_tos_accepted_by
         self.pad_tos_accepted_date: datetime = self._dao.pad_tos_accepted_date
         self.credit: float = self._dao.credit
+        self.billable: bool = self._dao.billable
 
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(self.id)
         if cfs_account:
@@ -286,6 +289,17 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self._credit = value
         self._dao.credit = value
 
+    @property
+    def billable(self):
+        """Return the billable."""
+        return self._billable
+
+    @billable.setter
+    def billable(self, value: bool):
+        """Set the billable."""
+        self._billable = value
+        self._dao.billable = value
+
     def save(self):
         """Save the information to the DB."""
         return self._dao.save()
@@ -317,6 +331,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         """Update and save payment account and CFS account model."""
         # pylint:disable=cyclic-import, import-outside-toplevel
         from pay_api.factory.payment_system_factory import PaymentSystemFactory
+
         # If the payment method is CC, set the payment_method as DIRECT_PAY
         payment_method: str = get_str_by_path(account_request, 'paymentInfo/methodOfPayment')
         if not payment_method or payment_method == PaymentMethod.CC.value:
@@ -334,6 +349,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         payment_info = account_request.get('paymentInfo')
         billable = payment_info.get('billable', True)
         payment_account.billable = billable
+        payment_account.flush()
 
         # Steps to decide on creating CFS Account or updating CFS bank account.
         # Updating CFS account apart from bank details not in scope now.
@@ -358,19 +374,33 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 # Update details in CFS
                 pay_system.update_account(name=payment_account.auth_account_name, cfs_account=cfs_account,
                                           payment_info=payment_info)
+            is_pad = payment_method == PaymentMethod.PAD.value
+            if is_pad:
+                # override payment method for since pad has 3 days wait period
+                effective_pay_method, activation_date = PaymentAccount._get_payment_based_on_pad_activation(
+                    payment_account)
+                payment_account.pad_activation_date = activation_date
+                payment_account.payment_method = effective_pay_method
 
-        elif cfs_account is not None:
-            # if its not PAYBC ,it means switching to either drawdown or internal ,deactivate the cfs account
-            cfs_account.status = CfsAccountStatus.INACTIVE.value
-            cfs_account.flush()
+        elif pay_system.get_payment_system_code() == PaymentSystem.CGI.value:
+            # if distribution code exists, put an end date as previous day and create new.
+            dist_code_svc: DistributionCode = DistributionCode.find_active_by_account_id(payment_account.id)
+            if dist_code_svc and dist_code_svc.distribution_code_id:
+                end_date: datetime = datetime.now() - timedelta(days=1)
+                dist_code_svc.end_date = end_date.date()
+                dist_code_svc.save()
 
-        is_pad = payment_method == PaymentMethod.PAD.value
-        if is_pad:
-            # override payment method for since pad has 3 days wait period
-            effective_pay_method, activation_date = PaymentAccount._get_payment_based_on_pad_activation(payment_account)
-            payment_account.pad_activation_date = activation_date
-            payment_account.payment_method = effective_pay_method
-
+            # Create distribution code details.
+            if revenue_account := payment_info.get('revenueAccount'):
+                revenue_account.update(dict(accountId=payment_account.id,
+                                            name=payment_account.auth_account_name,
+                                            ))
+                DistributionCode.save_or_update(revenue_account)
+        else:
+            if cfs_account is not None:
+                # if its not PAYBC ,it means switching to either drawdown or internal ,deactivate the cfs account
+                cfs_account.status = CfsAccountStatus.INACTIVE.value
+                cfs_account.flush()
         payment_account.save()
 
     @classmethod
@@ -379,10 +409,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         current_app.logger.debug('<update payment account')
         try:
             account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-            # TODO Remove it later, this is to help migration from auth to pay.
-            if not account:
-                return PaymentAccount.create(account_request)
-
             PaymentAccount._save_account(account_request, account)
         except ServiceUnavailableException as e:
             current_app.logger.error(e)
@@ -490,6 +516,11 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
         if is_future_pad:
             d['futurePaymentMethod'] = PaymentMethod.PAD.value
+
+        if not self.billable:  # include JV details
+            dist_code = DistributionCode.find_active_by_account_id(self.id)
+            d['revenueAccount'] = dist_code.asdict()
+
         return d
 
     def _is_pad_in_pending_activation(self):

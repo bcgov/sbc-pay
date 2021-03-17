@@ -573,3 +573,36 @@ def get_unlinked_pad_account_payload(account_id: int = randrange(999999), bank_n
             'bankAccountNumber': bank_account
         }
     }
+
+
+def get_gov_account_payload(payment_method: str = PaymentMethod.EJV.value,
+                            account_id: int = randrange(999999), project_code='1111111'):
+    """Return a gov account payload."""
+    return {
+        'accountId': account_id,
+        'accountName': 'Test Account',
+        'paymentInfo': {
+            'methodOfPayment': payment_method,
+            'billable': False,
+            'revenueAccount': {
+                'client': '100',
+                'projectCode': project_code,
+                'responsibilityCentre': '22222',
+                'serviceLine': '1111111',
+                'stob': '9000'
+            }
+        }
+    }
+
+
+def get_gov_account_payload_with_no_revenue_account(payment_method: str = PaymentMethod.EJV.value,
+                                                    account_id: int = randrange(999999)):
+    """Return a gov account payload with no revenue account."""
+    return {
+        'accountId': account_id,
+        'accountName': 'Test Account',
+        'paymentInfo': {
+            'methodOfPayment': payment_method,
+            'billable': False
+        }
+    }
