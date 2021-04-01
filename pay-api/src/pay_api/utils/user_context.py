@@ -147,5 +147,5 @@ def get_auth_account_id() -> str:
     """Return account id from the header."""
     account_id = _get_token_info().get('Account-Id', None)
     if not account_id:
-        account_id=request.headers['Account-Id'] if request and 'Account-Id' in request.headers else None
+        account_id = request.headers['Account-Id'] if request and 'Account-Id' in request.headers else None
     return account_id
