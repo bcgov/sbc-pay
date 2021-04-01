@@ -11,6 +11,15 @@ FROM python:3.8.5-buster
 # --------------------------------------------------------------------------------------------------------
 ARG SOURCE_REPO=BCDevOps
 ARG GOCROND_VERSION=0.6.2
+ARG VCS_REF="missing"
+ARG BUILD_DATE="missing"
+
+ENV VCS_REF=${VCS_REF}
+ENV BUILD_DATE=${BUILD_DATE}
+
+LABEL org.label-schema.vcs-ref=${VCS_REF} \
+    org.label-schema.build-date=${BUILD_DATE}
+
 RUN curl https://github.com/$SOURCE_REPO/go-crond/releases/download/$GOCROND_VERSION/go-crond-64-linux -s -L -o /usr/local/bin/go-crond
 RUN chmod ug+x /usr/local/bin/go-crond
 # ========================================================================================================
