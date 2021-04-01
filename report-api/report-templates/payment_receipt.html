@@ -651,9 +651,9 @@
                 <td>{{invoice.createdOn|format_datetime}}</td>
                 <td>{{filingIdentifier}}</td>
                 <td>${{"%.2f"|format((item.filingFees+item.futureEffectiveFees+item.priorityFees)) if (item.total) else '0.00'}}</td>
-                <td>${{"%.2f"|format(item.gst) if item.gst else '0.00'}}</td>
-                <td>${{"%.2f"|format(item.serviceFees) if item.serviceFees else '0.00'}}</td>
-                <td class="font-bold">${{"%.2f"|format(item.total+item.serviceFees) if item.total else '0.00'}}</td>
+                <td>${{"%.2f"|format(item.get('gst', 0))}}</td>
+                <td>${{"%.2f"|format(item.get('serviceFees', 0))}}</td>
+                <td class="font-bold">${{"%.2f"|format(item.total+item.get('serviceFees', 0)) if item.total else '0.00'}}</td>
               </tr>
               {% endfor %}
             </tbody>
@@ -671,7 +671,7 @@
         <td colspan="2">
           <div class="total-elements">
             Fees:
-            <span class="total-elements-price font-bold">${{"%.2f"|format(invoice.total-invoice.serviceFees) if invoice.total else '0.00'}}</span>
+            <span class="total-elements-price font-bold">${{"%.2f"|format(invoice.total-invoice.get('serviceFees', 0)) if invoice.total else '0.00'}}</span>
           </div>
         </td>
       </tr>
@@ -687,7 +687,7 @@
         <td colspan="2">
           <div class="total-elements blue-border-bottom ">
             Service Fees
-            <span class="total-elements-price font-bold">${{"%.2f"|format(invoice.serviceFees) if invoice.serviceFees else '0.00'}}</span>
+            <span class="total-elements-price font-bold">${{"%.2f"|format(invoice.get('serviceFees', 0))}}</span>
           </div>
         </td>
       </tr>
