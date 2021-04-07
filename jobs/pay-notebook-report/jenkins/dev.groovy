@@ -166,6 +166,7 @@ if( run_pipeline ) {
                         returnStdout: true).trim()
 
             rocketChatNotificaiton("${ROCKETCHAT_TOKEN}", "${ROCKETCHAT_DEVELOPER_CHANNEL}", "${APP_NAME} build and deploy to ${DESTINATION_TAG} ${currentBuild.result}!")
+			echo "End notify on RocketChat..."
         }
     }
 }
