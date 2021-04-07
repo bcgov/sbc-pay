@@ -39,7 +39,7 @@ to setup your local development environment.
 3. Create build image with a tag 'latest'.
 
    ```sh
-   cd */lear/jobs/pay-notebook-report/openshift/templates
+   cd */sbc-pay/jobs/pay-notebook-report/openshift/templates
    oc create imagestream pay-notebook-report
    oc process -f pay-notebook-report-bc-template.json \
         -p GIT_REPO_URL=https://github.com/bcgov/sbc-pay.git \
@@ -52,10 +52,10 @@ to setup your local development environment.
    or tag it from 'test' to 'prod'
 
    ```sh
-   oc process -f auth-notebook-report-pipeline.json \
+   oc process -f pay-notebook-report-pipeline.json \
         -p TAG_NAME=dev \
-        -p GIT_REPO_URL=https://github.com/bcgov/sbc-auth.git \
-        -p WEBHOOK=github-auth-notebook-report-dev \
+        -p GIT_REPO_URL=https://github.com/bcgov/sbc-pay.git \
+        -p WEBHOOK=github-pay-notebook-report-dev \
         -p JENKINS_FILE=./jenkins/dev.groovy \
     | oc apply -f -
    ```
