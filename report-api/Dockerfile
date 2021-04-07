@@ -23,7 +23,14 @@ FROM python:3.8.5-buster
 #                        libpangocairo-1.0-0 \
 #    && apt-get -y clean
 
+ARG VCS_REF="missing"
+ARG BUILD_DATE="missing"
 
+ENV VCS_REF=${VCS_REF}
+ENV BUILD_DATE=${BUILD_DATE}
+
+LABEL org.label-schema.vcs-ref=${VCS_REF} \
+    org.label-schema.build-date=${BUILD_DATE}
 
 
 RUN apt-get -y update && apt-get install -y build-essential python3-dev python3-pip python3-setuptools python3-wheel python3-cffi libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
