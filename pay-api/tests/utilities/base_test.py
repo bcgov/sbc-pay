@@ -264,7 +264,7 @@ def get_waive_fees_payment_request(business_identifier: str = 'CP0001234'):
     }
 
 
-def get_payment_request_for_wills(will_alias_quantity:int=1):
+def get_payment_request_for_wills(will_alias_quantity: int = 1):
     """Return a payment request object for wills."""
     return {
         'businessInfo': {
@@ -453,7 +453,7 @@ def factory_statement_invoices(
                              invoice_id=invoice_id).save()
 
 
-def activate_pad_account(auth_account_id:str):
+def activate_pad_account(auth_account_id: str):
     """Activate the pad account."""
     payment_account: PaymentAccount = PaymentAccount.find_by_auth_account_id(auth_account_id)
     payment_account.pad_activation_date = datetime.now()
