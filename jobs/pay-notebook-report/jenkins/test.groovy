@@ -27,7 +27,7 @@ def SOURCE_TAG = 'dev'
 def DESTINATION_TAG = 'test'
 def TOOLS_TAG = 'tools'
 
-def NAMESPACE_APP = 'gl2uos'
+def NAMESPACE_APP = 'l4ygcl'
 def NAMESPACE_BUILD = "${NAMESPACE_APP}"  + '-' + "${TOOLS_TAG}"
 def NAMESPACE_DEPLOY = "${NAMESPACE_APP}" + '-' + "${DESTINATION_TAG}"
 
