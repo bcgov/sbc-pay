@@ -79,7 +79,7 @@
       "displayName": "Git Repo URL",
       "description": "The URL to your GIT repo.",
       "required": true,
-      "value": "https://github.com/bcgov/sbc-pay.git"
+      "value": "https://github.com/stevenc987/sbc-pay.git"
     },
     {
       "name": "GIT_REF",
