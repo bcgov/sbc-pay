@@ -14,17 +14,16 @@
 
 """Tests to assure the payments end-point.
 
-Test-Suite to ensure that the /payments endpoint is working as expected.
+Test-Suite to ensure that the /payment-requests endpoint is working as expected.
 """
 
 import json
-from datetime import datetime
 from unittest.mock import patch
 
 from flask import current_app
 from requests.exceptions import ConnectionError
 
-from pay_api.models import CfsAccount as CfsAccountModel, PaymentAccount as PaymentAccountModel, \
+from pay_api.models import PaymentAccount as PaymentAccountModel, \
     DistributionCode as DistributionCodeModel
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import PaymentMethod, Role, InvoiceStatus
@@ -33,7 +32,7 @@ from tests.utilities.base_test import (
     get_payment_request_with_service_fees,
     get_payment_request_with_no_contact_info, get_payment_request_with_payment_method, get_waive_fees_payment_request,
     get_zero_dollar_payment_request, token_header, get_basic_account_payload, get_unlinked_pad_account_payload,
-    get_gov_account_payload)
+    get_gov_account_payload, get_payment_request_for_wills, activate_pad_account)
 
 
 def test_payment_creation(session, client, jwt, app):
@@ -671,12 +670,7 @@ def test_create_pad_payment_request(session, client, jwt, app):
                      headers=headers)
     auth_account_id = rv.json.get('authAccountId')
     # Update the payment account as ACTIVE
-    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-    payment_account.pad_activation_date = datetime.now()
-    payment_account.save()
-    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
-    cfs_account.status = 'ACTIVE'
-    cfs_account.save()
+    activate_pad_account(auth_account_id)
 
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': auth_account_id}
@@ -751,3 +745,25 @@ def test_create_ejv_payment_request(session, client, jwt, app):
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     assert rv.json.get('paymentMethod') == PaymentMethod.EJV.value
     assert rv.json.get('statusCode') == InvoiceStatus.APPROVED.value
+
+
+def test_payment_request_creation_for_wills(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    # Create account first
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_unlinked_pad_account_payload(account_id=1234)),
+                     headers=headers)
+    auth_account_id = rv.json.get('authAccountId')
+    # Update the payment account as ACTIVE
+    activate_pad_account(auth_account_id)
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': auth_account_id}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request_for_wills(will_alias_quantity=2)),
+                     headers=headers)
+    assert rv.json.get('serviceFees') == 1.5
+    assert rv.json.get('total') == 28.5  # Wills Noticee : 17, Alias : 5 each for 2, service fee 1.5
+    assert rv.json.get('lineItems')[0]['serviceFees'] == 1.5
+    assert rv.json.get('lineItems')[1]['serviceFees'] == 0

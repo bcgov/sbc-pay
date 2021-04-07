@@ -264,6 +264,26 @@ def get_waive_fees_payment_request(business_identifier: str = 'CP0001234'):
     }
 
 
+def get_payment_request_for_wills(will_alias_quantity:int=1):
+    """Return a payment request object for wills."""
+    return {
+        'businessInfo': {
+            'corpType': 'VS'
+        },
+        'filingInfo': {
+            'filingTypes': [
+                {
+                    'filingTypeCode': 'WILLNOTICE'
+                },
+                {
+                    'filingTypeCode': 'WILLALIAS',
+                    'quantity': will_alias_quantity
+                }
+            ]
+        }
+    }
+
+
 def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC', account_number='4101',
                             bcol_user_id='test',
                             auth_account_id: str = '1234',
@@ -431,6 +451,16 @@ def factory_statement_invoices(
     """Return Factory."""
     return StatementInvoices(statement_id=statement_id,
                              invoice_id=invoice_id).save()
+
+
+def activate_pad_account(auth_account_id:str):
+    """Activate the pad account."""
+    payment_account: PaymentAccount = PaymentAccount.find_by_auth_account_id(auth_account_id)
+    payment_account.pad_activation_date = datetime.now()
+    payment_account.save()
+    cfs_account: CfsAccount = CfsAccount.find_effective_by_account_id(payment_account.id)
+    cfs_account.status = 'ACTIVE'
+    cfs_account.save()
 
 
 def get_paybc_transaction_request():
