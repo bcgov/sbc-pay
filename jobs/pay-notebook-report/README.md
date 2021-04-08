@@ -32,11 +32,8 @@ to setup your local development environment.
 
 2. switch to tools namespace
 
-
-
-
    ```sh
-   oc project gl2uos-tools
+   oc project l4ygcl-tools
    ```
 
 3. Create build image with a tag 'latest'.
@@ -74,7 +71,7 @@ to setup your local development environment.
 2. switch to dev namespace
 
    ```sh
-   oc project gl2uos-dev
+   oc project l4ygcl-dev
    ```
 
 3. Create cron
