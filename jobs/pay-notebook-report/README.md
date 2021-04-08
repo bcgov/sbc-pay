@@ -22,9 +22,9 @@ to setup your local development environment.
 
 1. Run `python -m pytest` or `pytest` command.
 
-### Build API - can be done in VS Code
-
-1. Login to openshift
+### Important: Please remember to add run.sh permission by "git update-index –chmod=+x" before run.sh is commit to github. 
+### API - can be done in VS Code
+1. Login to openshift 
 
    ```sh
    oc login xxxxxxx
