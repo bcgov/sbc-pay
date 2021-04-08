@@ -31,7 +31,7 @@ objects:
                   - name: PG_USER
                     valueFrom:
                       secretKeyRef:
-                        key: DATABASE_NAME
+                        key: DATABASE_USER
                         name: pay-api-${ENV_TAG}-secret
                   - name: PG_PASSWORD
                     valueFrom:
