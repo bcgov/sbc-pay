@@ -22,7 +22,7 @@ to setup your local development environment.
 
 1. Run `python -m pytest` or `pytest` command.
 
-### Important: Please remember to add run.sh permission by "git update-index –chmod=+x" before run.sh is commit to github. 
+### Important: Please remember to add run.sh permission by "git update-index --chmod=+x run.sh" before run.sh is commit to github. 
 ### API - can be done in VS Code
 1. Login to openshift 
 
@@ -31,6 +31,9 @@ to setup your local development environment.
    ```
 
 2. switch to tools namespace
+
+
+
 
    ```sh
    oc project gl2uos-tools
