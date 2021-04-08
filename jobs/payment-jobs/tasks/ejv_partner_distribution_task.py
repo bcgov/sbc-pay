@@ -13,8 +13,6 @@
 # limitations under the License.
 """Task to create Journal Voucher."""
 
-import os
-import tempfile
 import time
 from datetime import datetime
 from typing import List
@@ -29,16 +27,11 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import db
 from pay_api.utils.enums import DisbursementStatus, InvoiceStatus
-from pay_api.utils.util import get_fiscal_year, get_nearest_business_day
 
-from utils.minio import put_object
-from utils.sftp import upload_to_ftp
-
-DELIMITER = chr(29)  # '<0x1d>'
-EMPTY = ''
+from tasks.cgi_ejv import CgiEjv
 
 
-class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-few-public-methods
+class EjvPartnerDistributionTask(CgiEjv):
     """Task to create EJV Files."""
 
     @classmethod
@@ -56,7 +49,7 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
         cls._create_ejv_file_for_partner(batch_type='GA')  # External ministry
 
     @classmethod
-    def _create_ejv_file_for_partner(cls, batch_type: str):
+    def _create_ejv_file_for_partner(cls, batch_type: str):  # pylint:disable=too-many-locals, too-many-statements
         """Create EJV file for the partner and upload."""
         ejv_content: str = ''
         batch_total: float = 0
@@ -65,34 +58,21 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
         disbursement_desc = current_app.config.get('CGI_DISBURSEMENT_DESC'). \
             format(today.strftime('%B').upper(), f'{today.day:0>2}')[:100]
         disbursement_desc = f'{disbursement_desc:<100}'
-        message_version = current_app.config.get('CGI_MESSAGE_VERSION')
-        fiscal_year = get_fiscal_year(today)
-        feeder_number = current_app.config.get('CGI_FEEDER_NUMBER')
-        ministry = current_app.config.get('CGI_MINISTRY_PREFIX')
-        trg_suffix = current_app.config.get('CGI_TRIGGER_FILE_SUFFIX')
 
-        # Create file name
-        date_time = get_nearest_business_day(datetime.now()).strftime('%Y%m%d%H%M%S')
-        file_name: str = f'INBOX.F{feeder_number}.{date_time}'
-        current_app.logger.info('file_name %s', file_name)
-
-        # Create Batch Header.
         # Create a ejv file model record.
         ejv_file_model: EjvFileModel = EjvFileModel(
             is_distribution=True,
-            file_ref=file_name,
+            file_ref=cls.get_file_name(),
             disbursement_status_code=DisbursementStatus.UPLOADED.value
         ).flush()
-        batch_number = f'{ejv_file_model.id:0>9}'
-        journal_batch_name: str = f'{ministry}{batch_number}{EMPTY:<14}'
+        batch_number = cls.get_batch_number(ejv_file_model.id)
 
         # Get partner list. Each of the partner will go as a JV Header and transactions as JV Details.
-        partners: List[CorpTypeModel] = db.session.query(CorpTypeModel.code)\
+        partners: List[CorpTypeModel] = db.session.query(CorpTypeModel.code) \
             .filter(CorpTypeModel.batch_type == batch_type).all()
 
         # JV Batch Header
-        batch_header: str = f'{feeder_number}{batch_type}BH{DELIMITER}{feeder_number}{fiscal_year}' \
-                            f'{batch_number}{message_version}{DELIMITER}{os.linesep}'
+        batch_header: str = cls.get_batch_header(batch_number, batch_type)
 
         for partner in partners:
             # Find all invoices for the partner to disburse.
@@ -101,14 +81,14 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
             if not invoices:
                 continue
 
-            effective_date: str = cls._get_effective_date()
+            effective_date: str = cls.get_effective_date()
             # Construct journal name
             ejv_header_model: EjvFileModel = EjvHeaderModel(
                 partner_code=partner.code,
                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
                 ejv_file_id=ejv_file_model.id
             ).flush()
-            journal_name: str = f'{ministry}{ejv_header_model.id:0>8}'
+            journal_name: str = cls.get_journal_name(ejv_header_model.id)
 
             # To populate JV Header and JV Details, group these invoices by the distribution
             # and create one JV Header and detail for each.
@@ -135,13 +115,13 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
 
                 batch_total += total
 
-                debit_distribution = cls._get_distribution_string(distribution_code)  # Debit from BCREG GL
-                credit_distribution = cls._get_distribution_string(credit_distribution_code)  # Credit to partner GL
+                debit_distribution = cls.get_distribution_string(distribution_code)  # Debit from BCREG GL
+                credit_distribution = cls.get_distribution_string(credit_distribution_code)  # Credit to partner GL
 
                 # JV Header
-                ejv_content = f'{ejv_content}{feeder_number}{batch_type}JH{DELIMITER}{journal_name}' \
-                              f'{journal_batch_name}{cls._format_amount(total)}ACAD{EMPTY:<100}{EMPTY:<110}' \
-                              f'{DELIMITER}{os.linesep}'
+                ejv_content = '{}{}'.format(ejv_content,
+                                            cls.get_jv_header(batch_type, cls.get_journal_batch_name(batch_number),
+                                                              journal_name, total))
                 control_total += 1
 
                 line_number: int = 0
@@ -151,18 +131,18 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
                     # Flow Through add it as the invoice id.
                     flow_through = f'{line.invoice_id:<110}'
                     # Line for credit.
-                    ejv_content = f'{ejv_content}{feeder_number}{batch_type}JD{DELIMITER}{journal_name}' \
-                                  f'{line_number:0>5}{effective_date}{credit_distribution}{EMPTY:<9}' \
-                                  f'{cls._format_amount(line.total)}C{disbursement_desc}{flow_through}' \
-                                  f'{DELIMITER}{os.linesep}'
+                    ejv_content = '{}{}'.format(ejv_content,
+                                                cls.get_jv_line(batch_type, credit_distribution, disbursement_desc,
+                                                                effective_date, flow_through, journal_name, line,
+                                                                line_number))
                     line_number += 1
                     control_total += 1
 
                     # Add a line here for debit too
-                    ejv_content = f'{ejv_content}{feeder_number}{batch_type}JD{DELIMITER}{journal_name}' \
-                                  f'{line_number:0>5}{effective_date}{debit_distribution}{EMPTY:<9}' \
-                                  f'{cls._format_amount(line.total)}D{disbursement_desc}{flow_through}' \
-                                  f'{DELIMITER}{os.linesep}'
+                    ejv_content = '{}{}'.format(ejv_content,
+                                                cls.get_jv_line(batch_type, debit_distribution, disbursement_desc,
+                                                                effective_date, flow_through, journal_name, line,
+                                                                line_number))
 
                     control_total += 1
 
@@ -180,30 +160,14 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
             return
 
         # JV Batch Trailer
-        batch_trailer: str = f'{feeder_number}{batch_type}BT{DELIMITER}{feeder_number}{fiscal_year}{batch_number}' \
-                             f'{control_total:0>15}{cls._format_amount(batch_total)}{DELIMITER}{os.linesep}'
+        batch_trailer: str = cls.get_batch_trailer(batch_number, batch_total, batch_type, control_total)
 
         ejv_content = f'{batch_header}{ejv_content}{batch_trailer}'
         # Create a file add this content.
-        file_path: str = tempfile.gettempdir()
-        file_path_with_name = f'{file_path}/{file_name}'
-        trg_file_path = f'{file_path_with_name}.{trg_suffix}'
-        with open(file_path_with_name, 'a+') as jv_file:
-            jv_file.write(ejv_content)
-            jv_file.close()
-
-        # TRG File
-        with open(trg_file_path, 'a+') as trg_file:
-            trg_file.write('')
-            trg_file.close()
+        file_path_with_name, trg_file_path = cls.create_inbox_and_trg_files(ejv_content)
 
         # Upload file and trg to FTP
-        upload_to_ftp(file_path_with_name, trg_file_path)
-
-        # Upload to MINIO
-        cls._upload_to_minio(content=ejv_content.encode(),
-                             file_name=file_name,
-                             file_size=os.stat(file_path_with_name).st_size)
+        cls.upload(ejv_content, cls.get_file_name(), file_path_with_name, trg_file_path)
 
         # commit changes to DB
         db.session.commit()
@@ -229,30 +193,3 @@ class CgiEjvTask:  # pylint:disable=too-many-locals, too-many-statements, too-fe
             .filter(InvoiceModel.corp_type_code == partner.code) \
             .all()
         return invoices
-
-    @classmethod
-    def _get_distribution_string(cls, dist_code: DistributionCodeModel):
-        """Return GL code combination for the distribution."""
-        return f'{dist_code.client}{dist_code.responsibility_centre}{dist_code.service_line}' \
-               f'{dist_code.stob}{dist_code.project_code}0000000000{EMPTY:<16}'
-
-    @classmethod
-    def _get_effective_date(cls):
-        """Return effective date.."""
-        # TODO Use current date now, need confirmation
-        return get_nearest_business_day(datetime.now()).strftime('%Y%m%d')
-
-    @classmethod
-    def _format_amount(cls, amount: float):
-        """Format and return amount to fix 2 decimal places and total of length 15 prefixed with zeroes."""
-        formatted_amount: str = f'{amount:.2f}'
-        return formatted_amount.zfill(15)
-
-    @classmethod
-    def _upload_to_minio(cls, content, file_name, file_size):
-        """Upload to minio."""
-        try:
-            put_object(content, file_name, file_size)
-        except Exception as e:  # NOQA # pylint: disable=broad-except
-            current_app.logger.error(e)
-            current_app.logger.error(f'upload to minio failed for the file: {file_name}')
