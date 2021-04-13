@@ -72,5 +72,5 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
                 current_app.logger.info(
                     'Delete Payment Job Updated records.Payment Id: {}'.format(invoice.id))
             except BusinessException as err:  # just catch and continue .Don't stop
-                current_app.logger.error('Error on delete_payment')
-                current_app.logger.error(err)
+                current_app.logger.warn('Error on delete_payment')
+                current_app.logger.warn(err)
