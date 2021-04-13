@@ -20,7 +20,7 @@ from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvInvoiceLink, FeeSchedule, Invoice, db
 from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, PaymentMethod
 
-from tasks.cgi_ejv_task import CgiEjvTask
+from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
 
 from .factory import (
     factory_create_pad_account, factory_distribution, factory_invoice, factory_invoice_reference, factory_payment,
@@ -69,7 +69,7 @@ def test_disbursement_for_partners(session, monkeypatch):
     inv_ref = factory_invoice_reference(invoice_id=invoice.id)
     factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code='COMPLETED')
 
-    CgiEjvTask.create_ejv_file()
+    EjvPartnerDistributionTask.create_ejv_file()
 
     # Lookup invoice and assert disbursement status
     invoice = Invoice.find_by_id(invoice.id)
