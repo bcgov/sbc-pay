@@ -290,6 +290,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 def _calculate_fees(corp_type, filing_info):
     """Calculate and return the fees based on the filing type codes."""
     fees = []
+    service_fee_applied: bool = False
     for filing_type_info in filing_info.get('filingTypes'):
         current_app.logger.debug('Getting fees for {} '.format(filing_type_info.get('filingTypeCode')))
         fee: FeeSchedule = FeeSchedule.find_by_corp_type_and_filing_type(
@@ -302,6 +303,12 @@ def _calculate_fees(corp_type, filing_info):
             waive_fees=filing_type_info.get('waiveFees'),
             quantity=filing_type_info.get('quantity')
         )
+        # If service fee is already applied, do not charge again.
+        if service_fee_applied:
+            fee.service_fees = 0
+        elif fee.service_fees > 0:
+            service_fee_applied = True
+
         if filing_type_info.get('filingDescription'):
             fee.description = filing_type_info.get('filingDescription')
 

@@ -1379,9 +1379,9 @@ paths:
         required: true
         description: Invoice Identifier
     post:
-      summary: 'Create refund request'
+      summary: Create refund request
       operationId: create_refund
-      tags: 
+      tags:
         - Refunds
       responses:
         '202':
@@ -1613,6 +1613,8 @@ components:
         isPaymentActionRequired:
           type: boolean
           description: Flag to indicate if a user action/redirection is needed to complete the payment.
+        isOnlineBankingAllowed:
+          type: boolean
     Transaction:
       type: object
       properties:
