@@ -24,6 +24,7 @@ from pay_api.utils.util import get_fiscal_year, get_nearest_business_day
 from utils.minio import put_object
 from utils.sftp import upload_to_ftp
 
+
 DELIMITER = chr(29)  # '<0x1d>'
 EMPTY = ''
 
@@ -59,12 +60,12 @@ class CgiEjv:
 
     @classmethod
     def get_jv_line(cls,  # pylint:disable=too-many-arguments
-                    batch_type, distribution, description, effective_date, flow_through, journal_name, line,
-                    line_number):
+                    batch_type, distribution, description, effective_date, flow_through, journal_name, amount,
+                    line_number, credit_debit):
         """Return jv line string."""
         return f'{cls._feeder_number()}{batch_type}JD{DELIMITER}{journal_name}' \
                f'{line_number:0>5}{effective_date}{distribution}{EMPTY:<9}' \
-               f'{cls.format_amount(line.total)}C{description}{flow_through}' \
+               f'{cls.format_amount(amount)}{credit_debit}{description}{flow_through}' \
                f'{DELIMITER}{os.linesep}'
 
     @classmethod
