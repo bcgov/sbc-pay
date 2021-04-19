@@ -27,5 +27,5 @@ isort<5
 
 # docker
 lovely-pytest-docker
-pytest-asyncio
+pytest-asyncio==0.14.0 #new version breaks test cases
 

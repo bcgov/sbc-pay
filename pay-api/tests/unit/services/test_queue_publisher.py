@@ -29,7 +29,7 @@ from .utils import subscribe_to_queue
 
 @pytest.mark.asyncio
 @skip_in_pod
-async def test_publish(app, stan_server, client_id, stan, future, event_loop):
+async def test_publish(app, stan_server, client_id, stan, future):
     """Assert that payment tokens can be retrieved and decoded from the Queue."""
     with app.app_context():
         # Call back for the subscription
