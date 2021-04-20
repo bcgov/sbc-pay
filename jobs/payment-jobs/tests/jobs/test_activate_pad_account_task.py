@@ -25,6 +25,7 @@ from pay_api.utils.enums import CfsAccountStatus, PaymentMethod
 
 from tasks.activate_pad_account_task import ActivatePadAccountTask
 from tasks.cfs_create_account_task import CreateAccountTask
+
 from .factory import factory_create_pad_account
 
 

@@ -149,6 +149,28 @@ def factory_create_eft_account(auth_account_id='1234', status=CfsAccountStatus.P
     return account
 
 
+def factory_create_ejv_account(auth_account_id='1234',
+                               client: str = '112',
+                               resp_centre: str = '11111',
+                               service_line: str = '11111',
+                               stob: str = '1111',
+                               project_code: str = '1111111'):
+    """Return Factory."""
+    account = PaymentAccount(auth_account_id=auth_account_id,
+                             payment_method=PaymentMethod.EJV.value,
+                             auth_account_name=f'Test {auth_account_id}').save()
+    DistributionCode(name=account.auth_account_name,
+                     client=client,
+                     responsibility_centre=resp_centre,
+                     service_line=service_line,
+                     stob=stob,
+                     project_code=project_code,
+                     account_id=account.id,
+                     start_date=datetime.today().date(),
+                     created_by='test').save()
+    return account
+
+
 def factory_create_wire_account(auth_account_id='1234', status=CfsAccountStatus.PENDING.value):
     """Return Factory."""
     account = PaymentAccount(auth_account_id=auth_account_id,

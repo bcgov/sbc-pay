@@ -23,6 +23,7 @@ from pay_api.models import Statement, StatementInvoices
 from pay_api.utils.util import get_previous_day
 
 from tasks.statement_task import StatementTask
+
 from .factory import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_premium_payment_account,
     factory_statement_settings)

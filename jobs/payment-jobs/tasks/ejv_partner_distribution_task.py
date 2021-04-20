@@ -26,9 +26,9 @@ from pay_api.models import EjvInvoiceLink as EjvInvoiceLinkModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import db
-from pay_api.utils.enums import DisbursementStatus, InvoiceStatus
+from pay_api.utils.enums import DisbursementStatus, InvoiceStatus, PaymentMethod
 
-from tasks.cgi_ejv import CgiEjv
+from tasks.common.cgi_ejv import CgiEjv
 
 
 class EjvPartnerDistributionTask(CgiEjv):
@@ -133,16 +133,16 @@ class EjvPartnerDistributionTask(CgiEjv):
                     # Line for credit.
                     ejv_content = '{}{}'.format(ejv_content,
                                                 cls.get_jv_line(batch_type, credit_distribution, disbursement_desc,
-                                                                effective_date, flow_through, journal_name, line,
-                                                                line_number))
+                                                                effective_date, flow_through, journal_name, line.total,
+                                                                line_number, 'C'))
                     line_number += 1
                     control_total += 1
 
                     # Add a line here for debit too
                     ejv_content = '{}{}'.format(ejv_content,
                                                 cls.get_jv_line(batch_type, debit_distribution, disbursement_desc,
-                                                                effective_date, flow_through, journal_name, line,
-                                                                line_number))
+                                                                effective_date, flow_through, journal_name, line.total,
+                                                                line_number, 'D'))
 
                     control_total += 1
 
@@ -180,6 +180,7 @@ class EjvPartnerDistributionTask(CgiEjv):
         """Find and return all payment line items for this distribution."""
         line_items: List[PaymentLineItemModel] = db.session.query(PaymentLineItemModel) \
             .filter(PaymentLineItemModel.invoice_id.in_(invoice_id_list)) \
+            .filter(PaymentLineItemModel.total > 0) \
             .filter(PaymentLineItemModel.fee_distribution_id == distribution_code_id)
         return line_items
 
@@ -188,6 +189,8 @@ class EjvPartnerDistributionTask(CgiEjv):
         """Return invoices for disbursement."""
         invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
+            .filter(
+            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value])) \
             .filter((InvoiceModel.disbursement_status_code.is_(None)) |
                     (InvoiceModel.disbursement_status_code == DisbursementStatus.ERRORED.value)) \
             .filter(InvoiceModel.corp_type_code == partner.code) \
