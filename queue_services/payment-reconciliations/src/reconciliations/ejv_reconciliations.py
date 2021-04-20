@@ -27,7 +27,7 @@ to be pursued.
 """
 import os
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from entity_queue_common.service_utils import logger
 from pay_api.models import DistributionCode as DistributionCodeModel
@@ -35,10 +35,14 @@ from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
 from pay_api.models import EjvInvoiceLink as EjvInvoiceLinkModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import InvoiceReference as InvoiceReferenceModel
+from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
 from pay_api.services.queue_publisher import publish
-from pay_api.utils.enums import DisbursementStatus
+from pay_api.utils.enums import (
+    DisbursementStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
 from sentry_sdk import capture_message
 
 from reconciliations import config
@@ -70,13 +74,16 @@ def _update_acknowledgement():
         EjvHeaderModel.ejv_file_id == ejv_file.id).all()
 
     ejv_file.disbursement_status_code = DisbursementStatus.ACKNOWLEDGED.value
+
     for ejv_header in ejv_headers:
         ejv_header.disbursement_status_code = DisbursementStatus.ACKNOWLEDGED.value
-        ejv_links: List[EjvInvoiceLinkModel] = db.session.query(EjvInvoiceLinkModel).filter(
-            EjvInvoiceLinkModel.ejv_header_id == ejv_header.id).all()
-        for ejv_link in ejv_links:
-            invoice: InvoiceModel = InvoiceModel.find_by_id(ejv_link.invoice_id)
-            invoice.disbursement_status_code = DisbursementStatus.ACKNOWLEDGED.value
+        if ejv_file.is_distribution:
+            ejv_links: List[EjvInvoiceLinkModel] = db.session.query(EjvInvoiceLinkModel).filter(
+                EjvInvoiceLinkModel.ejv_header_id == ejv_header.id).all()
+            for ejv_link in ejv_links:
+                invoice: InvoiceModel = InvoiceModel.find_by_id(ejv_link.invoice_id)
+                invoice.disbursement_status_code = DisbursementStatus.ACKNOWLEDGED.value
+    db.session.commit()
 
 
 async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-locals, too-many-statements
@@ -86,69 +93,139 @@ async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-loca
     minio_location: str = msg.get('data').get('location')
     file = get_object(minio_location, file_name)
     content = file.data.decode('utf-8-sig')
+    group_batches: List[str] = _group_batches(content)
+    for group_batch in group_batches:
+        ejv_file: Optional[EjvFileModel] = None
+        receipt_number: Optional[str] = None
+        for line in group_batch.splitlines():
+            # For all these indexes refer the sharepoint docs refer : https://github.com/bcgov/entity/issues/6226
+            is_batch_group: bool = line[2:4] == 'BG'
+            is_batch_header: bool = line[2:4] == 'BH'
+            is_jv_header: bool = line[2:4] == 'JH'
+            is_jv_detail: bool = line[2:4] == 'JD'
 
-    ejv_file: EjvFileModel = None
-    for line in content.splitlines():
-        # For all these indexes refer the sharepoint docs refer : https://github.com/bcgov/entity/issues/6226
-        is_batch_group: bool = line[2:4] == 'BG'
-        is_batch_header: bool = line[2:4] == 'BH'
-        is_jv_header: bool = line[2:4] == 'JH'
-        is_jv_detail: bool = line[2:4] == 'JD'
-
-        if is_batch_group:
-            batch_number = int(line[15:24])
-            ejv_file = EjvFileModel.find_by_id(batch_number)
-        elif is_batch_header:
-            return_code = line[7:11]
-            return_message = line[11:161]
-            ejv_file.disbursement_status_code = _get_disbursement_status(return_code)
-            ejv_file.message = return_message
-            if ejv_file.disbursement_status_code == DisbursementStatus.ERRORED.value:
-                has_errors = True
-        elif is_jv_header:
-            journal_name: str = line[7:17]  # {ministry}{ejv_header_model.id:0>8}
-            ejv_header_model_id = int(journal_name[2:])
-            ejv_header: EjvHeaderModel = EjvHeaderModel.find_by_id(ejv_header_model_id)
-            ejv_header_return_code = line[271:275]
-            ejv_header.disbursement_status_code = _get_disbursement_status(ejv_header_return_code)
-            ejv_header_error_message = line[275:425]
-            ejv_header.message = ejv_header_error_message
-            if ejv_header.disbursement_status_code == DisbursementStatus.ERRORED.value:
-                has_errors = True
-        elif is_jv_detail:
-            journal_name: str = line[7:17]  # {ministry}{ejv_header_model.id:0>8}
-            ejv_header_model_id = int(journal_name[2:])
-            invoice_id = int(line[205:315])
-            invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
-            invoice_link: EjvInvoiceLinkModel = db.session.query(EjvInvoiceLinkModel).filter(
-                EjvInvoiceLinkModel.ejv_header_id == ejv_header_model_id).filter(
-                EjvInvoiceLinkModel.invoice_id == invoice_id).one_or_none()
-
-            invoice_return_code = line[315:319]
-            invoice_return_message = line[319:469]
-            # If the JV process failed, then mark the GL code against the invoice to be stopped
-            # for further JV process for the credit GL.
-            is_credit: bool = line[104:105] == 'C'
-            if is_credit:
-                invoice_link.disbursement_status_code = _get_disbursement_status(invoice_return_code)
-                invoice_link.message = invoice_return_message
-                invoice.disbursement_status_code = _get_disbursement_status(invoice_return_code)
-
-                if invoice_link.disbursement_status_code == DisbursementStatus.ERRORED.value:
+            if is_batch_group:
+                batch_number = int(line[15:24])
+                ejv_file = EjvFileModel.find_by_id(batch_number)
+            elif is_batch_header:
+                return_code = line[7:11]
+                return_message = line[11:161]
+                ejv_file.disbursement_status_code = _get_disbursement_status(return_code)
+                ejv_file.message = return_message
+                if ejv_file.disbursement_status_code == DisbursementStatus.ERRORED.value:
                     has_errors = True
+            elif is_jv_header:
+                journal_name: str = line[7:17]  # {ministry}{ejv_header_model.id:0>8}
+                ejv_header_model_id = int(journal_name[2:])
+                ejv_header: EjvHeaderModel = EjvHeaderModel.find_by_id(ejv_header_model_id)
+                ejv_header_return_code = line[271:275]
+                ejv_header.disbursement_status_code = _get_disbursement_status(ejv_header_return_code)
+                ejv_header_error_message = line[275:425]
+                ejv_header.message = ejv_header_error_message
+                if ejv_header.disbursement_status_code == DisbursementStatus.ERRORED.value:
+                    has_errors = True
+                # Create a payment record if its a gov account payment.
+                elif not ejv_file.is_distribution:
+                    amount = float(line[42:57])
+                    receipt_number = line[0:42].strip()
+                    await _create_payment_record(amount, ejv_header, receipt_number)
 
-                line_items: List[PaymentLineItemModel] = invoice.payment_line_items
-                for line_item in line_items:
-                    # Line debit distribution
-                    debit_distribution: DistributionCodeModel = DistributionCodeModel \
-                        .find_by_id(line_item.fee_distribution_id)
-                    credit_distribution: DistributionCodeModel = DistributionCodeModel \
-                        .find_by_id(debit_distribution.disbursement_distribution_code_id)
-                    credit_distribution.stop_ejv = True
+            elif is_jv_detail:
+                has_errors = await _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number)
 
     if has_errors:
         await _publish_mailer_events(file_name, minio_location)
+
     db.session.commit()
+
+
+async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  # pylint:disable=too-many-locals
+    journal_name: str = line[7:17]  # {ministry}{ejv_header_model.id:0>8}
+    ejv_header_model_id = int(journal_name[2:])
+    invoice_id = int(line[205:315])
+    invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
+    invoice_link: EjvInvoiceLinkModel = db.session.query(EjvInvoiceLinkModel).filter(
+        EjvInvoiceLinkModel.ejv_header_id == ejv_header_model_id).filter(
+        EjvInvoiceLinkModel.invoice_id == invoice_id).one_or_none()
+    invoice_return_code = line[315:319]
+    invoice_return_message = line[319:469]
+    # If the JV process failed, then mark the GL code against the invoice to be stopped
+    # for further JV process for the credit GL.
+    if line[104:105] == 'C' and ejv_file.is_distribution:
+        invoice_link.disbursement_status_code = _get_disbursement_status(invoice_return_code)
+        invoice_link.message = invoice_return_message
+        invoice.disbursement_status_code = _get_disbursement_status(invoice_return_code)
+
+        if invoice_link.disbursement_status_code == DisbursementStatus.ERRORED.value:
+            has_errors = True
+
+        line_items: List[PaymentLineItemModel] = invoice.payment_line_items
+        for line_item in line_items:
+            # Line debit distribution
+            debit_distribution: DistributionCodeModel = DistributionCodeModel \
+                .find_by_id(line_item.fee_distribution_id)
+            credit_distribution: DistributionCodeModel = DistributionCodeModel \
+                .find_by_id(debit_distribution.disbursement_distribution_code_id)
+            credit_distribution.stop_ejv = True
+    elif line[104:105] == 'D' and not ejv_file.is_distribution:
+        # This is for gov account payment JV.
+        invoice_link.disbursement_status_code = _get_disbursement_status(invoice_return_code)
+        invoice_link.message = invoice_return_message
+        inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
+            invoice_id, InvoiceReferenceStatus.ACTIVE.value)
+
+        if invoice_link.disbursement_status_code == DisbursementStatus.ERRORED.value:
+            has_errors = True
+            # Cancel the invoice reference.
+            inv_ref.status_code = InvoiceReferenceStatus.CANCELLED.value
+            # Find the distribution code and set the stop_ejv flag to TRUE
+            dist_code: DistributionCodeModel = DistributionCodeModel.find_by_active_for_account(
+                invoice.payment_account_id)
+            dist_code.stop_ejv = True
+        elif invoice_link.disbursement_status_code == DisbursementStatus.COMPLETED.value:
+            # Set the invoice status as PAID. Mark the invoice reference as COMPLETED, create a receipt
+            invoice.invoice_status_code = InvoiceStatus.PAID.value
+            if inv_ref:
+                inv_ref.status_code = InvoiceReferenceStatus.COMPLETED.value
+            # Find receipt and add total to it, as single invoice can be multiple rows in the file
+            receipt = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=invoice_id,
+                                                                         receipt_number=receipt_number)
+            if receipt:
+                receipt.receipt_amount += float(line[89:104])
+            else:
+                ReceiptModel(invoice_id=invoice_id, receipt_number=receipt_number, receipt_date=datetime.now(),
+                             receipt_amount=float(line[89:104])).flush()
+    return has_errors
+
+
+async def _create_payment_record(amount, ejv_header, receipt_number):
+    """Create payment record."""
+    PaymentModel(
+        payment_system_code=PaymentSystem.CGI.value,
+        payment_account_id=ejv_header.payment_account_id,
+        payment_method_code=PaymentMethod.EJV.value,
+        payment_status_code=PaymentStatus.COMPLETED.value,
+        receipt_number=receipt_number,
+        invoice_amount=amount,
+        paid_amount=amount,
+        completed_on=datetime.now()).flush()
+
+
+def _group_batches(content: str):
+    """Group batches based on the group and trailer.."""
+    # A batch starts from BG to BT.
+    group_batches: List[str] = []
+    batch_content: str = ''
+
+    for line in content.splitlines():
+        if line[2:4] == 'BG':  # batch starts from BG
+            batch_content = line
+        else:
+            batch_content = batch_content + os.linesep + line
+            if line[2:4] == 'BT':  # batch ends with BT
+                group_batches.append(batch_content)
+
+    return group_batches
 
 
 def _get_disbursement_status(return_code: str) -> str:

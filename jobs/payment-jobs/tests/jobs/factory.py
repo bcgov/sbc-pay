@@ -89,7 +89,6 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
         invoice.cfs_account_id = cfs_account_id
 
     invoice.save()
-    print(invoice.payment_method_code, invoice.invoice_status_code)
     return invoice
 
 

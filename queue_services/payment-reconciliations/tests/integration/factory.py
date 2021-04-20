@@ -55,6 +55,7 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
                     created_on: datetime = datetime.now()):
     """Return Factory."""
     cfs_account = CfsAccount.find_effective_by_account_id(payment_account.id)
+    cfs_account_id = cfs_account.id if cfs_account else None
     return Invoice(
         invoice_status_code=status_code,
         payment_account_id=payment_account.id,
@@ -66,13 +67,14 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
         folio_number='1234567890',
         service_fees=service_fees,
         bcol_account=payment_account.bcol_account,
-        cfs_account_id=cfs_account.id,
+        cfs_account_id=cfs_account_id,
         payment_method_code=payment_method_code or payment_account.payment_method
     ).save()
 
 
 def factory_payment_line_item(invoice_id: str, fee_schedule_id: int = 1, filing_fees: int = 10, total: int = 10,
-                              service_fees: int = 0, status: str = LineItemStatus.ACTIVE.value):
+                              service_fees: int = 0, status: str = LineItemStatus.ACTIVE.value,
+                              fee_dist_id: int = None):
     """Return Factory."""
     return PaymentLineItem(
         invoice_id=invoice_id,
@@ -81,7 +83,8 @@ def factory_payment_line_item(invoice_id: str, fee_schedule_id: int = 1, filing_
         total=total,
         service_fees=service_fees,
         line_item_status_code=status,
-        fee_distribution_id=DistributionCode.find_by_active_for_fee_schedule(fee_schedule_id).distribution_code_id
+        fee_distribution_id=fee_dist_id or DistributionCode.find_by_active_for_fee_schedule(
+            fee_schedule_id).distribution_code_id
     ).save()
 
 
@@ -142,6 +145,28 @@ def factory_create_pad_account(auth_account_id='1234', bank_number='001', bank_b
                cfs_account=account_number,
                cfs_site='29921',
                ).save()
+    return account
+
+
+def factory_create_ejv_account(auth_account_id='1234',
+                               client: str = '112',
+                               resp_centre: str = '11111',
+                               service_line: str = '11111',
+                               stob: str = '1111',
+                               project_code: str = '1111111'):
+    """Return Factory."""
+    account = PaymentAccount(auth_account_id=auth_account_id,
+                             payment_method=PaymentMethod.EJV.value,
+                             auth_account_name=f'Test {auth_account_id}').save()
+    DistributionCode(name=account.auth_account_name,
+                     client=client,
+                     responsibility_centre=resp_centre,
+                     service_line=service_line,
+                     stob=stob,
+                     project_code=project_code,
+                     account_id=account.id,
+                     start_date=datetime.today().date(),
+                     created_by='test').save()
     return account
 
 

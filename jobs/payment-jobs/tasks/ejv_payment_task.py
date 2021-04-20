@@ -165,7 +165,7 @@ class EjvPaymentTask(CgiEjv):
                     reference_number=None,
                     status_code=InvoiceReferenceStatus.ACTIVE.value
                 )
-                inv_ref.save()
+                inv_ref.flush()
 
         if not ejv_content:
             db.session.rollback()
