@@ -19,8 +19,9 @@ Test-Suite to ensure that the /receipt endpoint is working as expected.
 
 import json
 
-from tests.utilities.base_test import get_claims, get_payment_request, token_header
 from pay_api.utils.enums import Role
+from tests.utilities.base_test import get_claims, get_payment_request, token_header, \
+    get_payment_request_with_payment_method
 
 
 def test_create_refund(session, client, jwt, app, stan_server):
@@ -41,6 +42,27 @@ def test_create_refund(session, client, jwt, app, stan_server):
     txn_id = rv.json.get('id')
     client.patch(f'/api/v1/payment-requests/{inv_id}/transactions/{txn_id}',
                  data=json.dumps({'receipt_number': receipt_number}), headers=headers)
+
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
+                     headers=headers)
+    assert rv.status_code == 202
+
+
+def test_create_drawdown_refund(session, client, jwt, app, stan_server):
+    """Assert that the endpoint returns 202."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/payment-requests',
+                     data=json.dumps(
+                         get_payment_request_with_payment_method(
+                             business_identifier='CP0002000', payment_method='DRAWDOWN'
+                         )
+                     ),
+                     headers=headers)
+    inv_id = rv.json.get('id')
 
     token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}

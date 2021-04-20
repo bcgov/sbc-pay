@@ -23,7 +23,8 @@ from flask import current_app
 from pay_api.exceptions import BusinessException
 from pay_api.models import Refund as RefundModel, Invoice as InvoiceModel, Payment as PaymentModel, \
     Receipt as ReceiptModel, InvoiceReference as InvoiceReferenceModel, PaymentTransaction as PaymentTransactionModel, \
-    CfsAccount as CfsAccountModel, PaymentLineItem as PaymentLineItemModel, Credit as CreditModel
+    CfsAccount as CfsAccountModel, PaymentLineItem as PaymentLineItemModel, Credit as CreditModel, \
+    PaymentAccount as PaymentAccountModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.queue_publisher import publish_response
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus, InvoiceReferenceStatus
@@ -154,7 +155,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def _process_cfs_refund(cls, invoice: InvoiceModel):
         """Process refund in CFS."""
-        if invoice.payment_method_code == PaymentMethod.DIRECT_PAY.value:
+        if invoice.payment_method_code in ([PaymentMethod.DIRECT_PAY.value, PaymentMethod.DRAWDOWN.value]):
             cls._publish_to_mailer(invoice)
             payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
             payment.payment_status_code = PaymentStatus.REFUNDED.value
@@ -178,16 +179,22 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
                         account_id=invoice.payment_account_id).save()
 
     @classmethod
-    def _publish_to_mailer(cls, invoice):
+    def _publish_to_mailer(cls, invoice: InvoiceModel):
         """Construct message and send to mailer queue."""
         receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=invoice.id)
         invoice_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
             invoice_id=invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value)
         payment_transaction: PaymentTransactionModel = PaymentTransactionModel.find_recent_completed_by_invoice_id(
             invoice_id=invoice.id)
+        message_type: str = f'bc.registry.payment.{invoice.payment_method_code.lower()}.refundRequest'
+        filing_description = ''
+        for line_item in invoice.payment_line_items:
+            if filing_description:
+                filing_description += ','
+            filing_description += line_item.description
         q_payload = dict(
             specversion='1.x-wip',
-            type='bc.registry.payment.refundRequest',
+            type=message_type,
             source=f'https://api.pay.bcregistry.gov.bc.ca/v1/invoices/{invoice.id}',
             id=invoice.id,
             datacontenttype='application/json',
@@ -196,7 +203,15 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
                 orderNumber=receipt.receipt_number,
                 transactionDateTime=get_local_formatted_date_time(payment_transaction.transaction_end_time),
                 transactionAmount=receipt.receipt_amount,
-                transactionId=invoice_ref.invoice_number
+                transactionId=invoice_ref.invoice_number,
+                refundDate=get_local_formatted_date_time(datetime.now(), '%Y%m%d'),
+                filingDescription=filing_description
+            ))
+        if invoice.payment_method_code == PaymentMethod.DRAWDOWN.value:
+            payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice.payment_account_id)
+            q_payload['data'].update(dict(
+                bcolAccount=invoice.bcol_account,
+                bcolUser=payment_account.bcol_user_id
             ))
         current_app.logger.debug('Publishing payment refund request to mailer ')
         current_app.logger.debug(q_payload)
