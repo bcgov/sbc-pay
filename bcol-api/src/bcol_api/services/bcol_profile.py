@@ -154,5 +154,5 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
         country_info = pycountry.countries.get(name=country)
         if country_info:
             return country_info.alpha_2
-        else:
-            return country
+
+        return country
