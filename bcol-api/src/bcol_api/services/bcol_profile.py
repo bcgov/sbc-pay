@@ -16,6 +16,7 @@
 from typing import Dict
 
 import ldap
+import pycountry
 import zeep
 from flask import current_app
 
@@ -74,12 +75,14 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
             }
             address = profile_resp['Address']
             if address:
+                country = self.standardize_country(self.__get(address, 'Country'))
+
                 response['address'] = {
                     'line1': self.__get(address, 'AddressA'),
                     'line2': self.__get(address, 'AddressB'),
                     'city': self.__get(address, 'City'),
                     'province': self.__get(address, 'Prov'),
-                    'country': self.__get(address, 'Country'),
+                    'country': country,
                     'postalCode': self.__get(address, 'PostalCode'),
                 }
             query_profile_flags = profile_resp['queryProfileFlag']
@@ -141,3 +144,15 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
         """Get Query Profile Response."""
         client = BcolSoap().get_profile_client()
         return zeep.helpers.serialize_object(client.service.queryProfile(req=data))
+
+    @staticmethod
+    def standardize_country(country):
+        """Standardize country to 2 letters country code, return original if no country code found."""
+        if len(country) == 2:
+            return country.upper()
+
+        country_info = pycountry.countries.get(name=country)
+        if country_info:
+            return country_info.alpha_2
+        else:
+            return country
