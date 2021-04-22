@@ -25,3 +25,16 @@ def test_query_profile(app, ldap_mock, query_profile_mock):
     with app.app_context():
         query_profile_response = BcolProfile().query_profile('TEST', 'TEST')
         assert query_profile_response.get('userId') == 'PB25020'
+        assert query_profile_response.get('address').get('country') == 'CA'
+
+
+def test_standardize_country():
+    """Test standardize country to code."""
+    code = BcolProfile().standardize_country('CANADA')
+    assert code == 'CA'
+
+    code = BcolProfile().standardize_country('CA')
+    assert code == 'CA'
+
+    code = BcolProfile().standardize_country('Test')
+    assert code == 'Test'
