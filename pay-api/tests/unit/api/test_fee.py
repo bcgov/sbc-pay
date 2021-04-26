@@ -243,7 +243,7 @@ def test_fee_for_account_fee_settings(session, client, jwt, app):
     # Now change the settings to apply filing fees and assert
     token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    client.put('/api/v1/accounts/{account_id}/fees/BUSINESS', data=json.dumps({
+    client.put(f'/api/v1/accounts/{account_id}/fees/BUSINESS', data=json.dumps({
         'applyFilingFees': True,
         'serviceFeeCode': 'TRF01',  # 1.5
         'product': 'BUSINESS'
