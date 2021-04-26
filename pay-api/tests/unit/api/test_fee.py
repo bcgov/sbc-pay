@@ -16,38 +16,14 @@
 
 Test-Suite to ensure that the /fees endpoint is working as expected.
 """
+import json
 from datetime import date, timedelta
 
 from pay_api.models import CorpType, FeeCode, FeeSchedule, FilingType
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import Role
-
-token_header = {
-    'alg': 'RS256',
-    'typ': 'JWT',
-    'kid': 'sbc-auth-web'
-}
-
-
-def get_claims(role: str = Role.EDITOR.value):
-    """Return the claim with the role param."""
-    claim = {
-        'jti': 'a50fafa4-c4d6-4a9b-9e51-1e5e0d102878',
-        'exp': 31531718745,
-        'iat': 1531718745,
-        'iss': 'http://localhost:8081/auth/realms/demo',
-        'aud': 'sbc-auth-web',
-        'sub': '15099883-3c3f-4b4c-a124-a1824d6cba84',
-        'typ': 'Bearer',
-        'realm_access':
-            {
-                'roles':
-                    [
-                        '{}'.format(role)
-                    ]
-            }
-    }
-    return claim
+from tests.utilities.base_test import (
+    get_claims, get_gov_account_payload, token_header)
 
 
 def test_fees_with_corp_type_and_filing_type(session, client, jwt, app):
@@ -232,6 +208,56 @@ def test_calculate_fees_with_zero_service_fee(session, client, jwt, app):
     assert schema_utils.validate(rv.json, 'fees')[0]
     assert rv.json.get('filingFees') == 0
     assert rv.json.get('serviceFees') == 0
+
+
+def test_fee_for_account_fee_settings(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_gov_account_payload()),
+                     headers=headers)
+
+    account_id = rv.json.get('authAccountId')
+
+    # Create account fee details.
+    token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    client.post(f'/api/v1/accounts/{account_id}/fees', data=json.dumps({'accountFees': [
+        {
+            'applyFilingFees': False,
+            'serviceFeeCode': 'TRF02',  # 1.0
+            'product': 'BUSINESS'
+        }
+    ]}), headers=headers)
+
+    # Get fee for this account.
+    token = jwt.create_jwt(get_claims(role=Role.EDITOR.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': account_id}
+    rv = client.get('/api/v1/fees/BEN/BCANN', headers=headers)
+    assert rv.status_code == 200
+    assert schema_utils.validate(rv.json, 'fees')[0]
+    # assert filing fee is not applied and service fee is applied
+    assert rv.json.get('filingFees') == 0
+    assert rv.json.get('serviceFees') == 1.0
+
+    # Now change the settings to apply filing fees and assert
+    token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    client.put('/api/v1/accounts/{account_id}/fees/BUSINESS', data=json.dumps({
+        'applyFilingFees': True,
+        'serviceFeeCode': 'TRF01',  # 1.5
+        'product': 'BUSINESS'
+    }), headers=headers)
+
+    # Get fee for this account.
+    token = jwt.create_jwt(get_claims(role=Role.EDITOR.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': account_id}
+    rv = client.get('/api/v1/fees/BEN/BCANN', headers=headers)
+    assert rv.status_code == 200
+    assert schema_utils.validate(rv.json, 'fees')[0]
+    # assert filing fee is applied and service fee is applied
+    assert rv.json.get('filingFees') > 0
+    assert rv.json.get('serviceFees') == 1.5
 
 
 def factory_filing_type_model(

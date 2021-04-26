@@ -450,6 +450,65 @@ def test_create_gov_accounts(session, client, jwt, app):
     assert rv.status_code == 201
 
 
+def test_create_gov_accounts_with_account_fee(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_gov_account_payload()),
+                     headers=headers)
+
+    account_id = rv.json.get('authAccountId')
+
+    # Create account fee details.
+    token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post(f'/api/v1/accounts/{account_id}/fees', data=json.dumps({'accountFees': [
+        {
+            'applyFilingFees': False,
+            'serviceFeeCode': 'TRF01',
+            'product': 'BUSINESS'
+        }
+    ]}), headers=headers)
+
+    assert rv.status_code == 200
+    assert rv.json.get('accountFees')[0]['product'] == 'BUSINESS'
+    assert not rv.json.get('accountFees')[0]['applyFilingFees']
+    assert rv.json.get('accountFees')[0]['serviceFeeCode'] == 'TRF01'
+
+
+def test_update_gov_accounts_with_account_fee(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_gov_account_payload()),
+                     headers=headers)
+
+    account_id = rv.json.get('authAccountId')
+
+    # Create account fee details.
+    token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post(f'/api/v1/accounts/{account_id}/fees', data=json.dumps({'accountFees': [
+        {
+            'applyFilingFees': False,
+            'serviceFeeCode': 'TRF01',
+            'product': 'BUSINESS'
+        }
+    ]}), headers=headers)
+
+    assert rv.status_code == 200
+
+    # PUT this with changes
+    rv = client.put(f'/api/v1/accounts/{account_id}/fees/BUSINESS', data=json.dumps({
+        'applyFilingFees': True,
+        'serviceFeeCode': 'TRF02'
+    }), headers=headers)
+
+    assert rv.json['product'] == 'BUSINESS'
+    assert rv.json['applyFilingFees']
+    assert rv.json['serviceFeeCode'] == 'TRF02'
+
+
 def test_update_gov_accounts(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)

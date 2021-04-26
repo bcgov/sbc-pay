@@ -19,8 +19,10 @@ from flask import current_app
 from sbc_common_components.tracing.service_tracing import ServiceTracing
 
 from pay_api.exceptions import BusinessException
+from pay_api.models import AccountFee as AccountFeeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import FeeScheduleSchema
+from pay_api.models import FeeCode as FeeCodeModel
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
@@ -141,8 +143,8 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     @property
     def total(self):
         """Return the total fees calculated."""
-        return self._fee_amount + self.pst + self.gst + self.priority_fee + self.future_effective_fee \
-            + self.service_fees
+        return self._fee_amount + self.pst + self.gst + self.priority_fee + \
+            self.future_effective_fee + self.service_fees
 
     @property
     def total_excluding_service_fees(self):
@@ -167,6 +169,11 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     def waived_fee_amount(self):
         """Return waived fee amount."""
         return self._waived_fee_amount
+
+    @waived_fee_amount.setter
+    def waived_fee_amount(self, waived_fee_amount):
+        """Set waived fee amount."""
+        self._waived_fee_amount = waived_fee_amount
 
     @property
     def priority_fee(self):
@@ -260,6 +267,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         self._dao.save()
 
     @classmethod
+    @user_context
     def find_by_corp_type_and_filing_type(  # pylint: disable=too-many-arguments
             cls,
             corp_type: str,
@@ -269,6 +277,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     ):
         """Calculate fees for the filing by using the arguments."""
         current_app.logger.debug('<get_fees_by_corp_type_and_filing_type')
+        user: UserContext = kwargs['user']
 
         if not corp_type and not filing_type_code:
             raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
@@ -279,16 +288,25 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
 
         if not fee_schedule_dao:
             raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
+
         fee_schedule = FeeSchedule()
         fee_schedule._dao = fee_schedule_dao  # pylint: disable=protected-access
         fee_schedule.quantity = kwargs.get('quantity')
 
-        # Set transaction fees
-        fee_schedule.service_fees = FeeSchedule.calculate_service_fees(fee_schedule_dao)
+        # Find fee overrides for account.
+        account_fee = AccountFeeModel.find_by_auth_account_id_and_corp_type(user.account_id, corp_type)
 
-        if kwargs.get('is_priority') and fee_schedule_dao.priority_fee:
+        apply_filing_fees: bool = account_fee.apply_filing_fees if account_fee else True
+        if not apply_filing_fees:
+            fee_schedule.fee_amount = 0
+            fee_schedule.waived_fee_amount = 0
+
+        # Set transaction fees
+        fee_schedule.service_fees = FeeSchedule.calculate_service_fees(fee_schedule_dao, account_fee)
+
+        if kwargs.get('is_priority') and fee_schedule_dao.priority_fee and apply_filing_fees:
             fee_schedule.priority_fee = fee_schedule_dao.priority_fee.amount
-        if kwargs.get('is_future_effective') and fee_schedule_dao.future_effective_fee:
+        if kwargs.get('is_future_effective') and fee_schedule_dao.future_effective_fee and apply_filing_fees:
             fee_schedule.future_effective_fee = fee_schedule_dao.future_effective_fee.amount
 
         if kwargs.get('waive_fees'):
@@ -318,7 +336,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
 
     @staticmethod
     @user_context
-    def calculate_service_fees(fee_schedule_model: FeeScheduleModel, **kwargs):
+    def calculate_service_fees(fee_schedule_model: FeeScheduleModel, account_fee: AccountFeeModel, **kwargs):
         """Calculate service_fees fees."""
         current_app.logger.debug('<calculate_service_fees')
         user: UserContext = kwargs['user']
@@ -329,7 +347,9 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         #  Handle it properly later
         if not user.is_staff() and \
                 not (user.is_system() and Role.EXCLUDE_SERVICE_FEES.value in user.roles) \
-                and fee_schedule_model.fee.amount > 0 and fee_schedule_model.service_fee:
-            service_fees = fee_schedule_model.service_fee.amount
+                and fee_schedule_model.fee.amount > 0:
+            service_fee = (account_fee.service_fee if account_fee else None) or fee_schedule_model.service_fee
+            if service_fee:
+                service_fees = FeeCodeModel.find_by_code(service_fee.code).amount
 
         return service_fees
