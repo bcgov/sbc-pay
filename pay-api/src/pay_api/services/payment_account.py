@@ -21,6 +21,8 @@ from flask import current_app
 from sentry_sdk import capture_message
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
+from pay_api.models import AccountFee as AccountFeeModel
+from pay_api.models import AccountFeeSchema
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentAccountSchema
@@ -404,6 +406,37 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         payment_account.save()
 
     @classmethod
+    def save_account_fees(cls, auth_account_id: str, account_fee_request: dict):
+        """Save multiple fee settings against the account."""
+        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        for fee in account_fee_request.get('accountFees'):
+            cls._create_or_update_account_fee(fee, payment_account, fee.get('product'))
+        return {
+            'accountFees': AccountFeeSchema().dump(AccountFeeModel.find_by_account_id(payment_account.id), many=True)
+        }
+
+    @classmethod
+    def save_account_fee(cls, auth_account_id: str, product: str, account_fee_request: dict):
+        """Save fee overrides against the account."""
+        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        cls._create_or_update_account_fee(account_fee_request, payment_account, product)
+        return AccountFeeSchema().dump(AccountFeeModel.find_by_account_id_and_product(payment_account.id, product))
+
+    @classmethod
+    def _create_or_update_account_fee(cls, fee: dict, payment_account: PaymentAccountModel, product: str):
+        # Save or update the fee, first lookup and see if the fees exist.
+        account_fee = AccountFeeModel.find_by_account_id_and_product(
+            payment_account.id, product
+        )
+        if not account_fee:
+            account_fee = AccountFeeModel(
+                account_id=payment_account.id, product=product
+            )
+        account_fee.apply_filing_fees = fee.get('applyFilingFees')
+        account_fee.service_fee_code = fee.get('serviceFeeCode')
+        account_fee.save()
+
+    @classmethod
     def update(cls, auth_account_id: str, account_request: Dict[str, Any]) -> PaymentAccount:
         """Create or update payment account record."""
         current_app.logger.debug('<update payment account')
@@ -520,6 +553,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         if not self.billable:  # include JV details
             dist_code = DistributionCode.find_active_by_account_id(self.id)
             d['revenueAccount'] = dist_code.asdict()
+
+        if account_fees := AccountFeeModel.find_by_account_id(self.id):
+            d['accountFees'] = AccountFeeSchema().dump(account_fees, many=True)
 
         return d
 

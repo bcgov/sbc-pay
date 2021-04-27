@@ -52,6 +52,6 @@ from .invoice_batch_link import InvoiceBatchLink
 from .refund import Refund
 from .credit import Credit
 from .disbursement_status_code import DisbursementStatusCode
-
+from .account_fee import AccountFee, AccountFeeSchema
 
 event.listen(Engine, 'before_cursor_execute', DBTracing.query_tracing)

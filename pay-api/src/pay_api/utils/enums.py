@@ -122,6 +122,7 @@ class Code(Enum):
     ERROR = 'errors'
     INVOICE_STATUS = 'invoice_statuses'
     CORP_TYPE = 'corp_types'
+    FEE_CODE = 'fee_codes'
 
 
 class AccountType(Enum):
