@@ -19,6 +19,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from pay_api.models.error_code import ErrorCode, ErrorCodeSchema
 from pay_api.models.invoice_status_code import InvoiceStatusCode, InvoiceStatusCodeSchema
 from pay_api.models.corp_type import CorpType, CorpTypeSchema
+from pay_api.models.fee_code import FeeCode, FeeCodeSchema
 from pay_api.utils.cache import cache
 from pay_api.utils.enums import Code as CodeValue
 
@@ -46,20 +47,23 @@ class Code:
 
         # Get from cache and if still none look up in database
         codes_response = cache.get(code_type)
+        codes_models, schema = None, None
         if not codes_response:
             if code_type == CodeValue.ERROR.value:
                 codes_models = ErrorCode.find_all()
-                error_schema = ErrorCodeSchema()
-                codes_response = error_schema.dump(codes_models, many=True)
+                schema = ErrorCodeSchema()
             elif code_type == CodeValue.INVOICE_STATUS.value:
                 codes_models = InvoiceStatusCode.find_all()
-                code_schema = InvoiceStatusCodeSchema()
-                codes_response = code_schema.dump(codes_models, many=True)
+                schema = InvoiceStatusCodeSchema()
             elif code_type == CodeValue.CORP_TYPE.value:
                 codes_models = CorpType.find_all()
-                code_schema = CorpTypeSchema()
-                codes_response = code_schema.dump(codes_models, many=True)
-            cache.set(code_type, codes_response)
+                schema = CorpTypeSchema()
+            elif code_type == CodeValue.FEE_CODE.value:
+                codes_models = FeeCode.find_all()
+                schema = FeeCodeSchema()
+            if schema and codes_models:
+                codes_response = schema.dump(codes_models, many=True)
+                cache.set(code_type, codes_response)
 
         response['codes'] = codes_response
         current_app.logger.debug('>find_code_values_by_type')

@@ -767,3 +767,63 @@ def test_payment_request_creation_for_wills(session, client, jwt, app):
     assert rv.json.get('total') == 28.5  # Wills Noticee : 17, Alias : 5 each for 2, service fee 1.5
     assert rv.json.get('lineItems')[0]['serviceFees'] == 1.5
     assert rv.json.get('lineItems')[1]['serviceFees'] == 0
+
+
+def test_payment_request_creation_with_account_settings(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    system_token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    system_headers = {'Authorization': f'Bearer {system_token}', 'content-type': 'application/json'}
+    # Create account first
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_gov_account_payload(account_id=1234)),
+                     headers=system_headers)
+    auth_account_id = rv.json.get('authAccountId')
+
+    # Create account fee details.
+    staff_token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    staff_headers = {'Authorization': f'Bearer {staff_token}', 'content-type': 'application/json'}
+    client.post(f'/api/v1/accounts/{auth_account_id}/fees', data=json.dumps({'accountFees': [
+        {
+            'applyFilingFees': False,
+            'serviceFeeCode': 'TRF02',  # 1.0
+            'product': 'VS'  # Wills
+        }
+    ]}), headers=staff_headers)
+
+    user_token = jwt.create_jwt(get_claims(), token_header)
+    user_headers = {'Authorization': f'Bearer {user_token}', 'content-type': 'application/json',
+                    'Account-Id': auth_account_id}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request_for_wills(will_alias_quantity=2)),
+                     headers=user_headers)
+    assert rv.json.get('serviceFees') == 1.0
+    assert rv.json.get('total') == 1.0  # Wills Noticee : 0, Alias : 0 each for 2, service fee 1.0
+    assert rv.json.get('lineItems')[0]['serviceFees'] == 1.0
+    assert rv.json.get('lineItems')[1]['serviceFees'] == 0
+
+    # Now change the flag and try
+    client.put(f'/api/v1/accounts/{auth_account_id}/fees/VS', data=json.dumps({
+        'applyFilingFees': True,
+        'serviceFeeCode': 'TRF02',  # 1.0
+        'product': 'VS'  # Wills
+    }), headers=staff_headers)
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request_for_wills(will_alias_quantity=2)),
+                     headers=user_headers)
+    assert rv.json.get('serviceFees') == 1.0
+    assert rv.json.get('total') == 28  # Wills Noticee : 17, Alias : 5 each for 2, service fee 1.0
+    assert rv.json.get('lineItems')[0]['serviceFees'] == 1.0
+    assert rv.json.get('lineItems')[1]['serviceFees'] == 0
+
+    # Now change the serviceFeeCode
+    client.put(f'/api/v1/accounts/{auth_account_id}/fees/VS', data=json.dumps({
+        'applyFilingFees': True,
+        'serviceFeeCode': 'TRF01',  # 1.0
+        'product': 'VS'  # Wills
+    }), headers=staff_headers)
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request_for_wills(will_alias_quantity=2)),
+                     headers=user_headers)
+    assert rv.json.get('serviceFees') == 1.5
+    assert rv.json.get('total') == 28.5  # Wills Noticee : 17, Alias : 5 each for 2, service fee 1.0
+    assert rv.json.get('lineItems')[0]['serviceFees'] == 1.5
+    assert rv.json.get('lineItems')[1]['serviceFees'] == 0

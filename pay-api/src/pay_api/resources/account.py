@@ -21,8 +21,8 @@ from flask_restplus import Namespace, Resource, cors
 from pay_api.exceptions import BusinessException, error_to_response, ServiceUnavailableException
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import Payment
-from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.services.auth import check_auth
+from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE, VIEW_ROLE
 from pay_api.utils.enums import ContentType, Role, CfsAccountStatus
@@ -105,6 +105,59 @@ class Account(Resource):
         check_auth(business_identifier=None, account_id=account_number, one_of_roles=[EDIT_ROLE, VIEW_ROLE])
         response, status = PaymentAccountService.find_by_auth_account_id(account_number).asdict(), HTTPStatus.OK
         current_app.logger.debug('>Account.get')
+        return jsonify(response), status
+
+
+@cors_preflight('POST')
+@API.route('/<string:account_number>/fees', methods=['POST', 'OPTIONS'])
+class AccountFees(Resource):
+    """Endpoint resource to create payment account fee settings."""
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.requires_auth
+    @_jwt.has_one_of_roles([Role.STAFF_ADMIN.value])
+    def post(account_number: str):
+        """Create or update the account fee settings."""
+        current_app.logger.info('<AccountFees.post')
+        request_json = request.get_json()
+        # Validate the input request
+        valid_format, errors = schema_utils.validate(request_json, 'account_fees')
+
+        if not valid_format:
+            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+        try:
+            response, status = PaymentAccountService.save_account_fees(account_number, request_json), HTTPStatus.OK
+        except BusinessException as exception:
+            return exception.response()
+        current_app.logger.debug('>AccountFees.post')
+        return jsonify(response), status
+
+
+@cors_preflight('PUT')
+@API.route('/<string:account_number>/fees/<string:product>', methods=['PUT', 'OPTIONS'])
+class AccountFee(Resource):
+    """Endpoint resource to update payment account fee settings."""
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.requires_auth
+    @_jwt.has_one_of_roles([Role.STAFF_ADMIN.value])
+    def put(account_number: str, product: str):
+        """Create or update the account fee settings."""
+        current_app.logger.info('<AccountFee.post')
+        request_json = request.get_json()
+        # Validate the input request
+        valid_format, errors = schema_utils.validate(request_json, 'account_fee')
+
+        if not valid_format:
+            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+        try:
+            response, status = PaymentAccountService.save_account_fee(account_number, product,
+                                                                      request_json), HTTPStatus.OK
+        except BusinessException as exception:
+            return exception.response()
+        current_app.logger.debug('>AccountFee.post')
         return jsonify(response), status
 
 

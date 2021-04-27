@@ -37,3 +37,9 @@ def test_find_code(session, client, jwt, app):
     code = rv.json.get('codes')[0].get('type')
     rv = client.get(f'/api/v1/codes/errors/{code}', headers={})
     assert rv.json.get('type') == code
+
+
+def test_find_fee_codes(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    rv = client.get('/api/v1/codes/fee_codes', headers={})
+    assert rv.status_code == 200
