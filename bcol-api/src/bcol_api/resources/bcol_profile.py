@@ -18,7 +18,7 @@ from http import HTTPStatus
 from flask import request
 from flask_restplus import Namespace, Resource, cors
 
-from bcol_api.exceptions import BusinessException, PaymentException
+from bcol_api.exceptions import BusinessException
 from bcol_api.exceptions import error_to_response
 from bcol_api.schemas import utils as schema_utils
 from bcol_api.services.bcol_profile import BcolProfile as BcolProfileService
@@ -27,14 +27,13 @@ from bcol_api.utils.errors import Error
 from bcol_api.utils.trace import tracing as _tracing
 from bcol_api.utils.util import cors_preflight
 
-
 API = Namespace('bcol profile', description='Payment System - BCOL Profiles')
 
 
 @cors_preflight(['POST', 'OPTIONS'])
 @API.route('', methods=['POST', 'OPTIONS'])
-class BcolProfile(Resource):
-    """Endpoint resource to manage BCOL Accounts."""
+class BcolProfiles(Resource):
+    """Endpoint query bcol profile using user id and password."""
 
     @staticmethod
     @_tracing.trace()
@@ -53,6 +52,22 @@ class BcolProfile(Resource):
                                                                   req_json.get('password')), HTTPStatus.OK
         except BusinessException as exception:
             return exception.response()
-        except PaymentException as exception:
+        return response, status
+
+
+@cors_preflight(['GET', 'OPTIONS'])
+@API.route('/<string:bcol_user_id>', methods=['GET', 'OPTIONS'])
+class BcolProfile(Resource):
+    """Endpoint resource to get bcol profile by user id."""
+
+    @staticmethod
+    @_tracing.trace()
+    @_jwt.has_one_of_roles(['system'])
+    @cors.crossdomain(origin='*')
+    def get(bcol_user_id: str):
+        """Return the bcol profile."""
+        try:
+            response, status = BcolProfileService().get_profile(bcol_user_id), HTTPStatus.OK
+        except BusinessException as exception:
             return exception.response()
         return response, status

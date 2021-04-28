@@ -35,6 +35,13 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
         # Validate the user first
         self.__authenticate_user(bcol_user_id, password)
 
+        response = self.get_profile(bcol_user_id)
+
+        current_app.logger.debug('>query_profile')
+        return response
+
+    def get_profile(self, bcol_user_id):
+        """Return bcol profile by user id."""
         # Call the query profile service to fetch profile
         data = {
             'Version': current_app.config.get('BCOL_DEBIT_ACCOUNT_VERSION'),
@@ -89,7 +96,9 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
             if query_profile_flags:
                 flags: list = []
                 for flag in query_profile_flags:
-                    flags.append(flag['name'])
+                    value = dict(flag).get('_value_1')
+                    if value and value.strip() == 'Y':
+                        flags.append(flag['name'])
                 response['profile_flags'] = flags
         except zeep.exceptions.Fault as fault:
             current_app.logger.error(fault)
@@ -102,8 +111,6 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
         except Exception as e:  # NOQA
             current_app.logger.error(e)
             raise BusinessException(Error.SYSTEM_ERROR)
-
-        current_app.logger.debug('>query_profile')
         return response
 
     def __authenticate_user(self, user_id: str, password: str) -> bool:  # pylint: disable=no-self-use
