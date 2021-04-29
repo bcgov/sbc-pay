@@ -133,7 +133,9 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         # Do validation by looking up the invoice
         invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
         # Allow refund only for direct pay payments, and only if the status of invoice is PAID/UPDATE_REVENUE_ACCOUNT
-        paid_statuses = (InvoiceStatus.PAID.value, InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value)
+        paid_statuses = (
+            InvoiceStatus.PAID.value, InvoiceStatus.APPROVED.value, InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value
+        )
 
         if invoice.invoice_status_code not in paid_statuses:
             raise BusinessException(Error.INVALID_REQUEST)
@@ -161,8 +163,10 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             payment.payment_status_code = PaymentStatus.REFUNDED.value
             payment.flush()
         else:
-            # Create credit memo in CFS.
-            # TODO Refactor this when actual task is done. This is just a quick fix for CFS UAT - Dec 2020
+            # Create credit memo in CFS if the invoice status is PAID.
+            # Don't do anything is the status is APPROVED.
+            if invoice.invoice_status_code == InvoiceStatus.APPROVED.value:
+                return
             cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(invoice.payment_account_id)
             line_items: List[PaymentLineItemModel] = []
             for line_item in invoice.payment_line_items:

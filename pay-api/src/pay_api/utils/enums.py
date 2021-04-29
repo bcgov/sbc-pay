@@ -169,6 +169,8 @@ class CorpType(Enum):
     """Corp Type."""
 
     NRO = 'NRO'
+    PPR = 'PPR'
+    VS = 'VS'
 
 
 class DisbursementStatus(Enum):

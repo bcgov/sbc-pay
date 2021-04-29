@@ -170,7 +170,15 @@ def get_pay_subject_name(corp_type: str, subject_format: str = None):
     """Return payment subject name."""
     # TODO Refactor later
     subject_format = subject_format or current_app.config.get('NATS_PAYMENT_SUBJECT')
-    pay_subject = 'name-request' if corp_type == CorpType.NRO.value else 'filing'
+
+    if corp_type == CorpType.NRO.value:
+        pay_subject = 'name-request'
+    elif corp_type == CorpType.PPR.value:
+        pay_subject = 'ppr'
+    elif corp_type == CorpType.VS.value:
+        pay_subject = 'vs'
+    else:
+        pay_subject = 'filing'
     return subject_format.format(product=pay_subject)
 
 
