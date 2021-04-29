@@ -353,11 +353,12 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         if payment.payment_status_code == PaymentStatus.COMPLETED.value:
             # if the transaction status is EVENT_FAILED then publish to queue and return, else raise error
             if transaction_dao.status_code == TransactionStatus.EVENT_FAILED.value:
+                transaction_dao.status_code = TransactionStatus.COMPLETED.value
+
                 # Publish status to Queue
                 for invoice in invoices:
                     PaymentTransaction.publish_status(transaction_dao, invoice)
 
-                transaction_dao.status_code = TransactionStatus.COMPLETED.value
                 return PaymentTransaction.__wrap_dao(transaction_dao.save())
 
             raise BusinessException(Error.COMPLETED_PAYMENT)
