@@ -61,3 +61,11 @@ def test_post_accounts_not_prime_error(client, jwt, app, ldap_mock, query_profil
     rv = client.post('/api/v1/profiles', data=json.dumps({'userId': 'TEST', 'password': 'TEST'}), headers=headers)
     assert rv.status_code == 400
     assert rv.json.get('type') == Error.NOT_A_PRIME_USER.name
+
+
+def test_get_profile(client, jwt, app, query_profile_mock):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(role='system'), get_token_header())
+    headers = {'content-type': 'application/json', 'Authorization': f'Bearer {token}'}
+    rv = client.get('/api/v1/profiles/PB25020', headers=headers)
+    assert rv.status_code == 200
