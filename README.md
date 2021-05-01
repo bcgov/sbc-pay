@@ -1,5 +1,6 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![codecov](https://codecov.io/gh/bcgov/sbc-pay/branch/development/graph/badge.svg)](https://codecov.io/gh/bcgov/sbc-pay)
+[![Lifecycle:Maturing](https://img.shields.io/badge/Lifecycle-Maturing-007EC6)](https://github.com/bcgov/repomountie/blob/master/doc/lifecycle-badges.md)
 
 # BC Registiries payment services
 
