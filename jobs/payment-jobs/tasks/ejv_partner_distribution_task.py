@@ -20,9 +20,11 @@ from typing import List
 from flask import current_app
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import DistributionCode as DistributionCodeModel
+from pay_api.models import DistributionCodeLink as DistributionCodeLinkModel
 from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
 from pay_api.models import EjvInvoiceLink as EjvInvoiceLinkModel
+from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import db
@@ -68,8 +70,7 @@ class EjvPartnerDistributionTask(CgiEjv):
         batch_number = cls.get_batch_number(ejv_file_model.id)
 
         # Get partner list. Each of the partner will go as a JV Header and transactions as JV Details.
-        partners: List[CorpTypeModel] = db.session.query(CorpTypeModel.code) \
-            .filter(CorpTypeModel.batch_type == batch_type).all()
+        partners = cls._get_partners_by_batch_type(batch_type)
 
         # JV Batch Header
         batch_header: str = cls.get_batch_header(batch_number, batch_type)
@@ -196,3 +197,36 @@ class EjvPartnerDistributionTask(CgiEjv):
             .filter(InvoiceModel.corp_type_code == partner.code) \
             .all()
         return invoices
+
+    @classmethod
+    def _get_partners_by_batch_type(cls, batch_type) -> List[CorpTypeModel]:
+        """Return partners by batch type."""
+        # CREDIT : Ministry GL code -> disbursement_distribution_code_id on distribution_codes table
+        # DEBIT : BC Registry GL Code -> distribution_code on fee_schedule, starts with 112
+        bc_reg_client_code = current_app.config.get('CGI_BCREG_CLIENT_CODE')  # 112
+        query = db.session.query(DistributionCodeModel.distribution_code_id) \
+            .filter(DistributionCodeModel.stop_ejv.is_(False)) \
+            .filter(DistributionCodeModel.account_id.is_(None)) \
+            .filter(DistributionCodeModel.disbursement_distribution_code_id.is_(None))
+
+        if batch_type == 'GA':
+            # Rule for GA. Credit is 112 and debit is 112.
+            partner_distribution_code_ids: List[int] = query.filter(
+                DistributionCodeModel.client == bc_reg_client_code
+            ).all()
+        else:
+            # Rule for GI. Debit is 112 and credit is not 112.
+            partner_distribution_code_ids: List[int] = query.filter(
+                DistributionCodeModel.client != bc_reg_client_code
+            ).all()
+
+        # Find all distribution codes who have these partner distribution codes as disbursement.
+        fee_distribution_codes: List[int] = db.session.query(DistributionCodeModel.distribution_code_id).filter(
+            DistributionCodeModel.disbursement_distribution_code_id.in_(partner_distribution_code_ids)).all()
+
+        corp_type_codes: List[str] = db.session.query(FeeScheduleModel.corp_type_code). \
+            join(DistributionCodeLinkModel,
+                 DistributionCodeLinkModel.fee_schedule_id == FeeScheduleModel.fee_schedule_id). \
+            filter(DistributionCodeLinkModel.distribution_code_id.in_(fee_distribution_codes)).all()
+
+        return db.session.query(CorpTypeModel).filter(CorpTypeModel.code.in_(corp_type_codes)).all()
