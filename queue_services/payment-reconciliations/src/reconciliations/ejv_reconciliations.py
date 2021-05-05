@@ -48,7 +48,6 @@ from sentry_sdk import capture_message
 from reconciliations import config
 from reconciliations.minio import get_object
 
-
 APP_CONFIG = config.get_named_config(os.getenv('DEPLOYMENT_ENV', 'production'))
 
 
@@ -149,6 +148,7 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
         EjvInvoiceLinkModel.invoice_id == invoice_id).one_or_none()
     invoice_return_code = line[315:319]
     invoice_return_message = line[319:469]
+
     # If the JV process failed, then mark the GL code against the invoice to be stopped
     # for further JV process for the credit GL.
     if line[104:105] == 'C' and ejv_file.is_distribution:
@@ -171,13 +171,15 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
         # This is for gov account payment JV.
         invoice_link.disbursement_status_code = _get_disbursement_status(invoice_return_code)
         invoice_link.message = invoice_return_message
+        logger.info('Invoice ID %s', invoice_id)
         inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
             invoice_id, InvoiceReferenceStatus.ACTIVE.value)
-
+        logger.info('invoice_link.disbursement_status_code %s', invoice_link.disbursement_status_code)
         if invoice_link.disbursement_status_code == DisbursementStatus.ERRORED.value:
             has_errors = True
             # Cancel the invoice reference.
-            inv_ref.status_code = InvoiceReferenceStatus.CANCELLED.value
+            if inv_ref:
+                inv_ref.status_code = InvoiceReferenceStatus.CANCELLED.value
             # Find the distribution code and set the stop_ejv flag to TRUE
             dist_code: DistributionCodeModel = DistributionCodeModel.find_by_active_for_account(
                 invoice.payment_account_id)
