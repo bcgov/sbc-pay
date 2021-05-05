@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
+import pytest
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvInvoiceLink, FeeSchedule, Invoice, db
 from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, PaymentMethod
@@ -23,23 +24,21 @@ from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, PaymentMet
 from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
 
 from .factory import (
-    factory_create_pad_account, factory_distribution, factory_invoice, factory_invoice_reference, factory_payment,
-    factory_payment_line_item)
+    factory_create_pad_account, factory_distribution, factory_distribution_link, factory_invoice,
+    factory_invoice_reference, factory_payment, factory_payment_line_item)
 
 
-def test_disbursement_for_partners(session, monkeypatch):
+@pytest.mark.parametrize('client_code, batch_type', [('112', 'GA'), ('113', 'GI'), ('ABC', 'GI')])
+def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type):
     """Test disbursement for partners.
 
     Steps:
-    1) Update a partner with batch type as GI.
-    2) Update another partner with batch type as GA.
-    3) Create paid invoices for these partners.
-    4) Run the job and assert results.
+    1) Create GL codes to match GA batch type.
+    2) Create paid invoices for these partners.
+    3) Run the job and assert results.
     """
     monkeypatch.setattr('pysftp.Connection.put', lambda *args, **kwargs: None)
     corp_type: CorpTypeModel = CorpTypeModel.find_by_code('VS')
-    corp_type.batch_type = 'GI'
-    corp_type.save()
 
     pad_account = factory_create_pad_account(auth_account_id='1234',
                                              bank_number='001',
@@ -48,17 +47,20 @@ def test_disbursement_for_partners(session, monkeypatch):
                                              status=CfsAccountStatus.ACTIVE.value,
                                              payment_method=PaymentMethod.PAD.value)
 
-    # Create 3 distribution code records. 1 for VS stat fee, 1 for service fee and 1 for disbursement.
-    disbursement_distribution: DistributionCode = factory_distribution(name='VS Disbursement', client='111')
-    service_fee_distribution: DistributionCode = factory_distribution(name='VS Service Fee', client='222')
+    # GI - Create 3 distribution code records. 1 for VS stat fee, 1 for service fee and 1 for disbursement.
+    disbursement_distribution: DistributionCode = factory_distribution(name='VS Disbursement', client=client_code)
+
+    service_fee_distribution: DistributionCode = factory_distribution(name='VS Service Fee', client='112')
     fee_distribution: DistributionCode = factory_distribution(
-        name='VS Fee distribution', client='333', service_fee_dist_id=service_fee_distribution.distribution_code_id,
+        name='VS Fee distribution', client='112', service_fee_dist_id=service_fee_distribution.distribution_code_id,
         disbursement_dist_id=disbursement_distribution.distribution_code_id
     )
+    fee_schedule: FeeSchedule = FeeSchedule.find_by_filing_type_and_corp_type(corp_type.code, 'WILLNOTICE')
+
+    factory_distribution_link(fee_distribution.distribution_code_id, fee_schedule.fee_schedule_id)
     invoice = factory_invoice(payment_account=pad_account, corp_type_code=corp_type.code, total=11.5,
                               status_code='PAID')
 
-    fee_schedule: FeeSchedule = FeeSchedule.find_by_filing_type_and_corp_type(corp_type.code, 'WILLNOTICE')
     factory_payment_line_item(invoice_id=invoice.id,
                               fee_schedule_id=fee_schedule.fee_schedule_id,
                               filing_fees=10,
@@ -84,4 +86,4 @@ def test_disbursement_for_partners(session, monkeypatch):
 
     ejv_file = EjvFile.find_by_id(ejv_header.ejv_file_id)
     assert ejv_file
-    assert ejv_file.disbursement_status_code == DisbursementStatus.UPLOADED.value
+    assert ejv_file.disbursement_status_code == DisbursementStatus.UPLOADED.value, f'{batch_type}'

@@ -20,8 +20,8 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 from datetime import datetime, timedelta
 
 from pay_api.models import (
-    CfsAccount, DistributionCode, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem,
-    StatementSettings)
+    CfsAccount, DistributionCode, DistributionCodeLink, Invoice, InvoiceReference, Payment, PaymentAccount,
+    PaymentLineItem, StatementSettings)
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus)
 
@@ -194,3 +194,9 @@ def factory_distribution(name: str, client: str = '111', reps_centre: str = '222
                             disbursement_distribution_code_id=disbursement_dist_id,
                             start_date=datetime.today().date(),
                             created_by='test').save()
+
+
+def factory_distribution_link(distribution_code_id: int, fee_schedule_id: int):
+    """Return Factory."""
+    return DistributionCodeLink(fee_schedule_id=fee_schedule_id,
+                                distribution_code_id=distribution_code_id).save()
