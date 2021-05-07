@@ -42,3 +42,5 @@ CHANGE_STATEMENT_SETTINGS = 'change_statement_settings'
 ALL_ALLOWED_ROLES = (EDIT_ROLE, VIEW_ROLE)
 
 LEGISLATIVE_TIMEZONE = 'America/Vancouver'
+
+INCORPORATION_LABEL = 'Incorporation Number:'

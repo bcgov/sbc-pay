@@ -180,3 +180,9 @@ class DisbursementStatus(Enum):
     ACKNOWLEDGED = 'ACKNOWLEDGED'
     ERRORED = 'ERRORED'
     COMPLETED = 'COMPLETED'
+
+
+class Product(Enum):
+    """Product."""
+
+    BUSINESS = 'BUSINESS'

@@ -28,8 +28,8 @@ from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceStatus, Paym
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import generate_transaction_number, get_local_formatted_date
-from .oauth_service import OAuthService
 from .code import Code as CodeService
+from .oauth_service import OAuthService
 
 
 class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
@@ -57,6 +57,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._dat_number: str = None
         self._cfs_account_id: int
         self._payment_method_code: str = None
+        self._details: Dict = None
 
     @property
     def _dao(self):
@@ -86,6 +87,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.business_identifier: str = self._dao.business_identifier
         self.dat_number: str = self._dao.dat_number
         self.cfs_account_id: int = self._dao.cfs_account_id
+        self.details: Dict = self._dao.details
 
     @property
     def id(self):
@@ -295,6 +297,17 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         """Set the cfs_account_id."""
         self._cfs_account_id = value
         self._dao.cfs_account_id = value
+
+    @property
+    def details(self):
+        """Return the details."""
+        return self._details
+
+    @details.setter
+    def details(self, value: str):
+        """Set the details."""
+        self._details = value
+        self._dao.details = value
 
     def commit(self):
         """Save the information to the DB."""
