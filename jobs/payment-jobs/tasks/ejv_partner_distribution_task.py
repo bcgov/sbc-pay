@@ -71,6 +71,7 @@ class EjvPartnerDistributionTask(CgiEjv):
 
         # Get partner list. Each of the partner will go as a JV Header and transactions as JV Details.
         partners = cls._get_partners_by_batch_type(batch_type)
+        current_app.logger.info(partners)
 
         # JV Batch Header
         batch_header: str = cls.get_batch_header(batch_number, batch_type)
@@ -196,6 +197,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                     (InvoiceModel.disbursement_status_code == DisbursementStatus.ERRORED.value)) \
             .filter(InvoiceModel.corp_type_code == partner.code) \
             .all()
+        current_app.logger.info(invoices)
         return invoices
 
     @classmethod
