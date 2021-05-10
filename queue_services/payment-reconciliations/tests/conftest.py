@@ -148,7 +148,7 @@ def session(app, db):  # pylint: disable=redefined-outer-name, invalid-name
             # Detecting whether this is indeed the nested transaction of the test
             if trans.nested and not trans._parent.nested:  # pylint: disable=protected-access
                 # Handle where test DOESN'T session.commit(),
-                sess2.expire_all()
+                # sess2.expire_all()
                 sess.begin_nested()
 
         db.session = sess
