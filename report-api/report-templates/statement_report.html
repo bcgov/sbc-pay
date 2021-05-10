@@ -217,10 +217,15 @@
 
       .transaction-table thead tr,
       .transaction-table tbody tr {
-        border-bottom: 1px solid #b3bac3;
         line-height: 3;
         font-size: 12px;
       }
+
+      .transaction-table thead tr,
+      .transaction-table tbody tr.row-border {
+        border-bottom: 1px solid #b3bac3;
+      }
+
       .transaction-table tbody tr:last-child {
         border-bottom: none;
       }
@@ -404,10 +409,9 @@
           <td colspan="2">
             <table class="transaction-table">
               <thead>
-                <th>Folio</th>
                 <th>Product Purchased</th>
-                <th class="two-line-head" style="width: 96px;">Transaction Date</th>
-                <th>Fee Code</th>
+                <th>Folio</th>
+                <th class="two-line-head" style="width: 96px;">Date</th>
                 <th>Fee</th>
                 <th>GST</th>
                 <th class="two-line-head" style="width: 45px;">Service Charge</th>
@@ -416,25 +420,24 @@
               <tbody>
                 {% for item in invoices %}
                 <tr>
+                    <td class="product-purchased">
+                        {% for lineItemProduct in item.line_items %}
+                        <div>{{lineItemProduct.description}}</div>
+                        {% endfor %}
+                  </td>
                   <td>{{item.folio_number}}</td>
-                  <td class="product-purchased">
-                    {% for lineItemProduct in item.line_items %}
-                    <div>{{lineItemProduct.description}}</div>
-                    {% endfor %}
-                    {% if item.business_identifier %}
-                    <div>#{{item.business_identifier}}</div>
-                    {% endif %}
-                  </td>
                   <td>{{item.created_on|format_datetime}}</td>
-                  <td>
-                    {% for lineItemFeeCode in item.line_items %}
-                    <div>{{lineItemFeeCode.filing_type_code}}</div>
-                    {% endfor %}
-                  </td>
                   <td>${{"%.2f"|format((item.total - item.service_fees)) if (item.service_fees and item.total) else '0.00'}}</td>
                   <td>${{"%.2f"|format(item.gst) if item.gst else '0.00'}}</td>
                   <td>${{"%.2f"|format(item.service_fees) if item.service_fees else '0.00'}}</td>
                   <td class="font-bold">${{"%.2f"|format(item.total) if item.total else '0.00'}}</td>
+                </tr>
+                <tr class="row-border">
+                    <td colspan="7">
+                        {% for detail in item.details %}
+                        <div>{{detail.label}}&nbsp;{{details.value}}</div>
+                        {% endfor %}
+                  </td>
                 </tr>
                 {% endfor %}
               </tbody>
