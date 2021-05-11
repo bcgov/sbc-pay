@@ -98,7 +98,6 @@ class EjvPaymentTask(CgiEjv):
             total: float = 0
             for inv in invoices:
                 line_items = inv.payment_line_items
-                control_total += 1
 
                 for line in line_items:
                     # Line can have 2 distribution, 1 for the total and another one for service fees.
@@ -148,6 +147,7 @@ class EjvPaymentTask(CgiEjv):
             batch_total += total
 
             # A JV header for each account.
+            control_total += 1
             account_jv = cls.get_jv_header(batch_type, cls.get_journal_batch_name(batch_number),
                                            journal_name, total) + account_jv
             ejv_content = ejv_content + account_jv
