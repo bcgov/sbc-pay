@@ -382,8 +382,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
     def generate_payment_report(content_type, report_name, results, template_name,
                                 **kwargs):  # pylint: disable=too-many-locals
         """Prepare data and generate payment report by calling report api."""
-        labels = ['Transaction', 'Folio Number', 'Initiated By', 'Date', 'Purchase Amount', 'GST', 'Statutory Fee',
-                  'BCOL Fee', 'Status', 'Corp Number']
+        labels = ['Transaction', 'Transaction Details', 'Folio Number', 'Initiated By', 'Date', 'Purchase Amount',
+                  'GST', 'Statutory Fee', 'BCOL Fee', 'Status', 'Corp Number']
         if content_type == ContentType.CSV.value:
             template_vars = {
                 'columns': labels,
@@ -459,6 +459,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             total_fees = float(invoice.get('total', 0))
             row_value = [
                 ','.join([line_item.get('description') for line_item in invoice.get('line_items')]),
+                ','.join(['{} {}'.format(
+                    detail.get('label'), detail.get('value')) for detail in invoice.get('details')
+                ]) if invoice.get('details') else None,
                 invoice.get('folio_number'),
                 invoice.get('created_name'),
                 parser.parse(invoice.get('created_on')).strftime('%m-%d-%Y %I:%M %p'),

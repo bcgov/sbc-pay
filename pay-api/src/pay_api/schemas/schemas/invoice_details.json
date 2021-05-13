@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/invoice_details",
+  "type": "array",
+  "title": "Invoice Details",
+  "properties": {
+    "key": {
+      "$id": "#/properties/key",
+      "type": "string",
+      "title": "Key",
+      "default": "",
+      "examples": [
+        "Name 1"
+      ],
+      "pattern": "^(.*)$"
+    },
+    "value": {
+      "$id": "#/properties/value",
+      "type": "string",
+      "title": "Value",
+      "default": "",
+      "examples": [
+        "NR 345678"
+      ],
+      "pattern": "^(.*)$"
+    }
+  }
+}

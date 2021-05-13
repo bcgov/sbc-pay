@@ -18,15 +18,18 @@ from typing import List
 
 from marshmallow import fields, post_dump
 from sqlalchemy import ForeignKey
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
-from pay_api.utils.enums import InvoiceStatus, LineItemStatus, PaymentStatus, InvoiceReferenceStatus
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentStatus, Product
+from pay_api.utils.constants import INCORPORATION_LABEL
 from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
 from .db import db, ma
 from .invoice_reference import InvoiceReferenceSchema
 from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from .receipt import ReceiptSchema
+from .corp_type import CorpType
 
 
 class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
@@ -54,6 +57,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     dat_number = db.Column(db.String(50), nullable=True, index=True)
     bcol_account = db.Column(db.String(50), nullable=True, index=True)
     service_fees = db.Column(db.Float, nullable=True)
+    details = db.Column(JSONB)
 
     payment_line_items = relationship('PaymentLineItem')
     receipts = relationship('Receipt')
@@ -134,11 +138,20 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
         if 'line_items' in data and not data.get('line_items'):
             data.pop('line_items')
 
-        # do not include temproary business identifier
+        # do not include temporary business identifier
         if data.get('business_identifier', None) and data.get('business_identifier').startswith('T'):
             data.pop('business_identifier')
 
         # TODO remove it later, adding this here to make non-breaking changes for other teams
         if data.get('status_code') == InvoiceStatus.PAID.value:
             data['status_code'] = PaymentStatus.COMPLETED.value
+
+        # If it's a BUSINESS invoice, then push details.
+        if data.get('business_identifier', None) \
+                and CorpType.find_by_code(data.get('corp_type_code')).product == Product.BUSINESS.value:
+            details: list[dict] = data.get('details')
+            if not details:
+                details = []
+            details.insert(0, dict(label=INCORPORATION_LABEL, value=data.get('business_identifier')))
+            data['details'] = details
         return data
