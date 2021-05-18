@@ -35,6 +35,13 @@
           "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/account_info"
         }
       ]
+    },
+    "details": {
+      "oneOf": [
+        {
+          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/invoice_details"
+        }
+      ]
     }
   }
 }

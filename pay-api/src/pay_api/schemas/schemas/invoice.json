@@ -109,6 +109,13 @@
       "items": {
         "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/invoice_reference"
       }
+    },
+    "details": {
+      "oneOf": [
+        {
+          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/invoice_details"
+        }
+      ]
     }
   }
 }

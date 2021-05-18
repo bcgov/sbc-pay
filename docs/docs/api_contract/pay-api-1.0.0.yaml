@@ -258,6 +258,9 @@ paths:
                     updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
                     updatedName: BCREGTEST Bena THIRTEEN
                     updatedOn: '2020-09-18T12:51:32.256413+00:00'
+                    details:
+                      - label: 'Incorporation Number : '
+                        value: BC1000000
           headers:
             Access-Control-Allow-Origin:
               schema:
@@ -376,6 +379,9 @@ paths:
                     updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
                     updatedName: BCREGTEST Bena THIRTEEN
                     updatedOn: '2020-09-18T12:51:32.256413+00:00'
+                    details:
+                      - label: 'Incorporation Number : '
+                        value: BC1000000
                 /api/v1/payment-requests/2:
                   value:
                     _links:
@@ -401,6 +407,9 @@ paths:
                     updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
                     updatedName: BCREGTEST Bena THIRTEEN
                     updatedOn: '2020-09-18T12:51:32.256413+00:00'
+                    details:
+                      - label: 'Incorporation Number : '
+                        value: BC1000001
         '404':
           description: Not Found
           content:
@@ -553,6 +562,9 @@ paths:
                       updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
                       updatedName: BCREGTEST Bena THIRTEEN
                       updatedOn: '2020-09-18T12:51:32.256413+00:00'
+                      details:
+                        - label: 'Incorporation Number : '
+                          value: BC1000000
                     invoiceNumber: '21'
                     paymentMethod: Drawdown Payment
                     receiptNumber: '21'
@@ -601,6 +613,9 @@ paths:
                       updatedBy: BCSC/FYD76WBCNG76CPXBU42HHUA4QPHTIVB5
                       updatedName: BCREGTEST Bena THIRTEEN
                       updatedOn: '2020-09-18T12:51:32.256413+00:00'
+                      details:
+                        - label: 'Incorporation Number : '
+                          value: BC1000001
                     invoiceNumber: '22'
                     paymentMethod: Drawdown Payment
                     receiptNumber: '22'
@@ -1453,6 +1468,8 @@ components:
       description: <p> Object to return fee information. </p>
     PaymentRequest:
       type: object
+      title: Payment Request
+      description: <p>Object to hold payment request details. </p>
       properties:
         filingInfo:
           $ref: '#/components/schemas/FilingInfo'
@@ -1460,11 +1477,18 @@ components:
           $ref: '#/components/schemas/BusinessInfo'
         contactInfo:
           $ref: '#/components/schemas/ContactInfo'
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              label:
+                type: string
+              value:
+                type: string
       required:
         - filingInfo
         - businessInfo
-      title: Payment Request
-      description: <p>Object to hold payment request details. </p>
     FilingInfo:
       type: object
       properties:
@@ -1598,6 +1622,8 @@ components:
             - PAID
             - DELETED
             - CREATED
+            - APPROVED
+            - COMPLETED
         references:
           type: array
           items:
@@ -1615,6 +1641,15 @@ components:
           description: Flag to indicate if a user action/redirection is needed to complete the payment.
         isOnlineBankingAllowed:
           type: boolean
+        details:
+          type: array
+          items:
+            type: object
+            properties:
+              label:
+                type: string
+              value:
+                type: string
     Transaction:
       type: object
       properties:
@@ -1700,6 +1735,10 @@ components:
         invoiceNumber:
           type: string
         receiptNumber:
+          type: string
+        bcOnlineAccountNumber:
+          type: string
+        paymentMethod:
           type: string
     TransactionReportQuery:
       title: Transaction Report Query

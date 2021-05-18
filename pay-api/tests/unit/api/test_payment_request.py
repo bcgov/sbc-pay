@@ -18,6 +18,7 @@ Test-Suite to ensure that the /payment-requests endpoint is working as expected.
 """
 
 import json
+import copy
 from unittest.mock import patch
 
 from flask import current_app
@@ -35,16 +36,22 @@ from tests.utilities.base_test import (
     get_gov_account_payload, get_payment_request_for_wills, activate_pad_account)
 
 
-def test_payment_creation(session, client, jwt, app):
+def test_payment_request_creation(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    req_data = copy.deepcopy(get_payment_request())
+    details = [{
+        'label': 'TEST',
+        'value': 'TEST'
+    }]
+    req_data['details'] = details
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
-                     headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(req_data), headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
     assert schema_utils.validate(rv.json, 'invoice')[0]
+    assert details[0] in rv.json.get('details')
 
 
 def test_payment_creation_using_direct_pay(session, client, jwt, app):
@@ -779,7 +786,7 @@ def test_payment_request_creation_with_account_settings(session, client, jwt, ap
     auth_account_id = rv.json.get('authAccountId')
 
     # Create account fee details.
-    staff_token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    staff_token = jwt.create_jwt(get_claims(role=Role.MANAGE_ACCOUNTS.value), token_header)
     staff_headers = {'Authorization': f'Bearer {staff_token}', 'content-type': 'application/json'}
     client.post(f'/api/v1/accounts/{auth_account_id}/fees', data=json.dumps({'accountFees': [
         {

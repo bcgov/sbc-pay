@@ -93,8 +93,6 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice.payment_account_id = payment_account.id
             invoice.cfs_account_id = payment_account.cfs_account_id
             invoice.invoice_status_code = pay_service.get_default_invoice_status()
-            #   TODO Change based on decision, whether to apply service fees for each line or not.
-            #   For now add up the service fee on each fee schedule
             invoice.service_fees = sum(fee.service_fees for fee in fees) if fees else 0
             invoice.total = sum(fee.total for fee in fees) if fees else 0
             invoice.paid = 0
@@ -106,6 +104,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice.business_identifier = business_info.get('businessIdentifier')
             invoice.payment_method_code = pay_service.get_payment_method_code()
             invoice.corp_type_code = corp_type
+            invoice.details = payment_request.get('details', None)
             invoice = invoice.flush()
 
             line_items = []

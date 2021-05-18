@@ -26,7 +26,7 @@ from tests.utilities.base_test import get_claims, token_header, get_distribution
 
 def test_fee_schedules(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
-    token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    token = jwt.create_jwt(get_claims(role=Role.STAFF.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     rv = client.get('/api/v1/fees/schedules', headers=headers)
     assert rv.status_code == 200
@@ -34,7 +34,7 @@ def test_fee_schedules(session, client, jwt, app):
 
 def test_fee_schedules_for_corp_and_filing_type(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
-    token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    token = jwt.create_jwt(get_claims(role=Role.STAFF.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     rv = client.get('/api/v1/fees/schedules?corp_type=CP&filing_type=OTANN', headers=headers)
     assert rv.status_code == 200

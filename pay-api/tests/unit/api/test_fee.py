@@ -220,7 +220,7 @@ def test_fee_for_account_fee_settings(session, client, jwt, app):
     account_id = rv.json.get('authAccountId')
 
     # Create account fee details.
-    token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    token = jwt.create_jwt(get_claims(role=Role.MANAGE_ACCOUNTS.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     client.post(f'/api/v1/accounts/{account_id}/fees', data=json.dumps({'accountFees': [
         {
@@ -241,7 +241,7 @@ def test_fee_for_account_fee_settings(session, client, jwt, app):
     assert rv.json.get('serviceFees') == 1.0
 
     # Now change the settings to apply filing fees and assert
-    token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    token = jwt.create_jwt(get_claims(role=Role.MANAGE_ACCOUNTS.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     client.put(f'/api/v1/accounts/{account_id}/fees/BUSINESS', data=json.dumps({
         'applyFilingFees': True,
