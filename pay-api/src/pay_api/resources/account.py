@@ -116,7 +116,7 @@ class AccountFees(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.requires_auth
-    @_jwt.has_one_of_roles([Role.STAFF_ADMIN.value])
+    @_jwt.has_one_of_roles([Role.MANAGE_ACCOUNTS.value])
     def post(account_number: str):
         """Create or update the account fee settings."""
         current_app.logger.info('<AccountFees.post')
@@ -142,7 +142,7 @@ class AccountFee(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.requires_auth
-    @_jwt.has_one_of_roles([Role.STAFF_ADMIN.value])
+    @_jwt.has_one_of_roles([Role.MANAGE_ACCOUNTS.value])
     def put(account_number: str, product: str):
         """Create or update the account fee settings."""
         current_app.logger.info('<AccountFee.post')
