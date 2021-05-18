@@ -432,8 +432,8 @@
                   <td>${{"%.2f"|format(item.service_fees) if item.service_fees else '0.00'}}</td>
                   <td class="font-bold">${{"%.2f"|format(item.total) if item.total else '0.00'}}</td>
                 </tr>
-                <tr class="row-border">
-                    <td colspan="7">
+                <tr class="row-border" style="text-align: left;">
+                    <td colspan="7" style="text-align: left;">
                         {% for detail in item.details %}
                         <div>{{detail.label}}&nbsp;{{detail.value}}</div>
                         {% endfor %}
