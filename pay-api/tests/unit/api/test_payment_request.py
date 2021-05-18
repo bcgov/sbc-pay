@@ -786,7 +786,7 @@ def test_payment_request_creation_with_account_settings(session, client, jwt, ap
     auth_account_id = rv.json.get('authAccountId')
 
     # Create account fee details.
-    staff_token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    staff_token = jwt.create_jwt(get_claims(role=Role.MANAGE_ACCOUNTS.value), token_header)
     staff_headers = {'Authorization': f'Bearer {staff_token}', 'content-type': 'application/json'}
     client.post(f'/api/v1/accounts/{auth_account_id}/fees', data=json.dumps({'accountFees': [
         {
