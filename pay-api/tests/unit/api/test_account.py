@@ -460,7 +460,7 @@ def test_create_gov_accounts_with_account_fee(session, client, jwt, app):
     account_id = rv.json.get('authAccountId')
 
     # Create account fee details.
-    token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    token = jwt.create_jwt(get_claims(role=Role.MANAGE_ACCOUNTS.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     rv = client.post(f'/api/v1/accounts/{account_id}/fees', data=json.dumps({'accountFees': [
         {
@@ -486,7 +486,7 @@ def test_update_gov_accounts_with_account_fee(session, client, jwt, app):
     account_id = rv.json.get('authAccountId')
 
     # Create account fee details.
-    token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    token = jwt.create_jwt(get_claims(role=Role.MANAGE_ACCOUNTS.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     rv = client.post(f'/api/v1/accounts/{account_id}/fees', data=json.dumps({'accountFees': [
         {

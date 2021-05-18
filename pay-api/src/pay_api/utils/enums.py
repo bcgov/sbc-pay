@@ -114,6 +114,7 @@ class Role(Enum):
     PUBLIC_USER = 'public_user'
     EXCLUDE_SERVICE_FEES = 'exclude_service_fees'
     CREATE_CREDITS = 'create_credits'
+    MANAGE_ACCOUNTS = 'manage_accounts'
 
 
 class Code(Enum):

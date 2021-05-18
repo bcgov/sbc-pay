@@ -35,7 +35,7 @@ class FeeSchedules(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_tracing.trace()
-    @_jwt.has_one_of_roles([Role.STAFF_ADMIN.value])
+    @_jwt.has_one_of_roles([Role.STAFF.value])
     def get():
         """Calculate the fee for the filing using the corp type/filing type and return fee."""
         try:
