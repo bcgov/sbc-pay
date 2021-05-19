@@ -57,6 +57,7 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
             auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON).json()
 
             roles: list = auth_response.get('roles', [])
+            user.account_id = auth_response.get('account').get('id') if auth_response.get('account', None) else None
 
         g.user_permission = auth_response.get('roles')
         if kwargs.get('one_of_roles', None):
