@@ -14,17 +14,17 @@ jaeger-client==4.4.0
 jsonschema==3.2.0
 minio==7.0.3
 opentracing==2.4.0
-protobuf==3.15.8
+protobuf==3.16.0
 pycountry==20.7.3
 pyrsistent==0.17.3
 python-dotenv==0.17.1
-sentry-sdk==1.0.0
-six==1.15.0
+sentry-sdk==1.1.0
+six==1.16.0
 threadloop==1.0.2
 thrift==0.13.0
 tornado==6.1
 urllib3==1.26.4
 -e git+https://github.com/bcgov/lear.git#egg=entity_queue_common&subdirectory=queue_services/common
 -e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
--e git+https://github.com/bcgov/sbc-pay.git#egg=pay-api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-pay.git@master#egg=pay-api&subdirectory=pay-api
 # -e git+https://github.com/bcgov/sbc-pay.git@payment_settlement#egg=pay-api&subdirectory=pay-api
