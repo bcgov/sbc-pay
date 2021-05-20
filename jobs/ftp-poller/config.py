@@ -52,26 +52,6 @@ class _Config(object):  # pylint: disable=too-few-public-methods
 
     SECRET_KEY = 'a secret'
 
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-
-    ALEMBIC_INI = 'migrations/alembic.ini'
-
-    # POSTGRESQL
-    DB_USER = os.getenv('DATABASE_USERNAME', '')
-    DB_PASSWORD = os.getenv('DATABASE_PASSWORD', '')
-    DB_NAME = os.getenv('DATABASE_NAME', '')
-    DB_HOST = os.getenv('DATABASE_HOST', '')
-    DB_PORT = os.getenv('DATABASE_PORT', '5432')
-
-    SQLALCHEMY_DATABASE_URI = 'postgresql://{user}:{password}@{host}:{port}/{name}'.format(
-        user=DB_USER,
-        password=DB_PASSWORD,
-        host=DB_HOST,
-        port=int(DB_PORT),
-        name=DB_NAME,
-    )
-    SQLALCHEMY_ECHO = False
-
     # FTP CONFIG
     CAS_SFTP_HOST = os.getenv('CAS_SFTP_HOST', 'localhost')
     CAS_SFTP_USER_NAME = os.getenv('CAS_SFTP_USER_NAME', 'foo')
@@ -183,19 +163,6 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
             'SFTP_PORT': CAS_SFTP_PORT
         }
     }
-
-    # POSTGRESQL
-    DB_USER = os.getenv('DATABASE_TEST_USERNAME', default='postgres')
-    DB_PASSWORD = os.getenv('DATABASE_TEST_PASSWORD', default='postgres')
-    DB_NAME = os.getenv('DATABASE_TEST_NAME', default='paytestdb')
-    DB_HOST = os.getenv('DATABASE_TEST_HOST', default='localhost')
-    DB_PORT = os.getenv('DATABASE_TEST_PORT', default='5432')
-    SQLALCHEMY_DATABASE_URI = os.getenv(
-        'DATABASE_TEST_URL',
-        default='postgresql://{user}:{password}@{host}:{port}/{name}'.format(
-            user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=int(DB_PORT), name=DB_NAME
-        ),
-    )
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
