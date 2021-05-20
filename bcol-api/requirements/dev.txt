@@ -18,8 +18,8 @@ flake8-quotes
 pep8-naming
 autopep8
 coverage
-pylint<2.5
+pylint
 pylint-flask
-pydocstyle<4
+pydocstyle
 lovely-pytest-docker
-isort<5
+isort

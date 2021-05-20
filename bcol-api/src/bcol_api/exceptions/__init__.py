@@ -48,7 +48,7 @@ class BusinessException(Exception):
 
     def __init__(self, error: Error, *args, **kwargs):
         """Return a valid BusinessException."""
-        super(BusinessException, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.message = error.title
         self.details = error.details
         self.code = error.name
@@ -72,7 +72,7 @@ class PaymentException(Exception):
 
     def __init__(self, code: str, message: str, *args, **kwargs):
         """Return a valid BusinessException."""
-        super(PaymentException, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.status = HTTPStatus.BAD_REQUEST
         self.message = message
         self.details = message

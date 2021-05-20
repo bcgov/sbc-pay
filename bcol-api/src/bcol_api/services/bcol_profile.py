@@ -105,12 +105,12 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
             parsed_fault_detail = BcolSoap().get_profile_client().wsdl.types.deserialize(fault.detail[0])
             current_app.logger.error(parsed_fault_detail)
             raise PaymentException(message=self.__get(parsed_fault_detail, 'message'),
-                                   code=self.__get(parsed_fault_detail, 'returnCode'))
+                                   code=self.__get(parsed_fault_detail, 'returnCode')) from fault
         except BusinessException as e:
-            raise e
+            raise e from e
         except Exception as e:  # NOQA
             current_app.logger.error(e)
-            raise BusinessException(Error.SYSTEM_ERROR)
+            raise BusinessException(Error.SYSTEM_ERROR) from e
         return response
 
     def __authenticate_user(self, user_id: str, password: str) -> bool:  # pylint: disable=no-self-use
@@ -134,7 +134,7 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
             ldap_conn.simple_bind_s(username, password)
         except Exception as error:  # NOQA
             current_app.logger.warning(error)
-            raise BusinessException(Error.INVALID_CREDENTIALS)
+            raise BusinessException(Error.INVALID_CREDENTIALS) from error
         finally:
             if ldap_conn:
                 ldap_conn.unbind_s()

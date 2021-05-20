@@ -16,10 +16,9 @@
 from http import HTTPStatus
 
 from flask import abort, current_app, request
-from flask_restplus import Namespace, Resource, cors
+from flask_restx import Namespace, Resource, cors
 
-from bcol_api.exceptions import BusinessException, PaymentException
-from bcol_api.exceptions import error_to_response
+from bcol_api.exceptions import BusinessException, PaymentException, error_to_response
 from bcol_api.schemas import utils as schema_utils
 from bcol_api.services.bcol_payment import BcolPayment
 from bcol_api.utils.auth import jwt as _jwt
@@ -27,6 +26,7 @@ from bcol_api.utils.constants import Role
 from bcol_api.utils.errors import Error
 from bcol_api.utils.trace import tracing as _tracing
 from bcol_api.utils.util import cors_preflight
+
 
 API = Namespace('bcol accounts', description='Payment System - BCOL Accounts')
 
@@ -56,7 +56,7 @@ class AccountPayment(Resource):
             valid_format = schema_utils.validate(req_json, 'payment_request')
 
             if not valid_format[0]:
-                current_app.logger.info('Validation Error with incoming request',
+                current_app.logger.info('Validation Error with incoming request %s',
                                         schema_utils.serialize(valid_format[1]))
                 return error_to_response(Error.INVALID_REQUEST,
                                          invalid_params=schema_utils.serialize(valid_format[1]))
