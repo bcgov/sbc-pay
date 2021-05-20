@@ -82,6 +82,11 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
         """Return the account_id."""
         return self._account_id
 
+    @account_id.setter
+    def account_id(self, value: str):
+        """Set the account_id."""
+        self._account_id = value
+
     @property
     def permission(self) -> List[str]:
         """Return the permission."""
