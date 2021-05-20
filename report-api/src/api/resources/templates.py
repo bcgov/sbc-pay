@@ -15,7 +15,7 @@
 from http import HTTPStatus
 
 from flask import Response, abort, request
-from flask_restplus import Namespace, Resource
+from flask_restx import Namespace, Resource
 from jinja2 import TemplateNotFound
 
 from api.services.template_service import TemplateService

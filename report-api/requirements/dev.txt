@@ -21,5 +21,5 @@ coverage
 pylint
 pylint-flask
 pydocstyle
-isort<5
+isort
 lovely-pytest-docker

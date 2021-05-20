@@ -13,7 +13,7 @@
 # limitations under the License.
 """For fixing swagger in openshift."""
 from flask import url_for
-from flask_restplus import Api as BaseApi
+from flask_restx import Api as BaseApi
 
 
 class Api(BaseApi):

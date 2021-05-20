@@ -1,28 +1,22 @@
-setuptools==39.2.0
+setuptools
 gunicorn
 Flask
-Flask-Migrate
-Flask-Script
-Flask-Moment
-Flask-SQLAlchemy
-Flask-RESTplus
-Flask-Marshmallow<3
-flask-jwt-oidc>=0.1.5
+flask-restx
+python-dateutil
+flask-jwt-oidc
 python-dotenv
 psycopg2-binary
-marshmallow
-marshmallow-sqlalchemy
 jsonschema
 requests
 cairocffi>=0.9.0
-flask-jwt-oidc>=0.1.5
+flask-jwt-oidc
 
 #For report generation
-WeasyPrint==47
+WeasyPrint
 Flask-WeasyPrint
 
 #Sentry
 sentry-sdk[flask]
 jaeger-client
 
-werkzeug==0.16.1
+werkzeug<2
