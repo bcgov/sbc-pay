@@ -13,7 +13,7 @@
 # limitations under the License.
 """Model to handle all operations related to Notification Recipients."""
 
-from sqlalchemy import String, ForeignKey
+from sqlalchemy import ForeignKey, String
 
 from .base_model import BaseModel
 from .db import db, ma

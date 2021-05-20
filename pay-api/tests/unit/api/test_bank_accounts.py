@@ -19,8 +19,7 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 
 import json
 
-from tests.utilities.base_test import (
-    get_claims, token_header)
+from tests.utilities.base_test import get_claims, token_header
 
 
 def test_bank_account_valid_bank(session, client, jwt, app):

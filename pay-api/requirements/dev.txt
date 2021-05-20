@@ -22,10 +22,8 @@ coverage
 pylint
 pylint-flask
 pydocstyle
-isort<5
-
+isort
 
 # docker
 lovely-pytest-docker
-pytest-asyncio==0.14.0 #new version breaks test cases
-
+pytest-asyncio

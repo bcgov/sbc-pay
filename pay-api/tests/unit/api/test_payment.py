@@ -16,13 +16,14 @@
 
 Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
+import json
+from datetime import datetime
+
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.utils.enums import PaymentMethod, Role
-from tests.utilities.base_test import (factory_invoice, factory_invoice_reference, factory_payment,
-                                       factory_payment_account,
-                                       get_claims, token_header, factory_payment_line_item)
-from datetime import datetime
-import json
+from tests.utilities.base_test import (
+    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
+    get_claims, token_header)
 
 
 def test_account_payments(session, client, jwt, app):

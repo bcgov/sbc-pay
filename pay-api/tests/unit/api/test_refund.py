@@ -20,8 +20,8 @@ Test-Suite to ensure that the /receipt endpoint is working as expected.
 import json
 
 from pay_api.utils.enums import Role
-from tests.utilities.base_test import get_claims, get_payment_request, token_header, \
-    get_payment_request_with_payment_method
+from tests.utilities.base_test import (
+    get_claims, get_payment_request, get_payment_request_with_payment_method, token_header)
 
 
 def test_create_refund(session, client, jwt, app, stan_server):

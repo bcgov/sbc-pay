@@ -26,8 +26,9 @@ from sqlalchemy import event, text
 from sqlalchemy.schema import DropConstraint, MetaData
 from stan.aio.client import Client as Stan
 
-from pay_api import create_app, setup_jwt_manager
+from pay_api import create_app
 from pay_api import jwt as _jwt
+from pay_api import setup_jwt_manager
 from pay_api.models import db as _db
 
 

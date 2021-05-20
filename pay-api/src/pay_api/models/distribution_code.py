@@ -19,9 +19,9 @@ from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey
 
 from .audit import Audit, AuditSchema, BaseModel
+from .base_model import VersionedModel
 from .db import db, ma
 from .fee_schedule import FeeSchedule
-from .base_model import VersionedModel
 
 
 class DistributionCodeLink(BaseModel):

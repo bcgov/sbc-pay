@@ -5,12 +5,12 @@ Revises: bcb296e7f6f4
 Create Date: 2020-08-20 18:05:57.263571
 
 """
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 from pay_api.utils.enums import StatementFrequency
+
 
 revision = '71c733c91cbf'
 down_revision = 'bcb296e7f6f4'

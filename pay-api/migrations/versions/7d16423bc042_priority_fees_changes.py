@@ -5,14 +5,14 @@ Revises: 00467a306afd
 Create Date: 2019-12-23 10:55:10.959439
 
 """
-from alembic import op
-import sqlalchemy as sa
 from datetime import date
 
+import sqlalchemy as sa
 from alembic import op
-from sqlalchemy import Date, Integer, String, Float
-from sqlalchemy.sql import column, table
+from sqlalchemy import Date, Float, Integer, String
 from sqlalchemy.dialects import postgresql
+from sqlalchemy.sql import column, table
+
 
 # revision identifiers, used by Alembic.
 revision = '7d16423bc042'

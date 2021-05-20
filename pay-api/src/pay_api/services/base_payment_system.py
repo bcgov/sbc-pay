@@ -119,8 +119,8 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def _release_payment(invoice: Invoice):
         """Release record."""
-        from .payment_transaction import publish_response  # pylint:disable=import-outside-toplevel,cyclic-import
         from .payment_transaction import PaymentTransaction  # pylint:disable=import-outside-toplevel,cyclic-import
+        from .payment_transaction import publish_response  # pylint:disable=import-outside-toplevel,cyclic-import
 
         payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
         try:

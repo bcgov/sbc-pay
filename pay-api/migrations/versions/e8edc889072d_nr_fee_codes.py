@@ -8,8 +8,9 @@ Create Date: 2020-06-23 11:06:16.156584
 from datetime import date
 
 from alembic import op
-from sqlalchemy import Date, String, Float
+from sqlalchemy import Date, Float, String
 from sqlalchemy.sql import column, table
+
 
 # revision identifiers, used by Alembic.
 revision = 'e8edc889072d'

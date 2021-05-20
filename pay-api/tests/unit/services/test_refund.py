@@ -20,9 +20,10 @@ Test-Suite to ensure that the Refund Service is working as expected.
 import pytest
 
 from pay_api.exceptions import BusinessException
-from pay_api.models import Invoice as InvoiceModel, Payment as PaymentModel
+from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import Payment as PaymentModel
 from pay_api.services import RefundService
-from pay_api.utils.enums import InvoiceStatus, PaymentStatus, TransactionStatus, InvoiceReferenceStatus
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentStatus, TransactionStatus
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_transaction,
     factory_receipt)

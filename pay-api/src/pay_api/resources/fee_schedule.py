@@ -15,7 +15,7 @@
 from http import HTTPStatus
 
 from flask import jsonify, request
-from flask_restplus import Namespace, Resource, cors
+from flask_restx import Namespace, Resource, cors
 
 from pay_api.exceptions import BusinessException
 from pay_api.services import FeeSchedule
@@ -23,6 +23,7 @@ from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.enums import Role
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
+
 
 API = Namespace('fee-schedules', description='Payment System - Fee Schedules')
 

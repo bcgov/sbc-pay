@@ -5,10 +5,12 @@ Revises: b6e28faea978
 Create Date: 2021-01-27 14:07:28.400759
 
 """
-from alembic import op
-import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
 from datetime import datetime
+
+import sqlalchemy as sa
+from alembic import op
+from sqlalchemy.dialects import postgresql
+
 
 today = datetime.today().strftime('%Y-%m-%d')
 

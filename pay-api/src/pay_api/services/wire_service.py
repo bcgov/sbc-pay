@@ -14,6 +14,7 @@
 """Service to manage CFS Wire Payments."""
 
 from pay_api.utils.enums import PaymentMethod
+
 from .deposit_service import DepositService
 
 

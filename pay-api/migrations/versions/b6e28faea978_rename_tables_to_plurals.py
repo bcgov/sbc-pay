@@ -5,14 +5,14 @@ Revises: 90afcc0d6d9f
 Create Date: 2021-01-25 21:50:58.043768
 
 """
-from alembic import op
-from sqlalchemy import create_engine
-from sqlalchemy.engine import reflection
-from sqlalchemy import MetaData
 import re
 
+from alembic import op
+from sqlalchemy import MetaData, create_engine
+from sqlalchemy.engine import reflection
 # revision identifiers, used by Alembic.
 from sqlalchemy.engine.reflection import Inspector
+
 
 VERSION = '_version'
 

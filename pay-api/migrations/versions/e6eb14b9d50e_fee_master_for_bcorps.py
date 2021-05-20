@@ -5,12 +5,11 @@ Revises: 4a6ddf932b62
 Create Date: 2019-10-29 10:44:55.220375
 
 """
-from alembic import op
-import sqlalchemy as sa
 from datetime import date
 
+import sqlalchemy as sa
 from alembic import op
-from sqlalchemy import Date, Integer, String, Float
+from sqlalchemy import Date, Float, Integer, String
 from sqlalchemy.sql import column, table
 
 

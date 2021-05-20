@@ -21,12 +21,13 @@ import json
 from datetime import datetime
 
 import pytest
-from pay_api.utils.enums import Role, PaymentMethod
 
-from pay_api.models import CfsAccount as CfsAccountModel, PaymentAccount as PaymentAccountModel
-
-from tests.utilities.base_test import get_claims, get_payment_request, get_zero_dollar_payment_request, token_header, \
-    get_payment_request_with_no_contact_info, get_unlinked_pad_account_payload
+from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.utils.enums import PaymentMethod, Role
+from tests.utilities.base_test import (
+    get_claims, get_payment_request, get_payment_request_with_no_contact_info, get_unlinked_pad_account_payload,
+    get_zero_dollar_payment_request, token_header)
 
 
 @pytest.fixture

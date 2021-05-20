@@ -18,7 +18,7 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 
 import json
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
 
 import dateutil
 
@@ -26,9 +26,7 @@ from pay_api.models.invoice import Invoice
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.utils.enums import StatementFrequency
 from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month, get_week_start_and_end_date
-
-from tests.utilities.base_test import (
-    get_claims, token_header, get_payment_request)
+from tests.utilities.base_test import get_claims, get_payment_request, token_header
 
 
 def test_get_default_statement_settings_weekly(session, client, jwt, app):

@@ -5,18 +5,17 @@ Revises: 0449261c3fa7
 Create Date: 2020-12-08 09:59:41.540905
 
 """
-from alembic import op
-import sqlalchemy as sa
 import base64
 
 import sqlalchemy as sa
 from alembic import op
 from flask import current_app
-from sqlalchemy import String, Integer
+from sqlalchemy import Integer, String
 from sqlalchemy.sql import column, table
 
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType
+
 
 # revision identifiers, used by Alembic.
 revision = '331c2cdb0b94'

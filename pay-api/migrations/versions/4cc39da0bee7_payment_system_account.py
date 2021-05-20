@@ -10,11 +10,12 @@ import base64
 import sqlalchemy as sa
 from alembic import op
 from flask import current_app
-from sqlalchemy import String, Integer
+from sqlalchemy import Integer, String
 from sqlalchemy.sql import column, table
 
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType
+
 
 # revision identifiers, used by Alembic.
 revision = '4cc39da0bee7'

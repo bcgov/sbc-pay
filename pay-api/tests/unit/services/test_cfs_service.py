@@ -22,6 +22,7 @@ from requests import ConnectTimeout
 
 from pay_api.services.cfs_service import CFSService
 
+
 cfs_service = CFSService()
 
 

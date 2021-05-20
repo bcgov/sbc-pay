@@ -15,14 +15,15 @@
 from http import HTTPStatus
 
 from flask import current_app, jsonify, request
-from flask_restplus import Namespace, Resource, cors
+from flask_restx import Namespace, Resource, cors
 
-from pay_api.exceptions import BusinessException, error_to_response, ServiceUnavailableException
+from pay_api.exceptions import BusinessException, ServiceUnavailableException, error_to_response
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import CFSService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.errors import Error
 from pay_api.utils.util import cors_preflight
+
 
 API = Namespace('bank_accounts', description='Payment System - Bank Accounts')
 

@@ -17,7 +17,8 @@ from flask import current_app
 from sqlalchemy_continuum.plugins.flask import fetch_remote_addr
 
 from pay_api.utils.user_context import user_context
-from .db import db, activity_plugin
+
+from .db import activity_plugin, db
 
 
 class BaseModel(db.Model):

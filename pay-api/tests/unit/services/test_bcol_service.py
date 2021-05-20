@@ -23,6 +23,7 @@ from pay_api.services.payment_line_item import PaymentLineItem
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item)
 
+
 bcol_service = BcolService()
 
 

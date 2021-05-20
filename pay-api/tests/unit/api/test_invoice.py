@@ -19,8 +19,7 @@ Test-Suite to ensure that the /invoices endpoint is working as expected.
 
 import json
 
-from tests.utilities.base_test import (
-    get_claims, get_payment_request, token_header)
+from tests.utilities.base_test import get_claims, get_payment_request, token_header
 
 
 def test_get_invoice(session, client, jwt, app):

@@ -17,23 +17,22 @@
 Test-Suite to ensure that the /payment-requests endpoint is working as expected.
 """
 
-import json
 import copy
+import json
 from unittest.mock import patch
 
 from flask import current_app
 from requests.exceptions import ConnectionError
 
-from pay_api.models import PaymentAccount as PaymentAccountModel, \
-    DistributionCode as DistributionCodeModel
+from pay_api.models import DistributionCode as DistributionCodeModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.schemas import utils as schema_utils
-from pay_api.utils.enums import PaymentMethod, Role, InvoiceStatus
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
-    get_claims, get_payment_request, get_payment_request_with_folio_number,
-    get_payment_request_with_service_fees,
-    get_payment_request_with_no_contact_info, get_payment_request_with_payment_method, get_waive_fees_payment_request,
-    get_zero_dollar_payment_request, token_header, get_basic_account_payload, get_unlinked_pad_account_payload,
-    get_gov_account_payload, get_payment_request_for_wills, activate_pad_account)
+    activate_pad_account, get_basic_account_payload, get_claims, get_gov_account_payload, get_payment_request,
+    get_payment_request_for_wills, get_payment_request_with_folio_number, get_payment_request_with_no_contact_info,
+    get_payment_request_with_payment_method, get_payment_request_with_service_fees, get_unlinked_pad_account_payload,
+    get_waive_fees_payment_request, get_zero_dollar_payment_request, token_header)
 
 
 def test_payment_request_creation(session, client, jwt, app):

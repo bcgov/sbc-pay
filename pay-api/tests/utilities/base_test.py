@@ -20,14 +20,13 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 from datetime import datetime
 from random import randrange
 
-from pay_api.models import (CfsAccount,
-                            Invoice,
-                            InvoiceReference, Payment,
-                            PaymentAccount, PaymentLineItem, PaymentTransaction, DistributionCode, StatementSettings,
-                            Statement,
-                            StatementInvoices, Receipt)
-from pay_api.utils.enums import CfsAccountStatus, PaymentSystem, Role, PaymentStatus, InvoiceReferenceStatus, \
-    LineItemStatus, InvoiceStatus, PaymentMethod
+from pay_api.models import (
+    CfsAccount, DistributionCode, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem,
+    PaymentTransaction, Receipt, Statement, StatementInvoices, StatementSettings)
+from pay_api.utils.enums import (
+    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
+    PaymentSystem, Role)
+
 
 token_header = {
     'alg': 'RS256',

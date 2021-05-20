@@ -8,7 +8,7 @@ Create Date: 2019-05-10 11:07:41.003718
 from datetime import date
 
 from alembic import op
-from sqlalchemy import Date, Integer, String, Float
+from sqlalchemy import Date, Float, Integer, String
 from sqlalchemy.sql import column, table
 
 
