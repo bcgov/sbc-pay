@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to statements."""
-from datetime import datetime, date
-from typing import Tuple, Dict, Any
+from datetime import date, datetime
+from typing import Any, Dict, Tuple
 
 from flask import current_app
+
 from pay_api.models import StatementRecipients as StatementRecipientsModel
 from pay_api.models import StatementRecipientsSchema as NotificationSchema
 from pay_api.models.payment_account import PaymentAccount as PaymentAccountModel

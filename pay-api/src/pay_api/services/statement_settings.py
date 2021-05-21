@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to statements."""
-from datetime import datetime, date, timedelta
+from datetime import date, datetime, timedelta
 
 from flask import current_app
-from pay_api.models import StatementSettings as StatementSettingsModel
 
+from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import StatementSettingsSchema as StatementSettingsModelSchema
 from pay_api.models.payment_account import PaymentAccount as PaymentAccountModel
 from pay_api.utils.enums import StatementFrequency
-from pay_api.utils.util import current_local_time, get_week_start_and_end_date, get_first_and_last_dates_of_month
+from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month, get_week_start_and_end_date
 
 
 class StatementSettings:  # pylint:disable=too-many-instance-attributes

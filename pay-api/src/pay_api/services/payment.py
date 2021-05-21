@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Tuple, Dict, List
+from typing import Dict, List, Tuple
 
 from dateutil import parser
 from flask import current_app
@@ -30,10 +30,11 @@ from pay_api.models.payment import PaymentSchema
 from pay_api.models.payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
-from pay_api.utils.enums import ContentType, AuthHeaderType, Code, InvoiceReferenceStatus, PaymentMethod
-from pay_api.utils.enums import PaymentStatus, PaymentSystem
+from pay_api.utils.enums import (
+    AuthHeaderType, Code, ContentType, InvoiceReferenceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import generate_receipt_number
+
 from .code import Code as CodeService
 from .oauth_service import OAuthService
 

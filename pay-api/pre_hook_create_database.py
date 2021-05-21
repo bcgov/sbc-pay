@@ -18,7 +18,6 @@ import sys
 
 import sqlalchemy
 import sqlalchemy.exc
-
 from config import ProdConfig
 
 

@@ -20,8 +20,8 @@ Test-Suite to ensure that the /fees endpoint is working as expected.
 from flask import json
 
 from pay_api.utils.enums import Role
-from tests.utilities.base_test import get_claims, token_header, get_distribution_code_payload, \
-    get_distribution_schedules_payload
+from tests.utilities.base_test import (
+    get_claims, get_distribution_code_payload, get_distribution_schedules_payload, token_header)
 
 
 def test_fee_schedules(session, client, jwt, app):

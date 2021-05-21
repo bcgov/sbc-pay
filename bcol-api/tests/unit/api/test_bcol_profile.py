@@ -18,8 +18,8 @@ Test-Suite to ensure that the /accounts/<id>/users/<user_id> endpoint is working
 """
 import json
 
-from tests.utilities.base_test import get_claims, get_token_header
 from bcol_api.utils.errors import Error
+from tests.utilities.base_test import get_claims, get_token_header
 
 
 def test_post_accounts(client, jwt, app, ldap_mock, query_profile_mock):

@@ -15,8 +15,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Boolean
-from sqlalchemy import ForeignKey
+from sqlalchemy import Boolean, ForeignKey
 
 from .base_model import BaseModel
 from .db import db

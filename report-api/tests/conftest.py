@@ -16,8 +16,9 @@
 
 import pytest
 
-from api import create_app, setup_jwt_manager
+from api import create_app
 from api import jwt as _jwt
+from api import setup_jwt_manager
 
 
 @pytest.fixture(scope='session')

@@ -5,15 +5,18 @@ Revises: 5f7df60469fa
 Create Date: 2020-04-08 12:15:06.484296
 
 """
-from alembic import op
-import sqlalchemy as sa
-from flask import current_app
 import base64
+import re
+
+import sqlalchemy as sa
+from alembic import op
+from flask import current_app
+
+from pay_api.models.invoice import Invoice
+from pay_api.models.payment import Payment
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import AuthHeaderType, ContentType
-from pay_api.models.payment import Payment
-from pay_api.models.invoice import Invoice
-import re
+
 
 # revision identifiers, used by Alembic.
 revision = '8eac44955fb6'

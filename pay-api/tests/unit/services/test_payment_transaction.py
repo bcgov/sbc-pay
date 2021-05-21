@@ -25,10 +25,10 @@ import pytest
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
-from pay_api.models import FeeSchedule, Payment, Invoice, CfsAccount
+from pay_api.models import CfsAccount, FeeSchedule, Invoice, Payment
 from pay_api.services.hashing import HashingService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
-from pay_api.utils.enums import PaymentStatus, TransactionStatus, PaymentMethod, CfsAccountStatus
+from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, PaymentStatus, TransactionStatus
 from pay_api.utils.errors import Error
 from tests import skip_in_pod
 from tests.utilities.base_test import (
@@ -382,7 +382,8 @@ def test_transaction_update_on_paybc_connection_error(session, stan_server):
     transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
 
     from unittest.mock import patch
-    from requests.exceptions import ConnectTimeout, ConnectionError
+
+    from requests.exceptions import ConnectionError, ConnectTimeout
 
     # Mock here that the invoice update fails here to test the rollback scenario
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):

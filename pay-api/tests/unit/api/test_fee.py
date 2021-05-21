@@ -22,8 +22,7 @@ from datetime import date, timedelta
 from pay_api.models import CorpType, FeeCode, FeeSchedule, FilingType
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import Role
-from tests.utilities.base_test import (
-    get_claims, get_gov_account_payload, token_header)
+from tests.utilities.base_test import get_claims, get_gov_account_payload, token_header
 
 
 def test_fees_with_corp_type_and_filing_type(session, client, jwt, app):

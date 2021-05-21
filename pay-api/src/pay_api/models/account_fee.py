@@ -14,9 +14,9 @@
 """Model to handle all operations related to Fee related to accounts."""
 from __future__ import annotations
 
+from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey
 from sqlalchemy.orm import relationship
-from marshmallow import fields
 
 from .base_model import BaseModel
 from .corp_type import CorpType

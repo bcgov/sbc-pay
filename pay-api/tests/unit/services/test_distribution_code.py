@@ -22,13 +22,14 @@ from datetime import datetime
 from flask import current_app
 
 from pay_api import services
-from pay_api.models import FeeSchedule, Invoice as InvoiceModel
+from pay_api.models import FeeSchedule
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
-from pay_api.utils.enums import PaymentMethod, InvoiceStatus
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
-    get_paybc_transaction_request)
-from tests.utilities.base_test import get_distribution_code_payload
+    get_distribution_code_payload, get_paybc_transaction_request)
+
 
 test_user_token = {'preferred_username': 'test'}
 

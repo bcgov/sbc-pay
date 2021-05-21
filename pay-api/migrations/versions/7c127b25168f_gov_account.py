@@ -5,11 +5,11 @@ Revises: a66de2954e70
 Create Date: 2021-03-11 12:25:33.138896
 
 """
-from alembic import op
 import sqlalchemy as sa
 from alembic import op
 from sqlalchemy import String
 from sqlalchemy.sql import column, table
+
 
 # revision identifiers, used by Alembic.
 revision = '7c127b25168f'

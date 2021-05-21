@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to statements."""
-from datetime import datetime, date
+from datetime import date, datetime
 
 from flask import current_app
 
 from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementSchema as StatementModelSchema
-from pay_api.utils.enums import StatementFrequency, ContentType
+from pay_api.utils.enums import ContentType, StatementFrequency
+
 from .payment import Payment as PaymentService
 
 

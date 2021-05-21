@@ -24,15 +24,14 @@ from freezegun import freeze_time
 
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.bcol_service import BcolService
+from pay_api.services.deposit_service import DepositService
 from pay_api.services.direct_pay_service import DirectPayService
 from pay_api.services.eft_service import EftService
-from pay_api.services.wire_service import WireService
-from pay_api.services.deposit_service import DepositService
-
 from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.services.pad_service import PadService
 from pay_api.services.paybc_service import PaybcService
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
+from pay_api.services.wire_service import WireService
 from pay_api.utils.enums import PaymentMethod
 from pay_api.utils.errors import Error
 from tests.utilities.base_test import get_unlinked_pad_account_payload
@@ -124,8 +123,8 @@ def test_bcol_factory_for_system(session, system_user_mock):
 
 def test_pad_factory_for_system_fails(session, system_user_mock):
     """Test payment system creation for PAD payment instances."""
-    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
     from pay_api.exceptions import BusinessException
+    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
 
     pad_account = PaymentAccountService.create(get_unlinked_pad_account_payload())
     # Try a DRAWDOWN for system user
@@ -142,9 +141,8 @@ def test_pad_factory_for_system_fails(session, system_user_mock):
 
 def test_invalid_pay_system(session, public_user_mock):
     """Test invalid data."""
-    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
-
     from pay_api.exceptions import BusinessException
+    from pay_api.factory.payment_system_factory import PaymentSystemFactory  # noqa I001; errors out the test case
 
     with pytest.raises(BusinessException) as excinfo:
         PaymentSystemFactory.create(payment_method=None, corp_type=None)

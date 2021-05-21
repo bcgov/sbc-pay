@@ -31,10 +31,10 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
-from pay_api.utils.enums import PaymentStatus, TransactionStatus, InvoiceReferenceStatus, \
-    InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_pay_subject_name, is_valid_redirect_url
+
 from .payment import Payment
 from .queue_publisher import publish_response
 

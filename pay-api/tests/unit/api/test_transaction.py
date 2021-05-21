@@ -27,9 +27,8 @@ from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import PaymentMethod
 from tests import skip_in_pod
 from tests.utilities.base_test import (
-    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item)
-from tests.utilities.base_test import get_claims, get_payment_request, token_header, \
-    get_payment_request_with_payment_method
+    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
+    get_claims, get_payment_request, get_payment_request_with_payment_method, token_header)
 
 
 def test_transaction_post(session, client, jwt, app):

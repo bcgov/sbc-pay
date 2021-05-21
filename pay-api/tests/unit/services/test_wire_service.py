@@ -19,6 +19,7 @@ Test-Suite to ensure that the Wire Service is working as expected.
 
 from pay_api.services.wire_service import WireService
 
+
 wire_service = WireService()
 
 

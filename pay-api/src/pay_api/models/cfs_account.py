@@ -20,6 +20,7 @@ from sqlalchemy.types import String
 from sqlalchemy_utils.types.encrypted.encrypted_type import AesEngine, StringEncryptedType
 
 from pay_api.utils.enums import CfsAccountStatus
+
 from .base_model import VersionedModel
 from .db import db, ma
 

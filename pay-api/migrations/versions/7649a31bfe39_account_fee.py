@@ -6,10 +6,10 @@ Create Date: 2021-04-22 12:11:08.896138
 
 """
 import sqlalchemy as sa
-
 from alembic import op
-from sqlalchemy import String, Float
+from sqlalchemy import Float, String
 from sqlalchemy.sql import column, table
+
 
 # revision identifiers, used by Alembic.
 revision = '7649a31bfe39'

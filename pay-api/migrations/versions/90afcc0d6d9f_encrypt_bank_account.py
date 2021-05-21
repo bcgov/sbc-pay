@@ -11,6 +11,7 @@ from alembic import op
 
 from pay_api.models.cfs_account import CfsAccount
 
+
 # revision identifiers, used by Alembic.
 revision = '90afcc0d6d9f'
 down_revision = 'f1ed292af77f'

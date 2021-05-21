@@ -22,6 +22,7 @@ from sqlalchemy.dialects.postgresql import UUID
 
 from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
 from pay_api.utils.enums import InvoiceReferenceStatus, PaymentMethod, TransactionStatus
+
 from .base_model import BaseModel
 from .base_schema import BaseSchema
 from .db import db
@@ -58,9 +59,9 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods, 
     def find_active_by_invoice_id(cls, invoice_id: int):
         """Return Active Payment Transactions by invoice identifier."""
         # pylint: disable=import-outside-toplevel, cyclic-import
+        from .invoice import Invoice
         from .invoice_reference import InvoiceReference
         from .payment import Payment
-        from .invoice import Invoice
 
         query = db.session.query(PaymentTransaction) \
             .join(Payment) \
@@ -76,9 +77,9 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods, 
     def find_recent_completed_by_invoice_id(cls, invoice_id: int):
         """Return Completed Payment Transactions by invoice identifier."""
         # pylint: disable=import-outside-toplevel, cyclic-import
+        from .invoice import Invoice
         from .invoice_reference import InvoiceReference
         from .payment import Payment
-        from .invoice import Invoice
 
         query = db.session.query(PaymentTransaction) \
             .join(Payment) \
@@ -94,9 +95,9 @@ class PaymentTransaction(BaseModel):  # pylint: disable=too-few-public-methods, 
     def find_by_invoice_id(cls, invoice_id: int):
         """Return all Payment Transactions by invoice identifier."""
         # pylint: disable=import-outside-toplevel, cyclic-import
+        from .invoice import Invoice
         from .invoice_reference import InvoiceReference
         from .payment import Payment
-        from .invoice import Invoice
 
         query = db.session.query(PaymentTransaction) \
             .join(Payment) \

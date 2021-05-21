@@ -22,8 +22,8 @@ from pay_api.services.statement import Statement as StatementService
 from pay_api.utils.enums import StatementFrequency
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_line_item,
-    factory_statement,
-    factory_premium_payment_account, factory_statement_invoices, factory_statement_settings, get_auth_premium_user)
+    factory_premium_payment_account, factory_statement, factory_statement_invoices, factory_statement_settings,
+    get_auth_premium_user)
 
 
 def test_statement_find_by_account(session):

@@ -5,10 +5,11 @@ Revises: e385e278cf3e
 Create Date: 2020-07-29 12:20:53.748750
 
 """
-from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.sql import column, table
+from alembic import op
 from sqlalchemy import String
+from sqlalchemy.sql import column, table
+
 
 # revision identifiers, used by Alembic.
 revision = '39a97401040c'

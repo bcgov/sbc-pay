@@ -18,6 +18,7 @@ from marshmallow import fields
 from sqlalchemy import ForeignKey
 
 from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
+
 from .base_model import BaseModel
 from .db import db, ma
 

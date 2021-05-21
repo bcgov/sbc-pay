@@ -28,8 +28,8 @@ from pay_api.models.payment_account import PaymentAccount
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import PaymentMethod, Role
 from tests.utilities.base_test import (
-    get_basic_account_payload, get_claims, get_pad_account_payload, get_payment_request, get_premium_account_payload,
-    get_unlinked_pad_account_payload, get_gov_account_payload, get_gov_account_payload_with_no_revenue_account,
+    get_basic_account_payload, get_claims, get_gov_account_payload, get_gov_account_payload_with_no_revenue_account,
+    get_pad_account_payload, get_payment_request, get_premium_account_payload, get_unlinked_pad_account_payload,
     token_header)
 
 

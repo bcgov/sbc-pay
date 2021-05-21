@@ -16,19 +16,20 @@ from datetime import datetime
 from http import HTTPStatus
 
 from flask import Response, current_app, jsonify, request
-from flask_restplus import Namespace, Resource, cors
+from flask_restx import Namespace, Resource, cors
 
-from pay_api.exceptions import BusinessException, error_to_response, ServiceUnavailableException
+from pay_api.exceptions import BusinessException, ServiceUnavailableException, error_to_response
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import Payment
 from pay_api.services.auth import check_auth
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE, VIEW_ROLE
-from pay_api.utils.enums import ContentType, Role, CfsAccountStatus
+from pay_api.utils.enums import CfsAccountStatus, ContentType, Role
 from pay_api.utils.errors import Error
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
+
 
 API = Namespace('accounts', description='Payment System - Accounts')
 

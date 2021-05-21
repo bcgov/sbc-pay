@@ -16,7 +16,7 @@ from datetime import datetime
 from http import HTTPStatus
 
 from flask import jsonify, request
-from flask_restplus import Namespace, Resource, cors
+from flask_restx import Namespace, Resource, cors
 
 from pay_api.exceptions import BusinessException
 from pay_api.services import FeeSchedule
@@ -25,6 +25,7 @@ from pay_api.utils.constants import DEFAULT_JURISDICTION
 from pay_api.utils.enums import Role
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import convert_to_bool, cors_preflight
+
 
 API = Namespace('fees', description='Payment System - Fees')
 

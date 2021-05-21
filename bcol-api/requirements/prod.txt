@@ -2,8 +2,8 @@ gunicorn
 Flask
 Flask-Script
 Flask-Moment
-Flask-RESTplus
-flask-jwt-oidc>=0.1.5
+flask-restx
+flask-jwt-oidc
 python-dotenv
 psycopg2-binary
 jsonschema
@@ -11,7 +11,7 @@ requests
 zeep
 python-ldap
 sentry-sdk[flask]
-attrs<=19.1.0
-Werkzeug==0.16.1
+attrs
+Werkzeug<2
 jaeger-client
 pycountry

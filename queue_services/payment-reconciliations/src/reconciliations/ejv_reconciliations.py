@@ -48,6 +48,7 @@ from sentry_sdk import capture_message
 from reconciliations import config
 from reconciliations.minio import get_object
 
+
 APP_CONFIG = config.get_named_config(os.getenv('DEPLOYMENT_ENV', 'production'))
 
 

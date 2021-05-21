@@ -21,15 +21,16 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentStatus, Product
 from pay_api.utils.constants import INCORPORATION_LABEL
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentStatus, Product
+
 from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
+from .corp_type import CorpType
 from .db import db, ma
 from .invoice_reference import InvoiceReferenceSchema
 from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from .receipt import ReceiptSchema
-from .corp_type import CorpType
 
 
 class Invoice(Audit):  # pylint: disable=too-many-instance-attributes

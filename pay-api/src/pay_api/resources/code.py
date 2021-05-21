@@ -14,11 +14,12 @@
 """Resource for code endpoints."""
 from http import HTTPStatus
 
-from flask_restplus import Namespace, Resource, cors
+from flask_restx import Namespace, Resource, cors
 
 from pay_api.services.code import Code as CodeService
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
+
 
 API = Namespace('codes', description='Payment System - Codes')
 

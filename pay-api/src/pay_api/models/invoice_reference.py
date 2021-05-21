@@ -17,6 +17,7 @@ from marshmallow import fields
 from sqlalchemy import ForeignKey
 
 from pay_api.utils.enums import InvoiceReferenceStatus
+
 from .base_model import BaseModel
 from .base_schema import BaseSchema
 from .db import db

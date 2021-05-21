@@ -77,12 +77,12 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
             parsed_fault_detail = BcolSoap().get_payment_client().wsdl.types.deserialize(fault.detail[0])
             current_app.logger.error(parsed_fault_detail)
             raise PaymentException(message=self.__get(parsed_fault_detail, 'message'),
-                                   code=self.__get(parsed_fault_detail, 'returnCode'))
+                                   code=self.__get(parsed_fault_detail, 'returnCode')) from fault
         except BusinessException as e:
             raise e
         except Exception as e:  # NOQA
             current_app.logger.error(e)
-            raise BusinessException(Error.PAYMENT_ERROR)
+            raise BusinessException(Error.PAYMENT_ERROR) from e
 
         current_app.logger.debug('>query_profile')
         return pay_response

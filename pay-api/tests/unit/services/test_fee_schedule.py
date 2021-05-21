@@ -27,6 +27,7 @@ from pay_api.models import FeeSchedule as FeesScheduleModel
 from pay_api.models import FilingType
 from pay_api.utils.errors import Error
 
+
 CORP_TYPE_CODE = 'CPX'
 FILING_TYPE_CODE = 'OTANNX'
 

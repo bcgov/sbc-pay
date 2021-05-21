@@ -19,21 +19,23 @@ from typing import Dict
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import ForeignKey
-from sqlalchemy import func, or_
+from sqlalchemy import ForeignKey, func, or_
 from sqlalchemy.orm import relationship
 
-from pay_api.utils.enums import InvoiceReferenceStatus, PaymentMethod as PaymentMethodEnum, PaymentStatus
+from pay_api.utils.enums import InvoiceReferenceStatus
+from pay_api.utils.enums import PaymentMethod as PaymentMethodEnum
+from pay_api.utils.enums import PaymentStatus
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
+
 from .base_model import BaseModel
 from .base_schema import BaseSchema
 from .db import db
 from .invoice import Invoice
+from .invoice_reference import InvoiceReference
 from .payment_account import PaymentAccount
 from .payment_method import PaymentMethod
 from .payment_status_code import PaymentStatusCode
 from .payment_system import PaymentSystem
-from .invoice_reference import InvoiceReference
 
 
 class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
