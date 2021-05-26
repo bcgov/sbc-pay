@@ -14,7 +14,7 @@
 """Task to create Journal Voucher."""
 
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 
 from flask import current_app
@@ -27,8 +27,10 @@ from pay_api.models import EjvInvoiceLink as EjvInvoiceLinkModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
 from pay_api.utils.enums import DisbursementStatus, InvoiceStatus, PaymentMethod
+from sqlalchemy import Date, cast
 
 from tasks.common.cgi_ejv import CgiEjv
 
@@ -189,12 +191,14 @@ class EjvPartnerDistributionTask(CgiEjv):
     @classmethod
     def _get_invoices_for_disbursement(cls, partner):
         """Return invoices for disbursement."""
+        disbursement_date = datetime.today() - timedelta(days=current_app.config.get('DISBURSEMENT_DELAY_IN_DAYS'))
         invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
             .filter(
             InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value])) \
             .filter((InvoiceModel.disbursement_status_code.is_(None)) |
                     (InvoiceModel.disbursement_status_code == DisbursementStatus.ERRORED.value)) \
+            .filter(~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date())) \
             .filter(InvoiceModel.corp_type_code == partner.code) \
             .all()
         current_app.logger.info(invoices)
