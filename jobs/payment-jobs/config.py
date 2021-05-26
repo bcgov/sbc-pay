@@ -177,6 +177,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
                                                        '2021-Jul-1, 2021-Aug-2, 2021-Sep-6,2021-Oct-11, 2021-Nov-11, '
                                                        '2021-Dec-25')
 
+    # disbursement delay
+    DISBURSEMENT_DELAY_IN_DAYS = int(os.getenv('DISBURSEMENT_DELAY', 5))
+
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     TESTING = False

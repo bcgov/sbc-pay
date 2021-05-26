@@ -16,7 +16,11 @@
 
 Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
+from datetime import datetime, timedelta
+
 import pytest
+from flask import current_app
+from freezegun import freeze_time
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvInvoiceLink, FeeSchedule, Invoice, db
 from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, PaymentMethod
@@ -25,7 +29,7 @@ from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
 
 from .factory import (
     factory_create_pad_account, factory_distribution, factory_distribution_link, factory_invoice,
-    factory_invoice_reference, factory_payment, factory_payment_line_item)
+    factory_invoice_reference, factory_payment, factory_payment_line_item, factory_receipt)
 
 
 @pytest.mark.parametrize('client_code, batch_type', [('112', 'GA'), ('113', 'GI'), ('ABC', 'GI')])
@@ -70,20 +74,28 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
 
     inv_ref = factory_invoice_reference(invoice_id=invoice.id)
     factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code='COMPLETED')
+    factory_receipt(invoice_id=invoice.id, receipt_date=datetime.today()).save()
 
     EjvPartnerDistributionTask.create_ejv_file()
 
     # Lookup invoice and assert disbursement status
     invoice = Invoice.find_by_id(invoice.id)
-    assert invoice.disbursement_status_code == DisbursementStatus.UPLOADED.value
+    assert invoice.disbursement_status_code is None
 
-    ejv_inv_link = db.session.query(EjvInvoiceLink).filter(EjvInvoiceLink.invoice_id == invoice.id).first()
-    assert ejv_inv_link
+    day_after_time_delay = datetime.today() + timedelta(days=(current_app.config.get('DISBURSEMENT_DELAY_IN_DAYS') + 1))
+    with freeze_time(day_after_time_delay):
+        EjvPartnerDistributionTask.create_ejv_file()
+        # Lookup invoice and assert disbursement status
+        invoice = Invoice.find_by_id(invoice.id)
+        assert invoice.disbursement_status_code == DisbursementStatus.UPLOADED.value
 
-    ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_inv_link.ejv_header_id).first()
-    assert ejv_header.disbursement_status_code == DisbursementStatus.UPLOADED.value
-    assert ejv_header
+        ejv_inv_link = db.session.query(EjvInvoiceLink).filter(EjvInvoiceLink.invoice_id == invoice.id).first()
+        assert ejv_inv_link
 
-    ejv_file = EjvFile.find_by_id(ejv_header.ejv_file_id)
-    assert ejv_file
-    assert ejv_file.disbursement_status_code == DisbursementStatus.UPLOADED.value, f'{batch_type}'
+        ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_inv_link.ejv_header_id).first()
+        assert ejv_header.disbursement_status_code == DisbursementStatus.UPLOADED.value
+        assert ejv_header
+
+        ejv_file = EjvFile.find_by_id(ejv_header.ejv_file_id)
+        assert ejv_file
+        assert ejv_file.disbursement_status_code == DisbursementStatus.UPLOADED.value, f'{batch_type}'

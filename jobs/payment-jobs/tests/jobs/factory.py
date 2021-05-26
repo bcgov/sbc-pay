@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 
 from pay_api.models import (
     CfsAccount, DistributionCode, DistributionCodeLink, Invoice, InvoiceReference, Payment, PaymentAccount,
-    PaymentLineItem, StatementSettings)
+    PaymentLineItem, Receipt, StatementSettings)
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus)
 
@@ -200,3 +200,18 @@ def factory_distribution_link(distribution_code_id: int, fee_schedule_id: int):
     """Return Factory."""
     return DistributionCodeLink(fee_schedule_id=fee_schedule_id,
                                 distribution_code_id=distribution_code_id).save()
+
+
+def factory_receipt(
+        invoice_id: int,
+        receipt_number: str = 'TEST1234567890',
+        receipt_date: datetime = datetime.now(),
+        receipt_amount: float = 10.0
+):
+    """Return Factory."""
+    return Receipt(
+        invoice_id=invoice_id,
+        receipt_number=receipt_number,
+        receipt_date=receipt_date,
+        receipt_amount=receipt_amount
+    )
