@@ -83,11 +83,6 @@ class UserContext:  # pylint: disable=too-many-instance-attributes
         """Return the account_id."""
         return self._account_id
 
-    @account_id.setter
-    def account_id(self, value: str):
-        """Set the account_id."""
-        self._account_id = value
-
     @property
     def permission(self) -> List[str]:
         """Return the permission."""
@@ -151,7 +146,7 @@ def _get_token() -> str:
 
 def get_auth_account_id() -> str:
     """Return account id from the header."""
-    account_id = _get_token_info().get('Account-Id', None)
+    account_id = (_get_token_info().get('Account-Id', None)) or (str(g.account_id) if g and 'account_id' in g else None)
     if not account_id:
         account_id = request.headers['Account-Id'] if request and 'Account-Id' in request.headers else None
     return account_id
