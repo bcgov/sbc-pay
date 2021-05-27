@@ -20,7 +20,7 @@ from flask import Flask
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler  # noqa: I001
 from sentry_sdk.integrations.flask import FlaskIntegration  # noqa: I001
 
-import api.config as config
+import config  # pylint:disable=import-error
 from api import models
 from api.utils.auth import jwt
 from api.utils.logging import setup_logging
