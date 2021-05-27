@@ -19,8 +19,7 @@ from importlib import reload
 
 import pytest
 
-from api import config
-
+import config
 
 # testdata pattern is ({str: environment}, {expected return value})
 TEST_ENVIRONMENT_DATA = [
