@@ -26,6 +26,7 @@ from pay_api.utils.constants import EDIT_ROLE, VIEW_ROLE
 
 def test_auth_role_for_service_account(session, monkeypatch):
     """Assert the auth works for service account."""
+
     def token_info():  # pylint: disable=unused-argument; mocks of library methods
         return {
             'username': 'service account',
@@ -49,6 +50,7 @@ def test_auth_role_for_service_account(session, monkeypatch):
 
 def test_auth_role_for_service_account_with_no_edit_role(session, monkeypatch):
     """Assert the auth works for service account."""
+
     def token_info():  # pylint: disable=unused-argument; mocks of library methods
         return {
             'username': 'service account',
@@ -73,26 +75,19 @@ def test_auth_role_for_service_account_with_no_edit_role(session, monkeypatch):
 
 def test_auth_for_client_user_roles(session, public_user_mock):
     """Assert that the auth is working as expected."""
-    # token = jwt.create_jwt(get_claims(roles=[Role.EDITOR.value]), token_header)
-
-    # headers = {'Authorization': 'Bearer ' + token}
-
-    # def mock_auth(one, two):  # pylint: disable=unused-argument; mocks of library methods
-    #     return headers['Authorization']
-
-    # with app.test_request_context():
-    #     monkeypatch.setattr('flask.request.headers.get', mock_auth)
-
     # Test one of roles
     check_auth('CP0001234', one_of_roles=[EDIT_ROLE])
     # Test contains roles
     check_auth('CP0001234', contains_role=EDIT_ROLE)
 
+
+@pytest.mark.parametrize('roles, param_name', [
+    (VIEW_ROLE, 'contains_role'),
+    ([EDIT_ROLE], 'one_of_roles')
+])
+def test_auth_for_client_user_roles_for_error(session, public_user_mock, roles, param_name):
+    """Assert that the auth is working as expected."""
     # Test for exception
     with pytest.raises(HTTPException) as excinfo:
-        check_auth('CP0000000', contains_role=VIEW_ROLE)
-        assert excinfo.exception.code == 403
-
-    with pytest.raises(HTTPException) as excinfo:
-        check_auth('CP0000000', one_of_roles=[EDIT_ROLE])
+        check_auth('CP0000000', param_name=roles)
         assert excinfo.exception.code == 403
