@@ -21,6 +21,7 @@ import copy
 import json
 from unittest.mock import patch
 
+import pytest
 from flask import current_app
 from requests.exceptions import ConnectionError
 
@@ -461,29 +462,23 @@ def test_premium_payment_with_no_contact_info(session, client, jwt, app):
     assert rv.json.get('paymentMethod') == 'DRAWDOWN'
 
 
-def test_payment_creation_with_folio_number(session, client, jwt, app):
+@pytest.mark.parametrize('folio_number, payload', [
+    ('1234567890', get_payment_request_with_folio_number(folio_number='1234567890')),
+    ('MOCK1234', get_payment_request())
+])
+def test_payment_creation_with_folio_number(session, client, jwt, app, folio_number, payload):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    folio_number = '1234567890'
 
     rv = client.post('/api/v1/payment-requests',
-                     data=json.dumps(get_payment_request_with_folio_number(folio_number=folio_number)),
+                     data=json.dumps(payload),
                      headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('_links') is not None
 
     assert schema_utils.validate(rv.json, 'invoice')[0]
     assert rv.json.get('folioNumber') == folio_number
-
-    rv = client.post('/api/v1/payment-requests',
-                     data=json.dumps(get_payment_request()),
-                     headers=headers)
-    assert rv.status_code == 201
-    assert rv.json.get('_links') is not None
-
-    assert schema_utils.validate(rv.json, 'invoice')[0]
-    assert rv.json.get('folioNumber') == 'MOCK1234'
 
 
 def test_bcol_payment_creation_by_staff(session, client, jwt, app):
