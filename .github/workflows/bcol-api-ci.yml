@@ -3,19 +3,55 @@ name: BCOL API CI
 on:
   pull_request:
     branches:
-      - development
+      - main
     paths:
       - "bcol-api/**"
 
+defaults:
+  run:
+    shell: bash
+    working-directory: ./bcol-api
+
 jobs:
-  bcol-api-ci:
+  setup-job:
     runs-on: ubuntu-20.04
-    defaults:
-      run:
-        shell: bash
-        working-directory: ./bcol-api
 
     if: github.repository == 'bcgov/sbc-pay'
+
+    steps:
+      - uses: actions/checkout@v2
+      - run: "true"
+
+  linting:
+    needs: setup-job
+    runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        python-version: [3.8]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install libsasl2-dev libldap2-dev libssl-dev --yes
+          make setup
+      - name: Lint with pylint
+        id: pylint
+        run: |
+          make pylint
+      - name: Lint with flake8
+        id: flake8
+        run: |
+          make flake8
+
+  testing:
+    needs: setup-job
     env:
       FLASK_ENV: "testing"
       JWT_OIDC_ISSUER: "http://localhost:8081/auth/realms/demo"
@@ -34,9 +70,27 @@ jobs:
 
       BCOL_APPLIED_CHARGE_WSDL_URL: "https://appsd1.bconline.gov.bc.ca/account/services/AppliedCharge?wsdl"
 
-    strategy:
-      matrix:
-        python-version: [3.8]
+      TOKEN_EXPIRY_PERIOD: 7
+      EMAIL_SECURITY_PASSWORD_SALT: "my_pwd_salt"
+      EMAIL_TOKEN_SECRET_KEY: "mySecretKey"
+      USE_TEST_KEYCLOAK_DOCKER: "YES"
+      USE_DOCKER_MOCK: "YES"
+      STAFF_ADMIN_EMAIL: "test@test.com"
+
+    runs-on: ubuntu-20.04
+
+    services:
+      postgres:
+        image: postgres:12
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        # needed because the postgres container does not provide a healthcheck
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python ${{ matrix.python-version }}
@@ -48,13 +102,8 @@ jobs:
           sudo apt update
           sudo apt install libsasl2-dev libldap2-dev libssl-dev --yes
           make setup
-      - name: Lint with pylint
-        run: |
-          make pylint
-      - name: Lint with flake8
-        run: |
-          make flake8
       - name: Test with pytest
+        id: test
         run: |
           make test
       - name: Upload coverage to Codecov
@@ -64,6 +113,14 @@ jobs:
           flags: bcolapi
           name: codecov-bcol-api
           fail_ci_if_error: true
+
+  build-check:
+    needs: setup-job
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
       - name: build to check strictness
+        id: build
         run: |
           make build-nc
