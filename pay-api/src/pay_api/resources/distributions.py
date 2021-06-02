@@ -38,7 +38,7 @@ class Distributions(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_tracing.trace()
-    @_jwt.has_one_of_roles([Role.STAFF_ADMIN.value])
+    @_jwt.has_one_of_roles([Role.MANAGE_GL_CODES.value])
     def get():
         """Return all distributions."""
         try:
@@ -54,7 +54,7 @@ class Distributions(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_tracing.trace()
-    @_jwt.has_one_of_roles([Role.STAFF_ADMIN.value])
+    @_jwt.has_one_of_roles([Role.MANAGE_GL_CODES.value])
     def post():
         """Create a new distribution from the payload."""
         request_json = request.get_json()
@@ -81,7 +81,7 @@ class Distribution(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_tracing.trace()
-    @_jwt.has_one_of_roles([Role.STAFF_ADMIN.value])
+    @_jwt.has_one_of_roles([Role.MANAGE_GL_CODES.value])
     def get(distribution_code_id: int):
         """Return distribution by provided id."""
         try:
@@ -97,7 +97,7 @@ class Distribution(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_tracing.trace()
-    @_jwt.has_one_of_roles([Role.STAFF_ADMIN.value])
+    @_jwt.has_one_of_roles([Role.MANAGE_GL_CODES.value])
     def put(distribution_code_id: int):
         """Update distribution from the payload."""
         request_json = request.get_json()
@@ -124,7 +124,7 @@ class DistributionSchedules(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_tracing.trace()
-    @_jwt.has_one_of_roles([Role.STAFF_ADMIN.value])
+    @_jwt.has_one_of_roles([Role.MANAGE_GL_CODES.value])
     def get(distribution_code_id: int):
         """Return all fee schedules linked to the distribution."""
         try:
@@ -140,7 +140,7 @@ class DistributionSchedules(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_tracing.trace()
-    @_jwt.has_one_of_roles([Role.STAFF_ADMIN.value])
+    @_jwt.has_one_of_roles([Role.MANAGE_GL_CODES.value])
     def post(distribution_code_id: int):
         """Create link between distribution and fee schedule."""
         request_json = request.get_json()

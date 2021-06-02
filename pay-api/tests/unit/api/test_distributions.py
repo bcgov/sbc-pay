@@ -44,7 +44,7 @@ def test_fee_schedules_for_corp_and_filing_type(session, client, jwt, app):
 def test_create_distribution_with_invalid_data(session, client, jwt, app):
     """Assert that the endpoint returns 400."""
     # Insert a record first and then query for it
-    token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    token = jwt.create_jwt(get_claims(role=Role.MANAGE_GL_CODES.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.post('/api/v1/fees/distributions', data=json.dumps({}), headers=headers)
@@ -54,7 +54,7 @@ def test_create_distribution_with_invalid_data(session, client, jwt, app):
 def test_create_distribution_with_valid_data(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
     # Insert a record first and then query for it
-    token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    token = jwt.create_jwt(get_claims(role=Role.MANAGE_GL_CODES.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.post('/api/v1/fees/distributions', data=json.dumps(get_distribution_code_payload()), headers=headers)
@@ -79,7 +79,7 @@ def test_create_distribution_with_unauthorized_token(session, client, jwt, app):
 def test_get_distribution(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     # Insert a record first and then query for it
-    token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    token = jwt.create_jwt(get_claims(role=Role.MANAGE_GL_CODES.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.post('/api/v1/fees/distributions', data=json.dumps(get_distribution_code_payload()), headers=headers)
@@ -92,7 +92,7 @@ def test_get_distribution(session, client, jwt, app):
 def test_put_distribution(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     # Insert a record first and then query for it
-    token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    token = jwt.create_jwt(get_claims(role=Role.MANAGE_GL_CODES.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.post('/api/v1/fees/distributions', data=json.dumps(get_distribution_code_payload()), headers=headers)
@@ -106,7 +106,7 @@ def test_put_distribution(session, client, jwt, app):
 def test_create_distribution_schedules(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
     # Insert a record first and then query for it
-    token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    token = jwt.create_jwt(get_claims(role=Role.MANAGE_GL_CODES.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.post('/api/v1/fees/distributions', data=json.dumps(get_distribution_code_payload()), headers=headers)
@@ -120,7 +120,7 @@ def test_create_distribution_schedules(session, client, jwt, app):
 def test_get_distribution_schedules(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     # Insert a record first and then query for it
-    token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    token = jwt.create_jwt(get_claims(role=Role.MANAGE_GL_CODES.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.post('/api/v1/fees/distributions', data=json.dumps(get_distribution_code_payload()), headers=headers)
@@ -138,7 +138,7 @@ def test_get_distribution_schedules(session, client, jwt, app):
 def test_put_distribution_updates_invoice_status(session, client, jwt, app):
     """Assert that updating an existing fee distribution will update the invoice status."""
     # Insert a record first and then query for it
-    token = jwt.create_jwt(get_claims(role=Role.STAFF_ADMIN.value), token_header)
+    token = jwt.create_jwt(get_claims(role=Role.MANAGE_GL_CODES.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.post('/api/v1/fees/distributions', data=json.dumps(get_distribution_code_payload()), headers=headers)

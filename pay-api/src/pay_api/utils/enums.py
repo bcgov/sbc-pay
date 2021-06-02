@@ -110,7 +110,7 @@ class Role(Enum):
     VIEWER = 'view'
     EDITOR = 'edit'
     SYSTEM = 'system'
-    STAFF_ADMIN = 'admin'
+    MANAGE_GL_CODES = 'manage_gl_codes'
     PUBLIC_USER = 'public_user'
     EXCLUDE_SERVICE_FEES = 'exclude_service_fees'
     CREATE_CREDITS = 'create_credits'
