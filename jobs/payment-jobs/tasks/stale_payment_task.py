@@ -52,8 +52,8 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
                     'Stale Transaction Job Updated records.Payment Id: {}, Transaction Id : {}'.format(
                         transaction.payment_id, transaction.id))
             except BusinessException as err:  # just catch and continue .Don't stop
-                current_app.logger.error('Stale Transaction Error on update_transaction')
-                current_app.logger.error(err)
+                current_app.logger.info('Stale Transaction Error on update_transaction')
+                current_app.logger.info(err)
 
     @classmethod
     def _delete_marked_payments(cls):
