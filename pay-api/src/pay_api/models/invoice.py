@@ -22,6 +22,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
 from pay_api.utils.constants import INCORPORATION_LABEL
+from pay_api.utils.enums import CorpType as CorpTypeEnum
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentStatus, Product
 
 from .audit import Audit, AuditSchema
@@ -148,11 +149,13 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
             data['status_code'] = PaymentStatus.COMPLETED.value
 
         # If it's a BUSINESS invoice, then push details.
-        if data.get('business_identifier', None) \
-                and CorpType.find_by_code(data.get('corp_type_code')).product == Product.BUSINESS.value:
-            details: list[dict] = data.get('details')
-            if not details:
-                details = []
-            details.insert(0, dict(label=INCORPORATION_LABEL, value=data.get('business_identifier')))
-            data['details'] = details
+
+        if data.get('business_identifier', None):
+            corp_type: CorpType = CorpType.find_by_code(data.get('corp_type_code'))
+            if corp_type.product == Product.BUSINESS.value and corp_type.code != CorpTypeEnum.NRO.value:
+                details: list[dict] = data.get('details')
+                if not details:
+                    details = []
+                details.insert(0, dict(label=INCORPORATION_LABEL, value=data.get('business_identifier')))
+                data['details'] = details
         return data

@@ -410,26 +410,31 @@
 
       .transaction-table {
         margin: 0px 24px 8px;
-        /* width: 690px; */
-        /* min-width: 600px; */
         width: 92%;
       }
 
       .transaction-table thead tr,
       .transaction-table tbody tr {
-        border-bottom: 1px solid #b3bac3;
         line-height: 3;
         font-size: 12px;
       }
-      .transaction-table tbody tr:last-child {
-        border-bottom: none;
+
+      .transaction-table thead tr {
+        border-bottom: 1px solid #b3bac3;
       }
+
       .transaction-table thead th {
         text-align: left;
         vertical-align: top;
         font-family: 'BCSans-Bold', sans-serif;
         /* font-weight: normal; */
         padding-bottom: 2px;
+      }
+      .transaction-table tfoot tr {
+        border-bottom: 1px solid #234075;
+        border-top: 1px solid #234075;
+        line-height: 3;
+        font-size: 12px;
       }
       .transaction-table thead th:last-child {
         text-align: right;
@@ -451,12 +456,6 @@
         padding-bottom: 10px;
       }
 
-      .total-elements {
-        margin: 0px 24px;
-        padding: 10px 0;
-        font-size: 13px;
-        border-bottom: 1px solid #b3bac3;
-      }
       .blue-border-bottom {
         border-bottom: 1px solid #234075;
       }
@@ -464,6 +463,7 @@
       .total-elements-price {
         float: right;
         font-family: 'BCSans-Bold', sans-serif;
+        font-weight: bold;
       }
 
       .statement-footer {
@@ -629,76 +629,52 @@
         <td colspan="2">
           <table class="transaction-table">
             <thead>
-              <th class="font-bold">Folio</th>
-              <th class="font-bold">Product Purchased</th>
-              <th class="two-line-head font-bold" style="width: 96px;">Date</th>
-              <th class="font-bold">Filing #</th>
-              <th class="font-bold">Fee</th>
-              <th class="font-bold">GST</th>
-              <th class="two-line-head font-bold" style="width: 45px;">Service Charge</th>
-              <th class="font-bold">Total</th>
-            </thead>
+                <th>Product Purchased</th>
+                <th>Folio</th>
+                <th class="two-line-head" style="width: 96px;">Date</th>
+                <th>Fee</th>
+                <th>GST</th>
+                <th class="two-line-head" style="width: 45px;">Service Charge</th>
+                <th>Total</th>
+              </thead>
             <tbody>
               {% for item in invoice.lineItems %}
               <tr>
-                <td>{{invoice.get('folioNumber', '')}}</td>
                 <td class="product-purchased">
                   {{item.description}}
-                  {% if invoice.businessIdentifier %}
-                    <br/>#{{invoice.businessIdentifier}}
-                  {% endif %}
                 </td>
-                <td>{{invoice.createdOn|format_datetime}}</td>
-                <td>{{filingIdentifier}}</td>
+                <td>{{invoice.get('folioNumber','')}}</td>
+                <td>{{invoice.createdOn|format_datetime('yyyy-mm-dd')}}</td>
                 <td>${{"%.2f"|format((item.filingFees+item.futureEffectiveFees+item.priorityFees)) if (item.total) else '0.00'}}</td>
                 <td>${{"%.2f"|format(item.get('gst', 0))}}</td>
                 <td>${{"%.2f"|format(item.get('serviceFees', 0))}}</td>
-                <td class="font-bold">${{"%.2f"|format(item.total+item.get('serviceFees', 0)) if item.total else '0.00'}}</td>
+                <td class="total-elements-price">${{"%.2f"|format(item.total+item.get('serviceFees', 0)) if item.total else '0.00'}}</td>
               </tr>
               {% endfor %}
+
+              <tr class="row-border" style="text-align: left;">
+                <td colspan="7" style="text-align: left;">
+                  {% for detail in invoice.details %}
+                  <div>{{detail.label}}&nbsp;{{detail.value}}</div>
+                  {% endfor %}
+                </td>
+              </tr>
             </tbody>
+            <tfoot>
+              <td colspan="3" class="font-bold">TOTAL AMOUNT :</td>
+              <td>
+                ${{"%.2f"|format(invoice.total-invoice.get('serviceFees', 0)) if invoice.total else '0.00'}}
+              </td>
+              <td>${{'0.00'}}</td>
+              <td>${{"%.2f"|format(invoice.get('serviceFees', 0))}}</td>
+              <td class="total-elements-price">
+                ${{"%.2f"|format(invoice.total) if invoice.total else '0.00'}}
+              </td>
+            </tfoot>
           </table>
         </td>
       </tr>
-      <tr>
-        <td colspan="2">
-          <div class="section-title mb-0 blue-border-bottom ">
-            Totals
-          </div>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2">
-          <div class="total-elements">
-            Fees:
-            <span class="total-elements-price font-bold">${{"%.2f"|format(invoice.total-invoice.get('serviceFees', 0)) if invoice.total else '0.00'}}</span>
-          </div>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2">
-          <div class="total-elements">
-            Goods and Service Tax (GST)
-            <span class="total-elements-price font-bold">${{'0.00'}}</span>
-          </div>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2">
-          <div class="total-elements blue-border-bottom ">
-            Service Fees
-            <span class="total-elements-price font-bold">${{"%.2f"|format(invoice.get('serviceFees', 0))}}</span>
-          </div>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="2">
-          <div class="total-elements font-bold blue-border-bottom ">
-            TOTAL AMOUNT:
-            <span class="total-elements-price font-bold">${{"%.2f"|format(invoice.total)  if invoice.total else '0.00'}}</span>
-          </div>
-        </td>
-      </tr>
+
       <tr>
         <td colspan="2">
           <div class="receipt-message">
