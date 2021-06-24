@@ -57,6 +57,10 @@ class Error(Enum):
 
     ACCOUNT_EXISTS = 'ACCOUNT_EXISTS', HTTPStatus.BAD_REQUEST
 
+    OUTSTANDING_CREDIT = 'OUTSTANDING_CREDIT', HTTPStatus.BAD_REQUEST
+    TRANSACTIONS_IN_PROGRESS = 'TRANSACTIONS_IN_PROGRESS', HTTPStatus.BAD_REQUEST
+    FROZEN_ACCOUNT = 'FROZEN_ACCOUNT', HTTPStatus.BAD_REQUEST
+
     def __new__(cls, code, status, message=None, details=None):
         """Attributes for the enum."""
         obj = object.__new__(cls)

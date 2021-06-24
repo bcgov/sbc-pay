@@ -111,7 +111,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 # Get the first invoice id as the trx number for CFS
                 invoice_response = CFSService.create_account_invoice(transaction_number=account_invoices[0].id,
                                                                      line_items=lines,
-                                                                     payment_account=cfs_account)
+                                                                     cfs_account=cfs_account)
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(f'Error on creating PAD invoice: account id={payment_account.id}, '
                                 f'auth account : {payment_account.auth_account_id}, ERROR : {str(e)}', level='error')
@@ -160,6 +160,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         for invoice in invoices:
             # Get cfs account
             payment_account: PaymentAccountService = PaymentAccountService.find_by_id(invoice.payment_account_id)
+            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
 
             # Check for corp type and see if online banking is allowed.
             if invoice.payment_method_code == PaymentMethod.ONLINE_BANKING.value:
@@ -172,7 +173,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             try:
                 invoice_response = CFSService.create_account_invoice(transaction_number=invoice.id,
                                                                      line_items=invoice.payment_line_items,
-                                                                     payment_account=payment_account)
+                                                                     cfs_account=cfs_account)
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(f'Error on creating Online Banking invoice: account id={payment_account.id}, '
                                 f'auth account : {payment_account.auth_account_id}, ERROR : {str(e)}', level='error')

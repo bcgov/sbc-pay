@@ -52,7 +52,7 @@ class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attri
     @classmethod
     def find_by_auth_account_id(cls, auth_account_id: str):
         """Return a Account by id."""
-        return cls.query.filter_by(auth_account_id=auth_account_id).one_or_none()
+        return cls.query.filter_by(auth_account_id=str(auth_account_id)).one_or_none()
 
 
 class PaymentAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors

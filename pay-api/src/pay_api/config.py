@@ -174,6 +174,8 @@ class _Config():  # pylint: disable=too-few-public-methods
 
     HOLIDAYS_LIST = os.getenv('HOLIDAYS_LIST')
 
+    OUTSTANDING_TRANSACTION_DAYS = int(os.getenv('OUTSTANDING_TRANSACTION_DAYS', '10'))
+
     TESTING = False
     DEBUG = True
 

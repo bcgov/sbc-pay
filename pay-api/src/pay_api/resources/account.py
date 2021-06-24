@@ -64,8 +64,8 @@ class Accounts(Resource):
         return jsonify(response.asdict()), status
 
 
-@cors_preflight('PUT,GET')
-@API.route('/<string:account_number>', methods=['PUT', 'GET', 'OPTIONS'])
+@cors_preflight('PUT,GET,DELETE')
+@API.route('/<string:account_number>', methods=['PUT', 'GET', 'DELETE', 'OPTIONS'])
 class Account(Resource):
     """Endpoint resource to update and get payment account."""
 
@@ -107,6 +107,22 @@ class Account(Resource):
         response, status = PaymentAccountService.find_by_auth_account_id(account_number).asdict(), HTTPStatus.OK
         current_app.logger.debug('>Account.get')
         return jsonify(response), status
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.has_one_of_roles([Role.SYSTEM.value])
+    @_tracing.trace()
+    def delete(account_number: str):
+        """Get payment account details."""
+        current_app.logger.info('<Account.delete')
+        # Check if user is authorized to perform this action
+        check_auth(business_identifier=None, account_id=account_number, one_of_roles=[EDIT_ROLE, VIEW_ROLE])
+        try:
+            PaymentAccountService.delete_account(account_number)
+        except BusinessException as exception:
+            return exception.response()
+        current_app.logger.debug('>Account.delete')
+        return jsonify({}), HTTPStatus.NO_CONTENT
 
 
 @cors_preflight('POST')

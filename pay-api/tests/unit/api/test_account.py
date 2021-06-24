@@ -535,3 +535,17 @@ def test_update_gov_accounts(session, client, jwt, app):
 
     assert rv.status_code == 200
     assert rv.json['revenueAccount']['projectCode'] == project_code
+
+
+def test_account_delete(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_premium_account_payload()),
+                     headers=headers)
+
+    auth_account_id = rv.json.get('authAccountId')
+
+    rv = client.delete(f'/api/v1/accounts/{auth_account_id}', headers=headers)
+    assert rv.status_code == 204
