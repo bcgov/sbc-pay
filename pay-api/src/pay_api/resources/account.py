@@ -121,6 +121,8 @@ class Account(Resource):
             PaymentAccountService.delete_account(account_number)
         except BusinessException as exception:
             return exception.response()
+        except ServiceUnavailableException as exception:
+            return exception.response()
         current_app.logger.debug('>Account.delete')
         return jsonify({}), HTTPStatus.NO_CONTENT
 
