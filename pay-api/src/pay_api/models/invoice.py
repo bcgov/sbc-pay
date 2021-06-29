@@ -14,6 +14,7 @@
 """Model to handle all operations related to Invoice."""
 from __future__ import annotations
 
+from datetime import datetime
 from typing import List
 
 from marshmallow import fields, post_dump
@@ -23,7 +24,8 @@ from sqlalchemy.orm import relationship
 
 from pay_api.utils.constants import INCORPORATION_LABEL
 from pay_api.utils.enums import CorpType as CorpTypeEnum
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentStatus, Product
+from pay_api.utils.enums import (
+    InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus, Product)
 
 from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
@@ -104,6 +106,21 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     def find_invoices_marked_for_delete(cls):
         """Return a invoices with status DELETE_ACCEPTED."""
         return cls.query.filter_by(invoice_status_code=InvoiceStatus.DELETE_ACCEPTED.value).all()
+
+    @classmethod
+    def find_outstanding_invoices_for_account(cls, pay_account_id: int, from_date: datetime):
+        """Return invoices which are in APPROVED status, OR recent (N days) PAD PAID invoices."""
+        query = cls.query.filter_by(payment_account_id=pay_account_id). \
+            filter(
+            (Invoice.invoice_status_code.in_([InvoiceStatus.APPROVED.value, InvoiceStatus.PARTIAL.value])) |
+            (
+                (Invoice.payment_method_code == PaymentMethod.PAD.value) &
+                (Invoice.invoice_status_code == InvoiceStatus.PAID.value) &
+                (Invoice.created_on >= from_date)
+            )
+        )
+
+        return query.all()
 
 
 class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors

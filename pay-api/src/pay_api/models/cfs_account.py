@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to PayBC Account data."""
+from __future__ import annotations
+from typing import List
 from flask import current_app
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declared_attr
@@ -62,6 +64,11 @@ class CfsAccount(VersionedModel):  # pylint:disable=too-many-instance-attributes
         """Return a Account by id."""
         return CfsAccount.query.filter(CfsAccount.account_id == account_id,
                                        CfsAccount.status != CfsAccountStatus.INACTIVE.value).one_or_none()
+
+    @classmethod
+    def find_by_account_id(cls, account_id: str) -> List[CfsAccount]:
+        """Return a Account by id."""
+        return CfsAccount.query.filter(CfsAccount.account_id == account_id).all()
 
     @classmethod
     def find_all_pending_accounts(cls):

@@ -24,15 +24,18 @@ from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.models import AccountFee as AccountFeeModel
 from pay_api.models import AccountFeeSchema
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentAccountSchema
 from pay_api.models import StatementSettings as StatementSettingsModel
+from pay_api.services.cfs_service import CFSService
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.queue_publisher import publish_response
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, PaymentSystem, StatementFrequency
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
-from pay_api.utils.util import current_local_time, get_local_formatted_date, get_str_by_path, mask
+from pay_api.utils.util import (
+    current_local_time, get_local_formatted_date, get_outstanding_txns_from_date, get_str_by_path, mask)
 
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -609,7 +612,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @staticmethod
     def unlock_frozen_accounts(account_id: int):
         """Unlock frozen accounts."""
-        from pay_api.services.cfs_service import CFSService  # pylint: disable=import-outside-toplevel,cyclic-import
         pay_account: PaymentAccount = PaymentAccount.find_by_id(account_id)
         if pay_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
             # update CSF
@@ -635,3 +637,34 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 capture_message(
                     'Notification to Queue failed for the Unlock Account : {msg}.'.format(
                         msg=payload), level='error')
+
+    @classmethod
+    def delete_account(cls, auth_account_id: str) -> PaymentAccount:
+        """Delete the payment account."""
+        current_app.logger.debug('<delete_account')
+        pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account.id)
+        # 1 - Check if account have any credits
+        # 2 - Check if account have any PAD transactions done in last N (10) days.
+        if pay_account.credit and pay_account.credit > 0:
+            raise BusinessException(Error.OUTSTANDING_CREDIT)
+        # Check if account is frozen.
+        cfs_status: str = cfs_account.status if cfs_account else None
+        if cfs_status == CfsAccountStatus.FREEZE.value:
+            raise BusinessException(Error.FROZEN_ACCOUNT)
+        if InvoiceModel.find_outstanding_invoices_for_account(pay_account.id, get_outstanding_txns_from_date()):
+            # Check if there is any recent PAD transactions in N days.
+            raise BusinessException(Error.TRANSACTIONS_IN_PROGRESS)
+
+        # If CFS Account present, mark it as INACTIVE.
+        if cfs_status and cfs_status != CfsAccountStatus.INACTIVE.value:
+            cfs_account.status = CfsAccountStatus.INACTIVE.value
+            # If account is active or pending pad activation stop PAD payments.
+            if pay_account.payment_method == PaymentMethod.PAD.value \
+                    and cfs_status in [CfsAccountStatus.ACTIVE.value, CfsAccountStatus.PENDING_PAD_ACTIVATION.value]:
+                CFSService.suspend_cfs_account(cfs_account)
+            cfs_account.save()
+
+        if pay_account.statement_notification_enabled:
+            pay_account.statement_notification_enabled = False
+            pay_account.save()

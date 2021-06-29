@@ -17,11 +17,20 @@
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
 
+from datetime import datetime, timedelta
+
+import pytest
+
+from pay_api.exceptions import BusinessException
+from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
-from pay_api.utils.enums import PaymentMethod
+from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod
+from pay_api.utils.errors import Error
+from pay_api.utils.util import get_outstanding_txns_from_date
 from tests.utilities.base_test import (
-    factory_payment_account, factory_premium_payment_account, get_auth_basic_user, get_auth_premium_user,
-    get_basic_account_payload, get_pad_account_payload, get_premium_account_payload, get_unlinked_pad_account_payload)
+    factory_invoice, factory_payment_account, factory_premium_payment_account, get_auth_basic_user,
+    get_auth_premium_user, get_basic_account_payload, get_pad_account_payload, get_premium_account_payload,
+    get_unlinked_pad_account_payload)
 
 
 def test_account_saved_from_new(session):
@@ -171,3 +180,67 @@ def test_update_online_banking_to_credit(session):
         get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value))
     credit_account = PaymentAccountService.update(online_banking_account.auth_account_id, get_basic_account_payload())
     assert credit_account.payment_method == PaymentMethod.DIRECT_PAY.value
+
+
+@pytest.mark.parametrize('payload', [
+    get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value),
+    get_basic_account_payload(),
+    get_premium_account_payload(),
+    get_pad_account_payload(),
+    get_unlinked_pad_account_payload()
+])
+def test_delete_account(session, payload):
+    """Assert that delete payment account works."""
+    pay_account: PaymentAccountService = PaymentAccountService.create(payload)
+    PaymentAccountService.delete_account(payload.get('accountId'))
+
+    # Try to find the account by id.
+    pay_account = PaymentAccountService.find_by_id(pay_account.id)
+    for cfs_account in CfsAccountModel.find_by_account_id(pay_account.id):
+        assert cfs_account.status == CfsAccountStatus.INACTIVE.value if cfs_account else True
+
+
+def test_delete_account_failures(session):
+    """Assert that delete payment account works."""
+    # Create a PAD Account.
+    # Add credit and assert account cannot be deleted.
+    # Remove the credit.
+    # Add a PAD transaction for within N days and mark as PAID.
+    # Assert account cannot be deleted.
+    # Mark the account as NSF and assert account cannot be deleted.
+    payload = get_pad_account_payload()
+    pay_account: PaymentAccountService = PaymentAccountService.create(payload)
+    pay_account.credit = 100
+    pay_account.save()
+
+    with pytest.raises(BusinessException) as excinfo:
+        PaymentAccountService.delete_account(payload.get('accountId'))
+
+    assert excinfo.value.code == Error.OUTSTANDING_CREDIT.code
+
+    # Now mark the credit as zero and mark teh CFS account status as FREEZE.
+    pay_account.credit = 0
+    pay_account.save()
+
+    cfs_account = CfsAccountModel.find_effective_by_account_id(pay_account.id)
+    cfs_account.status = CfsAccountStatus.FREEZE.value
+    cfs_account.save()
+
+    with pytest.raises(BusinessException) as excinfo:
+        PaymentAccountService.delete_account(payload.get('accountId'))
+
+    assert excinfo.value.code == Error.FROZEN_ACCOUNT.code
+
+    # Now mark the status ACTIVE and create transactions within configured time.
+    cfs_account = CfsAccountModel.find_effective_by_account_id(pay_account.id)
+    cfs_account.status = CfsAccountStatus.ACTIVE.value
+    cfs_account.save()
+
+    created_on: datetime = get_outstanding_txns_from_date() + timedelta(minutes=1)
+    factory_invoice(pay_account, payment_method_code=PaymentMethod.PAD.value, created_on=created_on,
+                    status_code=InvoiceStatus.PAID.value).save()
+
+    with pytest.raises(BusinessException) as excinfo:
+        PaymentAccountService.delete_account(payload.get('accountId'))
+
+    assert excinfo.value.code == Error.TRANSACTIONS_IN_PROGRESS.code

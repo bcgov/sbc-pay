@@ -25,7 +25,6 @@ from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.oauth_service import OAuthService
-from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import (
     CFS_BATCH_SOURCE, CFS_CM_BATCH_SOURCE, CFS_CMS_TRX_TYPE, CFS_CUST_TRX_TYPE, CFS_CUSTOMER_PROFILE_CLASS,
     CFS_DRAWDOWN_BALANCE, CFS_LINE_TYPE, CFS_RCPT_EFT_WIRE, CFS_TERM_NAME, DEFAULT_ADDRESS_LINE_1, DEFAULT_CITY,
@@ -263,14 +262,15 @@ class CFSService(OAuthService):
         return token_response
 
     @classmethod
-    def create_account_invoice(cls, transaction_number: str, line_items: List[PaymentLineItemModel], payment_account) \
+    def create_account_invoice(cls, transaction_number: str, line_items: List[PaymentLineItemModel],
+                               cfs_account: CfsAccountModel) \
             -> Dict[str, any]:
         """Create CFS Account Invoice."""
         now = current_local_time()
         curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
         invoice_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/' \
-            .format(payment_account.cfs_party, payment_account.cfs_account, payment_account.cfs_site)
+            .format(cfs_account.cfs_party, cfs_account.cfs_account, cfs_account.cfs_site)
 
         invoice_payload = dict(
             batch_source=CFS_BATCH_SOURCE,
@@ -392,7 +392,7 @@ class CFSService(OAuthService):
         return adjustment_response.json()
 
     @staticmethod
-    def create_cfs_receipt(payment_account: PaymentAccount,
+    def create_cfs_receipt(cfs_account: CfsAccountModel,
                            rcpt_number: str,
                            rcpt_date: str,
                            amount: float,
@@ -402,8 +402,8 @@ class CFSService(OAuthService):
 
         access_token: str = CFSService.get_token().json().get('access_token')
         cfs_base: str = current_app.config.get('CFS_BASE_URL')
-        receipt_url = f'{cfs_base}/cfs/parties/{payment_account.cfs_party}/accs/{payment_account.cfs_account}/' \
-                      f'sites/{payment_account.cfs_site}/rcpts/'
+        receipt_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/' \
+                      f'sites/{cfs_account.cfs_site}/rcpts/'
         cfs_payment_method = CFS_DRAWDOWN_BALANCE if payment_method == PaymentMethod.DRAWDOWN.value \
             else CFS_RCPT_EFT_WIRE
         payload = {

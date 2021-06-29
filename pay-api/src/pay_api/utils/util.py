@@ -216,3 +216,16 @@ def get_next_day(val: datetime):
     """Return previous day."""
     # index: 0 (current week), 1 (last week) and so on
     return val + timedelta(days=1)
+
+
+def get_outstanding_txns_from_date() -> datetime:
+    """Return the date value which can be used as start date to calculate outstanding PAD transactions."""
+    days_interval: int = current_app.config.get('OUTSTANDING_TRANSACTION_DAYS')
+    from_date = datetime.now()
+    # Find the business day before days_interval time.
+    counter: int = 0
+    while counter < days_interval:
+        from_date = from_date - timedelta(days=1)
+        if not is_holiday(from_date):
+            counter += 1
+    return from_date

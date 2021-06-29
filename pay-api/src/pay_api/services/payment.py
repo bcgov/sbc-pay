@@ -21,20 +21,20 @@ from typing import Dict, List, Tuple
 from dateutil import parser
 from flask import current_app
 
+from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.base_model import BaseModel
 from pay_api.models.invoice import InvoiceSchema
 from pay_api.models.invoice_reference import InvoiceReference as InvoiceReferenceModel
 from pay_api.models.payment import PaymentSchema
 from pay_api.models.payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from pay_api.services.cfs_service import CFSService
-from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.enums import (
     AuthHeaderType, Code, ContentType, InvoiceReferenceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import generate_receipt_number
-
 from .code import Code as CodeService
 from .oauth_service import OAuthService
 
@@ -559,7 +559,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         # 3. Create new consolidated invoice in CFS.
         # 4. Create new invoice reference records.
         # 5. Create new payment records for the invoice as CREATED.
-        pay_account = PaymentAccountService.find_by_auth_account_id(auth_account_id)
+
+        pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account.id)
 
         consolidated_invoices: List[InvoiceModel] = []
         consolidated_line_items: List[PaymentLineItem] = []
@@ -579,7 +581,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         invoice_response = CFSService.create_account_invoice(
             transaction_number=str(consolidated_invoices[-1].id) + '-C',
             line_items=consolidated_line_items,
-            payment_account=pay_account)
+            cfs_account=cfs_account)
 
         invoice_number: str = invoice_response.json().get('invoice_number')
 
@@ -588,7 +590,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
                 invoice_id=invoice.id, status_code=InvoiceReferenceStatus.ACTIVE.value)
             inv_ref.status_code = InvoiceReferenceStatus.CANCELLED.value
-            # print(inv_ref)
 
             InvoiceReferenceModel(
                 invoice_id=invoice.id,
@@ -619,7 +620,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
     @user_context
     def create_payment_receipt(auth_account_id: str, credit_request: Dict[str, str], **kwargs) -> Payment:
         """Create a payment record for the account."""
-        pay_account = PaymentAccountService.find_by_auth_account_id(auth_account_id)
+        pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account.id)
         # Create a payment record
         # Create a receipt in CFS for the  amount.
         payment = Payment.create(
@@ -630,7 +632,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         receipt_date = credit_request.get('completedOn')
         amount = credit_request.get('paidAmount')
 
-        receipt_response = CFSService.create_cfs_receipt(payment_account=pay_account,
+        receipt_response = CFSService.create_cfs_receipt(cfs_account=cfs_account,
                                                          rcpt_number=receipt_number,
                                                          rcpt_date=receipt_date,
                                                          amount=amount,
