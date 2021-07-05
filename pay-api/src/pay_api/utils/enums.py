@@ -115,6 +115,8 @@ class Role(Enum):
     EXCLUDE_SERVICE_FEES = 'exclude_service_fees'
     CREATE_CREDITS = 'create_credits'
     MANAGE_ACCOUNTS = 'manage_accounts'
+    FAS_USER = 'fas_user'
+    FAS_EDITOR = 'fas_edit'
 
 
 class Code(Enum):

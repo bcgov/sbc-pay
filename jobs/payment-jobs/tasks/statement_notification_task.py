@@ -74,7 +74,7 @@ class StatementNotificationTask:  # pylint:disable=too-few-public-methods
 
             to_emails = ','.join([str(recipient.email) for recipient in recipients])
             current_app.logger.info(f'Recipients email Ids:{to_emails}')
-            params['org_name'] = payment_account.auth_account_name
+            params['org_name'] = payment_account.name
             params['frequency'] = statement.frequency.lower()
             # logic changed https://github.com/bcgov/entity/issues/4809
             # params.update({'url': params['url'].replace('orgId', payment_account.auth_account_id)})

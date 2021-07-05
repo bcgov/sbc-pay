@@ -407,7 +407,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
     def _update_receipt_details(invoices, payment, receipt_details, transaction_dao):
         """Update receipt details to invoice."""
         payment.paid_amount = receipt_details[2]
-        payment.completed_on = datetime.now()
+        payment.payment_date = datetime.now()
         transaction_dao.status_code = TransactionStatus.COMPLETED.value
 
         if float(payment.paid_amount) < float(payment.invoice_amount):

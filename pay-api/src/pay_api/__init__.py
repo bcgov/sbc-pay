@@ -24,7 +24,8 @@ from sbc_common_components.exception_handling.exception_handler import Exception
 from sbc_common_components.utils.camel_case_response import convert_to_camel
 from sentry_sdk.integrations.flask import FlaskIntegration  # noqa: I001
 
-import pay_api.config as config
+# import pay_api.config as config
+from pay_api import config
 from pay_api.config import _Config
 from pay_api.models import db, ma
 from pay_api.utils.auth import jwt

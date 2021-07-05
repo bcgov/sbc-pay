@@ -211,7 +211,7 @@ async def _create_payment_record(amount, ejv_header, receipt_number):
         receipt_number=receipt_number,
         invoice_amount=amount,
         paid_amount=amount,
-        completed_on=datetime.now()).flush()
+        payment_date=datetime.now()).flush()
 
 
 def _group_batches(content: str):

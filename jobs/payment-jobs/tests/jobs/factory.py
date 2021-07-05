@@ -49,7 +49,7 @@ def factory_statement_settings(pay_account_id: str, frequency='DAILY', from_date
 def factory_payment(
         payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC',
         payment_status_code: str = PaymentStatus.CREATED.value,
-        completed_on: datetime = datetime.now(),
+        payment_date: datetime = datetime.now(),
         invoice_number: str = None
 ):
     """Return Factory."""
@@ -57,7 +57,7 @@ def factory_payment(
         payment_system_code=payment_system_code,
         payment_method_code=payment_method_code,
         payment_status_code=payment_status_code,
-        completed_on=completed_on,
+        payment_date=payment_date,
         invoice_number=invoice_number
     ).save()
 

@@ -699,7 +699,7 @@ async def test_eft_wire_reconciliations(session, app, stan_server, event_loop, c
                  payment_status_code=PaymentStatus.CREATED.value,
                  payment_system_code='PAYBC',
                  payment_account_id=pay_account.id,
-                 completed_on=datetime.now(),
+                 payment_date=datetime.now(),
                  paid_amount=paid_amount,
                  receipt_number=eft_wire_receipt).save()
 
@@ -761,7 +761,7 @@ async def test_credits(session, app, stan_server, event_loop, client_id, events_
                  payment_status_code=PaymentStatus.CREATED.value,
                  payment_system_code='PAYBC',
                  payment_account_id=pay_account.id,
-                 completed_on=datetime.now(),
+                 payment_date=datetime.now(),
                  paid_amount=onac_amount,
                  receipt_number=eft_wire_receipt).save()
 

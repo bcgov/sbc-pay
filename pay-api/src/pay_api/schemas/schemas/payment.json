@@ -5,7 +5,7 @@
   "title": "Payment Request",
   "required": [
     "paymentMethod",
-    "completedOn",
+    "paymentDate",
     "paidAmount"
   ],
   "properties": {
@@ -17,7 +17,9 @@
         "EFT",
         "WIRE",
         "REFUND",
-        "DRAWDOWN"
+        "DRAWDOWN",
+        "CASH",
+        "CHEQUE"
       ],
       "examples": [
         "EFT",
@@ -27,7 +29,7 @@
       ],
       "pattern": "^(.*)$"
     },
-    "completedOn": {
+    "paymentDate": {
       "$id": "#/properties/completedOn",
       "type": "string",
       "title": "Date of Payment",
@@ -37,11 +39,20 @@
       ],
       "pattern": "^(.*)$"
     },
+    "routingSlipNumber": {
+      "$id": "#/properties/routingSlipNumber",
+      "type": "string",
+      "title": "Routing Slip Number"
+    },
+    "chequeReceiptNumber": {
+      "$id": "#/properties/chequeReceiptNumber",
+      "type": "string",
+      "title": "Cheque or Cash receipt number"
+    },
     "paidAmount": {
       "$id": "#/properties/paidAmount",
       "type": "number",
-      "title": "Payment Amount",
-      "default": 0
+      "title": "Payment Amount"
     }
   }
 }

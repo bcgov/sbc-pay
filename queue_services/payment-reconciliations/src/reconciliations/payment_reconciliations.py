@@ -83,7 +83,7 @@ async def _create_payment_records(csv_content: str):
                 inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
                 invoice_amount = float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL))
 
-                completed_on: datetime = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%d-%b-%y')
+                payment_date: datetime = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%d-%b-%y')
                 status = PaymentStatus.COMPLETED.value \
                     if _get_row_value(row, Column.TARGET_TXN_STATUS).lower() == Status.PAID.value.lower() \
                     else PaymentStatus.FAILED.value
@@ -93,7 +93,7 @@ async def _create_payment_records(csv_content: str):
                 elif _get_row_value(row, Column.TARGET_TXN_STATUS).lower() == Status.PARTIAL.value.lower():
                     paid_amount = invoice_amount - float(_get_row_value(row, Column.TARGET_TXN_OUTSTANDING))
 
-                _save_payment(completed_on, inv_number, invoice_amount, paid_amount, row, status,
+                _save_payment(payment_date, inv_number, invoice_amount, paid_amount, row, status,
                               PaymentMethod.PAD.value,
                               source_txn_number)
         elif settlement_type == RecordType.BOLP.value:
@@ -101,7 +101,7 @@ async def _create_payment_records(csv_content: str):
             paid_amount = 0
             inv_number = None
             invoice_amount = 0
-            completed_on: datetime = datetime.strptime(_get_row_value(payment_lines[0], Column.APP_DATE), '%d-%b-%y')
+            payment_date: datetime = datetime.strptime(_get_row_value(payment_lines[0], Column.APP_DATE), '%d-%b-%y')
             for row in payment_lines:
                 paid_amount += float(_get_row_value(row, Column.APP_AMOUNT))
 
@@ -111,7 +111,7 @@ async def _create_payment_records(csv_content: str):
                 invoice_amount = float(_get_row_value(row, Column.TARGET_TXN_ORIGINAL))
                 inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
 
-            _save_payment(completed_on, inv_number, invoice_amount, paid_amount, row, PaymentStatus.COMPLETED.value,
+            _save_payment(payment_date, inv_number, invoice_amount, paid_amount, row, PaymentStatus.COMPLETED.value,
                           PaymentMethod.ONLINE_BANKING.value, source_txn_number)
             # publish email event.
             await _publish_online_banking_mailer_events(payment_lines, paid_amount)
@@ -125,7 +125,7 @@ async def _create_payment_records(csv_content: str):
         db.session.commit()
 
 
-def _save_payment(completed_on, inv_number, invoice_amount,  # pylint: disable=too-many-arguments
+def _save_payment(payment_date, inv_number, invoice_amount,  # pylint: disable=too-many-arguments
                   paid_amount, row, status, payment_method, receipt_number):
     # pylint: disable=import-outside-toplevel
     from pay_api.factory.payment_system_factory import PaymentSystemFactory
@@ -149,7 +149,7 @@ def _save_payment(completed_on, inv_number, invoice_amount,  # pylint: disable=t
     payment.invoice_number = inv_number
     payment.invoice_amount = invoice_amount
     payment.payment_account_id = payment_account.id
-    payment.completed_on = completed_on
+    payment.payment_date = payment_date
     payment.paid_amount = paid_amount
     payment.receipt_number = receipt_number
     db.session.add(payment)

@@ -643,7 +643,7 @@
                 <td class="product-purchased">
                   {{item.description}}
                 </td>
-                <td>{{invoice.get('folioNumber','')}}</td>
+                <td>{{invoice.get('folioNumber','-')}}</td>
                 <td>{{invoice.createdOn|format_datetime('yyyy-mm-dd')}}</td>
                 <td>${{"%.2f"|format((item.filingFees+item.futureEffectiveFees+item.priorityFees)) if (item.total) else '0.00'}}</td>
                 <td>${{"%.2f"|format(item.get('gst', 0))}}</td>

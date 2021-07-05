@@ -77,7 +77,7 @@ def test_statements_for_empty_results(session):
         from_date=day_before_yday,
         frequency='DAILY'
     )
-    factory_payment(completed_on=day_before_yday, invoice_number=inv_ref.invoice_number)
+    factory_payment(payment_date=day_before_yday, invoice_number=inv_ref.invoice_number)
 
     StatementTask.generate_statements()
 

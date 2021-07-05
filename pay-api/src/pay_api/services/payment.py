@@ -52,7 +52,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self._payment_account_id: int = None
         self._invoice_number: str = None
         self._cons_inv_number: str = None
-        self._completed_on: datetime = None
+        self._payment_date: datetime = None
         self._invoice_amount: Decimal = None
         self._paid_amount: Decimal = None
         self._receipt_number: str = None
@@ -74,7 +74,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self.payment_account_id: int = self._dao.payment_account_id
         self.invoice_number: str = self._dao.invoice_number
         self.cons_inv_number: str = self._dao.cons_inv_number
-        self.completed_on: datetime = self._dao.completed_on
+        self.payment_date: datetime = self._dao.payment_date
         self.invoice_amount: Decimal = self._dao.invoice_amount
         self.paid_amount: Decimal = self._dao.paid_amount
         self.receipt_number: str = self._dao.receipt_number
@@ -169,15 +169,15 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self._dao.cons_inv_number = value
 
     @property
-    def completed_on(self):
-        """Return the completed_on."""
-        return self._completed_on
+    def payment_date(self):
+        """Return the payment_date."""
+        return self._payment_date
 
-    @completed_on.setter
-    def completed_on(self, value: datetime):
-        """Set the completed_on."""
-        self._completed_on = value
-        self._dao.completed_on = value
+    @payment_date.setter
+    def payment_date(self, value: datetime):
+        """Set the payment_date."""
+        self._payment_date = value
+        self._dao.payment_date = value
 
     @property
     def invoice_amount(self):
@@ -641,7 +641,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         payment.receipt_number = receipt_response.get('receipt_number', receipt_number)
         payment.paid_amount = amount
         payment.created_by = kwargs['user'].user_name
-        payment.completed_on = parser.parse(receipt_date)
+        payment.payment_date = parser.parse(receipt_date)
         payment.payment_status_code = PaymentStatus.COMPLETED.value
         payment.save()
 

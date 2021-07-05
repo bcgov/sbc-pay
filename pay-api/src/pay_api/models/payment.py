@@ -19,7 +19,7 @@ from typing import Dict
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import ForeignKey, func, or_
+from sqlalchemy import Boolean, ForeignKey, func, or_
 from sqlalchemy.orm import relationship
 
 from pay_api.utils.enums import InvoiceReferenceStatus
@@ -48,14 +48,18 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True)
     payment_method_code = db.Column(db.String(15), ForeignKey('payment_methods.code'), nullable=False)
     payment_status_code = db.Column(db.String(20), ForeignKey('payment_status_codes.code'), nullable=True)
-    invoice_number = db.Column(db.String(50), nullable=True, index=True)
-    receipt_number = db.Column(db.String(50), nullable=True, index=True)
+    invoice_number = db.Column(db.String(50), nullable=True, index=True, comment='CFS Invoice number')
+    receipt_number = db.Column(db.String(50), nullable=True, index=True, comment='CFS Receipt number')
+    cheque_receipt_number = db.Column(db.String(50), nullable=True, index=True, comment='Cheque or cash receipt number')
+    routing_slip_number = db.Column(db.String(50), nullable=True, index=True, comment='Routing slip number from FAS')
+    is_routing_slip = db.Column(Boolean(), default=False, comment='Is the payment created as part of FAS by FAS User')
+    paid_amount = db.Column(db.Numeric(), nullable=True, comment='Amount PAID as part of payment')
+    payment_date = db.Column(db.DateTime, nullable=True, comment='Date of payment')
+    created_by = db.Column(db.String(50), default='SYSTEM',
+                           comment='Created user name, SYSTEM if job creates the record')
+
     cons_inv_number = db.Column(db.String(50), nullable=True, index=True)
     invoice_amount = db.Column(db.Numeric(), nullable=True)
-    paid_amount = db.Column(db.Numeric(), nullable=True)
-    created_by = db.Column(db.String(50), default='SYSTEM')
-
-    completed_on = db.Column(db.DateTime, nullable=True)
 
     payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='select', innerjoin=True)
     payment_status = relationship(PaymentStatusCode, foreign_keys=[payment_status_code], lazy='select', innerjoin=True)
@@ -126,9 +130,9 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     @classmethod
     def find_payments_to_consolidate(cls, auth_account_id: str):
         """Find payments to be consolidated."""
-        consolidated_inv_subquery = db.session.query(Payment.cons_inv_number)\
-            .filter(Payment.payment_status_code == PaymentStatus.FAILED.value)\
-            .filter(Payment.payment_method_code == PaymentMethodEnum.PAD.value)\
+        consolidated_inv_subquery = db.session.query(Payment.cons_inv_number) \
+            .filter(Payment.payment_status_code == PaymentStatus.FAILED.value) \
+            .filter(Payment.payment_method_code == PaymentMethodEnum.PAD.value) \
             .subquery()
 
         query = db.session.query(Payment) \
