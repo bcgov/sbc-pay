@@ -431,7 +431,7 @@
               <tbody>
                 {% for item in filingTypes %}
                 <tr>
-                  <td>{{item.folio_number}}</td>
+                  <td>{{item.get('folio_number', '-')}}</td>
                   <td class="product-purchased">
                     {{item.description}}
                   </td>
