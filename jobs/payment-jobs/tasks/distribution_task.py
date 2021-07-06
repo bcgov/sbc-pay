@@ -48,14 +48,14 @@ class DistributionTask:
         current_app.logger.debug(f'Found {len(gl_updated_invoices)} invoices to update revenue details.')
 
         if len(gl_updated_invoices) > 0:  # pylint:disable=too-many-nested-blocks
-            access_token: str = cls.__get_token().json().get('access_token')
+            access_token: str = cls._get_token().json().get('access_token')
             paybc_ref_number: str = current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')
             paybc_svc_base_url = current_app.config.get('PAYBC_DIRECT_PAY_BASE_URL')
             for gl_updated_invoice in gl_updated_invoices:
                 payment: PaymentModel = PaymentModel.find_payment_for_invoice(gl_updated_invoice.id)
                 # For now handle only GL updates for Direct Pay, more to come in future
                 if payment.payment_method_code != PaymentMethod.DIRECT_PAY.value:
-                    cls.__update_invoice_status(gl_updated_invoice, InvoiceStatus.PAID.value)
+                    cls._update_invoice_status(gl_updated_invoice, InvoiceStatus.PAID.value)
                 else:
                     active_reference = list(
                         filter(lambda reference: (reference.status_code == InvoiceReferenceStatus.COMPLETED.value),
@@ -98,7 +98,7 @@ class DistributionTask:
                             OAuthService.post(payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
                                               post_revenue_payload)
 
-                        cls.__update_invoice_status(gl_updated_invoice, InvoiceStatus.PAID.value)
+                        cls._update_invoice_status(gl_updated_invoice, InvoiceStatus.PAID.value)
 
     @classmethod
     def get_payment_details(cls, payment_url: str, access_token: str):
@@ -126,7 +126,7 @@ class DistributionTask:
         }
 
     @classmethod
-    def __get_token(cls):
+    def _get_token(cls):
         """Generate oauth token from payBC which will be used for all communication."""
         current_app.logger.debug('<Getting token')
         token_url = current_app.config.get('PAYBC_DIRECT_PAY_BASE_URL') + '/oauth/token'
@@ -141,7 +141,7 @@ class DistributionTask:
         return token_response
 
     @classmethod
-    def __update_invoice_status(cls, gl_updated_invoice, status: str):
+    def _update_invoice_status(cls, gl_updated_invoice, status: str):
         gl_updated_invoice.invoice_status_code = status
         gl_updated_invoice.save()
         current_app.logger.info(f'Updated invoice : {gl_updated_invoice.id}')
