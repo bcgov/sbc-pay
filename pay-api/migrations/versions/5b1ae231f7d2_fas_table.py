@@ -62,6 +62,7 @@ def upgrade():
                     sa.Column('created_name', sa.String(length=100), nullable=True),
                     sa.Column('updated_by', sa.String(length=50), nullable=True),
                     sa.Column('updated_name', sa.String(length=50), nullable=True),
+                    sa.Column('routing_slip_date', sa.Date(), nullable=False),
                     sa.ForeignKeyConstraint(['payment_account_id'], ['payment_accounts.id'], ),
                     sa.ForeignKeyConstraint(['status'], ['routing_slip_status_codes.code'], ),
                     sa.PrimaryKeyConstraint('id'),
@@ -76,7 +77,7 @@ def upgrade():
                                         comment='Routing slip number from FAS'))
     op.add_column('payments', sa.Column('is_routing_slip', sa.Boolean(), nullable=True,
                                         comment='Is the payment created as part of FAS by FAS User'))
-    op.alter_column('payments', 'completed_on', new_column_name='payment_date')
+    op.alter_column('payments', 'completed_on', new_column_name='payment_date', comment='Date of payment')
 
     op.alter_column('payments', 'invoice_number',
                     existing_type=sa.VARCHAR(length=50),

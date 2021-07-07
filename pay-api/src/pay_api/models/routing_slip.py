@@ -30,6 +30,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
     status = db.Column(db.String(), ForeignKey('routing_slip_status_codes.code'), nullable=True)
     total = db.Column(db.Numeric(), nullable=True, default=0)
     remaining_amount = db.Column(db.Numeric(), nullable=True, default=0)
+    routing_slip_date = db.Column('routing_slip_date', db.Date, nullable=False)
 
 
 class RoutingSlipSchema(AuditSchema, ma.ModelSchema):  # pylint: disable=too-many-ancestors, too-few-public-methods

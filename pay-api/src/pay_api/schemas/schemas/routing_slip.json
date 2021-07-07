@@ -31,10 +31,22 @@
       "title": "Remaining amount on routing slip",
       "pattern": "^(.*)$"
     },
+    "routingSlipDate": {
+      "$id": "#/properties/routingSlipDate",
+      "type": "string",
+      "title": "Routing slip date",
+      "pattern": "^(.*)$"
+    },
     "createdBy": {
       "$id": "#/properties/createdBy",
       "type": "string",
       "title": "Routing slip creator name",
+      "pattern": "^(.*)$"
+    },
+    "createdOn": {
+      "$id": "#/properties/createdOn",
+      "type": "string",
+      "title": "Routing slip created date",
       "pattern": "^(.*)$"
     },
     "payments": {
