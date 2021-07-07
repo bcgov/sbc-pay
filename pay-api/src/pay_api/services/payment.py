@@ -629,7 +629,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             payment_system=PaymentSystem.PAYBC.value,
             payment_account_id=pay_account.id)
         receipt_number: str = generate_receipt_number(payment.id)
-        receipt_date = credit_request.get('completedOn')
+        receipt_date = credit_request.get('paymentDate')
         amount = credit_request.get('paidAmount')
 
         receipt_response = CFSService.create_cfs_receipt(cfs_account=cfs_account,

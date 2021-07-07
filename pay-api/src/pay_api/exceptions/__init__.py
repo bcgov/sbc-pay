@@ -50,7 +50,7 @@ def construct_type(code):
     return code
 
 
-class BusinessException(Exception):
+class BusinessException(Exception):  # noqa
     """Exception that adds error code and error name, that can be used for i18n support."""
 
     def __init__(self, error: Error, *args, **kwargs):
@@ -69,7 +69,7 @@ class BusinessException(Exception):
         return convert_to_response(body=self.as_problem_json(), status=self.status)
 
 
-class ServiceUnavailableException(Exception):
+class ServiceUnavailableException(Exception):  # noqa
     """Exception to be raised if third party service is unavailable."""
 
     def __init__(self, error, *args, **kwargs):

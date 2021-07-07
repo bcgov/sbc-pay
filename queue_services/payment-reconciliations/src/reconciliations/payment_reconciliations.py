@@ -216,8 +216,10 @@ async def reconcile_payments(msg: Dict[str, any]):
 
         # Commit the transaction and process next row.
         db.session.commit()
+
     # Create payment records for lines other than PAD
     await _create_payment_records(content)
+
     # Create Credit Records.
     _create_credit_records(content)
     # Sync credit memo and on account credits with CFS
@@ -226,9 +228,7 @@ async def reconcile_payments(msg: Dict[str, any]):
 
 async def _process_consolidated_invoices(row):
     target_txn_status = _get_row_value(row, Column.TARGET_TXN_STATUS)
-    print('target_txn_status ', target_txn_status)
     if (target_txn := _get_row_value(row, Column.TARGET_TXN)) == TargetTransaction.INV.value:
-        print('target_txn ', target_txn)
         inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
         record_type = _get_row_value(row, Column.RECORD_TYPE)
         logger.debug('Processing invoice :  %s', inv_number)
@@ -237,12 +237,10 @@ async def _process_consolidated_invoices(row):
             filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.ACTIVE.value). \
             filter(InvoiceReferenceModel.invoice_number == inv_number). \
             all()
-        print('inv_references ', inv_references)
         payment_account: PaymentAccountModel = _get_payment_account(row)
 
         if target_txn_status.lower() == Status.PAID.value.lower():
             logger.debug('Fully PAID payment.')
-            print('PAID ')
             await _process_paid_invoices(inv_references, row)
             await _publish_mailer_events('PAD.PaymentSuccess', payment_account, row)
         elif target_txn_status.lower() == Status.NOT_PAID.value.lower() \
@@ -403,6 +401,7 @@ def _process_failed_payments(row):
         filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.COMPLETED.value). \
         filter(InvoiceReferenceModel.invoice_number == inv_number). \
         all()
+
     # Update status to ACTIVE, if it was marked COMPLETED
     for inv_reference in inv_references:
         inv_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
@@ -595,7 +594,7 @@ async def _publish_account_events(message_type: str, pay_account: PaymentAccount
     except Exception as e:  # NOQA pylint: disable=broad-except
         logger.error(e)
         logger.warning('Notification to Queue failed for the Account %s - %s', pay_account.auth_account_id,
-                       pay_account.auth_account_name)
+                       pay_account.name)
         capture_message('Notification to Queue failed for the Account {auth_account_id}, {msg}.'.format(
             auth_account_id=pay_account.auth_account_id, msg=payload), level='error')
 

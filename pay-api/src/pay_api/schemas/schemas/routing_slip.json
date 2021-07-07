@@ -31,14 +31,8 @@
       "title": "Remaining amount on routing slip",
       "pattern": "^(.*)$"
     },
-    "name": {
-      "$id": "#/properties/name",
-      "type": "string",
-      "title": "Name of the person",
-      "pattern": "^(.*)$"
-    },
-    "createdName": {
-      "$id": "#/properties/createdName",
+    "createdBy": {
+      "$id": "#/properties/createdBy",
       "type": "string",
       "title": "Routing slip creator name",
       "pattern": "^(.*)$"
@@ -52,6 +46,13 @@
           }
         ]
       }
+    },
+    "paymentAccount": {
+      "oneOf": [
+        {
+          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/account_info"
+        }
+      ]
     },
     "invoices": {
       "type": "array",
