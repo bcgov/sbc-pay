@@ -51,7 +51,6 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     invoice_number = db.Column(db.String(50), nullable=True, index=True, comment='CFS Invoice number')
     receipt_number = db.Column(db.String(50), nullable=True, index=True, comment='CFS Receipt number')
     cheque_receipt_number = db.Column(db.String(50), nullable=True, index=True, comment='Cheque or cash receipt number')
-    routing_slip_number = db.Column(db.String(50), nullable=True, index=True, comment='Routing slip number from FAS')
     is_routing_slip = db.Column(Boolean(), default=False, comment='Is the payment created as part of FAS by FAS User')
     paid_amount = db.Column(db.Numeric(), nullable=True, comment='Amount PAID as part of payment')
     payment_date = db.Column(db.DateTime, nullable=True, comment='Date of payment')
