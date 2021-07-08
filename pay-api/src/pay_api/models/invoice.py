@@ -63,10 +63,10 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     service_fees = db.Column(db.Float, nullable=True)
     details = db.Column(JSONB)
 
-    payment_line_items = relationship('PaymentLineItem')
-    receipts = relationship('Receipt')
-    payment_account = relationship('PaymentAccount')
-    references = relationship('InvoiceReference')
+    payment_line_items = relationship('PaymentLineItem', lazy='joined')
+    receipts = relationship('Receipt', lazy='joined')
+    payment_account = relationship('PaymentAccount', lazy='joined')
+    references = relationship('InvoiceReference', lazy='joined')
 
     @classmethod
     def update_invoices_for_revenue_updates(cls, fee_distribution_id: int):
@@ -114,9 +114,9 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
             filter(
             (Invoice.invoice_status_code.in_([InvoiceStatus.APPROVED.value, InvoiceStatus.PARTIAL.value])) |
             (
-                (Invoice.payment_method_code == PaymentMethod.PAD.value) &
-                (Invoice.invoice_status_code == InvoiceStatus.PAID.value) &
-                (Invoice.created_on >= from_date)
+                    (Invoice.payment_method_code == PaymentMethod.PAD.value) &
+                    (Invoice.invoice_status_code == InvoiceStatus.PAID.value) &
+                    (Invoice.created_on >= from_date)
             )
         )
 

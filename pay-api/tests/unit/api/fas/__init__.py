@@ -11,13 +11,4 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Exposes all of the resource endpoints mounted in Flask-Blueprint style.
-
-Uses restplus namespaces to mount individual api endpoints into the service.
-
-All services have 2 defaults sets of endpoints:
- - ops
- - meta
-That are used to expose operational health information about the service, and meta information.
-"""
-from .routing_slip import API as ROUTING_SLIP_API
+"""Test-Suite for the FAS endpoints."""

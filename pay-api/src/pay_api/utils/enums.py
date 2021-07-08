@@ -87,6 +87,7 @@ class PaymentSystem(Enum):
     BCOL = 'BCOL'
     INTERNAL = 'INTERNAL'
     CGI = 'CGI'
+    FAS = 'FAS'
 
 
 class PaymentMethod(Enum):
@@ -101,6 +102,8 @@ class PaymentMethod(Enum):
     ONLINE_BANKING = 'ONLINE_BANKING'
     PAD = 'PAD'
     EJV = 'EJV'
+    CASH = 'CASH'
+    CHEQUE = 'CHEQUE'
 
 
 class Role(Enum):
@@ -189,3 +192,14 @@ class Product(Enum):
     """Product."""
 
     BUSINESS = 'BUSINESS'
+
+
+class RoutingSlipStatus(Enum):
+    """Routing slip statuses."""
+
+    ACTIVE = 'ACTIVE'
+    COMPLETE = 'COMPLETE'
+    BOUNCED = 'BOUNCED'
+    NSF = 'NSF'
+    REFUND = 'REFUND'
+    LAST = 'LAST'

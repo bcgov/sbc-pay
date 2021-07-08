@@ -17,7 +17,8 @@ from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey
 
 from .base_model import VersionedModel
-from .db import db, ma
+from .db import db
+from .base_schema import BaseSchema
 
 
 class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attributes
@@ -55,7 +56,7 @@ class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attri
         return cls.query.filter_by(auth_account_id=str(auth_account_id)).one_or_none()
 
 
-class PaymentAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class PaymentAccountSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Payment Account."""
 
     class Meta:  # pylint: disable=too-few-public-methods

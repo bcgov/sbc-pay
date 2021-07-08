@@ -62,6 +62,10 @@ class Error(Enum):
     TRANSACTIONS_IN_PROGRESS = 'TRANSACTIONS_IN_PROGRESS', HTTPStatus.BAD_REQUEST
     FROZEN_ACCOUNT = 'FROZEN_ACCOUNT', HTTPStatus.BAD_REQUEST
 
+    # FAS Errors
+    FAS_INVALID_PAYMENT_METHOD = 'FAS_INVALID_PAYMENT_METHOD', HTTPStatus.BAD_REQUEST
+    FAS_INVALID_ROUTING_SLIP_NUMBER = 'FAS_INVALID_ROUTING_SLIP_NUMBER', HTTPStatus.BAD_REQUEST
+
     def __new__(cls, code, status, message=None, details=None):
         """Attributes for the enum."""
         obj = object.__new__(cls)

@@ -229,3 +229,8 @@ def get_outstanding_txns_from_date() -> datetime:
         if not is_holiday(from_date):
             counter += 1
     return from_date
+
+
+def string_to_date(date_val: str, dt_format: str = '%Y-%m-%d'):
+    """Return formatted local time."""
+    return datetime.strptime(date_val, dt_format).date()

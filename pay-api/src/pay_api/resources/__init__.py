@@ -41,7 +41,7 @@ from .ops import API as OPS_API
 from .payment import API as PAYMENT_API
 from .refund import API as REFUND_API
 from .transaction import API as TRANSACTION_API
-
+from .fas import ROUTING_SLIP_API
 
 __all__ = ('API_BLUEPRINT', 'OPS_BLUEPRINT')
 
@@ -92,3 +92,4 @@ API.add_namespace(REFUND_API, path='/payment-requests/<int:invoice_id>')
 API.add_namespace(PAYMENT_API, path='/accounts/<string:account_id>/payments')
 
 API.add_namespace(CODES_API, path='/codes')
+API.add_namespace(ROUTING_SLIP_API, path='/fas/routing-slips')
