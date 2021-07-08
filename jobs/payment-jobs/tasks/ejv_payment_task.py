@@ -79,7 +79,7 @@ class EjvPaymentTask(CgiEjv):
                 continue
 
             pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(account_id)
-            disbursement_desc = f'{pay_account.auth_account_name[:100]:<100}'
+            disbursement_desc = f'{pay_account.name[:100]:<100}'
             effective_date: str = cls.get_effective_date()
             # Construct journal name
             ejv_header_model: EjvFileModel = EjvHeaderModel(

@@ -121,15 +121,14 @@ class PaybcService(PaymentSystemService, CFSService):
             receipts_response = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
                                          retry_on_failure=True).json()
             for receipt in receipts_response.get('items'):
-                expanded_receipt = self.__get_receipt_by_number(access_token, receipt_url,
-                                                                receipt.get('receipt_number'))
+                expanded_receipt = self._get_receipt_by_number(access_token, receipt_url, receipt.get('receipt_number'))
                 for invoice in expanded_receipt.get('invoices'):
                     if invoice.get('invoice_number') == invoice_reference.invoice_number:
                         return receipt.get('receipt_number'), parser.parse(
                             expanded_receipt.get('receipt_date')), float(invoice.get('amount_applied'))
 
         if receipt_number:
-            receipt_response = self.__get_receipt_by_number(access_token, receipt_url, receipt_number)
+            receipt_response = self._get_receipt_by_number(access_token, receipt_url, receipt_number)
             receipt_date = parser.parse(receipt_response.get('receipt_date'))
 
             amount: float = 0
@@ -140,13 +139,13 @@ class PaybcService(PaymentSystemService, CFSService):
             return receipt_number, receipt_date, amount
         return None
 
-    def __get_receipt_by_number(self, access_token: str = None, receipt_url: str = None, receipt_number: str = None):
+    def _get_receipt_by_number(self, access_token: str = None, receipt_url: str = None, receipt_number: str = None):
         """Get receipt details by receipt number."""
         receipt_url = receipt_url + f'{receipt_number}/'
         return self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, True).json()
 
-    def __add_adjustment(self, payment_account: PaymentAccount,  # pylint: disable=too-many-arguments
-                         inv_number: str, comment: str, amount: float, line: int = 0, access_token: str = None):
+    def _add_adjustment(self, payment_account: PaymentAccount,  # pylint: disable=too-many-arguments
+                        inv_number: str, comment: str, amount: float, line: int = 0, access_token: str = None):
         """Add adjustment to the invoice."""
         current_app.logger.debug(f'>Creating PayBC Adjustment  For Invoice: {inv_number}')
         adjustment_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/adjs/' \
@@ -170,7 +169,7 @@ class PaybcService(PaymentSystemService, CFSService):
         current_app.logger.debug('>Created PayBC Invoice Adjustment')
         return adjustment_response.json()
 
-    def __get_invoice(self, payment_account: PaymentAccount, inv_number: str, access_token: str):
+    def _get_invoice(self, payment_account: PaymentAccount, inv_number: str, access_token: str):
         """Get invoice from PayBC."""
         current_app.logger.debug('<__get_invoice')
         invoice_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/' \

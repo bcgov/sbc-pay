@@ -60,7 +60,7 @@ class PadService(PaymentSystemService, CFSService):
                 str(payment_info.get('bankAccountNumber')) != cfs_account.bank_account_number:
             # This means, PAD account details have changed. So update banking details for this CFS account
             # Call cfs service to add new bank info.
-            bank_details = CFSService.update_bank_details(name=cfs_account.payment_account.auth_account_name,
+            bank_details = CFSService.update_bank_details(name=cfs_account.payment_account.name,
                                                           party_number=cfs_account.cfs_party,
                                                           account_number=cfs_account.cfs_account,
                                                           site_number=cfs_account.cfs_site,

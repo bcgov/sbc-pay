@@ -82,7 +82,7 @@ def test_create_eft_payment(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     payload = {
         'paidAmount': 100,
-        'completedOn': str(datetime.now()),
+        'paymentDate': str(datetime.now()),
         'paymentMethod': 'EFT'
     }
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value).save()
@@ -98,7 +98,7 @@ def test_create_wire_payment(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     payload = {
         'paidAmount': 100,
-        'completedOn': str(datetime.now()),
+        'paymentDate': str(datetime.now()),
         'paymentMethod': 'WIRE'
     }
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.WIRE.value).save()

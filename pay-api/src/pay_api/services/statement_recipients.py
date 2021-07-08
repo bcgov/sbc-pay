@@ -148,7 +148,7 @@ class StatementRecipients:  # pylint:disable=too-many-instance-attributes
         if payment_account is None:
             payment_account = PaymentAccountModel()
             payment_account.auth_account_id = auth_account_id
-        payment_account.auth_account_name = notification_details.get('authAccountName')
+        payment_account.name = notification_details.get('authAccountName')
         payment_account.statement_notification_enabled = notification_details.get('statementNotificationEnabled')
         payment_account.save()
         recepient_list: list = []

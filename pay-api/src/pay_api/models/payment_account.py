@@ -27,11 +27,11 @@ class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attri
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
+    # Account ID from auth, not present for FAS accounts.
     auth_account_id = db.Column(db.String(50), nullable=True, index=True)
-    # More columns to come to handle account transactions for PAD transactions
 
     # used for sending out notifications.The statement emails needs account name
-    auth_account_name = db.Column(db.String(250), nullable=True, index=False)
+    name = db.Column(db.String(250), nullable=True, index=False)
 
     payment_method = db.Column(db.String(15), ForeignKey('payment_methods.code'), nullable=True)
 

@@ -1,0 +1,80 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/routing_slip",
+  "type": "object",
+  "title": "Routing Slip",
+  "required": [
+    "number"
+  ],
+  "properties": {
+    "number": {
+      "$id": "#/properties/number",
+      "type": "string",
+      "title": "Routing Slip Number",
+      "pattern": "^(.*)$"
+    },
+    "status": {
+      "$id": "#/properties/status",
+      "type": "string",
+      "title": "Routing Slip status",
+      "pattern": "^(.*)$"
+    },
+    "total": {
+      "$id": "#/properties/total",
+      "type": "number",
+      "title": "Total amount on routing slip",
+      "pattern": "^(.*)$"
+    },
+    "remainingAmount": {
+      "$id": "#/properties/remainingAmount",
+      "type": "number",
+      "title": "Remaining amount on routing slip",
+      "pattern": "^(.*)$"
+    },
+    "routingSlipDate": {
+      "$id": "#/properties/routingSlipDate",
+      "type": "string",
+      "title": "Routing slip date",
+      "pattern": "^(.*)$"
+    },
+    "createdBy": {
+      "$id": "#/properties/createdBy",
+      "type": "string",
+      "title": "Routing slip creator name",
+      "pattern": "^(.*)$"
+    },
+    "createdOn": {
+      "$id": "#/properties/createdOn",
+      "type": "string",
+      "title": "Routing slip created date",
+      "pattern": "^(.*)$"
+    },
+    "payments": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/payment"
+          }
+        ]
+      }
+    },
+    "paymentAccount": {
+      "oneOf": [
+        {
+          "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/account_info"
+        }
+      ]
+    },
+    "invoices": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "https://bcrs.gov.bc.ca/.well_known/schemas/invoice"
+          }
+        ]
+      }
+    }
+  }
+}

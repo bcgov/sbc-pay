@@ -46,9 +46,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self.__dao = None
         self._id: Optional[int] = None
         self._auth_account_id: Optional[str] = None
-        self._auth_account_name: Optional[str] = None
+        self._name: Optional[str] = None
         self._payment_method: Optional[str] = None
-        self._auth_account_name: Optional[str] = None
         self._pad_activation_date: Optional[datetime] = None
         self._pad_tos_accepted_by: Optional[str] = None
         self._pad_tos_accepted_date: Optional[datetime] = None
@@ -80,7 +79,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self.__dao = value
         self.id: int = self._dao.id
         self.auth_account_id: str = self._dao.auth_account_id
-        self.auth_account_name: str = self._dao.auth_account_name
+        self.name: str = self._dao.name
         self.payment_method: str = self._dao.payment_method
         self.bcol_user_id: str = self._dao.bcol_user_id
         self.bcol_account: str = self._dao.bcol_account
@@ -136,15 +135,15 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self._dao.auth_account_id = value
 
     @property
-    def auth_account_name(self):
-        """Return the auth_account_name."""
-        return self._auth_account_name
+    def name(self):
+        """Return the name."""
+        return self._name
 
-    @auth_account_name.setter
-    def auth_account_name(self, value: int):
-        """Set the auth_account_name."""
-        self._auth_account_name = value
-        self._dao.auth_account_name = value
+    @name.setter
+    def name(self, value: str):
+        """Set the name."""
+        self._name = value
+        self._dao.name = value
 
     @property
     def payment_method(self):
@@ -344,7 +343,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
         payment_account.payment_method = payment_method
         payment_account.auth_account_id = account_request.get('accountId')
-        payment_account.auth_account_name = account_request.get('accountName', None)
+        payment_account.name = account_request.get('accountName', None)
         payment_account.bcol_account = account_request.get('bcolAccountNumber', None)
         payment_account.bcol_user_id = account_request.get('bcolUserId', None)
         payment_account.pad_tos_accepted_by = account_request.get('padTosAcceptedBy', None)
@@ -368,16 +367,17 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         pay_system = PaymentSystemFactory.create_from_payment_method(payment_method=payment_method)
         if pay_system.get_payment_system_code() == PaymentSystem.PAYBC.value:
             if cfs_account is None:
-                cfs_account = pay_system.create_account(name=payment_account.auth_account_name,
-                                                        contact_info=account_request.get('contactInfo'),
-                                                        payment_info=account_request.get('paymentInfo'))
+                cfs_account = pay_system.create_account(  # pylint:disable=assignment-from-none
+                    name=payment_account.name,
+                    contact_info=account_request.get('contactInfo'),
+                    payment_info=account_request.get('paymentInfo'))
                 if cfs_account:
                     cfs_account.payment_account = payment_account
                     cfs_account.flush()
             # If the account is PAD and bank details changed, then update bank details
             else:
                 # Update details in CFS
-                pay_system.update_account(name=payment_account.auth_account_name, cfs_account=cfs_account,
+                pay_system.update_account(name=payment_account.name, cfs_account=cfs_account,
                                           payment_info=payment_info)
             is_pad = payment_method == PaymentMethod.PAD.value
             if is_pad:
@@ -398,7 +398,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             # Create distribution code details.
             if revenue_account := payment_info.get('revenueAccount'):
                 revenue_account.update(dict(accountId=payment_account.id,
-                                            name=payment_account.auth_account_name,
+                                            name=payment_account.name,
                                             ))
                 DistributionCode.save_or_update(revenue_account)
         else:
@@ -580,7 +580,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 current_app.logger.error(e)
                 current_app.logger.error(
                     'Notification to Queue failed for the Account Mailer %s - %s', self.auth_account_id,
-                    self.auth_account_name)
+                    self.name)
                 capture_message(
                     'Notification to Queue failed for the Account Mailer on account creation : {msg}.'.format(
                         msg=payload), level='error')
@@ -596,7 +596,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             'datacontenttype': 'application/json',
             'data': {
                 'accountId': self.auth_account_id,
-                'accountName': self.auth_account_name,
+                'accountName': self.name,
                 'padTosAcceptedBy': self.pad_tos_accepted_by
             }
         }
@@ -633,7 +633,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 current_app.logger.error(e)
                 current_app.logger.error(
                     'Notification to Queue failed for the Unlock Account %s - %s', pay_account.auth_account_id,
-                    pay_account.auth_account_name)
+                    pay_account.name)
                 capture_message(
                     'Notification to Queue failed for the Unlock Account : {msg}.'.format(
                         msg=payload), level='error')

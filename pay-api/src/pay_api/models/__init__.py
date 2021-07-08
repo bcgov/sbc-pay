@@ -53,6 +53,8 @@ from .statement_invoices import StatementInvoices, StatementInvoicesSchema
 from .statement_recipients import StatementRecipients, StatementRecipientsSchema
 from .statement_settings import StatementSettings, StatementSettingsSchema
 from .transaction_status_code import TransactionStatusCode, TransactionStatusCodeSchema
+from .routing_slip import RoutingSlip, RoutingSlipSchema
+from .routing_slip_status_code import RoutingSlipStatusCode, RoutingSlipStatusCodeSchema
 
 
 event.listen(Engine, 'before_cursor_execute', DBTracing.query_tracing)
