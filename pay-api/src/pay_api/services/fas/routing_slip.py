@@ -26,6 +26,7 @@ from pay_api.models import RoutingSlipSchema
 from pay_api.services.cfs_service import CFSService
 from pay_api.utils.enums import CfsAccountStatus, PaymentStatus, PaymentSystem, RoutingSlipStatus
 from pay_api.utils.errors import Error
+from pay_api.utils.user_context import user_context
 from pay_api.utils.util import string_to_date
 
 
@@ -162,7 +163,8 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         return routing_slip_dict
 
     @classmethod
-    def create(cls, request_json: Dict[str, any]):
+    @user_context
+    def create(cls, request_json: Dict[str, any], **kwargs):
         """Search for routing slip."""
         # 1. Create customer profile in CFS and store it in payment_account and cfs_accounts
         # 2. Create receipt in CFS
@@ -225,7 +227,8 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                 cheque_receipt_number=payment.get('chequeReceiptNumber'),
                 is_routing_slip=True,
                 paid_amount=payment.get('paidAmount'),
-                payment_date=string_to_date(payment.get('paymentDate'))
+                payment_date=string_to_date(payment.get('paymentDate')),
+                created_by=kwargs['user'].user_name
             ).flush()
 
         routing_slip.commit()
