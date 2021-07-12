@@ -12,11 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Routing Slip."""
+from __future__ import annotations
 
+from marshmallow import fields
 from sqlalchemy import ForeignKey
+from sqlalchemy.orm import relationship
+
+from pay_api.utils.enums import PaymentMethod
 
 from .audit import Audit, AuditSchema
+from .base_schema import BaseSchema
 from .db import db, ma
+from .invoice import Invoice, InvoiceSchema
+from .payment import Payment, PaymentSchema
+from .payment_account import PaymentAccount, PaymentAccountSchema
 
 
 class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
@@ -30,13 +39,41 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
     status = db.Column(db.String(), ForeignKey('routing_slip_status_codes.code'), nullable=True)
     total = db.Column(db.Numeric(), nullable=True, default=0)
     remaining_amount = db.Column(db.Numeric(), nullable=True, default=0)
-    routing_slip_date = db.Column('routing_slip_date', db.Date, nullable=False)
+    routing_slip_date = db.Column(db.Date, nullable=False)
+
+    payment_account = relationship(PaymentAccount, foreign_keys=[payment_account_id], lazy='select', innerjoin=True)
+    payments = relationship(Payment,
+                            secondary='join(PaymentAccount, Payment, PaymentAccount.id == Payment.payment_account_id)',
+                            primaryjoin='and_(RoutingSlip.payment_account_id == PaymentAccount.id)',
+                            viewonly=True,
+                            lazy='joined'
+                            )
+
+    invoices = relationship(Invoice,
+                            primaryjoin='and_(RoutingSlip.number == foreign(Invoice.routing_slip), '
+                                        f'Invoice.payment_method_code.in_('
+                                        f"['{PaymentMethod.CASH.value}','{PaymentMethod.CHEQUE.value}']))",
+                            viewonly=True,
+                            lazy='joined'
+                            )
+
+    @classmethod
+    def find_by_number(cls, number: str) -> RoutingSlip:
+        """Return a routing slip by number."""
+        return cls.query.filter_by(number=number).one_or_none()
 
 
-class RoutingSlipSchema(AuditSchema, ma.ModelSchema):  # pylint: disable=too-many-ancestors, too-few-public-methods
+class RoutingSlipSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors, too-few-public-methods
     """Main schema used to serialize the Routing Slip."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = RoutingSlip
+
+    total = fields.Float(data_key='total')
+    remaining_amount = fields.Float(data_key='remaining_amount')
+    # pylint: disable=no-member
+    payments = ma.Nested(PaymentSchema, many=True, data_key='payments')
+    payment_account = ma.Nested(PaymentAccountSchema, many=False, data_key='payment_account')
+    invoices = ma.Nested(InvoiceSchema, many=True, data_key='invoices', exclude=['_links'])

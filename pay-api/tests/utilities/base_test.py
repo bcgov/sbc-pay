@@ -19,6 +19,7 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 
 from datetime import datetime
 from random import randrange
+from typing import Dict, List, Tuple
 
 from pay_api.models import (
     CfsAccount, DistributionCode, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem,
@@ -635,3 +636,27 @@ def get_gov_account_payload_with_no_revenue_account(payment_method: str = Paymen
             'billable': False
         }
     }
+
+
+def get_routing_slip_request(
+        number: str = '123456',
+        cheque_receipt_numbers: List[Tuple] = [('1234567890', PaymentMethod.CHEQUE.value, 100)]
+):
+    """Return a routing slip request dictionary."""
+    routing_slip_payload: Dict[str, any] = {
+        'number': number,
+        'routingSlipDate': datetime.now().strftime('%Y-%m-%d'),
+        'paymentAccount': {
+            'accountName': 'TEST'
+        },
+        'payments': []
+    }
+    for cheque_detail in cheque_receipt_numbers:
+        routing_slip_payload['payments'].append({
+            'paymentMethod': cheque_detail[1],
+            'paymentDate': datetime.now().strftime('%Y-%m-%d'),
+            'chequeReceiptNumber': cheque_detail[0],
+            'paidAmount': cheque_detail[2]
+        })
+
+    return routing_slip_payload

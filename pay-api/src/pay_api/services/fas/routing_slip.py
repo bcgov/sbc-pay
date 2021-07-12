@@ -17,8 +17,17 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Dict
 
+from pay_api.exceptions import BusinessException
+from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import Payment as PaymentModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import RoutingSlipSchema
+from pay_api.services.cfs_service import CFSService
+from pay_api.utils.enums import CfsAccountStatus, PaymentStatus, PaymentSystem, RoutingSlipStatus
+from pay_api.utils.errors import Error
+from pay_api.utils.user_context import user_context
+from pay_api.utils.util import string_to_date
 
 
 class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -144,6 +153,83 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         # Do nothing for now
 
     @classmethod
-    def create(cls, request_json: Dict[str, any]):
+    def find_by_number(cls, rs_number: str) -> Dict[str, any]:
+        """Find by routing slip number."""
+        routing_slip_dict: Dict[str, any] = None
+        routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(rs_number)
+        if routing_slip:
+            routing_slip_schema = RoutingSlipSchema()
+            routing_slip_dict = routing_slip_schema.dump(routing_slip)
+        return routing_slip_dict
+
+    @classmethod
+    @user_context
+    def create(cls, request_json: Dict[str, any], **kwargs):
         """Search for routing slip."""
-        # Do nothing for now
+        # 1. Create customer profile in CFS and store it in payment_account and cfs_accounts
+        # 2. Create receipt in CFS
+        # 3. Create routing slip and payment records.
+
+        # Validate if Routing slip number is unique.
+        rs_number = request_json.get('number')
+        if cls.find_by_number(rs_number):
+            raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
+
+        payment_methods: [str] = [payment.get('paymentMethod') for payment in request_json.get('payments')]
+        # all the payment should have the same payment method
+        if len(set(payment_methods)) != 1:
+            raise BusinessException(Error.FAS_INVALID_PAYMENT_METHOD)
+
+        cfs_account_details: Dict[str, any] = CFSService.create_cfs_account(
+            name=rs_number,  # TODO Sending RS number as name of party
+            contact_info={}
+        )
+        pay_account: PaymentAccountModel = PaymentAccountModel(
+            name=request_json.get('paymentAccount').get('accountName'),
+            payment_method=payment_methods[0],
+        ).flush()
+
+        cfs_account: CfsAccountModel = CfsAccountModel(
+            account_id=pay_account.id,
+            cfs_account=cfs_account_details.get('account_number'),
+            cfs_party=cfs_account_details.get('party_number'),
+            cfs_site=cfs_account_details.get('site_number'),
+            status=CfsAccountStatus.ACTIVE.value
+        ).flush()
+
+        total = sum(float(payment.get('paidAmount')) for payment in request_json.get('payments'))
+
+        # Create receipt in CFS for the payment.
+        # TODO Create a receipt for the total or for one each ?
+        CFSService.create_cfs_receipt(cfs_account=cfs_account,
+                                      rcpt_number=rs_number,
+                                      rcpt_date=request_json.get('routingSlipDate'),
+                                      amount=total,
+                                      payment_method=payment_methods[0])
+
+        # Create a routing slip record.
+        routing_slip: RoutingSlipModel = RoutingSlipModel(
+            number=rs_number,
+            payment_account_id=pay_account.id,
+            status=RoutingSlipStatus.ACTIVE.value,
+            total=total,
+            remaining_amount=total,
+            routing_slip_date=string_to_date(request_json.get('routingSlipDate'))
+        ).flush()
+
+        for payment in request_json.get('payments'):
+            PaymentModel(
+                payment_system_code=PaymentSystem.FAS.value,
+                payment_account_id=pay_account.id,
+                payment_method_code=payment.get('paymentMethod'),
+                payment_status_code=PaymentStatus.COMPLETED.value,
+                receipt_number=rs_number,
+                cheque_receipt_number=payment.get('chequeReceiptNumber'),
+                is_routing_slip=True,
+                paid_amount=payment.get('paidAmount'),
+                payment_date=string_to_date(payment.get('paymentDate')),
+                created_by=kwargs['user'].user_name
+            ).flush()
+
+        routing_slip.commit()
+        return cls.find_by_number(rs_number)
