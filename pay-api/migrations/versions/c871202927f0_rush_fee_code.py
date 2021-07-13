@@ -81,10 +81,11 @@ def upgrade():
     res = conn.execute(
         f"select fee_schedule_id from fee_schedules where corp_type_code='VS' and filing_type_code='WILLRUSH'")
     fee_schedule_id = res.fetchall()[0][0]
-    distr_code_link = [{
-        'distribution_code_id': distribution_code_id,
-        'fee_schedule_id': fee_schedule_id
-    }]
+    if distribution_code_id_query:
+        distr_code_link = [{
+            'distribution_code_id': distribution_code_id,
+            'fee_schedule_id': fee_schedule_id
+        }]
     op.bulk_insert(distribution_code_link_table, distr_code_link)
     op.execute("update fee_schedules set priority_fee_code=null where corp_type_code='VS'")
     # ### end Alembic commands ###
