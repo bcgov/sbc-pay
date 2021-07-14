@@ -77,3 +77,4 @@ class RoutingSlipSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-an
     payments = ma.Nested(PaymentSchema, many=True, data_key='payments')
     payment_account = ma.Nested(PaymentAccountSchema, many=False, data_key='payment_account')
     invoices = ma.Nested(InvoiceSchema, many=True, data_key='invoices', exclude=['_links'])
+    status = fields.String(data_key='status')

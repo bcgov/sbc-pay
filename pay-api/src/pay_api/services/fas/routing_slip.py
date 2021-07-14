@@ -24,7 +24,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import RoutingSlipSchema
 from pay_api.services.cfs_service import CFSService
-from pay_api.utils.enums import CfsAccountStatus, PaymentStatus, PaymentSystem, RoutingSlipStatus
+from pay_api.utils.enums import CfsAccountStatus, PatchActions, PaymentStatus, PaymentSystem, RoutingSlipStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import string_to_date
@@ -232,4 +232,20 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             ).flush()
 
         routing_slip.commit()
+        return cls.find_by_number(rs_number)
+
+    @classmethod
+    def update(cls, rs_number: str, action: str, request_json: Dict[str, any]) -> Dict[str, any]:
+        """Update routing slip."""
+        if (patch_action := PatchActions.from_value(action)) is None:
+            raise BusinessException(Error.PATCH_INVALID_ACTION)
+
+        routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(rs_number)
+        if routing_slip is None:
+            raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
+
+        if patch_action == PatchActions.UPDATE_STATUS:
+            routing_slip.status = request_json.get('status')
+
+        routing_slip.save()
         return cls.find_by_number(rs_number)
