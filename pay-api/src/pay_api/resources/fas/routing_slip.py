@@ -87,7 +87,7 @@ class RoutingSlip(Resource):
         if response:
             status = HTTPStatus.OK
         else:
-            response, status = {}, HTTPStatus.NOT_FOUND
+            response, status = {}, HTTPStatus.NO_CONTENT
 
         current_app.logger.debug('>RoutingSlips.get')
         return jsonify(response), status

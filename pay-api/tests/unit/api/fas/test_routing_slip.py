@@ -79,9 +79,9 @@ def test_routing_slips_for_errors(session, client, jwt, app, payload):
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
     assert rv.status_code == 400
 
-    # Get a routing slip which doesn't exist and assert 404
+    # Get a routing slip which doesn't exist and assert 204
     rv = client.get('/api/v1/fas/routing-slips/5678987655678', headers=headers)
-    assert rv.status_code == 404
+    assert rv.status_code == 204
 
 
 def test_update_routing_slip_status(session, client, jwt, app):
