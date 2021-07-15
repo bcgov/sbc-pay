@@ -74,7 +74,7 @@ class RoutingSlips(Resource):
 @cors_preflight('GET,PATCH')
 @API.route('/<string:routing_slip_number>', methods=['GET', 'PATCH', 'OPTIONS'])
 class RoutingSlip(Resource):
-    """Endpoint resource to create and return routing slips."""
+    """Endpoint resource update and return routing slip by number."""
 
     @staticmethod
     @cors.crossdomain(origin='*')
