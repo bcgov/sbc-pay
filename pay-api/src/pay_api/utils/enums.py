@@ -203,3 +203,14 @@ class RoutingSlipStatus(Enum):
     NSF = 'NSF'
     REFUND = 'REFUND'
     LAST = 'LAST'
+
+
+class PatchActions(Enum):
+    """Patch Actions."""
+
+    UPDATE_STATUS = 'updateStatus'
+
+    @classmethod
+    def from_value(cls, value):
+        """Return instance from value of the enum."""
+        return PatchActions(value) if value in cls._value2member_map_ else None  # pylint: disable=no-member

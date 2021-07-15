@@ -71,10 +71,10 @@ class RoutingSlips(Resource):
         return jsonify(response), status
 
 
-@cors_preflight('GET,POST')
-@API.route('/<string:routing_slip_number>', methods=['GET', 'POST', 'OPTIONS'])
+@cors_preflight('GET,PATCH')
+@API.route('/<string:routing_slip_number>', methods=['GET', 'PATCH', 'OPTIONS'])
 class RoutingSlip(Resource):
-    """Endpoint resource to create and return routing slips."""
+    """Endpoint resource update and return routing slip by number."""
 
     @staticmethod
     @cors.crossdomain(origin='*')
@@ -87,7 +87,23 @@ class RoutingSlip(Resource):
         if response:
             status = HTTPStatus.OK
         else:
-            response, status = {}, HTTPStatus.NOT_FOUND
+            response, status = {}, HTTPStatus.NO_CONTENT
 
         current_app.logger.debug('>RoutingSlips.get')
+        return jsonify(response), status
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.has_one_of_roles([Role.FAS_EDITOR.value])
+    @_tracing.trace()
+    def patch(routing_slip_number: str):
+        """Patch routing slip."""
+        current_app.logger.info('<RoutingSlips.patch')
+        try:
+            response, status = RoutingSlipService.update(
+                routing_slip_number, request.args.get('action', None), request.get_json()), HTTPStatus.OK
+        except (BusinessException, ServiceUnavailableException) as exception:
+            return exception.response()
+
+        current_app.logger.debug('>RoutingSlips.patch')
         return jsonify(response), status

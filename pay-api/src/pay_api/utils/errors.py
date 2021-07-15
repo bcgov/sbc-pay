@@ -65,6 +65,7 @@ class Error(Enum):
     # FAS Errors
     FAS_INVALID_PAYMENT_METHOD = 'FAS_INVALID_PAYMENT_METHOD', HTTPStatus.BAD_REQUEST
     FAS_INVALID_ROUTING_SLIP_NUMBER = 'FAS_INVALID_ROUTING_SLIP_NUMBER', HTTPStatus.BAD_REQUEST
+    PATCH_INVALID_ACTION = 'PATCH_INVALID_ACTION', HTTPStatus.BAD_REQUEST
 
     def __new__(cls, code, status, message=None, details=None):
         """Attributes for the enum."""
