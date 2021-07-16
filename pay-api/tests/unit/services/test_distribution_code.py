@@ -19,8 +19,6 @@ Test-Suite to ensure that the Distribution code Service is working as expected.
 
 from datetime import datetime
 
-from flask import current_app
-
 from pay_api import services
 from pay_api.models import FeeSchedule
 from pay_api.models import Invoice as InvoiceModel
@@ -75,7 +73,6 @@ def test_update_distribution(session, public_user_mock, stan_server, monkeypatch
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
 
     # Create a direct pay
-    current_app.config['DIRECT_PAY_ENABLED'] = True
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.DIRECT_PAY.value)
     payment_account.save()
 

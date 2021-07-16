@@ -22,7 +22,6 @@ from datetime import datetime
 from unittest.mock import patch
 
 import pytest
-from flask import current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount, FeeSchedule, Invoice, Payment
@@ -97,7 +96,6 @@ def test_transaction_create_from_new(session):
 
 def test_transaction_for_direct_pay_create_from_new(session):
     """Assert that the payment is saved to the table."""
-    current_app.config['DIRECT_PAY_ENABLED'] = True
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.DIRECT_PAY.value)
     payment_account.save()
     invoice = factory_invoice(payment_account)
@@ -409,7 +407,6 @@ def test_transaction_update_on_paybc_connection_error(session, stan_server):
 @skip_in_pod
 def test_update_transaction_for_direct_pay_with_response_url(session):
     """Assert that the receipt records are created."""
-    current_app.config['DIRECT_PAY_ENABLED'] = True
     response_url = 'trnApproved=1&messageText=Approved&trnOrderId=1003598&trnAmount=201.00&paymentMethod=CC' \
                    '&cardType=VI&authCode=TEST&trnDate=2020-08-11&pbcTxnNumber=1'
     valid_hash = f'&hashValue={HashingService.encode(response_url)}'
@@ -441,8 +438,6 @@ def test_update_transaction_for_direct_pay_with_response_url(session):
 @skip_in_pod
 def test_update_transaction_for_direct_pay_without_response_url(session):
     """Assert that the receipt records are created."""
-    current_app.config['DIRECT_PAY_ENABLED'] = True
-
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.DIRECT_PAY.value)
     payment = factory_payment(payment_method_code=PaymentMethod.DIRECT_PAY.value)
     payment_account.save()
@@ -468,7 +463,6 @@ def test_event_failed_transactions(session, public_user_mock, stan_server, monke
     # 2. Create a transaction
     # 3. Fail the queue publishing which will mark the payment as COMPLETED and transaction as EVENT_FAILED
     # 4. Update the transansaction with queue up which will mark the transaction as COMPLETED
-    current_app.config['DIRECT_PAY_ENABLED'] = True
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.DIRECT_PAY.value)
     payment_account.save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
