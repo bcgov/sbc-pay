@@ -57,7 +57,8 @@ def upgrade():
             {'code': 'BOUNCED', 'description': 'Bounced'},
             {'code': 'NSF', 'description': 'Non Sufficient Fund'},
             {'code': 'REFUND', 'description': 'Refund'},
-            {'code': 'LAST', 'description': 'Last Service'}
+            {'code': 'LAST', 'description': 'Last Service'},
+            {'code': 'HOLD', 'description': 'On Hold'}
         ]
     )
 
