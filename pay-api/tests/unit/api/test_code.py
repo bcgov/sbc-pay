@@ -41,8 +41,8 @@ def test_find_code(session, client, jwt, app):
     assert rv.json.get('type') == code
 
 
-@pytest.mark.parametrize('codes', list(map(str, Code)))
-def test_find_codes(session, client, jwt, app, codes):
+@pytest.mark.parametrize('code', list(map(Code, Code)))
+def test_find_codes(session, client, jwt, app, code: Code):
     """Assert that the endpoint returns 200."""
-    rv = client.get(f'/api/v1/codes/{codes}', headers={})
+    rv = client.get(f'/api/v1/codes/{code.value}', headers={})
     assert rv.status_code == 200
