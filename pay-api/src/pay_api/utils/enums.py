@@ -132,6 +132,7 @@ class Code(Enum):
     INVOICE_STATUS = 'invoice_statuses'
     CORP_TYPE = 'corp_types'
     FEE_CODE = 'fee_codes'
+    ROUTING_SLIP_STATUS = 'routing_slip_statuses'
 
 
 class AccountType(Enum):

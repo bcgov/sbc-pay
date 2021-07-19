@@ -16,6 +16,8 @@
 
 Test-Suite to ensure that the /fees endpoint is working as expected.
 """
+import pytest
+from pay_api.utils.enums import Code
 
 
 def test_codes_valid(session, client, jwt, app):
@@ -39,7 +41,8 @@ def test_find_code(session, client, jwt, app):
     assert rv.json.get('type') == code
 
 
-def test_find_fee_codes(session, client, jwt, app):
+@pytest.mark.parametrize('code', list(map(Code, Code)))
+def test_find_codes(session, client, jwt, app, code: Code):
     """Assert that the endpoint returns 200."""
-    rv = client.get('/api/v1/codes/fee_codes', headers={})
+    rv = client.get(f'/api/v1/codes/{code.value}', headers={})
     assert rv.status_code == 200
