@@ -156,9 +156,6 @@ class _Config():  # pylint: disable=too-few-public-methods
     # legislative timezone for future effective dating
     LEGISLATIVE_TIMEZONE = os.getenv('LEGISLATIVE_TIMEZONE', 'America/Vancouver')
 
-    # Till direct pay is fully ready , keep this value false
-    DIRECT_PAY_ENABLED = os.getenv('DIRECT_PAY_ENABLED', 'False').lower() == 'true'
-
     # BCOL user name for Service account payments
     BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS = os.getenv('BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS',
                                                            'BCROS SERVICE ACCOUNT')
@@ -296,7 +293,6 @@ NrQw+2OdQACBJiEHsdZzAkBcsTk7frTH4yGx0VfHxXDPjfTj4wmD6gZIlcIr9lZg
     PAYBC_DIRECT_PAY_CLIENT_ID = 'TEST'
     PAYBC_DIRECT_PAY_CLIENT_SECRET = 'TEST'
 
-    DIRECT_PAY_ENABLED = True
     PAD_CONFIRMATION_PERIOD_IN_DAYS = 3
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = 'mysecretkeyforbank'

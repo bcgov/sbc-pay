@@ -22,7 +22,6 @@ import json
 from unittest.mock import patch
 
 import pytest
-from flask import current_app
 from requests.exceptions import ConnectionError
 
 from pay_api.models import DistributionCode as DistributionCodeModel
@@ -58,7 +57,6 @@ def test_payment_creation_using_direct_pay(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    current_app.config['DIRECT_PAY_ENABLED'] = True
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request(business_identifier='CP0001239')),
                      headers=headers)
     assert rv.status_code == 201

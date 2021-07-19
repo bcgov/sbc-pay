@@ -119,7 +119,10 @@ class Role(Enum):
     CREATE_CREDITS = 'create_credits'
     MANAGE_ACCOUNTS = 'manage_accounts'
     FAS_USER = 'fas_user'
-    FAS_EDITOR = 'fas_edit'
+    FAS_EDIT = 'fas_edit'
+    FAS_REPORTS = 'fas_reports'
+    FAS_SEARCH = 'fas_search'
+    FAS_VIEW = 'fas_view'
 
 
 class Code(Enum):

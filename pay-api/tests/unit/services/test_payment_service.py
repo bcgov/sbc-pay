@@ -20,7 +20,6 @@ Test-Suite to ensure that the FeeSchedule Service is working as expected.
 from unittest.mock import patch
 
 import pytest
-from flask import current_app
 from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
@@ -52,7 +51,6 @@ def test_create_payment_record(session, public_user_mock):
 
 def test_create_payment_record_with_direct_pay(session, public_user_mock):
     """Assert that the payment records are created."""
-    current_app.config['DIRECT_PAY_ENABLED'] = True
     payment_response = PaymentService.create_invoice(
         get_payment_request(), get_auth_basic_user(PaymentMethod.DIRECT_PAY.value))
     account_model = PaymentAccount.find_by_auth_account_id(get_auth_basic_user().get('account').get('id'))

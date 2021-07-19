@@ -37,7 +37,7 @@ class RoutingSlips(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.FAS_USER.value])
+    @_jwt.has_one_of_roles([Role.FAS_SEARCH.value])
     @_tracing.trace()
     def get():
         """Get routing slips."""
@@ -51,7 +51,7 @@ class RoutingSlips(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.FAS_EDITOR.value])
+    @_jwt.has_one_of_roles([Role.FAS_EDIT.value])
     @_tracing.trace()
     def post():
         """Create routing slip."""
@@ -78,7 +78,7 @@ class RoutingSlip(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.FAS_USER.value])
+    @_jwt.has_one_of_roles([Role.FAS_VIEW.value])
     @_tracing.trace()
     def get(routing_slip_number: str):
         """Get routing slip."""
@@ -94,7 +94,7 @@ class RoutingSlip(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.FAS_EDITOR.value])
+    @_jwt.has_one_of_roles([Role.FAS_EDIT.value])
     @_tracing.trace()
     def patch(routing_slip_number: str):
         """Patch routing slip."""
