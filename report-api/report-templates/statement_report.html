@@ -312,8 +312,8 @@
 
       .font-bold {
         font-family: 'BCSans-Bold', sans-serif;
+        font-weight: bold;
       }
-
 
         </style>
     </head>
@@ -341,9 +341,9 @@
                 {% if statement.from_date or statement.to_date %}
                 <div class="r-subtitle">
                     {% if 'DAILY' == statement.frequency %}
-                    {{statement.from_date|format_datetime}}
+                    {{statement.from_date|format_datetime('yyyy-mm-dd')}}
                     {% else %}
-                    {{statement.from_date|format_datetime}} to {{statement.to_date|format_datetime}}
+                    {{statement.from_date|format_datetime('yyyy-mm-dd')}} to {{statement.to_date|format_datetime('yyyy-mm-dd')}}
                     {% endif %}
                 </div>
                 {% endif %}
@@ -379,9 +379,9 @@
                 <div class="account-info-title">Statement Period:</div>
                 <div class="account-info-value">
                     {% if 'DAILY' == statement.frequency %}
-                    {{statement.from_date|format_datetime}}
+                    {{statement.from_date|format_datetime('yyyy-mm-dd')}}
                     {% else %}
-                    {{statement.from_date|format_datetime}} to {{statement.to_date|format_datetime}}
+                    {{statement.from_date|format_datetime('yyyy-mm-dd')}} to {{statement.to_date|format_datetime('yyyy-mm-dd')}}
                     {% endif %}
                 </div>
             </div>
@@ -389,7 +389,7 @@
             {% if statement.dueDate %}
             <div class="line-height-reg">
                 <div class="account-info-title">Due Date:</div>
-                <div class="account-info-value">{{statement.dueDate|format_datetime}}</div>
+                <div class="account-info-value">{{statement.dueDate|format_datetime('yyyy-mm-dd')}}</div>
             </div>
             {% endif %}
         </td>
@@ -429,11 +429,11 @@
     <tr>
         <td class="product-purchased">
             {% for lineItemProduct in item.line_items %}
-            <div>{{lineItemProduct.description}}</div>
+            <div class="font-bold">{{lineItemProduct.description}}</div>
             {% endfor %}
         </td>
         <td>{{item.get('folio_number', '-')}}</td>
-        <td>{{item.created_on|format_datetime}}</td>
+        <td>{{item.created_on|format_datetime('yyyy-mm-dd')}}</td>
         <td>${{"%.2f"|format((item.total - item.service_fees)) if (item.service_fees and item.total) else
             '0.00'}}
         </td>
