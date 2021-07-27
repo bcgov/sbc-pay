@@ -269,7 +269,7 @@
 
       .statement-footer {
         padding: 10px 24px;
-        position: absolute;
+        position: relative;
         bottom: 54px;
         left: -24px;
         width: 100%;
@@ -462,7 +462,7 @@
         <td colspan="2">
             <div class="total-elements">
                 Transaction Fees:
-                <span class="total-elements-price">${{"%.2f"|format(total.statutoryFees)}}</span>
+                <span class="total-elements-price font-bold">${{"%.2f"|format(total.statutoryFees)}}</span>
             </div>
         </td>
     </tr>
@@ -472,7 +472,7 @@
         <td colspan="2">
             <div class="total-elements">
                 Goods & Services Tax (GST):
-                <span class="total-elements-price">${{"%.2f"|format(total.gst)}}</span>
+                <span class="total-elements-price font-bold">${{"%.2f"|format(total.gst)}}</span>
             </div>
         </td>
     </tr>
@@ -482,7 +482,7 @@
         <td colspan="2">
             <div class="total-elements">
                 Service Charges:
-                <span class="total-elements-price">${{"%.2f"|format(total.serviceFees)}}</span>
+                <span class="total-elements-price font-bold">${{"%.2f"|format(total.serviceFees)}}</span>
             </div>
         </td>
     </tr>
@@ -497,7 +497,7 @@
         </td>
     </tr>
     {% endif %}
-    {% if total.paid %}
+    {% if total.paid is number%}
     <tr>
         <td colspan="2">
             <div class="total-elements font-bold">
