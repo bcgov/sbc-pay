@@ -151,7 +151,7 @@ def test_transaction_update(session, stan_server, public_user_mock):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    factory_payment(invoice_number=invoice_reference.invoice_number).save()
+    payment: Payment = factory_payment(invoice_number=invoice_reference.invoice_number).save()
 
     transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
     transaction = PaymentTransactionService.update_transaction(transaction.id,
@@ -166,6 +166,7 @@ def test_transaction_update(session, stan_server, public_user_mock):
     assert transaction.transaction_start_time is not None
     assert transaction.transaction_end_time is not None
     assert transaction.status_code == TransactionStatus.COMPLETED.value
+    assert payment.receipt_number
 
 
 @skip_in_pod
@@ -180,7 +181,7 @@ def test_transaction_update_with_no_receipt(session, stan_server):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    factory_payment(invoice_number=invoice_reference.invoice_number).save()
+    payment: Payment = factory_payment(invoice_number=invoice_reference.invoice_number).save()
 
     transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
     transaction = PaymentTransactionService.update_transaction(transaction.id, pay_response_url=None)
@@ -616,6 +617,7 @@ def test_patch_transaction_for_nsf_payment(session, monkeypatch):
     assert txn.status_code == 'COMPLETED'
     payment_2 = Payment.find_by_id(payment_2.id)
     assert payment_2.payment_status_code == 'COMPLETED'
+
     invoice_1: Invoice = Invoice.find_by_id(invoice_1.id)
     assert invoice_1.invoice_status_code == 'PAID'
     cfs_account = CfsAccount.find_effective_by_account_id(payment_account.id)

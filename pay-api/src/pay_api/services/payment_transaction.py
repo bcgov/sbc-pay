@@ -416,6 +416,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             capture_message(f'ALERT : Paid Amount is less than owed amount.  Paid : {payment.paid_amount}, '
                             f'Owed: {payment.invoice_amount}', level='error')
         else:
+            payment.receipt_number = receipt_details[0]
             payment.payment_status_code = PaymentStatus.COMPLETED.value
 
             for invoice in invoices:
