@@ -181,7 +181,7 @@ def test_transaction_update_with_no_receipt(session, stan_server):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    payment: Payment = factory_payment(invoice_number=invoice_reference.invoice_number).save()
+    factory_payment(invoice_number=invoice_reference.invoice_number).save()
 
     transaction = PaymentTransactionService.create_transaction_for_invoice(invoice.id, get_paybc_transaction_request())
     transaction = PaymentTransactionService.update_transaction(transaction.id, pay_response_url=None)
