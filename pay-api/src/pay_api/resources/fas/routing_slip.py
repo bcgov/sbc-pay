@@ -51,7 +51,7 @@ class RoutingSlips(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.FAS_EDIT.value])
+    @_jwt.has_one_of_roles([Role.FAS_CREATE.value])
     @_tracing.trace()
     def post():
         """Create routing slip."""
