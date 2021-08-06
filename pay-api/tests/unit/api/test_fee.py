@@ -216,7 +216,7 @@ def test_fee_for_account_fee_settings(session, client, jwt, app):
     rv = client.post('/api/v1/accounts', data=json.dumps(get_gov_account_payload()),
                      headers=headers)
 
-    account_id = rv.json.get('authAccountId')
+    account_id = rv.json.get('accountId')
 
     # Create account fee details.
     token = jwt.create_jwt(get_claims(role=Role.MANAGE_ACCOUNTS.value), token_header)
