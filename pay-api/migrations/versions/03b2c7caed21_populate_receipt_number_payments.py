@@ -28,7 +28,7 @@ def upgrade():
         receipt_number_result = res.fetchall()
         if receipt_number_result:
             receipt_number = receipt_number_result[0][0]
-            op.execute(f"update payments set receipt_number={receipt_number} where id = {pay_id}")
+            op.execute(f"update payments set receipt_number='{receipt_number}' where id = {pay_id}")
 
 
 def downgrade():
