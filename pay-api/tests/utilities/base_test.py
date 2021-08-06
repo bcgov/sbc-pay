@@ -193,7 +193,8 @@ def get_payment_request_with_no_contact_info(payment_method: str = 'CC', corp_ty
             'methodOfPayment': payment_method
         },
         'businessInfo': {
-            'corpType': corp_type
+            'corpType': corp_type,
+            'businessIdentifier': 'CP8765768'
         },
         'filingInfo': {
             'filingTypes': [

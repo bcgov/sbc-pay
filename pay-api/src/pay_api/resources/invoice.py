@@ -24,18 +24,18 @@ from pay_api.services.auth import check_auth
 from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import MAKE_PAYMENT
+from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight, get_str_by_path
 
-
 API = Namespace('invoice', description='Payment System - Invoices')
 
 
-@cors_preflight('POST')
-@API.route('', methods=['POST', 'OPTIONS'])
+@cors_preflight('POST,GET')
+@API.route('', methods=['POST', 'GET', 'OPTIONS'])
 class Invoice(Resource):
-    """Endpoint resource to create payment."""
+    """Endpoint resource to create and get invoice."""
 
     @staticmethod
     @cors.crossdomain(origin='*')
@@ -43,7 +43,7 @@ class Invoice(Resource):
     @_tracing.trace()
     def post():
         """Create the payment request records."""
-        current_app.logger.info('<Payment.post')
+        current_app.logger.info('<Invoice.post')
         request_json = request.get_json()
         current_app.logger.debug(request_json)
         # Validate the input request
@@ -62,7 +62,22 @@ class Invoice(Resource):
             response, status = PaymentService.create_invoice(request_json, authorization), HTTPStatus.CREATED
         except (BusinessException, ServiceUnavailableException) as exception:
             return exception.response()
-        current_app.logger.debug('>Payment.post')
+        current_app.logger.debug('>Invoice.post')
+        return jsonify(response), status
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.requires_roles([Role.SYSTEM.value])
+    @_tracing.trace()
+    def get():
+        """Get the invoice records."""
+        current_app.logger.info('<Invoice.get')
+        business_identifier = request.args.get('businessIdentifier', None)
+        try:
+            response, status = InvoiceService.find_invoices(business_identifier=business_identifier), HTTPStatus.OK
+        except (BusinessException, ServiceUnavailableException) as exception:
+            return exception.response()
+        current_app.logger.debug('>Invoice.get')
         return jsonify(response), status
 
 
@@ -89,7 +104,7 @@ class Invoices(Resource):
     @_tracing.trace()
     def delete(invoice_id):
         """Soft delete the invoice records."""
-        current_app.logger.info('<Payment.delete')
+        current_app.logger.info('<Invoices.delete')
 
         try:
             PaymentService.accept_delete(invoice_id)
@@ -99,7 +114,7 @@ class Invoices(Resource):
         except BusinessException as exception:
             return exception.response()
 
-        current_app.logger.debug('>Payment.delete')
+        current_app.logger.debug('>Invoices.delete')
         return jsonify(response), status
 
     @staticmethod
@@ -108,7 +123,7 @@ class Invoices(Resource):
     @_tracing.trace()
     def patch(invoice_id: int = None):
         """Update the payment method for an online banking ."""
-        current_app.logger.info('<Invoice.patch for invoice : %s', invoice_id)
+        current_app.logger.info('<Invoices.patch for invoice : %s', invoice_id)
 
         request_json = request.get_json()
         current_app.logger.debug(request_json)
@@ -124,7 +139,7 @@ class Invoices(Resource):
             response, status = PaymentService.update_invoice(invoice_id, request_json, is_apply_credit), HTTPStatus.OK
         except BusinessException as exception:
             return exception.response()
-        current_app.logger.debug('>Transaction.post')
+        current_app.logger.debug('>Invoices.post')
         return jsonify(response), status
 
 
@@ -151,5 +166,5 @@ class InvoiceReport(Resource):
 
         except BusinessException as exception:
             return exception.response()
-        current_app.logger.debug('>Transaction.post')
+        current_app.logger.debug('>InvoiceReport.post')
         return jsonify(response), 200

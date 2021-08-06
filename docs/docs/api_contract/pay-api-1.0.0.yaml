@@ -1014,7 +1014,7 @@ paths:
           name: Account-Id
         - schema:
             type: integer
-            default: '1'
+            default: 1
           in: query
           name: page
           description: Page number
@@ -1650,6 +1650,15 @@ components:
                 type: string
               value:
                 type: string
+        paymentAccount:
+          type: object
+          properties:
+            accountId:
+              type: string
+              description: Account ID for the invoice
+            name:
+              type: string
+              description: Account Name
     Transaction:
       type: object
       properties:
@@ -1774,7 +1783,7 @@ components:
         limit:
           type: integer
           description: number of records to be included
-          default: '10'
+          default: 10
         page:
           type: integer
           description: Current page

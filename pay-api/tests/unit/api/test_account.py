@@ -233,10 +233,10 @@ def test_premium_account_update_bcol_pad(session, client, jwt, app):
     rv = client.post('/api/v1/accounts', data=json.dumps(get_premium_account_payload()),
                      headers=headers)
 
-    auth_account_id = rv.json.get('authAccountId')
+    auth_account_id = rv.json.get('accountId')
 
     rv = client.get(f'/api/v1/accounts/{auth_account_id}', headers=headers)
-    assert rv.json.get('authAccountId') == auth_account_id
+    assert rv.json.get('accountId') == auth_account_id
 
     # assert switching to PAD returns bank details
     pad_account_details = get_pad_account_payload(account_id=int(auth_account_id))
@@ -279,10 +279,10 @@ def test_premium_account_update(session, client, jwt, app):
     rv = client.post('/api/v1/accounts', data=json.dumps(get_premium_account_payload()),
                      headers=headers)
 
-    auth_account_id = rv.json.get('authAccountId')
+    auth_account_id = rv.json.get('accountId')
 
     rv = client.get(f'/api/v1/accounts/{auth_account_id}', headers=headers)
-    assert rv.json.get('authAccountId') == auth_account_id
+    assert rv.json.get('accountId') == auth_account_id
 
     rv = client.put(f'/api/v1/accounts/{auth_account_id}', data=json.dumps(get_premium_account_payload()),
                     headers=headers)
@@ -344,7 +344,7 @@ def test_create_pad_update_when_cfs_down(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     # Create account first
     rv = client.post('/api/v1/accounts', data=json.dumps(get_unlinked_pad_account_payload()), headers=headers)
-    auth_account_id = rv.json.get('authAccountId')
+    auth_account_id = rv.json.get('accountId')
 
     # Mock ServiceUnavailableException
     with patch('pay_api.services.oauth_service.OAuthService.post',
@@ -361,7 +361,7 @@ def test_update_pad_account_when_cfs_up(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     rv = client.post('/api/v1/accounts', data=json.dumps(get_unlinked_pad_account_payload()), headers=headers)
-    auth_account_id = rv.json.get('authAccountId')
+    auth_account_id = rv.json.get('accountId')
     rv = client.put(f'/api/v1/accounts/{auth_account_id}',
                     data=json.dumps(get_unlinked_pad_account_payload(bank_account='11111111')),
                     headers=headers)
@@ -376,7 +376,7 @@ def test_update_online_banking_account_when_cfs_down(session, client, jwt, app):
     rv = client.post('/api/v1/accounts',
                      data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
                      headers=headers)
-    auth_account_id = rv.json.get('authAccountId')
+    auth_account_id = rv.json.get('accountId')
     # Mock ServiceUnavailableException
     with patch('pay_api.services.oauth_service.OAuthService.post',
                side_effect=ServiceUnavailableException(ConnectionError('mocked error'))):
@@ -394,7 +394,7 @@ def test_update_online_banking_account_when_cfs_up(session, client, jwt, app):
     rv = client.post('/api/v1/accounts',
                      data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
                      headers=headers)
-    auth_account_id = rv.json.get('authAccountId')
+    auth_account_id = rv.json.get('accountId')
     rv = client.put(f'/api/v1/accounts/{auth_account_id}',
                     data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
                     headers=headers)
@@ -410,7 +410,7 @@ def test_account_get_by_system(session, client, jwt, app):
     rv = client.post('/api/v1/accounts', data=json.dumps(get_unlinked_pad_account_payload()),
                      headers=headers)
 
-    auth_account_id = rv.json.get('authAccountId')
+    auth_account_id = rv.json.get('accountId')
 
     rv = client.get(f'/api/v1/accounts/{auth_account_id}', headers=headers)
     assert rv.json.get('cfsAccount').get('bankTransitNumber')
@@ -427,7 +427,7 @@ def test_account_get_by_user(session, client, jwt, app):
     rv = client.post('/api/v1/accounts', data=json.dumps(account),
                      headers=headers)
 
-    auth_account_id = rv.json.get('authAccountId')
+    auth_account_id = rv.json.get('accountId')
 
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -457,7 +457,7 @@ def test_create_gov_accounts_with_account_fee(session, client, jwt, app):
     rv = client.post('/api/v1/accounts', data=json.dumps(get_gov_account_payload()),
                      headers=headers)
 
-    account_id = rv.json.get('authAccountId')
+    account_id = rv.json.get('accountId')
 
     # Create account fee details.
     token = jwt.create_jwt(get_claims(role=Role.MANAGE_ACCOUNTS.value), token_header)
@@ -483,7 +483,7 @@ def test_update_gov_accounts_with_account_fee(session, client, jwt, app):
     rv = client.post('/api/v1/accounts', data=json.dumps(get_gov_account_payload()),
                      headers=headers)
 
-    account_id = rv.json.get('authAccountId')
+    account_id = rv.json.get('accountId')
 
     # Create account fee details.
     token = jwt.create_jwt(get_claims(role=Role.MANAGE_ACCOUNTS.value), token_header)
@@ -545,7 +545,7 @@ def test_account_delete(session, client, jwt, app):
     rv = client.post('/api/v1/accounts', data=json.dumps(get_premium_account_payload()),
                      headers=headers)
 
-    auth_account_id = rv.json.get('authAccountId')
+    auth_account_id = rv.json.get('accountId')
 
     rv = client.delete(f'/api/v1/accounts/{auth_account_id}', headers=headers)
     assert rv.status_code == 204

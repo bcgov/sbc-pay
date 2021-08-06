@@ -374,6 +374,20 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoices
 
     @staticmethod
+    def find_invoices(business_identifier: str) -> Dict[str, any]:
+        """Find invoices by business identifier."""
+        invoices: Dict[str, any] = dict(invoices=[])
+        invoice_daos: [InvoiceModel] = InvoiceModel.find_by_business_identifier(business_identifier)
+
+        for invoice_dao in invoice_daos:
+            invoice = Invoice()
+            invoice._dao = invoice_dao  # pylint: disable=protected-access
+            invoices['invoices'].append(invoice.asdict())
+
+        current_app.logger.debug('>find_invoices')
+        return invoices
+
+    @staticmethod
     @user_context
     def create_invoice_pdf(identifier: int, **kwargs) -> Tuple:
         """Find invoice by id."""
