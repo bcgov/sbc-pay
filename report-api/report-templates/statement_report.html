@@ -368,14 +368,14 @@
         <td class="account-info">
             {% if account.paymentPreference and account.paymentPreference.bcOnlineAccountId %}
             <div class="line-height-reg">
-                <div class="account-info-title" style="width: 60%;">BCOL Account Number:</div>
+                <div class="account-info-title font-bold" style="width: 60%;">BCOL Account Number:</div>
                 <div class="account-info-value" style="width: 38%;">#{{account.paymentPreference.bcOnlineAccountId}}
                 </div>
             </div>
             {% endif %}
             {% if statement.from_date or statement.to_date %}
             <div class="line-height-reg">
-                <div class="account-info-title">Statement Period:</div>
+                <div class="account-info-title font-bold">Statement Period:</div>
                 <div class="account-info-value">
                     {% if 'DAILY' == statement.frequency %}
                     {{statement.from_date|format_datetime('yyyy-mm-dd')}}

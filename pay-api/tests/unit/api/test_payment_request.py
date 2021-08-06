@@ -100,11 +100,8 @@ def test_payment_creation_for_unauthorized_user(session, client, jwt, app):
     assert rv.status_code == 403
 
 
-def test_payment_incomplete_input(session, client, jwt, app):
-    """Assert that the endpoint returns 201."""
-    token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    data = {
+@pytest.mark.parametrize('payload', [
+    {  # Incomplete input
         'paymentInfo': {
             'methodOfPayment': 'CC'
         },
@@ -120,20 +117,11 @@ def test_payment_incomplete_input(session, client, jwt, app):
                 'country': 'CA'
             }
         }
-    }
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
-    assert rv.status_code == 400
-    assert schema_utils.validate(rv.json, 'problem')[0]
-
-
-def test_payment_invalid_corp_type(session, client, jwt, app):
-    """Assert that the endpoint returns 400."""
-    token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    data = {
+    },
+    {
         'businessInfo': {
             'businessIdentifier': 'CP0001234',
-            'corpType': 'PC',
+            'corpType': 'PC',  # Invalid corp type
             'businessName': 'ABC Corp',
             'contactInfo': {
                 'city': 'Victoria',
@@ -154,8 +142,32 @@ def test_payment_invalid_corp_type(session, client, jwt, app):
                 }
             ]
         }
+    },
+    {
+        'businessInfo': {
+            'businessIdentifier': 'CP0001234',
+            'corpType': 'CP',
+            'businessName': 'ABC Corp',
+            'contactInfo': {
+                'city': 'Victoria',
+                'postalCode': 'V8P2P2',
+                'province': 'BC',
+                'addressLine1': '100 Douglas Street',
+                'country': 'CA'
+            }
+        },
+        'filingInfo': {
+            'filingTypes': [
+                # No filing types
+            ]
+        }
     }
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
+])
+def test_payment_invalid_request(session, client, jwt, app, payload):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(payload), headers=headers)
     assert rv.status_code == 400
     assert schema_utils.validate(rv.json, 'problem')[0]
 
