@@ -1315,7 +1315,7 @@ paths:
                 /api/v1/accounts:
                   value:
                     auccountId: 1
-                    name: tester
+                    accountName: tester
                     bcolAccount: null
                     bcolUserId: null
                     billable: true
@@ -1362,7 +1362,7 @@ paths:
                 /api/v1/accounts/1:
                   value:
                     accountId: '19'
-                    name: tester
+                    accountName: tester
                     bcolAccount: null
                     bcolUserId: null
                     billable: true
@@ -1656,7 +1656,7 @@ components:
             accountId:
               type: string
               description: Account ID for the invoice
-            name:
+            accountName:
               type: string
               description: Account Name
     Transaction:
