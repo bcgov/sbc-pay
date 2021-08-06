@@ -1314,8 +1314,8 @@ paths:
               examples:
                 /api/v1/accounts:
                   value:
-                    authAccountId: 1
-                    authAccountName: tester
+                    auccountId: 1
+                    name: tester
                     bcolAccount: null
                     bcolUserId: null
                     billable: true
@@ -1361,8 +1361,8 @@ paths:
               examples:
                 /api/v1/accounts/1:
                   value:
-                    authAccountId: '19'
-                    authAccountName: tester
+                    accountId: '19'
+                    name: tester
                     bcolAccount: null
                     bcolUserId: null
                     billable: true
