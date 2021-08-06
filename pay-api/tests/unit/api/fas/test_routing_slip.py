@@ -37,7 +37,7 @@ from tests.utilities.base_test import get_claims, get_routing_slip_request, toke
 ])
 def test_create_routing_slips(session, client, jwt, app, payload):
     """Assert that the endpoint returns 200."""
-    token = jwt.create_jwt(get_claims(roles=[Role.FAS_EDIT.value, Role.FAS_VIEW.value]), token_header)
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
@@ -65,7 +65,7 @@ def test_create_routing_slips_unauthorized(session, client, jwt, app, payload):
 ])
 def test_routing_slips_for_errors(session, client, jwt, app, payload):
     """Assert that the endpoint returns 401 for users with no fas_editor role."""
-    token = jwt.create_jwt(get_claims(roles=[Role.FAS_EDIT.value, Role.FAS_VIEW.value]), token_header)
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
@@ -86,7 +86,8 @@ def test_routing_slips_for_errors(session, client, jwt, app, payload):
 
 def test_update_routing_slip_status(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
-    token = jwt.create_jwt(get_claims(roles=[Role.FAS_EDIT.value, Role.FAS_VIEW.value]), token_header)
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_EDIT.value, Role.FAS_VIEW.value]),
+                           token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(get_routing_slip_request()), headers=headers)

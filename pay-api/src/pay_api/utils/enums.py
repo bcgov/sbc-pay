@@ -123,6 +123,7 @@ class Role(Enum):
     FAS_REPORTS = 'fas_reports'
     FAS_SEARCH = 'fas_search'
     FAS_VIEW = 'fas_view'
+    FAS_CREATE = 'fas_create'
 
 
 class Code(Enum):
