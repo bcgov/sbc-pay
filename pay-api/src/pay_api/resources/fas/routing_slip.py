@@ -26,7 +26,6 @@ from pay_api.utils.errors import Error
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
 
-
 API = Namespace('fas', description='Fee Accounting System')
 
 
@@ -34,20 +33,6 @@ API = Namespace('fas', description='Fee Accounting System')
 @API.route('', methods=['GET', 'POST', 'OPTIONS'])
 class RoutingSlips(Resource):
     """Endpoint resource to create and return routing slips."""
-
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.FAS_SEARCH.value])
-    @_tracing.trace()
-    def get():
-        """Get routing slips."""
-        current_app.logger.info('<RoutingSlips.get')
-        page: int = int(request.args.get('page', '1'))
-        limit: int = int(request.args.get('limit', '10'))
-        status: str = request.args.get('status', None)
-        response, status = RoutingSlipService.search(status=status, page=page, limit=limit), HTTPStatus.OK
-        current_app.logger.debug('>RoutingSlips.get')
-        return jsonify(response), status
 
     @staticmethod
     @cors.crossdomain(origin='*')
@@ -68,6 +53,35 @@ class RoutingSlips(Resource):
             return exception.response()
 
         current_app.logger.debug('>RoutingSlips.post')
+        return jsonify(response), status
+
+
+@cors_preflight('GET,POST')
+@API.route('/queries', methods=['POST', 'OPTIONS'])
+class RoutingSlipSearch(Resource):
+    """Endpoint resource to search for routing slips."""
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.has_one_of_roles([Role.FAS_SEARCH.value])
+    @_tracing.trace()
+    def post():
+        """Get routing slips."""
+        current_app.logger.info('<RoutingSlips.post')
+        request_json = request.get_json()
+        current_app.logger.debug(request_json)
+        page: int = int(request.args.get('page', '1'))
+        limit: int = int(request.args.get('limit', '10'))
+        # validate the request
+        valid_format, errors = schema_utils.validate(request_json, 'routing_slip_search_request')
+        if not valid_format:
+            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+
+        page: int = int(request.args.get('page', '1'))
+        limit: int = int(request.args.get('limit', '10'))
+        response, status = RoutingSlipService.search(request_json, page,
+                                                     limit), HTTPStatus.OK
+        current_app.logger.debug('>AccountPurchaseHistory.post')
         return jsonify(response), status
 
 

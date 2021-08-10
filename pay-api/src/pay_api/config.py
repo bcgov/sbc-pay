@@ -151,6 +151,9 @@ class _Config():  # pylint: disable=too-few-public-methods
     # Default number of transactions to be returned for transaction reporting
     TRANSACTION_REPORT_DEFAULT_TOTAL = int(_get_config('TRANSACTION_REPORT_DEFAULT_TOTAL', default=50))
 
+    # Default number of routing slips to be returned for routing slip search
+    ROUTING_SLIP_DEFAULT_TOTAL = int(_get_config('ROUTING_SLIP_DEFAULT_TOTAL', default=50))
+
     PAD_CONFIRMATION_PERIOD_IN_DAYS = int(_get_config('PAD_CONFIRMATION_PERIOD_IN_DAYS', default=3))
 
     # legislative timezone for future effective dating

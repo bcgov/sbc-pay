@@ -13,7 +13,9 @@
 # limitations under the License.
 """Model to handle all operations related to PayBC Account data."""
 from __future__ import annotations
+
 from typing import List
+
 from flask import current_app
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declared_attr
