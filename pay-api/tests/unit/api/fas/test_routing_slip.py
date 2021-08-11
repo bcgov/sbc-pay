@@ -50,7 +50,7 @@ def test_create_routing_slips(session, client, jwt, app, payload):
 
 
 def test_create_routing_slips_search(session, client, jwt, app):
-    """Assert that the endpoint returns 200."""
+    """Assert that the search works."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     payload = get_routing_slip_request()
@@ -124,6 +124,23 @@ def test_create_routing_slips_search(session, client, jwt, app):
 
     items = rv.json.get('items')
     assert len(items) == 0
+
+
+def test_create_routing_slips_search_with_receipt(session, client, jwt, app):
+    """Assert that the search works."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    payload = get_routing_slip_request()
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 201
+    receipt_number = payload.get('payments')[0].get('chequeReceiptNumber')
+    # search with routing slip number works
+    rv = client.post('/api/v1/fas/routing-slips/queries', data=json.dumps({'receiptNumber': receipt_number}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 1
+    assert items[0].get('payments')[0].get('chequeReceiptNumber') == receipt_number
 
 
 @pytest.mark.parametrize('payload', [
