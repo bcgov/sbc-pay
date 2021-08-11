@@ -17,6 +17,8 @@ from __future__ import annotations
 from decimal import Decimal
 from typing import Dict
 
+from flask import current_app
+
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Payment as PaymentModel
@@ -148,9 +150,22 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         return d
 
     @classmethod
-    def search(cls, **kwargs):
+    def search(cls, search_filter: Dict, page: int, limit: int, return_all: bool = False):
         """Search for routing slip."""
-        # Do nothing for now
+        max_no_records: int = 0
+        if not bool(search_filter) or not any(search_filter.values()):
+            max_no_records = current_app.config.get('ROUTING_SLIP_DEFAULT_TOTAL')
+
+        routing_slips, total = RoutingSlipModel.search(search_filter, page, limit, return_all,
+                                                       max_no_records)
+        data = {
+            'total': total,
+            'page': page,
+            'limit': limit,
+            'items': RoutingSlipSchema().dump(routing_slips, many=True)
+        }
+
+        return data
 
     @classmethod
     def find_by_number(cls, rs_number: str) -> Dict[str, any]:
