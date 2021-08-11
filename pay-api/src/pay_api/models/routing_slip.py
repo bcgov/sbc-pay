@@ -25,8 +25,7 @@ from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import relationship
 
 from pay_api.utils.enums import PaymentMethod
-from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
-
+from pay_api.utils.util import get_str_by_path
 from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
 from .db import db, ma
@@ -59,7 +58,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
     invoices = relationship(Invoice,
                             primaryjoin='and_(RoutingSlip.number == foreign(Invoice.routing_slip), '
                                         f'Invoice.payment_method_code.in_('
-                                        f"['{PaymentMethod.CASH.value}','{PaymentMethod.CHEQUE.value}']))",
+                                        f"['{PaymentMethod.INTERNAL.value}']))",
                             viewonly=True,
                             lazy='joined'
                             )
@@ -70,13 +69,14 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         return cls.query.filter_by(number=number).one_or_none()
 
     @classmethod
-    def search(cls, search_filter: Dict,    # pylint: disable=too-many-arguments
+    def search(cls, search_filter: Dict,  # pylint: disable=too-many-arguments
                page: int, limit: int, return_all: bool, max_no_records: int = 0):
         """Search for routing slips by the criteria provided."""
         query = db.session.query(RoutingSlip)
 
         if rs_number := search_filter.get('routingSlipNumber', None):
-            query = query.filter(RoutingSlip.number == rs_number)
+            query = query.filter(RoutingSlip.number.ilike('%' + rs_number + '%'))
+
         if status := search_filter.get('status', None):
             query = query.filter(RoutingSlip.status == status)
 
@@ -116,19 +116,10 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         # Find start and end dates for folio search
         created_from: datetime = None
         created_to: datetime = None
-        if get_str_by_path(search_filter, 'dateFilter/endDate'):
-            created_to = datetime.strptime(get_str_by_path(search_filter, 'dateFilter/endDate'), '%m/%d/%Y')
-        if get_str_by_path(search_filter, 'dateFilter/startDate'):
-            created_from = datetime.strptime(get_str_by_path(search_filter, 'dateFilter/startDate'), '%m/%d/%Y')
-        if get_str_by_path(search_filter, 'weekFilter/index'):
-            created_from, created_to = get_week_start_and_end_date(
-                int(get_str_by_path(search_filter, 'weekFilter/index')))
-        if get_str_by_path(search_filter, 'monthFilter/month') and get_str_by_path(search_filter,
-                                                                                   'monthFilter/year'):
-            # find month
-            month = int(get_str_by_path(search_filter, 'monthFilter/month'))
-            year = int(get_str_by_path(search_filter, 'monthFilter/year'))
-            created_from, created_to = get_first_and_last_dates_of_month(month=month, year=year)
+        if end_date := get_str_by_path(search_filter, 'dateFilter/endDate'):
+            created_to = datetime.strptime(end_date, '%m/%d/%Y')
+        if start_date := get_str_by_path(search_filter, 'dateFilter/startDate'):
+            created_from = datetime.strptime(start_date, '%m/%d/%Y')
         # if passed in details
         if created_to and created_from:
             # Truncate time for from date and add max time for to date
@@ -154,8 +145,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
             query = query.join(Invoice).filter(
                 and_(Invoice.routing_slip == RoutingSlip.number, and_(Invoice.folio_number == folio_number,
                                                                       Invoice.payment_method_code.in_(
-                                                                          [PaymentMethod.CASH.value,
-                                                                           PaymentMethod.CHEQUE.value]))))
+                                                                          [PaymentMethod.INTERNAL.value]))))
         return query
 
 
