@@ -51,7 +51,7 @@ def test_create_routing_slips(session, client, jwt, app, payload):
 
 def test_create_routing_slips_search(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
-    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     payload = get_routing_slip_request()
     initiator = payload.get('paymentAccount').get('accountName')
