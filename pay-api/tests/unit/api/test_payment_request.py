@@ -205,7 +205,9 @@ def test_payment_creation_when_paybc_down(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': '1234'}
 
     # Create an account first with CC as preffered payment, and it will create a DIRECT_PAY account
-    client.post('/api/v1/accounts', data=json.dumps(get_basic_account_payload(PaymentMethod.CC.value)), headers=headers)
+
+    account_payload = get_basic_account_payload(PaymentMethod.CC.value)
+    client.post('/api/v1/accounts', data=json.dumps(account_payload), headers=headers)
 
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -213,6 +215,18 @@ def test_payment_creation_when_paybc_down(session, client, jwt, app):
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
     assert rv.status_code == 201
     assert rv.json.get('isPaymentActionRequired')
+    invoice_id = rv.json.get('id')
+
+    # Try a search with business identifier and assert result
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    business_identifier = get_payment_request()['businessInfo']['businessIdentifier']
+    rv = client.get(f'/api/v1/payment-requests?businessIdentifier={business_identifier}', headers=headers)
+    assert rv.status_code == 200
+    assert len(rv.json['invoices']) == 1
+    assert rv.json['invoices'][0]['businessIdentifier'] == business_identifier
+    assert rv.json['invoices'][0]['id'] == invoice_id
+    assert rv.json['invoices'][0]['paymentAccount']['accountId'] == str(account_payload['accountId'])
 
 
 def test_zero_dollar_payment_creation(session, client, jwt, app):
@@ -659,7 +673,7 @@ def test_create_pad_payment_request_when_account_is_pending(session, client, jwt
     # Create account first
     rv = client.post('/api/v1/accounts', data=json.dumps(get_unlinked_pad_account_payload(account_id=1234)),
                      headers=headers)
-    auth_account_id = rv.json.get('authAccountId')
+    auth_account_id = rv.json.get('accountId')
 
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': auth_account_id}
@@ -679,19 +693,31 @@ def test_create_pad_payment_request(session, client, jwt, app):
     # Create account first
     rv = client.post('/api/v1/accounts', data=json.dumps(get_unlinked_pad_account_payload(account_id=1234)),
                      headers=headers)
-    auth_account_id = rv.json.get('authAccountId')
+    auth_account_id = rv.json.get('accountId')
     # Update the payment account as ACTIVE
     activate_pad_account(auth_account_id)
 
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': auth_account_id}
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(
-        get_payment_request_with_no_contact_info(corp_type='BEN', filing_type_code='BCINC',
-                                                 payment_method=PaymentMethod.PAD.value)),
-                     headers=headers)
+    payload = get_payment_request_with_no_contact_info(corp_type='BEN', filing_type_code='BCINC',
+                                                       payment_method=PaymentMethod.PAD.value)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(payload), headers=headers)
+
     assert rv.json.get('paymentMethod') == PaymentMethod.PAD.value
     assert not rv.json.get('isOnlineBankingAllowed')
+    invoice_id = rv.json['id']
+
+    # Try a search with business identifier and assert result
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    business_identifier = payload['businessInfo']['businessIdentifier']
+    rv = client.get(f'/api/v1/payment-requests?businessIdentifier={business_identifier}', headers=headers)
+    assert rv.status_code == 200
+    assert len(rv.json['invoices']) == 1
+    assert rv.json['invoices'][0]['businessIdentifier'] == business_identifier
+    assert rv.json['invoices'][0]['id'] == invoice_id
+    assert rv.json['invoices'][0]['paymentAccount']['accountId'] == '1234'
 
 
 def test_payment_request_online_banking_with_credit(session, client, jwt, app):
@@ -702,7 +728,7 @@ def test_payment_request_online_banking_with_credit(session, client, jwt, app):
     rv = client.post('/api/v1/accounts',
                      data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
                      headers=headers)
-    auth_account_id = rv.json.get('authAccountId')
+    auth_account_id = rv.json.get('accountId')
 
     # Update the payment account as ACTIVE
     payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
@@ -742,7 +768,7 @@ def test_create_ejv_payment_request(session, client, jwt, app):
     # Create account first
     rv = client.post('/api/v1/accounts', data=json.dumps(get_gov_account_payload(account_id=1234)),
                      headers=headers)
-    auth_account_id = rv.json.get('authAccountId')
+    auth_account_id = rv.json.get('accountId')
 
     payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
     dist_code: DistributionCodeModel = DistributionCodeModel.find_by_active_for_account(payment_account.id)
@@ -765,7 +791,7 @@ def test_payment_request_creation_for_wills(session, client, jwt, app):
     # Create account first
     rv = client.post('/api/v1/accounts', data=json.dumps(get_unlinked_pad_account_payload(account_id=1234)),
                      headers=headers)
-    auth_account_id = rv.json.get('authAccountId')
+    auth_account_id = rv.json.get('accountId')
     # Update the payment account as ACTIVE
     activate_pad_account(auth_account_id)
 
@@ -787,7 +813,7 @@ def test_payment_request_creation_with_account_settings(session, client, jwt, ap
     # Create account first
     rv = client.post('/api/v1/accounts', data=json.dumps(get_gov_account_payload(account_id=1234)),
                      headers=system_headers)
-    auth_account_id = rv.json.get('authAccountId')
+    auth_account_id = rv.json.get('accountId')
 
     # Create account fee details.
     staff_token = jwt.create_jwt(get_claims(role=Role.MANAGE_ACCOUNTS.value), token_header)

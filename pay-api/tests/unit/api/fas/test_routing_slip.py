@@ -18,6 +18,7 @@ Test-Suite to ensure that the /routing-slips endpoint is working as expected.
 """
 
 import json
+from datetime import date, timedelta
 
 import pytest
 
@@ -37,7 +38,7 @@ from tests.utilities.base_test import get_claims, get_routing_slip_request, toke
 ])
 def test_create_routing_slips(session, client, jwt, app, payload):
     """Assert that the endpoint returns 200."""
-    token = jwt.create_jwt(get_claims(roles=[Role.FAS_EDIT.value, Role.FAS_VIEW.value]), token_header)
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
@@ -46,6 +47,100 @@ def test_create_routing_slips(session, client, jwt, app, payload):
     rv = client.get('/api/v1/fas/routing-slips/{}'.format(rv.json.get('number')), headers=headers)
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, 'routing_slip')[0]
+
+
+def test_create_routing_slips_search(session, client, jwt, app):
+    """Assert that the search works."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    payload = get_routing_slip_request()
+    initiator = payload.get('paymentAccount').get('accountName')
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 201
+    rs_number = rv.json.get('number')
+    # do the searches
+
+    # search with routing slip number works
+    rv = client.post('/api/v1/fas/routing-slips/queries', data=json.dumps({'routingSlipNumber': rs_number}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 1
+    assert items[0].get('number') == rs_number
+
+    # search with partial routing slip number works
+
+    rv = client.post('/api/v1/fas/routing-slips/queries', data=json.dumps({'routingSlipNumber': rs_number[1:-1]}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 1
+    assert items[0].get('number') == rs_number
+
+    # search with initiator
+
+    rv = client.post('/api/v1/fas/routing-slips/queries',
+                     data=json.dumps({'routingSlipNumber': rs_number, 'initiator': initiator}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 1
+    assert items[0].get('number') == rs_number
+
+    # search with dates
+
+    valid_date_filter = {'startDate': (date.today() - timedelta(1)).strftime('%m/%d/%Y'),
+                         'endDate': (date.today() + timedelta(1)).strftime('%m/%d/%Y')}
+    rv = client.post('/api/v1/fas/routing-slips/queries',
+                     data=json.dumps({'routingSlipNumber': rs_number, 'dateFilter': valid_date_filter}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 1
+    assert items[0].get('number') == rs_number
+
+    invalid_date_filter = {'startDate': (date.today() + timedelta(100)).strftime('%m/%d/%Y'),
+                           'endDate': (date.today() + timedelta(1)).strftime('%m/%d/%Y')}
+    rv = client.post('/api/v1/fas/routing-slips/queries',
+                     data=json.dumps({'routingSlipNumber': rs_number, 'dateFilter': invalid_date_filter}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 0
+
+    # search using status
+    rv = client.post('/api/v1/fas/routing-slips/queries',
+                     data=json.dumps({'status': 'ACTIVE'}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 1
+    assert items[0].get('number') == rs_number
+
+    # search using invalid status
+    rv = client.post('/api/v1/fas/routing-slips/queries',
+                     data=json.dumps({'status': 'COMPLETED'}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 0
+
+
+def test_create_routing_slips_search_with_receipt(session, client, jwt, app):
+    """Assert that the search works."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    payload = get_routing_slip_request()
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 201
+    receipt_number = payload.get('payments')[0].get('chequeReceiptNumber')
+    # search with routing slip number works
+    rv = client.post('/api/v1/fas/routing-slips/queries', data=json.dumps({'receiptNumber': receipt_number}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 1
+    assert items[0].get('payments')[0].get('chequeReceiptNumber') == receipt_number
 
 
 @pytest.mark.parametrize('payload', [
@@ -65,7 +160,7 @@ def test_create_routing_slips_unauthorized(session, client, jwt, app, payload):
 ])
 def test_routing_slips_for_errors(session, client, jwt, app, payload):
     """Assert that the endpoint returns 401 for users with no fas_editor role."""
-    token = jwt.create_jwt(get_claims(roles=[Role.FAS_EDIT.value, Role.FAS_VIEW.value]), token_header)
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
@@ -86,7 +181,8 @@ def test_routing_slips_for_errors(session, client, jwt, app, payload):
 
 def test_update_routing_slip_status(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
-    token = jwt.create_jwt(get_claims(roles=[Role.FAS_EDIT.value, Role.FAS_VIEW.value]), token_header)
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_EDIT.value, Role.FAS_VIEW.value]),
+                           token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(get_routing_slip_request()), headers=headers)

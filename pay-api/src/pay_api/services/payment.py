@@ -278,7 +278,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         # Result is tuple of payment and invoice records.
         # Iterate the results and group all invoices for the same payment by keeping the last payment object to compare.
         last_payment_iter = None
-        payment_dict = None
+        payment_dict = dict()
 
         for result in results:
             payment = result[0]

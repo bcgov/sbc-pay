@@ -104,7 +104,7 @@ def test_create_pad_payment_receipt(session, client, jwt, app):
     # Create account first
     rv = client.post('/api/v1/accounts', data=json.dumps(get_unlinked_pad_account_payload(account_id=1234)),
                      headers=headers)
-    auth_account_id = rv.json.get('authAccountId')
+    auth_account_id = rv.json.get('accountId')
     # Update the payment account as ACTIVE
     payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
     payment_account.pad_activation_date = datetime.now()

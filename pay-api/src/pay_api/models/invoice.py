@@ -34,6 +34,7 @@ from .db import db, ma
 from .invoice_reference import InvoiceReferenceSchema
 from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from .receipt import ReceiptSchema
+from .payment_account import PaymentAccountSchema
 
 
 class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
@@ -130,7 +131,7 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Invoice
-        exclude = ['payment_account']
+        exclude = []
 
     invoice_status_code = fields.String(data_key='status_code')
     corp_type_code = fields.String(data_key='corp_type_code')
@@ -140,6 +141,7 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
     payment_line_items = ma.Nested(PaymentLineItemSchema, many=True, data_key='line_items')
     receipts = ma.Nested(ReceiptSchema, many=True, data_key='receipts')
     references = ma.Nested(InvoiceReferenceSchema, many=True, data_key='references')
+    payment_account = ma.Nested(PaymentAccountSchema(only=('auth_account_id', 'name')), many=False)
 
     _links = ma.Hyperlinks({
         'self': ma.URLFor('API.invoice_invoice', invoice_id='<id>'),

@@ -1014,7 +1014,7 @@ paths:
           name: Account-Id
         - schema:
             type: integer
-            default: '1'
+            default: 1
           in: query
           name: page
           description: Page number
@@ -1314,8 +1314,8 @@ paths:
               examples:
                 /api/v1/accounts:
                   value:
-                    authAccountId: 1
-                    authAccountName: tester
+                    auccountId: 1
+                    accountName: tester
                     bcolAccount: null
                     bcolUserId: null
                     billable: true
@@ -1361,8 +1361,8 @@ paths:
               examples:
                 /api/v1/accounts/1:
                   value:
-                    authAccountId: '19'
-                    authAccountName: tester
+                    accountId: '19'
+                    accountName: tester
                     bcolAccount: null
                     bcolUserId: null
                     billable: true
@@ -1650,6 +1650,15 @@ components:
                 type: string
               value:
                 type: string
+        paymentAccount:
+          type: object
+          properties:
+            accountId:
+              type: string
+              description: Account ID for the invoice
+            accountName:
+              type: string
+              description: Account Name
     Transaction:
       type: object
       properties:
@@ -1774,7 +1783,7 @@ components:
         limit:
           type: integer
           description: number of records to be included
-          default: '10'
+          default: 10
         page:
           type: integer
           description: Current page
