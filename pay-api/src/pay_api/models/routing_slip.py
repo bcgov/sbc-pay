@@ -88,7 +88,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
 
         query = query.join(PaymentAccount)
         if initiator := search_filter.get('initiator', None):
-            query = query.filter(PaymentAccount.name.ilike('%' + initiator + '%'))
+            query = query.filter(RoutingSlip.created_name.ilike('%' + initiator + '%'))
 
         query = cls._add_receipt_number(query, search_filter)
 
@@ -130,7 +130,8 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
             created_from = created_from.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(tz_local)
             created_to = created_to.replace(hour=23, minute=59, second=59, microsecond=999999).astimezone(tz_local)
             query = query.filter(
-                func.timezone(tz_name, func.timezone('UTC', RoutingSlip.created_on)).between(created_from, created_to))
+                func.timezone(tz_name, func.timezone('UTC', RoutingSlip.routing_slip_date))
+                    .between(created_from, created_to))
         return query
 
     @classmethod
