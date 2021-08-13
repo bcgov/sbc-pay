@@ -67,21 +67,23 @@ class RoutingSlipSearch(Resource):
     @_tracing.trace()
     def post():
         """Get routing slips."""
-        current_app.logger.info('<RoutingSlips.post')
+        current_app.logger.info('<RoutingSlips.query.post')
         request_json = request.get_json()
         current_app.logger.debug(request_json)
-        page: int = int(request.args.get('page', '1'))
-        limit: int = int(request.args.get('limit', '10'))
         # validate the request
         valid_format, errors = schema_utils.validate(request_json, 'routing_slip_search_request')
         if not valid_format:
             return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
+        # if no page param , return all results
+        if not request.args.get('page', None):
+            return_all = True
+
         page: int = int(request.args.get('page', '1'))
         limit: int = int(request.args.get('limit', '10'))
         response, status = RoutingSlipService.search(request_json, page,
-                                                     limit), HTTPStatus.OK
-        current_app.logger.debug('>AccountPurchaseHistory.post')
+                                                     limit, return_all=return_all), HTTPStatus.OK
+        current_app.logger.debug('>RoutingSlips.query.post')
         return jsonify(response), status
 
 
