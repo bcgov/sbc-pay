@@ -21,12 +21,14 @@ from datetime import datetime
 from random import randrange
 from typing import Dict, List, Tuple
 
+from faker import Faker
+
 from pay_api.models import (
     CfsAccount, DistributionCode, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem,
-    PaymentTransaction, Receipt, Statement, StatementInvoices, StatementSettings)
+    PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices, StatementSettings)
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
-    PaymentSystem, Role)
+    PaymentSystem, Role, RoutingSlipStatus)
 
 
 token_header = {
@@ -34,6 +36,8 @@ token_header = {
     'typ': 'JWT',
     'kid': 'sbc-auth-web'
 }
+
+fake = Faker()
 
 
 def get_claims(app_request=None, role: str = Role.EDITOR.value, username: str = 'CP0001234', login_source: str = None,
@@ -340,6 +344,27 @@ def factory_payment(
         invoice_amount=invoice_amount
     )
     return payment
+
+
+def factory_routing_slip(
+        number: str = fake.name(),
+        payment_account_id=None,
+        status: str = RoutingSlipStatus.ACTIVE.value,
+        total: int = 0,
+        remaining_amount: int = 0,
+        routing_slip_date=datetime.now()
+):
+    """Return Factory."""
+    routing_slip: RoutingSlip = RoutingSlip(
+        number=number,
+        payment_account_id=payment_account_id,
+        status=status,
+        total=total,
+        remaining_amount=remaining_amount,
+        created_by='test',
+        routing_slip_date=routing_slip_date
+    )
+    return routing_slip
 
 
 def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.value,
