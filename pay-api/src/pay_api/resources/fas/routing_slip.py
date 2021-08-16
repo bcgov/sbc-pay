@@ -63,6 +63,7 @@ class RoutingSlipSearch(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
+    @_jwt.has_one_of_roles([Role.FAS_SEARCH.value])
     @_tracing.trace()
     def post():
         """Get routing slips."""
@@ -93,6 +94,7 @@ class RoutingSlip(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
+    @_jwt.has_one_of_roles([Role.FAS_VIEW.value])
     @_tracing.trace()
     def get(routing_slip_number: str):
         """Get routing slip."""
