@@ -179,12 +179,12 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
 
     @classmethod
     def get_links(cls, rs_number: str) -> Dict[str, any]:
-        """Find by routing slip number."""
+        """Find dependents/links of a routing slips."""
         links: Dict[str, any] = None
         routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(rs_number)
         if routing_slip:
             routing_slip_schema = RoutingSlipSchema()
-            children = RoutingSlipModel.find_childrens(rs_number)
+            children = RoutingSlipModel.find_children(rs_number)
             links = {
                 'parent': routing_slip_schema.dump(routing_slip.parent),
                 'children': routing_slip_schema.dump(children, many=True)

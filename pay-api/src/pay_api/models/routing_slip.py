@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from operator import and_
-from typing import Dict
+from typing import Dict, List
 
 import pytz
 from flask import current_app
@@ -73,8 +73,8 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         return cls.query.filter_by(number=number).one_or_none()
 
     @classmethod
-    def find_childrens(cls, number: str) -> RoutingSlip:
-        """Return a routing slip by number."""
+    def find_children(cls, number: str) -> List[RoutingSlip]:
+        """Return children for the routing slip"""
         return cls.query.filter_by(parent_number=number).all()
 
     @classmethod

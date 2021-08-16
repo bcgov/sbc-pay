@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Resource for Account payments endpoints."""
+"""Resource for Routing slip Link endpoints."""
 from http import HTTPStatus
 
 from flask import current_app, jsonify
@@ -27,16 +27,16 @@ from pay_api.utils.util import cors_preflight
 API = Namespace('fas', description='Fee Accounting System Links')
 
 
-@cors_preflight('GET,PATCH')
+@cors_preflight('GET,PUT')
 @API.route('/', methods=['GET', 'PUT', 'OPTIONS'])
-class RoutingSlip(Resource):
-    """Endpoint resource update and return routing slip by number."""
+class RoutingSlipLinks(Resource):
+    """Endpoint resource to deal with links in routing slips."""
 
     @staticmethod
     @cors.crossdomain(origin='*')
     @_tracing.trace()
     def get(routing_slip_number: str):
-        """Get routing slip."""
+        """Get routing slip links ;ie parent/child details."""
         current_app.logger.info('<RoutingSlipLink.get')
         response = RoutingSlipService.get_links(routing_slip_number)
         if response:
