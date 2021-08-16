@@ -18,7 +18,7 @@ Test-Suite to ensure that the /routing-slips endpoint is working as expected.
 """
 
 import json
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 
@@ -89,8 +89,8 @@ def test_create_routing_slips_search(session, client, jwt, app):
 
     # search with dates
 
-    valid_date_filter = {'startDate': (date.today() - timedelta(1)).strftime('%m/%d/%Y'),
-                         'endDate': (date.today() + timedelta(1)).strftime('%m/%d/%Y')}
+    valid_date_filter = {'startDate': (date.today() - timedelta(1)).strftime('%Y-%m-%d'),
+                         'endDate': (date.today() + timedelta(1)).strftime('%Y-%m-%d')}
     rv = client.post('/api/v1/fas/routing-slips/queries',
                      data=json.dumps({'routingSlipNumber': rs_number, 'dateFilter': valid_date_filter}),
                      headers=headers)
@@ -99,8 +99,8 @@ def test_create_routing_slips_search(session, client, jwt, app):
     assert len(items) == 1
     assert items[0].get('number') == rs_number
 
-    invalid_date_filter = {'startDate': (date.today() + timedelta(100)).strftime('%m/%d/%Y'),
-                           'endDate': (date.today() + timedelta(1)).strftime('%m/%d/%Y')}
+    invalid_date_filter = {'startDate': (date.today() + timedelta(100)).strftime('%Y-%m-%d'),
+                           'endDate': (date.today() + timedelta(1)).strftime('%Y-%m-%d')}
     rv = client.post('/api/v1/fas/routing-slips/queries',
                      data=json.dumps({'routingSlipNumber': rs_number, 'dateFilter': invalid_date_filter}),
                      headers=headers)
@@ -207,3 +207,12 @@ def test_update_routing_slip_status(session, client, jwt, app):
     rv = client.patch(f'/api/v1/fas/routing-slips/TEST?action={PatchActions.UPDATE_STATUS.value}',
                       data=json.dumps({'status': RoutingSlipStatus.BOUNCED.value}), headers=headers)
     assert rv.status_code == 400
+
+
+def test_routing_slip_report(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_REPORTS.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post(f"/api/v1/fas/routing-slips/{datetime.now().strftime('%Y-%m-%d')}/reports", headers=headers)
+    assert rv.status_code == 201

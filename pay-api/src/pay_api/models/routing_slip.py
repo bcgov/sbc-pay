@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from operator import and_
-from typing import Dict
+from typing import Dict, List
 
 import pytz
 from flask import current_app
@@ -26,6 +26,7 @@ from sqlalchemy.orm import relationship
 
 from pay_api.utils.enums import PaymentMethod
 from pay_api.utils.util import get_str_by_path
+
 from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
 from .db import db, ma
@@ -70,7 +71,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def search(cls, search_filter: Dict,  # pylint: disable=too-many-arguments
-               page: int, limit: int, return_all: bool, max_no_records: int = 0):
+               page: int, limit: int, return_all: bool, max_no_records: int = 0) -> (List[RoutingSlip], int):
         """Search for routing slips by the criteria provided."""
         query = db.session.query(RoutingSlip)
 
@@ -117,9 +118,9 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         created_from: datetime = None
         created_to: datetime = None
         if end_date := get_str_by_path(search_filter, 'dateFilter/endDate'):
-            created_to = datetime.strptime(end_date, '%m/%d/%Y')
+            created_to = datetime.strptime(end_date, '%Y-%m-%d')
         if start_date := get_str_by_path(search_filter, 'dateFilter/startDate'):
-            created_from = datetime.strptime(start_date, '%m/%d/%Y')
+            created_from = datetime.strptime(start_date, '%Y-%m-%d')
         # if passed in details
         if created_to and created_from:
             # Truncate time for from date and add max time for to date
