@@ -26,6 +26,7 @@ from sqlalchemy.orm import relationship
 
 from pay_api.utils.enums import PaymentMethod
 from pay_api.utils.util import get_str_by_path
+
 from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
 from .db import db, ma
@@ -46,7 +47,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
     total = db.Column(db.Numeric(), nullable=True, default=0)
     remaining_amount = db.Column(db.Numeric(), nullable=True, default=0)
     routing_slip_date = db.Column(db.Date, nullable=False)
-    parent_id = db.Column(db.Integer, ForeignKey('routing_slips.id'), nullable=True)
+    parent_number = db.Column(db.String(), ForeignKey('routing_slips.number'), nullable=True)
 
     payment_account = relationship(PaymentAccount, foreign_keys=[payment_account_id], lazy='select', innerjoin=True)
     payments = relationship(Payment,
@@ -64,10 +65,17 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
                             lazy='joined'
                             )
 
+    parent = relationship('RoutingSlip', remote_side=[number], lazy='select')
+
     @classmethod
     def find_by_number(cls, number: str) -> RoutingSlip:
         """Return a routing slip by number."""
         return cls.query.filter_by(number=number).one_or_none()
+
+    @classmethod
+    def find_childrens(cls, number: str) -> RoutingSlip:
+        """Return a routing slip by number."""
+        return cls.query.filter_by(parent_number=number).all()
 
     @classmethod
     def search(cls, search_filter: Dict,  # pylint: disable=too-many-arguments
@@ -166,3 +174,4 @@ class RoutingSlipSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-an
     payment_account = ma.Nested(PaymentAccountSchema, many=False, data_key='payment_account')
     invoices = ma.Nested(InvoiceSchema, many=True, data_key='invoices', exclude=['_links'])
     status = fields.String(data_key='status')
+    parent_number = fields.String(data_key='parent_number')

@@ -178,6 +178,21 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         return routing_slip_dict
 
     @classmethod
+    def get_links(cls, rs_number: str) -> Dict[str, any]:
+        """Find by routing slip number."""
+        links: Dict[str, any] = None
+        routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(rs_number)
+        if routing_slip:
+            routing_slip_schema = RoutingSlipSchema()
+            children = RoutingSlipModel.find_childrens(rs_number)
+            links = {
+                'parent': routing_slip_schema.dump(routing_slip.parent),
+                'children': routing_slip_schema.dump(children, many=True)
+            }
+
+        return links
+
+    @classmethod
     @user_context
     def create(cls, request_json: Dict[str, any], **kwargs):
         """Search for routing slip."""
