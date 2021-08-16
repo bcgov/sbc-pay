@@ -51,10 +51,11 @@ def test_create_routing_slips(session, client, jwt, app, payload):
 
 def test_create_routing_slips_search(session, client, jwt, app):
     """Assert that the search works."""
-    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
+    claims = get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value])
+    token = jwt.create_jwt(claims, token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     payload = get_routing_slip_request()
-    initiator = payload.get('paymentAccount').get('accountName')
+    initiator = claims.get('name')
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
     assert rv.status_code == 201
     rs_number = rv.json.get('number')
