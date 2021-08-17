@@ -22,9 +22,10 @@ from datetime import date, timedelta
 
 import pytest
 
+from pay_api.models import PaymentAccount
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import PatchActions, PaymentMethod, Role, RoutingSlipStatus
-from tests.utilities.base_test import get_claims, get_routing_slip_request, token_header
+from tests.utilities.base_test import factory_invoice, get_claims, get_routing_slip_request, token_header
 
 
 @pytest.mark.parametrize('payload', [
@@ -125,6 +126,77 @@ def test_create_routing_slips_search(session, client, jwt, app):
 
     items = rv.json.get('items')
     assert len(items) == 0
+
+
+def test_create_routing_slips_search_with_folio_number(session, client, jwt, app):
+    """Assert that the search works."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    payload = get_routing_slip_request()
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 201
+    payment_account_id = rv.json.get('paymentAccount').get('id')
+    payment_account = PaymentAccount(id=payment_account_id)
+    folio_number = 'test_folio'
+    another_folio_number = 'another_test_folio'
+    invoice = factory_invoice(payment_account, folio_number=folio_number, routing_slip=rv.json.get('number'),
+                              payment_method_code=PaymentMethod.INTERNAL.value)
+    invoice.save()
+
+    # search with routing slip number works
+
+    rv = client.post('/api/v1/fas/routing-slips/queries',
+                     data=json.dumps({'routingSlipNumber': rv.json.get('number'), 'folioNumber': folio_number}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 1, 'folio and routing slip combo works.'
+
+    rv = client.post('/api/v1/fas/routing-slips/queries',
+                     data=json.dumps({'folioNumber': folio_number}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 1, 'folio alone works.'
+
+    # create another routing slip with folo
+
+    payload = get_routing_slip_request(number='99999')
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 201
+    payment_account_id = rv.json.get('paymentAccount').get('id')
+    payment_account = PaymentAccount(id=payment_account_id)
+    routing_slip_numbr = rv.json.get('number')
+    invoice = factory_invoice(payment_account, folio_number=folio_number, routing_slip=routing_slip_numbr,
+                              payment_method_code=PaymentMethod.INTERNAL.value)
+    invoice.save()
+
+    invoice = factory_invoice(payment_account, folio_number=another_folio_number, routing_slip=rv.json.get('number'),
+                              payment_method_code=PaymentMethod.INTERNAL.value)
+    invoice.save()
+
+    rv = client.post('/api/v1/fas/routing-slips/queries',
+                     data=json.dumps({'folioNumber': folio_number}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 2, 'folio alone works.'
+
+    rv = client.post('/api/v1/fas/routing-slips/queries',
+                     data=json.dumps({'routingSlipNumber': routing_slip_numbr, 'folioNumber': folio_number}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 1, 'folio and rs fetches only 1.'
+    assert len(items[0].get('invoices')) == 2, 'fetches all the folios. UI wil filter it out'
+
+    rv = client.post('/api/v1/fas/routing-slips/queries',
+                     data=json.dumps({'routingSlipNumber': routing_slip_numbr}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 1, 'folio and rs fetches only 1.'
+    assert len(items[0].get('invoices')) == 2, 'folio alone works.'
 
 
 def test_create_routing_slips_search_with_receipt(session, client, jwt, app):
