@@ -74,7 +74,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def find_children(cls, number: str) -> List[RoutingSlip]:
-        """Return children for the routing slip"""
+        """Return children for the routing slip."""
         return cls.query.filter_by(parent_number=number).all()
 
     @classmethod
