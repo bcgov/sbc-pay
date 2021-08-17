@@ -196,17 +196,6 @@ def get_nearest_business_day(date_val: datetime, include_today: bool = True) -> 
     return get_nearest_business_day(get_next_day(date_val))
 
 
-def get_previous_business_day(date_val: datetime) -> datetime:
-    """Return previous business day to the date."""
-    print('date_val ', date_val)
-    date_val = get_previous_day(date_val)
-    print('date_val ', date_val)
-    if not is_holiday(date_val):
-        return date_val
-    # just a recursive call to get the previous business day.
-    return get_nearest_business_day(date_val)
-
-
 def is_holiday(val: datetime) -> bool:
     """Return receipt number for payments.
 

@@ -26,7 +26,6 @@ from sqlalchemy.orm import relationship
 
 from pay_api.utils.enums import PaymentMethod
 from pay_api.utils.util import get_str_by_path
-
 from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
 from .db import db, ma
@@ -118,6 +117,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         # Find start and end dates for folio search
         created_from: datetime = None
         created_to: datetime = None
+
         if end_date := get_str_by_path(search_filter, 'dateFilter/endDate'):
             created_to = datetime.strptime(end_date, '%Y-%m-%d')
         if start_date := get_str_by_path(search_filter, 'dateFilter/startDate'):
@@ -130,8 +130,11 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
 
             created_from = created_from.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(tz_local)
             created_to = created_to.replace(hour=23, minute=59, second=59, microsecond=999999).astimezone(tz_local)
+
+            target = getattr(RoutingSlip, get_str_by_path(search_filter, 'dateFilter/target') or 'routing_slip_date')
+
             query = query.filter(
-                func.timezone(tz_name, func.timezone('UTC', RoutingSlip.routing_slip_date))
+                func.timezone(tz_name, func.timezone('UTC', target))
                     .between(created_from, created_to))
         return query
 

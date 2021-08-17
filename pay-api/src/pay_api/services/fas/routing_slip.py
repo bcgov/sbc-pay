@@ -33,7 +33,9 @@ from pay_api.utils.enums import (
     RoutingSlipStatus)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import get_local_time, get_previous_business_day, string_to_date
+from pay_api.utils.util import get_local_time, string_to_date
+
+DT_FORMAT = '%Y-%m-%d'
 
 
 class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -175,9 +177,14 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
     @user_context
     def create_daily_reports(cls, day: str, **kwargs):
         """Create and return daily report for the day provided."""
-        business_day = get_previous_business_day(datetime.strptime(day, '%Y-%m-%d'))
         routing_slips: List[RoutingSlipModel] = RoutingSlipModel.search(
-            dict(dateFilter=dict(endDate=business_day, startDate=business_day)),
+            dict(
+                dateFilter=dict(
+                    endDate=day,
+                    startDate=day,
+                    target='created_on'
+                )
+            ),
             page=1, limit=0, return_all=True
         )[0]
 
@@ -204,7 +211,6 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             reportName=f'Routing-Slip-Daily-Report-{day}',
             templateVars=dict(
                 day=day,
-                businessDay=str(get_local_time(business_day)),
                 reportDay=str(get_local_time(datetime.now())),
                 total=total,
                 numberOfCashReceipts=no_of_cash,

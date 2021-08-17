@@ -346,7 +346,7 @@
             <div class="r-heading">
                 <div class="r-title">Payment Summary Report</div>
                 <div class="r-subtitle">
-                    {{reportDay|format_datetime('mmm dd,yyyy')}}
+                    {{day|format_datetime('mmm dd,yyyy')}}
                 </div>
             </div>
         </td>
@@ -354,7 +354,7 @@
     <tr>
         <td colspan="2">
             <div class="blue-box-header">
-                <div class="col1">(Place Holder) CNF AR110-01-001</div>
+                <div class="col1">{{day|format_datetime('mmm dd,yyyy')}}</div>
             </div>
             <div class="blue-box-body">
                 <div class="detail-row">
@@ -362,7 +362,7 @@
                         Rev Owner:
                     </div>
                     <div class="detail-value">
-                        Compaines
+                        BC Registry Services
                     </div>
                 </div>
                 <div class="detail-row">
@@ -378,7 +378,7 @@
                         Entry Date:
                     </div>
                     <div class="detail-value">
-                        {{businessDay|format_datetime('mmm dd,yyyy')}}
+                        {{day|format_datetime('mmm dd,yyyy')}}
                     </div>
                 </div>
             </div>
@@ -408,14 +408,14 @@
                 <th>USD</th>
                 </thead>
                 <tr class="row-border">
-                    <td>{{businessDay|format_datetime('mmm dd,yyyy')}}</td>
+                    <td>{{day|format_datetime('mmm dd,yyyy')}}</td>
                     <td>Cash</td>
                     <td>{{numberOfCashReceipts}}</td>
                     <td>C${{"%.2f"|format(totalCashInCad)}}</td>
                     <td>${{"%.2f"|format(totalCashInUsd)}}</td>
                 </tr>
                 <tr class="row-border">
-                    <td>{{businessDay|format_datetime('mmm dd,yyyy')}}</td>
+                    <td>{{day|format_datetime('mmm dd,yyyy')}}</td>
                     <td>Cheque</td>
                     <td>{{numberOfChequeReceipts}}</td>
                     <td>C${{"%.2f"|format(totalChequeInCad)}}</td>
