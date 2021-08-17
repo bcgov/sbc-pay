@@ -40,7 +40,7 @@ def test_generate_report_with_existing_template(client, jwt, app):
     assert template_name is not None
     request_url = '/api/v1/reports'
     request_data = {
-        'templateName': template_name,
+        'templateName': 'payment_receipt',
         'templateVars': {
             'title': 'This is a sample request',
             'invoice': {}
