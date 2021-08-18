@@ -17,7 +17,7 @@ asyncio-nats-client==0.11.4
 asyncio-nats-streaming==0.4.0
 attrs==21.2.0
 blinker==1.4
-cachelib==0.2.0
+cachelib==0.3.0
 certifi==2021.5.30
 cffi==1.14.6
 charset-normalizer==2.0.4

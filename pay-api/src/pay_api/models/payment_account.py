@@ -63,7 +63,7 @@ class PaymentAccountSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = PaymentAccount
-        exclude = ['versions', 'pad_activation_date', 'id']
+        exclude = ['versions', 'pad_activation_date']
 
     payment_method = fields.String(data_key='payment_method')
     auth_account_id = fields.String(data_key='account_id')
