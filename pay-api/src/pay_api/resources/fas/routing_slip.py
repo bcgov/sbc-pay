@@ -14,7 +14,7 @@
 """Resource for Account payments endpoints."""
 from http import HTTPStatus
 
-from flask import current_app, jsonify, request
+from flask import Response, current_app, jsonify, request
 from flask_restx import Namespace, Resource, cors
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException, error_to_response
@@ -25,6 +25,7 @@ from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
+
 
 API = Namespace('fas', description='Fee Accounting System')
 
@@ -56,7 +57,7 @@ class RoutingSlips(Resource):
         return jsonify(response), status
 
 
-@cors_preflight('GET,POST')
+@cors_preflight('POST')
 @API.route('/queries', methods=['POST', 'OPTIONS'])
 class RoutingSlipSearch(Resource):
     """Endpoint resource to search for routing slips."""
@@ -85,6 +86,30 @@ class RoutingSlipSearch(Resource):
                                                      limit, return_all=return_all), HTTPStatus.OK
         current_app.logger.debug('>RoutingSlips.query.post')
         return jsonify(response), status
+
+
+@cors_preflight('POST')
+@API.route('/<string:date>/reports', methods=['POST', 'OPTIONS'])
+class RoutingSlipReport(Resource):
+    """Endpoint resource to generate report for routing slips."""
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.has_one_of_roles([Role.FAS_REPORTS.value])
+    @_tracing.trace()
+    def post(date: str):
+        """Create routing slip report."""
+        current_app.logger.info('<RoutingSlipReport.post')
+
+        pdf, file_name = RoutingSlipService.create_daily_reports(date)
+
+        response = Response(pdf, 201)
+        response.headers.set('Content-Disposition', 'attachment', filename='{}.pdf'.format(file_name))
+        response.headers.set('Content-Type', 'application/pdf')
+        response.headers.set('Access-Control-Expose-Headers', 'Content-Disposition')
+
+        current_app.logger.debug('>RoutingSlipReport.post')
+        return response
 
 
 @cors_preflight('GET,PATCH')

@@ -27,6 +27,7 @@ from pay_api.models.payment_account import PaymentAccount
 from pay_api.utils.enums import StatementFrequency
 from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month, get_week_start_and_end_date
 from tests.utilities.base_test import get_claims, get_payment_request, token_header
+from pay_api.utils.constants import DT_SHORT_FORMAT
 
 
 def test_get_default_statement_settings_weekly(session, client, jwt, app):
@@ -53,7 +54,7 @@ def test_get_default_statement_settings_weekly(session, client, jwt, app):
             today = datetime.today()
             actual_monthly = dateutil.parser.parse(freqeuncy.get('startDate')).date()
             expected_monthly = (
-                        get_first_and_last_dates_of_month(today.month, today.year)[1] + timedelta(days=1)).date()
+                    get_first_and_last_dates_of_month(today.month, today.year)[1] + timedelta(days=1)).date()
             assert actual_monthly == expected_monthly, 'monthly matches'
         if freqeuncy.get('frequency') == StatementFrequency.DAILY.value:
             actual_daily = dateutil.parser.parse(freqeuncy.get('startDate')).date()
@@ -85,7 +86,7 @@ def test_post_default_statement_settings_daily(session, client, jwt, app):
                      headers=headers)
     assert rv.json.get('frequency') == StatementFrequency.DAILY.value
     end_date = get_week_start_and_end_date()[1]
-    assert rv.json.get('fromDate') == (end_date + timedelta(days=1)).strftime('%Y-%m-%d')
+    assert rv.json.get('fromDate') == (end_date + timedelta(days=1)).strftime(DT_SHORT_FORMAT)
 
     # Set the frequency to Monthly and assert
     daily_frequency = {'frequency': 'MONTHLY'}
@@ -94,7 +95,7 @@ def test_post_default_statement_settings_daily(session, client, jwt, app):
                      headers=headers)
     end_date = get_first_and_last_dates_of_month(current_local_time().month, current_local_time().year)[1]
     assert rv.json.get('frequency') == StatementFrequency.MONTHLY.value
-    assert rv.json.get('fromDate') == (end_date + timedelta(days=1)).strftime('%Y-%m-%d')
+    assert rv.json.get('fromDate') == (end_date + timedelta(days=1)).strftime(DT_SHORT_FORMAT)
 
     # Get the latest frequency
     rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/settings', data=json.dumps({}),

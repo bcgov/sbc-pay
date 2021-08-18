@@ -14,8 +14,9 @@
 """Service to manage routing slip operations."""
 from __future__ import annotations
 
+from datetime import datetime
 from decimal import Decimal
-from typing import Dict
+from typing import Dict, List
 
 from flask import current_app
 
@@ -26,10 +27,13 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import RoutingSlipSchema
 from pay_api.services.cfs_service import CFSService
-from pay_api.utils.enums import CfsAccountStatus, PatchActions, PaymentStatus, PaymentSystem, RoutingSlipStatus
+from pay_api.services.oauth_service import OAuthService
+from pay_api.utils.enums import (
+    AuthHeaderType, CfsAccountStatus, ContentType, PatchActions, PaymentMethod, PaymentStatus, PaymentSystem,
+    RoutingSlipStatus)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import string_to_date
+from pay_api.utils.util import get_local_time, string_to_date
 
 
 class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -166,6 +170,61 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         }
 
         return data
+
+    @classmethod
+    @user_context
+    def create_daily_reports(cls, date: str, **kwargs):
+        """Create and return daily report for the day provided."""
+        routing_slips: List[RoutingSlipModel] = RoutingSlipModel.search(
+            dict(
+                dateFilter=dict(
+                    endDate=date,
+                    startDate=date,
+                    target='created_on'
+                )
+            ),
+            page=1, limit=0, return_all=True
+        )[0]
+
+        total: float = 0
+        no_of_cash: int = 0
+        no_of_cheque: int = 0
+        total_cash_usd: float = 0
+        total_cheque_usd: float = 0
+        total_cash_cad: float = 0
+        total_cheque_cad: float = 0
+        # TODO Only CAD supported now, so just add up the total.
+        for routing_slip in routing_slips:
+            total += float(routing_slip.total)
+            if routing_slip.payment_account.payment_method == PaymentMethod.CASH.value:
+                no_of_cash += 1
+                # TODO check if the payment is CAD or USD.
+                total_cash_cad += float(routing_slip.total)
+            else:
+                no_of_cheque += 1
+                total_cheque_cad += float(routing_slip.total)
+
+        report_dict = dict(
+            templateName='routing_slip_report',
+            reportName=f'Routing-Slip-Daily-Report-{date}',
+            templateVars=dict(
+                day=date,
+                reportDay=str(get_local_time(datetime.now())),
+                total=total,
+                numberOfCashReceipts=no_of_cash,
+                numberOfChequeReceipts=no_of_cheque,
+                totalCashInUsd=total_cash_usd,
+                totalChequeInUsd=total_cheque_usd,
+                totalCashInCad=total_cash_cad,
+                totalChequeInCad=total_cheque_cad
+            )
+        )
+
+        pdf_response = OAuthService.post(current_app.config.get('REPORT_API_BASE_URL'),
+                                         kwargs['user'].bearer_token, AuthHeaderType.BEARER,
+                                         ContentType.JSON, report_dict)
+
+        return pdf_response, report_dict.get('reportName')
 
     @classmethod
     def find_by_number(cls, rs_number: str) -> Dict[str, any]:
