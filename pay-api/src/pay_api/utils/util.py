@@ -26,6 +26,7 @@ from dateutil.parser import parse
 from dpath import util as dpath_util
 from flask import current_app
 
+from .constants import DT_SHORT_FORMAT
 from .enums import CorpType
 
 
@@ -231,6 +232,6 @@ def get_outstanding_txns_from_date() -> datetime:
     return from_date
 
 
-def string_to_date(date_val: str, dt_format: str = '%Y-%m-%d'):
+def string_to_date(date_val: str, dt_format: str = DT_SHORT_FORMAT):
     """Return formatted local time."""
     return datetime.strptime(date_val, dt_format).date()

@@ -18,6 +18,7 @@ from flask import current_app
 
 from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementSchema as StatementModelSchema
+from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import ContentType, StatementFrequency
 
 from .payment import Payment as PaymentService
@@ -138,8 +139,8 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         statement_svc = Statement()
         statement_svc._dao = statement_dao  # pylint: disable=protected-access
 
-        from_date_string: str = statement_svc.from_date.strftime('%Y-%m-%d')
-        to_date_string: str = statement_svc.to_date.strftime('%Y-%m-%d')
+        from_date_string: str = statement_svc.from_date.strftime(DT_SHORT_FORMAT)
+        to_date_string: str = statement_svc.to_date.strftime(DT_SHORT_FORMAT)
         extension: str = 'pdf' if content_type == ContentType.PDF.value else 'csv'
 
         if statement_svc.frequency == StatementFrequency.DAILY.value:

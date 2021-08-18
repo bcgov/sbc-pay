@@ -26,6 +26,7 @@ from faker import Faker
 from pay_api.models import (
     CfsAccount, DistributionCode, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem,
     PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices, StatementSettings)
+from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
     PaymentSystem, Role, RoutingSlipStatus)
@@ -675,7 +676,7 @@ def get_routing_slip_request(
     """Return a routing slip request dictionary."""
     routing_slip_payload: Dict[str, any] = {
         'number': number,
-        'routingSlipDate': datetime.now().strftime('%Y-%m-%d'),
+        'routingSlipDate': datetime.now().strftime(DT_SHORT_FORMAT),
         'paymentAccount': {
             'accountName': 'TEST'
         },
@@ -684,7 +685,7 @@ def get_routing_slip_request(
     for cheque_detail in cheque_receipt_numbers:
         routing_slip_payload['payments'].append({
             'paymentMethod': cheque_detail[1],
-            'paymentDate': datetime.now().strftime('%Y-%m-%d'),
+            'paymentDate': datetime.now().strftime(DT_SHORT_FORMAT),
             'chequeReceiptNumber': cheque_detail[0],
             'paidAmount': cheque_detail[2]
         })

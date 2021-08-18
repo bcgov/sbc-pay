@@ -24,6 +24,7 @@ from marshmallow import fields
 from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import relationship
 
+from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import PaymentMethod
 from pay_api.utils.util import get_str_by_path
 
@@ -127,9 +128,9 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         created_to: datetime = None
 
         if end_date := get_str_by_path(search_filter, 'dateFilter/endDate'):
-            created_to = datetime.strptime(end_date, '%Y-%m-%d')
+            created_to = datetime.strptime(end_date, DT_SHORT_FORMAT)
         if start_date := get_str_by_path(search_filter, 'dateFilter/startDate'):
-            created_from = datetime.strptime(start_date, '%Y-%m-%d')
+            created_from = datetime.strptime(start_date, DT_SHORT_FORMAT)
         # if passed in details
         if created_to and created_from:
             # Truncate time for from date and add max time for to date
@@ -139,10 +140,12 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
             created_from = created_from.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(tz_local)
             created_to = created_to.replace(hour=23, minute=59, second=59, microsecond=999999).astimezone(tz_local)
 
-            target = getattr(RoutingSlip, get_str_by_path(search_filter, 'dateFilter/target') or 'routing_slip_date')
+            # If the dateFilter/target is provided then filter on that column, else filter on routing_slip_date
+            target_date = getattr(RoutingSlip,
+                                  get_str_by_path(search_filter, 'dateFilter/target') or 'routing_slip_date')
 
             query = query.filter(
-                func.timezone(tz_name, func.timezone('UTC', target))
+                func.timezone(tz_name, func.timezone('UTC', target_date))
                     .between(created_from, created_to))
         return query
 

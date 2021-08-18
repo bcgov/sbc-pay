@@ -89,7 +89,7 @@ class RoutingSlipSearch(Resource):
 
 
 @cors_preflight('POST')
-@API.route('/<string:day>/reports', methods=['POST', 'OPTIONS'])
+@API.route('/<string:date>/reports', methods=['POST', 'OPTIONS'])
 class RoutingSlipReport(Resource):
     """Endpoint resource to generate report for routing slips."""
 
@@ -97,11 +97,11 @@ class RoutingSlipReport(Resource):
     @cors.crossdomain(origin='*')
     @_jwt.has_one_of_roles([Role.FAS_REPORTS.value])
     @_tracing.trace()
-    def post(day: str):
+    def post(date: str):
         """Create routing slip report."""
         current_app.logger.info('<RoutingSlipReport.post')
 
-        pdf, file_name = RoutingSlipService.create_daily_reports(day)
+        pdf, file_name = RoutingSlipService.create_daily_reports(date)
 
         response = Response(pdf, 201)
         response.headers.set('Content-Disposition', 'attachment', filename='{}.pdf'.format(file_name))

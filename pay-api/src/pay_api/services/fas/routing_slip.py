@@ -35,8 +35,6 @@ from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import get_local_time, string_to_date
 
-DT_FORMAT = '%Y-%m-%d'
-
 
 class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Service to manage Routing slip related operations."""
@@ -175,13 +173,13 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
 
     @classmethod
     @user_context
-    def create_daily_reports(cls, day: str, **kwargs):
+    def create_daily_reports(cls, date: str, **kwargs):
         """Create and return daily report for the day provided."""
         routing_slips: List[RoutingSlipModel] = RoutingSlipModel.search(
             dict(
                 dateFilter=dict(
-                    endDate=day,
-                    startDate=day,
+                    endDate=date,
+                    startDate=date,
                     target='created_on'
                 )
             ),
@@ -208,9 +206,9 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
 
         report_dict = dict(
             templateName='routing_slip_report',
-            reportName=f'Routing-Slip-Daily-Report-{day}',
+            reportName=f'Routing-Slip-Daily-Report-{date}',
             templateVars=dict(
-                day=day,
+                day=date,
                 reportDay=str(get_local_time(datetime.now())),
                 total=total,
                 numberOfCashReceipts=no_of_cash,
