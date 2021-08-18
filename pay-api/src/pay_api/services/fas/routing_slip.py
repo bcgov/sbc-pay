@@ -324,6 +324,27 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         return cls.find_by_number(rs_number)
 
     @classmethod
+    def do_link(cls, rs_number: str, parent_rs_number: str) -> Dict[str, any]:
+        """Link routing slip to parent routing slip."""
+        routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(rs_number)
+        parent_routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(parent_rs_number)
+        if routing_slip is None or parent_routing_slip is None:
+            raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
+
+        # do validations if its linkable
+        RoutingSlip._validate_linking(routing_slip=routing_slip, parent_rs_slip=parent_routing_slip)
+
+        routing_slip.parent_number = parent_routing_slip.number
+
+        # transfer the amount to parent.
+        # we keep the total amount as such and transfer only the remaining amount.
+        parent_routing_slip.remaining_amount += routing_slip.remaining_amount
+        routing_slip.remaining_amount = 0
+
+        routing_slip.commit()
+        return cls.find_by_number(rs_number)
+
+    @classmethod
     def update(cls, rs_number: str, action: str, request_json: Dict[str, any]) -> Dict[str, any]:
         """Update routing slip."""
         if (patch_action := PatchActions.from_value(action)) is None:
@@ -338,3 +359,24 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
 
         routing_slip.save()
         return cls.find_by_number(rs_number)
+
+    @staticmethod
+    def _validate_linking(routing_slip: RoutingSlipModel, parent_rs_slip: RoutingSlipModel) -> None:
+        """Validate the linking.
+
+        1). child already has a parent.
+        2). its already a parent.
+        3). one of them has transactions
+        """
+        if routing_slip.parent:
+            raise BusinessException(Error.RS_ALREADY_A_PARENT)
+        children = RoutingSlipModel.find_children(routing_slip.number)
+        if len(children) > 0:
+            raise BusinessException(Error.RS_ALREADY_A_PARENT)
+
+        # has one of these has pending
+        if parent_rs_slip.invoices:
+            raise BusinessException(Error.RS_PARENT_HAS_TRANSACTIONS)
+
+        if any(child.invoices for child in children if child.invoices is not None):
+            raise BusinessException(Error.RS_CHILD_HAS_TRANSACTIONS)

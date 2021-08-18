@@ -14,26 +14,29 @@
 """Resource for Routing slip Link endpoints."""
 from http import HTTPStatus
 
-from flask import current_app, jsonify
+from flask import current_app, jsonify, request
 from flask_restx import Namespace, Resource, cors
 
+from pay_api.exceptions import BusinessException, error_to_response
+from pay_api.schemas import utils as schema_utils
 from pay_api.services.fas import RoutingSlipService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.enums import Role
+from pay_api.utils.errors import Error
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
-
 
 API = Namespace('fas', description='Fee Accounting System Links')
 
 
-@cors_preflight('GET,PUT')
-@API.route('/', methods=['GET', 'PUT', 'OPTIONS'])
-class RoutingSlipLinks(Resource):
+@cors_preflight('GET')
+@API.route('/', methods=['GET', 'OPTIONS'])
+class RoutingSlipLink(Resource):
     """Endpoint resource to deal with links in routing slips."""
 
     @staticmethod
     @cors.crossdomain(origin='*')
+    @_jwt.has_one_of_roles([Role.FAS_VIEW.value])
     @_tracing.trace()
     def get(routing_slip_number: str):
         """Get routing slip links ;ie parent/child details."""
@@ -47,11 +50,29 @@ class RoutingSlipLinks(Resource):
         current_app.logger.debug('>RoutingSlipLink.get')
         return jsonify(response), status
 
+
+@cors_preflight('POST')
+@API.route('/', methods=['POST', 'OPTIONS'])
+class RoutingSlipLinks(Resource):
+    """Endpoint resource to deal with links in routing slips."""
+
     @staticmethod
     @cors.crossdomain(origin='*')
     @_jwt.has_one_of_roles([Role.FAS_EDIT.value])
     @_tracing.trace()
-    def put(routing_slip_number: str):
-        """Put routing slip."""
-        current_app.logger.info('<RoutingSlips.put', routing_slip_number)
-        # TODO
+    def post():
+        """Get routing slip links ;ie parent/child details."""
+        current_app.logger.info('<RoutingSlipLink.post')
+        try:
+            request_json = request.get_json()
+            valid_format, errors = schema_utils.validate(request_json, 'routing_slip_link_request')
+            if not valid_format:
+                return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+
+            response, status = RoutingSlipService.do_link(request_json.get('routingSlipNumber'),
+                                                          request_json.get('parentRoutingSlipNumber')), HTTPStatus.OK
+        except BusinessException as exception:
+            return exception.response()
+
+        current_app.logger.debug('>RoutingSlipLink.post')
+        return jsonify(response), status

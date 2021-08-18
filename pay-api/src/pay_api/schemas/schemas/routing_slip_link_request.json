@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/routing_slip",
+  "type": "object",
+  "title": "Routing Slip Link ",
+  "required": [
+  ],
+  "properties": {
+    "number": {
+      "$id": "#/properties/routingSlipNumber",
+      "type": "string",
+      "title": "Child Routing Slip Number",
+      "pattern": "^(.*)$"
+    },
+    "properties": {
+    "number": {
+      "$id": "#/properties/parentRoutingSlipNumbers",
+      "type": "string",
+      "title": "Parent Routing Slip Number",
+      "pattern": "^(.*)$"
+    }
+
+}
