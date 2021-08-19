@@ -46,9 +46,9 @@ class Refund(Resource):
             if not valid_format:
                 return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
-            RefundService.create_refund(invoice_id, request_json)
+            response = RefundService.create_refund(invoice_id, request_json)
 
         except BusinessException as exception:
             return exception.response()
         current_app.logger.debug('>Refund.post')
-        return jsonify(None), HTTPStatus.ACCEPTED
+        return jsonify(response), HTTPStatus.ACCEPTED

@@ -20,6 +20,7 @@ Test-Suite to ensure that the /receipt endpoint is working as expected.
 import json
 
 from pay_api.utils.enums import Role
+from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from tests.utilities.base_test import (
     get_claims, get_payment_request, get_payment_request_with_payment_method, token_header)
 
@@ -48,6 +49,7 @@ def test_create_refund(session, client, jwt, app, stan_server):
     rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
                      headers=headers)
     assert rv.status_code == 202
+    assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['DIRECT_PAY.PAID']
 
 
 def test_create_drawdown_refund(session, client, jwt, app, stan_server):
@@ -69,6 +71,7 @@ def test_create_drawdown_refund(session, client, jwt, app, stan_server):
     rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
                      headers=headers)
     assert rv.status_code == 202
+    assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['DIRECT_PAY.PAID']
 
 
 def test_create_duplicate_refund_fails(session, client, jwt, app, stan_server):

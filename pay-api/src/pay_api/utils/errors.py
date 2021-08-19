@@ -67,6 +67,10 @@ class Error(Enum):
     FAS_INVALID_ROUTING_SLIP_NUMBER = 'FAS_INVALID_ROUTING_SLIP_NUMBER', HTTPStatus.BAD_REQUEST
     PATCH_INVALID_ACTION = 'PATCH_INVALID_ACTION', HTTPStatus.BAD_REQUEST
 
+    # Refund Errors
+    ROUTING_SLIP_REFUND = 'ROUTING_SLIP_REFUND', HTTPStatus.BAD_REQUEST
+    NO_FEE_REFUND = 'NO_FEE_REFUND', HTTPStatus.BAD_REQUEST
+
     def __new__(cls, code, status, message=None, details=None):
         """Attributes for the enum."""
         obj = object.__new__(cls)

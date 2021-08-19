@@ -37,6 +37,7 @@ from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMe
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import get_local_formatted_date_time, get_str_by_path
+from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 
 
 class RefundService:  # pylint: disable=too-many-instance-attributes
@@ -133,12 +134,12 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     @user_context
-    def create_refund(cls, invoice_id: int, request: Dict[str, str], **kwargs) -> None:
+    def create_refund(cls, invoice_id: int, request: Dict[str, str], **kwargs) -> Dict[str, str]:
         """Create refund."""
         current_app.logger.debug('<create refund')
         # Do validation by looking up the invoice
         invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
-        # Allow refund only for direct pay payments, and only if the status of invoice is PAID/UPDATE_REVENUE_ACCOUNT
+
         paid_statuses = (
             InvoiceStatus.PAID.value, InvoiceStatus.APPROVED.value, InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value
         )
@@ -154,11 +155,13 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         refund.flush()
 
         cls._process_cfs_refund(invoice)
+        message = REFUND_SUCCESS_MESSAGES.get(f'{invoice.payment_method_code}.{invoice.invoice_status_code}')
 
         # set invoice status
         invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
         invoice.refund = invoice.total  # no partial refund
         invoice.save()
+        return {'message': message}
 
     @classmethod
     def _process_cfs_refund(cls, invoice: InvoiceModel):
@@ -168,11 +171,16 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
             payment.payment_status_code = PaymentStatus.REFUNDED.value
             payment.flush()
-        else:
+        elif invoice.payment_method_code in (
+                [PaymentMethod.ONLINE_BANKING.value, PaymentMethod.PAD.value, PaymentMethod.CC.value]):
             # Create credit memo in CFS if the invoice status is PAID.
             # Don't do anything is the status is APPROVED.
-            if invoice.invoice_status_code == InvoiceStatus.APPROVED.value:
+            if invoice.invoice_status_code == InvoiceStatus.APPROVED.value \
+                    and InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
+                        invoice.id, InvoiceReferenceStatus.ACTIVE.value
+                    ) is None:
                 return
+
             cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(invoice.payment_account_id)
             line_items: List[PaymentLineItemModel] = []
             for line_item in invoice.payment_line_items:
@@ -187,6 +195,12 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
                         amount=invoice.total,
                         remaining_amount=invoice.total,
                         account_id=invoice.payment_account_id).save()
+        elif invoice.payment_method_code == PaymentMethod.INTERNAL.value:
+            if invoice.total == 0:
+                raise BusinessException(Error.NO_FEE_REFUND)
+            raise BusinessException(Error.ROUTING_SLIP_REFUND)
+        else:
+            raise BusinessException(Error.INVALID_REQUEST)
 
     @classmethod
     def _publish_to_mailer(cls, invoice: InvoiceModel):
