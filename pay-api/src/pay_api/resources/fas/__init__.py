@@ -21,3 +21,4 @@ All services have 2 defaults sets of endpoints:
 That are used to expose operational health information about the service, and meta information.
 """
 from .routing_slip import API as ROUTING_SLIP_API
+from .routing_slip_links import API as ROUTING_SLIP_LINK_API

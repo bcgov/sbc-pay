@@ -18,13 +18,15 @@ Test-Suite to ensure that the /routing-slips endpoint is working as expected.
 """
 
 import json
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 
 import pytest
 
+from pay_api.models import PaymentAccount
 from pay_api.schemas import utils as schema_utils
+from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import PatchActions, PaymentMethod, Role, RoutingSlipStatus
-from tests.utilities.base_test import get_claims, get_routing_slip_request, token_header
+from tests.utilities.base_test import factory_invoice, get_claims, get_routing_slip_request, token_header
 
 
 @pytest.mark.parametrize('payload', [
@@ -51,10 +53,11 @@ def test_create_routing_slips(session, client, jwt, app, payload):
 
 def test_create_routing_slips_search(session, client, jwt, app):
     """Assert that the search works."""
-    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
+    claims = get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value])
+    token = jwt.create_jwt(claims, token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     payload = get_routing_slip_request()
-    initiator = payload.get('paymentAccount').get('accountName')
+    initiator = claims.get('name')
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
     assert rv.status_code == 201
     rs_number = rv.json.get('number')
@@ -89,8 +92,8 @@ def test_create_routing_slips_search(session, client, jwt, app):
 
     # search with dates
 
-    valid_date_filter = {'startDate': (date.today() - timedelta(1)).strftime('%m/%d/%Y'),
-                         'endDate': (date.today() + timedelta(1)).strftime('%m/%d/%Y')}
+    valid_date_filter = {'startDate': (date.today() - timedelta(1)).strftime(DT_SHORT_FORMAT),
+                         'endDate': (date.today() + timedelta(1)).strftime(DT_SHORT_FORMAT)}
     rv = client.post('/api/v1/fas/routing-slips/queries',
                      data=json.dumps({'routingSlipNumber': rs_number, 'dateFilter': valid_date_filter}),
                      headers=headers)
@@ -99,8 +102,8 @@ def test_create_routing_slips_search(session, client, jwt, app):
     assert len(items) == 1
     assert items[0].get('number') == rs_number
 
-    invalid_date_filter = {'startDate': (date.today() + timedelta(100)).strftime('%m/%d/%Y'),
-                           'endDate': (date.today() + timedelta(1)).strftime('%m/%d/%Y')}
+    invalid_date_filter = {'startDate': (date.today() + timedelta(100)).strftime(DT_SHORT_FORMAT),
+                           'endDate': (date.today() + timedelta(1)).strftime(DT_SHORT_FORMAT)}
     rv = client.post('/api/v1/fas/routing-slips/queries',
                      data=json.dumps({'routingSlipNumber': rs_number, 'dateFilter': invalid_date_filter}),
                      headers=headers)
@@ -124,6 +127,77 @@ def test_create_routing_slips_search(session, client, jwt, app):
 
     items = rv.json.get('items')
     assert len(items) == 0
+
+
+def test_create_routing_slips_search_with_folio_number(session, client, jwt, app):
+    """Assert that the search works."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    payload = get_routing_slip_request()
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 201
+    payment_account_id = rv.json.get('paymentAccount').get('id')
+    payment_account = PaymentAccount(id=payment_account_id)
+    folio_number = 'test_folio'
+    another_folio_number = 'another_test_folio'
+    invoice = factory_invoice(payment_account, folio_number=folio_number, routing_slip=rv.json.get('number'),
+                              payment_method_code=PaymentMethod.INTERNAL.value)
+    invoice.save()
+
+    # search with routing slip number works
+
+    rv = client.post('/api/v1/fas/routing-slips/queries',
+                     data=json.dumps({'routingSlipNumber': rv.json.get('number'), 'folioNumber': folio_number}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 1, 'folio and routing slip combo works.'
+
+    rv = client.post('/api/v1/fas/routing-slips/queries',
+                     data=json.dumps({'folioNumber': folio_number}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 1, 'folio alone works.'
+
+    # create another routing slip with folo
+
+    payload = get_routing_slip_request(number='99999')
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 201
+    payment_account_id = rv.json.get('paymentAccount').get('id')
+    payment_account = PaymentAccount(id=payment_account_id)
+    routing_slip_numbr = rv.json.get('number')
+    invoice = factory_invoice(payment_account, folio_number=folio_number, routing_slip=routing_slip_numbr,
+                              payment_method_code=PaymentMethod.INTERNAL.value)
+    invoice.save()
+
+    invoice = factory_invoice(payment_account, folio_number=another_folio_number, routing_slip=rv.json.get('number'),
+                              payment_method_code=PaymentMethod.INTERNAL.value)
+    invoice.save()
+
+    rv = client.post('/api/v1/fas/routing-slips/queries',
+                     data=json.dumps({'folioNumber': folio_number}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 2, 'folio alone works.'
+
+    rv = client.post('/api/v1/fas/routing-slips/queries',
+                     data=json.dumps({'routingSlipNumber': routing_slip_numbr, 'folioNumber': folio_number}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 1, 'folio and rs fetches only 1.'
+    assert len(items[0].get('invoices')) == 2, 'fetches all the folios. UI wil filter it out'
+
+    rv = client.post('/api/v1/fas/routing-slips/queries',
+                     data=json.dumps({'routingSlipNumber': routing_slip_numbr}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 1, 'folio and rs fetches only 1.'
+    assert len(items[0].get('invoices')) == 2, 'folio alone works.'
 
 
 def test_create_routing_slips_search_with_receipt(session, client, jwt, app):
@@ -207,3 +281,12 @@ def test_update_routing_slip_status(session, client, jwt, app):
     rv = client.patch(f'/api/v1/fas/routing-slips/TEST?action={PatchActions.UPDATE_STATUS.value}',
                       data=json.dumps({'status': RoutingSlipStatus.BOUNCED.value}), headers=headers)
     assert rv.status_code == 400
+
+
+def test_routing_slip_report(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_REPORTS.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post(f'/api/v1/fas/routing-slips/{datetime.now().strftime(DT_SHORT_FORMAT)}/reports', headers=headers)
+    assert rv.status_code == 201

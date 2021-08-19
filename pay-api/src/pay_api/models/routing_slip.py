@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from operator import and_
-from typing import Dict
+from typing import Dict, List
 
 import pytz
 from flask import current_app
@@ -24,8 +24,10 @@ from marshmallow import fields
 from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import relationship
 
+from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import PaymentMethod
 from pay_api.utils.util import get_str_by_path
+
 from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
 from .db import db, ma
@@ -46,6 +48,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
     total = db.Column(db.Numeric(), nullable=True, default=0)
     remaining_amount = db.Column(db.Numeric(), nullable=True, default=0)
     routing_slip_date = db.Column(db.Date, nullable=False)
+    parent_number = db.Column(db.String(), ForeignKey('routing_slips.number'), nullable=True)
 
     payment_account = relationship(PaymentAccount, foreign_keys=[payment_account_id], lazy='select', innerjoin=True)
     payments = relationship(Payment,
@@ -63,14 +66,21 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
                             lazy='joined'
                             )
 
+    parent = relationship('RoutingSlip', remote_side=[number], lazy='select')
+
     @classmethod
     def find_by_number(cls, number: str) -> RoutingSlip:
         """Return a routing slip by number."""
         return cls.query.filter_by(number=number).one_or_none()
 
     @classmethod
+    def find_children(cls, number: str) -> List[RoutingSlip]:
+        """Return children for the routing slip."""
+        return cls.query.filter_by(parent_number=number).all()
+
+    @classmethod
     def search(cls, search_filter: Dict,  # pylint: disable=too-many-arguments
-               page: int, limit: int, return_all: bool, max_no_records: int = 0):
+               page: int, limit: int, return_all: bool, max_no_records: int = 0) -> (List[RoutingSlip], int):
         """Search for routing slips by the criteria provided."""
         query = db.session.query(RoutingSlip)
 
@@ -87,7 +97,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
 
         query = query.join(PaymentAccount)
         if initiator := search_filter.get('initiator', None):
-            query = query.filter(PaymentAccount.name.ilike('%' + initiator + '%'))
+            query = query.filter(RoutingSlip.created_name.ilike('%' + initiator + '%'))
 
         query = cls._add_receipt_number(query, search_filter)
 
@@ -116,10 +126,11 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         # Find start and end dates for folio search
         created_from: datetime = None
         created_to: datetime = None
+
         if end_date := get_str_by_path(search_filter, 'dateFilter/endDate'):
-            created_to = datetime.strptime(end_date, '%m/%d/%Y')
+            created_to = datetime.strptime(end_date, DT_SHORT_FORMAT)
         if start_date := get_str_by_path(search_filter, 'dateFilter/startDate'):
-            created_from = datetime.strptime(start_date, '%m/%d/%Y')
+            created_from = datetime.strptime(start_date, DT_SHORT_FORMAT)
         # if passed in details
         if created_to and created_from:
             # Truncate time for from date and add max time for to date
@@ -128,8 +139,14 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
 
             created_from = created_from.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(tz_local)
             created_to = created_to.replace(hour=23, minute=59, second=59, microsecond=999999).astimezone(tz_local)
+
+            # If the dateFilter/target is provided then filter on that column, else filter on routing_slip_date
+            target_date = getattr(RoutingSlip,
+                                  get_str_by_path(search_filter, 'dateFilter/target') or 'routing_slip_date')
+
             query = query.filter(
-                func.timezone(tz_name, func.timezone('UTC', RoutingSlip.created_on)).between(created_from, created_to))
+                func.timezone(tz_name, func.timezone('UTC', target_date))
+                    .between(created_from, created_to))
         return query
 
     @classmethod
@@ -164,3 +181,4 @@ class RoutingSlipSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-an
     payment_account = ma.Nested(PaymentAccountSchema, many=False, data_key='payment_account')
     invoices = ma.Nested(InvoiceSchema, many=True, data_key='invoices', exclude=['_links'])
     status = fields.String(data_key='status')
+    parent_number = fields.String(data_key='parent_number')

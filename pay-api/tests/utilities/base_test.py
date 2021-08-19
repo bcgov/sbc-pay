@@ -21,12 +21,15 @@ from datetime import datetime
 from random import randrange
 from typing import Dict, List, Tuple
 
+from faker import Faker
+
 from pay_api.models import (
     CfsAccount, DistributionCode, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem,
-    PaymentTransaction, Receipt, Statement, StatementInvoices, StatementSettings)
+    PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices, StatementSettings)
+from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
-    PaymentSystem, Role)
+    PaymentSystem, Role, RoutingSlipStatus)
 
 
 token_header = {
@@ -34,6 +37,8 @@ token_header = {
     'typ': 'JWT',
     'kid': 'sbc-auth-web'
 }
+
+fake = Faker()
 
 
 def get_claims(app_request=None, role: str = Role.EDITOR.value, username: str = 'CP0001234', login_source: str = None,
@@ -56,6 +61,7 @@ def get_claims(app_request=None, role: str = Role.EDITOR.value, username: str = 
                     ]
             },
         'preferred_username': username,
+        'name': username,
         'username': username,
         'loginSource': login_source,
         'roles':
@@ -341,12 +347,35 @@ def factory_payment(
     return payment
 
 
+def factory_routing_slip(
+        number: str = fake.name(),
+        payment_account_id=None,
+        status: str = RoutingSlipStatus.ACTIVE.value,
+        total: int = 0,
+        remaining_amount: int = 0,
+        routing_slip_date=datetime.now()
+):
+    """Return Factory."""
+    routing_slip: RoutingSlip = RoutingSlip(
+        number=number,
+        payment_account_id=payment_account_id,
+        status=status,
+        total=total,
+        remaining_amount=remaining_amount,
+        created_by='test',
+        routing_slip_date=routing_slip_date
+    )
+    return routing_slip
+
+
 def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.value,
                     corp_type_code='CP',
                     business_identifier: str = 'CP0001234',
                     service_fees: float = 0.0, total=0,
                     payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
-                    created_on: datetime = datetime.now()):
+                    created_on: datetime = datetime.now(),
+                    routing_slip=None,
+                    folio_number=1234567890):
     """Return Factory."""
     return Invoice(
         invoice_status_code=status_code,
@@ -356,10 +385,11 @@ def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.va
         created_on=created_on,
         business_identifier=business_identifier,
         corp_type_code=corp_type_code,
-        folio_number='1234567890',
+        folio_number=folio_number,
         service_fees=service_fees,
         bcol_account=payment_account.bcol_account,
-        payment_method_code=payment_method_code
+        payment_method_code=payment_method_code,
+        routing_slip=routing_slip
     )
 
 
@@ -646,7 +676,7 @@ def get_routing_slip_request(
     """Return a routing slip request dictionary."""
     routing_slip_payload: Dict[str, any] = {
         'number': number,
-        'routingSlipDate': datetime.now().strftime('%Y-%m-%d'),
+        'routingSlipDate': datetime.now().strftime(DT_SHORT_FORMAT),
         'paymentAccount': {
             'accountName': 'TEST'
         },
@@ -655,7 +685,7 @@ def get_routing_slip_request(
     for cheque_detail in cheque_receipt_numbers:
         routing_slip_payload['payments'].append({
             'paymentMethod': cheque_detail[1],
-            'paymentDate': datetime.now().strftime('%Y-%m-%d'),
+            'paymentDate': datetime.now().strftime(DT_SHORT_FORMAT),
             'chequeReceiptNumber': cheque_detail[0],
             'paidAmount': cheque_detail[2]
         })
