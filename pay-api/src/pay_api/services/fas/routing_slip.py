@@ -335,6 +335,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         RoutingSlip._validate_linking(routing_slip=routing_slip, parent_rs_slip=parent_routing_slip)
 
         routing_slip.parent_number = parent_routing_slip.number
+        routing_slip.status = RoutingSlipStatus.LINKED.value
 
         # transfer the amount to parent.
         # we keep the total amount as such and transfer only the remaining amount.
@@ -369,7 +370,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         3). one of them has transactions
         """
         if routing_slip.parent:
-            raise BusinessException(Error.RS_ALREADY_A_PARENT)
+            raise BusinessException(Error.RS_ALREADY_HAS_A_PARENT)
         children = RoutingSlipModel.find_children(routing_slip.number)
         if len(children) > 0:
             raise BusinessException(Error.RS_ALREADY_A_PARENT)
@@ -377,6 +378,6 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         # has one of these has pending
         if parent_rs_slip.invoices:
             raise BusinessException(Error.RS_PARENT_HAS_TRANSACTIONS)
-
-        if any(child.invoices for child in children if child.invoices is not None):
+        # has one of these has pending
+        if routing_slip.invoices:
             raise BusinessException(Error.RS_CHILD_HAS_TRANSACTIONS)

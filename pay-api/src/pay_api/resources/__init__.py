@@ -31,7 +31,7 @@ from .apihelper import Api
 from .bank_accounts import API as BANK_ACCOUNTS_API
 from .code import API as CODES_API
 from .distributions import API as DISTRIBUTION_API
-from .fas import ROUTING_SLIP_API, ROUTING_SLIP_LINK_API
+from .fas import ROUTING_SLIP_API
 from .fee import API as FEE_API
 from .fee_schedule import API as FEE_SCHEDULE_API
 from .invoice import API as INVOICE_API
@@ -94,5 +94,3 @@ API.add_namespace(PAYMENT_API, path='/accounts/<string:account_id>/payments')
 
 API.add_namespace(CODES_API, path='/codes')
 API.add_namespace(ROUTING_SLIP_API, path='/fas/routing-slips')
-API.add_namespace(ROUTING_SLIP_LINK_API, path='/fas/routing-slips/<string:routing_slip_number>/links')
-API.add_namespace(ROUTING_SLIP_LINK_API, path='/fas/routing-slips/links')
