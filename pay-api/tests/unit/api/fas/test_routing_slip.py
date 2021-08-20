@@ -20,6 +20,7 @@ Test-Suite to ensure that the /routing-slips endpoint is working as expected.
 import json
 from datetime import date, datetime, timedelta
 
+from faker import Faker
 import pytest
 
 from pay_api.models import PaymentAccount
@@ -27,6 +28,8 @@ from pay_api.schemas import utils as schema_utils
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import PatchActions, PaymentMethod, Role, RoutingSlipStatus
 from tests.utilities.base_test import factory_invoice, get_claims, get_routing_slip_request, token_header
+
+fake = Faker()
 
 
 @pytest.mark.parametrize('payload', [
@@ -127,6 +130,79 @@ def test_create_routing_slips_search(session, client, jwt, app):
 
     items = rv.json.get('items')
     assert len(items) == 0
+
+
+def test_link_routing_slip(session, client, jwt, app):
+    """Assert that the linking of routing slip works as expected."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, Role.FAS_SEARCH.value]),
+                           token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    child = get_routing_slip_request()
+    parent = get_routing_slip_request(number=fake.name())
+    paid_amount_child = child.get('payments')[0].get('paidAmount')
+    paid_amount_parent = parent.get('payments')[0].get('paidAmount')
+    client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
+    client.post('/api/v1/fas/routing-slips', data=json.dumps(parent), headers=headers)
+
+    rv = client.get(f"/api/v1/fas/routing-slips/{child.get('number')}/links", headers=headers)
+    assert rv.json.get('parent') is None
+
+    # link them together ,success cases
+    data = {'childRoutingSlipNumber': f"{child.get('number')}", 'parentRoutingSlipNumber': f"{parent.get('number')}"}
+    rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
+    assert rv.json.get('status') == 'LINKED'
+    assert rv.json.get('remainingAmount') == 0
+    assert rv.json.get('total') == paid_amount_child
+
+    rv = client.get(f"/api/v1/fas/routing-slips/{child.get('number')}/links", headers=headers)
+    assert rv.json.get('parent') is not None
+    assert rv.json.get('parent').get('number') == parent.get('number')
+    assert rv.json.get('parent').get('remainingAmount') == paid_amount_child + \
+           paid_amount_parent
+    assert rv.json.get('parent').get('total') == paid_amount_parent
+
+    rv = client.get(f"/api/v1/fas/routing-slips/{parent.get('number')}/links", headers=headers)
+    assert len(rv.json.get('children')) == 1
+    assert rv.json.get('children')[0].get('number') == child.get('number')
+
+    # assert errors
+    data = {'childRoutingSlipNumber': f"{child.get('number')}", 'parentRoutingSlipNumber': f"{parent.get('number')}"}
+    rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
+    assert rv.json.get('type') == 'RS_ALREADY_HAS_A_PARENT'
+    assert rv.status_code == 400
+
+    # assert errors
+    data = {'childRoutingSlipNumber': f"{parent.get('number')}", 'parentRoutingSlipNumber': f"{child.get('number')}"}
+    rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
+    assert rv.json.get('type') == 'RS_ALREADY_A_PARENT'
+    assert rv.status_code == 400
+
+    # assert transactions
+    child = get_routing_slip_request(number=fake.name())
+    parent = get_routing_slip_request(number=fake.name())
+    rv1 = client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
+    rv2 = client.post('/api/v1/fas/routing-slips', data=json.dumps(parent), headers=headers)
+    payment_account_id = rv1.json.get('paymentAccount').get('id')
+    payment_account = PaymentAccount(id=payment_account_id)
+    folio_number = 'test_folio'
+    invoice = factory_invoice(payment_account, folio_number=folio_number, routing_slip=rv1.json.get('number'),
+                              payment_method_code=PaymentMethod.INTERNAL.value)
+    invoice.save()
+    # assert errors
+    data = {'childRoutingSlipNumber': f"{child.get('number')}", 'parentRoutingSlipNumber': f"{parent.get('number')}"}
+    rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
+    assert rv.json.get('type') == 'RS_CHILD_HAS_TRANSACTIONS'
+    assert rv.status_code == 400
+
+    payment_account_id = rv2.json.get('paymentAccount').get('id')
+    payment_account = PaymentAccount(id=payment_account_id)
+    invoice2 = factory_invoice(payment_account, folio_number=folio_number, routing_slip=rv2.json.get('number'),
+                               payment_method_code=PaymentMethod.INTERNAL.value)
+    invoice2.save()
+    data = {'childRoutingSlipNumber': f"{child.get('number')}", 'parentRoutingSlipNumber': f"{parent.get('number')}"}
+    rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
+    assert rv.json.get('type') == 'RS_PARENT_HAS_TRANSACTIONS'
+    assert rv.status_code == 400
 
 
 def test_create_routing_slips_search_with_folio_number(session, client, jwt, app):

@@ -348,7 +348,7 @@ def factory_payment(
 
 
 def factory_routing_slip(
-        number: str = fake.name(),
+        number: str = None,
         payment_account_id=None,
         status: str = RoutingSlipStatus.ACTIVE.value,
         total: int = 0,
@@ -357,7 +357,7 @@ def factory_routing_slip(
 ):
     """Return Factory."""
     routing_slip: RoutingSlip = RoutingSlip(
-        number=number,
+        number=number or fake.name(),
         payment_account_id=payment_account_id,
         status=status,
         total=total,

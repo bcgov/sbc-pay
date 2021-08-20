@@ -124,6 +124,7 @@ class Role(Enum):
     FAS_SEARCH = 'fas_search'
     FAS_VIEW = 'fas_view'
     FAS_CREATE = 'fas_create'
+    FAS_LINK = 'fas_link'
 
 
 class Code(Enum):
@@ -208,6 +209,7 @@ class RoutingSlipStatus(Enum):
     NSF = 'NSF'
     REFUND = 'REFUND'
     LAST = 'LAST'
+    LINKED = 'LINKED'
 
 
 class PatchActions(Enum):
