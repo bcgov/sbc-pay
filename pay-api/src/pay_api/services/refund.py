@@ -155,6 +155,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         refund.flush()
 
         cls._process_cfs_refund(invoice)
+
         message = REFUND_SUCCESS_MESSAGES.get(f'{invoice.payment_method_code}.{invoice.invoice_status_code}')
 
         # set invoice status

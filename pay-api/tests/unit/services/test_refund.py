@@ -23,13 +23,11 @@ from pay_api.exceptions import BusinessException
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.services import RefundService
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentStatus, TransactionStatus
+from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_transaction,
     factory_receipt)
-import pytest
-from pay_api.utils.enums import PaymentMethod, InvoiceStatus, PaymentStatus
-from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 
 
 def test_create_refund_for_unpaid_invoice(session):
@@ -61,7 +59,7 @@ def test_create_refund_for_paid_invoice(session, monkeypatch, payment_method, in
     payment_account = factory_payment_account()
     payment_account.save()
 
-    i = factory_invoice(payment_account=payment_account)
+    i = factory_invoice(payment_account=payment_account, payment_method_code=payment_method)
     i.save()
     if has_reference:
         inv_ref = factory_invoice_reference(i.id)
@@ -81,10 +79,8 @@ def test_create_refund_for_paid_invoice(session, monkeypatch, payment_method, in
 
     message = RefundService.create_refund(invoice_id=i.id, request={'reason': 'Test'})
     i = InvoiceModel.find_by_id(i.id)
-    payment: PaymentModel = PaymentModel.find_by_id(payment.id)
 
     assert i.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
-    assert payment.payment_status_code == PaymentStatus.REFUNDED.value
     assert message['message'] == expected
 
 
