@@ -71,6 +71,11 @@ class Error(Enum):
     ROUTING_SLIP_REFUND = 'ROUTING_SLIP_REFUND', HTTPStatus.BAD_REQUEST
     NO_FEE_REFUND = 'NO_FEE_REFUND', HTTPStatus.BAD_REQUEST
 
+    RS_ALREADY_A_PARENT = 'RS_ALREADY_A_PARENT', HTTPStatus.BAD_REQUEST
+    RS_ALREADY_HAS_A_PARENT = 'RS_ALREADY_HAS_A_PARENT', HTTPStatus.BAD_REQUEST
+    RS_PARENT_HAS_TRANSACTIONS = 'RS_PARENT_HAS_TRANSACTIONS', HTTPStatus.BAD_REQUEST
+    RS_CHILD_HAS_TRANSACTIONS = 'RS_CHILD_HAS_TRANSACTIONS', HTTPStatus.BAD_REQUEST
+
     def __new__(cls, code, status, message=None, details=None):
         """Attributes for the enum."""
         obj = object.__new__(cls)

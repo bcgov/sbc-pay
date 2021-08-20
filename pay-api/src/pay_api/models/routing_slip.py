@@ -173,6 +173,7 @@ class RoutingSlipSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-an
         """Returns all the fields from the SQLAlchemy class."""
 
         model = RoutingSlip
+        exclude = ['parent']
 
     total = fields.Float(data_key='total')
     remaining_amount = fields.Float(data_key='remaining_amount')
