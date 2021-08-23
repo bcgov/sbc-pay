@@ -32,7 +32,7 @@ from pay_api import setup_jwt_manager
 from pay_api.models import db as _db
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='session', autouse=True)
 def app():
     """Return a session-wide application configured in TEST mode."""
     _app = create_app('testing')
@@ -111,7 +111,7 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
         return _db
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope='function', autouse=True)
 def session(app, db):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a function-scoped session."""
     with app.app_context():
