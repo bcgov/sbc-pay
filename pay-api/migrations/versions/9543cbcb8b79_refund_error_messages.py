@@ -1,17 +1,18 @@
 """refund_error_messages
 
-Revision ID: 516192cfdf9d
-Revises: 10fa4c64f1da
-Create Date: 2021-08-19 12:48:40.895904
+Revision ID: 9543cbcb8b79
+Revises: f841ac43e15e
+Create Date: 2021-08-23 13:21:30.339589
 
 """
 from alembic import op
 from sqlalchemy import String
 from sqlalchemy.sql import column, table
 
+
 # revision identifiers, used by Alembic.
-revision = '516192cfdf9d'
-down_revision = '10fa4c64f1da'
+revision = '9543cbcb8b79'
+down_revision = 'f841ac43e15e'
 branch_labels = None
 depends_on = None
 
