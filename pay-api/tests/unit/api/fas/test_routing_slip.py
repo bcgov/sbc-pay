@@ -227,7 +227,7 @@ def test_link_routing_slip(client, jwt, app):
     invoice2.save()
     data = {'childRoutingSlipNumber': f"{child.get('number')}", 'parentRoutingSlipNumber': f"{parent.get('number')}"}
     rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
-    assert rv.json.get('type') == 'RS_PARENT_HAS_TRANSACTIONS'
+    assert rv.json.get('type') == 'RS_CHILD_HAS_TRANSACTIONS'
     assert rv.status_code == 400
 
     child1 = get_routing_slip_request(number=fake.name())
