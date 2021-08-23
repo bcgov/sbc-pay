@@ -26,7 +26,7 @@ def upgrade():
     op.bulk_insert(
         rs_status_table,
         [
-            {'code': 'LINKED', 'description': 'Linked to Parent'},
+            {'code': 'LINKED', 'description': 'Linked'},
         ]
     )
 
