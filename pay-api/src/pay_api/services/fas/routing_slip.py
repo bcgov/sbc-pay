@@ -365,15 +365,20 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
     def _validate_linking(routing_slip: RoutingSlipModel, parent_rs_slip: RoutingSlipModel) -> None:
         """Validate the linking.
 
-        1). child already has a parent.
+        1). child already has a parent/already linked.
         2). its already a parent.
-        3). one of them has transactions
+        3). parent_rs_slip has a parent.ie parent_rs_slip shouldn't already be linked
+        4). one of them has transactions
         """
-        if routing_slip.parent:
-            raise BusinessException(Error.RS_ALREADY_HAS_A_PARENT)
+        if RoutingSlip._is_linked_already(routing_slip):
+            raise BusinessException(Error.RS_ALREADY_LINKED)
+
         children = RoutingSlipModel.find_children(routing_slip.number)
-        if len(children) > 0:
+        if children and len(children) > 0:
             raise BusinessException(Error.RS_ALREADY_A_PARENT)
+
+        if RoutingSlip._is_linked_already(parent_rs_slip):
+            raise BusinessException(Error.RS_PARENT_ALREADY_LINKED)
 
         # has one of these has pending
         if parent_rs_slip.invoices:
@@ -381,3 +386,8 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         # has one of these has pending
         if routing_slip.invoices:
             raise BusinessException(Error.RS_CHILD_HAS_TRANSACTIONS)
+
+    @staticmethod
+    def _is_linked_already(routing_slip: RoutingSlipModel):
+        """Find if the rs is already linked."""
+        return routing_slip.parent or routing_slip.status == RoutingSlipStatus.LINKED.value

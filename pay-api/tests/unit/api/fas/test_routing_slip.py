@@ -20,8 +20,8 @@ Test-Suite to ensure that the /routing-slips endpoint is working as expected.
 import json
 from datetime import date, datetime, timedelta
 
-from faker import Faker
 import pytest
+from faker import Faker
 
 from pay_api.models import PaymentAccount
 from pay_api.schemas import utils as schema_utils
@@ -41,7 +41,7 @@ fake = Faker()
                                 ]),
     get_routing_slip_request(cheque_receipt_numbers=[('0001', PaymentMethod.CASH.value, 2000)])
 ])
-def test_create_routing_slips(session, client, jwt, app, payload):
+def test_create_routing_slips(client, jwt, payload):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -54,7 +54,7 @@ def test_create_routing_slips(session, client, jwt, app, payload):
     assert schema_utils.validate(rv.json, 'routing_slip')[0]
 
 
-def test_create_routing_slips_search(session, client, jwt, app):
+def test_create_routing_slips_search(client, jwt, app):
     """Assert that the search works."""
     claims = get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value])
     token = jwt.create_jwt(claims, token_header)
@@ -132,7 +132,33 @@ def test_create_routing_slips_search(session, client, jwt, app):
     assert len(items) == 0
 
 
-def test_link_routing_slip(session, client, jwt, app):
+def test_link_routing_slip_parent_is_a_child(client, jwt):
+    """Assert linking to a child fails."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, Role.FAS_SEARCH.value]),
+                           token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    child = get_routing_slip_request()
+    parent1 = get_routing_slip_request(number=fake.name())
+    parent2 = get_routing_slip_request(number=fake.name())
+    client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
+    client.post('/api/v1/fas/routing-slips', data=json.dumps(parent1), headers=headers)
+    client.post('/api/v1/fas/routing-slips', data=json.dumps(parent2), headers=headers)
+
+    # link parent 1 to parent 2
+
+    data = {'childRoutingSlipNumber': f"{parent1.get('number')}", 'parentRoutingSlipNumber': f"{parent2.get('number')}"}
+    rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
+    assert rv.json.get('status') == 'LINKED'
+
+    # now link child to parent
+
+    data = {'childRoutingSlipNumber': f"{child.get('number')}", 'parentRoutingSlipNumber': f"{parent1.get('number')}"}
+    rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
+    assert rv.json.get('type') == 'RS_PARENT_ALREADY_LINKED'
+    assert rv.status_code == 400
+
+
+def test_link_routing_slip(client, jwt, app):
     """Assert that the linking of routing slip works as expected."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, Role.FAS_SEARCH.value]),
                            token_header)
@@ -168,7 +194,7 @@ def test_link_routing_slip(session, client, jwt, app):
     # assert errors
     data = {'childRoutingSlipNumber': f"{child.get('number')}", 'parentRoutingSlipNumber': f"{parent.get('number')}"}
     rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
-    assert rv.json.get('type') == 'RS_ALREADY_HAS_A_PARENT'
+    assert rv.json.get('type') == 'RS_ALREADY_LINKED'
     assert rv.status_code == 400
 
     # assert errors
@@ -205,7 +231,7 @@ def test_link_routing_slip(session, client, jwt, app):
     assert rv.status_code == 400
 
 
-def test_create_routing_slips_search_with_folio_number(session, client, jwt, app):
+def test_create_routing_slips_search_with_folio_number(client, jwt, app):
     """Assert that the search works."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -276,7 +302,7 @@ def test_create_routing_slips_search_with_folio_number(session, client, jwt, app
     assert len(items[0].get('invoices')) == 2, 'folio alone works.'
 
 
-def test_create_routing_slips_search_with_receipt(session, client, jwt, app):
+def test_create_routing_slips_search_with_receipt(client, jwt, app):
     """Assert that the search works."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -296,7 +322,7 @@ def test_create_routing_slips_search_with_receipt(session, client, jwt, app):
 @pytest.mark.parametrize('payload', [
     get_routing_slip_request(),
 ])
-def test_create_routing_slips_unauthorized(session, client, jwt, app, payload):
+def test_create_routing_slips_unauthorized(client, jwt, payload):
     """Assert that the endpoint returns 401 for users with no fas_editor role."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_USER.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -308,7 +334,7 @@ def test_create_routing_slips_unauthorized(session, client, jwt, app, payload):
 @pytest.mark.parametrize('payload', [
     get_routing_slip_request(),
 ])
-def test_routing_slips_for_errors(session, client, jwt, app, payload):
+def test_routing_slips_for_errors(client, jwt, payload):
     """Assert that the endpoint returns 401 for users with no fas_editor role."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -329,7 +355,7 @@ def test_routing_slips_for_errors(session, client, jwt, app, payload):
     assert rv.status_code == 204
 
 
-def test_update_routing_slip_status(session, client, jwt, app):
+def test_update_routing_slip_status(client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_EDIT.value, Role.FAS_VIEW.value]),
                            token_header)
@@ -359,7 +385,7 @@ def test_update_routing_slip_status(session, client, jwt, app):
     assert rv.status_code == 400
 
 
-def test_routing_slip_report(session, client, jwt, app):
+def test_routing_slip_report(client, jwt, app):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_REPORTS.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
