@@ -230,6 +230,24 @@ def test_link_routing_slip(client, jwt, app):
     assert rv.json.get('type') == 'RS_PARENT_HAS_TRANSACTIONS'
     assert rv.status_code == 400
 
+    child1 = get_routing_slip_request(number=fake.name())
+    client.post('/api/v1/fas/routing-slips', data=json.dumps(child1), headers=headers)
+
+    data = {'childRoutingSlipNumber': f"{child1.get('number')}", 'parentRoutingSlipNumber': f"{child1.get('number')}"}
+    rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
+    assert rv.json.get('type') == 'RS_CANT_LINK_TO_SAME'
+    assert rv.status_code == 400
+
+    # parent record can have transactions
+    payment_account_id = rv2.json.get('paymentAccount').get('id')
+    payment_account = PaymentAccount(id=payment_account_id)
+    invoice2 = factory_invoice(payment_account, folio_number=folio_number, routing_slip=rv2.json.get('number'),
+                               payment_method_code=PaymentMethod.INTERNAL.value)
+    invoice2.save()
+    data = {'childRoutingSlipNumber': f"{child1.get('number')}", 'parentRoutingSlipNumber': f"{parent.get('number')}"}
+    rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
+    assert rv.status_code == 200, 'parent can have transactions'
+
 
 def test_create_routing_slips_search_with_folio_number(client, jwt, app):
     """Assert that the search works."""

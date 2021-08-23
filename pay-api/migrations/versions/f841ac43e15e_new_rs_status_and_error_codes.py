@@ -50,9 +50,9 @@ def upgrade():
                 'detail': 'Linking cannot be performed since the routing already has a parent.'
             },
             {
-                'code': 'RS_PARENT_HAS_TRANSACTIONS',
-                'title': 'Parent Routing Slip has transactions.',
-                'detail': 'Linking cannot be performed since the parent routing slip has transactions.'
+                'code': 'RS_CANT_LINK_TO_SAME',
+                'title': 'Cant self link.',
+                'detail': 'Linking to self is not allowed.'
             },
             {
                 'code': 'RS_CHILD_HAS_TRANSACTIONS',
@@ -72,4 +72,4 @@ def downgrade():
     op.execute('DELETE FROM routing_slip_status_codes where code=\'LINKED\'')
 
     op.execute("DELETE FROM error_codes where code in ('RS_ALREADY_A_PARENT',"
-               "'RS_ALREADY_LINKED','RS_PARENT_HAS_TRANSACTIONS','RS_PARENT_ALREADY_LINKED', 'RS_CHILD_HAS_TRANSACTIONS')")
+               "'RS_ALREADY_LINKED','RS_CANT_LINK_TO_SAME','RS_PARENT_ALREADY_LINKED', 'RS_CHILD_HAS_TRANSACTIONS')")

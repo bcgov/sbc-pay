@@ -380,9 +380,11 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         if RoutingSlip._is_linked_already(parent_rs_slip):
             raise BusinessException(Error.RS_PARENT_ALREADY_LINKED)
 
-        # has one of these has pending
-        if parent_rs_slip.invoices:
-            raise BusinessException(Error.RS_PARENT_HAS_TRANSACTIONS)
+        # prevent self linking
+
+        if routing_slip.number == parent_rs_slip.number:
+            raise BusinessException(Error.RS_CANT_LINK_TO_SAME)
+
         # has one of these has pending
         if routing_slip.invoices:
             raise BusinessException(Error.RS_CHILD_HAS_TRANSACTIONS)
