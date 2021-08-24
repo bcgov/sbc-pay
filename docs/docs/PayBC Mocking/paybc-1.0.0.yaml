@@ -1162,6 +1162,142 @@ paths:
         examples:
           inv_info:
             value: 29921
+  '/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/cms/':
+    post:
+      tags:
+        - Invs
+      summary: Create Credit Memo
+      description: Creates a Credit Meemo.
+      operationId: Cms_POST
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Cms'
+        required: true
+      responses:
+        '200':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Inv'
+              examples:
+                cms:
+                  value:
+                    credit_memo_number: '10021'
+                    pbc_ref_number: '10005'
+                    party_number: '11111'
+                    party_name: invoice
+                    account_name: ABC Co-Ops
+                    account_number: '4101'
+                    customer_site_id: '1'
+                    site_number: '29921'
+                    cust_trx_type: WTS-INVOICE-STANDARD
+                    transaction_date: '2019-04-12T07:00:00Z'
+                    batch_source: MANUAL-OTHER
+                    term_name: IMMEDIATE
+                    term_due_date: '2019-04-12T07:00:00Z'
+                    comments: Invoice for ABC Co-Ops
+                    late_charges_flag: null
+                    total: 100
+                    amount_due: 100
+                    amount_adjusted: null
+                    amount_adjusted_pending: null
+                    status: OP
+                    attribute_category: null
+                    attribute1: null
+                    attribute2: null
+                    attribute3: null
+                    attribute4: null
+                    attribute5: null
+                    attribute6: null
+                    attribute7: null
+                    attribute8: null
+                    attribute9: null
+                    attribute10: null
+                    attribute11: null
+                    attribute12: null
+                    attribute13: null
+                    attribute14: null
+                    attribute15: null
+                    provider: Finance and Citizens Services
+                    lines:
+                      - line_number: 1
+                        line_type: LINE
+                        memo_line_name: Test Memo Line
+                        description: Test Memo Line
+                        unit_price: 100
+                        quantity: 1
+                        attribute_category: null
+                        attribute1: null
+                        attribute2: null
+                        attribute3: null
+                        attribute4: null
+                        attribute5: null
+                        attribute6: null
+                        attribute7: null
+                        attribute8: null
+                        attribute9: null
+                        attribute10: null
+                        attribute11: null
+                        attribute12: null
+                        attribute13: null
+                        attribute14: null
+                        attribute15: null
+                        adjustments: []
+                    adjustments: []
+                    credit_memos: []
+                    receipts: []
+                    links:
+                      - rel: collection
+                        href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/'
+                      - rel: parent
+                        href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/'
+                      - rel: self
+                        href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10021/'
+                      - rel: deposits
+                        href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/deps/'
+                      - rel: credit_memos
+                        href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/cms/'
+                      - rel: receipts
+                        href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/rcpts/'
+                      - rel: adjustments
+                        href: 'https://heineken.cas.gov.bc.ca:7019/ords/cas/cfs/parties/11111/accs/4101/sites/29921/invs/10021/adjs/ '
+        '400':
+          description: BadRequest
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    parameters:
+      - name: party_number
+        in: path
+        required: true
+        schema:
+          format: string
+          type: string
+        examples:
+          inv_info:
+            value: 11111
+      - name: account_number
+        in: path
+        required: true
+        schema:
+          format: string
+          type: string
+        examples:
+          inv_info:
+            value: 4101
+      - name: site_number
+        in: path
+        required: true
+        schema:
+          format: string
+          type: string
+        examples:
+          inv_info:
+            value: 29921
   '/cfs/parties/invs/{inv_number}/creditbalance/':
     post:
       tags:
@@ -2246,6 +2382,124 @@ components:
           type: string
           description: Site Number.
         invoice_number:
+          type: string
+          description: Invoice Number.
+        pbc_ref_number:
+          type: string
+          description: PayBC Reference Number.
+        party_name:
+          type: string
+          description: Party Name.
+        account_name:
+          type: string
+          description: Account Name.
+        customer_site_id:
+          type: string
+          description: Customer Site ID.
+        cust_trx_type:
+          type: string
+          description: Customer Transaction Type.
+        transaction_date:
+          type: string
+          description: Transaction Date.
+        batch_source:
+          type: string
+          description: Batch Source.
+        term_name:
+          type: string
+          description: Term Name.
+        term_due_date:
+          type: string
+          description: Term Due Date.
+        comments:
+          type: string
+          description: Comments.
+        late_charges_flag:
+          type: string
+          description: Late Charges Flag.
+        total:
+          type: integer
+          description: Total.
+        amount_due:
+          type: integer
+          description: Amount Due.
+        amount_adjusted:
+          type: integer
+          description: Amount Adjusted.
+        amount_adjusted_pending:
+          type: integer
+          description: Amount Adjusted Pending.
+        status:
+          type: string
+          description: Status.
+        attribute_category:
+          type: string
+          description: Attribute Category.
+        attribute1:
+          type: string
+          description: Attribute 1.
+        attribute2:
+          type: string
+          description: Attribute 2.
+        attribute3:
+          type: string
+          description: Attribute 3.
+        attribute4:
+          type: string
+          description: Attribute 4.
+        attribute5:
+          type: string
+          description: Attribute 5.
+        attribute6:
+          type: string
+          description: Attribute 6.
+        attribute7:
+          type: string
+          description: Attribute 7.
+        attribute8:
+          type: string
+          description: Attribute 8.
+        attribute9:
+          type: string
+          description: Attribute 9.
+        attribute10:
+          type: string
+          description: Attribute 10.
+        attribute11:
+          type: string
+          description: Attribute 11.
+        attribute12:
+          type: string
+          description: Attribute 12.
+        attribute13:
+          type: string
+          description: Attribute 13.
+        attribute14:
+          type: string
+          description: Attribute 14.
+        attribute15:
+          type: string
+          description: Attribute 15.
+        provider:
+          type: string
+          description: Provider.
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/Link'
+    Cms:
+      type: object
+      properties:
+        party_number:
+          type: string
+          description: Party Number.
+        account_number:
+          type: string
+          description: Account Number.
+        site_number:
+          type: string
+          description: Site Number.
+        credit_memo_number:
           type: string
           description: Invoice Number.
         pbc_ref_number:

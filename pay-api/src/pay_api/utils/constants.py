@@ -44,3 +44,16 @@ ALL_ALLOWED_ROLES = (EDIT_ROLE, VIEW_ROLE)
 LEGISLATIVE_TIMEZONE = 'America/Vancouver'
 DT_SHORT_FORMAT = '%Y-%m-%d'
 INCORPORATION_LABEL = 'Incorporation Number:'
+
+REFUND_SUCCESS_MESSAGES = {
+    'PAD.APPROVED': 'Your transaction has been cancelled. We will not request the initial payment from your bank.',
+    'PAD.PAID': 'Your transaction has been cancelled and a credit will be applied to your BC Registries account. '
+                'There is a one day delay before the credit will show on your transactions / statements.',
+    'ONLINE_BANKING.PAID': 'Your transaction has been cancelled and a credit will be applied to your BC Registries '
+                           'account. There is a one day delay before the credit will show on your '
+                           'transactions / statements.',
+    'DIRECT_PAY.PAID': 'Your transaction has been cancelled and a refund has been requested.',
+    'CC.PAID': 'Your transaction has been cancelled and a credit will be applied to your BC Registries account. There '
+               'is a one day delay before the credit will show on your transactions / statements.',
+    'DRAWDOWN.PAID': 'Your transaction has been cancelled and a refund has been requested.'
+}
