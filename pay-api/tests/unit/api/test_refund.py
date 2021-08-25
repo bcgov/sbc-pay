@@ -18,11 +18,16 @@ Test-Suite to ensure that the /receipt endpoint is working as expected.
 """
 
 import json
+from datetime import datetime
 
-from pay_api.utils.enums import Role
+from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
+from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
-    get_claims, get_payment_request, get_payment_request_with_payment_method, token_header)
+    get_claims, get_payment_request, get_payment_request_with_payment_method, get_payment_request_with_service_fees,
+    get_unlinked_pad_account_payload, token_header)
 
 
 def test_create_refund(session, client, jwt, app, stan_server):
@@ -72,6 +77,92 @@ def test_create_drawdown_refund(session, client, jwt, app, stan_server):
                      headers=headers)
     assert rv.status_code == 202
     assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['DIRECT_PAY.PAID']
+
+
+def test_create_pad_refund(session, client, jwt, app, stan_server):
+    """Assert that the endpoint returns 202 and creates a credit on the account."""
+    # 1. Create a PAD payment_account and cfs_account.
+    # 2. Create a PAD invoice and mark as PAID.
+    # 3. Issue a refund and assert credit is reflected on payment_account.
+    # 4. Create an invoice again and assert that credit is updated.
+    auth_account_id = 1234
+
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    client.post('/api/v1/accounts', data=json.dumps(get_unlinked_pad_account_payload(account_id=auth_account_id)),
+                headers=headers)
+    pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+    cfs_account: CfsAccountModel = CfsAccountModel.find_by_account_id(pay_account.id)[0]
+    cfs_account.cfs_party = '1111'
+    cfs_account.cfs_account = '1111'
+    cfs_account.cfs_site = '1111'
+    cfs_account.status = CfsAccountStatus.ACTIVE.value
+    cfs_account.save()
+
+    pay_account.pad_activation_date = datetime.now()
+    pay_account.save()
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': auth_account_id}
+
+    rv = client.post('/api/v1/payment-requests',
+                     data=json.dumps(
+                         get_payment_request_with_payment_method(
+                             payment_method=PaymentMethod.PAD.value
+                         )
+                     ),
+                     headers=headers)
+
+    inv_id = rv.json.get('id')
+    inv_total = rv.json.get('total')
+
+    inv: InvoiceModel = InvoiceModel.find_by_id(inv_id)
+    inv.invoice_status_code = InvoiceStatus.PAID.value
+    inv.save()
+
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
+                     headers=headers)
+    assert rv.status_code == 202
+    assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['PAD.PAID']
+
+    # Assert credit is updated.
+    pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+    credit = pay_account.credit
+    assert pay_account.credit == inv_total
+
+    # Create an invoice again and assert that credit is updated.
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': auth_account_id}
+
+    rv = client.post('/api/v1/payment-requests',
+                     data=json.dumps(
+                         get_payment_request_with_service_fees(corp_type='CP',
+                                                               filing_type='OTADD'
+                                                               )
+                     ),
+                     headers=headers)
+    inv_total = rv.json.get('total')
+
+    pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+    credit -= inv_total
+    assert pay_account.credit == credit
+
+    # Create an invoice again and assert that credit is updated.
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': auth_account_id}
+
+    rv = client.post('/api/v1/payment-requests',
+                     data=json.dumps(
+                         get_payment_request_with_payment_method(
+                             payment_method=PaymentMethod.PAD.value
+                         )
+                     ),
+                     headers=headers)
+    inv_total = rv.json.get('total')
+    # Credit must be zero now as the new invoice amount exceeds remaining credit.
+    assert pay_account.credit == 0
 
 
 def test_create_duplicate_refund_fails(session, client, jwt, app, stan_server):

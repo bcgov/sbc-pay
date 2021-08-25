@@ -308,6 +308,10 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         """Save the information to the DB."""
         return self._dao.save()
 
+    def flush(self):
+        """Flush the information to the DB."""
+        return self._dao.flush()
+
     @classmethod
     def create(cls, account_request: Dict[str, Any] = None) -> PaymentAccount:
         """Create new payment account record."""
