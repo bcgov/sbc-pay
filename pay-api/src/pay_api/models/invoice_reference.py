@@ -50,7 +50,7 @@ class InvoiceReference(BaseModel):  # pylint: disable=too-many-instance-attribut
 class InvoiceReferenceSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the invoice reference."""
 
-    class Meta:  # pylint: disable=too-few-public-methods
+    class Meta(BaseSchema.Meta):  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = InvoiceReference

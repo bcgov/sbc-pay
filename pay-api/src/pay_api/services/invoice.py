@@ -312,6 +312,11 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._details = value
         self._dao.details = value
 
+    @property
+    def created_on(self):
+        """Return the created date."""
+        return self._dao.created_on
+
     def commit(self):
         """Save the information to the DB."""
         return self._dao.commit()
@@ -456,7 +461,6 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
             'templateVars': template_vars
         }
         current_app.logger.info('Invoice PDF Dict %s', invoice_pdf_dict)
-
         pdf_response = OAuthService.post(current_app.config.get('REPORT_API_BASE_URL'),
                                          kwargs['user'].bearer_token, AuthHeaderType.BEARER,
                                          ContentType.JSON, invoice_pdf_dict)

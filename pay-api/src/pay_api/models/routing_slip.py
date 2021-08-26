@@ -169,7 +169,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
 class RoutingSlipSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors, too-few-public-methods
     """Main schema used to serialize the Routing Slip."""
 
-    class Meta:  # pylint: disable=too-few-public-methods
+    class Meta(BaseSchema.Meta):  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = RoutingSlip

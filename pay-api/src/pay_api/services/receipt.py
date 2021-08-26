@@ -25,6 +25,7 @@ from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceStatus, PaymentMethod, PaymentSystem
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
+from pay_api.utils.util import get_local_formatted_date
 
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
@@ -195,4 +196,6 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         if invoice_data.payment_method_code != PaymentSystem.INTERNAL.value:
             receipt_details['paymentMethodDescription'] = payment_method.description
         receipt_details['invoice'] = camelcase_dict(invoice_data.asdict(), {})
+        # Format date to display in report.
+        receipt_details['invoice']['createdOn'] = get_local_formatted_date(invoice_data.created_on)
         return receipt_details

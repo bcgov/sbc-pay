@@ -18,8 +18,8 @@ from flask import current_app
 
 from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementSchema as StatementModelSchema
-from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import ContentType, StatementFrequency
+from pay_api.utils.constants import DT_SHORT_FORMAT
 
 from .payment import Payment as PaymentService
 
@@ -141,6 +141,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
 
         from_date_string: str = statement_svc.from_date.strftime(DT_SHORT_FORMAT)
         to_date_string: str = statement_svc.to_date.strftime(DT_SHORT_FORMAT)
+
         extension: str = 'pdf' if content_type == ContentType.PDF.value else 'csv'
 
         if statement_svc.frequency == StatementFrequency.DAILY.value:
@@ -151,11 +152,14 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         statement_purchases = StatementModel.find_all_payments_and_invoices_for_statement(statement_id)
 
         result_items: dict = PaymentService.create_payment_report_details(purchases=statement_purchases, data=None)
+        statement = statement_svc.asdict()
+        statement['from_date'] = from_date_string
+        statement['to_date'] = to_date_string
 
         report_response = PaymentService.generate_payment_report(content_type, report_name, result_items,
                                                                  template_name,
                                                                  auth=kwargs.get('auth', None),
-                                                                 statement=statement_svc.asdict())
+                                                                 statement=statement)
         current_app.logger.debug('>get_statement_report')
 
         return report_response, report_name

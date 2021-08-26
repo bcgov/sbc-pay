@@ -68,20 +68,20 @@
               "$id":"#/properties/dateFilter/properties/startDate",
               "type":"string",
               "title":"start date",
-              "description":"Start date in MM/DD/YYYY format.",
+              "description":"Start date in YYYY-MM-DD format.",
               "default":"",
               "examples":[
-                 "01/01/2020"
+                 "2020-12-31"
               ]
            },
            "endDate":{
               "$id":"#/properties/dateFilter/properties/endDate",
               "type":"string",
               "title":"End Date",
-              "description":"End Date in MM/DD/YYYY format.",
+              "description":"End Date in YYYY-MM-DD format.",
               "default":"",
               "examples":[
-                 "04/30/2020"
+                 "2020-12-31"
               ]
            }
         }

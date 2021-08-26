@@ -606,7 +606,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 bankInstitutionNumber=self.bank_number,
                 bankTransitNumber=self.bank_branch_number,
                 bankAccountNumber=mask(self.bank_account_number, current_app.config['MASK_LEN']),
-                paymentStartDate=get_local_formatted_date(self.pad_activation_date))
+                paymentStartDate=get_local_formatted_date(self.pad_activation_date, '%B %d, %y'))
         return payload
 
     @staticmethod
