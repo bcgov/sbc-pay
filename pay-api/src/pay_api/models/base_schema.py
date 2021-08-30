@@ -21,6 +21,11 @@ from .db import ma
 class BaseSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Base Schema."""
 
+    class Meta:  # pylint: disable=too-few-public-methods
+        """Meta class to declare any class attributes."""
+
+        datetimeformat = '%Y-%m-%dT%H:%M:%S+00:00'
+
     @post_dump(pass_many=True)
     def _remove_empty(self, data, many):  # pylint: disable=no-self-use
         """Remove all empty values from the dumped dict."""

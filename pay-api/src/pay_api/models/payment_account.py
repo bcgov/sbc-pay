@@ -59,7 +59,7 @@ class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attri
 class PaymentAccountSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Payment Account."""
 
-    class Meta:  # pylint: disable=too-few-public-methods
+    class Meta(BaseSchema.Meta):  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = PaymentAccount

@@ -127,7 +127,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
 class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the invoice."""
 
-    class Meta:  # pylint: disable=too-few-public-methods
+    class Meta(BaseSchema.Meta):  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Invoice

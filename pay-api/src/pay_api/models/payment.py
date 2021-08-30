@@ -26,6 +26,7 @@ from pay_api.utils.enums import InvoiceReferenceStatus
 from pay_api.utils.enums import PaymentMethod as PaymentMethodEnum
 from pay_api.utils.enums import PaymentStatus
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
+from pay_api.utils.constants import DT_SHORT_FORMAT
 
 from .base_model import BaseModel
 from .base_schema import BaseSchema
@@ -167,9 +168,9 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         created_from: datetime = None
         created_to: datetime = None
         if get_str_by_path(search_filter, 'dateFilter/startDate'):
-            created_from = datetime.strptime(get_str_by_path(search_filter, 'dateFilter/startDate'), '%m/%d/%Y')
+            created_from = datetime.strptime(get_str_by_path(search_filter, 'dateFilter/startDate'), DT_SHORT_FORMAT)
         if get_str_by_path(search_filter, 'dateFilter/endDate'):
-            created_to = datetime.strptime(get_str_by_path(search_filter, 'dateFilter/endDate'), '%m/%d/%Y')
+            created_to = datetime.strptime(get_str_by_path(search_filter, 'dateFilter/endDate'), DT_SHORT_FORMAT)
         if get_str_by_path(search_filter, 'weekFilter/index'):
             created_from, created_to = get_week_start_and_end_date(
                 int(get_str_by_path(search_filter, 'weekFilter/index')))
@@ -213,7 +214,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
 class PaymentSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Payment."""
 
-    class Meta:  # pylint: disable=too-few-public-methods
+    class Meta(BaseSchema.Meta):  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Payment

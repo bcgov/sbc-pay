@@ -340,9 +340,9 @@
                 {% if statement.from_date or statement.to_date %}
                 <div class="r-subtitle">
                     {% if 'DAILY' == statement.frequency %}
-                    {{statement.from_date|format_datetime('yyyy-mm-dd')}}
+                    {{statement.from_date}}
                     {% else %}
-                    {{statement.from_date|format_datetime('yyyy-mm-dd')}} to {{statement.to_date|format_datetime('yyyy-mm-dd')}}
+                    {{statement.from_date}} to {{statement.to_date}}
                     {% endif %}
                 </div>
                 {% endif %}
@@ -378,9 +378,9 @@
                 <div class="account-info-title font-bold">Statement Period:</div>
                 <div class="account-info-value">
                     {% if 'DAILY' == statement.frequency %}
-                    {{statement.from_date|format_datetime('yyyy-mm-dd')}}
+                    {{statement.from_date}}
                     {% else %}
-                    {{statement.from_date|format_datetime('yyyy-mm-dd')}} to {{statement.to_date|format_datetime('yyyy-mm-dd')}}
+                    {{statement.from_date}} to {{statement.to_date}}
                     {% endif %}
                 </div>
             </div>
@@ -388,7 +388,7 @@
             {% if statement.dueDate %}
             <div class="line-height-reg">
                 <div class="account-info-title">Due Date:</div>
-                <div class="account-info-value">{{statement.dueDate|format_datetime('yyyy-mm-dd')}}</div>
+                <div class="account-info-value">{{statement.dueDate}}</div>
             </div>
             {% endif %}
         </td>
@@ -432,7 +432,7 @@
             {% endfor %}
         </td>
         <td>{{item.get('folio_number', '-')}}</td>
-        <td>{{item.created_on|format_datetime('yyyy-mm-dd')}}</td>
+        <td>{{item.created_on}}</td>
         <td>${{"%.2f"|format((item.total - item.service_fees)) if (item.service_fees and item.total) else
             '0.00'}}
         </td>

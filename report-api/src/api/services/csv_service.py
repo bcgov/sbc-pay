@@ -30,7 +30,7 @@ class CsvService:  # pylint: disable=too-few-public-methods
         values = payload.get('values', None)
         if columns:
             temp_file = NamedTemporaryFile(delete=True)  # pylint: disable=consider-using-with
-            with open(temp_file.name, 'w', newline='') as csvfile:
+            with open(temp_file.name, 'w', newline='', encoding='utf-8') as csvfile:
                 report = csv.writer(csvfile)
                 report.writerow(columns)
                 for row in values:
