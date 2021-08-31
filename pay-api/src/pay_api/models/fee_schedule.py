@@ -14,14 +14,15 @@
 """Model to handle all operations related to fee and fee schedule."""
 
 from datetime import date, datetime
+from operator import or_
 
-from sqlalchemy import ForeignKey
+from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import relationship
 
-from .corp_type import CorpType
+from .corp_type import CorpType, CorpTypeSchema
 from .db import db, ma
 from .fee_code import FeeCode
-from .filing_type import FilingType
+from .filing_type import FilingType, FilingTypeSchema
 
 
 class FeeSchedule(db.Model):
@@ -79,7 +80,7 @@ class FeeSchedule(db.Model):
         return cls.query.get(fee_schedule_id)
 
     @classmethod
-    def find_all(cls, corp_type_code: str = None, filing_type_code: str = None):
+    def find_all(cls, corp_type_code: str = None, filing_type_code: str = None, description: str = None):
         """Find all fee schedules matching the filters."""
         valid_date = date.today()
         query = cls.query.filter(FeeSchedule.fee_start_date <= valid_date). \
@@ -90,6 +91,16 @@ class FeeSchedule(db.Model):
 
         if corp_type_code:
             query = query.filter_by(corp_type_code=corp_type_code)
+
+        if description:
+            # description is free text search
+            description_list = description.replace(' ', '%')
+            query = query.join(CorpType,
+                               CorpType.code == FeeSchedule.corp_type_code). \
+                join(FilingType, FilingType.code == FeeSchedule.filing_type_code)
+            query = query.filter(
+                or_(func.lower(FilingType.description).contains(description_list.lower(), autoescape=True),
+                    func.lower(CorpType.description).contains(description_list.lower(), autoescape=True)))
 
         return query.all()
 
@@ -106,3 +117,8 @@ class FeeScheduleSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = FeeSchedule
+
+    # pylint: disable=no-member
+    corp_type = ma.Nested(CorpTypeSchema, many=False, data_key='corp_type_code',
+                          exclude=['bcol_fee_code', 'bcol_staff_fee_code', 'batch_type'])
+    filing_type = ma.Nested(FilingTypeSchema, many=False, data_key='filing_type_code')
