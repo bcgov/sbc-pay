@@ -321,14 +321,16 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     @staticmethod
     def find_all(
             corp_type: str = None,
-            filing_type_code: str = None
+            filing_type_code: str = None,
+            description: str = None
     ):
         """Find all fee schedule by applying any filter."""
         current_app.logger.debug('<find_all')
         data = {
             'items': []
         }
-        fee_schdules = FeeScheduleModel.find_all(corp_type_code=corp_type, filing_type_code=filing_type_code)
+        fee_schdules = FeeScheduleModel.find_all(corp_type_code=corp_type, filing_type_code=filing_type_code,
+                                                 description=description)
         schdule_schema = FeeScheduleSchema()
         data['items'] = schdule_schema.dump(fee_schdules, many=True)
         current_app.logger.debug('>find_all')
