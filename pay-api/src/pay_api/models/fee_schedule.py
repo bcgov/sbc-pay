@@ -93,14 +93,14 @@ class FeeSchedule(db.Model):
             query = query.filter_by(corp_type_code=corp_type_code)
 
         if description:
-            # description is free text search
+            # TODO arrive at a better search
             description_list = description.replace(' ', '%')
             query = query.join(CorpType,
                                CorpType.code == FeeSchedule.corp_type_code). \
                 join(FilingType, FilingType.code == FeeSchedule.filing_type_code)
             query = query.filter(
-                or_(func.lower(FilingType.description).contains(description_list.lower(), autoescape=True),
-                    func.lower(CorpType.description).contains(description_list.lower(), autoescape=True)))
+                or_(func.lower(FilingType.description).contains(description_list.lower()),
+                    func.lower(CorpType.description).contains(description_list.lower())))
 
         return query.all()
 
