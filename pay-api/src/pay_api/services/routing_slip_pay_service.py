@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Routing Slip Payments."""
+from typing import List
 
 from flask import current_app
 
+from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models.routing_slip import RoutingSlip as RoutingSlipModel
 from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.services.invoice import Invoice
+from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import PaymentMethod
@@ -41,7 +45,22 @@ class RoutingSlipPayService(InternalPayService, OAuthService):
         if routing_slip.remaining_amount < invoice.total:
             raise BusinessException(Error.RS_INSUFFICIENT_FUNDS)
 
-        invoice_reference = super().create_invoice(payment_account, line_items, invoice, **kwargs)
+        line_item_models: List[PaymentLineItemModel] = []
+        for line_item in line_items:
+            line_item_models.append(PaymentLineItemModel.find_by_id(line_item.id))
+
+        cfs_account: CfsAccountModel = CfsAccountModel.find_by_account_id(payment_account.id)
+        invoice_response = CFSService.create_account_invoice(invoice.id, line_item_models, cfs_account)
+
+        invoice_reference: InvoiceReference = InvoiceReference.create(
+            invoice.id, invoice_response.json().get('invoice_number', None),
+            # TODO is pbc_ref_number correct?
+            invoice_response.json().get('pbc_ref_number', None))
+
+        current_app.logger.debug('>create_invoice')
+
+        routing_slip.remaining_amount = routing_slip.remaining_amount - invoice.total
+        routing_slip.flush()
 
         current_app.logger.debug('>create_invoice')
         return invoice_reference
@@ -55,10 +74,3 @@ class RoutingSlipPayService(InternalPayService, OAuthService):
         """Return ROUTING_SLIP as the method code."""
         # TODO do we need check or cash or routing slip?
         return PaymentMethod.ROUTING_SLIP.value
-
-    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
-        """Complete any post invoice activities if needed."""
-        super().complete_post_invoice(invoice, invoice_reference)
-        routing_slip = RoutingSlipModel.find_by_account_number(invoice.payment_account_id)
-        routing_slip.remaining_amount = routing_slip.remaining_amount - invoice.total
-        routing_slip.flush()
