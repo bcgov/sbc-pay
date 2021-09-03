@@ -150,12 +150,13 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         # If there is no payment_account it must be a request with no account (NR, Staff payment etc.)
         # and invoked using a service account or a staff token
         if not payment_account:
-            # no payment , check for routing slip
+            # no payment , check for routing slip fas payment
             if routing_slip_number:
                 routing_slip = RoutingSlipService.find_by_number(routing_slip_number)
                 if routing_slip is not None:
                     payment_account = PaymentAccount.find_by_id(routing_slip.get('payment_account'))
-            elif not payment_account:
+            # not a valid rs in fas , so create a new account
+            if not payment_account:
                 payment_method = get_str_by_path(authorization,
                                                  'account/paymentInfo/methodOfPayment') or _get_default_payment()
                 payment_account = PaymentAccount.create(

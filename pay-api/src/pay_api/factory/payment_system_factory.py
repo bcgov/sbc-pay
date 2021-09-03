@@ -87,7 +87,8 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
             _instance = InternalPayService()
         elif Role.STAFF.value in user.roles:
             # check if rs number is in our table
-            if payment_account and payment_account.payment_method in (PaymentMethod.CHEQUE.value, PaymentMethod.CASH.value):
+            if payment_account and payment_account.payment_method in \
+                    (PaymentMethod.CHEQUE.value, PaymentMethod.CASH.value):
                 _instance = RoutingSlipPayService()
             if has_bcol_account_number:
                 _instance = BcolService()
