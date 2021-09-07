@@ -498,8 +498,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def find_by_auth_account_id(cls, auth_account_id: str) -> PaymentAccount:
         """Find payment account by corp number, corp type and payment system code."""
         current_app.logger.debug('<find_by_auth_account_id')
-        if auth_account_id is None:
-            return None
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
         p = None
         if payment_account:

@@ -104,7 +104,6 @@ class PaymentMethod(Enum):
     EJV = 'EJV'
     CASH = 'CASH'
     CHEQUE = 'CHEQUE'
-    ROUTING_SLIP = 'ROUTING_SLIP'
 
 
 class Role(Enum):

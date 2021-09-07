@@ -60,8 +60,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         filing_info = payment_request.get('filingInfo')
         account_info = payment_request.get('accountInfo', None)
         filing_id = filing_info.get('filingIdentifier', None)
-        corp_type = business_info.get('corpType', None)
         folio_number = filing_info.get('folioNumber', get_str_by_path(authorization, 'business/folioNumber'))
+        corp_type = business_info.get('corpType', None)
 
         payment_account = cls._find_payment_account(authorization)
 

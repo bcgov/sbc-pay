@@ -79,7 +79,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
             invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id,
                                                                           generate_transaction_number(invoice.id), None)
 
-            current_app.logger.debug('>create_invoice')
+        current_app.logger.debug('>create_invoice')
         return invoice_reference
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):

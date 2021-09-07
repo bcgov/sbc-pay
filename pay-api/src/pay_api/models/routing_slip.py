@@ -74,11 +74,6 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         return cls.query.filter_by(number=number).one_or_none()
 
     @classmethod
-    def find_by_account_number(cls, payment_account_id: str) -> RoutingSlip:
-        """Return a routing slip by payment account id."""
-        return cls.query.filter_by(payment_account_id=payment_account_id).one_or_none()
-
-    @classmethod
     def find_children(cls, number: str) -> List[RoutingSlip]:
         """Return children for the routing slip."""
         return cls.query.filter_by(parent_number=number).all()
