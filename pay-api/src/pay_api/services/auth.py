@@ -59,6 +59,8 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
 
             roles: list = auth_response.get('roles', [])
             g.account_id = auth_response.get('account').get('id') if auth_response.get('account', None) else None
+        elif Role.STAFF.value in user.roles:
+            roles: list = user.roles
 
         g.user_permission = auth_response.get('roles')
         if kwargs.get('one_of_roles', None):
@@ -87,7 +89,4 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
             # Add account name as the service client name
             auth_response = {'account': {'id': user.user_name,
                                          'paymentInfo': {'methodOfPayment': PaymentMethod.DIRECT_PAY.value}}}
-        elif Role.STAFF.value in user.roles:
-            auth_response = {'account': {'id': PaymentMethod.INTERNAL.value,
-                                         'paymentInfo': {'methodOfPayment': PaymentMethod.INTERNAL.value}}}
     return auth_response

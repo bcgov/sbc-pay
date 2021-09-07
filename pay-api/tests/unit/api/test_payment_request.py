@@ -31,8 +31,8 @@ from pay_api.utils.enums import InvoiceStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
     activate_pad_account, get_basic_account_payload, get_claims, get_gov_account_payload, get_payment_request,
     get_payment_request_for_wills, get_payment_request_with_folio_number, get_payment_request_with_no_contact_info,
-    get_payment_request_with_payment_method, get_payment_request_with_service_fees, get_unlinked_pad_account_payload,
-    get_waive_fees_payment_request, get_zero_dollar_payment_request, token_header)
+    get_payment_request_with_payment_method, get_payment_request_with_service_fees, get_routing_slip_request,
+    get_unlinked_pad_account_payload, get_waive_fees_payment_request, get_zero_dollar_payment_request, token_header)
 
 
 def test_payment_request_creation(session, client, jwt, app):
@@ -314,6 +314,32 @@ def test_payment_creation_with_routing_slip(session, client, jwt, app):
     assert rv.json.get('routingSlip') == 'TEST_ROUTE_SLIP'
 
     assert schema_utils.validate(rv.json, 'invoice')[0]
+
+
+def test_payment_creation_with_existing_routing_slip(client, jwt):
+    """Assert that the endpoint returns 201."""
+    claims = get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value, Role.STAFF.value])
+    token = jwt.create_jwt(claims, token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    payload = get_routing_slip_request()
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 201
+    rs_number = rv.json.get('number')
+
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    data = get_payment_request()
+    data['accountInfo'] = {'routingSlip': rs_number}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
+    total = rv.json.get('total')
+    rv = client.post('/api/v1/fas/routing-slips/queries', data=json.dumps({'routingSlipNumber': rs_number}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+
+    assert items[0].get('remainingAmount') == payload.get('payments')[0].get('paidAmount') - total
 
 
 def test_bcol_payment_creation(session, client, jwt, app):

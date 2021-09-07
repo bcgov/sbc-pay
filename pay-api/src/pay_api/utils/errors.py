@@ -77,6 +77,9 @@ class Error(Enum):
     RS_CANT_LINK_TO_SAME = 'RS_CANT_LINK_TO_SAME', HTTPStatus.BAD_REQUEST
     RS_CHILD_HAS_TRANSACTIONS = 'RS_CHILD_HAS_TRANSACTIONS', HTTPStatus.BAD_REQUEST
 
+    # routing slip
+    RS_INSUFFICIENT_FUNDS = 'RS_INSUFFICIENT_FUNDS', HTTPStatus.BAD_REQUEST
+
     def __new__(cls, code, status, message=None, details=None):
         """Attributes for the enum."""
         obj = object.__new__(cls)
