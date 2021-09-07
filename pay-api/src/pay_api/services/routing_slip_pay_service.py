@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage Routing Slip Payments."""
+import decimal
 from typing import List
 
 from flask import current_app
@@ -49,7 +50,7 @@ class RoutingSlipPayService(InternalPayService, OAuthService):
         for line_item in line_items:
             line_item_models.append(PaymentLineItemModel.find_by_id(line_item.id))
 
-        cfs_account: CfsAccountModel = CfsAccountModel.find_by_account_id(payment_account.id)
+        cfs_account: CfsAccountModel = CfsAccountModel.find_by_account_id(payment_account.id)[0]
         invoice_response = CFSService.create_account_invoice(invoice.id, line_item_models, cfs_account)
 
         invoice_reference: InvoiceReference = InvoiceReference.create(
@@ -59,7 +60,7 @@ class RoutingSlipPayService(InternalPayService, OAuthService):
 
         current_app.logger.debug('>create_invoice')
 
-        routing_slip.remaining_amount = routing_slip.remaining_amount - invoice.total
+        routing_slip.remaining_amount = routing_slip.remaining_amount - decimal.Decimal(invoice.total)
         routing_slip.flush()
 
         current_app.logger.debug('>create_invoice')
@@ -68,7 +69,7 @@ class RoutingSlipPayService(InternalPayService, OAuthService):
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Create a static receipt."""
         # Find the invoice using the invoice_number
-        return super().get_receipt(None, None, invoice_reference=invoice_reference.invoice_id)
+        return super().get_receipt(None, None, invoice_reference=invoice_reference)
 
     def get_payment_method_code(self):
         """Return ROUTING_SLIP as the method code."""

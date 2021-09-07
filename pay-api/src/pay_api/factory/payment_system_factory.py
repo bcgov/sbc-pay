@@ -63,6 +63,8 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
             _instance = WireService()
         elif payment_method == PaymentMethod.EJV.value:
             _instance = EjvPayService()
+        elif payment_method == PaymentMethod.ROUTING_SLIP.value:
+            _instance = RoutingSlipPayService()
 
         if not _instance:
             raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
@@ -88,9 +90,9 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         elif Role.STAFF.value in user.roles:
             # check if rs number is in our table
             if payment_account and payment_account.payment_method in \
-                    (PaymentMethod.CHEQUE.value, PaymentMethod.CASH.value):
+                    (PaymentMethod.CHEQUE.value, PaymentMethod.CASH.value, PaymentMethod.ROUTING_SLIP.value):
                 _instance = RoutingSlipPayService()
-            if has_bcol_account_number:
+            elif has_bcol_account_number:
                 _instance = BcolService()
             else:
                 _instance = InternalPayService()
