@@ -468,7 +468,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 ]) if invoice.get('details') else None,
                 invoice.get('folio_number'),
                 invoice.get('created_name'),
-                get_local_formatted_date_time(parser.parse(invoice.get('created_on'))),
+                get_local_formatted_date_time(
+                    parser.parse(invoice.get('created_on')), '%Y-%m-%d %I:%M:%S %p Pacific Time'
+                ),
                 total_fees,
                 total_gst + total_pst,
                 total_fees - service_fee,  # TODO
