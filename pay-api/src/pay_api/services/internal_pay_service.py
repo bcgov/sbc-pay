@@ -63,7 +63,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
                     routing_slip.payment_account_id)
 
                 cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
-                    routing_slip_payment_account.id)[0]
+                    routing_slip_payment_account.id)
                 invoice_response = CFSService.create_account_invoice(invoice.id, line_item_models, cfs_account)
 
                 invoice_reference: InvoiceReference = InvoiceReference.create(
