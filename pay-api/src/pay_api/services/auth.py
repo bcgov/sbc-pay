@@ -26,7 +26,6 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
     """Authorize the user for the business entity and return authorization response."""
     user: UserContext = kwargs['user']
     is_authorized: bool = False
-    # test
     auth_response = None
 
     if not account_id:
@@ -62,6 +61,7 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
             g.account_id = auth_response.get('account').get('id') if auth_response.get('account', None) else None
         elif Role.STAFF.value in user.roles:
             roles: list = user.roles
+            auth_response = {}
 
         g.user_permission = auth_response.get('roles')
         if kwargs.get('one_of_roles', None):
