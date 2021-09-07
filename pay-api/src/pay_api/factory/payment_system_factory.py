@@ -27,7 +27,6 @@ from pay_api.services.online_banking_service import OnlineBankingService
 from pay_api.services.pad_service import PadService
 from pay_api.services.paybc_service import PaybcService
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.services.routing_slip_pay_service import RoutingSlipPayService
 from pay_api.services.wire_service import WireService
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, Role  # noqa: I001
 from pay_api.utils.errors import Error
@@ -63,8 +62,6 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
             _instance = WireService()
         elif payment_method == PaymentMethod.EJV.value:
             _instance = EjvPayService()
-        elif payment_method == PaymentMethod.ROUTING_SLIP.value:
-            _instance = RoutingSlipPayService()
 
         if not _instance:
             raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
@@ -85,14 +82,13 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         _instance: PaymentSystemService = None
         current_app.logger.debug('payment_method: {}'.format(payment_method))
 
+        if not payment_method:
+            raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)
+
         if total_fees == 0:
             _instance = InternalPayService()
         elif Role.STAFF.value in user.roles:
-            # check if rs number is in our table
-            if payment_account and payment_account.payment_method in \
-                    (PaymentMethod.CHEQUE.value, PaymentMethod.CASH.value, PaymentMethod.ROUTING_SLIP.value):
-                _instance = RoutingSlipPayService()
-            elif has_bcol_account_number:
+            if has_bcol_account_number:
                 _instance = BcolService()
             else:
                 _instance = InternalPayService()

@@ -15,12 +15,17 @@
 
 There are conditions where the payment will be handled internally. For e.g, zero $ or staff payments.
 """
-
+import decimal
 from datetime import datetime
+from typing import List
 
 from flask import current_app
 
+from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import RoutingSlip as RoutingSlipModel
+from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
@@ -29,6 +34,8 @@ from pay_api.utils.util import generate_transaction_number
 
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
+from ..exceptions import BusinessException
+from ..utils.errors import Error
 
 
 class InternalPayService(PaymentSystemService, OAuthService):
@@ -42,11 +49,37 @@ class InternalPayService(PaymentSystemService, OAuthService):
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number."""
         current_app.logger.debug('<create_invoice')
+        if routing_slip_number := invoice.routing_slip:
+            routing_slip = RoutingSlipModel.find_by_number(routing_slip_number)
+            if routing_slip:
+                if routing_slip.remaining_amount < invoice.total:
+                    raise BusinessException(Error.RS_INSUFFICIENT_FUNDS)
 
-        invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id,
-                                                                      generate_transaction_number(invoice.id), None)
+                line_item_models: List[PaymentLineItemModel] = []
+                for line_item in line_items:
+                    line_item_models.append(PaymentLineItemModel.find_by_id(line_item.id))
 
-        current_app.logger.debug('>create_invoice')
+                routing_slip_payment_account: PaymentAccount = PaymentAccount.find_by_id(
+                    routing_slip.payment_account_id)
+
+                cfs_account: CfsAccountModel = CfsAccountModel.find_by_account_id(routing_slip_payment_account.id)[0]
+                invoice_response = CFSService.create_account_invoice(invoice.id, line_item_models, cfs_account)
+
+                invoice_reference: InvoiceReference = InvoiceReference.create(
+                    invoice.id, invoice_response.json().get('invoice_number', None),
+                    # TODO is pbc_ref_number correct?
+                    invoice_response.json().get('pbc_ref_number', None))
+
+                current_app.logger.debug('>create_invoice')
+
+                routing_slip.remaining_amount = routing_slip.remaining_amount - decimal.Decimal(invoice.total)
+                routing_slip.flush()
+
+        else:
+            invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id,
+                                                                          generate_transaction_number(invoice.id), None)
+
+            current_app.logger.debug('>create_invoice')
         return invoice_reference
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):

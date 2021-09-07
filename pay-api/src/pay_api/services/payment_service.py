@@ -32,7 +32,6 @@ from .payment import Payment
 from .payment_account import PaymentAccount
 from .payment_line_item import PaymentLineItem
 from .payment_transaction import PaymentTransaction
-from .fas import RoutingSlipService
 
 
 class PaymentService:  # pylint: disable=too-few-public-methods
@@ -61,11 +60,10 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         filing_info = payment_request.get('filingInfo')
         account_info = payment_request.get('accountInfo', None)
         filing_id = filing_info.get('filingIdentifier', None)
-        routing_slip_number = get_str_by_path(account_info, 'routingSlip')
         corp_type = business_info.get('corpType', None)
         folio_number = filing_info.get('folioNumber', get_str_by_path(authorization, 'business/folioNumber'))
 
-        payment_account = cls._find_payment_account(authorization, routing_slip_number)
+        payment_account = cls._find_payment_account(authorization)
 
         payment_method = _get_payment_method(payment_request, payment_account)
 
@@ -143,33 +141,23 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         return invoice.asdict(include_dynamic_fields=True)
 
     @classmethod
-    def _find_payment_account(cls, authorization, routing_slip_number):
+    def _find_payment_account(cls, authorization):
         # find payment account
+        payment_account: PaymentAccount = PaymentAccount.find_account(authorization)
 
-        payment_account = None
-        # if RS number is provided , see if its a existing RS ;If not default back to finding based to authorisation
-        # RS number takes precedence over payment account
-        if routing_slip_number:
-            routing_slip = RoutingSlipService.find_by_number(routing_slip_number)
-            if routing_slip is not None:
-                payment_account = PaymentAccount.find_by_id(routing_slip.get('payment_account').get('id'))
-
+        # If there is no payment_account it must be a request with no account (NR, Staff payment etc.)
+        # and invoked using a service account or a staff token
         if not payment_account:
-            payment_account: PaymentAccount = PaymentAccount.find_account(authorization)
-
-            # If there is no payment_account it must be a request with no account (NR, Staff payment etc.)
-            # and invoked using a service account or a staff token
-            if not payment_account:
-                payment_method = get_str_by_path(authorization,
-                                                 'account/paymentInfo/methodOfPayment') or _get_default_payment()
-                payment_account = PaymentAccount.create(
-                    dict(
-                        accountId=get_str_by_path(authorization, 'account/id'),
-                        paymentInfo=dict(
-                            methodOfPayment=payment_method,
-                            billable=True)
-                    )
+            payment_method = get_str_by_path(authorization,
+                                             'account/paymentInfo/methodOfPayment') or _get_default_payment()
+            payment_account = PaymentAccount.create(
+                dict(
+                    accountId=get_str_by_path(authorization, 'account/id'),
+                    paymentInfo=dict(
+                        methodOfPayment=payment_method,
+                        billable=True)
                 )
+            )
         return payment_account
 
     @classmethod
