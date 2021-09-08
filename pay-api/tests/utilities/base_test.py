@@ -103,6 +103,27 @@ def get_payment_request(business_identifier: str = 'CP0001234', corp_type: str =
     }
 
 
+def get_payment_request_without_bn(corp_type: str = 'CP',
+                                   filing_type: str = 'OTADD'):
+    """Return a payment request object."""
+    return {
+        'businessInfo': {
+            'corpType': corp_type
+        },
+        'filingInfo': {
+            'filingTypes': [
+                {
+                    'filingTypeCode': filing_type,
+                    'filingDescription': 'TEST'
+                },
+                {
+                    'filingTypeCode': 'OTANN'
+                }
+            ]
+        }
+    }
+
+
 def get_payment_request_with_service_fees(business_identifier: str = 'CP0001234', corp_type: str = 'BEN',
                                           filing_type: str = 'BCINC'):
     """Return a payment request object."""

@@ -31,8 +31,9 @@ from pay_api.utils.enums import InvoiceStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
     activate_pad_account, get_basic_account_payload, get_claims, get_gov_account_payload, get_payment_request,
     get_payment_request_for_wills, get_payment_request_with_folio_number, get_payment_request_with_no_contact_info,
-    get_payment_request_with_payment_method, get_payment_request_with_service_fees, get_routing_slip_request,
-    get_unlinked_pad_account_payload, get_waive_fees_payment_request, get_zero_dollar_payment_request, token_header)
+    get_payment_request_with_payment_method, get_payment_request_with_service_fees, get_payment_request_without_bn,
+    get_routing_slip_request, get_unlinked_pad_account_payload, get_waive_fees_payment_request,
+    get_zero_dollar_payment_request, token_header)
 
 
 def test_payment_request_creation(session, client, jwt, app):
@@ -316,9 +317,13 @@ def test_payment_creation_with_routing_slip(session, client, jwt, app):
     assert schema_utils.validate(rv.json, 'invoice')[0]
 
 
-def test_payment_creation_with_existing_routing_slip(client, jwt):
+@pytest.mark.parametrize('payment_requests', [
+    get_payment_request(),
+    get_payment_request_without_bn()
+])
+def test_payment_creation_with_existing_routing_slip(client, jwt, payment_requests):
     """Assert that the endpoint returns 201."""
-    claims = get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value, Role.STAFF.value])
+    claims = get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value, Role.STAFF.value, 'make_payment'])
     token = jwt.create_jwt(claims, token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     payload = get_routing_slip_request()
@@ -327,7 +332,7 @@ def test_payment_creation_with_existing_routing_slip(client, jwt):
     rs_number = rv.json.get('number')
 
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    data = get_payment_request()
+    data = payment_requests
     data['accountInfo'] = {'routingSlip': rs_number}
 
     rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
