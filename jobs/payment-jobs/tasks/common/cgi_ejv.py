@@ -146,11 +146,11 @@ class CgiEjv:
         file_path: str = tempfile.gettempdir()
         file_path_with_name = f'{file_path}/{cls.get_file_name()}'
         trg_file_path = f'{file_path_with_name}.{cls.get_trg_suffix()}'
-        with open(file_path_with_name, 'a+') as jv_file:
+        with open(file_path_with_name, 'a+', encoding='utf-8') as jv_file:
             jv_file.write(ejv_content)
             jv_file.close()
         # TRG File
-        with open(trg_file_path, 'a+') as trg_file:
+        with open(trg_file_path, 'a+', encoding='utf-8') as trg_file:
             trg_file.write('')
             trg_file.close()
         return file_path_with_name, trg_file_path

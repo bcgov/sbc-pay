@@ -64,8 +64,8 @@ class StatementTask:  # pylint:disable=too-few-public-methods
 
         search_filter = {
             'dateFilter': {
-                'startDate': previous_day.strftime('%m/%d/%Y'),
-                'endDate': previous_day.strftime('%m/%d/%Y')
+                'startDate': previous_day.strftime('%Y-%m-%d'),
+                'endDate': previous_day.strftime('%Y-%m-%d')
             }
         }
         cls._create_statement_records(previous_day, search_filter, statement_settings)
