@@ -24,12 +24,12 @@ from sbc_common_components.exception_handling.exception_handler import Exception
 from sbc_common_components.utils.camel_case_response import convert_to_camel
 from sentry_sdk.integrations.flask import FlaskIntegration  # noqa: I001
 
-import bcol_api.config as config
+from bcol_api import config
+from bcol_api.config import _Config
 from bcol_api.resources import API_BLUEPRINT, OPS_BLUEPRINT
 from bcol_api.utils.auth import jwt
 from bcol_api.utils.logging import setup_logging
 from bcol_api.utils.run_version import get_run_version
-from bcol_api.config import _Config
 
 
 setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))  # important to do this first
