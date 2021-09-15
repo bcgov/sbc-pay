@@ -1,5 +1,5 @@
 -e git+https://github.com/bcgov/sbc-common-components.git@a7c5c1c589a958a78697288c240d38d5e1c352c0#egg=sbc_common_components&subdirectory=python
--e git+https://github.com/bcgov/sbc-pay.git@d735a9db20d6c9a6b67d4891eaec957dd5a6c711#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-pay.git@01f1390e8929d9416f3ea396b0b31f6db8f65635#egg=pay_api&subdirectory=pay-api
 Flask-Caching==1.10.1
 Flask-Migrate==2.7.0
 Flask-Moment==1.0.2
@@ -25,27 +25,26 @@ blinker==1.4
 cachelib==0.3.0
 certifi==2021.5.30
 cffi==1.14.6
-charset-normalizer==2.0.4
+charset-normalizer==2.0.5
 click==7.1.2
 croniter==1.0.15
 cryptography==3.4.8
-dpath==2.0.2
+dpath==2.0.5
 ecdsa==0.17.0
 flask-jwt-oidc==0.3.0
 flask-marshmallow==0.11.0
 flask-restx==0.5.1
 gunicorn==20.1.0
 idna==3.2
-importlib-resources==5.2.2
 itsdangerous==1.1.0
-jaeger-client==4.6.1
+jaeger-client==4.8.0
 jsonschema==3.2.0
 marshmallow-sqlalchemy==0.25.0
 marshmallow==3.13.0
 minio==7.1.0
 opentracing==2.4.0
 paramiko==2.7.2
-protobuf==3.17.3
+protobuf==3.18.0
 psycopg2-binary==2.9.1
 pyasn1==0.4.8
 pycparser==2.20
@@ -63,4 +62,3 @@ threadloop==1.0.2
 thrift==0.13.0
 tornado==6.1
 urllib3==1.26.6
-zipp==3.5.0
