@@ -1440,6 +1440,8 @@ components:
       description: <p>Object to hold tax details. </p>
     Fee:
       type: object
+      title: Fee
+      description: <p> Object to return fee information. </p>
       properties:
         filingTypeCode:
           type: string
@@ -1464,8 +1466,8 @@ components:
         total:
           type: number
           description: Total
-      title: Fee
-      description: <p> Object to return fee information. </p>
+        processingFees:
+          type: number
     PaymentRequest:
       type: object
       title: Payment Request
