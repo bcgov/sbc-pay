@@ -28,8 +28,7 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
     is_authorized: bool = False
     auth_response = None
 
-    if not account_id:
-        account_id = user.account_id
+    account_id = account_id or user.account_id
 
     call_auth_svc: bool = True
 
