@@ -22,6 +22,7 @@ depends_on = None
 
 
 def upgrade():
+    op.create_index(op.f('ix_invoices_created_on'), 'invoices', ['created_on'], unique=False)
     op.alter_column('payment_line_items', 'fee_distribution_id',
                     existing_type=sa.INTEGER(),
                     nullable=True)
@@ -66,3 +67,4 @@ def downgrade():
     op.alter_column('payment_line_items', 'fee_distribution_id',
                     existing_type=sa.INTEGER(),
                     nullable=False)
+    op.drop_index(op.f('ix_invoices_created_on'), table_name='invoices')
