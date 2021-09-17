@@ -49,7 +49,7 @@ class InvoiceReceipt(Resource):
             response = Response(pdf, 201)
             file_name = request_json.get('fileName')
             file_name = 'Coops-Filing' if not file_name else file_name
-            response.headers.set('Content-Disposition', 'attachment', filename='{}.pdf'.format(file_name))
+            response.headers.set('Content-Disposition', 'attachment', filename=f'{file_name}.pdf')
             response.headers.set('Content-Type', 'application/pdf')
             response.headers.set('Access-Control-Expose-Headers', 'Content-Disposition')
             return response

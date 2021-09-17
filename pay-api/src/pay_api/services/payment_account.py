@@ -586,8 +586,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                     'Notification to Queue failed for the Account Mailer %s - %s', self.auth_account_id,
                     self.name)
                 capture_message(
-                    'Notification to Queue failed for the Account Mailer on account creation : {msg}.'.format(
-                        msg=payload), level='error')
+                    f'Notification to Queue failed for the Account Mailer on account creation : {payload}.',
+                    level='error')
 
     def _create_account_event_payload(self, event_type: str, include_pay_info: bool = False):
         """Return event payload for account."""
@@ -639,8 +639,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                     'Notification to Queue failed for the Unlock Account %s - %s', pay_account.auth_account_id,
                     pay_account.name)
                 capture_message(
-                    'Notification to Queue failed for the Unlock Account : {msg}.'.format(
-                        msg=payload), level='error')
+                    f'Notification to Queue failed for the Unlock Account : {payload}.', level='error')
 
     @classmethod
     def delete_account(cls, auth_account_id: str) -> PaymentAccount:

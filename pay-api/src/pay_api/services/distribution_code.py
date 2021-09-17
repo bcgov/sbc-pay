@@ -312,7 +312,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     @staticmethod
     def find_by_id(identifier: int):
         """Find distribution code by id."""
-        current_app.logger.debug('<find_by_id, {}'.format(identifier))
+        current_app.logger.debug(f'<find_by_id, {identifier}')
         distribution_code = DistributionCodeModel.find_by_id(identifier=identifier)
         distribution_code_schema = DistributionCodeSchema()
         current_app.logger.debug('>find_by_id')
@@ -321,7 +321,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     @staticmethod
     def find_active_by_account_id(account_id: int) -> DistributionCode:
         """Find active distribution code by account_id."""
-        current_app.logger.debug('<find_active_by_account_id, {}'.format(account_id))
+        current_app.logger.debug(f'<find_active_by_account_id, {account_id}')
         distribution_code = DistributionCodeModel.find_by_active_for_account(account_id)
         dist_code_svc = DistributionCode()
         dist_code_svc._dao = distribution_code  # pylint: disable=protected-access

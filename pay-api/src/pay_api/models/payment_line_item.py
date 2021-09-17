@@ -43,7 +43,7 @@ class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attribute
     waived_by = db.Column(db.String(50), nullable=True, default=None)
     service_fees = db.Column(db.Float, nullable=True)
 
-    fee_distribution_id = db.Column(db.Integer, ForeignKey('distribution_codes.distribution_code_id'), nullable=False)
+    fee_distribution_id = db.Column(db.Integer, ForeignKey('distribution_codes.distribution_code_id'), nullable=True)
 
     fee_schedule = relationship(FeeSchedule, foreign_keys=[fee_schedule_id], lazy='joined', innerjoin=True)
 

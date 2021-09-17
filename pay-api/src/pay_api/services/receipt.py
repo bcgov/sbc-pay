@@ -160,7 +160,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         receipt_dict['templateVars'] = template_vars
 
         current_app.logger.debug(
-            '<OAuthService invoked from receipt.py {}'.format(current_app.config.get('REPORT_API_BASE_URL')))
+            f"<OAuthService invoked from receipt.py {current_app.config.get('REPORT_API_BASE_URL')}")
 
         pdf_response = OAuthService.post(current_app.config.get('REPORT_API_BASE_URL'),
                                          kwargs['user'].bearer_token, AuthHeaderType.BEARER,

@@ -156,8 +156,7 @@ class CFSService(OAuthService):
     def _create_paybc_account(access_token, party):
         """Create account record in PayBC."""
         current_app.logger.debug('<Creating account')
-        account_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/'.format(
-            party.get('party_number', None))
+        account_url = current_app.config.get('CFS_BASE_URL') + f"/cfs/parties/{party.get('party_number', None)}/accs/"
         account: Dict[str, Any] = {
             'account_description': current_app.config.get('CFS_ACCOUNT_DESCRIPTION'),
             'customer_profile_class': CFS_CUSTOMER_PROFILE_CLASS
@@ -174,8 +173,9 @@ class CFSService(OAuthService):
         current_app.logger.debug('<Creating site ')
         if not contact_info:
             contact_info = {}
-        site_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/' \
-            .format(account.get('party_number', None), account.get('account_number', None))
+        site_url = current_app.config.get(
+            'CFS_BASE_URL') + f"/cfs/parties/{account.get('party_number', None)}" \
+                              f"/accs/{account.get('account_number', None)}/sites/"
         site: Dict[str, Any] = {
             'site_name': 'Site 1',  # Make it dynamic if we ever need multiple sites per account
             'city': get_non_null_value(contact_info.get('city'), DEFAULT_CITY),
@@ -269,8 +269,9 @@ class CFSService(OAuthService):
         now = current_local_time()
         curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        invoice_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/' \
-            .format(cfs_account.cfs_party, cfs_account.cfs_account, cfs_account.cfs_site)
+        invoice_url = current_app.config.get(
+            'CFS_BASE_URL') + f'/cfs/parties/{cfs_account.cfs_party}' \
+                              f'/accs/{cfs_account.cfs_account}/sites/{cfs_account.cfs_site}/invs/'
 
         invoice_payload = dict(
             batch_source=CFS_BATCH_SOURCE,

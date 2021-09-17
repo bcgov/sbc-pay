@@ -463,9 +463,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             total_fees = float(invoice.get('total', 0))
             row_value = [
                 ','.join([line_item.get('description') for line_item in invoice.get('line_items')]),
-                ','.join(['{} {}'.format(
-                    detail.get('label'), detail.get('value')) for detail in invoice.get('details')
-                ]) if invoice.get('details') else None,
+                ','.join([f"{detail.get('label')} {detail.get('value')}" for detail in invoice.get('details')])
+                if invoice.get('details') else None,
                 invoice.get('folio_number'),
                 invoice.get('created_name'),
                 get_local_formatted_date_time(
