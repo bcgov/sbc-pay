@@ -80,7 +80,7 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
         has_bcol_account_number = account_info is not None and account_info.get('bcolAccountNumber') is not None
 
         _instance: PaymentSystemService = None
-        current_app.logger.debug('payment_method: {}'.format(payment_method))
+        current_app.logger.debug(f'payment_method: {payment_method}')
 
         if not payment_method:
             raise BusinessException(Error.INVALID_CORP_OR_FILING_TYPE)

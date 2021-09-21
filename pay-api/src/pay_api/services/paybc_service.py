@@ -113,8 +113,9 @@ class PaybcService(PaymentSystemService, CFSService):
         current_app.logger.debug('<paybc_service_Getting token')
         access_token: str = CFSService.get_token().json().get('access_token')
         current_app.logger.debug('<Getting receipt')
-        receipt_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/rcpts/'.format(
-            payment_account.cfs_party, payment_account.cfs_account, payment_account.cfs_site)
+        receipt_url = current_app.config.get(
+            'CFS_BASE_URL') + f'/cfs/parties/{payment_account.cfs_party}/accs/' \
+                              f'{payment_account.cfs_account}/sites/{payment_account.cfs_site}/rcpts/'
         parsed_url = parse_url_params(pay_response_url)
         receipt_number: str = parsed_url.get('receipt_number') if 'receipt_number' in parsed_url else None
         if not receipt_number:  # Find all receipts for the site and then match with invoice number
@@ -148,8 +149,9 @@ class PaybcService(PaymentSystemService, CFSService):
                         inv_number: str, comment: str, amount: float, line: int = 0, access_token: str = None):
         """Add adjustment to the invoice."""
         current_app.logger.debug(f'>Creating PayBC Adjustment  For Invoice: {inv_number}')
-        adjustment_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/adjs/' \
-            .format(payment_account.cfs_party, payment_account.cfs_account, payment_account.cfs_site, inv_number)
+        adjustment_url = current_app.config.get(
+            'CFS_BASE_URL') + f'/cfs/parties/{payment_account.cfs_party}/accs/{payment_account.cfs_account}' \
+                              f'/sites/{payment_account.cfs_site}/invs/{inv_number}/adjs/'
         current_app.logger.debug(f'>Creating PayBC Adjustment URL {adjustment_url}')
 
         adjustment = dict(
@@ -172,8 +174,9 @@ class PaybcService(PaymentSystemService, CFSService):
     def _get_invoice(self, payment_account: PaymentAccount, inv_number: str, access_token: str):
         """Get invoice from PayBC."""
         current_app.logger.debug('<__get_invoice')
-        invoice_url = current_app.config.get('CFS_BASE_URL') + '/cfs/parties/{}/accs/{}/sites/{}/invs/{}/' \
-            .format(payment_account.cfs_party, payment_account.cfs_account, payment_account.cfs_site, inv_number)
+        invoice_url = current_app.config.get(
+            'CFS_BASE_URL') + f'/cfs/parties/{payment_account.cfs_party}/accs/{payment_account.cfs_account}/' \
+                              f'sites/{payment_account.cfs_site}/invs/{inv_number}/'
 
         invoice_response = self.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
         current_app.logger.debug('>__get_invoice')

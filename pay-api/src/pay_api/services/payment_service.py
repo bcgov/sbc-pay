@@ -291,7 +291,7 @@ def _calculate_fees(corp_type, filing_info):
     fees = []
     service_fee_applied: bool = False
     for filing_type_info in filing_info.get('filingTypes'):
-        current_app.logger.debug('Getting fees for {} '.format(filing_type_info.get('filingTypeCode')))
+        current_app.logger.debug(f"Getting fees for {filing_type_info.get('filingTypeCode')} ")
         fee: FeeSchedule = FeeSchedule.find_by_corp_type_and_filing_type(
             corp_type=corp_type,
             filing_type_code=filing_type_info.get('filingTypeCode', None),
