@@ -892,6 +892,30 @@ def test_payment_request_creation_with_account_settings(session, client, jwt, ap
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request_for_wills(will_alias_quantity=2)),
                      headers=user_headers)
     assert rv.json.get('serviceFees') == 1.5
-    assert rv.json.get('total') == 28.5  # Wills Noticee : 17, Alias : 5 each for 2, service fee 1.0
+    assert rv.json.get('total') == 28.5  # Wills Notice : 17, Alias : 5 each for 2, service fee 1.0
     assert rv.json.get('lineItems')[0]['serviceFees'] == 1.5
     assert rv.json.get('lineItems')[1]['serviceFees'] == 0
+
+
+def test_create_ejv_payment_request_non_billable_account(session, client, jwt, app):
+    """Assert payment request works for EJV accounts."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    # Create account first
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_gov_account_payload(account_id=1234, billable=False)),
+                     headers=headers)
+    auth_account_id = rv.json.get('accountId')
+
+    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+    dist_code: DistributionCodeModel = DistributionCodeModel.find_by_active_for_account(payment_account.id)
+
+    assert dist_code
+    assert dist_code.account_id == payment_account.id
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': auth_account_id}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    assert rv.json.get('paymentMethod') == PaymentMethod.EJV.value
+    assert rv.json.get('statusCode') == 'COMPLETED'
+    assert rv.json.get('total') == rv.json.get('paid')
