@@ -49,33 +49,33 @@ class InternalPayService(PaymentSystemService, OAuthService):
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number."""
         current_app.logger.debug('<create_invoice')
+        routing_slip = None
         if routing_slip_number := invoice.routing_slip:
             routing_slip = RoutingSlipModel.find_by_number(routing_slip_number)
-            if routing_slip:
-                if routing_slip.remaining_amount < invoice.total:
-                    raise BusinessException(Error.RS_INSUFFICIENT_FUNDS)
+        if routing_slip is not None:
+            if routing_slip.remaining_amount < invoice.total:
+                raise BusinessException(Error.RS_INSUFFICIENT_FUNDS)
 
-                line_item_models: List[PaymentLineItemModel] = []
-                for line_item in line_items:
-                    line_item_models.append(PaymentLineItemModel.find_by_id(line_item.id))
+            line_item_models: List[PaymentLineItemModel] = []
+            for line_item in line_items:
+                line_item_models.append(PaymentLineItemModel.find_by_id(line_item.id))
 
-                routing_slip_payment_account: PaymentAccount = PaymentAccount.find_by_id(
-                    routing_slip.payment_account_id)
+            routing_slip_payment_account: PaymentAccount = PaymentAccount.find_by_id(
+                routing_slip.payment_account_id)
 
-                cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
-                    routing_slip_payment_account.id)
-                invoice_response = CFSService.create_account_invoice(invoice.id, line_item_models, cfs_account)
+            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
+                routing_slip_payment_account.id)
+            invoice_response = CFSService.create_account_invoice(invoice.id, line_item_models, cfs_account)
 
-                invoice_reference: InvoiceReference = InvoiceReference.create(
-                    invoice.id, invoice_response.json().get('invoice_number', None),
-                    # TODO is pbc_ref_number correct?
-                    invoice_response.json().get('pbc_ref_number', None))
+            invoice_reference: InvoiceReference = InvoiceReference.create(
+                invoice.id, invoice_response.json().get('invoice_number', None),
+                # TODO is pbc_ref_number correct?
+                invoice_response.json().get('pbc_ref_number', None))
 
-                current_app.logger.debug('>create_invoice')
+            current_app.logger.debug('>create_invoice')
 
-                routing_slip.remaining_amount = routing_slip.remaining_amount - decimal.Decimal(invoice.total)
-                routing_slip.flush()
-
+            routing_slip.remaining_amount = routing_slip.remaining_amount - decimal.Decimal(invoice.total)
+            routing_slip.flush()
         else:
             invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id,
                                                                           generate_transaction_number(invoice.id), None)
