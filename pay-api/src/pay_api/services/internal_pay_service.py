@@ -17,6 +17,7 @@ There are conditions where the payment will be handled internally. For e.g, zero
 """
 import decimal
 from datetime import datetime
+from http import HTTPStatus
 from typing import List
 
 from flask import current_app
@@ -29,7 +30,7 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import PaymentMethod, PaymentSystem
+from pay_api.utils.enums import PaymentMethod, PaymentSystem, RoutingSlipStatus
 from pay_api.utils.util import generate_transaction_number
 
 from .oauth_service import OAuthService
@@ -52,10 +53,8 @@ class InternalPayService(PaymentSystemService, OAuthService):
         routing_slip = None
         if routing_slip_number := invoice.routing_slip:
             routing_slip = RoutingSlipModel.find_by_number(routing_slip_number)
+            InternalPayService._validate_routing_slip(routing_slip, invoice)
         if routing_slip is not None:
-            if routing_slip.remaining_amount < invoice.total:
-                raise BusinessException(Error.RS_INSUFFICIENT_FUNDS)
-
             line_item_models: List[PaymentLineItemModel] = []
             for line_item in line_items:
                 line_item_models.append(PaymentLineItemModel.find_by_id(line_item.id))
@@ -116,3 +115,22 @@ class InternalPayService(PaymentSystemService, OAuthService):
             }
         )
         transaction.update_transaction(transaction.id, pay_response_url=None)
+
+    @staticmethod
+    def _validate_routing_slip(routing_slip: RoutingSlipModel, invoice: Invoice):
+        """Validate different conditions of a routing slip payment."""
+        # is rs doesnt exist , legacy routing slip flag should be on
+        if routing_slip is None and not current_app.config.get('ALLOW_LEGACY_ROUTING_SLIPS'):
+            raise BusinessException(Error.RS_DOESNT_EXIST)
+
+        # check rs is active
+
+        if routing_slip.status in (
+                RoutingSlipStatus.BOUNCED.value, RoutingSlipStatus.NSF.value, RoutingSlipStatus.COMPLETE.value):
+            raise BusinessException(Error.RS_NOT_ACTIVE)
+
+        if routing_slip.parent:
+            error = f'This Routing Slip is linked, enter the parent Routing slip:{routing_slip.parent.number}'
+            raise BusinessException(type('obj', (object,), {'code': error, 'status': HTTPStatus.BAD_REQUEST})())
+        if routing_slip.remaining_amount < invoice.total:
+            raise BusinessException(Error.RS_INSUFFICIENT_FUNDS)

@@ -692,7 +692,7 @@ def get_gov_account_payload_with_no_revenue_account(payment_method: str = Paymen
 
 def get_routing_slip_request(
         number: str = '123456',
-        cheque_receipt_numbers: List[Tuple] = [('1234567890', PaymentMethod.CHEQUE.value, 100)]
+        cheque_receipt_numbers: List[Tuple] = [('1234567890', PaymentMethod.CHEQUE.value, 1)]
 ):
     """Return a routing slip request dictionary."""
     routing_slip_payload: Dict[str, any] = {

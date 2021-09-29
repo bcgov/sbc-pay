@@ -336,15 +336,9 @@ def test_payment_creation_with_existing_routing_slip(client, jwt, payment_reques
     data['accountInfo'] = {'routingSlip': rs_number}
 
     rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
-    assert rv.status_code == 201
-    assert rv.json.get('_links') is not None
-    total = rv.json.get('total')
-    rv = client.post('/api/v1/fas/routing-slips/queries', data=json.dumps({'routingSlipNumber': rs_number}),
-                     headers=headers)
-
-    items = rv.json.get('items')
-
-    assert items[0].get('remainingAmount') == payload.get('payments')[0].get('paidAmount') - total
+    print(rv)
+    assert rv.status_code == 400
+    print(rv.json)
 
 
 def test_bcol_payment_creation(session, client, jwt, app):
