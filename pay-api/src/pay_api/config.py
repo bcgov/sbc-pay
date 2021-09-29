@@ -174,6 +174,8 @@ class _Config():  # pylint: disable=too-few-public-methods
 
     OUTSTANDING_TRANSACTION_DAYS = int(os.getenv('OUTSTANDING_TRANSACTION_DAYS', '10'))
 
+    ALLOW_LEGACY_ROUTING_SLIPS = os.getenv('ALLOW_LEGACY_ROUTING_SLIPS', 'False').lower() == 'true'
+
     TESTING = False
     DEBUG = True
 
