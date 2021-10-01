@@ -22,6 +22,7 @@ import json
 from unittest.mock import patch
 
 import pytest
+from flask import current_app
 from requests.exceptions import ConnectionError
 
 from pay_api.models import DistributionCode as DistributionCodeModel
@@ -385,6 +386,16 @@ def test_payment_creation_with_existing_invalid_routing_slip_invalid(client, jwt
     assert rv.status_code == 400
     assert 'This Routing Slip is linked' in rv.json.get('type')
     assert parent1.get('number') in rv.json.get('type')
+
+    # Flip the legacy routing slip flag
+    data['accountInfo'] = {'routingSlip': 'invalid'}
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
+    assert rv.status_code == 201
+    current_app.config['ALLOW_LEGACY_ROUTING_SLIPS'] = False
+    data['accountInfo'] = {'routingSlip': 'invalid'}
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
+    assert rv.status_code == 400
+    assert rv.json.get('type') == 'RS_DOESNT_EXIST'
 
 
 def test_bcol_payment_creation(session, client, jwt, app):

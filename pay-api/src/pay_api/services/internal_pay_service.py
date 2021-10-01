@@ -120,8 +120,11 @@ class InternalPayService(PaymentSystemService, OAuthService):
     def _validate_routing_slip(routing_slip: RoutingSlipModel, invoice: Invoice):
         """Validate different conditions of a routing slip payment."""
         # is rs doesnt exist , legacy routing slip flag should be on
-        if routing_slip is None and not current_app.config.get('ALLOW_LEGACY_ROUTING_SLIPS'):
-            raise BusinessException(Error.RS_DOESNT_EXIST)
+        if routing_slip is None:
+            if not current_app.config.get('ALLOW_LEGACY_ROUTING_SLIPS'):
+                raise BusinessException(Error.RS_DOESNT_EXIST)
+            # legacy routing slip which doesnt exist in the system.No validations
+            return
 
         # check rs is active
 
