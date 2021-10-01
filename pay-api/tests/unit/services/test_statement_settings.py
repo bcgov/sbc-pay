@@ -307,7 +307,7 @@ def test_update_statement_weekly(session):
     assert current_statement_settings.to_date == end_of_week_date.date()
 
     # travel to next month and see whats active
-    with freeze_time(end_of_month_date + timedelta(days=2)):
+    with freeze_time(end_of_month_date + timedelta(days=7)):
         next_week_statement_settings = StatementSettingsModel.find_active_settings(payment_account.auth_account_id,
                                                                                    datetime.today())
         assert next_week_statement_settings is not None

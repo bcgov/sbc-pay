@@ -153,9 +153,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             payment_account = PaymentAccount.create(
                 dict(
                     accountId=get_str_by_path(authorization, 'account/id'),
-                    paymentInfo=dict(
-                        methodOfPayment=payment_method,
-                        billable=True)
+                    paymentInfo=dict(methodOfPayment=payment_method)
                 )
             )
         return payment_account

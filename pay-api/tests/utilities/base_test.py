@@ -658,14 +658,14 @@ def get_unlinked_pad_account_payload(account_id: int = randrange(999999), bank_n
 
 
 def get_gov_account_payload(payment_method: str = PaymentMethod.EJV.value,
-                            account_id: int = randrange(999999), project_code='1111111'):
+                            account_id: int = randrange(999999), project_code='1111111', billable: bool = True):
     """Return a gov account payload."""
     return {
         'accountId': account_id,
         'accountName': 'Test Account',
         'paymentInfo': {
             'methodOfPayment': payment_method,
-            'billable': False,
+            'billable': billable,
             'revenueAccount': {
                 'client': '100',
                 'projectCode': project_code,

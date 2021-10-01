@@ -557,7 +557,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         if is_future_pad:
             d['futurePaymentMethod'] = PaymentMethod.PAD.value
 
-        if not self.billable:  # include JV details
+        if self.payment_method == PaymentMethod.EJV.value:  # include JV details
             dist_code = DistributionCode.find_active_by_account_id(self.id)
             d['revenueAccount'] = dist_code.asdict()
 
