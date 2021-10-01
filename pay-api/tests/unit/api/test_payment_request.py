@@ -384,7 +384,7 @@ def test_payment_creation_with_existing_invalid_routing_slip_invalid(client, jwt
     client.post('/api/v1/fas/routing-slips/links', data=json.dumps(link_data), headers=headers)
     rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
     assert rv.status_code == 400
-    assert 'This Routing Slip is linked' in rv.json.get('type')
+    assert 'This Routing slip is linked' in rv.json.get('type')
     assert parent1.get('number') in rv.json.get('type')
 
     # Flip the legacy routing slip flag
