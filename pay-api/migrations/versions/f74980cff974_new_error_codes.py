@@ -43,8 +43,5 @@ def upgrade():
 
 
 def downgrade():
-    op.execute('DELETE FROM routing_slip_status_codes where code=\'LINKED\'')
-
-    op.execute("DELETE FROM error_codes where code in ('RS_ALREADY_A_PARENT',"
-               "'RS_ALREADY_LINKED','RS_CANT_LINK_TO_SAME','RS_PARENT_ALREADY_LINKED', 'RS_CHILD_HAS_TRANSACTIONS')")
+    op.execute("DELETE FROM error_codes where code in ('RS_NOT_ACTIVE','RS_DOESNT_EXIST')")
 
