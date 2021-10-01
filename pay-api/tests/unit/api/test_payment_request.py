@@ -27,9 +27,9 @@ from requests.exceptions import ConnectionError
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.schemas import utils as schema_utils
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod, Role
+from pay_api.utils.enums import InvoiceStatus, PatchActions, PaymentMethod, Role, RoutingSlipStatus
 from tests.utilities.base_test import (
-    activate_pad_account, get_basic_account_payload, get_claims, get_gov_account_payload, get_payment_request,
+    activate_pad_account, fake, get_basic_account_payload, get_claims, get_gov_account_payload, get_payment_request,
     get_payment_request_for_wills, get_payment_request_with_folio_number, get_payment_request_with_no_contact_info,
     get_payment_request_with_payment_method, get_payment_request_with_service_fees, get_payment_request_without_bn,
     get_routing_slip_request, get_unlinked_pad_account_payload, get_waive_fees_payment_request,
@@ -336,9 +336,55 @@ def test_payment_creation_with_existing_routing_slip(client, jwt, payment_reques
     data['accountInfo'] = {'routingSlip': rs_number}
 
     rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
-    print(rv)
+    assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
+    total = rv.json.get('total')
+    rv = client.post('/api/v1/fas/routing-slips/queries', data=json.dumps({'routingSlipNumber': rs_number}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+
+    assert items[0].get('remainingAmount') == payload.get('payments')[0].get('paidAmount') - total
+
+
+def test_payment_creation_with_existing_invalid_routing_slip_invalid(client, jwt):
+    """Assert that the endpoint returns 201."""
+    claims = get_claims(
+        roles=[Role.FAS_CREATE.value, Role.FAS_EDIT.value, Role.STAFF.value, 'make_payment', Role.FAS_LINK.value])
+    token = jwt.create_jwt(claims, token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    # create an RS with less balance
+    payload = get_routing_slip_request(cheque_receipt_numbers=[('1234567890', PaymentMethod.CHEQUE.value, 1)])
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    rs_number = rv.json.get('number')
+
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    data = get_payment_request()
+    data['accountInfo'] = {'routingSlip': rs_number}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
     assert rv.status_code == 400
-    print(rv.json)
+    assert 'There is not enough balance in this Routing slip' in rv.json.get('type')
+
+    # change status of routing slip to inactive
+    rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
+                      data=json.dumps({'status': RoutingSlipStatus.COMPLETE.value}), headers=headers)
+
+    assert rv.status_code == 200
+    assert rv.json.get('status') == RoutingSlipStatus.COMPLETE.value
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
+    assert rv.status_code == 400
+    assert rv.json.get('type') == 'RS_NOT_ACTIVE'
+
+    parent1 = get_routing_slip_request(number=fake.name())
+    client.post('/api/v1/fas/routing-slips', data=json.dumps(parent1), headers=headers)
+    link_data = {'childRoutingSlipNumber': rs_number, 'parentRoutingSlipNumber': f"{parent1.get('number')}"}
+    client.post('/api/v1/fas/routing-slips/links', data=json.dumps(link_data), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
+    assert rv.status_code == 400
+    assert 'This Routing Slip is linked' in rv.json.get('type')
+    assert parent1.get('number') in rv.json.get('type')
 
 
 def test_bcol_payment_creation(session, client, jwt, app):
