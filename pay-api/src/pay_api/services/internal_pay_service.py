@@ -128,12 +128,12 @@ class InternalPayService(PaymentSystemService, OAuthService):
 
         # check rs is active
 
-        if routing_slip.status in (
-                RoutingSlipStatus.BOUNCED.value, RoutingSlipStatus.NSF.value, RoutingSlipStatus.COMPLETE.value):
+        if routing_slip.status not in (
+                RoutingSlipStatus.ACTIVE.value, RoutingSlipStatus.LINKED.value):
             raise BusinessException(Error.RS_NOT_ACTIVE)
 
         if routing_slip.parent:
-            error = f'This Routing Slip is linked, enter the parent Routing slip:{routing_slip.parent.number}'
+            error = f'This Routing slip is linked, enter the parent Routing slip:{routing_slip.parent.number}'
             raise BusinessException(type('obj', (object,), {'code': error, 'status': HTTPStatus.BAD_REQUEST})())
         if routing_slip.remaining_amount < invoice.total:
             error = f'There is not enough balance in this Routing slip. ' \
