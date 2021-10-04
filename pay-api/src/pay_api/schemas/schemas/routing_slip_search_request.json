@@ -48,9 +48,9 @@
         ]
      },
       "chequeReceiptNumber": {
-         "$id": "#/properties/receipts/items/properties/receiptNumber",
+         "$id": "#/properties/receipts/items/properties/chequeReceiptNumber",
          "type": "string",
-         "title": "Receipt number",
+         "title": "Cheque Receipt number",
          "default": "",
          "examples": [
             "123451"

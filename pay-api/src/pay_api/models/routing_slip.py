@@ -151,15 +151,13 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def _add_receipt_number(cls, query, search_filter):
-        receipt_number = search_filter.get('receiptNumber', None)
-        cheque_receipt_number = search_filter.get('chequeReceiptNumber', None)
         conditions = []
-        if receipt_number:
+        if receipt_number := search_filter.get('receiptNumber', None):
             conditions.append(
                 and_(Payment.payment_account_id == PaymentAccount.id,
                      and_(Payment.cheque_receipt_number == receipt_number,
                           Payment.payment_method_code == PaymentMethod.CASH.value)))
-        if cheque_receipt_number:
+        if cheque_receipt_number := search_filter.get('chequeReceiptNumber', None):
             conditions.append(
                 and_(Payment.payment_account_id == PaymentAccount.id,
                      and_(Payment.cheque_receipt_number == cheque_receipt_number,
