@@ -329,6 +329,36 @@ def test_create_routing_slips_search_with_receipt(client, jwt, app):
     assert rv.status_code == 201
     receipt_number = payload.get('payments')[0].get('chequeReceiptNumber')
     # search with routing slip number works
+    rv = client.post('/api/v1/fas/routing-slips/queries', data=json.dumps({'chequeReceiptNumber': receipt_number}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 1
+    assert items[0].get('payments')[0].get('chequeReceiptNumber') == receipt_number
+
+    # search with routing slip number works
+    rv = client.post('/api/v1/fas/routing-slips/queries', data=json.dumps({'receiptNumber': receipt_number}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 0
+
+    # search with routing slip number works
+    rv = client.post('/api/v1/fas/routing-slips/queries',
+                     data=json.dumps({'chequeReceiptNumber': receipt_number, 'receiptNumber': receipt_number}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 0
+
+    payload = get_routing_slip_request(number='TEST',
+                                       cheque_receipt_numbers=[('211001', PaymentMethod.CASH.value, 100)])
+
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 201
+
+    receipt_number = payload.get('payments')[0].get('chequeReceiptNumber')
+    # search with routing slip number works
     rv = client.post('/api/v1/fas/routing-slips/queries', data=json.dumps({'receiptNumber': receipt_number}),
                      headers=headers)
 
