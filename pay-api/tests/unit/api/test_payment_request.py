@@ -395,7 +395,7 @@ def test_payment_creation_with_existing_invalid_routing_slip_invalid(client, jwt
     data['accountInfo'] = {'routingSlip': 'invalid'}
     rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
     assert rv.status_code == 400
-    assert rv.json.get('type') == 'RS_DOESNT_EXIST', 'tesing'
+    assert rv.json.get('type') == 'RS_DOESNT_EXIST'
 
 
 def test_bcol_payment_creation(session, client, jwt, app):
