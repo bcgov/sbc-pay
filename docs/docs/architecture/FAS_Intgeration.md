@@ -1,6 +1,6 @@
 # FAS Integration points with CFS 
 
-### Endpoints to call when routing slip is created
+## Endpoints to call when routing slip is created
 
 <!--
 ```
@@ -39,7 +39,7 @@ end note
 -->
  ![CFS](fas/routing_slip.svg)
 
-### Endpoints to call on invoice (transaction) creation
+## Endpoints to call on invoice (transaction) creation
 
 <!--
 ```
@@ -64,7 +64,7 @@ end note
  ![CFS](fas/routing_slip_transaction.svg)
 
 
-### Endpoints to call when invoice (transaction) is cancelled
+## Endpoints to call when invoice (transaction) is cancelled
 
 <!--
 ```
@@ -88,7 +88,7 @@ end note
 -->
  ![CFS](fas/cancel_transaction.svg)
 
- ### Endpoints to call when invoice (transaction) is partially cancelled
+ ## Endpoints to call when invoice (transaction) is partially cancelled
 
 <!--
 ```
@@ -118,7 +118,7 @@ end note
  ![CFS](fas/cancel_transaction_partial.svg)
 
 
-### Endpoints to call when refund is approved.
+## Endpoints to call when refund is approved.
 
 <!--
 ```
@@ -137,7 +137,7 @@ end note
  ![CFS](fas/refund_approved.svg)
 
 
-### Endpoints to call to write off a routing slip (< $10)
+## Endpoints to call to write off a routing slip (< $10)
 
 <!--
 ```
@@ -155,7 +155,7 @@ end note
  ![CFS](fas/write_off.svg)
 
 
-### Endpoints to call when cheque is bounced
+## Endpoints to call when cheque is bounced
 
 <!--
 ```
@@ -179,7 +179,7 @@ end note
 -->
  ![CFS](fas/nsf.svg)
 
-### Endpoints to call when RS is linked
+## Endpoints to call when RS is linked
 
 <!--
 ```
