@@ -123,7 +123,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                 credit_distribution = cls.get_distribution_string(credit_distribution_code)  # Credit to partner GL
 
                 # JV Header
-                ejv_content = '{}{}'.format(ejv_content,
+                ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
                                             cls.get_jv_header(batch_type, cls.get_journal_batch_name(batch_number),
                                                               journal_name, total))
                 control_total += 1
@@ -135,7 +135,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                     # Flow Through add it as the invoice id.
                     flow_through = f'{line.invoice_id:<110}'
                     # Line for credit.
-                    ejv_content = '{}{}'.format(ejv_content,
+                    ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
                                                 cls.get_jv_line(batch_type, credit_distribution, disbursement_desc,
                                                                 effective_date, flow_through, journal_name, line.total,
                                                                 line_number, 'C'))
@@ -143,7 +143,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                     control_total += 1
 
                     # Add a line here for debit too
-                    ejv_content = '{}{}'.format(ejv_content,
+                    ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
                                                 cls.get_jv_line(batch_type, debit_distribution, disbursement_desc,
                                                                 effective_date, flow_through, journal_name, line.total,
                                                                 line_number, 'D'))

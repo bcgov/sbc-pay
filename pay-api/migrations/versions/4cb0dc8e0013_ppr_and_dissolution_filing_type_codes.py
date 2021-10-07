@@ -43,7 +43,8 @@ def upgrade():
             {'code': 'SSRCH', 'description': 'Staff Search for Client'},
             {'code': 'AFDVT', 'description': 'Affidavit'},
             {'code': 'SPRLN', 'description': 'Special resolution'},
-            {'code': 'VDSLN', 'description': 'Voluntary dissolution'}
+            {'code': 'VDSLN', 'description': 'Voluntary dissolution'},
+            {'code': 'VLQDN', 'description': 'Voluntary liquidation'}
         ]
     )
 
@@ -131,6 +132,57 @@ def upgrade():
                 'service_fee_code': 'TRF01',
                 'future_effective_fee_code': 'FUT01',
                 'priority_fee_code': 'PRI01'
+            },
+
+            {
+                'filing_type_code': 'VLQDN',
+                'corp_type_code': 'BC',
+                'fee_code': 'EN101',
+                'fee_start_date': date.today(),
+                'fee_end_date': None,
+                'service_fee_code': 'TRF01',
+                'future_effective_fee_code': 'FUT01',
+                'priority_fee_code': 'PRI01'
+            },
+            {
+                'filing_type_code': 'VLQDN',
+                'corp_type_code': 'BEN',
+                'fee_code': 'EN101',
+                'fee_start_date': date.today(),
+                'fee_end_date': None,
+                'service_fee_code': 'TRF01',
+                'future_effective_fee_code': 'FUT01',
+                'priority_fee_code': 'PRI01'
+            },
+            {
+                'filing_type_code': 'VLQDN',
+                'corp_type_code': 'ULC',
+                'fee_code': 'EN101',
+                'fee_start_date': date.today(),
+                'fee_end_date': None,
+                'service_fee_code': 'TRF01',
+                'future_effective_fee_code': 'FUT01',
+                'priority_fee_code': 'PRI01'
+            },
+            {
+                'filing_type_code': 'VLQDN',
+                'corp_type_code': 'LTD',
+                'fee_code': 'EN101',
+                'fee_start_date': date.today(),
+                'fee_end_date': None,
+                'service_fee_code': 'TRF01',
+                'future_effective_fee_code': 'FUT01',
+                'priority_fee_code': 'PRI01'
+            },
+            {
+                'filing_type_code': 'VLQDN',
+                'corp_type_code': 'CC',
+                'fee_code': 'EN101',
+                'fee_start_date': date.today(),
+                'fee_end_date': None,
+                'service_fee_code': 'TRF01',
+                'future_effective_fee_code': 'FUT01',
+                'priority_fee_code': 'PRI01'
             }
         ]
     )
@@ -163,7 +215,7 @@ def upgrade():
     if (res_fetch := res.fetchall()) and res_fetch[0]:
         distribution_code_id = res_fetch[0][0]
         res = conn.execute(
-            f"select fee_schedule_id from fee_schedules where filing_type_code in ('AFDVT', 'SPRLN', 'VDSLN')")
+            f"select fee_schedule_id from fee_schedules where filing_type_code in ('AFDVT', 'SPRLN', 'VDSLN', 'VLQDN')")
         distr_code_links = []
         for result in res.fetchall():
             fee_schedule_id = result[0]
@@ -176,6 +228,6 @@ def upgrade():
 
 def downgrade():
     op.execute(
-        "DELETE FROM distribution_code_links WHERE fee_schedule_id in (select fee_schedule_id from fee_schedules where filing_type_code in ('SSRCH', 'AFDVT', 'SPRLN', 'VDSLN'))")
-    op.execute("DELETE FROM fee_schedules WHERE filing_type_code in ('SSRCH', 'AFDVT', 'SPRLN', 'VDSLN')")
-    op.execute("DELETE FROM filing_types WHERE code in ('SSRCH', 'AFDVT', 'SPRLN', 'VDSLN')")
+        "DELETE FROM distribution_code_links WHERE fee_schedule_id in (select fee_schedule_id from fee_schedules where filing_type_code in ('SSRCH', 'AFDVT', 'SPRLN', 'VDSLN', 'VLQDN'))")
+    op.execute("DELETE FROM fee_schedules WHERE filing_type_code in ('SSRCH', 'AFDVT', 'SPRLN', 'VDSLN', 'VLQDN')")
+    op.execute("DELETE FROM filing_types WHERE code in ('SSRCH', 'AFDVT', 'SPRLN', 'VDSLN', 'VLQDN')")
