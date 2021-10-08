@@ -137,5 +137,5 @@ class InternalPayService(PaymentSystemService, OAuthService):
             raise BusinessException(type('obj', (object,), {'code': error, 'status': HTTPStatus.BAD_REQUEST})())
         if routing_slip.remaining_amount < invoice.total:
             error = f'There is not enough balance in this Routing slip. ' \
-                    f'The current balance is :{routing_slip.remaining_amount}'
+                    f'The current balance is :${routing_slip.remaining_amount:.2f}'
             raise BusinessException(type('obj', (object,), {'code': error, 'status': HTTPStatus.BAD_REQUEST})())
