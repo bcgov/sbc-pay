@@ -355,7 +355,9 @@ def test_payment_creation_with_existing_invalid_routing_slip_invalid(client, jwt
     token = jwt.create_jwt(claims, token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     # create an RS with less balance
-    payload = get_routing_slip_request(cheque_receipt_numbers=[('1234567890', PaymentMethod.CHEQUE.value, 1)])
+    cheque_amount = 1
+    payload = get_routing_slip_request(cheque_receipt_numbers=[('1234567890',
+                                                                PaymentMethod.CHEQUE.value, cheque_amount)])
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
     rs_number = rv.json.get('number')
 
@@ -365,7 +367,9 @@ def test_payment_creation_with_existing_invalid_routing_slip_invalid(client, jwt
 
     rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
     assert rv.status_code == 400
-    assert 'There is not enough balance in this Routing slip' in rv.json.get('type')
+    assert 'There is not enough balance in this Routing slip' in rv.json.get('detail')
+    assert 'INSUFFICIENT_BALANCE_IN_ROUTING_SLIP' in rv.json.get('type')
+    assert f'${cheque_amount}.00' in rv.json.get('detail')
 
     # change status of routing slip to inactive
     rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
@@ -384,8 +388,9 @@ def test_payment_creation_with_existing_invalid_routing_slip_invalid(client, jwt
     client.post('/api/v1/fas/routing-slips/links', data=json.dumps(link_data), headers=headers)
     rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
     assert rv.status_code == 400
-    assert 'This Routing slip is linked' in rv.json.get('type')
-    assert parent1.get('number') in rv.json.get('type')
+    assert 'LINKED_ROUTING_SLIP' in rv.json.get('type')
+    assert 'This Routing slip is linked' in rv.json.get('detail')
+    assert parent1.get('number') in rv.json.get('detail')
 
     # Flip the legacy routing slip flag
     data['accountInfo'] = {'routingSlip': 'invalid'}
