@@ -126,7 +126,7 @@ async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-loca
                     has_errors = True
                 # Create a payment record if its a gov account payment.
                 elif not ejv_file.is_distribution:
-                    amount = float(line[42:57])
+                    amount = float(line[42:57]) #TODO Adjust payment if reversal.
                     receipt_number = line[0:42].strip()
                     await _create_payment_record(amount, ejv_header, receipt_number)
 
@@ -152,13 +152,16 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
 
     # If the JV process failed, then mark the GL code against the invoice to be stopped
     # for further JV process for the credit GL.
+    # print('line[104:105] ', line[104:105])
     if line[104:105] == 'C' and ejv_file.is_distribution:
-        invoice_link.disbursement_status_code = _get_disbursement_status(invoice_return_code)
+        disbursement_status = _get_disbursement_status(invoice_return_code)
+        invoice_link.disbursement_status_code = disbursement_status
         invoice_link.message = invoice_return_message
-        invoice.disbursement_status_code = _get_disbursement_status(invoice_return_code)
 
-        if invoice_link.disbursement_status_code == DisbursementStatus.ERRORED.value:
+        if disbursement_status == DisbursementStatus.ERRORED.value:
             has_errors = True
+        else:
+            await _update_invoice_status(invoice)
 
         line_items: List[PaymentLineItemModel] = invoice.payment_line_items
         for line_item in line_items:
@@ -186,19 +189,32 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
                 invoice.payment_account_id)
             dist_code.stop_ejv = True
         elif invoice_link.disbursement_status_code == DisbursementStatus.COMPLETED.value:
-            # Set the invoice status as PAID. Mark the invoice reference as COMPLETED, create a receipt
-            invoice.invoice_status_code = InvoiceStatus.PAID.value
+            # Set the invoice status as REFUNDED if it's a JV reversal, else mark as PAID
+            # For 1 invoice, there would be multiple lines. Below check is to make sure the invoice status is updated only once.
+            is_reversal = invoice.invoice_status_code in (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
+            invoice.invoice_status_code = InvoiceStatus.REFUNDED.value if is_reversal else InvoiceStatus.PAID.value
+
+            # Mark the invoice reference as COMPLETED, create a receipt
             if inv_ref:
                 inv_ref.status_code = InvoiceReferenceStatus.COMPLETED.value
             # Find receipt and add total to it, as single invoice can be multiple rows in the file
-            receipt = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=invoice_id,
-                                                                         receipt_number=receipt_number)
-            if receipt:
-                receipt.receipt_amount += float(line[89:104])
-            else:
-                ReceiptModel(invoice_id=invoice_id, receipt_number=receipt_number, receipt_date=datetime.now(),
-                             receipt_amount=float(line[89:104])).flush()
+            if not is_reversal:
+                receipt = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=invoice_id,
+                                                                             receipt_number=receipt_number)
+                if receipt:
+                    receipt.receipt_amount += float(line[89:104])
+                else:
+                    ReceiptModel(invoice_id=invoice_id, receipt_number=receipt_number, receipt_date=datetime.now(),
+                                 receipt_amount=float(line[89:104])).flush()
     return has_errors
+
+
+async def _update_invoice_status(invoice):
+    """Update status to reversed if its a refund, else to completed."""
+    if invoice.invoice_status_code in (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value):
+        invoice.disbursement_status_code = DisbursementStatus.REVERSED.value
+    else:
+        invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
 
 
 async def _create_payment_record(amount, ejv_header, receipt_number):

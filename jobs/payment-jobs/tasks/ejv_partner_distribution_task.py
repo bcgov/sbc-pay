@@ -80,7 +80,9 @@ class EjvPartnerDistributionTask(CgiEjv):
 
         for partner in partners:
             # Find all invoices for the partner to disburse.
-            invoices = cls._get_invoices_for_disbursement(partner)
+            payment_invoices = cls._get_invoices_for_disbursement(partner)
+            refund_reversals = cls._get_invoices_for_refund_reversal(partner)
+            invoices = payment_invoices + refund_reversals
             # If no invoices continue.
             if not invoices:
                 continue
@@ -123,7 +125,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                 credit_distribution = cls.get_distribution_string(credit_distribution_code)  # Credit to partner GL
 
                 # JV Header
-                ejv_content = '{}{}'.format(ejv_content,
+                ejv_content = '{}{}'.format(ejv_content,  # pylint: disable=consider-using-f-string
                                             cls.get_jv_header(batch_type, cls.get_journal_batch_name(batch_number),
                                                               journal_name, total))
                 control_total += 1
@@ -135,18 +137,22 @@ class EjvPartnerDistributionTask(CgiEjv):
                     # Flow Through add it as the invoice id.
                     flow_through = f'{line.invoice_id:<110}'
                     # Line for credit.
-                    ejv_content = '{}{}'.format(ejv_content,
+                    # If it's a reversal credit goes as 'D'ebit. Else goes 'C'redit.
+                    is_reversal = InvoiceModel.find_by_id(line.invoice_id).invoice_status_code in \
+                                  (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
+
+                    ejv_content = '{}{}'.format(ejv_content,  # pylint: disable=consider-using-f-string
                                                 cls.get_jv_line(batch_type, credit_distribution, disbursement_desc,
                                                                 effective_date, flow_through, journal_name, line.total,
-                                                                line_number, 'C'))
+                                                                line_number, 'C' if not is_reversal else 'D'))
                     line_number += 1
                     control_total += 1
 
                     # Add a line here for debit too
-                    ejv_content = '{}{}'.format(ejv_content,
+                    ejv_content = '{}{}'.format(ejv_content,  # pylint: disable=consider-using-f-string
                                                 cls.get_jv_line(batch_type, debit_distribution, disbursement_desc,
                                                                 effective_date, flow_through, journal_name, line.total,
-                                                                line_number, 'D'))
+                                                                line_number, 'D' if not is_reversal else 'C'))
 
                     control_total += 1
 
@@ -180,7 +186,8 @@ class EjvPartnerDistributionTask(CgiEjv):
         time.sleep(1)
 
     @classmethod
-    def _find_line_items_by_invoice_and_distribution(cls, distribution_code_id, invoice_id_list):
+    def _find_line_items_by_invoice_and_distribution(cls, distribution_code_id, invoice_id_list) \
+            -> List[PaymentLineItemModel]:
         """Find and return all payment line items for this distribution."""
         line_items: List[PaymentLineItemModel] = db.session.query(PaymentLineItemModel) \
             .filter(PaymentLineItemModel.invoice_id.in_(invoice_id_list)) \
@@ -205,13 +212,28 @@ class EjvPartnerDistributionTask(CgiEjv):
         return invoices
 
     @classmethod
+    def _get_invoices_for_refund_reversal(cls, partner):
+        """Return invoices for refund reversal."""
+        # Refund requested for credit card.
+        refund_inv_statuses = (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
+
+        invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
+            .filter(InvoiceModel.invoice_status_code.in_(refund_inv_statuses)) \
+            .filter(InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value])) \
+            .filter(InvoiceModel.disbursement_status_code == DisbursementStatus.COMPLETED.value) \
+            .filter(InvoiceModel.corp_type_code == partner.code) \
+            .all()
+        current_app.logger.info(invoices)
+        return invoices
+
+    @classmethod
     def _get_partners_by_batch_type(cls, batch_type) -> List[CorpTypeModel]:
         """Return partners by batch type."""
         # CREDIT : Ministry GL code -> disbursement_distribution_code_id on distribution_codes table
         # DEBIT : BC Registry GL Code -> distribution_code on fee_schedule, starts with 112
         bc_reg_client_code = current_app.config.get('CGI_BCREG_CLIENT_CODE')  # 112
         query = db.session.query(DistributionCodeModel.distribution_code_id) \
-            .filter(DistributionCodeModel.stop_ejv.is_(False)) \
+            .filter(DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None)) \
             .filter(DistributionCodeModel.account_id.is_(None)) \
             .filter(DistributionCodeModel.disbursement_distribution_code_id.is_(None))
 

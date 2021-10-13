@@ -16,7 +16,8 @@
 
 Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
-from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvInvoiceLink, FeeSchedule, InvoiceReference, db
+from pay_api.models import (
+    DistributionCode, EjvFile, EjvHeader, EjvInvoiceLink, FeeSchedule, Invoice, InvoiceReference, db)
 from pay_api.utils.enums import DisbursementStatus, InvoiceReferenceStatus, InvoiceStatus
 
 from tasks.ejv_payment_task import EjvPaymentTask
@@ -97,3 +98,38 @@ def test_payments_for_gov_accounts(session, monkeypatch):
         assert ejv_file
         assert ejv_file.disbursement_status_code == DisbursementStatus.UPLOADED.value
         assert not ejv_file.is_distribution
+
+    # Try reversal on these payments.
+    # Mark invoice as REFUND_REQUESTED and run a JV job again.
+    for inv_id in inv_ids:
+        # Set invoice ref status as COMPLETED, as that would be the status when the payment is reconciled.
+        invoice_ref = InvoiceReference.find_reference_by_invoice_id_and_status(inv_id,
+                                                                               InvoiceReferenceStatus.ACTIVE.value)
+        invoice_ref.status_code = InvoiceReferenceStatus.COMPLETED.value
+
+        # Set invoice status for Refund requested.
+        inv: Invoice = Invoice.find_by_id(inv_id)
+        inv.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
+        inv.save()
+
+    # Create a JV again, which should reverse the payments.
+    EjvPaymentTask.create_ejv_file()
+
+    # Lookup invoice and assert invoice status
+    for inv_id in inv_ids:
+        invoice_ref = InvoiceReference.find_reference_by_invoice_id_and_status(inv_id,
+                                                                               InvoiceReferenceStatus.ACTIVE.value)
+        assert invoice_ref
+
+        ejv_inv_link = db.session.query(EjvInvoiceLink).filter(EjvInvoiceLink.invoice_id == inv_id).first()
+        assert ejv_inv_link
+
+        ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_inv_link.ejv_header_id).first()
+        assert ejv_header.disbursement_status_code == DisbursementStatus.UPLOADED.value
+        assert ejv_header
+
+        ejv_file: EjvFile = EjvFile.find_by_id(ejv_header.ejv_file_id)
+        assert ejv_file
+        assert ejv_file.disbursement_status_code == DisbursementStatus.UPLOADED.value
+        assert not ejv_file.is_distribution
+

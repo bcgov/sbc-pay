@@ -38,6 +38,7 @@ from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import get_local_formatted_date_time, get_str_by_path
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
+from .fas.routing_slip import RoutingSlipModel
 
 
 class RefundService:  # pylint: disable=too-many-instance-attributes
@@ -203,9 +204,13 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             payment_account.save()
 
         elif invoice.payment_method_code == PaymentMethod.INTERNAL.value:
-            if invoice.total == 0:
-                raise BusinessException(Error.NO_FEE_REFUND)
-            raise BusinessException(Error.ROUTING_SLIP_REFUND)
+            # Allow if the payment is done using new FAS system.
+            is_fas_payment = invoice.routing_slip and RoutingSlipModel.find_by_number(invoice.routing_slip)
+            if not is_fas_payment:
+                if invoice.total == 0:
+                    raise BusinessException(Error.NO_FEE_REFUND)
+
+                raise BusinessException(Error.ROUTING_SLIP_REFUND)
         else:
             raise BusinessException(Error.INVALID_REQUEST)
 
