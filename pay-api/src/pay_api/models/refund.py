@@ -14,21 +14,30 @@
 """Model to handle all operations related to invoice refund."""
 
 from sqlalchemy import ForeignKey
+from sqlalchemy.schema import CheckConstraint
+from sqlalchemy.dialects.postgresql import JSONB
 
 from .base_model import BaseModel
 from .db import db, ma
 
 
 class Refund(BaseModel):
-    """This class manages all of the base data about Invoice Refund."""
+    """This class manages all of the base data about Routing Slip Invoice Refund."""
 
     __tablename__ = 'refunds'
 
+    __table_args__ = (
+        CheckConstraint('NOT(routing_slip_id IS NULL AND invoice_id IS NULL)', name='routing_slip_invoice'
+                                                                                    '_id_check'),
+    )
+
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
+    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=True)
+    routing_slip_id = db.Column(db.Integer, ForeignKey('routing_slips.id'), nullable=True)
     requested_date = db.Column(db.DateTime)
     reason = db.Column(db.String(250))
     requested_by = db.Column(db.String(50))
+    details = db.Column(JSONB)
 
     @classmethod
     def find_by_invoice_id(cls, invoice_id: int):
