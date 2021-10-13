@@ -8,6 +8,7 @@ Create Date: 2021-10-13 14:32:38.882045
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+from sqlalchemy import String
 from sqlalchemy.sql import column, table
 
 # revision identifiers, used by Alembic.
@@ -42,6 +43,18 @@ def upgrade():
         ]
     )
 
+    invoice_status_code_table = table('invoice_status_codes',
+                              column('code', String),
+                              column('description', String)
+                              )
+
+    op.bulk_insert(
+        invoice_status_code_table,
+        [
+            {'code': 'REFUNDED', 'description': 'Refund complete'}
+        ]
+    )
+
 
 def downgrade():
     op.drop_constraint('routing_slip_invoice_id_check', 'refunds', type_='check')
@@ -53,3 +66,4 @@ def downgrade():
     op.drop_column('refunds', 'routing_slip_id')
     op.execute("DELETE FROM routing_slip_status_codes where code in ('REFUND_REQUESTED',"
                "'REFUND_AUTHORIZED','REFUND_COMPLETED')")
+    op.execute("DELETE FROM invoice_status_codes WHERE code = 'REFUNDED'")
