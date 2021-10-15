@@ -4,6 +4,7 @@
   "type": "object",
   "title": "Refund",
   "required": [
+    "status"
   ],
   "properties": {
      "status": {
@@ -11,6 +12,11 @@
       "type": "string",
       "title": "Routing Slip status",
       "pattern": "^(.*)$"
+    },
+    "details": {
+      "$id": "#/properties/status",
+      "title": "Details of routing slip refund",
+      "type": "object"
     }
   }
 }

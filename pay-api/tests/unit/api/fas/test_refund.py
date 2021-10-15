@@ -23,8 +23,9 @@ from faker import Faker
 
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
-from pay_api.utils.enums import Role, RoutingSlipStatus, PaymentMethod
+from pay_api.utils.enums import PaymentMethod, Role, RoutingSlipStatus
 from tests.utilities.base_test import get_claims, get_routing_slip_request, token_header
+
 
 fake = Faker()
 
@@ -88,7 +89,7 @@ def test_refund_routing_slips(client, jwt):
 
 def test_refund_routing_slips_zero_dollar_error(client, jwt):
     """Assert zero dollar refund fails."""
-    payload = get_routing_slip_request(cheque_receipt_numbers = [('1234567890', PaymentMethod.CHEQUE.value, 0)])
+    payload = get_routing_slip_request(cheque_receipt_numbers=[('1234567890', PaymentMethod.CHEQUE.value, 0)])
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
