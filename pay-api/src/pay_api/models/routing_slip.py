@@ -34,6 +34,7 @@ from .db import db, ma
 from .invoice import Invoice, InvoiceSchema
 from .payment import Payment, PaymentSchema
 from .payment_account import PaymentAccount, PaymentAccountSchema
+from .refund import Refund, RefundSchema
 
 
 class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
@@ -65,6 +66,10 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
                             viewonly=True,
                             lazy='joined'
                             )
+
+    refunds = relationship(Refund, viewonly=True,
+                           primaryjoin='and_(RoutingSlip.id == Refund.routing_slip_id)',
+                           lazy='joined')
 
     parent = relationship('RoutingSlip', remote_side=[number], lazy='select')
 
@@ -190,6 +195,7 @@ class RoutingSlipSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-an
     # pylint: disable=no-member
     payments = ma.Nested(PaymentSchema, many=True, data_key='payments')
     payment_account = ma.Nested(PaymentAccountSchema, many=False, data_key='payment_account')
+    refunds = ma.Nested(RefundSchema, many=True, data_key='refunds')
     invoices = ma.Nested(InvoiceSchema, many=True, data_key='invoices', exclude=['_links'])
     status = fields.String(data_key='status')
     parent_number = fields.String(data_key='parent_number')

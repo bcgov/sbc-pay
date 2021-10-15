@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Resource for Refunds endpoints."""
+"""Resource for FAS Refunds endpoints."""
 from http import HTTPStatus
 
 from flask import current_app, jsonify, request
@@ -26,27 +26,28 @@ from pay_api.utils.errors import Error
 from pay_api.utils.util import cors_preflight
 
 
-API = Namespace('refunds', description='Payment System - Refunds')
+API = Namespace('fas', description='Fee Accounting System')
 
 
 @cors_preflight('POST')
 @API.route('', methods=['POST', 'OPTIONS'])
 class Refund(Resource):
-    """Endpoint resource to create refunds against invoices."""
+    """Endpoint resource to create refunds against routing slips."""
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.FAS_SEARCH.value, Role.FAS_VIEW.value])
-    def post(invoice_id):
+    @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.CREATE_CREDITS.value])
+    def post(routing_slip_number):
         """Create the Refund for the Invoice."""
         current_app.logger.info('<Refund.post')
         request_json = request.get_json(silent=True)
         try:
-            valid_format, errors = schema_utils.validate(request_json, 'refund') if request_json else (True, None)
+            valid_format, errors = schema_utils.validate(request_json, 'refund_routing_slip') if \
+                request_json else (True, None)
             if not valid_format:
                 return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
-            response = RefundService.create_refund(invoice_id, request_json)
+            response = RefundService.create_routing_slip_refund(routing_slip_number, request_json)
 
         except BusinessException as exception:
             return exception.response()
