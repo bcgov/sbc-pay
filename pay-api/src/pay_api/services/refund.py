@@ -31,13 +31,15 @@ from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import Refund as RefundModel
+from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.queue_publisher import publish_response
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus
-from pay_api.utils.errors import Error
-from pay_api.utils.user_context import user_context
-from pay_api.utils.util import get_local_formatted_date_time, get_str_by_path
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
+from pay_api.utils.enums import (
+    InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, Role, RoutingSlipStatus)
+from pay_api.utils.errors import Error
+from pay_api.utils.user_context import UserContext, user_context
+from pay_api.utils.util import get_local_formatted_date_time, get_str_by_path
 
 
 class RefundService:  # pylint: disable=too-many-instance-attributes
@@ -50,7 +52,9 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         self.__dao: Optional[RefundModel] = None
         self._id: Optional[int] = None
         self._invoice_id: Optional[int] = None
+        self._routing_slip_id: Optional[int] = None
         self._requested_date: Optional[datetime] = None
+        self._details: Optional[Dict] = None
         self._reason: Optional[str] = None
         self._requested_by: Optional[str] = None
 
@@ -65,9 +69,11 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         self.__dao = value
         self.id: int = self._dao.id
         self.invoice_id: int = self._dao.invoice_id
+        self.routing_slip_id: int = self._dao.routing_slip_id
         self.requested_date: datetime = self._dao.requested_date
         self.reason: str = self._dao.reason
         self.requested_by: str = self._dao.requested_by
+        self.details: Dict = self._dao.details
 
     @property
     def id(self) -> int:
@@ -90,6 +96,17 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         """Set the invoice_id."""
         self._invoice_id = value
         self._dao.invoice_id = value
+
+    @property
+    def routing_slip_id(self) -> int:
+        """Return the _routing_slip_id."""
+        return self._routing_slip_id
+
+    @routing_slip_id.setter
+    def routing_slip_id(self, value: int):
+        """Set the routing_slip_id."""
+        self._routing_slip_id = value
+        self._dao.routing_slip_id = value
 
     @property
     def requested_date(self) -> datetime:
@@ -124,6 +141,17 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         self._requested_by = value
         self._dao.requested_by = value
 
+    @property
+    def details(self):
+        """Return the details."""
+        return self._details
+
+    @details.setter
+    def details(self, value: str):
+        """Set the details."""
+        self._details = value
+        self._dao.details = value
+
     def save(self) -> RefundModel:
         """Save the information to the DB and commit."""
         return self._dao.save()
@@ -131,6 +159,54 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
     def flush(self) -> RefundModel:
         """Save the information to the DB and flush."""
         return self._dao.flush()
+
+    @classmethod
+    @user_context
+    def create_routing_slip_refund(cls, routing_slip_number: str, request: Dict[str, str], **kwargs) -> Dict[str, str]:
+        """Create Routing slip refund."""
+        current_app.logger.debug('<create Routing slip  refund')
+        #
+        # check if routing slip exists
+        # validate user role -> update status of routing slip
+        # check refunds table
+        #   if Yes ; update the data [only with whatever is in payload]
+        #   if not ; create new entry
+        # call cfs
+        rs_model = RoutingSlipModel.find_by_number(routing_slip_number)
+        if not rs_model:
+            raise BusinessException(Error.RS_DOESNT_EXIST)
+
+        if (refund_status := get_str_by_path(request, 'status')) is None:
+            raise BusinessException(Error.INVALID_REQUEST)
+
+        if rs_model.remaining_amount == 0:
+            raise BusinessException(Error.INVALID_REQUEST)  # refund not possible for zero amount routing slips
+
+        user: UserContext = kwargs['user']
+        has_refund_approver_role = Role.FAS_REFUND_APPROVER.value not in user.roles
+        is_refund_finalized = refund_status in (RoutingSlipStatus.REFUND_AUTHORIZED.value,
+                                                RoutingSlipStatus.REFUND_REJECTED.value)
+        if is_refund_finalized and has_refund_approver_role:
+            raise BusinessException(Error.INVALID_REQUEST)
+
+        rs_model.status = refund_status
+        rs_model.flush()
+
+        refund: RefundService = RefundService()
+        refund_dao = RefundModel.find_by_routing_slip_id(rs_model.id)
+        if refund_dao:
+            refund._dao = refund_dao
+
+        refund.routing_slip_id = rs_model.id
+        refund.reason = get_str_by_path(request, 'reason')
+        if details := request.get('details'):
+            refund.details = details
+
+        refund.requested_by = kwargs['user'].user_name
+        refund.requested_date = datetime.now()
+        refund.save()
+        message = REFUND_SUCCESS_MESSAGES.get(f'ROUTINGSLIP.{rs_model.status}')
+        return {'message': message}
 
     @classmethod
     @user_context
@@ -177,9 +253,9 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             # Create credit memo in CFS if the invoice status is PAID.
             # Don't do anything is the status is APPROVED.
             if invoice.invoice_status_code == InvoiceStatus.APPROVED.value \
-                    and InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
-                        invoice.id, InvoiceReferenceStatus.ACTIVE.value
-                    ) is None:
+                    and InvoiceReferenceModel. \
+                    find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value
+                                                            ) is None:
                 return
 
             cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(invoice.payment_account_id)

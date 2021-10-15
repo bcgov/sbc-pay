@@ -55,5 +55,7 @@ REFUND_SUCCESS_MESSAGES = {
     'DIRECT_PAY.PAID': 'Your transaction has been cancelled and a refund has been requested.',
     'CC.PAID': 'Your transaction has been cancelled and a credit will be applied to your BC Registries account. There '
                'is a one day delay before the credit will show on your transactions / statements.',
-    'DRAWDOWN.PAID': 'Your transaction has been cancelled and a refund has been requested.'
+    'DRAWDOWN.PAID': 'Your transaction has been cancelled and a refund has been requested.',
+    'ROUTINGSLIP.REFUND_AUTHORIZED': 'Routing slip refund has been authorised.',
+    'ROUTINGSLIP.REFUND_REQUESTED': 'Routing slil refund is requested.'
 }

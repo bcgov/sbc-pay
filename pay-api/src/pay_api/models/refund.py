@@ -44,6 +44,11 @@ class Refund(BaseModel):
         """Return a refund by invoice id."""
         return cls.query.filter_by(invoice_id=invoice_id).one_or_none()
 
+    @classmethod
+    def find_by_routing_slip_id(cls, routing_slip_id: int):
+        """Return a refund by invoice id."""
+        return cls.query.filter_by(routing_slip_id=routing_slip_id).one_or_none()
+
 
 class RefundSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Refund."""
