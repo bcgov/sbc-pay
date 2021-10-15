@@ -35,7 +35,7 @@ class Refund(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.FAS_SEARCH.value, Role.FAS_REFUND_APPROVER.value, Role.FAS_SEARCH.value])
+    @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.CREATE_CREDITS.value])
     def post(invoice_id):
         """Create the Refund for the Invoice."""
         current_app.logger.info('<Refund.post')

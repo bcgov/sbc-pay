@@ -23,14 +23,14 @@ from faker import Faker
 
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
-from pay_api.utils.enums import Role, RoutingSlipStatus
+from pay_api.utils.enums import Role, RoutingSlipStatus, PaymentMethod
 from tests.utilities.base_test import get_claims, get_routing_slip_request, token_header
 
 fake = Faker()
 
 
 def test_create_routing_slips(client, jwt):
-    """Assert that the endpoint returns 200."""
+    """Assert refund works for routing slips."""
     payload = get_routing_slip_request()
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -85,3 +85,33 @@ def test_create_routing_slips(client, jwt):
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, 'routing_slip')[0]
     assert rv.json.get('status') == RoutingSlipStatus.REFUND_AUTHORIZED.value
+
+
+def test_create_routing_slips_zero_dollar_error(client, jwt):
+    """Assert zero dollar refund fails."""
+    payload = get_routing_slip_request(cheque_receipt_numbers = [('1234567890', PaymentMethod.CHEQUE.value, 0)])
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 201
+    assert schema_utils.validate(rv.json, 'routing_slip')[0]
+    rv = client.get('/api/v1/fas/routing-slips/{}'.format(rv.json.get('number')), headers=headers)
+    assert rv.status_code == 200
+    assert schema_utils.validate(rv.json, 'routing_slip')[0]
+    refund_details = {
+        'mailingAddress': {
+            'city': 'Gatineau',
+            'country': 'CA',
+            'region': 'QC',
+            'postalCode': 'J8L 2K3',
+            'street': 'E-412 Rue Charles',
+            'streetAdditional': ''
+        },
+        'name': 'Staff user'
+    }
+    rs_number = rv.json.get('number')
+    rv = client.post('/api/v1/fas/routing-slips/{}/refunds'.format(rs_number),
+                     data=json.dumps({'status': RoutingSlipStatus.REFUND_REQUESTED.value, 'details': refund_details}),
+                     headers=headers)
+    assert rv.status_code == 400

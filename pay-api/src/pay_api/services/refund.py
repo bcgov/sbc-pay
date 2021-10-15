@@ -199,7 +199,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
 
         refund.routing_slip_id = rs_model.id
         refund.reason = get_str_by_path(request, 'reason')
-        if details := get_str_by_path(request, 'details'):
+        if details := request.get('details'):
             refund.details = details
 
         refund.requested_by = kwargs['user'].user_name
