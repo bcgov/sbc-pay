@@ -183,8 +183,10 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             raise BusinessException(Error.INVALID_REQUEST)  # refund not possible for zero amount routing slips
 
         user: UserContext = kwargs['user']
-        if refund_status in (RoutingSlipStatus.REFUND_AUTHORIZED.value,
-                             RoutingSlipStatus.REFUND_REJECTED.value) and Role.REFUND_APPROVER not in user.roles:
+        has_refund_approver_role = Role.FAS_REFUND_APPROVER.value not in user.roles
+        is_refund_finalized = refund_status in (RoutingSlipStatus.REFUND_AUTHORIZED.value,
+                                                RoutingSlipStatus.REFUND_REJECTED.value)
+        if is_refund_finalized and has_refund_approver_role:
             raise BusinessException(Error.INVALID_REQUEST)
 
         rs_model.status = refund_status

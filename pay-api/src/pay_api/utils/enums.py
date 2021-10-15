@@ -125,7 +125,7 @@ class Role(Enum):
     FAS_VIEW = 'fas_view'
     FAS_CREATE = 'fas_create'
     FAS_LINK = 'fas_link'
-    REFUND_APPROVER = 'refund_approver'
+    FAS_REFUND_APPROVER = 'fas_refund_approver'
 
 
 class Code(Enum):
