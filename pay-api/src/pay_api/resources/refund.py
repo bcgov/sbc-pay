@@ -25,7 +25,6 @@ from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.util import cors_preflight
 
-
 API = Namespace('refunds', description='Payment System - Refunds')
 
 
@@ -36,7 +35,7 @@ class Refund(Resource):
 
     @staticmethod
     @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.CREATE_CREDITS.value])
+    @_jwt.has_one_of_roles([Role.FAS_SEARCH.value, Role.REFUND_APPROVER.value, Role.FAS_SEARCH.value])
     def post(invoice_id):
         """Create the Refund for the Invoice."""
         current_app.logger.info('<Refund.post')
