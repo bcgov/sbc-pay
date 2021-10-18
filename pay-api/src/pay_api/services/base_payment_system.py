@@ -14,18 +14,27 @@
 """Abstract class for payment system implementation."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict
+from datetime import datetime
+from typing import Any, Dict, List
 
 from flask import current_app
 from sentry_sdk import capture_message
 
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import Credit as CreditModel
+from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import InvoiceReference as InvoiceReferenceModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.models import PaymentTransaction as PaymentTransactionModel
+from pay_api.models import Receipt as ReceiptModel
+from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import InvoiceStatus, PaymentStatus, TransactionStatus
-from pay_api.utils.util import get_pay_subject_name
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus
+from pay_api.utils.util import get_local_formatted_date_time, get_pay_subject_name
 
 from .payment_line_item import PaymentLineItem
 
@@ -87,6 +96,10 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Return the payment system portal URL for payment."""
         return None
 
+    def process_cfs_refund(self, invoice: InvoiceModel):  # pylint:disable=unused-argument, no-self-use
+        """Process Refund if any."""
+        return None
+
     def get_pay_system_reason_code(self, pay_response_url: str) -> str:  # pylint:disable=unused-argument, no-self-use
         """Return the Pay system reason code."""
         return None
@@ -129,3 +142,73 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             current_app.logger.error(e)
             current_app.logger.error('Notification to Queue failed for the Payment Event %s', payload)
             capture_message(f'Notification to Queue failed for the Payment Event : {payload}.', level='error')
+
+    @staticmethod
+    def _refund_and_create_credit_memo(invoice: InvoiceModel):
+        # Create credit memo in CFS if the invoice status is PAID.
+        # Don't do anything is the status is APPROVED.
+        if invoice.invoice_status_code == InvoiceStatus.APPROVED.value \
+                and InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
+                invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None:
+            return
+
+        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(invoice.payment_account_id)
+        line_items: List[PaymentLineItemModel] = []
+        for line_item in invoice.payment_line_items:
+            line_items.append(PaymentLineItemModel.find_by_id(line_item.id))
+
+        cms_response = CFSService.create_cms(line_items=line_items, cfs_account=cfs_account)
+        # TODO Create a payment record for this to show up on transactions, when the ticket comes.
+        # Create a credit with CM identifier as CMs are not reported in payment interface file
+        # until invoice is applied.
+        CreditModel(cfs_identifier=cms_response.get('credit_memo_number'),
+                    is_credit_memo=True,
+                    amount=invoice.total,
+                    remaining_amount=invoice.total,
+                    account_id=invoice.payment_account_id).save()
+
+        # Add up the credit amount and update payment account table.
+        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice.payment_account_id)
+        payment_account.credit = (payment_account.credit or 0) + invoice.total
+        payment_account.save()
+
+    @staticmethod
+    def _publish_refund_to_mailer(invoice: InvoiceModel):
+        """Construct message and send to mailer queue."""
+        from .payment_transaction import publish_response  # pylint:disable=import-outside-toplevel,cyclic-import
+        receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=invoice.id)
+        invoice_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
+            invoice_id=invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value)
+        payment_transaction: PaymentTransactionModel = PaymentTransactionModel.find_recent_completed_by_invoice_id(
+            invoice_id=invoice.id)
+        message_type: str = f'bc.registry.payment.{invoice.payment_method_code.lower()}.refundRequest'
+        filing_description = ''
+        for line_item in invoice.payment_line_items:
+            if filing_description:
+                filing_description += ','
+            filing_description += line_item.description
+        q_payload = dict(
+            specversion='1.x-wip',
+            type=message_type,
+            source=f'https://api.pay.bcregistry.gov.bc.ca/v1/invoices/{invoice.id}',
+            id=invoice.id,
+            datacontenttype='application/json',
+            data=dict(
+                identifier=invoice.business_identifier,
+                orderNumber=receipt.receipt_number,
+                transactionDateTime=get_local_formatted_date_time(payment_transaction.transaction_end_time),
+                transactionAmount=receipt.receipt_amount,
+                transactionId=invoice_ref.invoice_number,
+                refundDate=get_local_formatted_date_time(datetime.now(), '%Y%m%d'),
+                filingDescription=filing_description
+            ))
+        if invoice.payment_method_code == PaymentMethod.DRAWDOWN.value:
+            payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice.payment_account_id)
+            q_payload['data'].update(dict(
+                bcolAccount=invoice.bcol_account,
+                bcolUser=payment_account.bcol_user_id
+            ))
+        current_app.logger.debug('Publishing payment refund request to mailer ')
+        current_app.logger.debug(q_payload)
+        publish_response(payload=q_payload, client_name=current_app.config.get('NATS_MAILER_CLIENT_NAME'),
+                         subject=current_app.config.get('NATS_MAILER_SUBJECT'))

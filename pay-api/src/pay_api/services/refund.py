@@ -16,20 +16,13 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, Optional
 
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
-from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import Credit as CreditModel
+from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import Invoice as InvoiceModel
-from pay_api.models import InvoiceReference as InvoiceReferenceModel
-from pay_api.models import Payment as PaymentModel
-from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.models import PaymentLineItem as PaymentLineItemModel
-from pay_api.models import PaymentTransaction as PaymentTransactionModel
-from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.services.cfs_service import CFSService
@@ -37,9 +30,14 @@ from pay_api.services.queue_publisher import publish_response
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.enums import (
     InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, Role, RoutingSlipStatus)
+from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
+from pay_api.utils.enums import InvoiceStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_local_formatted_date_time, get_str_by_path
+from pay_api.utils.user_context import user_context
+from pay_api.utils.util import get_str_by_path
 
 
 class RefundService:  # pylint: disable=too-many-instance-attributes
@@ -245,7 +243,10 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         refund.requested_date = datetime.now()
         refund.flush()
 
-        cls._process_cfs_refund(invoice)
+        pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
+            payment_method=invoice.payment_method_code
+        )
+        pay_system_service.process_cfs_refund(invoice)
 
         message = REFUND_SUCCESS_MESSAGES.get(f'{invoice.payment_method_code}.{invoice.invoice_status_code}')
 
@@ -254,88 +255,3 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         invoice.refund = invoice.total  # no partial refund
         invoice.save()
         return {'message': message}
-
-    @classmethod
-    def _process_cfs_refund(cls, invoice: InvoiceModel):
-        """Process refund in CFS."""
-        if invoice.payment_method_code in ([PaymentMethod.DIRECT_PAY.value, PaymentMethod.DRAWDOWN.value]):
-            cls._publish_to_mailer(invoice)
-            payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
-            payment.payment_status_code = PaymentStatus.REFUNDED.value
-            payment.flush()
-        elif invoice.payment_method_code in (
-                [PaymentMethod.ONLINE_BANKING.value, PaymentMethod.PAD.value, PaymentMethod.CC.value]):
-            # Create credit memo in CFS if the invoice status is PAID.
-            # Don't do anything is the status is APPROVED.
-            if invoice.invoice_status_code == InvoiceStatus.APPROVED.value \
-                    and InvoiceReferenceModel. \
-                    find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value
-                                                            ) is None:
-                return
-
-            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(invoice.payment_account_id)
-            line_items: List[PaymentLineItemModel] = []
-            for line_item in invoice.payment_line_items:
-                line_items.append(PaymentLineItemModel.find_by_id(line_item.id))
-
-            cms_response = CFSService.create_cms(line_items=line_items, cfs_account=cfs_account)
-            # TODO Create a payment record for this to show up on transactions, when the ticket comes.
-            # Create a credit with CM identifier as CMs are not reported in payment interface file
-            # until invoice is applied.
-            CreditModel(cfs_identifier=cms_response.get('credit_memo_number'),
-                        is_credit_memo=True,
-                        amount=invoice.total,
-                        remaining_amount=invoice.total,
-                        account_id=invoice.payment_account_id).save()
-
-            # Add up the credit amount and update payment account table.
-            payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice.payment_account_id)
-            payment_account.credit = (payment_account.credit or 0) + invoice.total
-            payment_account.save()
-
-        elif invoice.payment_method_code == PaymentMethod.INTERNAL.value:
-            if invoice.total == 0:
-                raise BusinessException(Error.NO_FEE_REFUND)
-            raise BusinessException(Error.ROUTING_SLIP_REFUND)
-        else:
-            raise BusinessException(Error.INVALID_REQUEST)
-
-    @classmethod
-    def _publish_to_mailer(cls, invoice: InvoiceModel):
-        """Construct message and send to mailer queue."""
-        receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=invoice.id)
-        invoice_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
-            invoice_id=invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value)
-        payment_transaction: PaymentTransactionModel = PaymentTransactionModel.find_recent_completed_by_invoice_id(
-            invoice_id=invoice.id)
-        message_type: str = f'bc.registry.payment.{invoice.payment_method_code.lower()}.refundRequest'
-        filing_description = ''
-        for line_item in invoice.payment_line_items:
-            if filing_description:
-                filing_description += ','
-            filing_description += line_item.description
-        q_payload = dict(
-            specversion='1.x-wip',
-            type=message_type,
-            source=f'https://api.pay.bcregistry.gov.bc.ca/v1/invoices/{invoice.id}',
-            id=invoice.id,
-            datacontenttype='application/json',
-            data=dict(
-                identifier=invoice.business_identifier,
-                orderNumber=receipt.receipt_number,
-                transactionDateTime=get_local_formatted_date_time(payment_transaction.transaction_end_time),
-                transactionAmount=receipt.receipt_amount,
-                transactionId=invoice_ref.invoice_number,
-                refundDate=get_local_formatted_date_time(datetime.now(), '%Y%m%d'),
-                filingDescription=filing_description
-            ))
-        if invoice.payment_method_code == PaymentMethod.DRAWDOWN.value:
-            payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice.payment_account_id)
-            q_payload['data'].update(dict(
-                bcolAccount=invoice.bcol_account,
-                bcolUser=payment_account.bcol_user_id
-            ))
-        current_app.logger.debug('Publishing payment refund request to mailer ')
-        current_app.logger.debug(q_payload)
-        publish_response(payload=q_payload, client_name=current_app.config.get('NATS_MAILER_CLIENT_NAME'),
-                         subject=current_app.config.get('NATS_MAILER_SUBJECT'))

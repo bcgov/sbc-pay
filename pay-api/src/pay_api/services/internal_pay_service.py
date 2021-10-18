@@ -23,8 +23,9 @@ from typing import List
 from flask import current_app
 
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import RoutingSlip as RoutingSlipModel
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
@@ -32,7 +33,6 @@ from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import PaymentMethod, PaymentSystem, RoutingSlipStatus
 from pay_api.utils.util import generate_transaction_number
-
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 from ..exceptions import BusinessException
@@ -115,6 +115,12 @@ class InternalPayService(PaymentSystemService, OAuthService):
             }
         )
         transaction.update_transaction(transaction.id, pay_response_url=None)
+
+    def process_cfs_refund(self, invoice: InvoiceModel):
+        """Process refund in CFS."""
+        # TODO handle Routing Slip refund CAS integration here
+        if invoice.total == 0:
+            raise BusinessException(Error.NO_FEE_REFUND)
 
     @staticmethod
     def _validate_routing_slip(routing_slip: RoutingSlipModel, invoice: Invoice):
