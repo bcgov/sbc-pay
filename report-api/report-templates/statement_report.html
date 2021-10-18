@@ -38,8 +38,9 @@
       @page {
         size: Letter;
         /* Change from the default size of A4 */
-        margin: 0.75cm;
+        margin: 0.75cm 0.75cm 0 0.75cm;
         /* Set margin on each page */
+        margin-bottom: 78px;
       }
 
       @media print {
@@ -269,10 +270,11 @@
 
       .statement-footer {
         padding: 10px 24px;
-        position: relative;
-        bottom: 54px;
+        position: fixed;
+        bottom: 0px;
         left: -24px;
         width: 100%;
+        margin-bottom: -10px;
       }
 
       .footer-bcrs-logo {
