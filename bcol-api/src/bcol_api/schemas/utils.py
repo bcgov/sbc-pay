@@ -38,7 +38,7 @@ def get_schema_store(validate_schema: bool = False, schema_search_path: str = No
         for fname in fnames:
             fpath = path.join(schema_search_path, fname)
             if fpath[-5:] == '.json':
-                with open(fpath, 'r') as schema_fd:
+                with open(fpath, 'r', encoding='utf-8') as schema_fd:
                     schema = json.load(schema_fd)
                     if '$id' in schema:
                         schemastore[schema['$id']] = schema

@@ -125,6 +125,7 @@ class Role(Enum):
     FAS_VIEW = 'fas_view'
     FAS_CREATE = 'fas_create'
     FAS_LINK = 'fas_link'
+    REFUND_APPROVER = 'refund_approver'
 
 
 class Code(Enum):
@@ -210,6 +211,9 @@ class RoutingSlipStatus(Enum):
     REFUND = 'REFUND'
     LAST = 'LAST'
     LINKED = 'LINKED'
+    REFUND_REQUESTED = 'REFUND_REQUESTED'
+    REFUND_AUTHORIZED = 'REFUND_AUTHORIZED'
+    REFUND_COMPLETED = 'REFUND_COMPLETED'
 
 
 class PatchActions(Enum):

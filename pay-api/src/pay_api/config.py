@@ -82,9 +82,7 @@ class _Config():  # pylint: disable=too-few-public-methods
     DB_NAME = _get_config('DATABASE_NAME')
     DB_HOST = _get_config('DATABASE_HOST')
     DB_PORT = _get_config('DATABASE_PORT', default='5432')
-    SQLALCHEMY_DATABASE_URI = 'postgresql://{user}:{password}@{host}:{port}/{name}'.format(
-        user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=int(DB_PORT), name=DB_NAME
-    )
+    SQLALCHEMY_DATABASE_URI = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}'
     SQLALCHEMY_ECHO = _get_config('SQLALCHEMY_ECHO', default='False').lower() == 'true'
 
     # JWT_OIDC Settings
@@ -176,6 +174,8 @@ class _Config():  # pylint: disable=too-few-public-methods
 
     OUTSTANDING_TRANSACTION_DAYS = int(os.getenv('OUTSTANDING_TRANSACTION_DAYS', '10'))
 
+    ALLOW_LEGACY_ROUTING_SLIPS = os.getenv('ALLOW_LEGACY_ROUTING_SLIPS', 'True').lower() == 'true'
+
     TESTING = False
     DEBUG = True
 
@@ -204,9 +204,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     DB_PORT = _get_config('DATABASE_TEST_PORT', default='5432')
     SQLALCHEMY_DATABASE_URI = _get_config(
         'DATABASE_TEST_URL',
-        default='postgresql://{user}:{password}@{host}:{port}/{name}'.format(
-            user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=int(DB_PORT), name=DB_NAME
-        ),
+        default=f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}'
     )
 
     JWT_OIDC_TEST_MODE = True
@@ -330,7 +328,5 @@ class MigrationConfig():  # pylint: disable=too-few-public-methods
     DB_NAME = _get_config('DATABASE_NAME')
     DB_HOST = _get_config('DATABASE_HOST')
     DB_PORT = _get_config('DATABASE_PORT', default='5432')
-    SQLALCHEMY_DATABASE_URI = 'postgresql://{user}:{password}@{host}:{port}/{name}'.format(
-        user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=int(DB_PORT), name=DB_NAME
-    )
+    SQLALCHEMY_DATABASE_URI = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}'
     SQLALCHEMY_TRACK_MODIFICATIONS = False

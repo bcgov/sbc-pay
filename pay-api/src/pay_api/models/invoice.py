@@ -50,6 +50,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     payment_method_code = db.Column(db.String(15), ForeignKey('payment_methods.code'), nullable=False)
     corp_type_code = db.Column(db.String(10), ForeignKey('corp_types.code'), nullable=True)
     disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now, index=True)
 
     business_identifier = db.Column(db.String(20), nullable=True)
     total = db.Column(db.Float, nullable=False)
@@ -127,7 +128,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
 class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the invoice."""
 
-    class Meta:  # pylint: disable=too-few-public-methods
+    class Meta(BaseSchema.Meta):  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Invoice

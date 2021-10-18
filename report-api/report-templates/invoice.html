@@ -387,7 +387,7 @@
           <div class="line-height-reg">
             <div class="account-info-title">INVOICE DATE:</div>
             <div class="account-info-value">
-                {{createdOn|format_datetime}}
+                {{createdOn}}
             </div>
           </div>
           {% endif %}
@@ -435,7 +435,7 @@
                   <td class="product-purchased">
                     {{item.description}}
                   </td>
-                  <td>{{item.createdOn|format_datetime}}</td>
+                  <td>{{item.createdOn}}</td>
                   <td>{{item.filingTypeCode}}</td>
                   <td>${{"%.2f"|format((item.fee)) if (item.fee) else '0.00'}}</td>
                   <td>${{"%.2f"|format(item.gst) if item.gst else '0.00'}}</td>

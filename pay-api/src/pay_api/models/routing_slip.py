@@ -151,9 +151,19 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def _add_receipt_number(cls, query, search_filter):
+        conditions = []
         if receipt_number := search_filter.get('receiptNumber', None):
-            query = query.join(Payment).filter(
-                and_(Payment.payment_account_id == PaymentAccount.id, Payment.cheque_receipt_number == receipt_number))
+            conditions.append(
+                and_(Payment.payment_account_id == PaymentAccount.id,
+                     and_(Payment.cheque_receipt_number == receipt_number,
+                          Payment.payment_method_code == PaymentMethod.CASH.value)))
+        if cheque_receipt_number := search_filter.get('chequeReceiptNumber', None):
+            conditions.append(
+                and_(Payment.payment_account_id == PaymentAccount.id,
+                     and_(Payment.cheque_receipt_number == cheque_receipt_number,
+                          Payment.payment_method_code == PaymentMethod.CHEQUE.value)))
+        if conditions:
+            query = query.join(Payment).filter(*conditions)
         return query
 
     @classmethod
@@ -169,7 +179,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
 class RoutingSlipSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors, too-few-public-methods
     """Main schema used to serialize the Routing Slip."""
 
-    class Meta:  # pylint: disable=too-few-public-methods
+    class Meta(BaseSchema.Meta):  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = RoutingSlip

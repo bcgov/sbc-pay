@@ -34,7 +34,7 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.utils.enums import (
     AuthHeaderType, Code, ContentType, InvoiceReferenceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import generate_receipt_number
+from pay_api.utils.util import generate_receipt_number, get_local_formatted_date, get_local_formatted_date_time
 from .code import Code as CodeService
 from .oauth_service import OAuthService
 
@@ -404,6 +404,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 total_service_fees += invoice.get('service_fees', 0)
                 total_paid += invoice.get('paid', 0)
 
+                # Format date to local
+                invoice['created_on'] = get_local_formatted_date(parser.parse(invoice['created_on']))
+
             account_info = None
             if kwargs.get('auth', None):
                 account_id = kwargs.get('auth')['account']['id']
@@ -460,12 +463,13 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             total_fees = float(invoice.get('total', 0))
             row_value = [
                 ','.join([line_item.get('description') for line_item in invoice.get('line_items')]),
-                ','.join(['{} {}'.format(
-                    detail.get('label'), detail.get('value')) for detail in invoice.get('details')
-                ]) if invoice.get('details') else None,
+                ','.join([f"{detail.get('label')} {detail.get('value')}" for detail in invoice.get('details')])
+                if invoice.get('details') else None,
                 invoice.get('folio_number'),
                 invoice.get('created_name'),
-                parser.parse(invoice.get('created_on')).strftime('%m-%d-%Y %I:%M %p'),
+                get_local_formatted_date_time(
+                    parser.parse(invoice.get('created_on')), '%Y-%m-%d %I:%M:%S %p Pacific Time'
+                ),
                 total_fees,
                 total_gst + total_pst,
                 total_fees - service_fee,  # TODO

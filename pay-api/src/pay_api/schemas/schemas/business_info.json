@@ -15,7 +15,7 @@
         "CP1000"
       ],
       "pattern": "^(.*)$",
-      "minLength": 9
+      "minLength": 1
     },
     "corpType": {
       "$id": "#/properties/corpType",

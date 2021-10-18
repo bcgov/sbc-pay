@@ -15,20 +15,28 @@
 
 There are conditions where the payment will be handled internally. For e.g, zero $ or staff payments.
 """
-
+import decimal
 from datetime import datetime
+from http import HTTPStatus
+from typing import List
 
 from flask import current_app
 
+from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import RoutingSlip as RoutingSlipModel
+from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import PaymentMethod, PaymentSystem
+from pay_api.utils.enums import PaymentMethod, PaymentSystem, RoutingSlipStatus
 from pay_api.utils.util import generate_transaction_number
 
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
+from ..exceptions import BusinessException
+from ..utils.errors import Error
 
 
 class InternalPayService(PaymentSystemService, OAuthService):
@@ -42,9 +50,34 @@ class InternalPayService(PaymentSystemService, OAuthService):
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number."""
         current_app.logger.debug('<create_invoice')
+        routing_slip = None
+        if routing_slip_number := invoice.routing_slip:
+            routing_slip = RoutingSlipModel.find_by_number(routing_slip_number)
+            InternalPayService._validate_routing_slip(routing_slip, invoice)
+        if routing_slip is not None:
+            line_item_models: List[PaymentLineItemModel] = []
+            for line_item in line_items:
+                line_item_models.append(PaymentLineItemModel.find_by_id(line_item.id))
 
-        invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id,
-                                                                      generate_transaction_number(invoice.id), None)
+            routing_slip_payment_account: PaymentAccount = PaymentAccount.find_by_id(
+                routing_slip.payment_account_id)
+
+            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
+                routing_slip_payment_account.id)
+            invoice_response = CFSService.create_account_invoice(invoice.id, line_item_models, cfs_account)
+
+            invoice_reference: InvoiceReference = InvoiceReference.create(
+                invoice.id, invoice_response.json().get('invoice_number', None),
+                # TODO is pbc_ref_number correct?
+                invoice_response.json().get('pbc_ref_number', None))
+
+            current_app.logger.debug('>create_invoice')
+
+            routing_slip.remaining_amount = routing_slip.remaining_amount - decimal.Decimal(invoice.total)
+            routing_slip.flush()
+        else:
+            invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id,
+                                                                          generate_transaction_number(invoice.id), None)
 
         current_app.logger.debug('>create_invoice')
         return invoice_reference
@@ -82,3 +115,35 @@ class InternalPayService(PaymentSystemService, OAuthService):
             }
         )
         transaction.update_transaction(transaction.id, pay_response_url=None)
+
+    @staticmethod
+    def _validate_routing_slip(routing_slip: RoutingSlipModel, invoice: Invoice):
+        """Validate different conditions of a routing slip payment."""
+        # is rs doesnt exist , legacy routing slip flag should be on
+        if routing_slip is None:
+            if not current_app.config.get('ALLOW_LEGACY_ROUTING_SLIPS'):
+                raise BusinessException(Error.RS_DOESNT_EXIST)
+            # legacy routing slip which doesnt exist in the system.No validations
+            return
+
+        # check rs is active
+
+        if routing_slip.status not in (
+                RoutingSlipStatus.ACTIVE.value, RoutingSlipStatus.LINKED.value):
+            raise BusinessException(Error.RS_NOT_ACTIVE)
+
+        if routing_slip.parent:
+            detail = f'This Routing slip is linked, enter the parent Routing slip:{routing_slip.parent.number}'
+            raise BusinessException(InternalPayService._create_error_object('LINKED_ROUTING_SLIP', detail))
+        if routing_slip.remaining_amount < invoice.total:
+            detail = f'There is not enough balance in this Routing slip. ' \
+                     f'The current balance is :${routing_slip.remaining_amount:.2f}'
+
+            raise BusinessException(InternalPayService.
+                                    _create_error_object('INSUFFICIENT_BALANCE_IN_ROUTING_SLIP', detail))
+
+    @staticmethod
+    def _create_error_object(code: str, detail: str):
+        return type('obj', (object,),
+                    {'code': code, 'status': HTTPStatus.BAD_REQUEST,
+                     'detail': detail})()

@@ -103,7 +103,7 @@ class RoutingSlipReport(Resource):
         pdf, file_name = RoutingSlipService.create_daily_reports(date)
 
         response = Response(pdf, 201)
-        response.headers.set('Content-Disposition', 'attachment', filename='{}.pdf'.format(file_name))
+        response.headers.set('Content-Disposition', 'attachment', filename=f'{file_name}.pdf')
         response.headers.set('Content-Type', 'application/pdf')
         response.headers.set('Access-Control-Expose-Headers', 'Content-Disposition')
 

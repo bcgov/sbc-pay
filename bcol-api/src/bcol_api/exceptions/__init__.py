@@ -43,7 +43,7 @@ def error_to_response(error: Error, invalid_params=None):
     }, status=error.status)
 
 
-class BusinessException(Exception):
+class BusinessException(Exception):  # noqa
     """Exception that adds error code and error name, that can be used for i18n support."""
 
     def __init__(self, error: Error, *args, **kwargs):
@@ -67,7 +67,7 @@ class BusinessException(Exception):
         return convert_to_response(body=self.as_problem_json(), status=self.status)
 
 
-class PaymentException(Exception):
+class PaymentException(Exception):  # noqa
     """Exception that adds error code and error name, that can be used for i18n support."""
 
     def __init__(self, code: str, message: str, *args, **kwargs):

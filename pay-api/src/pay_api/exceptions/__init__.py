@@ -58,6 +58,8 @@ class BusinessException(Exception):  # noqa
         super(BusinessException, self).__init__(*args, **kwargs)  # pylint:disable=super-with-arguments
         self.code = error.code
         self.status = error.status
+        # not a part of the object.Used for custom error patterns.
+        self.detail = getattr(error, 'detail', None)
 
     def as_problem_json(self):
         """Return problem+json of error message."""
@@ -65,6 +67,8 @@ class BusinessException(Exception):  # noqa
         problem_json = CodeService.find_code_value_by_type_and_code(Code.ERROR.value, self.code)
         if not problem_json:  # If the error is not configured in DB, return details from Error object
             problem_json = dict(type=self.code)
+            if self.detail:
+                problem_json['detail'] = self.detail
         return problem_json
 
     def response(self):

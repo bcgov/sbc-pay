@@ -128,5 +128,4 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(e)
             current_app.logger.error('Notification to Queue failed for the Payment Event %s', payload)
-            capture_message('Notification to Queue failed for the Payment Event : {msg}.'.format(msg=payload),
-                            level='error')
+            capture_message(f'Notification to Queue failed for the Payment Event : {payload}.', level='error')

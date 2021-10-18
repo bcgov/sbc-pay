@@ -109,7 +109,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
             try:
                 # Get the first invoice id as the trx number for CFS
-                invoice_response = CFSService.create_account_invoice(transaction_number=account_invoices[0].id,
+                invoice_response = CFSService.create_account_invoice(transaction_number=account_invoices[-1].id,
                                                                      line_items=lines,
                                                                      cfs_account=cfs_account)
             except Exception as e:  # NOQA # pylint: disable=broad-except

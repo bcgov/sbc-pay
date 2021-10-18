@@ -237,10 +237,16 @@ async def _process_consolidated_invoices(row):
             filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.ACTIVE.value). \
             filter(InvoiceReferenceModel.invoice_number == inv_number). \
             all()
+
         payment_account: PaymentAccountModel = _get_payment_account(row)
 
         if target_txn_status.lower() == Status.PAID.value.lower():
             logger.debug('Fully PAID payment.')
+            if not inv_references:
+                logger.error('No invoice found for %s in the system, and cannot process %s.', inv_number, row)
+                capture_message('No invoice found for {invoice_number} in the system, and cannot process {row}.'
+                                .format(invoice_number=inv_number, row=row), level='error')
+                return
             await _process_paid_invoices(inv_references, row)
             await _publish_mailer_events('PAD.PaymentSuccess', payment_account, row)
         elif target_txn_status.lower() == Status.NOT_PAID.value.lower() \

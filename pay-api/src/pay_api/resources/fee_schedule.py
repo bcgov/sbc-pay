@@ -19,11 +19,8 @@ from flask_restx import Namespace, Resource, cors
 
 from pay_api.exceptions import BusinessException
 from pay_api.services import FeeSchedule
-from pay_api.utils.auth import jwt as _jwt
-from pay_api.utils.enums import Role
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
-
 
 API = Namespace('fee-schedules', description='Payment System - Fee Schedules')
 
@@ -36,14 +33,14 @@ class FeeSchedules(Resource):
     @staticmethod
     @cors.crossdomain(origin='*')
     @_tracing.trace()
-    @_jwt.has_one_of_roles([Role.STAFF.value])
     def get():
         """Calculate the fee for the filing using the corp type/filing type and return fee."""
         try:
             corp_type = request.args.get('corp_type', None)
             filing_type = request.args.get('filing_type', None)
+            description = request.args.get('description', None)
             response, status = (
-                FeeSchedule.find_all(corp_type=corp_type, filing_type_code=filing_type),
+                FeeSchedule.find_all(corp_type=corp_type, filing_type_code=filing_type, description=description),
                 HTTPStatus.OK,
             )
         except BusinessException as exception:

@@ -22,17 +22,19 @@ import json
 from unittest.mock import patch
 
 import pytest
+from flask import current_app
 from requests.exceptions import ConnectionError
 
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.schemas import utils as schema_utils
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod, Role
+from pay_api.utils.enums import InvoiceStatus, PatchActions, PaymentMethod, Role, RoutingSlipStatus
 from tests.utilities.base_test import (
-    activate_pad_account, get_basic_account_payload, get_claims, get_gov_account_payload, get_payment_request,
+    activate_pad_account, fake, get_basic_account_payload, get_claims, get_gov_account_payload, get_payment_request,
     get_payment_request_for_wills, get_payment_request_with_folio_number, get_payment_request_with_no_contact_info,
-    get_payment_request_with_payment_method, get_payment_request_with_service_fees, get_unlinked_pad_account_payload,
-    get_waive_fees_payment_request, get_zero_dollar_payment_request, token_header)
+    get_payment_request_with_payment_method, get_payment_request_with_service_fees, get_payment_request_without_bn,
+    get_routing_slip_request, get_unlinked_pad_account_payload, get_waive_fees_payment_request,
+    get_zero_dollar_payment_request, token_header)
 
 
 def test_payment_request_creation(session, client, jwt, app):
@@ -314,6 +316,91 @@ def test_payment_creation_with_routing_slip(session, client, jwt, app):
     assert rv.json.get('routingSlip') == 'TEST_ROUTE_SLIP'
 
     assert schema_utils.validate(rv.json, 'invoice')[0]
+
+
+@pytest.mark.parametrize('payment_requests', [
+    get_payment_request(),
+    get_payment_request_without_bn()
+])
+def test_payment_creation_with_existing_routing_slip(client, jwt, payment_requests):
+    """Assert that the endpoint returns 201."""
+    claims = get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value, Role.STAFF.value, 'make_payment'])
+    token = jwt.create_jwt(claims, token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    payload = get_routing_slip_request()
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 201
+    rs_number = rv.json.get('number')
+
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    data = payment_requests
+    data['accountInfo'] = {'routingSlip': rs_number}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
+    total = rv.json.get('total')
+    rv = client.post('/api/v1/fas/routing-slips/queries', data=json.dumps({'routingSlipNumber': rs_number}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+
+    assert items[0].get('remainingAmount') == payload.get('payments')[0].get('paidAmount') - total
+
+
+def test_payment_creation_with_existing_invalid_routing_slip_invalid(client, jwt):
+    """Assert that the endpoint returns 201."""
+    claims = get_claims(
+        roles=[Role.FAS_CREATE.value, Role.FAS_EDIT.value, Role.STAFF.value, 'make_payment', Role.FAS_LINK.value])
+    token = jwt.create_jwt(claims, token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    # create an RS with less balance
+    cheque_amount = 1
+    payload = get_routing_slip_request(cheque_receipt_numbers=[('1234567890',
+                                                                PaymentMethod.CHEQUE.value, cheque_amount)])
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    rs_number = rv.json.get('number')
+
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    data = get_payment_request()
+    data['accountInfo'] = {'routingSlip': rs_number}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
+    assert rv.status_code == 400
+    assert 'There is not enough balance in this Routing slip' in rv.json.get('detail')
+    assert 'INSUFFICIENT_BALANCE_IN_ROUTING_SLIP' in rv.json.get('type')
+    assert f'${cheque_amount}.00' in rv.json.get('detail')
+
+    # change status of routing slip to inactive
+    rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
+                      data=json.dumps({'status': RoutingSlipStatus.COMPLETE.value}), headers=headers)
+
+    assert rv.status_code == 200
+    assert rv.json.get('status') == RoutingSlipStatus.COMPLETE.value
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
+    assert rv.status_code == 400
+    assert rv.json.get('type') == 'RS_NOT_ACTIVE'
+
+    parent1 = get_routing_slip_request(number=fake.name())
+    client.post('/api/v1/fas/routing-slips', data=json.dumps(parent1), headers=headers)
+    link_data = {'childRoutingSlipNumber': rs_number, 'parentRoutingSlipNumber': f"{parent1.get('number')}"}
+    client.post('/api/v1/fas/routing-slips/links', data=json.dumps(link_data), headers=headers)
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
+    assert rv.status_code == 400
+    assert 'LINKED_ROUTING_SLIP' in rv.json.get('type')
+    assert 'This Routing slip is linked' in rv.json.get('detail')
+    assert parent1.get('number') in rv.json.get('detail')
+
+    # Flip the legacy routing slip flag
+    data['accountInfo'] = {'routingSlip': 'invalid'}
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
+    assert rv.status_code == 201
+    current_app.config['ALLOW_LEGACY_ROUTING_SLIPS'] = False
+    data['accountInfo'] = {'routingSlip': 'invalid'}
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
+    assert rv.status_code == 400
+    assert rv.json.get('type') == 'RS_DOESNT_EXIST'
 
 
 def test_bcol_payment_creation(session, client, jwt, app):
@@ -861,6 +948,30 @@ def test_payment_request_creation_with_account_settings(session, client, jwt, ap
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request_for_wills(will_alias_quantity=2)),
                      headers=user_headers)
     assert rv.json.get('serviceFees') == 1.5
-    assert rv.json.get('total') == 28.5  # Wills Noticee : 17, Alias : 5 each for 2, service fee 1.0
+    assert rv.json.get('total') == 28.5  # Wills Notice : 17, Alias : 5 each for 2, service fee 1.0
     assert rv.json.get('lineItems')[0]['serviceFees'] == 1.5
     assert rv.json.get('lineItems')[1]['serviceFees'] == 0
+
+
+def test_create_ejv_payment_request_non_billable_account(session, client, jwt, app):
+    """Assert payment request works for EJV accounts."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    # Create account first
+    rv = client.post('/api/v1/accounts', data=json.dumps(get_gov_account_payload(account_id=1234, billable=False)),
+                     headers=headers)
+    auth_account_id = rv.json.get('accountId')
+
+    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+    dist_code: DistributionCodeModel = DistributionCodeModel.find_by_active_for_account(payment_account.id)
+
+    assert dist_code
+    assert dist_code.account_id == payment_account.id
+
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': auth_account_id}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    assert rv.json.get('paymentMethod') == PaymentMethod.EJV.value
+    assert rv.json.get('statusCode') == 'COMPLETED'
+    assert rv.json.get('total') == rv.json.get('paid')
