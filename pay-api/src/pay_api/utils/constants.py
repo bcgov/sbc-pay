@@ -57,5 +57,6 @@ REFUND_SUCCESS_MESSAGES = {
                'is a one day delay before the credit will show on your transactions / statements.',
     'DRAWDOWN.PAID': 'Your transaction has been cancelled and a refund has been requested.',
     'ROUTINGSLIP.REFUND_AUTHORIZED': 'Routing slip refund has been authorised.',
-    'ROUTINGSLIP.REFUND_REQUESTED': 'Routing slil refund is requested.'
+    'ROUTINGSLIP.REFUND_REQUESTED': 'Routing slip refund is requested.',
+    'ROUTINGSLIP.ACTIVE': 'Routing slip is active.'
 }

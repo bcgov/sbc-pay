@@ -175,19 +175,22 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         rs_model = RoutingSlipModel.find_by_number(routing_slip_number)
         if not rs_model:
             raise BusinessException(Error.RS_DOESNT_EXIST)
-
+        reason = get_str_by_path(request, 'reason')
         if (refund_status := get_str_by_path(request, 'status')) is None:
             raise BusinessException(Error.INVALID_REQUEST)
-
+        user_name = kwargs['user'].user_name
         if rs_model.remaining_amount == 0:
             raise BusinessException(Error.INVALID_REQUEST)  # refund not possible for zero amount routing slips
 
-        user: UserContext = kwargs['user']
-        has_refund_approver_role = Role.FAS_REFUND_APPROVER.value not in user.roles
         is_refund_finalized = refund_status in (RoutingSlipStatus.REFUND_AUTHORIZED.value,
                                                 RoutingSlipStatus.REFUND_REJECTED.value)
-        if is_refund_finalized and has_refund_approver_role:
-            raise BusinessException(Error.INVALID_REQUEST)
+        if is_refund_finalized:
+            RefundService._is_authorised_refund()
+
+        # Rejected refund makes routing slip active
+        if refund_status == RoutingSlipStatus.REFUND_REJECTED.value:
+            refund_status = RoutingSlipStatus.ACTIVE.value
+            reason = f'Refund Rejected by {user_name}'
 
         rs_model.status = refund_status
         rs_model.flush()
@@ -197,16 +200,28 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         if refund_dao:
             refund._dao = refund_dao
 
-        refund.routing_slip_id = rs_model.id
-        refund.reason = get_str_by_path(request, 'reason')
+        if not is_refund_finalized:
+            # do not update these for approval/rejections
+
+            refund.routing_slip_id = rs_model.id
+            refund.requested_by = kwargs['user'].user_name
+            refund.requested_date = datetime.now()
+
+        refund.reason = reason
         if details := request.get('details'):
             refund.details = details
 
-        refund.requested_by = kwargs['user'].user_name
-        refund.requested_date = datetime.now()
         refund.save()
         message = REFUND_SUCCESS_MESSAGES.get(f'ROUTINGSLIP.{rs_model.status}')
         return {'message': message}
+
+    @staticmethod
+    @user_context
+    def _is_authorised_refund(**kwargs):
+        user: UserContext = kwargs['user']
+        has_refund_approver_role = Role.FAS_REFUND_APPROVER.value in user.roles
+        if not has_refund_approver_role:
+            raise BusinessException(Error.INVALID_REQUEST)
 
     @classmethod
     @user_context

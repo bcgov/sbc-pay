@@ -25,7 +25,7 @@ from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import relationship
 
 from pay_api.utils.constants import DT_SHORT_FORMAT
-from pay_api.utils.enums import PaymentMethod
+from pay_api.utils.enums import PaymentMethod, RoutingSlipStatus
 from pay_api.utils.util import get_str_by_path
 
 from .audit import Audit, AuditSchema
@@ -68,7 +68,10 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
                             )
 
     refunds = relationship(Refund, viewonly=True,
-                           primaryjoin='and_(RoutingSlip.id == Refund.routing_slip_id)',
+                           primaryjoin=f'and_(RoutingSlip.id == Refund.routing_slip_id,'
+                                       f'RoutingSlip.status.in_('
+                                       f'[f"{RoutingSlipStatus.REFUND_REQUESTED.value}",'
+                                       f'f"{RoutingSlipStatus.REFUND_AUTHORIZED.value}"]))',
                            lazy='joined')
 
     parent = relationship('RoutingSlip', remote_side=[number], lazy='select')

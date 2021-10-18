@@ -26,7 +26,6 @@ from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.enums import PaymentMethod, Role, RoutingSlipStatus
 from tests.utilities.base_test import get_claims, get_routing_slip_request, token_header
 
-
 fake = Faker()
 
 
@@ -85,6 +84,34 @@ def test_refund_routing_slips(client, jwt):
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, 'routing_slip')[0]
     assert rv.json.get('status') == RoutingSlipStatus.REFUND_AUTHORIZED.value
+
+
+def test_refund_routing_slips_reject(client, jwt):
+    """Assert refund works for routing slips."""
+    payload = get_routing_slip_request()
+    token = jwt.create_jwt(
+        get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value, Role.FAS_REFUND_APPROVER.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+
+    rs_number = rv.json.get('number')
+    rv = client.post('/api/v1/fas/routing-slips/{}/refunds'.format(rs_number),
+                     data=json.dumps({'status': RoutingSlipStatus.REFUND_REQUESTED.value, }),
+                     headers=headers)
+    assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['ROUTINGSLIP.REFUND_REQUESTED']
+
+    rv = client.post('/api/v1/fas/routing-slips/{}/refunds'.format(rs_number),
+                     data=json.dumps({'status': RoutingSlipStatus.REFUND_REJECTED.value}),
+                     headers=headers)
+    assert rv.status_code == 202
+    assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['ROUTINGSLIP.ACTIVE']
+
+    rv = client.get('/api/v1/fas/routing-slips/{}'.format(rs_number), headers=headers)
+    assert rv.status_code == 200
+    assert schema_utils.validate(rv.json, 'routing_slip')[0]
+    assert rv.json.get('status') == RoutingSlipStatus.ACTIVE.value
+    assert rv.json.get('refunds') is None
 
 
 def test_refund_routing_slips_zero_dollar_error(client, jwt):
