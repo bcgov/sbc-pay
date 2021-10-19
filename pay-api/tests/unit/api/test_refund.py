@@ -27,11 +27,11 @@ from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
     get_claims, get_payment_request, get_payment_request_with_payment_method, get_payment_request_with_service_fees,
-    get_unlinked_pad_account_payload, token_header)
+    get_routing_slip_request, get_unlinked_pad_account_payload, token_header)
 
 
 def test_create_refund(session, client, jwt, app, stan_server):
-    """Assert that the endpoint returns 202."""
+    """Assert that the endpoint  returns 202."""
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
@@ -191,3 +191,39 @@ def test_create_duplicate_refund_fails(session, client, jwt, app, stan_server):
     rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test 2'}),
                      headers=headers)
     assert rv.status_code == 400
+
+
+def test_create_refund_routing_slip(session, client,
+                                    jwt, app, stan_server):
+    """Assert that the endpoint  returns 202."""
+    claims = get_claims(
+        roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value, Role.FAS_REFUND.value, Role.STAFF.value, 'make_payment'])
+    token = jwt.create_jwt(claims, token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    payload = get_routing_slip_request()
+    routingslip_amount = payload.get('payments')[0].get('paidAmount')
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    rs_number = rv.json.get('number')
+
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    data = get_payment_request()
+    data['accountInfo'] = {'routingSlip': rs_number}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
+    inv_id = rv.json.get('id')
+    total = rv.json.get('total')
+    rv = client.post('/api/v1/fas/routing-slips/queries', data=json.dumps({'routingSlipNumber': rs_number}),
+                     headers=headers)
+    items = rv.json.get('items')
+
+    assert items[0].get('remainingAmount') == payload.get('payments')[0].get('paidAmount') - total
+
+    rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
+                     headers=headers)
+    assert rv.status_code == 202
+    assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['INTERNAL.PAID']
+
+    rv = client.post('/api/v1/fas/routing-slips/queries', data=json.dumps({'routingSlipNumber': rs_number}),
+                     headers=headers)
+    # asssert refund amount goes to routing slip back
+    assert rv.json.get('items')[0].get('remainingAmount') == routingslip_amount

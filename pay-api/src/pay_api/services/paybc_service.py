@@ -21,6 +21,7 @@ from flask import current_app
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
@@ -181,6 +182,10 @@ class PaybcService(PaymentSystemService, CFSService):
         invoice_response = self.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
         current_app.logger.debug('>__get_invoice')
         return invoice_response.json()
+
+    def process_cfs_refund(self, invoice: InvoiceModel):
+        """Process refund in CFS."""
+        super()._refund_and_create_credit_memo(invoice)
 
     def get_payment_system_url_for_payment(self, payment: Payment, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""

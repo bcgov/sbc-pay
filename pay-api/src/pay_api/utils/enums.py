@@ -122,6 +122,7 @@ class Role(Enum):
     FAS_EDIT = 'fas_edit'
     FAS_REPORTS = 'fas_reports'
     FAS_SEARCH = 'fas_search'
+    FAS_REFUND = 'fas_refund'
     FAS_VIEW = 'fas_view'
     FAS_CREATE = 'fas_create'
     FAS_LINK = 'fas_link'
