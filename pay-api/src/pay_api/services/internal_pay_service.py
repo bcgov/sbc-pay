@@ -136,7 +136,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         payment.flush()
         # if not legacy routing slip , add the total back to routing slip
         if routing_slip := RoutingSlipModel.find_by_number(routing_slip_number):
-            routing_slip.remaining_amount += invoice.total
+            routing_slip.remaining_amount += decimal.Decimal(invoice.total)
             routing_slip.flush()
 
     @staticmethod
