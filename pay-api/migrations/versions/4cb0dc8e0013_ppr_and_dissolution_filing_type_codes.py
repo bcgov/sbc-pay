@@ -124,7 +124,7 @@ def upgrade():
                 'fee_start_date': date.today(),
                 'fee_end_date': None,
                 'service_fee_code': None,
-                'future_effective_fee_code': None
+                'future_effective_fee_code': None,
                 'priority_fee_code': None
             },
             {
