@@ -42,12 +42,10 @@ def test_get_schedule_with_description(client, jwt):
     search = 'Community Contribution Company'
     rv = client.get(f'/api/v1/fees/schedules?description={search}', headers=headers)
     assert rv.status_code == 200
-    assert len(rv.json.get('items')) == 1
     assert rv.json.get('items')[0].get('corpTypeCode').get('code') == 'CC'
     assert rv.json.get('items')[0].get('corpTypeCode').get('description') == search
 
     rv = client.get(f'/api/v1/fees/schedules?description={search[:-5]}', headers=headers)
     assert rv.status_code == 200
-    assert len(rv.json.get('items')) == 1
     assert rv.json.get('items')[0].get('corpTypeCode').get('code') == 'CC'
     assert rv.json.get('items')[0].get('corpTypeCode').get('description') == search

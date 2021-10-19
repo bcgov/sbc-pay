@@ -125,7 +125,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                 credit_distribution = cls.get_distribution_string(credit_distribution_code)  # Credit to partner GL
 
                 # JV Header
-                ejv_content = '{}{}'.format(ejv_content,  # pylint: disable=consider-using-f-string
+                ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
                                             cls.get_jv_header(batch_type, cls.get_journal_batch_name(batch_number),
                                                               journal_name, total))
                 control_total += 1
@@ -141,7 +141,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                     is_reversal = InvoiceModel.find_by_id(line.invoice_id).invoice_status_code in \
                                   (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
 
-                    ejv_content = '{}{}'.format(ejv_content,  # pylint: disable=consider-using-f-string
+                    ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
                                                 cls.get_jv_line(batch_type, credit_distribution, disbursement_desc,
                                                                 effective_date, flow_through, journal_name, line.total,
                                                                 line_number, 'C' if not is_reversal else 'D'))
@@ -149,7 +149,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                     control_total += 1
 
                     # Add a line here for debit too
-                    ejv_content = '{}{}'.format(ejv_content,  # pylint: disable=consider-using-f-string
+                    ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
                                                 cls.get_jv_line(batch_type, debit_distribution, disbursement_desc,
                                                                 effective_date, flow_through, journal_name, line.total,
                                                                 line_number, 'D' if not is_reversal else 'C'))

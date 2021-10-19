@@ -43,11 +43,11 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
             current_app.logger.info(f'Stale Transaction Job Ran at {datetime.datetime.now()}.But No records found!')
         for transaction in stale_transactions:
             try:
-                current_app.logger.info('Stale Transaction Job found records.Payment Id: %s, Transaction Id : %s',
-                                        transaction.payment_id, transaction.id)
+                current_app.logger.info(f'Stale Transaction Job found records.Payment Id: {transaction.payment_id}, '
+                                        f'Transaction Id : {transaction.id}')
                 TransactionService.update_transaction(transaction.id, pay_response_url=None)
-                current_app.logger.info('Stale Transaction Job Updated records.Payment Id: %s, Transaction Id : %s',
-                                        transaction.payment_id, transaction.id)
+                current_app.logger.info(f'Stale Transaction Job Updated records.Payment Id: {transaction.payment_id}, '
+                                        f'Transaction Id : {transaction.id}')
             except BusinessException as err:  # just catch and continue .Don't stop
                 current_app.logger.info('Stale Transaction Error on update_transaction')
                 current_app.logger.info(err)
@@ -64,9 +64,9 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
             current_app.logger.info(f'Delete Invoice Job Ran at {datetime.datetime.now()}.But No records found!')
         for invoice in invoices_to_delete:
             try:
-                current_app.logger.info('Delete Payment Job found records.Payment Id: %s', invoice.id)
+                current_app.logger.info(f'Delete Payment Job found records.Payment Id: {invoice.id}')
                 PaymentService.delete_invoice(invoice.id)
-                current_app.logger.info('Delete Payment Job Updated records.Payment Id: %s', invoice.id)
+                current_app.logger.info(f'Delete Payment Job Updated records.Payment Id: {invoice.id}')
             except BusinessException as err:  # just catch and continue .Don't stop
                 current_app.logger.warn('Error on delete_payment')
                 current_app.logger.warn(err)
