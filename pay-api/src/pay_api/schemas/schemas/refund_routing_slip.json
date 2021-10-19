@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/refund_routing_slip",
+  "type": "object",
+  "title": "Refund",
+  "required": [
+    "status"
+  ],
+  "properties": {
+     "status": {
+      "$id": "#/properties/status",
+      "type": "string",
+      "title": "Routing Slip status",
+      "pattern": "^(.*)$"
+    },
+    "details": {
+      "$id": "#/properties/status",
+      "title": "Details of routing slip refund",
+      "type": "object"
+    }
+  }
+}
