@@ -85,7 +85,7 @@ def upgrade():
                 'fee_end_date': None,
                 'service_fee_code': None,
                 'future_effective_fee_code': None,
-                'priority_fee_code': None
+                'priority_fee_code': 'PRI01'
             },
             {
                 'filing_type_code': 'DIS_VOL',
@@ -120,12 +120,12 @@ def upgrade():
             {
                 'filing_type_code': 'DIS_INVOL',
                 'corp_type_code': 'BC',
-                'fee_code': 'EN101',
+                'fee_code': 'EN107',
                 'fee_start_date': date.today(),
                 'fee_end_date': None,
-                'service_fee_code': 'TRF01',
-                'future_effective_fee_code': 'FUT01',
-                'priority_fee_code': 'PRI01'
+                'service_fee_code': None,
+                'future_effective_fee_code': None
+                'priority_fee_code': None
             },
             {
                 'filing_type_code': 'DIS_ADMIN',
@@ -181,12 +181,12 @@ def upgrade():
             {
                 'filing_type_code': 'DIS_INVOL',
                 'corp_type_code': 'BEN',
-                'fee_code': 'EN101',
+                'fee_code': 'EN107',
                 'fee_start_date': date.today(),
                 'fee_end_date': None,
-                'service_fee_code': 'TRF01',
-                'future_effective_fee_code': 'FUT01',
-                'priority_fee_code': 'PRI01'
+                'service_fee_code': None,
+                'future_effective_fee_code': None,
+                'priority_fee_code': None
             },
             {
                 'filing_type_code': 'DIS_ADMIN',
@@ -242,12 +242,12 @@ def upgrade():
             {
                 'filing_type_code': 'DIS_INVOL',
                 'corp_type_code': 'CC',
-                'fee_code': 'EN101',
+                'fee_code': 'EN107',
                 'fee_start_date': date.today(),
                 'fee_end_date': None,
-                'service_fee_code': 'TRF01',
-                'future_effective_fee_code': 'FUT01',
-                'priority_fee_code': 'PRI01'
+                'service_fee_code': None,
+                'future_effective_fee_code': None,
+                'priority_fee_code': None
             },
             {
                 'filing_type_code': 'DIS_ADMIN',
@@ -303,12 +303,12 @@ def upgrade():
             {
                 'filing_type_code': 'DIS_INVOL',
                 'corp_type_code': 'ULC',
-                'fee_code': 'EN101',
+                'fee_code': 'EN107',
                 'fee_start_date': date.today(),
                 'fee_end_date': None,
-                'service_fee_code': 'TRF01',
-                'future_effective_fee_code': 'FUT01',
-                'priority_fee_code': 'PRI01'
+                'service_fee_code': None,
+                'future_effective_fee_code': None,
+                'priority_fee_code': None
             },
             {
                 'filing_type_code': 'DIS_ADMIN',
@@ -354,12 +354,12 @@ def upgrade():
             {
                 'filing_type_code': 'DIS_INVOL',
                 'corp_type_code': 'LTD',
-                'fee_code': 'EN101',
+                'fee_code': 'EN107',
                 'fee_start_date': date.today(),
                 'fee_end_date': None,
-                'service_fee_code': 'TRF01',
-                'future_effective_fee_code': 'FUT01',
-                'priority_fee_code': 'PRI01'
+                'service_fee_code': None,
+                'future_effective_fee_code': None,
+                'priority_fee_code': None
             },
             {
                 'filing_type_code': 'DIS_ADMIN',
