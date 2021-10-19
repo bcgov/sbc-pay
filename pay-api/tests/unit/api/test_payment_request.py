@@ -887,10 +887,10 @@ def test_payment_request_creation_for_wills(session, client, jwt, app):
 
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request_for_wills(will_alias_quantity=2)),
                      headers=headers)
+
     assert rv.json.get('serviceFees') == 1.5
     assert rv.json.get('total') == 28.5  # Wills Noticee : 17, Alias : 5 each for 2, service fee 1.5
-    assert rv.json.get('lineItems')[0]['serviceFees'] == 1.5
-    assert rv.json.get('lineItems')[1]['serviceFees'] == 0
+    assert sum(line['serviceFees'] for line in rv.json.get('lineItems')) == 1.5
 
 
 def test_payment_request_creation_with_account_settings(session, client, jwt, app):
