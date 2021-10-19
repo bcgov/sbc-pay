@@ -139,7 +139,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                     # Line for credit.
                     # If it's a reversal credit goes as 'D'ebit. Else goes 'C'redit.
                     is_reversal = InvoiceModel.find_by_id(line.invoice_id).invoice_status_code in \
-                                  (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
+                        (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
 
                     ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
                                                 cls.get_jv_line(batch_type, credit_distribution, disbursement_desc,
@@ -219,7 +219,8 @@ class EjvPartnerDistributionTask(CgiEjv):
 
         invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
             .filter(InvoiceModel.invoice_status_code.in_(refund_inv_statuses)) \
-            .filter(InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value])) \
+            .filter(
+            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value])) \
             .filter(InvoiceModel.disbursement_status_code == DisbursementStatus.COMPLETED.value) \
             .filter(InvoiceModel.corp_type_code == partner.code) \
             .all()

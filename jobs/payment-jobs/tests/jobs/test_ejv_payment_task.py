@@ -87,7 +87,8 @@ def test_payments_for_gov_accounts(session, monkeypatch):
                                                                                InvoiceReferenceStatus.ACTIVE.value)
         assert invoice_ref
 
-        ejv_inv_link = db.session.query(EjvInvoiceLink).filter(EjvInvoiceLink.invoice_id == inv_id).first()
+        ejv_inv_link: EjvInvoiceLink = db.session.query(EjvInvoiceLink)\
+            .filter(EjvInvoiceLink.invoice_id == inv_id).first()
         assert ejv_inv_link
 
         ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_inv_link.ejv_header_id).first()
@@ -98,6 +99,11 @@ def test_payments_for_gov_accounts(session, monkeypatch):
         assert ejv_file
         assert ejv_file.disbursement_status_code == DisbursementStatus.UPLOADED.value
         assert not ejv_file.is_distribution
+
+    # Update the disbursement_status_code to COMPLETED, so that we can create records for Reversals
+    for ejv_file in db.session.query(EjvFile).all():
+        ejv_file.disbursement_status_code = DisbursementStatus.COMPLETED.value
+        ejv_file.save()
 
     # Try reversal on these payments.
     # Mark invoice as REFUND_REQUESTED and run a JV job again.
@@ -121,15 +127,13 @@ def test_payments_for_gov_accounts(session, monkeypatch):
                                                                                InvoiceReferenceStatus.ACTIVE.value)
         assert invoice_ref
 
-        ejv_inv_link = db.session.query(EjvInvoiceLink).filter(EjvInvoiceLink.invoice_id == inv_id).first()
+        ejv_inv_link = db.session.query(EjvInvoiceLink).filter(EjvInvoiceLink.invoice_id == inv_id)\
+            .filter(EjvInvoiceLink.disbursement_status_code == DisbursementStatus.UPLOADED.value).first()
         assert ejv_inv_link
 
         ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_inv_link.ejv_header_id).first()
-        assert ejv_header.disbursement_status_code == DisbursementStatus.UPLOADED.value
         assert ejv_header
 
         ejv_file: EjvFile = EjvFile.find_by_id(ejv_header.ejv_file_id)
         assert ejv_file
-        assert ejv_file.disbursement_status_code == DisbursementStatus.UPLOADED.value
         assert not ejv_file.is_distribution
-

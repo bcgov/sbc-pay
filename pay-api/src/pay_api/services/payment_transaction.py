@@ -348,7 +348,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         payment_account: PaymentAccount = PaymentAccount.find_by_id(payment.payment_account_id)
 
         # For transactions other than Credit Card, there could be more than one invoice per payment.
-        invoices: [Invoice] = Invoice.find_invoices_for_payment(transaction_dao.payment_id)
+        invoices1: [Invoice] = Invoice.find_invoices_for_payment(transaction_dao.payment_id)
 
         if payment.payment_status_code == PaymentStatus.COMPLETED.value:
             # if the transaction status is EVENT_FAILED then publish to queue and return, else raise error

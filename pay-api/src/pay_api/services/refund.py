@@ -251,7 +251,6 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         message = REFUND_SUCCESS_MESSAGES.get(f'{invoice.payment_method_code}.{invoice.invoice_status_code}')
 
         # set invoice status
-        invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
         invoice.refund = invoice.total  # no partial refund
         invoice.save()
         return {'message': message}
@@ -264,6 +263,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
             payment.payment_status_code = PaymentStatus.REFUNDED.value
             payment.flush()
+            invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
         elif invoice.payment_method_code in (
                 [PaymentMethod.ONLINE_BANKING.value, PaymentMethod.PAD.value, PaymentMethod.CC.value]):
             # Create credit memo in CFS if the invoice status is PAID.
@@ -293,6 +293,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice.payment_account_id)
             payment_account.credit = (payment_account.credit or 0) + invoice.total
             payment_account.save()
+            invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
 
         elif invoice.payment_method_code == PaymentMethod.INTERNAL.value:
             # Allow if the payment is done using new FAS system.
@@ -302,6 +303,8 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
                     raise BusinessException(Error.NO_FEE_REFUND)
 
                 raise BusinessException(Error.ROUTING_SLIP_REFUND)
+        elif invoice.payment_method_code == PaymentMethod.EJV.value:
+            invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
         else:
             raise BusinessException(Error.INVALID_REQUEST)
 

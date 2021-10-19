@@ -70,7 +70,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
         port=int(DB_PORT),
         name=DB_NAME,
     )
-    SQLALCHEMY_ECHO = True
+    SQLALCHEMY_ECHO = False
 
     # PAYBC Direct Pay Settings
     PAYBC_DIRECT_PAY_REF_NUMBER = os.getenv('PAYBC_DIRECT_PAY_REF_NUMBER')
