@@ -126,7 +126,7 @@ async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-loca
                     has_errors = True
                 # Create a payment record if its a gov account payment.
                 elif not ejv_file.is_distribution:
-                    amount = float(line[42:57]) #TODO Adjust payment if reversal.
+                    amount = float(line[42:57])  # TODO Adjust payment if reversal.
                     receipt_number = line[0:42].strip()
                     await _create_payment_record(amount, ejv_header, receipt_number)
 
@@ -190,8 +190,8 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
             dist_code.stop_ejv = True
         elif invoice_link.disbursement_status_code == DisbursementStatus.COMPLETED.value:
             # Set the invoice status as REFUNDED if it's a JV reversal, else mark as PAID
-            # For 1 invoice, there would be multiple lines. Below check is to make sure the invoice status is updated only once.
-            is_reversal = invoice.invoice_status_code in (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
+            is_reversal = invoice.invoice_status_code in (
+                InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
             invoice.invoice_status_code = InvoiceStatus.REFUNDED.value if is_reversal else InvoiceStatus.PAID.value
 
             # Mark the invoice reference as COMPLETED, create a receipt

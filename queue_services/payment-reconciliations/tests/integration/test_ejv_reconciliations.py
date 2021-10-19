@@ -391,7 +391,7 @@ async def test_succesful_payment_ejv_reconciliations(session, app, stan_server, 
         inv_total = f'{inv.total:.2f}'.zfill(15)
         pay_line_amount = f'{line.total:.2f}'.zfill(15)
         service_fee_amount = f'{line.service_fees:.2f}'.zfill(15)
-        credit_debit_order = ['D','C','D','C'] if not is_payment_reversal else ['C','D','C', 'D']
+        credit_debit_order = ['D', 'C', 'D', 'C'] if not is_payment_reversal else ['C', 'D', 'C', 'D']
         jh_and_jd = f'..JH...FI0000000{ejv_header.id}.........................{inv_total}.....................' \
                     f'............................................................................................' \
                     f'............................................................................................' \
@@ -477,7 +477,6 @@ async def test_succesful_payment_ejv_reconciliations(session, app, stan_server, 
                                                                      page=1, limit=100)[0]
         assert len(payment) == 1
         assert payment[0][0].paid_amount == inv_total_amount
-
 
 # @pytest.mark.asyncio
 # async def test_failed_payment_ejv_reconciliations(session, app, stan_server, event_loop, client_id, events_stan,
