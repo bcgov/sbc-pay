@@ -111,7 +111,9 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 # publish to mailer queue.
-                mailer.publish_mailer_events('PadSetupFailed', pay_account)
+                if pay_account.payment_method == PaymentMethod.PAD.value:
+                    mailer.publish_mailer_events('PadSetupFailed', pay_account)
+
                 capture_message(f'Error on creating CFS Account: account id={pay_account.id}, '
                                 f'auth account : {pay_account.auth_account_id}, ERROR : {str(e)}', level='error')
                 current_app.logger.error(e)
