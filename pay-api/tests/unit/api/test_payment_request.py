@@ -401,6 +401,7 @@ def test_payment_creation_with_existing_invalid_routing_slip_invalid(client, jwt
     rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
     assert rv.status_code == 400
     assert rv.json.get('type') == 'RS_DOESNT_EXIST'
+    current_app.config['ALLOW_LEGACY_ROUTING_SLIPS'] = True  # reset it back not to affect other tests
 
 
 def test_bcol_payment_creation(session, client, jwt, app):
