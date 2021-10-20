@@ -133,11 +133,11 @@ class InternalPayService(PaymentSystemService, OAuthService):
             raise BusinessException(Error.RS_NOT_ACTIVE)
 
         if routing_slip.parent:
-            detail = f'This Routing slip is linked, enter the parent Routing slip:{routing_slip.parent.number}'
+            detail = f'This Routing slip is linked, enter the parent Routing slip: {routing_slip.parent.number}'
             raise BusinessException(InternalPayService._create_error_object('LINKED_ROUTING_SLIP', detail))
         if routing_slip.remaining_amount < invoice.total:
             detail = f'There is not enough balance in this Routing slip. ' \
-                     f'The current balance is :${routing_slip.remaining_amount:.2f}'
+                     f'The current balance is: ${routing_slip.remaining_amount:.2f}'
 
             raise BusinessException(InternalPayService.
                                     _create_error_object('INSUFFICIENT_BALANCE_IN_ROUTING_SLIP', detail))
