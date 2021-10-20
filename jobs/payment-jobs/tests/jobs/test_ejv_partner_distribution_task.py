@@ -23,7 +23,7 @@ from flask import current_app
 from freezegun import freeze_time
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvInvoiceLink, FeeSchedule, Invoice, db
-from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, PaymentMethod
+from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, PaymentMethod, InvoiceStatus
 
 from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
 
@@ -99,3 +99,16 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
         ejv_file = EjvFile.find_by_id(ejv_header.ejv_file_id)
         assert ejv_file
         assert ejv_file.disbursement_status_code == DisbursementStatus.UPLOADED.value, f'{batch_type}'
+
+    # Reverse those payments and assert records.
+    # Set the status of invoice as disbursement completed, so that reversal can kick start.
+    invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
+    ejv_file.disbursement_status_code = DisbursementStatus.COMPLETED.value
+    invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
+    invoice.save()
+
+    EjvPartnerDistributionTask.create_ejv_file()
+    # Lookup invoice and assert disbursement status
+    invoice = Invoice.find_by_id(invoice.id)
+    assert invoice.disbursement_status_code == DisbursementStatus.UPLOADED.value
+

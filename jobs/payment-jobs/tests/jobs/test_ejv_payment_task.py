@@ -107,6 +107,10 @@ def test_payments_for_gov_accounts(session, monkeypatch):
                                                                                InvoiceReferenceStatus.ACTIVE.value)
         invoice_ref.status_code = InvoiceReferenceStatus.COMPLETED.value
 
+        # Update EJV File status
+        ejv_file: EjvFile = EjvFile.find_by_id(ejv_header.ejv_file_id)
+        ejv_file.disbursement_status_code = DisbursementStatus.COMPLETED.value
+
         # Set invoice status for Refund requested.
         inv: Invoice = Invoice.find_by_id(inv_id)
         inv.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
