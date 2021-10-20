@@ -242,7 +242,6 @@ def test_create_refund_with_legacy_routing_slip(session, client,
 
     rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
     inv_id = rv.json.get('id')
-    rv.json.get('total')
 
     rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
                      headers=headers)
