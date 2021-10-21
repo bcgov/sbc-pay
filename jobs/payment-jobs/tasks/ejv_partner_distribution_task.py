@@ -80,6 +80,7 @@ class EjvPartnerDistributionTask(CgiEjv):
 
         for partner in partners:
             # Find all invoices for the partner to disburse.
+            # This includes invoices which are not PAID and invoices which are refunded.
             payment_invoices = cls._get_invoices_for_disbursement(partner)
             refund_reversals = cls._get_invoices_for_refund_reversal(partner)
             invoices = payment_invoices + refund_reversals
@@ -136,8 +137,8 @@ class EjvPartnerDistributionTask(CgiEjv):
                     line_number += 1
                     # Flow Through add it as the invoice id.
                     flow_through = f'{line.invoice_id:<110}'
-                    # Line for credit.
-                    # If it's a reversal credit goes as 'D'ebit. Else goes 'C'redit.
+                    # debit_distribution and credit_distribution stays as is for invoices which are not PAID
+                    # For reversals, we just need to reverse the debit and credit.
                     is_reversal = InvoiceModel.find_by_id(line.invoice_id).invoice_status_code in \
                         (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
 
@@ -214,7 +215,7 @@ class EjvPartnerDistributionTask(CgiEjv):
     @classmethod
     def _get_invoices_for_refund_reversal(cls, partner):
         """Return invoices for refund reversal."""
-        # Refund requested for credit card.
+        # Refund_requested for credit card payments and REFUNDED for other payments.
         refund_inv_statuses = (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
 
         invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \

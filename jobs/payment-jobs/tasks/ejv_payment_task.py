@@ -101,6 +101,7 @@ class EjvPaymentTask(CgiEjv):
                 is_jv_reversal = inv.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
 
                 # If it's reversal, If there is no COMPLETED invoice reference, then no need to reverse it.
+                # Else mark it as CANCELLED, as new invoice reference will be created
                 if is_jv_reversal:
                     if (inv_ref := InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
                         inv.id, InvoiceReferenceStatus.COMPLETED.value
@@ -123,6 +124,8 @@ class EjvPaymentTask(CgiEjv):
                         # Credit to BCREG GL
                         line_number += 1
                         control_total += 1
+                        # If it's normal payment then the Line distribution goes as Credit,
+                        # else it goes as Debit as we need to debit the fund from BC registry GL.
                         account_jv = account_jv + cls.get_jv_line(batch_type, line_distribution, disbursement_desc,
                                                                   effective_date, flow_through, journal_name,
                                                                   line.total,
@@ -131,6 +134,8 @@ class EjvPaymentTask(CgiEjv):
                         # Debit from GOV ACCOUNT GL
                         line_number += 1
                         control_total += 1
+                        # If it's normal payment then the Gov account GL goes as Debit,
+                        # else it goes as Credit as we need to credit the fund back to ministry.
                         account_jv = account_jv + cls.get_jv_line(batch_type, debit_distribution, disbursement_desc,
                                                                   effective_date, flow_through, journal_name,
                                                                   line.total,
