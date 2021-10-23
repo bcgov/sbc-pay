@@ -25,12 +25,11 @@ from faker import Faker
 
 from pay_api.models import (
     CfsAccount, DistributionCode, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem,
-    PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices, StatementSettings)
+    PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices, StatementSettings, Comment)
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
     PaymentSystem, Role, RoutingSlipStatus)
-
 
 token_header = {
     'alg': 'RS256',
@@ -712,3 +711,12 @@ def get_routing_slip_request(
         })
 
     return routing_slip_payload
+
+
+def factory_comments(routing_slip_number: str, username: str = 'comment_user', comment: str = 'test_comment'):
+    """Return a routing slip request dictionary."""
+    comment = Comment(submitter_display_name=username,
+                      routing_slip_number=routing_slip_number,
+                      comment=comment
+                      )
+    return comment

@@ -14,3 +14,4 @@
 """Exposes all of the Services used in the FAS."""
 
 from .routing_slip import RoutingSlip as RoutingSlipService
+from .comment import Comment as CommentService
