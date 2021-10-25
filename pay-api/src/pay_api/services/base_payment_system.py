@@ -165,12 +165,14 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
                     is_credit_memo=True,
                     amount=invoice.total,
                     remaining_amount=invoice.total,
-                    account_id=invoice.payment_account_id).save()
+                    account_id=invoice.payment_account_id).flush()
 
         # Add up the credit amount and update payment account table.
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice.payment_account_id)
         payment_account.credit = (payment_account.credit or 0) + invoice.total
-        payment_account.save()
+        payment_account.flush()
+        invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
+        invoice.flush()
 
     @staticmethod
     def _publish_refund_to_mailer(invoice: InvoiceModel):
