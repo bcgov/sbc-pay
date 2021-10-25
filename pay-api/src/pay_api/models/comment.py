@@ -13,18 +13,15 @@
 # limitations under the License.
 """Model to handle all operations related to Routing Slip Comment data."""
 from datetime import datetime
-
 from sqlalchemy.orm import relationship
-
+from sqlalchemy import ForeignKey
+from sqlalchemy.ext.declarative import declared_attr
+from marshmallow import fields
+from pay_api.utils.user_context import user_context
 from .base_model import BaseModel
 from .base_schema import BaseSchema
 from .db import db
-from sqlalchemy import ForeignKey
 from .routing_slip import RoutingSlip
-from marshmallow import fields
-
-from sqlalchemy.ext.declarative import declared_attr
-from pay_api.utils.user_context import user_context
 
 
 class Comment(BaseModel):

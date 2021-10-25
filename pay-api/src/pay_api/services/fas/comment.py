@@ -14,9 +14,8 @@
 """Service to manage routing slip comments."""
 from __future__ import annotations
 
-import json
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict
 
 from flask import current_app
 
@@ -168,4 +167,3 @@ class Comment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         comment_service.commit()
         current_app.logger.debug('>Comment.create.service')
         return comment_service.asdict()
-
