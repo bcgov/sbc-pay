@@ -74,11 +74,11 @@ class EjvPaymentTask(CgiEjv):
             account_jv: str = ''
             # Find all invoices for the gov account to pay.
             invoices = cls._get_invoices_for_payment(account_id)
+            pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(account_id)
             # If no invoices continue.
-            if not invoices:
+            if not invoices or not pay_account.billable:
                 continue
 
-            pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(account_id)
             disbursement_desc = f'{pay_account.name[:100]:<100}'
             effective_date: str = cls.get_effective_date()
             # Construct journal name
@@ -97,6 +97,18 @@ class EjvPaymentTask(CgiEjv):
             line_number: int = 0
             total: float = 0
             for inv in invoices:
+                # If it's a JV reversal credit and debit is reversed.
+                is_jv_reversal = inv.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
+
+                # If it's reversal, If there is no COMPLETED invoice reference, then no need to reverse it.
+                # Else mark it as CANCELLED, as new invoice reference will be created
+                if is_jv_reversal:
+                    if (inv_ref := InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
+                        inv.id, InvoiceReferenceStatus.COMPLETED.value
+                    )) is None:
+                        continue
+                    inv_ref.status_code = InvoiceReferenceStatus.CANCELLED.value
+
                 line_items = inv.payment_line_items
 
                 for line in line_items:
@@ -112,18 +124,22 @@ class EjvPaymentTask(CgiEjv):
                         # Credit to BCREG GL
                         line_number += 1
                         control_total += 1
+                        # If it's normal payment then the Line distribution goes as Credit,
+                        # else it goes as Debit as we need to debit the fund from BC registry GL.
                         account_jv = account_jv + cls.get_jv_line(batch_type, line_distribution, disbursement_desc,
                                                                   effective_date, flow_through, journal_name,
                                                                   line.total,
-                                                                  line_number, 'C')
+                                                                  line_number, 'C' if not is_jv_reversal else 'D')
 
                         # Debit from GOV ACCOUNT GL
                         line_number += 1
                         control_total += 1
+                        # If it's normal payment then the Gov account GL goes as Debit,
+                        # else it goes as Credit as we need to credit the fund back to ministry.
                         account_jv = account_jv + cls.get_jv_line(batch_type, debit_distribution, disbursement_desc,
                                                                   effective_date, flow_through, journal_name,
                                                                   line.total,
-                                                                  line_number, 'D')
+                                                                  line_number, 'D' if not is_jv_reversal else 'C')
                     if line.service_fees > 0:
                         total += line.service_fees
                         service_fee_distribution = cls.get_distribution_string(service_fee_distribution_code)
@@ -135,7 +151,7 @@ class EjvPaymentTask(CgiEjv):
                                                                   disbursement_desc,
                                                                   effective_date, flow_through, journal_name,
                                                                   line.service_fees,
-                                                                  line_number, 'C')
+                                                                  line_number, 'C' if not is_jv_reversal else 'D')
 
                         # Debit from GOV ACCOUNT GL
                         line_number += 1
@@ -143,7 +159,7 @@ class EjvPaymentTask(CgiEjv):
                         account_jv = account_jv + cls.get_jv_line(batch_type, debit_distribution, disbursement_desc,
                                                                   effective_date, flow_through, journal_name,
                                                                   line.service_fees,
-                                                                  line_number, 'D')
+                                                                  line_number, 'D' if not is_jv_reversal else 'C')
             batch_total += total
 
             # A JV header for each account.
@@ -194,9 +210,8 @@ class EjvPaymentTask(CgiEjv):
         # CREDIT : Distribution code against fee schedule
         # DEBIT : Distribution code against account.
         bc_reg_client_code = current_app.config.get('CGI_BCREG_CLIENT_CODE')  # 112 #TODO
-        account_ids: List[int] = []
         query = db.session.query(DistributionCodeModel.account_id) \
-            .filter(DistributionCodeModel.stop_ejv.is_(False)) \
+            .filter(DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None)) \
             .filter(DistributionCodeModel.account_id.isnot(None))
 
         if batch_type == 'GA':
@@ -210,11 +225,12 @@ class EjvPaymentTask(CgiEjv):
     @classmethod
     def _get_invoices_for_payment(cls, account_id: int) -> List[InvoiceModel]:
         """Return invoices for payments."""
+        valid_statuses = (InvoiceStatus.APPROVED.value, InvoiceStatus.REFUND_REQUESTED.value)
         invoice_ref_subquery = db.session.query(InvoiceReferenceModel.invoice_id). \
             filter(InvoiceReferenceModel.status_code.in_((InvoiceReferenceStatus.ACTIVE.value,)))
 
         invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
-            .filter(InvoiceModel.invoice_status_code.in_([InvoiceStatus.APPROVED.value])) \
+            .filter(InvoiceModel.invoice_status_code.in_(valid_statuses)) \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.EJV.value) \
             .filter(InvoiceModel.payment_account_id == account_id) \
             .filter(InvoiceModel.id.notin_(invoice_ref_subquery)) \

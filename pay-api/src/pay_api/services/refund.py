@@ -31,7 +31,6 @@ from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import Refund as RefundModel
-from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.queue_publisher import publish_response
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
@@ -40,6 +39,8 @@ from pay_api.utils.enums import (
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_local_formatted_date_time, get_str_by_path
+
+from .fas.routing_slip import RoutingSlipModel
 
 
 class RefundService:  # pylint: disable=too-many-instance-attributes
@@ -245,12 +246,11 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         refund.requested_date = datetime.now()
         refund.flush()
 
-        cls._process_cfs_refund(invoice)
-
         message = REFUND_SUCCESS_MESSAGES.get(f'{invoice.payment_method_code}.{invoice.invoice_status_code}')
 
+        cls._process_cfs_refund(invoice)
+
         # set invoice status
-        invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
         invoice.refund = invoice.total  # no partial refund
         invoice.save()
         return {'message': message}
@@ -263,8 +263,10 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
             payment.payment_status_code = PaymentStatus.REFUNDED.value
             payment.flush()
+            invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
         elif invoice.payment_method_code in (
                 [PaymentMethod.ONLINE_BANKING.value, PaymentMethod.PAD.value, PaymentMethod.CC.value]):
+            invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
             # Create credit memo in CFS if the invoice status is PAID.
             # Don't do anything is the status is APPROVED.
             if invoice.invoice_status_code == InvoiceStatus.APPROVED.value \
@@ -294,9 +296,15 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             payment_account.save()
 
         elif invoice.payment_method_code == PaymentMethod.INTERNAL.value:
-            if invoice.total == 0:
-                raise BusinessException(Error.NO_FEE_REFUND)
-            raise BusinessException(Error.ROUTING_SLIP_REFUND)
+            # Allow if the payment is done using new FAS system.
+            is_fas_payment = invoice.routing_slip and RoutingSlipModel.find_by_number(invoice.routing_slip)
+            if not is_fas_payment:
+                if invoice.total == 0:
+                    raise BusinessException(Error.NO_FEE_REFUND)
+
+                raise BusinessException(Error.ROUTING_SLIP_REFUND)
+        elif invoice.payment_method_code == PaymentMethod.EJV.value:
+            invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
         else:
             raise BusinessException(Error.INVALID_REQUEST)
 

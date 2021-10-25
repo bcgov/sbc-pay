@@ -210,8 +210,7 @@ async def reconcile_payments(msg: Dict[str, any]):
         else:
             # For any other transactions like DM log error and continue.
             logger.error('Record Type is received as %s, and cannot process %s.', record_type, msg)
-            capture_message('Record Type is received as {record_type}, and cannot process {msg}.'.format(
-                record_type=record_type, msg=msg), level='error')
+            capture_message(f'Record Type is received as {record_type}, and cannot process {msg}.', level='error')
             # Continue processing
 
         # Commit the transaction and process next row.
@@ -244,8 +243,8 @@ async def _process_consolidated_invoices(row):
             logger.debug('Fully PAID payment.')
             if not inv_references:
                 logger.error('No invoice found for %s in the system, and cannot process %s.', inv_number, row)
-                capture_message('No invoice found for {invoice_number} in the system, and cannot process {row}.'
-                                .format(invoice_number=inv_number, row=row), level='error')
+                capture_message(f'No invoice found for {inv_number} in the system, and cannot process {row}.',
+                                level='error')
                 return
             await _process_paid_invoices(inv_references, row)
             await _publish_mailer_events('PAD.PaymentSuccess', payment_account, row)
@@ -259,8 +258,7 @@ async def _process_consolidated_invoices(row):
         else:
             logger.error('Target Transaction Type is received as %s for PAD, and cannot process %s.', target_txn, row)
             capture_message(
-                'Target Transaction Type is received as {target_txn} for PAD, and cannot process.'.format(
-                    target_txn=target_txn), level='error')
+                f'Target Transaction Type is received as {target_txn} for PAD, and cannot process.', level='error')
 
 
 async def _process_unconsolidated_invoices(row):
@@ -287,8 +285,8 @@ async def _process_unconsolidated_invoices(row):
                 logger.error('More than one or none invoice reference received for invoice number %s for %s',
                              inv_number, record_type)
                 capture_message(
-                    'More than one or none invoice reference received for invoice number {inv_number} for {record_type}'
-                    .format(inv_number=inv_number, record_type=record_type), level='error')
+                    f'More than one or none invoice reference received for invoice number {inv_number} for '
+                    f'{record_type}', level='error')
         else:
             # Handle fully PAID and Partially Paid scenarios.
             if target_txn_status.lower() == Status.PAID.value.lower():
@@ -302,8 +300,8 @@ async def _process_unconsolidated_invoices(row):
                 logger.error('Target Transaction Type is received as %s for %s, and cannot process.',
                              target_txn, record_type)
                 capture_message(
-                    'Target Transaction Type is received as {target_txn} for {record_type}, and cannot process.'
-                    .format(target_txn=target_txn, record_type=record_type), level='error')
+                    f'Target Transaction Type is received as {target_txn} for {record_type}, and cannot process.',
+                    level='error')
 
 
 async def _process_credit_on_invoices(row):
@@ -326,8 +324,8 @@ async def _process_credit_on_invoices(row):
         else:
             logger.error('Target Transaction status is received as %s for CMAP, and cannot process.', target_txn_status)
             capture_message(
-                'Target Transaction status is received as {target_txn_status} for CMAP, and cannot process.'.format(
-                    target_txn_status=target_txn_status), level='error')
+                f'Target Transaction status is received as {target_txn_status} for CMAP, and cannot process.',
+                level='error')
 
 
 async def _process_paid_invoices(inv_references, row):
@@ -502,8 +500,8 @@ def _validate_account(inv: InvoiceModel, row: Dict[str, str]):
     cfs_account: CfsAccountModel = CfsAccountModel.find_by_id(inv.cfs_account_id)
     if (account_number := _get_row_value(row, Column.CUSTOMER_ACC)) != cfs_account.cfs_account:
         logger.error('Customer Account received as %s, but expected %s.', account_number, cfs_account.cfs_account)
-        capture_message('Customer Account received as {account_number}, but expected {cfs_account}.'.format(
-            account_number=account_number, cfs_account=cfs_account.cfs_account), level='error')
+        capture_message(f'Customer Account received as {account_number}, but expected {cfs_account.cfs_account}.',
+                        level='error')
 
         raise Exception('Invalid Account Number')
 
@@ -519,8 +517,8 @@ async def _publish_payment_event(inv: InvoiceModel):
     except Exception as e:  # NOQA pylint: disable=broad-except
         logger.error(e)
         logger.warning('Notification to Queue failed for the Payment Event - %s', payment_event_payload)
-        capture_message('Notification to Queue failed for the Payment Event {payment_event_payload}.'.format(
-            payment_event_payload=payment_event_payload), level='error')
+        capture_message(f'Notification to Queue failed for the Payment Event {payment_event_payload}.',
+                        level='error')
 
 
 async def _publish_mailer_events(message_type: str, pay_account: PaymentAccountModel, row: Dict[str, str]):
@@ -562,8 +560,8 @@ async def _publish_online_banking_mailer_events(rows: List[Dict[str, str]], paid
     queue_data = {
         'accountId': pay_account.auth_account_id,
         'paymentMethod': PaymentMethod.ONLINE_BANKING.value,
-        'amount': '{:.2f}'.format(paid_amount),
-        'creditAmount': '{:.2f}'.format(credit_amount)
+        'amount': '{:.2f}'.format(paid_amount),  # pylint: disable = consider-using-f-string
+        'creditAmount': '{:.2f}'.format(credit_amount)  # pylint: disable = consider-using-f-string
     }
 
     payload = {

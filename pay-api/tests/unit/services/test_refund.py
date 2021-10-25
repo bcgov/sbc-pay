@@ -44,16 +44,21 @@ def test_create_refund_for_unpaid_invoice(session):
     assert excinfo.type == BusinessException
 
 
-@pytest.mark.parametrize('payment_method, invoice_status, pay_status, has_reference', [
-    (PaymentMethod.PAD.value, InvoiceStatus.PAID.value, PaymentStatus.COMPLETED.value, True),
-    (PaymentMethod.PAD.value, InvoiceStatus.APPROVED.value, None, False),
-    (PaymentMethod.ONLINE_BANKING.value, InvoiceStatus.PAID.value, PaymentStatus.COMPLETED.value, True),
-    (PaymentMethod.DRAWDOWN.value, InvoiceStatus.PAID.value, PaymentStatus.COMPLETED.value, True),
-    (PaymentMethod.DIRECT_PAY.value, InvoiceStatus.PAID.value, PaymentStatus.COMPLETED.value, True),
-    (PaymentMethod.CC.value, InvoiceStatus.PAID.value, PaymentStatus.COMPLETED.value, True)
+@pytest.mark.parametrize('payment_method, invoice_status, pay_status, has_reference, expected_inv_status', [
+    (PaymentMethod.PAD.value, InvoiceStatus.PAID.value, PaymentStatus.COMPLETED.value, True,
+     InvoiceStatus.REFUNDED.value),
+    (PaymentMethod.PAD.value, InvoiceStatus.APPROVED.value, None, False, InvoiceStatus.REFUNDED.value),
+    (PaymentMethod.ONLINE_BANKING.value, InvoiceStatus.PAID.value, PaymentStatus.COMPLETED.value, True,
+     InvoiceStatus.REFUNDED.value),
+    (PaymentMethod.DRAWDOWN.value, InvoiceStatus.PAID.value, PaymentStatus.COMPLETED.value, True,
+     InvoiceStatus.REFUND_REQUESTED.value),
+    (PaymentMethod.DIRECT_PAY.value, InvoiceStatus.PAID.value, PaymentStatus.COMPLETED.value, True,
+     InvoiceStatus.REFUND_REQUESTED.value),
+    (PaymentMethod.CC.value, InvoiceStatus.PAID.value, PaymentStatus.COMPLETED.value, True,
+     InvoiceStatus.REFUNDED.value)
 ])
 def test_create_refund_for_paid_invoice(session, monkeypatch, payment_method, invoice_status, pay_status,
-                                        has_reference):
+                                        has_reference, expected_inv_status):
     """Assert that the create refund succeeds for paid invoices."""
     expected = REFUND_SUCCESS_MESSAGES[f'{payment_method}.{invoice_status}']
     payment_account = factory_payment_account()
@@ -80,7 +85,7 @@ def test_create_refund_for_paid_invoice(session, monkeypatch, payment_method, in
     message = RefundService.create_refund(invoice_id=i.id, request={'reason': 'Test'})
     i = InvoiceModel.find_by_id(i.id)
 
-    assert i.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
+    assert i.invoice_status_code == expected_inv_status
     assert message['message'] == expected
 
 
