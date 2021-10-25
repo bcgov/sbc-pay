@@ -53,10 +53,11 @@ class InternalPayService(PaymentSystemService, OAuthService):
         """Return a static invoice number."""
         current_app.logger.debug('<create_invoice')
         routing_slip = None
+        is_zero_dollar_invoice = invoice.total == 0
         if routing_slip_number := invoice.routing_slip:
             routing_slip = RoutingSlipModel.find_by_number(routing_slip_number)
             InternalPayService._validate_routing_slip(routing_slip, invoice)
-        if routing_slip is not None:
+        if not is_zero_dollar_invoice and routing_slip is not None:
             line_item_models: List[PaymentLineItemModel] = []
             for line_item in line_items:
                 line_item_models.append(PaymentLineItemModel.find_by_id(line_item.id))
@@ -156,11 +157,11 @@ class InternalPayService(PaymentSystemService, OAuthService):
             raise BusinessException(Error.RS_NOT_ACTIVE)
 
         if routing_slip.parent:
-            detail = f'This Routing slip is linked, enter the parent Routing slip:{routing_slip.parent.number}'
+            detail = f'This Routing slip is linked, enter the parent Routing slip: {routing_slip.parent.number}'
             raise BusinessException(InternalPayService._create_error_object('LINKED_ROUTING_SLIP', detail))
         if routing_slip.remaining_amount < invoice.total:
             detail = f'There is not enough balance in this Routing slip. ' \
-                     f'The current balance is :${routing_slip.remaining_amount:.2f}'
+                     f'The current balance is: ${routing_slip.remaining_amount:.2f}'
 
             raise BusinessException(InternalPayService.
                                     _create_error_object('INSUFFICIENT_BALANCE_IN_ROUTING_SLIP', detail))

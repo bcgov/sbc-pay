@@ -318,6 +318,31 @@ def test_payment_creation_with_routing_slip(session, client, jwt, app):
     assert schema_utils.validate(rv.json, 'invoice')[0]
 
 
+def test_zero_dollar_payment_creation_with_existing_routing_slip(client, jwt):
+    """Assert that the endpoint returns 201."""
+    claims = get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value, Role.STAFF.value, 'make_payment'])
+    token = jwt.create_jwt(claims, token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    payload = get_routing_slip_request()
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 201
+    rs_number = rv.json.get('number')
+
+    data = get_zero_dollar_payment_request()
+    data['accountInfo'] = {'routingSlip': rs_number}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('_links') is not None
+    total = rv.json.get('total')
+    rv = client.post('/api/v1/fas/routing-slips/queries', data=json.dumps({'routingSlipNumber': rs_number}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+
+    assert items[0].get('remainingAmount') == payload.get('payments')[0].get('paidAmount') - total
+
+
 @pytest.mark.parametrize('payment_requests', [
     get_payment_request(),
     get_payment_request_without_bn()

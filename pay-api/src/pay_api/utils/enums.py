@@ -53,6 +53,7 @@ class InvoiceStatus(Enum):
     SETTLEMENT_SCHEDULED = 'SETTLEMENT_SCHED'
     REFUND_REQUESTED = 'REFUND_REQUESTED'
     PARTIAL = 'PARTIAL_PAID'
+    REFUNDED = 'REFUNDED'
 
 
 class TransactionStatus(Enum):
@@ -194,6 +195,7 @@ class DisbursementStatus(Enum):
     ACKNOWLEDGED = 'ACKNOWLEDGED'
     ERRORED = 'ERRORED'
     COMPLETED = 'COMPLETED'
+    REVERSED = 'REVERSED'
 
 
 class Product(Enum):
