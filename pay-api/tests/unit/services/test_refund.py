@@ -80,7 +80,7 @@ def test_create_refund_for_paid_invoice(session, monkeypatch, payment_method, in
 
     factory_receipt(invoice_id=i.id).save()
 
-    monkeypatch.setattr('pay_api.services.refund.publish_response', lambda *args, **kwargs: None)
+    monkeypatch.setattr('pay_api.services.payment_transaction.publish_response', lambda *args, **kwargs: None)
 
     message = RefundService.create_refund(invoice_id=i.id, request={'reason': 'Test'})
     i = InvoiceModel.find_by_id(i.id)
@@ -108,7 +108,7 @@ def test_create_duplicate_refund_for_paid_invoice(session, monkeypatch):
     i.save()
 
     factory_receipt(invoice_id=i.id).save()
-    monkeypatch.setattr('pay_api.services.refund.publish_response', lambda *args, **kwargs: None)
+    monkeypatch.setattr('pay_api.services.payment_transaction.publish_response', lambda *args, **kwargs: None)
 
     RefundService.create_refund(invoice_id=i.id, request={'reason': 'Test'})
     i = InvoiceModel.find_by_id(i.id)
