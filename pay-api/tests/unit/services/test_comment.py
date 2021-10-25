@@ -47,15 +47,16 @@ def test_create_comment(session, monkeypatch):
 
     payment_account = factory_payment_account()
     payment_account.save()
-    rs = factory_routing_slip(payment_account_id=payment_account.id)
+    rs = factory_routing_slip(payment_account_id=payment_account.id, number='test_number')
     rs.save()
 
     CommentService.create(comment_value='test', rs_number=rs.number)
     result = CommentService.find_all_comments_for_a_routingslip(rs.number)
 
     assert result
-    assert len(result) == 1
-    assert result[0]['routing_slip_number'] == rs.number
+    comments = result.get('comments')
+    assert len(comments) == 1
+    assert comments[0].get('routing_slip_number') == rs.number
 
 
 def test_create_comment_invalid_case(session, monkeypatch):

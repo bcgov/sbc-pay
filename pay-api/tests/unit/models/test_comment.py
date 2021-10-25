@@ -42,5 +42,4 @@ def test_find_comment(session):
     )
 
     assert fetched_comment
-    assert fetched_comment[0].id == 1
     assert fetched_comment[0].routing_slip_number == rs.number

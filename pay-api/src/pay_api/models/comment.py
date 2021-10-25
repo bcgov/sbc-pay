@@ -53,7 +53,6 @@ class Comment(BaseModel):
     @classmethod
     def find_all_comments_for_a_routingslip(cls, routing_slip_number: str):
         """Find all comments specific to a routing slip."""
-
         query = db.session.query(Comment).filter(Comment.routing_slip_number == routing_slip_number)
         return query.all()
 
