@@ -70,6 +70,9 @@ class DirectPayService(PaymentSystemService, OAuthService):
         index: int = 0
         revenue_item = []
         for payment_line_item in payment_line_items:
+            if payment_line_item.total == 0:
+                continue
+
             distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
                 payment_line_item.fee_distribution_id)
 

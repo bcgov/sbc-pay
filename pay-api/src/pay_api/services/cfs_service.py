@@ -297,6 +297,8 @@ class CFSService(OAuthService):
         lines = []
         index: int = 0
         for line_item in payment_line_items:
+            if line_item.total == 0:
+                continue
             # Find the distribution from the above list
             distribution_code = [dist for dist in distribution_codes if
                                  dist.distribution_code_id == line_item.fee_distribution_id][0] \
