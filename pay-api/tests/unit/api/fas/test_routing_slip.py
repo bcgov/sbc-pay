@@ -440,3 +440,86 @@ def test_routing_slip_report(client, jwt, app):
 
     rv = client.post(f'/api/v1/fas/routing-slips/{datetime.now().strftime(DT_SHORT_FORMAT)}/reports', headers=headers)
     assert rv.status_code == 201
+
+
+@pytest.mark.parametrize('payload', [
+    get_routing_slip_request(
+        cheque_receipt_numbers=[('0001', PaymentMethod.CHEQUE.value, 100),
+                                ('0002', PaymentMethod.CHEQUE.value, 100),
+                                ('0003', PaymentMethod.CHEQUE.value, 100)
+                                ])
+])
+def test_create_comment_with_valid_routing_slips(client, jwt, payload):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 201
+    assert schema_utils.validate(rv.json, 'routing_slip')[0]
+
+    rv = client.post('/api/v1/fas/routing-slips/{}/comments'.format(rv.json.get('number')),
+                     data=json.dumps({'comment': 'test'}),
+                     headers=headers)
+    assert rv.status_code == 201
+
+
+def test_create_comment_with_invalid_routing_slips(client, jwt):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/fas/routing-slips/{}/comments'.format('invalid_routing_slip_number'),
+                     data=json.dumps({'comment': 'test'}),
+                     headers=headers)
+    assert rv.json.get('type') == 'FAS_INVALID_ROUTING_SLIP_NUMBER'
+    assert rv.status_code == 400
+
+
+@pytest.mark.parametrize('payload', [
+    get_routing_slip_request(
+        cheque_receipt_numbers=[('0001', PaymentMethod.CHEQUE.value, 100),
+                                ('0002', PaymentMethod.CHEQUE.value, 100),
+                                ('0003', PaymentMethod.CHEQUE.value, 100)
+                                ])
+])
+def test_create_comment_with_invalid_body_request(client, jwt, payload):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+
+    rv = client.post('/api/v1/fas/routing-slips/{}/comments'.format('invalid_routing_slip_number'),
+                     data=json.dumps({'comment_invalid': 'test'}),
+                     headers=headers)
+    assert rv.json.get('type') == 'INVALID_REQUEST'
+    assert rv.status_code == 400
+
+
+@pytest.mark.parametrize('payload', [
+    get_routing_slip_request(
+        cheque_receipt_numbers=[('0001', PaymentMethod.CHEQUE.value, 100),
+                                ('0002', PaymentMethod.CHEQUE.value, 100),
+                                ('0003', PaymentMethod.CHEQUE.value, 100)
+                                ])
+])
+def test_get_valid_and_invalid_comments(client, jwt, payload):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+
+    rs_number = rv.json.get('number')
+
+    rv = client.post('/api/v1/fas/routing-slips/{}/comments'.format(rs_number),
+                     data=json.dumps({'comment': 'test_1'}),
+                     headers=headers)
+    rv = client.post('/api/v1/fas/routing-slips/{}/comments'.format(rs_number),
+                     data=json.dumps({'comment': 'test_2'}),
+                     headers=headers)
+
+    rv = client.get('/api/v1/fas/routing-slips/{}/comments'.format(rs_number), headers=headers)
+    assert rv.status_code == 200
+    items = rv.json.get('comments')
+    assert len(items) == 2

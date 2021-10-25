@@ -132,22 +132,27 @@ class Comment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return d
 
     @classmethod
-    def find_all_comments_for_a_routingslip(cls, routing_slip_number: str) -> List[Comment]:
+    def find_all_comments_for_a_routingslip(cls, routing_slip_number: str):
         """Find comments for a routing slip."""
-        current_app.logger.debug('<find_all_comments_for_a_routingslip service')
+        current_app.logger.debug('<Comment.get.service')
         routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(routing_slip_number)
-        comments: List[CommentModel] = None
-        if routing_slip:
-            comment_schema = CommentSchema()
-            result = CommentModel.find_all_comments_for_a_routingslip(routing_slip.number)
-            comments = comment_schema.dump(result, many=True)
-        current_app.logger.debug('find_all_comments_for_a_routingslip service>')
-        return comments
+
+        if routing_slip is None:
+            raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
+
+        comments_dao = CommentModel.find_all_comments_for_a_routingslip(routing_slip.number)
+        comments = CommentSchema().dump(comments_dao, many=True)
+        data = {
+            'comments': comments
+        }
+
+        current_app.logger.debug('>Comment.get.service')
+        return data
 
     @classmethod
     def create(cls, comment_value: str, rs_number: str):
         """Create routing slip comment."""
-        current_app.logger.debug('<Creating Comment record service')
+        current_app.logger.debug('<Comment.create.service')
         routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(number=rs_number)
         if routing_slip is None:
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
@@ -161,5 +166,6 @@ class Comment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         comment_service.flush()
 
         comment_service.commit()
-        current_app.logger.debug('Creating Comment record service>')
+        current_app.logger.debug('>Comment.create.service')
         return comment_service.asdict()
+

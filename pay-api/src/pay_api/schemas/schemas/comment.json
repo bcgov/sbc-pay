@@ -4,7 +4,6 @@
   "type": "object",
   "title": "Comment",
   "required": [
-    "routingSlipId",
     "comment"
   ],
   "properties": {
@@ -17,10 +16,6 @@
       ],
       "pattern": "^(.*)$"
     },
-    "routingSlipId": {
-      "$id": "#/properties/routingSlipId",
-      "type": "number",
-      "title": "Routing Slip Id"
-    }
+    "additionalProperties": true
   }
 }
