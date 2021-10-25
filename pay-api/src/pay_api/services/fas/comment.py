@@ -36,7 +36,7 @@ class Comment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self._comment: str = None
         self._timestamp: datetime = None
         self._routing_slip_number: str = None
-        self._submitter_display_name: str = None
+        self._submitter_name: str = None
 
     @property
     def _dao(self):
@@ -51,7 +51,7 @@ class Comment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self.comment: str = self._dao.comment
         self.timestamp: datetime = self._dao.timestamp
         self.routing_slip_number: str = self._dao.routing_slip_number
-        self.submitter_display_name: str = self._dao.submitter_display_name
+        self.submitter_name: str = self._dao.submitter_name
 
     @property
     def id(self):
@@ -98,15 +98,15 @@ class Comment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self._dao.routing_slip_number = value
 
     @property
-    def submitter_display_name(self):
+    def submitter_name(self):
         """Return the submitted by staff user name."""
-        return self._submitter_display_name
+        return self._submitter_name
 
-    @submitter_display_name.setter
-    def submitter_display_name(self, value: str):
+    @submitter_name.setter
+    def submitter_name(self, value: str):
         """Set the submitted by staff user name."""
-        self._submitter_display_name = value
-        self._dao.submitter_display_name = value
+        self._submitter_name = value
+        self._dao.submitter_name = value
 
     def commit(self):
         """Save the information to the DB."""

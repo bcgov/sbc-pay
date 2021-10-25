@@ -442,19 +442,12 @@ def test_routing_slip_report(client, jwt, app):
     assert rv.status_code == 201
 
 
-@pytest.mark.parametrize('payload', [
-    get_routing_slip_request(
-        cheque_receipt_numbers=[('0001', PaymentMethod.CHEQUE.value, 100),
-                                ('0002', PaymentMethod.CHEQUE.value, 100),
-                                ('0003', PaymentMethod.CHEQUE.value, 100)
-                                ])
-])
-def test_create_comment_with_valid_routing_slips(client, jwt, payload):
+def test_create_comment_with_valid_routing_slips(client, jwt):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(get_routing_slip_request()), headers=headers)
     assert rv.status_code == 201
     assert schema_utils.validate(rv.json, 'routing_slip')[0]
 
@@ -476,18 +469,11 @@ def test_create_comment_with_invalid_routing_slips(client, jwt):
     assert rv.status_code == 400
 
 
-@pytest.mark.parametrize('payload', [
-    get_routing_slip_request(
-        cheque_receipt_numbers=[('0001', PaymentMethod.CHEQUE.value, 100),
-                                ('0002', PaymentMethod.CHEQUE.value, 100),
-                                ('0003', PaymentMethod.CHEQUE.value, 100)
-                                ])
-])
-def test_create_comment_with_invalid_body_request(client, jwt, payload):
+def test_create_comment_with_invalid_body_request(client, jwt):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(get_routing_slip_request()), headers=headers)
 
     rv = client.post('/api/v1/fas/routing-slips/{}/comments'.format('invalid_routing_slip_number'),
                      data=json.dumps({'comment_invalid': 'test'}),
@@ -496,19 +482,12 @@ def test_create_comment_with_invalid_body_request(client, jwt, payload):
     assert rv.status_code == 400
 
 
-@pytest.mark.parametrize('payload', [
-    get_routing_slip_request(
-        cheque_receipt_numbers=[('0001', PaymentMethod.CHEQUE.value, 100),
-                                ('0002', PaymentMethod.CHEQUE.value, 100),
-                                ('0003', PaymentMethod.CHEQUE.value, 100)
-                                ])
-])
-def test_get_valid_comments(client, jwt, payload):
+def test_get_valid_comments(client, jwt):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(get_routing_slip_request()), headers=headers)
 
     rs_number = rv.json.get('number')
 

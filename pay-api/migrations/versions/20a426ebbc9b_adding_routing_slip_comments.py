@@ -1,8 +1,8 @@
 """adding_routing_slip_comments
 
-Revision ID: db40bb37a30c
-Revises: 999f11310f30
-Create Date: 2021-10-23 00:03:45.881835
+Revision ID: 20a426ebbc9b
+Revises: 4cb0dc8e0013
+Create Date: 2021-10-25 14:02:06.208386
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'db40bb37a30c'
-down_revision = '999f11310f30'
+revision = '20a426ebbc9b'
+down_revision = '4cb0dc8e0013'
 branch_labels = None
 depends_on = None
 
@@ -23,7 +23,7 @@ def upgrade():
     sa.Column('comment', sa.String(length=4096), nullable=True),
     sa.Column('timestamp', sa.DateTime(timezone=True), nullable=True),
     sa.Column('routing_slip_number', sa.String(), nullable=True),
-    sa.Column('submitter_display_name', sa.String(length=50), nullable=False),
+    sa.Column('submitter_name', sa.String(length=50), nullable=False),
     sa.ForeignKeyConstraint(['routing_slip_number'], ['routing_slips.number'], ),
     sa.PrimaryKeyConstraint('id')
     )

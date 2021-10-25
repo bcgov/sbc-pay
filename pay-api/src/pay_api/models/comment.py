@@ -40,9 +40,9 @@ class Comment(BaseModel):
     routing_slip = relationship(RoutingSlip, foreign_keys=[routing_slip_number], lazy='select', innerjoin=True)
 
     @declared_attr
-    def submitter_display_name(self):  # pylint:disable=no-self-argument, # noqa: N805
+    def submitter_name(self):  # pylint:disable=no-self-argument, # noqa: N805
         """Return created by."""
-        return db.Column('submitter_display_name', db.String(50), nullable=False, default=self._get_user_name)
+        return db.Column('submitter_name', db.String(50), nullable=False, default=self._get_user_name)
 
     @staticmethod
     @user_context
