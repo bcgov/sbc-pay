@@ -1,4 +1,4 @@
-from admin.views.fee_code import FeeCodeConfig, FeeCode
+from admin.views.fee_code import FeeCode, FeeCodeConfig
 
 
 def test_fee_codee_columns(db):

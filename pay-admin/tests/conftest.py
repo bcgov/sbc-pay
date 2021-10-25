@@ -1,17 +1,18 @@
-import os
-import time
+"""Conf test.
 
+Fixtures for testing.
+"""
 import pytest
-from sqlalchemy import engine_from_config
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope='function')
 def clean_db():
+    """Clean DB."""
     from flask_sqlalchemy import SQLAlchemy
-    from admin import create_app
 
-    from tests.fake_oidc import FakeOidc
+    from admin import create_app
     from admin.keycloak import Keycloak
+    from tests.fake_oidc import FakeOidc
 
     Keycloak._oidc = FakeOidc()
     app, admin = create_app(run_mode='testing')
@@ -21,7 +22,8 @@ def clean_db():
     return db
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope='function')
 def db(clean_db):
+    """DB."""
     yield clean_db
     clean_db.session.close()
