@@ -715,7 +715,7 @@ def get_routing_slip_request(
 
 def factory_comments(routing_slip_number: str, username: str = 'comment_user', comment: str = 'test_comment'):
     """Return a routing slip request dictionary."""
-    comment = Comment(submitter_display_name=username,
+    comment = Comment(submitter_name=username,
                       routing_slip_number=routing_slip_number,
                       comment=comment
                       )
