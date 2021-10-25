@@ -234,11 +234,14 @@ class RoutingSlipComment(Resource):
     def get(routing_slip_number: str):
         """Get comments for a slip."""
         current_app.logger.info('<Comment.get.request')
-        response = CommentService.find_all_comments_for_a_routingslip(routing_slip_number)
-        if response:
-            status = HTTPStatus.OK
-        else:
-            response, status = {}, HTTPStatus.NO_CONTENT
+        try:
+            response = CommentService.find_all_comments_for_a_routingslip(routing_slip_number)
+            if response:
+                status = HTTPStatus.OK
+            else:
+                response, status = {}, HTTPStatus.NO_CONTENT
+        except (BusinessException, ServiceUnavailableException) as exception:
+            return exception.response()
 
         current_app.logger.debug('>Comment.get.request')
         return jsonify(response), status

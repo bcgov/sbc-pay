@@ -503,8 +503,8 @@ def test_create_comment_with_invalid_body_request(client, jwt, payload):
                                 ('0003', PaymentMethod.CHEQUE.value, 100)
                                 ])
 ])
-def test_get_valid_and_invalid_comments(client, jwt, payload):
-    """Assert that the endpoint returns 201."""
+def test_get_valid_comments(client, jwt, payload):
+    """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
@@ -523,3 +523,17 @@ def test_get_valid_and_invalid_comments(client, jwt, payload):
     assert rv.status_code == 200
     items = rv.json.get('comments')
     assert len(items) == 2
+
+    rv = client.get('/api/v1/fas/routing-slips/{}/comments'.format('invalid'), headers=headers)
+    assert rv.json.get('type') == 'FAS_INVALID_ROUTING_SLIP_NUMBER'
+    assert rv.status_code == 400
+
+
+def test_get_invalid_comments(client, jwt):
+    """Assert that the endpoint returns 400 based on conditions."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.get('/api/v1/fas/routing-slips/{}/comments'.format('invalid'), headers=headers)
+    assert rv.status_code == 400
+    assert rv.json.get('type') == 'FAS_INVALID_ROUTING_SLIP_NUMBER'

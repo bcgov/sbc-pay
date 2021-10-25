@@ -19,15 +19,14 @@ Test-Suite to ensure that the Comment Model Class is working as expected.
 from faker import Faker
 
 from pay_api.models import Comment as CommentModel
-from tests.utilities.base_test import factory_payment_account, factory_routing_slip, factory_comments
+from tests.utilities.base_test import factory_comments, factory_payment_account, factory_routing_slip
 
 
 fake = Faker()
 
 
 def test_find_comment(session):
-    """Assert a comment is stored and fetched
-    """
+    """Assert a comment is stored and fetched."""
     # Create a payment account and routing slip and then a comment record
 
     payment_account = factory_payment_account()
