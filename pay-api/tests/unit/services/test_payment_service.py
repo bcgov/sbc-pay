@@ -16,19 +16,20 @@
 
 Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
-
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
+from requests import Response
 from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount
+from pay_api.services import CFSService
 from pay_api.services.payment_service import PaymentService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
-    factory_payment_transaction, get_auth_basic_user, get_auth_premium_user, get_payment_request,
+    factory_payment_transaction, factory_routing_slip, get_auth_basic_user, get_auth_premium_user, get_payment_request,
     get_payment_request_with_payment_method, get_payment_request_with_service_fees, get_zero_dollar_payment_request)
 
 
@@ -121,6 +122,29 @@ def test_create_zero_dollar_payment_record(session, public_user_mock):
     account_model = PaymentAccount.find_by_auth_account_id(get_auth_basic_user().get('account').get('id'))
     assert account_id == account_model.id
     assert payment_response.get('status_code') == 'COMPLETED'
+
+
+def test_create_payment_record_with_rs(session, public_user_mock):
+    """Assert that the payment records are created and completed."""
+    payment_account = factory_payment_account()
+    payment_account.save()
+    rs = factory_routing_slip(payment_account_id=payment_account.id, total=1000, remaining_amount=1000)
+    rs.save()
+    cfs_response = Mock(spec=Response)
+    cfs_response.json.return_value = {'invoice_number': 'abcde', }
+    cfs_response.status_code = 200
+
+    request = get_payment_request()
+    request['accountInfo'] = {'routingSlip': rs.number}
+    with patch.object(CFSService, 'create_account_invoice', return_value=cfs_response) as mock_post:
+        PaymentService.create_invoice(request, get_auth_basic_user())
+        mock_post.assert_called()
+
+    request = get_zero_dollar_payment_request()
+    request['accountInfo'] = {'routingSlip': rs.number}
+    with patch.object(CFSService, 'create_account_invoice', return_value=cfs_response) as mock_post:
+        PaymentService.create_invoice(request, get_auth_basic_user())
+        mock_post.assert_not_called()
 
 
 def test_delete_payment(session, auth_mock, public_user_mock):
