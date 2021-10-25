@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/comment_bcrs_schema",
+  "type": "object",
+  "title": "Comment Bcrs Schema",
+  "required": [
+    "comment"
+  ],
+  "properties": {
+    "comment":{
+        "$id":"#/properties/comment",
+        "type":"object",
+        "title":"Comment",
+        "description":"Comment Schema object.",
+        "default":{
+
+        },
+        "examples":[
+           {
+              "comment":"test"
+           }
+        ],
+        "required":[
+          "comment"
+        ],
+        "properties":{
+           "comment":{
+              "$id":"#/properties/dateFilter/properties/comment",
+              "type":"string",
+              "title":"comment",
+              "description":"comment of a slip.",
+              "default":"",
+              "examples":[
+                 "test"
+              ]
+           }
+        },
+      "additionalProperties": true
+     },
+    "additionalProperties": true
+  }
+}

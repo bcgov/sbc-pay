@@ -482,6 +482,68 @@ def test_create_comment_with_invalid_body_request(client, jwt):
     assert rv.status_code == 400
 
 
+def test_create_comment_with_valid_comment_schema(client, jwt):
+    """Assert that the endpoint returns 201 for valid comment schema."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(get_routing_slip_request()), headers=headers)
+    assert rv.status_code == 201
+    assert schema_utils.validate(rv.json, 'routing_slip')[0]
+
+    rv = client.post('/api/v1/fas/routing-slips/{}/comments'.format(rv.json.get('number')),
+                     data=json.dumps({'comment': 'test'}),
+                     headers=headers)
+    assert rv.status_code == 201
+
+
+def test_create_comment_with_invalid_comment_schema(client, jwt):
+    """Assert that the endpoint returns 400 for invalid comment schema."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(get_routing_slip_request()), headers=headers)
+    assert rv.status_code == 201
+    assert schema_utils.validate(rv.json, 'routing_slip')[0]
+
+    rv = client.post('/api/v1/fas/routing-slips/{}/comments'.format(rv.json.get('number')),
+                     data=json.dumps({'test': 'test'}),
+                     headers=headers)
+    assert rv.json.get('type') == 'INVALID_REQUEST'
+    assert rv.status_code == 400
+
+
+def test_create_comment_with_valid_comment_bcrs_schema(client, jwt):
+    """Assert that the endpoint returns 201 for valid comment schema."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(get_routing_slip_request()), headers=headers)
+    assert rv.status_code == 201
+    assert schema_utils.validate(rv.json, 'routing_slip')[0]
+
+    rv = client.post('/api/v1/fas/routing-slips/{}/comments'.format(rv.json.get('number')),
+                     data=json.dumps({'comment': {'businessId': 'test', 'comment': 'test'}}),
+                     headers=headers)
+    assert rv.status_code == 201
+
+
+def test_create_comment_with_invalid_comment_bcrs_schema(client, jwt):
+    """Assert that the endpoint returns 201 for valid comment schema."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(get_routing_slip_request()), headers=headers)
+    assert rv.status_code == 201
+    assert schema_utils.validate(rv.json, 'routing_slip')[0]
+
+    rv = client.post('/api/v1/fas/routing-slips/{}/comments'.format(rv.json.get('number')),
+                     data=json.dumps({'comment': {'businessId': 'test'}}),
+                     headers=headers)
+    assert rv.json.get('type') == 'INVALID_REQUEST'
+    assert rv.status_code == 400
+
+
 def test_get_valid_comments(client, jwt):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)

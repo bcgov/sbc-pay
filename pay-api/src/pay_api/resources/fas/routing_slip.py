@@ -213,14 +213,19 @@ class RoutingSlipComment(Resource):
         current_app.logger.info('<Comment.post.request')
         request_json = request.get_json()
         # Validate payload.
-        valid_format, errors = schema_utils.validate(request_json, 'comment')
-        if not valid_format:
-            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
-
         try:
-            comment = request_json.get('comment')
-            response, status = \
-                CommentService.create(comment_value=comment, rs_number=routing_slip_number), HTTPStatus.CREATED
+            valid_format, errors = schema_utils.validate(request_json, 'comment')
+            if valid_format:
+                comment = request_json.get('comment')
+            else:
+                valid_format, errors = schema_utils.validate(request_json, 'comment_bcrs_schema')
+                if valid_format:
+                    comment = request_json.get('comment').get('comment')
+                else:
+                    return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+            if comment:
+                response, status = \
+                    CommentService.create(comment_value=comment, rs_number=routing_slip_number), HTTPStatus.CREATED
         except (BusinessException, ServiceUnavailableException) as exception:
             return exception.response()
 
