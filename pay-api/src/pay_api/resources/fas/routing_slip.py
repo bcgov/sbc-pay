@@ -19,8 +19,8 @@ from flask_restx import Namespace, Resource, cors
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException, error_to_response
 from pay_api.schemas import utils as schema_utils
-from pay_api.services.fas import RoutingSlipService
-from pay_api.utils.auth import jwt as _jwt
+from pay_api.services.fas import RoutingSlipService, CommentService
+from pay_api.utils.auth import jwt as _jwt  # noqa: I005
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.trace import tracing as _tracing
@@ -196,4 +196,52 @@ class RoutingSlipLinks(Resource):
             return exception.response()
 
         current_app.logger.debug('>RoutingSlipLink.post')
+        return jsonify(response), status
+
+
+@cors_preflight('POST')
+@API.route('/<string:routing_slip_number>/comments', methods=['POST', 'GET', 'OPTIONS'])
+class RoutingSlipComment(Resource):
+    """Endpoint resource to create/get comments for routing slips."""
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.has_one_of_roles([Role.FAS_VIEW.value])
+    @_tracing.trace()
+    def post(routing_slip_number: str):
+        """Create comment for a slip."""
+        current_app.logger.info('<Comment.post.request')
+        request_json = request.get_json()
+        # Validate payload.
+        valid_format, errors = schema_utils.validate(request_json, 'comment')
+        if not valid_format:
+            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+
+        try:
+            comment = request_json.get('comment')
+            response, status = \
+                CommentService.create(comment_value=comment, rs_number=routing_slip_number), HTTPStatus.CREATED
+        except (BusinessException, ServiceUnavailableException) as exception:
+            return exception.response()
+
+        current_app.logger.debug('>Comment.post.request')
+        return jsonify(response), status
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.has_one_of_roles([Role.FAS_VIEW.value])
+    @_tracing.trace()
+    def get(routing_slip_number: str):
+        """Get comments for a slip."""
+        current_app.logger.info('<Comment.get.request')
+        try:
+            response = CommentService.find_all_comments_for_a_routingslip(routing_slip_number)
+            if response:
+                status = HTTPStatus.OK
+            else:
+                response, status = {}, HTTPStatus.NO_CONTENT
+        except (BusinessException, ServiceUnavailableException) as exception:
+            return exception.response()
+
+        current_app.logger.debug('>Comment.get.request')
         return jsonify(response), status
