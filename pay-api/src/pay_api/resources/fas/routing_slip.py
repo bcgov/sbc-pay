@@ -20,7 +20,7 @@ from flask_restx import Namespace, Resource, cors
 from pay_api.exceptions import BusinessException, ServiceUnavailableException, error_to_response
 from pay_api.schemas import utils as schema_utils
 from pay_api.services.fas import RoutingSlipService, CommentService
-from pay_api.utils.auth import jwt as _jwt
+from pay_api.utils.auth import jwt as _jwt  # noqa: I005
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.trace import tracing as _tracing
