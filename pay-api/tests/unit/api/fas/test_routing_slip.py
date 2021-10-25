@@ -502,6 +502,8 @@ def test_get_valid_comments(client, jwt):
     assert rv.status_code == 200
     items = rv.json.get('comments')
     assert len(items) == 2
+    assert items[0].get('comment') == 'test_2'
+    assert items[1].get('comment') == 'test_1'
 
     rv = client.get('/api/v1/fas/routing-slips/{}/comments'.format('invalid'), headers=headers)
     assert rv.json.get('type') == 'FAS_INVALID_ROUTING_SLIP_NUMBER'
