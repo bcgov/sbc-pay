@@ -455,6 +455,7 @@ def test_create_comment_with_valid_routing_slips(client, jwt):
                      data=json.dumps({'comment': 'test'}),
                      headers=headers)
     assert rv.status_code == 201
+    assert rv.json.get('submitterDisplayName')
 
 
 def test_create_comment_with_invalid_routing_slips(client, jwt):
@@ -495,6 +496,7 @@ def test_create_comment_with_valid_comment_schema(client, jwt):
                      data=json.dumps({'comment': 'test'}),
                      headers=headers)
     assert rv.status_code == 201
+    assert rv.json.get('submitterDisplayName')
 
 
 def test_create_comment_with_invalid_comment_schema(client, jwt):
@@ -526,6 +528,7 @@ def test_create_comment_with_valid_comment_bcrs_schema(client, jwt):
                      data=json.dumps({'comment': {'businessId': 'test', 'comment': 'test'}}),
                      headers=headers)
     assert rv.status_code == 201
+    assert rv.json.get('submitterDisplayName')
 
 
 def test_create_comment_with_invalid_comment_bcrs_schema(client, jwt):
@@ -566,6 +569,8 @@ def test_get_valid_comments(client, jwt):
     assert len(items) == 2
     assert items[0].get('comment') == 'test_2'
     assert items[1].get('comment') == 'test_1'
+    assert items[0].get('submitterDisplayName')
+    assert items[1].get('submitterDisplayName')
 
     rv = client.get('/api/v1/fas/routing-slips/{}/comments'.format('invalid'), headers=headers)
     assert rv.json.get('type') == 'FAS_INVALID_ROUTING_SLIP_NUMBER'

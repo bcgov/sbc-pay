@@ -70,4 +70,4 @@ class CommentSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         exclude = ['routing_slip']
 
     routing_slip_number = fields.String(data_key='routing_slip_number')
-    submitter_display_name = fields.String(data_key='submitter_name')
+    submitter_name = fields.String(data_key="submitter_display_name")
