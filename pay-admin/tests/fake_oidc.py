@@ -5,6 +5,8 @@ Create a fake OIDC object for testing.
 
 
 class FakeOidc:
+    """Fake OIDC class."""
+
     user_loggedin = True
 
     def user_getfield(self, key):
@@ -12,7 +14,7 @@ class FakeOidc:
         return 'Joe'
 
     def user_role(self):
-        """Get user role"""
+        """Get user role."""
         return
 
     def has_access(self):
