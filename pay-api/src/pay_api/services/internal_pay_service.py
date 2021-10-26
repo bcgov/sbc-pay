@@ -23,20 +23,22 @@ from typing import List
 from flask import current_app
 
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import RoutingSlip as RoutingSlipModel
+from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import PaymentMethod, PaymentSystem, RoutingSlipStatus
+from pay_api.utils.enums import PaymentMethod, PaymentStatus, PaymentSystem, RoutingSlipStatus
 from pay_api.utils.util import generate_transaction_number
 
-from .oauth_service import OAuthService
-from .payment_line_item import PaymentLineItem
 from ..exceptions import BusinessException
 from ..utils.errors import Error
+from .oauth_service import OAuthService
+from .payment_line_item import PaymentLineItem
 
 
 class InternalPayService(PaymentSystemService, OAuthService):
@@ -116,6 +118,27 @@ class InternalPayService(PaymentSystemService, OAuthService):
             }
         )
         transaction.update_transaction(transaction.id, pay_response_url=None)
+
+    def process_cfs_refund(self, invoice: InvoiceModel):
+        """Process refund in CFS."""
+        # TODO handle Routing Slip refund CAS integration here
+        if invoice.total == 0:
+            raise BusinessException(Error.NO_FEE_REFUND)
+
+        # find if its a routing slip refund
+        # if yes -> check existing one or legacy
+        # if yes , add money back to rs after refunding
+
+        if (routing_slip_number := invoice.routing_slip) is None:
+            raise BusinessException(Error.INVALID_REQUEST)
+        # TODO Add cfs refund here
+        payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
+        payment.payment_status_code = PaymentStatus.REFUNDED.value
+        payment.flush()
+        # if not legacy routing slip , add the total back to routing slip
+        if routing_slip := RoutingSlipModel.find_by_number(routing_slip_number):
+            routing_slip.remaining_amount += decimal.Decimal(invoice.total)
+            routing_slip.flush()
 
     @staticmethod
     def _validate_routing_slip(routing_slip: RoutingSlipModel, invoice: Invoice):

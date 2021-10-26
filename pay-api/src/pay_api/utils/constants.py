@@ -58,5 +58,6 @@ REFUND_SUCCESS_MESSAGES = {
     'DRAWDOWN.PAID': 'Your transaction has been cancelled and a refund has been requested.',
     'ROUTINGSLIP.REFUND_AUTHORIZED': 'Routing slip refund has been authorised.',
     'ROUTINGSLIP.REFUND_REQUESTED': 'Routing slip refund is requested.',
-    'ROUTINGSLIP.ACTIVE': 'Routing slip is active.'
+    'ROUTINGSLIP.ACTIVE': 'Routing slip is active.',
+    'INTERNAL.PAID': 'Your transaction has been cancelled and a refund has been requested.'
 }

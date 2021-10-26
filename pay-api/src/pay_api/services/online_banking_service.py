@@ -18,6 +18,7 @@ from typing import Any, Dict
 from flask import current_app
 
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
@@ -65,3 +66,7 @@ class OnlineBankingService(PaymentSystemService, CFSService):
         """Adjust the invoice to zero."""
         current_app.logger.debug('<cancel_invoice %s, %s', payment_account, inv_number)
         self.reverse_invoice(inv_number)
+
+    def process_cfs_refund(self, invoice: InvoiceModel):
+        """Process refund in CFS."""
+        super()._refund_and_create_credit_memo(invoice)

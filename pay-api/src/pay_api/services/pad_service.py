@@ -17,6 +17,7 @@ from typing import Any, Dict
 from flask import current_app
 
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
@@ -104,3 +105,7 @@ class PadService(PaymentSystemService, CFSService):
         """Complete any post invoice activities if needed."""
         # Publish message to the queue with payment token, so that they can release records on their side.
         self._release_payment(invoice=invoice)
+
+    def process_cfs_refund(self, invoice: InvoiceModel):
+        """Process refund in CFS."""
+        super()._refund_and_create_credit_memo(invoice)
