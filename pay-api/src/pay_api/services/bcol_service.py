@@ -20,8 +20,6 @@ from flask import current_app
 from requests.exceptions import HTTPError
 
 from pay_api.exceptions import BusinessException, Error
-from pay_api.models import Invoice as InvoiceModel
-from pay_api.models import Payment as PaymentModel
 from pay_api.models.corp_type import CorpType
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentStatus
 from pay_api.utils.enums import PaymentSystem as PaySystemCode
@@ -29,6 +27,8 @@ from pay_api.utils.errors import get_bcol_error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import generate_transaction_number
 
+from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import Payment as PaymentModel
 from .base_payment_system import PaymentSystemService
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference

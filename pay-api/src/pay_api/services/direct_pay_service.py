@@ -34,7 +34,6 @@ from ..utils.paybc_transaction_error_message import PAYBC_TRANSACTION_ERROR_MESS
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
-
 PAYBC_DATE_FORMAT = '%Y-%m-%d'
 PAYBC_REVENUE_SEPARATOR = '|'
 DECIMAL_PRECISION = '.2f'
