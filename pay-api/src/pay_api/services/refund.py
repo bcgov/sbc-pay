@@ -32,8 +32,6 @@ from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_str_by_path
 
-from .fas.routing_slip import RoutingSlipModel
-
 
 class RefundService:  # pylint: disable=too-many-instance-attributes
     """Service to hold and manage refund instance."""
@@ -237,18 +235,13 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         refund.requested_by = kwargs['user'].user_name
         refund.requested_date = datetime.now()
         refund.flush()
-
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
             payment_method=invoice.payment_method_code
         )
         pay_system_service.process_cfs_refund(invoice)
-
-
         message = REFUND_SUCCESS_MESSAGES.get(f'{invoice.payment_method_code}.{invoice.invoice_status_code}')
-
-     
         # set invoice status
+        invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
         invoice.refund = invoice.total  # no partial refund
         invoice.save()
         return {'message': message}
-      
