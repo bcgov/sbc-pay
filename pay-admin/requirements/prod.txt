@@ -10,4 +10,4 @@ requests
 requests-futures
 wtforms
 Werkzeug<2
--e git+https://github.com/bcgov/sbc-pay.git@main#egg=pay-api&subdirectory=pay-api
+sqlalchemy<1.4
