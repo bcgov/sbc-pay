@@ -242,6 +242,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         pay_system_service.process_cfs_refund(invoice)
 
         # set invoice status
+        invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
         invoice.refund = invoice.total  # no partial refund
         invoice.save()
         return {'message': message}

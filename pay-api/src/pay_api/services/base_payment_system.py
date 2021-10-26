@@ -171,7 +171,6 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice.payment_account_id)
         payment_account.credit = (payment_account.credit or 0) + invoice.total
         payment_account.flush()
-        invoice.flush()
 
     @staticmethod
     def _publish_refund_to_mailer(invoice: InvoiceModel):

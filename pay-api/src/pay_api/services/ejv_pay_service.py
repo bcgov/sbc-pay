@@ -21,7 +21,6 @@ from datetime import datetime
 from flask import current_app
 
 from pay_api.services.base_payment_system import PaymentSystemService
-from pay_api.models import Invoice as InvoiceModel
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
@@ -57,11 +56,6 @@ class EjvPayService(PaymentSystemService, OAuthService):
             invoice_reference = InvoiceReference.create(invoice.id, generate_transaction_number(invoice.id), None)
         # else Do nothing here as the invoice references are created later.
         return invoice_reference
-
-    def process_cfs_refund(self, invoice: InvoiceModel):
-        """Process refund for EJV."""
-        invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
-        invoice.flush()
 
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""

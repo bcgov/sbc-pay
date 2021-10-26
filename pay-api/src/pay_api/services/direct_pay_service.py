@@ -27,7 +27,7 @@ from pay_api.services.hashing import HashingService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem
+from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentStatus, PaymentSystem
 from pay_api.utils.util import current_local_time, generate_transaction_number, parse_url_params
 
 from ..utils.paybc_transaction_error_message import PAYBC_TRANSACTION_ERROR_MESSAGE_DICT
@@ -146,8 +146,6 @@ class DirectPayService(PaymentSystemService, OAuthService):
         payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
         payment.payment_status_code = PaymentStatus.REFUNDED.value
         payment.flush()
-        invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
-        invoice.flush()
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Get the receipt details by calling PayBC web service."""
