@@ -16,9 +16,13 @@
 
 Test-Suite to ensure that the Routing slip Service is working as expected.
 """
+from datetime import datetime
+from typing import Dict
 
+from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.services.fas.routing_slip import RoutingSlip as RoutingSlip_service
-from pay_api.utils.enums import RoutingSlipStatus
+from pay_api.utils.constants import DT_SHORT_FORMAT
+from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, RoutingSlipStatus
 from tests.utilities.base_test import factory_payment_account, factory_routing_slip
 
 
@@ -50,3 +54,26 @@ def test_get_links(session):
     parent_rs_from_search = results.get('items')[0]
     assert parent_rs_from_search.get('remaining_amount') == child_rs.remaining_amount + parent_rs.remaining_amount
     assert parent_rs_from_search.get('total') == parent_rs.total
+
+
+def test_create_routing_slip(session, staff_user_mock):
+    """Create a routing slip."""
+    routing_slip_payload: Dict[str, any] = {
+        'number': '1234567890',
+        'routingSlipDate': datetime.now().strftime(DT_SHORT_FORMAT),
+        'paymentAccount': {
+            'accountName': 'TEST'
+        },
+        'payments': [{
+            'paymentMethod': PaymentMethod.CHEQUE.value,
+            'paymentDate': datetime.now().strftime(DT_SHORT_FORMAT),
+            'chequeReceiptNumber': '123',
+            'paidAmount': 100
+        }]
+    }
+
+    rs = RoutingSlip_service.create(routing_slip_payload)
+    assert rs
+    cfs_account_model: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
+        rs.get('payment_account').get('id'))
+    assert cfs_account_model.status == CfsAccountStatus.PENDING.value
