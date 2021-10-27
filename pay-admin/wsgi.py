@@ -24,4 +24,4 @@ if __name__ == "__main__":
     port = '8080'
     if len(sys.argv) > 1:
         port = sys.argv[1]
-    application.run(host='0.0.0.0', port=int(port), debug=True)
+    application.run(port=int(port), debug=True)

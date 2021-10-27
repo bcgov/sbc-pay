@@ -57,7 +57,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     def index():
         return redirect('/admin/feecode/')
 
-    return app, admin
+    return app
 
 
 def init_flask_admin(app):
