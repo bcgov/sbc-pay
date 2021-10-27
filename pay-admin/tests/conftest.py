@@ -15,7 +15,7 @@ def clean_db():
     from tests.fake_oidc import FakeOidc
 
     Keycloak._oidc = FakeOidc()
-    app, admin = create_app(run_mode='testing')
+    app = create_app(run_mode='testing')
 
     db = SQLAlchemy(app)
 

@@ -24,7 +24,6 @@ from pay_api.models import db, ma
 from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
 
-# import pay_api.config as config
 from admin import config
 from admin.config import _Config
 from admin.views import FeeCodeView, IndexView
@@ -44,7 +43,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     ma.init_app(app)
 
     # Init Flask Admin
-    admin = init_flask_admin(app)
+    init_flask_admin(app)
     Keycloak(app)
 
     @app.after_request
