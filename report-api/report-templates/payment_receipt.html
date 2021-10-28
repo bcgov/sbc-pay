@@ -674,47 +674,50 @@
           </table>
         </td>
       </tr>
-
-      <tr>
-        <td colspan="2">
-          <div class="receipt-message">
-            This is a confirmation of payment.
-          </div>
-        </td>
-      </tr>
+      {% if invoice.paymentAccount.get('billable') == true %}
+        <tr>
+          <td colspan="2">
+            <div class="receipt-message">
+              This is a confirmation of payment.
+            </div>
+          </td>
+        </tr>
       {% endif %}
-      <tr>
-        <td colspan="2">
-          <div class="receipt-payment-details">
-            {% if paymentMethodDescription %}
-            <div class="payment-row">
-              Payment Method: <span> {{paymentMethodDescription}}</span>
-            </div>
-            {% endif %}
-            {% if invoiceNumber %}
-            <div class="payment-row">
-              Invoice Number: <span> {{invoiceNumber}}</span>
-            </div>
-            {% endif %}
-            {% if bcOnlineAccountNumber %}
-            <div class="payment-row">
-              BC Online Account Number: <span> {{bcOnlineAccountNumber}}</span>
-            </div>
-            {% endif %}
+      {% endif %}
+      {% if invoice.paymentAccount.get('billable') == true %}
+        <tr>
+          <td colspan="2">
+            <div class="receipt-payment-details">
+              {% if paymentMethodDescription %}
+              <div class="payment-row">
+                Payment Method: <span> {{paymentMethodDescription}}</span>
+              </div>
+              {% endif %}
+              {% if invoiceNumber %}
+              <div class="payment-row">
+                Invoice Number: <span> {{invoiceNumber}}</span>
+              </div>
+              {% endif %}
+              {% if bcOnlineAccountNumber %}
+              <div class="payment-row">
+                BC Online Account Number: <span> {{bcOnlineAccountNumber}}</span>
+              </div>
+              {% endif %}
 
-            {% if invoice.get('routingSlip', None) %}
-            <div class="payment-row">
-              Routing Slip Number: <span> {{invoice.get('routingSlip')}}</span>
+              {% if invoice.get('routingSlip', None) %}
+              <div class="payment-row">
+                Routing Slip Number: <span> {{invoice.get('routingSlip')}}</span>
+              </div>
+              {% endif %}
+              {% if invoice.get('datNumber', None) %}
+              <div class="payment-row">
+                DAT Number: <span> {{invoice.get('datNumber')}}</span>
+              </div>
+              {% endif %}
             </div>
-            {% endif %}
-            {% if invoice.get('datNumber', None) %}
-            <div class="payment-row">
-              DAT Number: <span> {{invoice.get('datNumber')}}</span>
-            </div>
-            {% endif %}
-          </div>
-        </td>
-      </tr>
+          </td>
+        </tr>
+      {% endif %}
 
     <tr>
       <td colspan="2" class="watermark-cell">
