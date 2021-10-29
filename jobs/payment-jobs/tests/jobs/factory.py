@@ -21,9 +21,10 @@ from datetime import datetime, timedelta
 
 from pay_api.models import (
     CfsAccount, DistributionCode, DistributionCodeLink, Invoice, InvoiceReference, Payment, PaymentAccount,
-    PaymentLineItem, Receipt, StatementSettings)
+    PaymentLineItem, Receipt, RoutingSlip, StatementSettings)
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus)
+    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
+    RoutingSlipStatus)
 
 
 def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='1234567890', auth_account_id='1234'):
@@ -138,6 +139,37 @@ def factory_create_pad_account(auth_account_id='1234', bank_number='001', bank_b
     CfsAccount(status=status, account_id=account.id, bank_number=bank_number,
                bank_branch_number=bank_branch, bank_account_number=bank_account).save()
     return account
+
+
+def factory_routing_slip_account(
+        number: str = '1234',
+        status: str = CfsAccountStatus.PENDING.value,
+        total: int = 0,
+        remaining_amount: int = 0,
+        routing_slip_date=datetime.now(),
+        payment_method=PaymentMethod.CASH.value,
+        auth_account_id='1234'
+):
+    """Create routing slip and return payment account with it."""
+    payment_account = PaymentAccount(
+        payment_method=payment_method,
+        name=f'Test {auth_account_id}')
+    payment_account.save()
+
+    """Return Factory."""
+    RoutingSlip(
+        number=number,
+        payment_account_id=payment_account.id,
+        status=RoutingSlipStatus.ACTIVE.value,
+        total=total,
+        remaining_amount=remaining_amount,
+        created_by='test',
+        routing_slip_date=routing_slip_date
+    ).save()
+
+    CfsAccount(status=status, account_id=payment_account.id).save()
+
+    return payment_account
 
 
 def factory_create_eft_account(auth_account_id='1234', status=CfsAccountStatus.PENDING.value):
