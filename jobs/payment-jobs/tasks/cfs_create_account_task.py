@@ -53,7 +53,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
             # Find the payment account and create the pay system instance.
             pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(pending_account.account_id)
             if pay_account.payment_method in (PaymentMethod.CASH.value, PaymentMethod.CHEQUE.value):
-                routing_slip.create_cfs_account(pending_account, pay_account, auth_token)
+                routing_slip.create_cfs_account(pending_account, pay_account)
             else:
                 cls._create_cfs_account(pending_account, pay_account, auth_token)
 

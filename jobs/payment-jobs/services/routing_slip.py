@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Task to create CFS invoices offline."""
+"""Service to help with different routing slip operations."""
 
 from typing import Dict
 
@@ -26,13 +26,13 @@ from pay_api.utils.util import (
 from sentry_sdk import capture_message
 
 
-def create_cfs_account(cfs_account: CfsAccountModel, pay_account: PaymentAccountModel, auth_token: str):
+def create_cfs_account(cfs_account: CfsAccountModel, pay_account: PaymentAccountModel):
     """Create CFS account for routing slip."""
     routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_payment_account_id(pay_account.id)
     try:
         # TODO add status check so that LINKED etc can be skipped.
         cfs_account_details: Dict[str, any] = CFSService.create_cfs_account(
-            name=routing_slip.number,  # TODO Sending RS number as name of party
+            name=pay_account.name,
             contact_info={}
         )
         cfs_account.cfs_account = cfs_account_details.get('account_number')
@@ -41,7 +41,6 @@ def create_cfs_account(cfs_account: CfsAccountModel, pay_account: PaymentAccount
         cfs_account.status = CfsAccountStatus.ACTIVE.value
         cfs_account.flush()
         # Create receipt in CFS for the payment.
-        # TODO Create a receipt for the total or for one each ?
         CFSService.create_cfs_receipt(cfs_account=cfs_account,
                                       rcpt_number=routing_slip.number,
                                       rcpt_date=routing_slip.routing_slip_date.strftime('%Y-%m-%d'),
