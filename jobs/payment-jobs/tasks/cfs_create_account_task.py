@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to create CFS account offline."""
-
+import re
 from datetime import datetime
 from typing import Dict, List
 
@@ -124,15 +124,21 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
 
         except Exception as e:  # NOQA # pylint: disable=broad-except
             # publish to mailer queue.
+            is_user_error = False
             if pay_account.payment_method == PaymentMethod.PAD.value:
                 mailer.publish_mailer_events('PadSetupFailed', pay_account)
+                is_user_error = CreateAccountTask._check_user_error(e.response)  # pylint: disable=no-member
 
             capture_message(f'Error on creating CFS Account: account id={pay_account.id}, '
                             f'auth account : {pay_account.auth_account_id}, ERROR : {str(e)}', level='error')
             current_app.logger.error(e)
             pending_account.rollback()
-            # pending_account.status = CfsAccountStatus.INACTIVE.value
-            # pending_account.save()
+            if is_user_error:
+                capture_message(f'User Input needed for creating CFS Account: account id={pay_account.id}, '
+                                f'auth account : {pay_account.auth_account_id}, ERROR : Invalid Bank Details',
+                                level='error')
+                pending_account.status = CfsAccountStatus.INACTIVE.value
+                pending_account.save()
             return
 
         # If the account has an activation time set ,
@@ -142,3 +148,18 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
         pending_account.status = CfsAccountStatus.PENDING_PAD_ACTIVATION.value if \
             is_account_in_pad_confirmation_period else CfsAccountStatus.ACTIVE.value
         pending_account.save()
+
+    @staticmethod
+    def _check_user_error(response) -> bool:
+        """Check and see if its an error to be fixed by user."""
+        headers = response.headers
+        # CAS errors are in the below format
+        # [Errors = [34] Bank Account Number is Invalid]
+        # [Errors = [32] Branch Number is Invalid]
+        # [Errors = [31] Bank Number is Invalid]
+        error_strings = ['Bank Account Number', 'Branch Number', 'Bank Number']
+        if cas_error := headers.get('CAS-Returned-Messages', None):
+            # searches for error message and invalid word
+            if [re.match(f'.+{word}.+invalid.+', cas_error, re.IGNORECASE) for word in error_strings]:
+                return True
+        return False
