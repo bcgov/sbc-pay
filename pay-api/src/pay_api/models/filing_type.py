@@ -33,6 +33,9 @@ class FilingType(db.Model, CodeTable):
         db.session.add(self)
         db.session.commit()
 
+    def __str__(self):
+        return f'{self.code}'
+
 
 class FilingTypeSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Business."""

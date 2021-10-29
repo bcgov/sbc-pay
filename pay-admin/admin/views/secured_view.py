@@ -21,26 +21,36 @@ from admin import keycloak
 class SecuredView(sqla.ModelView):
     """Wrapper to secure the view with keycloak."""
 
+    @property
+    def can_create(self):
+        return self._has_role(self.edit_role)
+
+    @property
+    def can_edit(self):
+        return self._has_role(self.edit_role)
+
     def __init__(self, model, session,  # pylint: disable=too-many-arguments
                  name=None, category=None, endpoint=None, url=None, static_folder=None,
-                 menu_class_name=None, menu_icon_type=None, menu_icon_value=None, allowed_role: str = 'admin_view'):
+                 menu_class_name=None, menu_icon_type=None, menu_icon_value=None,
+                 view_role: str = 'admin_view', edit_role: str = 'admin_edit'):
         """Initialize."""
-        print('2222222')
         super().__init__(model, session,
                          name, category, endpoint, url, static_folder,
                          menu_class_name, menu_icon_type, menu_icon_value)
         self.connected = False
-        self.allowed_role = allowed_role
+        self.view_role = view_role
+        self.edit_role = edit_role
 
     def is_accessible(self):
         """Return True if view is accessible."""
+        return self._has_role(self.view_role)
+
+    def _has_role(self, role):
         kc = keycloak.Keycloak(None)
-        print(' kc.is_logged_in() ', kc.is_logged_in())
         if not kc.is_logged_in():
             self.connected = False
             return False
-
-        return kc.has_access(self.allowed_role)
+        return kc.has_access(role)
 
     def inaccessible_callback(self, name, **kwargs):
         """Handle if view is not accessible."""

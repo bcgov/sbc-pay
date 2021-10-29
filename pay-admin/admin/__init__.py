@@ -21,12 +21,13 @@ import os
 from flask import Flask, redirect
 from flask_admin import Admin
 from pay_api.models import db, ma
+from pay_api.models import FilingType
 from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
 
 from admin import config
 from admin.config import _Config
-from admin.views import FeeCodeView, IndexView
+from admin.views import FeeCodeView, IndexView, CorpTypeView, CodeConfig, FeeScheduleView, DistributionCodeView
 
 from .keycloak import Keycloak
 
@@ -46,12 +47,6 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     init_flask_admin(app)
     Keycloak(app)
 
-    @app.after_request
-    def add_version(response):  # pylint: disable=unused-variable
-        version = get_run_version()
-        response.headers['API'] = f'pay_api/{version}'
-        return response
-
     @app.route('/')
     def index():
         return redirect('/admin/feecode/')
@@ -63,5 +58,8 @@ def init_flask_admin(app):
     """Initialize flask admin and it's views."""
     flask_admin = Admin(app, name='Fee Admin', template_mode='bootstrap4', index_view=IndexView())
     flask_admin.add_view(FeeCodeView)
-
+    flask_admin.add_view(CorpTypeView)
+    flask_admin.add_view(CodeConfig(FilingType, db.session))
+    flask_admin.add_view(FeeScheduleView)
+    flask_admin.add_view(DistributionCodeView)
     return flask_admin

@@ -18,10 +18,10 @@ from pay_api.models import FeeCode, db
 from .secured_view import SecuredView
 
 
-class FeeCodeConfig(SecuredView):
-    """Fee code config."""
+class CodeConfig(SecuredView):
+    """Code config for all generic code tables."""
 
-    column_list = form_columns = column_searchable_list = ('code', 'amount')
+    column_list = form_columns = column_searchable_list = ('code', 'description')
 
     # Allow export as a CSV file.
     can_export = False
@@ -38,7 +38,3 @@ class FeeCodeConfig(SecuredView):
 
     def on_form_prefill(self, form, id):
         form.code.render_kw = {'readonly': True}
-
-
-# If this view is going to be displayed for only special roles, do like below
-FeeCodeView = FeeCodeConfig(FeeCode, db.session)

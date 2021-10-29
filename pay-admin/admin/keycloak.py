@@ -40,12 +40,10 @@ class Keycloak:
     def has_access(self, role='admin_view') -> bool:
         """Determine whether or not the user is authorized to use the application. True if the user have role."""
         token = self._oidc.get_access_token()
-        print('token ', token)
         if not token:
             return False
 
         token_info = self._oidc._get_token_info(token)  # pylint: disable=protected-access
-        print('token_info ', token_info)
         if not token_info['roles']:
             return False
 

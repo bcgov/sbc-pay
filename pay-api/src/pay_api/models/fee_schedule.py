@@ -17,6 +17,7 @@ from datetime import date, datetime
 from operator import or_
 
 from sqlalchemy import ForeignKey, func
+from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
 
 from .corp_type import CorpType, CorpTypeSchema
@@ -48,11 +49,20 @@ class FeeSchedule(db.Model):
 
     filing_type = relationship(FilingType, foreign_keys=[filing_type_code], lazy='joined', innerjoin=True)
     corp_type = relationship(CorpType, foreign_keys=[corp_type_code], lazy='joined', innerjoin=True)
-    fee = relationship(FeeCode, foreign_keys=[fee_code], lazy='joined', innerjoin=True)
-    future_effective_fee = relationship(FeeCode, foreign_keys=[future_effective_fee_code], lazy='joined',
+
+    fee = relationship(FeeCode, foreign_keys=[fee_code], lazy='select', innerjoin=True)
+    future_effective_fee = relationship(FeeCode, foreign_keys=[future_effective_fee_code], lazy='select',
                                         innerjoin=False)
-    priority_fee = relationship(FeeCode, foreign_keys=[priority_fee_code], lazy='joined', innerjoin=False)
-    service_fee = relationship(FeeCode, foreign_keys=[service_fee_code], lazy='joined', innerjoin=False)
+    priority_fee = relationship(FeeCode, foreign_keys=[priority_fee_code], lazy='select', innerjoin=False)
+    service_fee = relationship(FeeCode, foreign_keys=[service_fee_code], lazy='select', innerjoin=False)
+
+    @declared_attr
+    def distribution_codes(cls):
+        return relationship('DistributionCode', secondary='distribution_code_links', backref='fee_schedules',
+                            lazy='dynamic')
+
+    def __str__(self):
+        return f'{self.corp_type_code} - {self.filing_type_code}'
 
     @classmethod
     def find_by_filing_type_and_corp_type(cls, corp_type_code: str,
@@ -117,6 +127,7 @@ class FeeScheduleSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = FeeSchedule
+        exclude = ['distribution_codes']
 
     # pylint: disable=no-member
     corp_type = ma.Nested(CorpTypeSchema, many=False, data_key='corp_type_code',

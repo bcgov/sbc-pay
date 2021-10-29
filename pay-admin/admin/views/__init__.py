@@ -16,3 +16,8 @@
 
 from .fee_code import FeeCodeView
 from .index import IndexView
+from .corp_type import CorpTypeView
+from .code import CodeConfig
+from .fee_schedule import FeeScheduleView
+from .distribution_code import DistributionCodeView
+
