@@ -45,9 +45,7 @@ class DistributionCodeConfig(SecuredView):
         'stop_ejv': 'Suspend EJV',
         'service_fee_distribution_code': 'Service Fee Distribution Code',
         'disbursement_distribution_code': 'Disbursement Distribution Code',
-        'account': 'Account (For ministry government accounts)',
-        'fee_schedules': 'Fee Schedules'
-
+        'account': 'Account (For ministry government accounts)'
     }
     column_searchable_list = (
         'name', 'stop_ejv', 'client', 'responsibility_centre', 'service_line', 'stob', 'project_code')
@@ -55,17 +53,12 @@ class DistributionCodeConfig(SecuredView):
 
     column_default_sort = 'name'
 
-    form_args = {
-        # 'fee_code': get_fee_codes(('ss'))
-        # 'fee_code': {
-        #     'query_factory': lambda: FeeCode.query.filter(FeeCode.code.like('EN%'))
-        # }
-    }
+    form_args = {}
 
     form_columns = edit_columns = [
         'name', 'stop_ejv', 'client', 'responsibility_centre', 'service_line', 'stob', 'project_code',
         'start_date', 'end_date', 'stop_ejv', 'service_fee_distribution_code', 'disbursement_distribution_code',
-        'account', 'fee_schedules'
+        'account'
     ]
 
     def edit_form(self, obj=None):

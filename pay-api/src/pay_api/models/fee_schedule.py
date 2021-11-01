@@ -56,9 +56,8 @@ class FeeSchedule(db.Model):
     priority_fee = relationship(FeeCode, foreign_keys=[priority_fee_code], lazy='select', innerjoin=False)
     service_fee = relationship(FeeCode, foreign_keys=[service_fee_code], lazy='select', innerjoin=False)
 
-    @classmethod
     @declared_attr
-    def distribution_codes(cls):
+    def distribution_codes(cls):  # pylint:disable=no-self-argument, # noqa: N805
         """Distribution code relationship."""
         return relationship('DistributionCode', secondary='distribution_code_links', backref='fee_schedules',
                             lazy='dynamic')
@@ -130,7 +129,6 @@ class FeeScheduleSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = FeeSchedule
-        exclude = ['distribution_codes']
 
     # pylint: disable=no-member
     corp_type = ma.Nested(CorpTypeSchema, many=False, data_key='corp_type_code',
