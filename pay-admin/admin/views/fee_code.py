@@ -36,7 +36,8 @@ class FeeCodeConfig(SecuredView):
 
     can_delete = False
 
-    def on_form_prefill(self, form, id):
+    def on_form_prefill(self, form, id):  # pylint:disable=redefined-builtin
+        """Prefill overrides."""
         form.code.render_kw = {'readonly': True}
 
 

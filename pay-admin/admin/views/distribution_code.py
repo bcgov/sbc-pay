@@ -12,10 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from flask_admin.contrib.sqla.filters import BaseSQLAFilter, FilterEqual
-from flask_admin.contrib import sqla
-from flask import has_request_context
-from pay_api.models import CorpType, db, FeeSchedule, FeeCode, DistributionCode
+from pay_api.models import DistributionCode, db
 
 from .secured_view import SecuredView
 
@@ -53,7 +50,7 @@ class DistributionCodeConfig(SecuredView):
 
     }
     column_searchable_list = (
-    'name', 'stop_ejv', 'client', 'responsibility_centre', 'service_line', 'stob', 'project_code')
+        'name', 'stop_ejv', 'client', 'responsibility_centre', 'service_line', 'stob', 'project_code')
     column_sortable_list = ('name',)
 
     column_default_sort = 'name'
@@ -72,11 +69,13 @@ class DistributionCodeConfig(SecuredView):
     ]
 
     def edit_form(self, obj=None):
+        """Edit form overrides."""
         form = super().edit_form(obj)
         form.account.render_kw = {'disabled': True}
         return form
 
     def create_form(self, obj=None):
+        """Create form overrides."""
         form = super().create_form(obj)
         form.account.render_kw = {'disabled': True}
         return form

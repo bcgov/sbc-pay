@@ -20,14 +20,12 @@ import os
 
 from flask import Flask, redirect
 from flask_admin import Admin
-from pay_api.models import db, ma
-from pay_api.models import FilingType
+from pay_api.models import FilingType, db, ma
 from pay_api.utils.logging import setup_logging
-from pay_api.utils.run_version import get_run_version
 
 from admin import config
 from admin.config import _Config
-from admin.views import FeeCodeView, IndexView, CorpTypeView, CodeConfig, FeeScheduleView, DistributionCodeView
+from admin.views import CodeConfig, CorpTypeView, DistributionCodeView, FeeCodeView, FeeScheduleView, IndexView
 
 from .keycloak import Keycloak
 

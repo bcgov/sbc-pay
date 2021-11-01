@@ -12,10 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from flask_admin.contrib.sqla.filters import BaseSQLAFilter, FilterEqual
-from flask_admin.contrib import sqla
-from flask import has_request_context
-from pay_api.models import CorpType, db, FeeSchedule, FeeCode
+from pay_api.models import FeeSchedule, db
 
 from .secured_view import SecuredView
 
@@ -53,12 +50,7 @@ class FeeScheduleConfig(SecuredView):
 
     column_default_sort = 'corp_type_code'
 
-    form_args = {
-        # 'fee_code': get_fee_codes(('ss'))
-        # 'fee_code': {
-        #     'query_factory': lambda: FeeCode.query.filter(FeeCode.code.like('EN%'))
-        # }
-    }
+    form_args = {}
 
     form_columns = ['corp_type', 'filing_type', 'fee', 'fee_start_date',
                     'fee_end_date', 'future_effective_fee', 'priority_fee', 'service_fee',
@@ -67,18 +59,21 @@ class FeeScheduleConfig(SecuredView):
                     'fee_end_date', 'priority_fee', 'service_fee',
                     'distribution_codes']
 
-    def _change_labels(self, form):
-        form.fee.label.text = 'Filing Fee (Starts with \'EN\')'
-        form.future_effective_fee.label.text = 'Future Effective Fee (Starts with \'FUT\')'
-        form.priority_fee.label.text = 'Priority Fee (Starts with \'PRI\')'
-        form.service_fee.label.text = 'Service Fee (Starts with \'TRF\')'
+    @staticmethod
+    def _change_labels(form):
+        form.fee.label.text = "Filing Fee (Starts with 'EN')"
+        form.future_effective_fee.label.text = "Future Effective Fee (Starts with 'FUT')"
+        form.priority_fee.label.text = "Priority Fee (Starts with 'PRI')"
+        form.service_fee.label.text = "Service Fee (Starts with 'TRF')"
 
     def edit_form(self, obj=None):
+        """Edit form overrides."""
         form = super().edit_form(obj)
         self._change_labels(form)
         return form
 
     def create_form(self, obj=None):
+        """Create form overrides."""
         form = super().create_form(obj)
         self._change_labels(form)
         return form

@@ -34,6 +34,7 @@ class FilingType(db.Model, CodeTable):
         db.session.commit()
 
     def __str__(self):
+        """Override to string."""
         return f'{self.code}'
 
 

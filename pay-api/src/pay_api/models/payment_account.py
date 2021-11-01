@@ -51,6 +51,7 @@ class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attri
     pad_tos_accepted_by = db.Column(db.String(50), nullable=True)
 
     def __str__(self):
+        """Override to string."""
         return f'{self.name or ""} ({self.auth_account_id})'
 
     @classmethod

@@ -37,7 +37,7 @@ class CorpTypeConfig(SecuredView):
         'code': 'Code',
         'description': 'Description',
         'bcol_fee_code': 'BCOL Fee Code used for Account transactions',
-        'bcol_staff_fee_code': 'BCOL Fee Code used for Staff transactions. (starts with \'C\')',
+        'bcol_staff_fee_code': "BCOL Fee Code used for Staff transactions. (starts with 'C')",
         'is_online_banking_allowed': 'Is Online Banking allowed',
         'product': 'Product to map in account products'
     }
@@ -50,10 +50,11 @@ class CorpTypeConfig(SecuredView):
     }
 
     form_columns = edit_columns = ['code', 'description', 'bcol_fee_code', 'bcol_staff_fee_code',
-                                           'is_online_banking_allowed',
-                                           'product']
+                                   'is_online_banking_allowed',
+                                   'product']
 
-    def on_form_prefill(self, form, id):
+    def on_form_prefill(self, form, id):  # pylint:disable=redefined-builtin
+        """Prefill overrides."""
         form.code.render_kw = {'readonly': True}
 
 

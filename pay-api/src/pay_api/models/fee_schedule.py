@@ -56,12 +56,15 @@ class FeeSchedule(db.Model):
     priority_fee = relationship(FeeCode, foreign_keys=[priority_fee_code], lazy='select', innerjoin=False)
     service_fee = relationship(FeeCode, foreign_keys=[service_fee_code], lazy='select', innerjoin=False)
 
+    @classmethod
     @declared_attr
     def distribution_codes(cls):
+        """Distribution code relationship."""
         return relationship('DistributionCode', secondary='distribution_code_links', backref='fee_schedules',
                             lazy='dynamic')
 
     def __str__(self):
+        """Override to string."""
         return f'{self.corp_type_code} - {self.filing_type_code}'
 
     @classmethod

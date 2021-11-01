@@ -12,9 +12,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-
-from pay_api.models import FeeCode, db
-
 from .secured_view import SecuredView
 
 
@@ -36,5 +33,6 @@ class CodeConfig(SecuredView):
 
     can_delete = False
 
-    def on_form_prefill(self, form, id):
+    def on_form_prefill(self, form, id):  # pylint:disable=redefined-builtin
+        """Set code as readonly."""
         form.code.render_kw = {'readonly': True}

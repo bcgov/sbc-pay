@@ -13,17 +13,16 @@
 # limitations under the License.
 """Model to handle all operations related to distribution code."""
 from __future__ import annotations
+
 from datetime import date
 
 from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey
+from sqlalchemy.orm import relationship
 
 from .audit import Audit, AuditSchema, BaseModel
 from .base_model import VersionedModel
 from .db import db, ma
-from sqlalchemy.ext.declarative import declared_attr
-
-from sqlalchemy.orm import relationship
 
 
 class DistributionCodeLink(BaseModel):
@@ -41,7 +40,7 @@ class DistributionCodeLink(BaseModel):
     @classmethod
     def find_fee_schedules_by_distribution_id(cls, distribution_code_id: int):
         """Find all distribution codes."""
-        from .fee_schedule import FeeSchedule
+        from .fee_schedule import FeeSchedule  # pylint: disable=import-outside-toplevel
 
         query = db.session.query(FeeSchedule). \
             join(DistributionCodeLink, DistributionCodeLink.fee_schedule_id == FeeSchedule.fee_schedule_id). \
@@ -60,7 +59,6 @@ class DistributionCode(Audit, VersionedModel):  # pylint:disable=too-many-instan
 
     Distribution code holds details on the codes for how the collected payment is going to be distributed.
     """
-
 
     __tablename__ = 'distribution_codes'
 
@@ -84,12 +82,16 @@ class DistributionCode(Audit, VersionedModel):  # pylint:disable=too-many-instan
     # account id for distribution codes for gov account. None for distribution codes for filing types
     account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
 
-    service_fee_distribution_code = relationship('DistributionCode', foreign_keys=[service_fee_distribution_code_id], remote_side=[distribution_code_id], lazy='select')
-    disbursement_distribution_code = relationship('DistributionCode', foreign_keys=[disbursement_distribution_code_id], remote_side=[distribution_code_id], lazy='select')
+    service_fee_distribution_code = relationship('DistributionCode', foreign_keys=[service_fee_distribution_code_id],
+                                                 remote_side=[distribution_code_id], lazy='select')
+    disbursement_distribution_code = relationship('DistributionCode', foreign_keys=[disbursement_distribution_code_id],
+                                                  remote_side=[distribution_code_id], lazy='select')
     account = relationship('PaymentAccount', lazy='joined')
 
     def __str__(self):
-        return f'{self.name} ({self.client}.{self.responsibility_centre}.{self.service_line}.{self.stob}.{self.project_code})'
+        """Override to string."""
+        return f'{self.name} ({self.client}.{self.responsibility_centre}.{self.service_line}.' \
+               f'{self.stob}.{self.project_code})'
 
     @classmethod
     def find_all(cls, include_gov_account_gl_codes: bool = False):

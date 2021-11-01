@@ -23,10 +23,12 @@ class SecuredView(sqla.ModelView):
 
     @property
     def can_create(self):
+        """Return if user can create."""
         return self._has_role(self.edit_role)
 
     @property
     def can_edit(self):
+        """Return if user can edit."""
         return self._has_role(self.edit_role)
 
     def __init__(self, model, session,  # pylint: disable=too-many-arguments
