@@ -88,7 +88,7 @@ class _Config():  # pylint: disable=too-few-public-methods
     # non-TLS HTTP server. Set this to non-"True" for local development, and use the default everywhere else.
     OIDC_ID_TOKEN_COOKIE_SECURE = os.getenv('PAY_OIDC_ID_TOKEN_COOKIE_SECURE', 'True').lower() == 'true'
 
-    # PREFERRED_URL_SCHEME = 'https'
+    PREFERRED_URL_SCHEME = 'https'
 
     TESTING = False
     DEBUG = True
