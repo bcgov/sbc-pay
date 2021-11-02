@@ -338,7 +338,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
 
         fee_schedules = DistributionCodeLinkModel.find_fee_schedules_by_distribution_id(
             distribution_code_id=distribution_id)
-        fee_schedule_schema = FeeScheduleSchema()
+        fee_schedule_schema = FeeScheduleSchema(exclude=('distribution_codes',))
         data['items'] = fee_schedule_schema.dump(fee_schedules, many=True)
         current_app.logger.debug('>find_fee_schedules_by_distribution_id')
         return data
