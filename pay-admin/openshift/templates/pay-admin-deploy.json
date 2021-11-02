@@ -15,9 +15,9 @@
       "metadata": {
         "name": "${NAME}-${TAG_NAME}",
         "labels": {
-          "app": "${NAME}-${TAG_NAME}",
-          "app-group": "${APP_GROUP}",
-          "template": "${NAME}-deploy"
+          "environment": "${TAG_NAME}",
+          "name": "${NAME}",
+          "role": "api"
         }
       },
       "spec": {
@@ -45,7 +45,7 @@
               "from": {
                 "kind": "ImageStreamTag",
                 "namespace": "78c88a-tools",
-                "name": "${NAME}:latest"
+                "name": "${NAME}:${TAG_NAME}"
               },
               "lastTriggeredImage": "image-registry.openshift-image-registry.svc:5000/78c88a-tools/${NAME}@sha256:66652d7231c3257c3b6752c58775ece775c9ddea3ef1e3423476c1c5fc4af99e"
             }
