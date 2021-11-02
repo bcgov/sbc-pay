@@ -45,9 +45,9 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     init_flask_admin(app)
     Keycloak(app)
 
-    # @app.route('/')
-    # def index():
-    #     return redirect('/admin/feecode/')
+    @app.route('/')
+    def index():
+        return redirect('/admin/feecode/')
 
     return app
 
