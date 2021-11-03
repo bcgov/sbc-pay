@@ -21,6 +21,16 @@ from admin import keycloak
 class SecuredView(sqla.ModelView):
     """Wrapper to secure the view with keycloak."""
 
+    # Allow export as a CSV file.
+    can_export = False
+
+    # Allow the user to change the page size.
+    can_set_page_size = True
+
+    column_display_pk = True
+
+    can_delete = False
+
     @property
     def can_create(self):
         """Return if user can create."""

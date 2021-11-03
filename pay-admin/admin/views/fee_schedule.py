@@ -20,16 +20,6 @@ from .secured_view import SecuredView
 class FeeScheduleConfig(SecuredView):
     """Fee Schedule config."""
 
-    # Allow export as a CSV file.
-    can_export = False
-
-    # Allow the user to change the page size.
-    can_set_page_size = True
-
-    column_display_pk = True
-
-    can_delete = False
-
     column_list = ['corp_type_code', 'filing_type_code', 'fee', 'future_effective_fee', 'priority_fee', 'service_fee']
 
     column_labels = {

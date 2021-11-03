@@ -20,16 +20,6 @@ from .secured_view import SecuredView
 class DistributionCodeConfig(SecuredView):
     """Distribution Code config."""
 
-    # Allow export as a CSV file.
-    can_export = False
-
-    # Allow the user to change the page size.
-    can_set_page_size = True
-
-    column_display_pk = True
-
-    can_delete = False
-
     column_list = ['name', 'client', 'responsibility_centre', 'service_line', 'stob', 'project_code', 'start_date',
                    'end_date']
 

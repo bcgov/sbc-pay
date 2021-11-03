@@ -23,18 +23,8 @@ class FeeCodeConfig(SecuredView):
 
     column_list = form_columns = column_searchable_list = ('code', 'amount')
 
-    # Allow export as a CSV file.
-    can_export = False
-
-    # Allow the user to change the page size.
-    can_set_page_size = True
-
     # Keep everything sorted, although realistically also we need to sort the values within a row before it is saved.
     column_default_sort = 'code'
-
-    column_display_pk = True
-
-    can_delete = False
 
     def on_form_prefill(self, form, id):  # pylint:disable=redefined-builtin
         """Prefill overrides."""
