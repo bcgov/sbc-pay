@@ -331,7 +331,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         }
         fee_schdules = FeeScheduleModel.find_all(corp_type_code=corp_type, filing_type_code=filing_type_code,
                                                  description=description)
-        schdule_schema = FeeScheduleSchema()
+        schdule_schema = FeeScheduleSchema(exclude=('distribution_codes',))
         data['items'] = schdule_schema.dump(fee_schdules, many=True)
         current_app.logger.debug('>find_all')
         return data

@@ -14,5 +14,9 @@
 
 """This exports all of the models and schemas used by the application."""
 
+from .code import CodeConfig
+from .corp_type import CorpTypeView
+from .distribution_code import DistributionCodeView
 from .fee_code import FeeCodeView
+from .fee_schedule import FeeScheduleView
 from .index import IndexView

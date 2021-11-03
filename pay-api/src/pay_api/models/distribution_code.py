@@ -12,16 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to distribution code."""
+from __future__ import annotations
 
 from datetime import date
 
 from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey
+from sqlalchemy.orm import relationship
 
 from .audit import Audit, AuditSchema, BaseModel
 from .base_model import VersionedModel
 from .db import db, ma
-from .fee_schedule import FeeSchedule
 
 
 class DistributionCodeLink(BaseModel):
@@ -39,6 +40,8 @@ class DistributionCodeLink(BaseModel):
     @classmethod
     def find_fee_schedules_by_distribution_id(cls, distribution_code_id: int):
         """Find all distribution codes."""
+        from .fee_schedule import FeeSchedule  # pylint: disable=import-outside-toplevel
+
         query = db.session.query(FeeSchedule). \
             join(DistributionCodeLink, DistributionCodeLink.fee_schedule_id == FeeSchedule.fee_schedule_id). \
             filter(DistributionCodeLink.distribution_code_id == distribution_code_id)
@@ -78,6 +81,17 @@ class DistributionCode(Audit, VersionedModel):  # pylint:disable=too-many-instan
                                                   nullable=True)
     # account id for distribution codes for gov account. None for distribution codes for filing types
     account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
+
+    service_fee_distribution_code = relationship('DistributionCode', foreign_keys=[service_fee_distribution_code_id],
+                                                 remote_side=[distribution_code_id], lazy='select')
+    disbursement_distribution_code = relationship('DistributionCode', foreign_keys=[disbursement_distribution_code_id],
+                                                  remote_side=[distribution_code_id], lazy='select')
+    account = relationship('PaymentAccount', lazy='joined')
+
+    def __str__(self):
+        """Override to string."""
+        return f'{self.name} ({self.client}.{self.responsibility_centre}.{self.service_line}.' \
+               f'{self.stob}.{self.project_code})'
 
     @classmethod
     def find_all(cls, include_gov_account_gl_codes: bool = False):

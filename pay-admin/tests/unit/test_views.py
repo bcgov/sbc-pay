@@ -15,13 +15,27 @@
 
 Test Views module.
 """
+import pytest
+from pay_api.models import FilingType
+
+from admin.views.code import CodeConfig
+from admin.views.corp_type import CorpType, CorpTypeConfig
+from admin.views.distribution_code import DistributionCode, DistributionCodeConfig
 from admin.views.fee_code import FeeCode, FeeCodeConfig
+from admin.views.fee_schedule import FeeSchedule, FeeScheduleConfig
 
 
-def test_fee_code_view_config(db):
-    """Test fee code view config."""
-    view = FeeCodeConfig(FeeCode, db.session, allowed_role='admin_view')
+@pytest.mark.parametrize('model, config', [
+    (FeeCode, FeeCodeConfig),
+    (CorpType, CorpTypeConfig),
+    (FilingType, CodeConfig),
+    (DistributionCode, DistributionCodeConfig),
+    (FeeSchedule, FeeScheduleConfig)
+])
+def test_view_configs(db, model, config):
+    """Test view configs."""
+    view = config(model, db.session)
     columns = view.get_list_columns()
 
     for col in columns:
-        assert col[0] in ('code', 'amount')
+        assert col[0] in config.column_list

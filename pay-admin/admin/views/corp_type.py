@@ -13,18 +13,35 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 
-from pay_api.models import FeeCode, db
+from pay_api.models import CorpType, db
 
 from .secured_view import SecuredView
 
 
-class FeeCodeConfig(SecuredView):
-    """Fee code config."""
+class CorpTypeConfig(SecuredView):
+    """Corp Type config."""
 
-    column_list = form_columns = column_searchable_list = ('code', 'amount')
+    column_list = ['code', 'description']
 
-    # Keep everything sorted, although realistically also we need to sort the values within a row before it is saved.
+    column_labels = {
+        'code': 'Code',
+        'description': 'Description',
+        'bcol_fee_code': 'BCOL Fee Code used for Account transactions',
+        'bcol_staff_fee_code': "BCOL Fee Code used for Staff transactions. (starts with 'C')",
+        'is_online_banking_allowed': 'Is Online Banking allowed',
+        'product': 'Product to map in account products'
+    }
+    column_searchable_list = ('code',)
+    column_sortable_list = ('code',)
+
     column_default_sort = 'code'
+
+    form_choices = {
+    }
+
+    form_columns = edit_columns = ['code', 'description', 'bcol_fee_code', 'bcol_staff_fee_code',
+                                   'is_online_banking_allowed',
+                                   'product']
 
     def on_form_prefill(self, form, id):  # pylint:disable=redefined-builtin
         """Prefill overrides."""
@@ -32,4 +49,4 @@ class FeeCodeConfig(SecuredView):
 
 
 # If this view is going to be displayed for only special roles, do like below
-FeeCodeView = FeeCodeConfig(FeeCode, db.session)
+CorpTypeView = CorpTypeConfig(CorpType, db.session)

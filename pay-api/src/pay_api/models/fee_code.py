@@ -33,6 +33,10 @@ class FeeCode(db.Model, CodeTable):
         db.session.add(self)
         db.session.commit()
 
+    def __str__(self):
+        """Override to string."""
+        return f'{self.amount} ({self.code})'
+
 
 class FeeCodeSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Business."""
