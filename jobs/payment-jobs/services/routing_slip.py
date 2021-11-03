@@ -39,13 +39,13 @@ def create_cfs_account(cfs_account: CfsAccountModel, pay_account: PaymentAccount
         cfs_account.cfs_party = cfs_account_details.get('party_number')
         cfs_account.cfs_site = cfs_account_details.get('site_number')
         cfs_account.status = CfsAccountStatus.ACTIVE.value
-        cfs_account.flush()
         # Create receipt in CFS for the payment.
         CFSService.create_cfs_receipt(cfs_account=cfs_account,
                                       rcpt_number=routing_slip.number,
                                       rcpt_date=routing_slip.routing_slip_date.strftime('%Y-%m-%d'),
                                       amount=routing_slip.total,
                                       payment_method=pay_account.payment_method)
+        cfs_account.commit()
         return
 
     except Exception as e:  # NOQA # pylint: disable=broad-except
