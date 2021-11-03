@@ -65,7 +65,7 @@ class FeeScheduleConfig(SecuredView):
         form.future_effective_fee.label.text = "Future Effective Fee (Starts with 'FUT')"
         form.priority_fee.label.text = "Priority Fee (Starts with 'PRI')"
         form.service_fee.label.text = "Service Fee (Starts with 'TRF')"
-        form.distribution_codes.label.text = "Distribution Code (Mandatory for non-zero fees)"
+        form.distribution_codes.label.text = 'Distribution Code (Mandatory for non-zero fees)'
 
     def edit_form(self, obj=None):
         """Edit form overrides."""
