@@ -42,10 +42,10 @@ class Report(Resource):
         request_json = request.get_json()
         response_content_type = request.headers.get('Accept', 'application/pdf')
         if response_content_type == 'text/csv':
-            file_name = '{}.csv'.format(request_json.get('reportName'))
+            file_name = f"{request_json.get('reportName')}.csv"
             report = CsvService.create_report(request_json.get('templateVars'))
         else:
-            file_name = '{}.pdf'.format(request_json.get('reportName'))
+            file_name = f"{request_json.get('reportName')}.pdf"
             template_vars = request_json['templateVars']
             populate_page_number = bool(request_json.get('populatePageNumber', None))
 

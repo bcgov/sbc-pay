@@ -51,7 +51,7 @@ class ReportService:
     def create_report_from_stored_template(cls, template_name: str, template_args: object,
                                            generate_page_number: bool = False):
         """Create a report from a stored template."""
-        template = ENV.get_template('{}/{}.html'.format(TEMPLATE_FOLDER_PATH, template_name))
+        template = ENV.get_template(f'{TEMPLATE_FOLDER_PATH}/{template_name}.html')
         bc_logo_url = url_for('static', filename='images/bcgov-logo-vert.jpg')
         registries_url = url_for('static', filename='images/reg_logo.png')
         html_out = template.render(template_args, bclogoUrl=bc_logo_url, registriesurl=registries_url)
