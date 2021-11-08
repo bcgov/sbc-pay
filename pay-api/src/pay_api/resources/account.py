@@ -15,7 +15,7 @@
 from datetime import datetime
 from http import HTTPStatus
 
-from flask import Response, current_app, jsonify, request
+from flask import Response, abort, current_app, jsonify, request
 from flask_restx import Namespace, Resource, cors
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException, error_to_response
@@ -48,13 +48,19 @@ class Accounts(Resource):
         current_app.logger.info('<Account.post')
         request_json = request.get_json()
         current_app.logger.debug(request_json)
+
+        # Check if sandbox request is authorized.
+        is_sandbox = request.args.get('sandbox', 'false').lower() == 'true'
+        if is_sandbox and not _jwt.validate_roles([Role.CREATE_SANDBOX_ACCOUNT.value]):
+            abort(HTTPStatus.FORBIDDEN)
+            
         # Validate the input request
         valid_format, errors = schema_utils.validate(request_json, 'account_info')
 
         if not valid_format:
             return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
         try:
-            response = PaymentAccountService.create(request_json)
+            response = PaymentAccountService.create(request_json, is_sandbox)
             status = HTTPStatus.ACCEPTED \
                 if response.cfs_account_id and response.cfs_account_status == CfsAccountStatus.PENDING.value \
                 else HTTPStatus.CREATED
