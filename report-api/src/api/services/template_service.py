@@ -42,6 +42,6 @@ class TemplateService:
     @classmethod
     def get_stored_template(cls, templatename: str, ):
         """Get a stored template."""
-        template = ENV.get_template('{}/{}.html'.format(TEMPLATE_FOLDER_PATH, templatename))
+        template = ENV.get_template(f'{TEMPLATE_FOLDER_PATH}/{templatename}.html')
         html_template = template.render()
         return html_template
