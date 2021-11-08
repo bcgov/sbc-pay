@@ -53,7 +53,7 @@ class Accounts(Resource):
         is_sandbox = request.args.get('sandbox', 'false').lower() == 'true'
         if is_sandbox and not _jwt.validate_roles([Role.CREATE_SANDBOX_ACCOUNT.value]):
             abort(HTTPStatus.FORBIDDEN)
-            
+
         # Validate the input request
         valid_format, errors = schema_utils.validate(request_json, 'account_info')
 
