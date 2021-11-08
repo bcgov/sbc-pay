@@ -16,13 +16,16 @@
 
 Test-Suite to ensure that the CreateAccountTask is working as expected.
 """
-
+from unittest.mock import patch
+import requests
+from requests.exceptions import HTTPError
 from pay_api.models import CfsAccount, PaymentAccount
 from pay_api.services.online_banking_service import OnlineBankingService
 from pay_api.services.pad_service import PadService
 from pay_api.utils.enums import CfsAccountStatus
 
 from tasks.cfs_create_account_task import CreateAccountTask
+from utils import mailer
 
 from .factory import factory_create_online_banking_account, factory_create_pad_account
 
@@ -46,6 +49,48 @@ def test_create_pad_account(session):
     assert cfs_account.cfs_site
     assert cfs_account.cfs_account
     assert cfs_account.payment_instrument_number
+
+
+def test_create_pad_account_user_error(session):
+    """Test create account."""
+    # Create a pending account first, then call the job
+    account = factory_create_pad_account(auth_account_id='1')
+    cfs_account: CfsAccount = CfsAccount.find_effective_by_account_id(account.id)
+    assert cfs_account.status == CfsAccountStatus.PENDING.value
+    mock_response = requests.models.Response()
+    mock_response.headers['CAS-Returned-Messages'] = '[Errors = [34] Bank Account Number is Invalid]'
+    mock_response.status_code = 404
+
+    side_effect = HTTPError(response=mock_response)
+    with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
+        with patch('pay_api.services.CFSService.create_cfs_account', side_effect=side_effect):
+            CreateAccountTask.create_accounts()
+            mock_mailer.assert_called
+
+    account = PaymentAccount.find_by_id(account.id)
+    cfs_account: CfsAccount = CfsAccount.find_by_id(cfs_account.id)
+    assert cfs_account.status == CfsAccountStatus.INACTIVE.value
+
+
+def test_create_pad_account_system_error(session):
+    """Test create account."""
+    # Create a pending account first, then call the job
+    account = factory_create_pad_account(auth_account_id='1')
+    cfs_account: CfsAccount = CfsAccount.find_effective_by_account_id(account.id)
+    assert cfs_account.status == CfsAccountStatus.PENDING.value
+    mock_response = requests.models.Response()
+    mock_response.headers['CAS-Returned-Messages'] = '[CFS Down]'
+    mock_response.status_code = 404
+
+    side_effect = HTTPError(response=mock_response)
+    with patch.object(mailer, 'publish_mailer_events') as mock_mailer:
+        with patch('pay_api.services.CFSService.create_cfs_account', side_effect=side_effect):
+            CreateAccountTask.create_accounts()
+            mock_mailer.assert_not_called()
+
+    account = PaymentAccount.find_by_id(account.id)
+    cfs_account: CfsAccount = CfsAccount.find_by_id(cfs_account.id)
+    assert cfs_account.status == CfsAccountStatus.PENDING.value
 
 
 def test_create_pad_account_no_confirmation_period(session):
