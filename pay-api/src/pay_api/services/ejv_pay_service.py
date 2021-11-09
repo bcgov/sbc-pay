@@ -20,6 +20,7 @@ from datetime import datetime
 
 from flask import current_app
 
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
@@ -87,3 +88,19 @@ class EjvPayService(PaymentSystemService, OAuthService):
 
         # Publish message to the queue with payment token, so that they can release records on their side.
         self._release_payment(invoice=invoice)
+
+    def process_cfs_refund(self, invoice: InvoiceModel) -> str:  # pylint:disable=unused-argument, no-self-use
+        """Do nothing to process refund; as the refund is handled by CRON job.
+
+        Return the status after checking invoice status.
+            1. If invoice status is APPROVED:
+            1.1 return REFUND_REQUESTED if there is an ACTIVE invoice_reference
+            1.2 else return REFUNDED (as no refund process is needed for this as JV hasn't started yet)
+            2. If invoice status is PAID
+            2.1 Return REFUND_REQUESTED
+        """
+        if invoice.invoice_status_code == InvoiceStatus.APPROVED.value:
+            if InvoiceReference.find_active_reference_by_invoice_id(invoice.id):
+                return InvoiceStatus.REFUND_REQUESTED.value
+            return InvoiceStatus.REFUNDED.value
+        return InvoiceStatus.REFUND_REQUESTED.value
