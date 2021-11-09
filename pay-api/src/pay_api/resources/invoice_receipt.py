@@ -64,7 +64,7 @@ class InvoiceReceipt(Resource):
     @_jwt.requires_auth
     def get(invoice_id):
         """Return the receipt details."""
-        current_app.logger.info('<Receipt.post')
+        current_app.logger.info('<Receipt.get')
         try:
             receipt_details = ReceiptService.get_receipt_details({}, invoice_id, skip_auth_check=False)
             receipt_details.pop('paymentMethodDescription', None)
