@@ -20,13 +20,14 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 import json
 from unittest.mock import patch
 
+import pytest
 from requests.exceptions import ConnectionError
 
 from pay_api.exceptions import ServiceUnavailableException
 from pay_api.models.invoice import Invoice
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.schemas import utils as schema_utils
-from pay_api.utils.enums import PaymentMethod, Role
+from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
     get_basic_account_payload, get_claims, get_gov_account_payload, get_gov_account_payload_with_no_revenue_account,
     get_pad_account_payload, get_payment_request, get_premium_account_payload, get_unlinked_pad_account_payload,
@@ -549,3 +550,21 @@ def test_account_delete(session, client, jwt, app):
 
     rv = client.delete(f'/api/v1/accounts/{auth_account_id}', headers=headers)
     assert rv.status_code == 204
+
+
+@pytest.mark.parametrize('pay_load, is_cfs_account_expected, expected_response_status, roles', [
+    (get_unlinked_pad_account_payload(), True, 201, [Role.SYSTEM.value, Role.CREATE_SANDBOX_ACCOUNT.value]),
+    (get_premium_account_payload(), False, 201, [Role.SYSTEM.value, Role.CREATE_SANDBOX_ACCOUNT.value]),
+    (get_premium_account_payload(), False, 403, [Role.SYSTEM.value])
+])
+def test_create_sandbox_accounts(session, client, jwt, app, pay_load, is_cfs_account_expected, expected_response_status,
+                                 roles):
+    """Assert that the payment records are created with 202."""
+    token = jwt.create_jwt(get_claims(roles=roles), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post('/api/v1/accounts?sandbox=true', data=json.dumps(pay_load),
+                     headers=headers)
+
+    assert rv.status_code == expected_response_status
+    if is_cfs_account_expected:
+        assert rv.json['cfsAccount']['status'] == CfsAccountStatus.ACTIVE.value
