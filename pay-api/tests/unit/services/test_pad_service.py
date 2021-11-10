@@ -30,7 +30,7 @@ def test_create_account(session):
         'bankTransitNumber': 222,
         'bankAccountNumber': 33333333
     }
-    account = pad_service.create_account(name='Test Account', contact_info={}, payment_info=payment_info)
+    account = pad_service.create_account(identifier='100', contact_info={}, payment_info=payment_info)
     assert account
     assert account.bank_number == payment_info.get('bankInstitutionNumber')
 

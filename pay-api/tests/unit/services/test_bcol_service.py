@@ -29,7 +29,7 @@ bcol_service = BcolService()
 
 def test_create_account(session):
     """Test create_account."""
-    account = bcol_service.create_account(name=None, contact_info=None, payment_info=None)
+    account = bcol_service.create_account(identifier=None, contact_info=None, payment_info=None)
     assert not account
 
 

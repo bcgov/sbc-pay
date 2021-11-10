@@ -21,8 +21,6 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.utils.enums import CfsAccountStatus
-from pay_api.utils.util import (
-    get_local_formatted_date)
 from sentry_sdk import capture_message
 
 
@@ -31,9 +29,11 @@ def create_cfs_account(cfs_account: CfsAccountModel, pay_account: PaymentAccount
     routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_payment_account_id(pay_account.id)
     try:
         # TODO add status check so that LINKED etc can be skipped.
+        # for RS , entity/business number=party name ; RS Number=site name
         cfs_account_details: Dict[str, any] = CFSService.create_cfs_account(
-            name=pay_account.name,
-            contact_info={}
+            identifier=pay_account.name,
+            contact_info={},
+            site_name=routing_slip.number
         )
         cfs_account.cfs_account = cfs_account_details.get('account_number')
         cfs_account.cfs_party = cfs_account_details.get('party_number')

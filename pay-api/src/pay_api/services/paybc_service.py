@@ -54,12 +54,13 @@ class PaybcService(PaymentSystemService, CFSService):
         """Return CC as the method code."""
         return PaymentMethod.CC.value
 
-    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any], **kwargs) -> any:
+    def create_account(self, identifier: str, contact_info: Dict[str, Any],
+                       payment_info: Dict[str, Any], **kwargs) -> any:
         """Create account in PayBC."""
         # Create CFS Account model instance and store the bank details
         cfs_account = CfsAccountModel()
         # Create CFS account
-        cfs_account_details = self.create_cfs_account(name, contact_info, receipt_method=None)
+        cfs_account_details = self.create_cfs_account(identifier, contact_info, receipt_method=None)
         # Update model with response values
         cfs_account.cfs_account = cfs_account_details.get('account_number')
         cfs_account.cfs_site = cfs_account_details.get('site_number')

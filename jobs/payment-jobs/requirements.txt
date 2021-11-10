@@ -1,5 +1,5 @@
--e git+https://github.com/bcgov/sbc-common-components.git@b9b998c8340b746e77a64dad20645955ade509a8#egg=sbc_common_components&subdirectory=python
--e git+https://github.com/saravanpa-aot/sbc-pay.git@149f2ad28abd66893d4c637bbb768107c98e54eb#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-common-components.git@46c54f86084beb8ea782fb1d2e5d1c85131e5dd7#egg=sbc_common_components&subdirectory=python
+-e git+https://github.com/saravanpa-aot/sbc-pay.git@bd335cdf6bf968e9ab0f54b95ee7c08813cfe09e#egg=pay_api&subdirectory=pay-api
 Flask-Caching==1.10.1
 Flask-Migrate==2.7.0
 Flask-Moment==1.0.2
@@ -36,20 +36,20 @@ flask-marshmallow==0.11.0
 flask-restx==0.5.1
 gunicorn==20.1.0
 idna==3.3
-importlib-metadata==4.8.1
-importlib-resources==5.3.0
+importlib-metadata==4.8.2
+importlib-resources==5.4.0
 itsdangerous==1.1.0
 jaeger-client==4.8.0
-jsonschema==4.1.2
+jsonschema==4.2.1
 marshmallow-sqlalchemy==0.25.0
 marshmallow==3.14.0
 minio==7.1.1
 opentracing==2.4.0
 paramiko==2.8.0
-protobuf==3.19.0
+protobuf==3.19.1
 psycopg2-binary==2.9.1
 pyasn1==0.4.8
-pycparser==2.20
+pycparser==2.21
 pyrsistent==0.18.0
 pysftp==0.2.9
 python-dateutil==2.8.2

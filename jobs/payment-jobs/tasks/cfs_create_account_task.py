@@ -92,12 +92,11 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
             'bankAccountNumber': pending_account.bank_account_number,
         }
 
-        account_name = pay_account.name
         # For an existing CFS Account, call update.. This is to handle PAD update when CFS is offline
         try:
             if pending_account.cfs_account and pending_account.cfs_party and pending_account.cfs_site:
                 # This means, PAD account details have changed. So update banking details for this CFS account
-                bank_details = CFSService.update_bank_details(name=account_name,
+                bank_details = CFSService.update_bank_details(name=pay_account.auth_account_id,
                                                               party_number=pending_account.cfs_party,
                                                               account_number=pending_account.cfs_account,
                                                               site_number=pending_account.cfs_site,
@@ -107,12 +106,12 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                 # If the account have banking information, then create a PAD account else a regular account.
                 if pending_account.bank_number and pending_account.bank_branch_number \
                         and pending_account.bank_account_number:
-                    cfs_account_details = CFSService.create_cfs_account(name=account_name,
+                    cfs_account_details = CFSService.create_cfs_account(identifier=pay_account.auth_account_id,
                                                                         contact_info=contact_info,
                                                                         payment_info=payment_info,
                                                                         receipt_method=RECEIPT_METHOD_PAD_DAILY)
                 else:
-                    cfs_account_details = CFSService.create_cfs_account(name=account_name,
+                    cfs_account_details = CFSService.create_cfs_account(identifier=pay_account.auth_account_id,
                                                                         contact_info=contact_info,
                                                                         receipt_method=None)
 
