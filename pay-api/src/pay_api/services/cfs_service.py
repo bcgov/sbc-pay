@@ -42,8 +42,7 @@ class CFSService(OAuthService):
                            payment_info: Dict[str, any] = None,
                            receipt_method: str = None, site_name=None) -> Dict[str, str]:
         """Create a cfs account and return the details."""
-        party_prefix = current_app.config.get('CFS_PARTY_PREFIX')
-        party_id = re.sub(r'[^a-zA-Z0-9]+', ' ', f'{party_prefix}{identifier}')  # TODO is the prefixing needed?
+        party_id = f"{current_app.config.get('CFS_PARTY_PREFIX')}{identifier}"
         access_token = CFSService.get_token().json().get('access_token')
         party = CFSService._create_party(access_token, party_id)
         account = CFSService._create_paybc_account(access_token, party)
@@ -218,9 +217,7 @@ class CFSService(OAuthService):
         bank_number = str(payment_info.get('bankInstitutionNumber'))
         branch_number = str(payment_info.get('bankTransitNumber'))
 
-        # TODO is the prefixing needed?
-        party_prefix = current_app.config.get('CFS_PARTY_PREFIX')
-        name = re.sub(r'[^a-zA-Z0-9]+', ' ', f'{party_prefix}{name}')
+        name = f"{current_app.config.get('CFS_PARTY_PREFIX')}{name}"
 
         payment_details: Dict[str, str] = {
             'bank_account_name': name,
