@@ -373,7 +373,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         if pay_system.get_payment_system_code() == PaymentSystem.PAYBC.value:
             if cfs_account is None:
                 cfs_account = pay_system.create_account(  # pylint:disable=assignment-from-none
-                    name=payment_account.name,
+                    identifier=payment_account.auth_account_id,
                     contact_info=account_request.get('contactInfo'),
                     payment_info=account_request.get('paymentInfo'))
                 if cfs_account:

@@ -43,7 +43,7 @@ class PadService(PaymentSystemService, CFSService):
         """Return CREATED as the default invoice status."""
         return InvoiceStatus.APPROVED.value
 
-    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
+    def create_account(self, identifier: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
                        **kwargs) -> CfsAccountModel:
         """Create an account for the PAD transactions."""
         # Create CFS Account model instance and store the bank details, set the status as PENDING

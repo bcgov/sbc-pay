@@ -38,21 +38,23 @@ class CFSService(OAuthService):
     """Service to invoke CFS related operations."""
 
     @classmethod
-    def create_cfs_account(cls, name: str, contact_info: Dict[str, Any],
-                           payment_info: Dict[str, any] = None, receipt_method: str = None) -> Dict[str, str]:
+    def create_cfs_account(cls, identifier: str, contact_info: Dict[str, Any],  # pylint: disable=too-many-arguments
+                           payment_info: Dict[str, any] = None,
+                           receipt_method: str = None, site_name=None) -> Dict[str, str]:
         """Create a cfs account and return the details."""
-        name = re.sub(r'[^a-zA-Z0-9]+', ' ', name)
+        party_prefix = current_app.config.get('CFS_PARTY_PREFIX')
+        party_id = re.sub(r'[^a-zA-Z0-9]+', ' ', f'{party_prefix}{identifier}')  # TODO is it needed
         access_token = CFSService.get_token().json().get('access_token')
-        party = CFSService._create_party(access_token, name)
+        party = CFSService._create_party(access_token, party_id)
         account = CFSService._create_paybc_account(access_token, party)
-        site = CFSService._create_site(access_token, account, contact_info, receipt_method)
+        site = CFSService._create_site(access_token, account, contact_info, receipt_method, site_name)
         account_details = {
             'party_number': party.get('party_number'),
             'account_number': account.get('account_number'),
             'site_number': site.get('site_number')
         }
         if payment_info:
-            account_details.update(cls._save_bank_details(access_token, name, party.get('party_number'),
+            account_details.update(cls._save_bank_details(access_token, party_id, party.get('party_number'),
                                                           account.get('account_number'),
                                                           site.get('site_number'), payment_info))
 
@@ -168,7 +170,7 @@ class CFSService(OAuthService):
         return account_response.json()
 
     @staticmethod
-    def _create_site(access_token, account, contact_info, receipt_method):
+    def _create_site(access_token, account, contact_info, receipt_method, site_name=None):
         """Create site in PayBC."""
         current_app.logger.debug('<Creating site ')
         if not contact_info:
@@ -177,7 +179,7 @@ class CFSService(OAuthService):
             'CFS_BASE_URL') + f"/cfs/parties/{account.get('party_number', None)}" \
                               f"/accs/{account.get('account_number', None)}/sites/"
         site: Dict[str, Any] = {
-            'site_name': 'Site 1',  # Make it dynamic if we ever need multiple sites per account
+            'site_name': site_name or 'Site 1',  # Make it dynamic if we ever need multiple sites per account
             'city': get_non_null_value(contact_info.get('city'), DEFAULT_CITY),
             'address_line_1': get_non_null_value(contact_info.get('addressLine1'), DEFAULT_ADDRESS_LINE_1),
             'postal_code': get_non_null_value(contact_info.get('postalCode'), DEFAULT_POSTAL_CODE).replace(' ', ''),

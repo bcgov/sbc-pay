@@ -40,7 +40,7 @@ class OnlineBankingService(PaymentSystemService, CFSService):
         """Return ONLINE_BANKING as the system code."""
         return PaymentMethod.ONLINE_BANKING.value
 
-    def create_account(self, name: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
+    def create_account(self, identifier: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
                        **kwargs) -> CfsAccountModel:
         """Create an account for the online banking."""
         # Create CFS Account model instance and set the status as PENDING

@@ -50,9 +50,11 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Initialize."""
         super(PaymentSystemService, self).__init__()  # pylint:disable=super-with-arguments
 
-    def create_account(self, name: str, contact_info: Dict[str, Any],  # pylint: disable=unused-argument, no-self-use
-                       payment_info: Dict[str, Any],  # pylint: disable=unused-argument
+    def create_account(self, identifier: str,
+                       contact_info: Dict[str, Any],
+                       payment_info: Dict[str, Any],
                        **kwargs) -> CfsAccountModel:
+        # pylint: disable=unused-argument, no-self-use
         """Create account in payment system."""
         return None
 
@@ -149,7 +151,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         # Don't do anything is the status is APPROVED.
         if invoice.invoice_status_code == InvoiceStatus.APPROVED.value \
                 and InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
-                invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None:
+                    invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None:
             return
 
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(invoice.payment_account_id)
