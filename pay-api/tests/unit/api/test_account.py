@@ -22,6 +22,7 @@ from unittest.mock import patch
 
 import pytest
 from requests.exceptions import ConnectionError
+from faker import Faker
 
 from pay_api.exceptions import ServiceUnavailableException
 from pay_api.models.invoice import Invoice
@@ -32,6 +33,8 @@ from tests.utilities.base_test import (
     get_basic_account_payload, get_claims, get_gov_account_payload, get_gov_account_payload_with_no_revenue_account,
     get_pad_account_payload, get_payment_request, get_premium_account_payload, get_unlinked_pad_account_payload,
     token_header)
+
+fake = Faker()
 
 
 def test_account_purchase_history(session, client, jwt, app):
@@ -398,6 +401,21 @@ def test_update_online_banking_account_when_cfs_up(session, client, jwt, app):
     auth_account_id = rv.json.get('accountId')
     rv = client.put(f'/api/v1/accounts/{auth_account_id}',
                     data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
+                    headers=headers)
+
+    assert rv.status_code == 202
+
+
+def test_update_name(session, client, jwt, app):
+    """Assert that the payment records are created with 200."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post('/api/v1/accounts',
+                     data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.ONLINE_BANKING.value)),
+                     headers=headers)
+    auth_account_id = rv.json.get('accountId')
+    rv = client.put(f'/api/v1/accounts/{auth_account_id}',
+                    data=json.dumps({'accountName': fake.name()}),
                     headers=headers)
 
     assert rv.status_code == 202
