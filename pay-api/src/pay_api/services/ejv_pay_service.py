@@ -16,17 +16,14 @@
 There are conditions where the payment will be handled for government accounts.
 """
 
-from datetime import datetime
-
 from flask import current_app
 
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentSystem
 from pay_api.utils.util import generate_transaction_number
-
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
 
@@ -59,31 +56,9 @@ class EjvPayService(PaymentSystemService, OAuthService):
 
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
-        # pylint: disable=import-outside-toplevel, cyclic-import
-        from .payment import Payment
-        from .receipt import Receipt
-
         if invoice_reference and invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value:
             # Create a payment record
-            Payment.create(payment_method=self.get_payment_method_code(),
-                           payment_system=self.get_payment_system_code(),
-                           payment_status=PaymentStatus.COMPLETED.value,
-                           invoice_number=invoice_reference.invoice_number,
-                           invoice_amount=invoice.total,
-                           payment_account_id=invoice.payment_account_id)
-            invoice.invoice_status_code = InvoiceStatus.PAID.value
-            invoice.paid = invoice.total
-            invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
-            # Create receipt.
-            receipt = Receipt()
-            receipt.receipt_number = invoice_reference.invoice_number
-            receipt.receipt_amount = invoice.total
-            receipt.invoice_id = invoice.id
-            receipt.receipt_date = datetime.now()
-
-            invoice_reference.flush()
-            receipt.flush()
-            invoice.save()
+            self.complete_payment(invoice, invoice_reference)
 
         # Publish message to the queue with payment token, so that they can release records on their side.
         self._release_payment(invoice=invoice)
