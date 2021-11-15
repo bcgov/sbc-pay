@@ -13,6 +13,7 @@
 # limitations under the License.
 """Abstract class for payment system implementation."""
 
+import functools
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any, Dict, List
@@ -34,9 +35,11 @@ from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus
+from pay_api.utils.user_context import UserContext
 from pay_api.utils.util import get_local_formatted_date_time, get_pay_subject_name
 
 from .payment_line_item import PaymentLineItem
+from .receipt import Receipt
 
 
 class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
@@ -184,6 +187,8 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         payment_transaction: PaymentTransactionModel = PaymentTransactionModel.find_recent_completed_by_invoice_id(
             invoice_id=invoice.id)
         message_type: str = f'bc.registry.payment.{invoice.payment_method_code.lower()}.refundRequest'
+        transaction_date_time = receipt.receipt_date if invoice.payment_method_code == PaymentMethod.DRAWDOWN.value \
+            else payment_transaction.transaction_end_time
         filing_description = ''
         for line_item in invoice.payment_line_items:
             if filing_description:
@@ -198,7 +203,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             data=dict(
                 identifier=invoice.business_identifier,
                 orderNumber=receipt.receipt_number,
-                transactionDateTime=get_local_formatted_date_time(payment_transaction.transaction_end_time),
+                transactionDateTime=get_local_formatted_date_time(transaction_date_time),
                 transactionAmount=receipt.receipt_amount,
                 transactionId=invoice_ref.invoice_number,
                 refundDate=get_local_formatted_date_time(datetime.now(), '%Y%m%d'),
@@ -214,3 +219,56 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug(q_payload)
         publish_response(payload=q_payload, client_name=current_app.config.get('NATS_MAILER_CLIENT_NAME'),
                          subject=current_app.config.get('NATS_MAILER_SUBJECT'))
+
+    def complete_payment(self, invoice, invoice_reference):
+        """Create payment and related records as if the payment is complete."""
+        Payment.create(payment_method=self.get_payment_method_code(),
+                       payment_system=self.get_payment_system_code(),
+                       payment_status=PaymentStatus.COMPLETED.value,
+                       invoice_number=invoice_reference.invoice_number,
+                       invoice_amount=invoice.total,
+                       payment_account_id=invoice.payment_account_id)
+        invoice.invoice_status_code = InvoiceStatus.PAID.value
+        invoice.paid = invoice.total
+        invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
+        # Create receipt.
+        receipt = Receipt()
+        receipt.receipt_number = invoice_reference.invoice_number
+        receipt.receipt_amount = invoice.total
+        receipt.invoice_id = invoice.id
+        receipt.receipt_date = datetime.now()
+        receipt.save()
+
+
+def skip_invoice_for_sandbox(function):
+    """Skip downstream system (BCOL, CFS) if the invoice creation is in sandbox environment."""
+
+    @functools.wraps(function)
+    def wrapper(*func_args, **func_kwargs):
+        """Complete any post invoice activities if needed."""
+        user: UserContext = func_kwargs['user']
+        if user.is_sandbox():
+            current_app.logger.info('Skipping invoice creation as sandbox token is detected.')
+            invoice: Invoice = func_args[3]  # 3 is invoice from the create_invoice signature
+            return InvoiceReference.create(invoice.id, f'SANDBOX-{invoice.id}', f'REF-{invoice.id}')
+        return function(*func_args, **func_kwargs)
+
+    return wrapper
+
+
+def skip_complete_post_invoice_for_sandbox(function):
+    """Skip actual implementation invocation and mark all records as complete if it's sandbox."""
+
+    @functools.wraps(function)
+    def wrapper(*func_args, **func_kwargs):
+        """Complete any post invoice activities."""
+        user: UserContext = func_kwargs['user']
+        if user.is_sandbox():
+            current_app.logger.info('Completing the payment as sandbox token is detected.')
+            instance: PaymentSystemService = func_args[0]
+            instance.complete_payment(func_args[1], func_args[2])  # invoice and invoice ref
+            instance._release_payment(func_args[1])  # pylint: disable=protected-access
+            return None
+        return function(*func_args, **func_kwargs)
+
+    return wrapper

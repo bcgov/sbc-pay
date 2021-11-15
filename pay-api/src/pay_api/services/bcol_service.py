@@ -20,6 +20,8 @@ from flask import current_app
 from requests.exceptions import HTTPError
 
 from pay_api.exceptions import BusinessException, Error
+from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import Payment as PaymentModel
 from pay_api.models.corp_type import CorpType
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentStatus
 from pay_api.utils.enums import PaymentSystem as PaySystemCode
@@ -27,9 +29,7 @@ from pay_api.utils.errors import get_bcol_error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import generate_transaction_number
 
-from pay_api.models import Invoice as InvoiceModel
-from pay_api.models import Payment as PaymentModel
-from .base_payment_system import PaymentSystemService
+from .base_payment_system import PaymentSystemService, skip_complete_post_invoice_for_sandbox, skip_invoice_for_sandbox
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
 from .oauth_service import OAuthService
@@ -45,6 +45,7 @@ class BcolService(PaymentSystemService, OAuthService):
         return PaySystemCode.BCOL.value
 
     @user_context
+    @skip_invoice_for_sandbox
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
                        line_items: [PaymentLineItem], invoice: Invoice, **kwargs) -> InvoiceReference:
         """Create Invoice in PayBC."""
@@ -117,29 +118,16 @@ class BcolService(PaymentSystemService, OAuthService):
 
     def process_cfs_refund(self, invoice: InvoiceModel):
         """Process refund in CFS."""
-        super()._publish_refund_to_mailer(invoice)
+        self._publish_refund_to_mailer(invoice)
         payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
         payment.payment_status_code = PaymentStatus.REFUNDED.value
         payment.flush()
 
-    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
+    @user_context
+    @skip_complete_post_invoice_for_sandbox
+    def complete_post_invoice(self, invoice: Invoice,  # pylint: disable=unused-argument
+                              invoice_reference: InvoiceReference, **kwargs) -> None:
         """Complete any post payment activities if needed."""
-        # pylint: disable=cyclic-import,import-outside-toplevel
-        from .payment import Payment
-        from .payment_transaction import PaymentTransaction
-
-        # Create a payment record
-        Payment.create(payment_method=self.get_payment_method_code(),
-                       payment_system=self.get_payment_system_code(),
-                       payment_status=self.get_default_payment_status(),
-                       invoice_number=invoice_reference.invoice_number,
-                       invoice_amount=invoice.total,
-                       payment_account_id=invoice.payment_account_id)
-        transaction: PaymentTransaction = PaymentTransaction.create_transaction_for_invoice(
-            invoice.id,
-            {
-                'clientSystemUrl': '',
-                'payReturnUrl': ''
-            }
-        )
-        transaction.update_transaction(transaction.id, pay_response_url=None)
+        self.complete_payment(invoice, invoice_reference)
+        # Publish message to the queue with payment token, so that they can release records on their side.
+        self._release_payment(invoice=invoice)

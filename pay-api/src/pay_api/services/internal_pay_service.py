@@ -97,27 +97,9 @@ class InternalPayService(PaymentSystemService, OAuthService):
 
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
-        # pylint: disable=import-outside-toplevel, cyclic-import
-        from .payment import Payment
-        from .payment_transaction import PaymentTransaction
-
-        # Create a payment record
-        current_app.logger.debug('Created payment record')
-        Payment.create(payment_method=self.get_payment_method_code(),
-                       payment_system=self.get_payment_system_code(),
-                       payment_status=self.get_default_payment_status(),
-                       invoice_number=invoice_reference.invoice_number,
-                       invoice_amount=invoice.total,
-                       payment_account_id=invoice.payment_account_id)
-
-        transaction: PaymentTransaction = PaymentTransaction.create_transaction_for_invoice(
-            invoice.id,
-            {
-                'clientSystemUrl': '',
-                'payReturnUrl': ''
-            }
-        )
-        transaction.update_transaction(transaction.id, pay_response_url=None)
+        self.complete_payment(invoice, invoice_reference)
+        # Publish message to the queue with payment token, so that they can release records on their side.
+        self._release_payment(invoice=invoice)
 
     def process_cfs_refund(self, invoice: InvoiceModel):
         """Process refund in CFS."""

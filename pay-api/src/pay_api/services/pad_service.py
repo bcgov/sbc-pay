@@ -24,7 +24,9 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, PaymentSystem
+from pay_api.utils.user_context import user_context
 
+from .base_payment_system import skip_complete_post_invoice_for_sandbox, skip_invoice_for_sandbox
 from .payment_line_item import PaymentLineItem
 
 
@@ -91,8 +93,10 @@ class PadService(PaymentSystemService, CFSService):
             updated_cfs_account.flush()
         return cfs_account
 
+    @user_context
+    @skip_invoice_for_sandbox
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
-                       **kwargs) -> InvoiceReference:
+                       **kwargs) -> InvoiceReference:  # pylint: disable=unused-argument
         """Return a static invoice number for direct pay."""
         current_app.logger.debug('<create_invoice_pad_service')
         # Do nothing here as the invoice references are created later.
@@ -101,11 +105,14 @@ class PadService(PaymentSystemService, CFSService):
         payment_account.credit = 0 if account_credit < invoice.total else account_credit - invoice.total
         payment_account.flush()
 
-    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
+    @user_context
+    @skip_complete_post_invoice_for_sandbox
+    def complete_post_invoice(self, invoice: Invoice,  # pylint: disable=unused-argument
+                              invoice_reference: InvoiceReference, **kwargs) -> None:
         """Complete any post invoice activities if needed."""
         # Publish message to the queue with payment token, so that they can release records on their side.
         self._release_payment(invoice=invoice)
 
     def process_cfs_refund(self, invoice: InvoiceModel):
         """Process refund in CFS."""
-        super()._refund_and_create_credit_memo(invoice)
+        self._refund_and_create_credit_memo(invoice)

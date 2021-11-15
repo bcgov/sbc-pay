@@ -129,6 +129,7 @@ class Role(Enum):
     FAS_CREATE = 'fas_create'
     FAS_LINK = 'fas_link'
     FAS_REFUND_APPROVER = 'fas_refund_approver'
+    SANDBOX = 'sandbox'
 
 
 class Code(Enum):

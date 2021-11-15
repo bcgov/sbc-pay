@@ -33,8 +33,8 @@ from tests.utilities.base_test import (
     activate_pad_account, fake, get_basic_account_payload, get_claims, get_gov_account_payload, get_payment_request,
     get_payment_request_for_wills, get_payment_request_with_folio_number, get_payment_request_with_no_contact_info,
     get_payment_request_with_payment_method, get_payment_request_with_service_fees, get_payment_request_without_bn,
-    get_routing_slip_request, get_unlinked_pad_account_payload, get_waive_fees_payment_request,
-    get_zero_dollar_payment_request, token_header)
+    get_premium_account_payload, get_routing_slip_request, get_unlinked_pad_account_payload,
+    get_waive_fees_payment_request, get_zero_dollar_payment_request, token_header)
 
 
 def test_payment_request_creation(session, client, jwt, app):
@@ -1001,3 +1001,25 @@ def test_create_ejv_payment_request_non_billable_account(session, client, jwt, a
     assert rv.json.get('paymentMethod') == PaymentMethod.EJV.value
     assert rv.json.get('statusCode') == 'COMPLETED'
     assert rv.json.get('total') == rv.json.get('paid')
+
+
+@pytest.mark.parametrize('account_payload, pay_method', [
+    (get_unlinked_pad_account_payload(account_id=1234), PaymentMethod.PAD.value),
+    (get_premium_account_payload(account_id=1234), PaymentMethod.DRAWDOWN.value)])
+def test_create_sandbox_payment_requests(session, client, jwt, app, account_payload, pay_method):
+    """Assert payment request works for PAD accounts."""
+    token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value, Role.CREATE_SANDBOX_ACCOUNT.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    # Create account first
+    rv = client.post('/api/v1/accounts?sandbox=true', data=json.dumps(account_payload), headers=headers)
+
+    auth_account_id = rv.json.get('accountId')
+
+    token = jwt.create_jwt(get_claims(roles=[Role.SANDBOX.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json', 'Account-Id': auth_account_id}
+
+    payload = get_payment_request()
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(payload), headers=headers)
+
+    assert rv.json.get('paymentMethod') == pay_method
+    assert rv.json.get('statusCode') == 'COMPLETED'
