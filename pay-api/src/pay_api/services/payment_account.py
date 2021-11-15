@@ -341,23 +341,24 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         # pylint:disable=cyclic-import, import-outside-toplevel
         from pay_api.factory.payment_system_factory import PaymentSystemFactory
 
-        # If the payment method is CC, set the payment_method as DIRECT_PAY
-        payment_method: str = get_str_by_path(account_request, 'paymentInfo/methodOfPayment')
-        if not payment_method or payment_method == PaymentMethod.CC.value:
-            payment_method = PaymentMethod.DIRECT_PAY.value
-
-        payment_account.payment_method = payment_method
         payment_account.auth_account_id = account_request.get('accountId')
-        payment_account.name = account_request.get('accountName', None)
-        payment_account.bcol_account = account_request.get('bcolAccountNumber', None)
-        payment_account.bcol_user_id = account_request.get('bcolUserId', None)
-        payment_account.pad_tos_accepted_by = account_request.get('padTosAcceptedBy', None)
-        if payment_account.pad_tos_accepted_by is not None:
+
+        # If the payment method is CC, set the payment_method as DIRECT_PAY
+        if payment_method := get_str_by_path(account_request, 'paymentInfo/methodOfPayment'):
+            payment_account.payment_method = payment_method
+            payment_account.bcol_account = account_request.get('bcolAccountNumber', None)
+            payment_account.bcol_user_id = account_request.get('bcolUserId', None)
+
+        if name := account_request.get('accountName', None):
+            payment_account.name = name
+
+        if pad_tos_accepted_by := account_request.get('padTosAcceptedBy', None):
+            payment_account.pad_tos_accepted_by = pad_tos_accepted_by
             payment_account.pad_tos_accepted_date = datetime.now()
 
-        payment_info = account_request.get('paymentInfo')
-        billable = payment_info.get('billable', True)
-        payment_account.billable = billable
+        if payment_info := account_request.get('paymentInfo'):
+            billable = payment_info.get('billable', True)
+            payment_account.billable = billable
         payment_account.flush()
 
         # Steps to decide on creating CFS Account or updating CFS bank account.
@@ -367,9 +368,18 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         # 2. Existing payment account:
         # -  If the account was on DIRECT_PAY and switching to Online Banking, and active CFS account is not present.
         # -  If the account was on DRAWDOWN and switching to PAD, and active CFS account is not present
+
+        if payment_method:
+            pay_system = PaymentSystemFactory.create_from_payment_method(payment_method=payment_method)
+            cls._handle_payment_details(account_request, is_sandbox, pay_system, payment_account, payment_info)
+        payment_account.save()
+
+    @classmethod
+    def _handle_payment_details(cls, account_request, is_sandbox, pay_system, payment_account,
+                                payment_info):
+        # pylint: disable=too-many-arguments
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id) \
             if payment_account.id else None
-        pay_system = PaymentSystemFactory.create_from_payment_method(payment_method=payment_method)
         if pay_system.get_payment_system_code() == PaymentSystem.PAYBC.value:
             if cfs_account is None:
                 cfs_account = pay_system.create_account(  # pylint:disable=assignment-from-none
@@ -405,7 +415,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 # if its not PAYBC ,it means switching to either drawdown or internal ,deactivate the cfs account
                 cfs_account.status = CfsAccountStatus.INACTIVE.value
                 cfs_account.flush()
-        payment_account.save()
 
     @classmethod
     def _update_pad_activation_date(cls, cfs_account: CfsAccountModel,
