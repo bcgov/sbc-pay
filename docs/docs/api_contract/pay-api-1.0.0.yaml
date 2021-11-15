@@ -542,7 +542,7 @@ paths:
                           serviceFees: 1.5
                           statusCode: ACTIVE
                           total: 450
-                          waivedBy: null
+                          waivedBy: Staff
                           waivedFees: 0
                       paid: 451.5
                       receipts:
@@ -593,7 +593,7 @@ paths:
                           serviceFees: 1.5
                           statusCode: ACTIVE
                           total: 450
-                          waivedBy: null
+                          waivedBy: Staff
                           waivedFees: 0
                       paid: 451.5
                       receipts:
@@ -772,7 +772,7 @@ paths:
                             quantity: 1
                             serviceFees: 1.5
                             total: 350
-                            waivedBy: null
+                            waivedBy: Staff
                             waivedFees: 0
                         paid: 351.5
                         refund: 0
@@ -792,7 +792,7 @@ paths:
                             quantity: 1
                             serviceFees: 1.5
                             total: 350
-                            waivedBy: null
+                            waivedBy: Staff
                             waivedFees: 0
                         paid: 351.5
                         refund: 0
@@ -814,7 +814,7 @@ paths:
                             quantity: 1
                             serviceFees: 1.5
                             total: 20
-                            waivedBy: null
+                            waivedBy: Staff
                             waivedFees: 0
                         paid: 21.5
                         refund: 0
@@ -835,7 +835,7 @@ paths:
                             quantity: 1
                             serviceFees: 1.5
                             total: 20
-                            waivedBy: null
+                            waivedBy: Staff
                             waivedFees: 0
                         paid: 21.5
                         refund: 0
@@ -856,7 +856,7 @@ paths:
                             quantity: 1
                             serviceFees: 0
                             total: 0
-                            waivedBy: null
+                            waivedBy: Staff
                             waivedFees: 0
                         paid: 0
                         refund: 0
@@ -877,7 +877,7 @@ paths:
                             quantity: 1
                             serviceFees: 0
                             total: 0
-                            waivedBy: null
+                            waivedBy: Staff
                             waivedFees: 0
                         paid: 0
                         refund: 0
@@ -898,7 +898,7 @@ paths:
                             quantity: 1
                             serviceFees: 0
                             total: 20
-                            waivedBy: null
+                            waivedBy: Staff
                             waivedFees: 0
                         paid: 21.5
                         refund: 0
@@ -919,7 +919,7 @@ paths:
                             quantity: 1
                             serviceFees: 0
                             total: 20
-                            waivedBy: null
+                            waivedBy: Staff
                             waivedFees: 0
                         paid: 21.5
                         refund: 0
@@ -940,7 +940,7 @@ paths:
                             quantity: 1
                             serviceFees: 0
                             total: 20
-                            waivedBy: null
+                            waivedBy: Staff
                             waivedFees: 0
                         paid: 21.5
                         refund: 0
@@ -961,7 +961,7 @@ paths:
                             quantity: 1
                             serviceFees: 0
                             total: 20
-                            waivedBy: null
+                            waivedBy: Staff
                             waivedFees: 0
                         paid: 21.5
                         refund: 0
@@ -1661,6 +1661,20 @@ components:
             accountName:
               type: string
               description: Account Name
+            billable:
+              type: boolean
+        createdName:
+          type: string
+        filingId:
+          type: string
+        folioNumber:
+          type: string
+        paymentMethod:
+          type: string
+        receipts:
+          type: array
+          items:
+            $ref: '#/components/schemas/Receipt'
     Transaction:
       type: object
       properties:
@@ -1734,6 +1748,8 @@ components:
           type: number
         waivedFees:
           type: number
+        waivedBy:
+          type: string
     Receipt:
       title: Receipt
       type: object
@@ -1750,6 +1766,10 @@ components:
         bcOnlineAccountNumber:
           type: string
         paymentMethod:
+          type: string
+        receiptAmount:
+          type: number
+        receiptDate:
           type: string
     TransactionReportQuery:
       title: Transaction Report Query
