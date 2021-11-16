@@ -63,10 +63,9 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         # find all routing slip invoices [cash or cheque]
         # create invoices in csf
         # do the recipt apply
-
         invoices: List[InvoiceModel] = InvoiceModel.query \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.INTERNAL.value) \
-            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.CREATED.value) \
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value) \
             .filter(InvoiceModel.routing_slip is not None) \
             .order_by(InvoiceModel.created_on.asc()).all()
 
@@ -86,8 +85,8 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                                                                      line_items=invoice.payment_line_items,
                                                                      cfs_account=cfs_account)
                 # apply receipt now
-                receipt_response = CFSService.apply_receipt(cfs_account, routing_slip, invoice.id)
-
+                receipt_response = CFSService.apply_receipt(cfs_account, routing_slip.number,
+                                                            invoice_response.json().get('invoice_number', None))
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(
@@ -128,7 +127,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         # check last receipt applies amount with routing slip balance.
         # Trigger sentry if there is mismatch
         if receipt_response:
-            last_remaining_balance_from_cfs = receipt_response.get('receipt_amount', None)
+            last_remaining_balance_from_cfs = receipt_response.json().get('receipt_amount', None)
             if last_remaining_balance_from_cfs != routing_slip.remaining_amount:
                 capture_message(f'Routing Slip:{routing_slip.number} remaining amount :{routing_slip.remaining_amount} '
                                 f'doesnt match with cfs receipt balance:'
