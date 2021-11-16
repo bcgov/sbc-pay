@@ -216,6 +216,10 @@ def test_create_refund_with_existing_routing_slip(session, client,
                      headers=headers)
     items = rv.json.get('items')
 
+    inv: InvoiceModel = InvoiceModel.find_by_id(inv_id)
+    inv.invoice_status_code = InvoiceStatus.PAID.value
+    inv.save()
+
     assert items[0].get('remainingAmount') == payload.get('payments')[0].get('paidAmount') - total
 
     rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
