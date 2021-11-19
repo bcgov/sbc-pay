@@ -100,7 +100,6 @@ class InternalPayService(PaymentSystemService, OAuthService):
 
         if (routing_slip_number := invoice.routing_slip) is None:
             raise BusinessException(Error.INVALID_REQUEST)
-        # TODO Add cfs refund here
         payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
         if payment:
             payment.payment_status_code = PaymentStatus.REFUNDED.value
@@ -109,6 +108,10 @@ class InternalPayService(PaymentSystemService, OAuthService):
         if routing_slip := RoutingSlipModel.find_by_number(routing_slip_number):
             routing_slip.remaining_amount += decimal.Decimal(invoice.total)
             routing_slip.flush()
+            invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
+        else:
+            invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
+        invoice.save()
 
     @staticmethod
     def _validate_routing_slip(routing_slip: RoutingSlipModel, invoice: Invoice):
