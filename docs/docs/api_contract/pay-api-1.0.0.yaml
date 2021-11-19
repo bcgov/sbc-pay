@@ -1626,6 +1626,7 @@ components:
             - CREATED
             - APPROVED
             - COMPLETED
+            - PAD Invoice Approved
         references:
           type: array
           items:
@@ -1675,6 +1676,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Receipt'
+        updatedOn:
+          type: string
+        updatedBy:
+          type: string
     Transaction:
       type: object
       properties:
@@ -1750,6 +1755,8 @@ components:
           type: number
         waivedBy:
           type: string
+        filingTypeCode:
+          type: string
     Receipt:
       title: Receipt
       type: object
@@ -1771,6 +1778,8 @@ components:
           type: number
         receiptDate:
           type: string
+        id:
+          type: number
     TransactionReportQuery:
       title: Transaction Report Query
       type: object
