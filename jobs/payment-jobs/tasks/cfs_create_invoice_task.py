@@ -105,7 +105,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             # leave the status as PAID
             invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
             invoice.invoice_status_code = InvoiceStatus.PAID.value
-            invoice.save()
+            invoice.paid = invoice.total
 
             Payment.create(payment_method=PaymentMethod.INTERNAL.value,
                            payment_system=PaymentSystem.INTERNAL.value,
@@ -113,12 +113,10 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                            invoice_number=invoice_reference.invoice_number,
                            invoice_amount=invoice.total,
                            payment_account_id=invoice.payment_account_id)
-            invoice.invoice_status_code = InvoiceStatus.PAID.value
-            invoice.paid = invoice.total
-            invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
+
             # Create receipt.
             receipt = Receipt()
-            receipt.receipt_number = invoice_reference.invoice_number
+            receipt.receipt_number = receipt_response.json().get('receipt_number', None)
             receipt.receipt_amount = invoice.total
             receipt.invoice_id = invoice.id
             receipt.receipt_date = datetime.now()
