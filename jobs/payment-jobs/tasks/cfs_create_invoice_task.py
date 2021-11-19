@@ -54,6 +54,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         cls._create_eft_invoices()
         cls._create_wire_invoices()
         cls._create_rs_invoices()
+        cls._cancel_rs_invoices()
 
     @classmethod
     def _create_rs_invoices(cls):  # pylint: disable=too-many-locals
@@ -85,6 +86,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                                                                      line_items=invoice.payment_line_items,
                                                                      cfs_account=cfs_account)
                 # apply receipt now
+                # TODO is the invoice_number arugment to pass to unapply service  is correct???
                 receipt_response = CFSService.apply_receipt(cfs_account, routing_slip.number,
                                                             invoice_response.json().get('invoice_number', None))
 
@@ -271,4 +273,41 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             invoice.cfs_account_id = payment_account.cfs_account_id
             # leave the status as SETTLEMENT_SCHEDULED
             invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
+            invoice.save()
+
+    @classmethod
+    def _cancel_rs_invoices(cls):
+        """Cancel routing slip invoices in CFS."""
+        invoices: List[InvoiceModel] = InvoiceModel.query \
+            .filter(InvoiceModel.payment_method_code == PaymentMethod.INTERNAL.value) \
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value) \
+            .filter(InvoiceModel.routing_slip is not None) \
+            .order_by(InvoiceModel.created_on.asc()).all()
+
+        current_app.logger.info(f'Found {len(invoices)} to be cancelled in CFS.')
+        for invoice in invoices:
+            # call unapply rcpts
+            # adjust invoice to zero
+            current_app.logger.debug(f'Creating cfs invoice for invoice {invoice.id}')
+            routing_slip = RoutingSlipModel.find_by_number(invoice.routing_slip)
+            routing_slip_payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(
+                routing_slip.payment_account_id)
+            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
+                routing_slip_payment_account.id)
+            invoice_reference = InvoiceReferenceModel.find_any_active_reference_by_invoice_number(invoice.id)
+            try:
+                invoice_response = CFSService.adjust_invoice(cfs_account=cfs_account,
+                                                             inv_number=invoice_reference.invoice_number, amount=0)
+                # apply receipt now
+                CFSService.unapply_receipt(cfs_account, routing_slip.number,
+                                           invoice_response.json().get('invoice_number', None))
+
+            except Exception as e:  # NOQA # pylint: disable=broad-except
+                capture_message(
+                    f'Error on creating Routing Slip invoice: account id={routing_slip_payment_account.id}, '
+                    f'routing slip : {routing_slip.id}, ERROR : {str(e)}', level='error')
+                current_app.logger.error(e)
+                continue
+
+            invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
             invoice.save()
