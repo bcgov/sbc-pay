@@ -77,26 +77,52 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             routing_slip = RoutingSlipModel.find_by_number(invoice.routing_slip)
             routing_slip_payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(
                 routing_slip.payment_account_id)
-            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
+
+            # apply invoice to the active CFS_ACCOUNT which will be the parent routing slip
+            active_cfs_account = CfsAccountModel.find_effective_by_account_id(
                 routing_slip_payment_account.id)
 
-            try:
-                invoice_response = CFSService.create_account_invoice(transaction_number=invoice.id,
-                                                                     line_items=invoice.payment_line_items,
-                                                                     cfs_account=cfs_account)
-                # apply receipt now
-                receipt_response = CFSService.apply_receipt(cfs_account, routing_slip.number,
-                                                            invoice_response.json().get('invoice_number', None))
+            invoice_response = CFSService.create_account_invoice(transaction_number=invoice.id,
+                                                                 line_items=invoice.payment_line_items,
+                                                                 cfs_account=active_cfs_account)
+            invoice_number = invoice_response.json().get('invoice_number', None)
 
-            except Exception as e:  # NOQA # pylint: disable=broad-except
-                capture_message(
-                    f'Error on creating Routing Slip invoice: account id={routing_slip_payment_account.id}, '
-                    f'routing slip : {routing_slip.id}, ERROR : {str(e)}', level='error')
-                current_app.logger.error(e)
-                continue
+            receipt_applied_amount = 0
+            # a routing slip can have multiple receipts
+            cfs_accounts: List[CfsAccountModel] = CfsAccountModel.find_by_account_id(
+                routing_slip_payment_account.id)
+            # an invoice has to be applied to multiple receipts ; apply till the balance is zero
+            for cfs_account in cfs_accounts:
+                try:
+                    # apply receipt now
+                    current_app.logger.debug(f'Apply receipt {cfs_account.id} on invoice {invoice_number} '
+                                             f'for routing slip {routing_slip.number}')
+                    receipt_response = CFSService.apply_receipt(cfs_account, routing_slip.number,
+                                                                invoice_number)
+
+                    # Create receipt.
+                    receipt = Receipt()
+                    receipt.receipt_number = receipt_response.json().get('receipt_number', None)
+                    receipt_amount = receipt_response.json().get('receipt_amount', None)
+                    receipt.receipt_amount = receipt_amount
+                    receipt.invoice_id = invoice.id
+                    receipt.receipt_date = datetime.now()
+                    receipt.flush()
+
+                    # check total applied amount reaches the invoice amount , if so stop the apply
+                    receipt_applied_amount += receipt_amount
+                    if receipt_applied_amount >= invoice.total:
+                        break
+
+                except Exception as e:  # NOQA # pylint: disable=broad-except
+                    capture_message(
+                        f'Error on creating Routing Slip invoice: account id={routing_slip_payment_account.id}, '
+                        f'routing slip : {routing_slip.id}, ERROR : {str(e)}', level='error')
+                    current_app.logger.error(e)
+                    continue
 
             invoice_reference: InvoiceReference = InvoiceReference.create(
-                invoice.id, invoice_response.json().get('invoice_number', None),
+                invoice.id, invoice_number,
                 # TODO is pbc_ref_number correct?
                 invoice_response.json().get('pbc_ref_number', None))
 
@@ -113,23 +139,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                            invoice_number=invoice_reference.invoice_number,
                            invoice_amount=invoice.total,
                            payment_account_id=invoice.payment_account_id)
-
-            # Create receipt.
-            receipt = Receipt()
-            receipt.receipt_number = receipt_response.json().get('receipt_number', None)
-            receipt.receipt_amount = invoice.total
-            receipt.invoice_id = invoice.id
-            receipt.receipt_date = datetime.now()
-            receipt.save()
-
-        # check last receipt applies amount with routing slip balance.
-        # Trigger sentry if there is mismatch
-        if receipt_response:
-            last_remaining_balance_from_cfs = receipt_response.json().get('receipt_amount', None)
-            if last_remaining_balance_from_cfs != routing_slip.remaining_amount:
-                capture_message(f'Routing Slip:{routing_slip.number} remaining amount :{routing_slip.remaining_amount} '
-                                f'doesnt match with cfs receipt balance:'
-                                f'{last_remaining_balance_from_cfs}', level='error')
+            invoice.save()
 
     @classmethod
     def _create_pad_invoices(cls):  # pylint: disable=too-many-locals
