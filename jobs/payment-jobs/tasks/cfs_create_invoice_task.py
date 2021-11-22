@@ -86,7 +86,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                                                                  line_items=invoice.payment_line_items,
                                                                  cfs_account=active_cfs_account)
             invoice_number = invoice_response.json().get('invoice_number', None)
-            print('---invoice_numberbefore:--',invoice_number)
             receipt_applied_amount = 0
             # a routing slip can have multiple receipts
             cfs_accounts: List[CfsAccountModel] = CfsAccountModel.find_by_account_id(
@@ -104,7 +103,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     receipt = Receipt()
                     receipt.receipt_number = receipt_response.json().get('receipt_number', None)
                     # TODO verify if paybc response has a dollar
-                    receipt_amount = receipt_response.json().get('receipt_amount', None).replace("$", "")
+                    receipt_amount = receipt_response.json().get('receipt_amount', None).replace('$', '')
                     receipt.receipt_amount = receipt_amount
                     receipt.invoice_id = invoice.id
                     receipt.receipt_date = datetime.now()
@@ -122,20 +121,15 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     current_app.logger.error(e)
                     continue
 
-            print('------------------------invoice_number------',invoice_number)
-            print('------------------------invoice_number--2----', invoice_response.json().get('pbc_ref_number', None))
-            print('------------------------invoice_number------', invoice.id)
             invoice_reference: InvoiceReference = InvoiceReference.create(
                 invoice.id, invoice_number,
                 # TODO is pbc_ref_number correct?
                 invoice_response.json().get('pbc_ref_number', None))
 
             current_app.logger.debug('>create_invoice')
-            print('------------------------here------')
             # leave the status as PAID
             invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
             invoice.invoice_status_code = InvoiceStatus.PAID.value
-            print('------------------------here--invoice.total----',invoice.total)
             invoice.paid = invoice.total
 
             Payment.create(payment_method=PaymentMethod.INTERNAL.value,
