@@ -242,6 +242,35 @@ class CFSService(OAuthService):
         return payment_details
 
     @classmethod
+    def get_invoice(cls, cfs_account: CfsAccountModel, inv_number: str):
+        """Get invoice from CFS."""
+        current_app.logger.debug('<get_invoice')
+        access_token: str = CFSService.get_token().json().get('access_token')
+        invoice_url = current_app.config.get(
+            'CFS_BASE_URL') + f'/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/' \
+                              f'sites/{cfs_account.cfs_site}/invs/{inv_number}/'
+
+        invoice_response = CFSService.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+        current_app.logger.debug('>get_invoice')
+        return invoice_response.json()
+
+    @classmethod
+    def apply_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, invoice_number: str) -> Dict[str, any]:
+        """Return Invoice to Routing slip receipt from CFS."""
+        current_app.logger.debug('>Apply receipt: %s invoice:%s', receipt_number, invoice_number)
+        access_token: str = CFSService.get_token().json().get('access_token')
+        cfs_base: str = current_app.config.get('CFS_BASE_URL')
+        receipt_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}' \
+                      f'/sites/{cfs_account.cfs_site}/rcpts/{receipt_number}/apply'
+        current_app.logger.debug('Receipt URL %s', receipt_url)
+
+        payload = {
+            'invoice_number': invoice_number,
+        }
+
+        return CFSService.post(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload)
+
+    @classmethod
     def update_bank_details(cls, name: str, party_number: str,  # pylint: disable=too-many-arguments
                             account_number: str, site_number: str,
                             payment_info: Dict[str, str]):

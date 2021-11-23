@@ -25,14 +25,14 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 # from pay_api.models import Payment as PaymentModel
 from pay_api.services import CFSService
-from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus
+from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
 from requests import Response
 
 from tasks.cfs_create_invoice_task import CreateInvoiceTask
 
 from .factory import (
     factory_create_eft_account, factory_create_online_banking_account, factory_create_pad_account,
-    factory_create_wire_account, factory_invoice, factory_payment_line_item)
+    factory_create_wire_account, factory_invoice, factory_payment_line_item, factory_routing_slip_account)
 
 
 def test_create_invoice(session):
@@ -63,6 +63,32 @@ def test_create_pad_invoice_single_transaction(session):
 
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+
+
+def test_create_rs_invoice_single_transaction(session):
+    """Assert PAD invoices are created."""
+    # Create an account and an invoice for the account
+    rs_number = '123'
+    account = factory_routing_slip_account(number=rs_number, status=CfsAccountStatus.ACTIVE.value)
+    previous_day = datetime.now() - timedelta(days=1)
+    # Create an invoice for this account
+    invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10,
+                              status_code=InvoiceStatus.APPROVED.value,
+                              payment_method_code=PaymentMethod.INTERNAL.value, routing_slip=rs_number)
+
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+
+    CreateInvoiceTask.create_invoices()
+
+    updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
+    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
+        find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.COMPLETED.value)
+
+    assert inv_ref
+    assert updated_invoice.invoice_status_code == InvoiceStatus.PAID.value
 
 
 def test_create_pad_invoice_single_transaction_run_again(session):
