@@ -86,16 +86,21 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                                                                  line_items=invoice.payment_line_items,
                                                                  cfs_account=active_cfs_account)
             invoice_number = invoice_response.json().get('invoice_number', None)
-            receipt_applied_amount = 0
-            # a routing slip can have multiple receipts
-            cfs_accounts: List[CfsAccountModel] = CfsAccountModel.find_by_account_id(
-                routing_slip_payment_account.id)
+            routing_slips: List[RoutingSlipModel] = RoutingSlipModel.\
+                find_all_by_payment_account_id(routing_slip_payment_account.id)
             # an invoice has to be applied to multiple receipts ; apply till the balance is zero
-            for cfs_account in cfs_accounts:
+            for routing_slip in routing_slips:
                 try:
                     # apply receipt now
-                    current_app.logger.debug(f'Apply receipt {cfs_account.id} on invoice {invoice_number} '
+                    current_app.logger.debug(f'Apply receipt {routing_slip.number} on invoice {invoice_number} '
                                              f'for routing slip {routing_slip.number}')
+
+                    routing_slip_payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(
+                        routing_slip.payment_account_id)
+
+                    cfs_account = CfsAccountModel.find_effective_by_account_id(
+                        routing_slip_payment_account.id)
+
                     receipt_response = CFSService.apply_receipt(cfs_account, routing_slip.number,
                                                                 invoice_number)
 
@@ -109,9 +114,8 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     receipt.receipt_date = datetime.now()
                     receipt.flush()
 
-                    # check total applied amount reaches the invoice amount , if so stop the apply
-                    receipt_applied_amount += receipt_amount
-                    if receipt_applied_amount >= invoice.total:
+                    invoice_from_cfs = CFSService.get_invoice(active_cfs_account, invoice_number)
+                    if invoice_from_cfs.get('dueAmount') <= 0:
                         break
 
                 except Exception as e:  # NOQA # pylint: disable=broad-except
