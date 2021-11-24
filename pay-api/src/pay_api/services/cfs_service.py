@@ -266,7 +266,7 @@ class CFSService(OAuthService):
 
     @classmethod
     def _modify_rs_receipt_in_cfs(cls, cfs_account, invoice_number, receipt_number, verb='apply'):
-        """Common method for apply and unapply."""
+        """Apply and unapply using the verb passed."""
         current_app.logger.debug('>Apply receipt: %s invoice:%s', receipt_number, invoice_number)
         access_token: str = CFSService.get_token().json().get('access_token')
         cfs_base: str = current_app.config.get('CFS_BASE_URL')
