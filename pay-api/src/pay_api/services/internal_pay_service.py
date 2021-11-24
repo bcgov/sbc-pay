@@ -109,6 +109,11 @@ class InternalPayService(PaymentSystemService, OAuthService):
         if routing_slip := RoutingSlipModel.find_by_number(routing_slip_number):
             routing_slip.remaining_amount += decimal.Decimal(invoice.total)
             routing_slip.flush()
+            invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
+        else:
+            # legacy rs assumes to be refunded
+            invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
+        invoice.flush()
 
     @staticmethod
     def _validate_routing_slip(routing_slip: RoutingSlipModel, invoice: Invoice):

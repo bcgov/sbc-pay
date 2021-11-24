@@ -256,18 +256,26 @@ class CFSService(OAuthService):
 
     @classmethod
     def apply_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, invoice_number: str) -> Dict[str, any]:
-        """Return Invoice to Routing slip receipt from CFS."""
+        """Apply Invoice to Routing slip receipt from CFS."""
+        return cls._modify_rs_receipt_in_cfs(cfs_account, invoice_number, receipt_number)
+
+    @classmethod
+    def unapply_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, invoice_number: str) -> Dict[str, any]:
+        """Unapply Invoice to Routing slip receipt from CFS."""
+        return cls._modify_rs_receipt_in_cfs(cfs_account, invoice_number, receipt_number, verb='unapply')
+
+    @classmethod
+    def _modify_rs_receipt_in_cfs(cls, cfs_account, invoice_number, receipt_number, verb='apply'):
+        """Common method for apply and unapply."""
         current_app.logger.debug('>Apply receipt: %s invoice:%s', receipt_number, invoice_number)
         access_token: str = CFSService.get_token().json().get('access_token')
         cfs_base: str = current_app.config.get('CFS_BASE_URL')
         receipt_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}' \
-                      f'/sites/{cfs_account.cfs_site}/rcpts/{receipt_number}/apply'
+                      f'/sites/{cfs_account.cfs_site}/rcpts/{receipt_number}/{verb}'
         current_app.logger.debug('Receipt URL %s', receipt_url)
-
         payload = {
             'invoice_number': invoice_number,
         }
-
         return CFSService.post(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload)
 
     @classmethod

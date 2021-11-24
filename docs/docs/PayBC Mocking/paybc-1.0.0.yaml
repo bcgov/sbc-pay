@@ -468,6 +468,104 @@
           examples:
             inv_info:
               value: 10021
+    '/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/rcpts/{receipt_number}/unapply':
+      post:
+        tags:
+          - Rcpts Unapply
+        summary: Unapply Rcpt
+        description: Unapply a receipt.
+        operationId: Rcpts_Unapply_POST
+        requestBody:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/invoice_info'
+          required: true
+        responses:
+          '200':
+            description: Created
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/Rcpt'
+                examples:
+                  rcpt_info:
+                    value:
+                      receipt_number: '123451'
+                      receipt_date: '2021-10-05T07'
+                      party_number: '11111'
+                      party_name: receipt
+                      account_number: '4101'
+                      site_number: '29921'
+                      receipt_amount: $10.02
+                      unapplied_amount: 0
+                      payment_method: credit card
+                      comments: This is post
+                      invoices:
+                        - invoice_number: '10021'
+                          amount_applied: '9.85'
+                          lines:
+                            - line_number: '23'
+                              amount_to_apply: $9.5
+          '400':
+            description: BadRequest
+            content:
+              application/json:
+                schema:
+                  $ref: '#/components/schemas/ErrorResponse'
+      parameters:
+        - name: party_number
+          in: path
+          required: true
+          schema:
+            format: string
+            type: string
+          examples:
+            inv_info1:
+              value: 11111
+            inv_info2:
+              value: 11111
+            inv_info3:
+              value: 11111
+        - name: account_number
+          in: path
+          required: true
+          schema:
+            format: string
+            type: string
+          examples:
+            inv_info1:
+              value: 4101
+            inv_info2:
+              value: 4101
+            inv_info3:
+              value: 4101
+        - name: site_number
+          in: path
+          required: true
+          schema:
+            format: string
+            type: string
+          examples:
+            inv_info1:
+              value: 29921
+            inv_info2:
+              value: 29921
+            inv_info3:
+              value: 29921
+        - name: receipt_number
+          in: path
+          required: true
+          schema:
+            format: string
+            type: string
+          examples:
+            inv_info1:
+              value: 10021
+            inv_info2:
+              value: 10022
+            inv_info3:
+              value: 10023
     '/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/rcpts/{receipt_number}/apply':
       post:
         tags:
