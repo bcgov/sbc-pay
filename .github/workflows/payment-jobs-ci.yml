@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "jobs/payment-jobs/**"
+      - "pay-api/src/pay_api/models/**"
 
 defaults:
   run:

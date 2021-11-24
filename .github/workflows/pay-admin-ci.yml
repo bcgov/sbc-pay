@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "pay-admin/**"
+      - "pay-api/src/pay_api/models/**"
 
 defaults:
   run:
