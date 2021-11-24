@@ -434,6 +434,33 @@ class CFSService(OAuthService):
         current_app.logger.debug('>Created CFS Invoice NSF Adjustment')
         return adjustment_response.json()
 
+    @classmethod
+    def adjust_invoice(cls, cfs_account: CfsAccountModel, inv_number: str, amount: float):
+        """Add adjustment to the invoice."""
+        current_app.logger.debug('>Creating Adjustment for Invoice: %s', inv_number)
+        access_token: str = CFSService.get_token().json().get('access_token')
+        cfs_base: str = current_app.config.get('CFS_BASE_URL')
+        adjustment_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/sites/' \
+                         f'{cfs_account.cfs_site}/invs/{inv_number}/adjs/'
+        current_app.logger.debug('Adjustment URL %s', adjustment_url)
+
+        adjustment = dict(
+            comment='Invoice cancellation',
+            lines=[
+                {
+                    'line_number': '1',
+                    'adjustment_amount': str(amount),
+                    'activity_name': 'BC Registries - Invoice cancellation'
+                }
+            ]
+        )
+
+        adjustment_response = cls.post(adjustment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                       adjustment)
+
+        current_app.logger.debug('>Created Invoice NSF Adjustment')
+        return adjustment_response.json()
+
     @staticmethod
     def create_cfs_receipt(cfs_account: CfsAccountModel,
                            rcpt_number: str,
