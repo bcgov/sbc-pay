@@ -42,6 +42,11 @@ class Receipt(BaseModel):
             query.filter_by(receipt_number=receipt_number)
         return query.one_or_none()
 
+    @classmethod
+    def find_all_receipts_for_invoice(cls, invoice_id: int):
+        """Return all Receipts for invoice id."""
+        return cls.query.filter_by(invoice_id=invoice_id).all()
+
 
 class ReceiptSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Receipt."""
