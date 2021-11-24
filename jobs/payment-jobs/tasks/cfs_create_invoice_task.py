@@ -87,7 +87,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                                                invoice_reference.json().get('invoice_number', None))
 
                 CFSService.adjust_invoice(cfs_account=cfs_account,
-                                          inv_number=invoice_reference.invoice_number, amount=0)
+                                          inv_number=invoice_reference.invoice_number, amount=-invoice.total)
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(

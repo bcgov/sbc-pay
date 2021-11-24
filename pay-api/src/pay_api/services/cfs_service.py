@@ -26,10 +26,10 @@ from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import (
-    CFS_BATCH_SOURCE, CFS_CM_BATCH_SOURCE, CFS_CMS_TRX_TYPE, CFS_CUST_TRX_TYPE, CFS_CUSTOMER_PROFILE_CLASS,
-    CFS_DRAWDOWN_BALANCE, CFS_LINE_TYPE, CFS_RCPT_EFT_WIRE, CFS_TERM_NAME, DEFAULT_ADDRESS_LINE_1, DEFAULT_CITY,
-    DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE, RECEIPT_METHOD_PAD_DAILY,
-    RECEIPT_METHOD_PAD_STOP)
+    CFS_ADJ_ACTIVITY_NAME, CFS_BATCH_SOURCE, CFS_CM_BATCH_SOURCE, CFS_CMS_TRX_TYPE, CFS_CUST_TRX_TYPE,
+    CFS_CUSTOMER_PROFILE_CLASS, CFS_DRAWDOWN_BALANCE, CFS_LINE_TYPE, CFS_RCPT_EFT_WIRE, CFS_TERM_NAME,
+    DEFAULT_ADDRESS_LINE_1, DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
+    RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP)
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod
 from pay_api.utils.util import current_local_time, generate_transaction_number
 
@@ -450,7 +450,7 @@ class CFSService(OAuthService):
                 {
                     'line_number': '1',
                     'adjustment_amount': str(amount),
-                    'activity_name': 'BC Registries - Invoice cancellation'
+                    'activity_name': CFS_ADJ_ACTIVITY_NAME
                 }
             ]
         )

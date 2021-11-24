@@ -100,19 +100,18 @@ class InternalPayService(PaymentSystemService, OAuthService):
 
         if (routing_slip_number := invoice.routing_slip) is None:
             raise BusinessException(Error.INVALID_REQUEST)
-        # TODO Add cfs refund here
+        if invoice.total == 0:
+            raise BusinessException(Error.NO_FEE_REFUND)
+        if not (routing_slip := RoutingSlipModel.find_by_number(routing_slip_number)):
+            raise BusinessException(Error.ROUTING_SLIP_REFUND)
+
         payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
         if payment:
             payment.payment_status_code = PaymentStatus.REFUNDED.value
             payment.flush()
-        # if not legacy routing slip , add the total back to routing slip
-        if routing_slip := RoutingSlipModel.find_by_number(routing_slip_number):
-            routing_slip.remaining_amount += decimal.Decimal(invoice.total)
-            routing_slip.flush()
-            invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
-        else:
-            # legacy rs assumes to be refunded
-            invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
+        routing_slip.remaining_amount += decimal.Decimal(invoice.total)
+        routing_slip.flush()
+        invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
         invoice.flush()
 
     @staticmethod
