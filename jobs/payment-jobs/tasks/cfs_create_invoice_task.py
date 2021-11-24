@@ -86,8 +86,10 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     CFSService.unapply_receipt(cfs_account, receipt.receipt_number,
                                                invoice_reference.json().get('invoice_number', None))
 
+                adjustment_negative_amount = -invoice.total
                 CFSService.adjust_invoice(cfs_account=cfs_account,
-                                          inv_number=invoice_reference.invoice_number, amount=-invoice.total)
+                                          inv_number=invoice_reference.invoice_number,
+                                          amount=adjustment_negative_amount)
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(
