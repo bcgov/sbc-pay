@@ -26,10 +26,10 @@ from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import (
-    CFS_BATCH_SOURCE, CFS_CM_BATCH_SOURCE, CFS_CMS_TRX_TYPE, CFS_CUST_TRX_TYPE, CFS_CUSTOMER_PROFILE_CLASS,
-    CFS_DRAWDOWN_BALANCE, CFS_LINE_TYPE, CFS_RCPT_EFT_WIRE, CFS_TERM_NAME, DEFAULT_ADDRESS_LINE_1, DEFAULT_CITY,
-    DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE, RECEIPT_METHOD_PAD_DAILY,
-    RECEIPT_METHOD_PAD_STOP)
+    CFS_ADJ_ACTIVITY_NAME, CFS_BATCH_SOURCE, CFS_CM_BATCH_SOURCE, CFS_CMS_TRX_TYPE, CFS_CUST_TRX_TYPE,
+    CFS_CUSTOMER_PROFILE_CLASS, CFS_DRAWDOWN_BALANCE, CFS_LINE_TYPE, CFS_RCPT_EFT_WIRE, CFS_TERM_NAME,
+    DEFAULT_ADDRESS_LINE_1, DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
+    RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP)
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod
 from pay_api.utils.util import current_local_time, generate_transaction_number
 
@@ -256,18 +256,26 @@ class CFSService(OAuthService):
 
     @classmethod
     def apply_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, invoice_number: str) -> Dict[str, any]:
-        """Return Invoice to Routing slip receipt from CFS."""
+        """Apply Invoice to Routing slip receipt from CFS."""
+        return cls._modify_rs_receipt_in_cfs(cfs_account, invoice_number, receipt_number)
+
+    @classmethod
+    def unapply_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, invoice_number: str) -> Dict[str, any]:
+        """Unapply Invoice to Routing slip receipt from CFS."""
+        return cls._modify_rs_receipt_in_cfs(cfs_account, invoice_number, receipt_number, verb='unapply')
+
+    @classmethod
+    def _modify_rs_receipt_in_cfs(cls, cfs_account, invoice_number, receipt_number, verb='apply'):
+        """Apply and unapply using the verb passed."""
         current_app.logger.debug('>Apply receipt: %s invoice:%s', receipt_number, invoice_number)
         access_token: str = CFSService.get_token().json().get('access_token')
         cfs_base: str = current_app.config.get('CFS_BASE_URL')
         receipt_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}' \
-                      f'/sites/{cfs_account.cfs_site}/rcpts/{receipt_number}/apply'
+                      f'/sites/{cfs_account.cfs_site}/rcpts/{receipt_number}/{verb}'
         current_app.logger.debug('Receipt URL %s', receipt_url)
-
         payload = {
             'invoice_number': invoice_number,
         }
-
         return CFSService.post(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload)
 
     @classmethod
@@ -424,6 +432,33 @@ class CFSService(OAuthService):
                                        adjustment)
 
         current_app.logger.debug('>Created CFS Invoice NSF Adjustment')
+        return adjustment_response.json()
+
+    @classmethod
+    def adjust_invoice(cls, cfs_account: CfsAccountModel, inv_number: str, amount: float):
+        """Add adjustment to the invoice."""
+        current_app.logger.debug('>Creating Adjustment for Invoice: %s', inv_number)
+        access_token: str = CFSService.get_token().json().get('access_token')
+        cfs_base: str = current_app.config.get('CFS_BASE_URL')
+        adjustment_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/sites/' \
+                         f'{cfs_account.cfs_site}/invs/{inv_number}/adjs/'
+        current_app.logger.debug('Adjustment URL %s', adjustment_url)
+
+        adjustment = dict(
+            comment='Invoice cancellation',
+            lines=[
+                {
+                    'line_number': '1',
+                    'adjustment_amount': str(amount),
+                    'activity_name': CFS_ADJ_ACTIVITY_NAME
+                }
+            ]
+        )
+
+        adjustment_response = cls.post(adjustment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                       adjustment)
+
+        current_app.logger.debug('>Created Invoice NSF Adjustment')
         return adjustment_response.json()
 
     @staticmethod

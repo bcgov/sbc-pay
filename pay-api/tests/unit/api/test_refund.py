@@ -225,7 +225,7 @@ def test_create_refund_with_existing_routing_slip(session, client,
     rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
                      headers=headers)
     assert rv.status_code == 202
-    assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['INTERNAL.PAID']
+    assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['INTERNAL.REFUND_REQUESTED']
 
     rv = client.post('/api/v1/fas/routing-slips/queries', data=json.dumps({'routingSlipNumber': rs_number}),
                      headers=headers)
@@ -249,5 +249,5 @@ def test_create_refund_with_legacy_routing_slip(session, client,
 
     rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
                      headers=headers)
-    assert rv.status_code == 202
-    assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['INTERNAL.PAID']
+    assert rv.status_code == 400
+    assert rv.json.get('type') == 'ROUTING_SLIP_REFUND'
