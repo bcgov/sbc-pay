@@ -319,7 +319,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         RoutingSlip._validate_linking(routing_slip=routing_slip, parent_rs_slip=parent_routing_slip)
 
         routing_slip.parent_number = parent_routing_slip.number
-        routing_slip.status = RoutingSlipStatus.PENDING_LINKING.value
+        routing_slip.status = RoutingSlipStatus.LINKED.value
 
         # transfer the amount to parent.
         # we keep the total amount as such and transfer only the remaining amount.
