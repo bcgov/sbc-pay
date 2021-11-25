@@ -26,7 +26,8 @@ from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import (
-    CFS_ADJ_ACTIVITY_NAME, CFS_BATCH_SOURCE, CFS_CM_BATCH_SOURCE, CFS_CMS_TRX_TYPE, CFS_CUST_TRX_TYPE,
+    CFS_ADJ_ACTIVITY_NAME, CFS_BATCH_SOURCE, CFS_CM_BATCH_SOURCE, CFS_REVERSAL_REASON, CFS_CMS_TRX_TYPE,
+    CFS_CUST_TRX_TYPE,
     CFS_CUSTOMER_PROFILE_CLASS, CFS_DRAWDOWN_BALANCE, CFS_LINE_TYPE, CFS_RCPT_EFT_WIRE, CFS_TERM_NAME,
     DEFAULT_ADDRESS_LINE_1, DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
     RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP)
@@ -253,6 +254,21 @@ class CFSService(OAuthService):
         invoice_response = CFSService.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
         current_app.logger.debug('>get_invoice')
         return invoice_response.json()
+
+    @classmethod
+    def reverse_rs_receipt_in_cfs(cls, cfs_account, receipt_number):
+        """Reverse Receipt."""
+        current_app.logger.debug('>Reverse receipt: %s', receipt_number)
+        access_token: str = CFSService.get_token().json().get('access_token')
+        cfs_base: str = current_app.config.get('CFS_BASE_URL')
+        receipt_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}' \
+                      f'/sites/{cfs_account.cfs_site}/rcpts/{receipt_number}/reverse'
+        current_app.logger.debug('Receipt URL %s', receipt_url)
+        payload = {
+            'Reversal Reason': CFS_REVERSAL_REASON,
+            'Reversal comment': 'Linking Routing Slip'
+        }
+        return CFSService.post(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload)
 
     @classmethod
     def apply_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, invoice_number: str) -> Dict[str, any]:
