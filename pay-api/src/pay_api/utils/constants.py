@@ -34,7 +34,7 @@ CFS_CUSTOMER_PROFILE_CLASS = 'BCR_CORP_PROFILE'
 CFS_RCPT_EFT_WIRE = 'BC REG EFT Wire Cheque'
 CFS_DRAWDOWN_BALANCE = 'BC REG Drawdown Balance'
 
-CFS_REVERSAL_REASON = 'NSF' # TODO is it constant? whats the value for linking
+CFS_REVERSAL_REASON = 'NSF'  # TODO is it constant? whats the value for linking
 
 EDIT_ROLE = 'edit'
 VIEW_ROLE = 'view'
