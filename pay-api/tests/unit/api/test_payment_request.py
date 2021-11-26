@@ -27,6 +27,7 @@ from requests.exceptions import ConnectionError
 
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import InvoiceStatus, PatchActions, PaymentMethod, Role, RoutingSlipStatus
 from tests.utilities.base_test import (
@@ -1023,3 +1024,27 @@ def test_create_sandbox_payment_requests(session, client, jwt, app, account_payl
 
     assert rv.json.get('paymentMethod') == pay_method
     assert rv.json.get('statusCode') == 'COMPLETED'
+
+
+def test_payment_request_creation_using_variable_fee(session, client, jwt, app):
+    """Assert that the endpoint returns 201."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    req_data = copy.deepcopy(get_payment_request())
+    req_data['filingInfo']['filingTypes'][0]['fee'] = 100  # This shouldn't be in effect as the fee is not variable.
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(req_data), headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('total') == 50
+
+    # Now change the fee to variable and try again.
+    fee_schedule: FeeScheduleModel = FeeScheduleModel.find_by_filing_type_and_corp_type(
+        req_data['businessInfo']['corpType'], req_data['filingInfo']['filingTypes'][0]['filingTypeCode'])
+    fee_schedule.variable = True
+    fee_schedule.save()
+
+    req_data['filingInfo']['filingTypes'][0]['fee'] = 100  # This should be in effect now.
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(req_data), headers=headers)
+    assert rv.status_code == 201
+    assert rv.json.get('total') == 130

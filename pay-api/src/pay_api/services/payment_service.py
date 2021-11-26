@@ -306,6 +306,9 @@ def _calculate_fees(corp_type, filing_info):
         elif fee.service_fees > 0:
             service_fee_applied = True
 
+        if fee.variable:
+            fee.fee_amount = float(filing_type_info.get('fee', 0))
+
         if filing_type_info.get('filingDescription'):
             fee.description = filing_type_info.get('filingDescription')
 
