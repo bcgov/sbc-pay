@@ -16,7 +16,7 @@
 from datetime import date, datetime
 from operator import or_
 
-from sqlalchemy import ForeignKey, func
+from sqlalchemy import Boolean, ForeignKey, func
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
 
@@ -46,6 +46,7 @@ class FeeSchedule(db.Model):
     future_effective_fee_code = db.Column(db.String(10), ForeignKey('fee_codes.code'), nullable=True)
     priority_fee_code = db.Column(db.String(10), ForeignKey('fee_codes.code'), nullable=True)
     service_fee_code = db.Column(db.String(10), ForeignKey('fee_codes.code'), nullable=True)
+    variable = db.Column(Boolean(), default=False, comment='Flag to indicate if the fee is variable')
 
     filing_type = relationship(FilingType, foreign_keys=[filing_type_code], lazy='joined', innerjoin=True)
     corp_type = relationship(CorpType, foreign_keys=[corp_type_code], lazy='joined', innerjoin=True)

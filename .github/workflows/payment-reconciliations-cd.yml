@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - "queue_services/payment-reconciliations/**"
+      - "pay-api/src/pay_api/models/**"
+      - "pay-api/src/pay_api/services/cfs_service.py"
   workflow_dispatch:
     inputs:
       environment:

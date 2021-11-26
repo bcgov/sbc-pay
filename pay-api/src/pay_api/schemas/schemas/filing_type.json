@@ -63,6 +63,15 @@
       "examples": [
         1
       ]
+    },
+    "fee": {
+      "$id": "#/properties/filing_types/items/properties/fee",
+      "type": "number",
+      "title": "Fee amount for variable fee",
+      "default": 0,
+      "examples": [
+        10.00, 20.00, 99.99
+      ]
     }
   }
 }

@@ -6,6 +6,8 @@ on:
       - main
     paths:
       - "jobs/payment-jobs/**"
+      - "pay-api/src/pay_api/models/**"
+      - "pay-api/src/pay_api/services/cfs_service.py"
   workflow_dispatch:
     inputs:
       environment:
