@@ -23,6 +23,7 @@ from flask import Flask
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 import config
+from tasks.routing_slip_task import RoutingSlipTask
 from utils.logger import setup_logging
 
 
@@ -105,6 +106,9 @@ def run(job_name):
     elif job_name == 'NOTIFY_UNPAID_INVOICE_OB':
         UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
         application.logger.info(f'<<<< Completed Sending notification for OB invoices >>>>')
+    elif job_name == 'ROUTING_SLIP':
+        RoutingSlipTask.link_routing_slips()
+        application.logger.info(f'<<<< Completed Routing Slip tasks >>>>')
     elif job_name == 'EJV_PAYMENT':
         EjvPaymentTask.create_ejv_file()
         application.logger.info(f'<<<< Completed running EJV payment >>>>')

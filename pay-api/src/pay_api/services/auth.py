@@ -64,7 +64,7 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
 
         g.user_permission = auth_response.get('roles')
         if kwargs.get('one_of_roles', None):
-            is_authorized = list(set(kwargs.get('one_of_roles')) & set(roles)) != []
+            is_authorized = list(set(kwargs.get('one_of_roles')) & set(roles))
         if kwargs.get('contains_role', None):
             is_authorized = kwargs.get('contains_role') in roles
         # Check if premium flag is required
