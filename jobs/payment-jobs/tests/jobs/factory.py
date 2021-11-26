@@ -69,7 +69,8 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
                     service_fees: float = 0.0, total=0,
                     payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
                     created_on: datetime = datetime.now(),
-                    cfs_account_id: int = 0
+                    cfs_account_id: int = 0,
+                    routing_slip=None
                     ):
     """Return Factory."""
     status_code = InvoiceStatus.APPROVED.value if payment_method_code == PaymentMethod.PAD.value else status_code
@@ -84,7 +85,9 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
         folio_number='1234567890',
         service_fees=service_fees,
         bcol_account=payment_account.bcol_account,
-        payment_method_code=payment_method_code or payment_account.payment_method
+        payment_method_code=payment_method_code or payment_account.payment_method,
+        routing_slip=routing_slip
+
     )
     if cfs_account_id != 0:
         invoice.cfs_account_id = cfs_account_id
