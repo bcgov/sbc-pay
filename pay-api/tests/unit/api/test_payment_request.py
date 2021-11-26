@@ -26,8 +26,8 @@ from flask import current_app
 from requests.exceptions import ConnectionError
 
 from pay_api.models import DistributionCode as DistributionCodeModel
-from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import InvoiceStatus, PatchActions, PaymentMethod, Role, RoutingSlipStatus
 from tests.utilities.base_test import (
@@ -70,27 +70,22 @@ def test_payment_creation_using_direct_pay(session, client, jwt, app):
     assert rv.json.get('isPaymentActionRequired')
 
 
-def test_payment_creation_with_service_account(session, client, jwt, app):
+@pytest.mark.parametrize('payload, product_code_claim, expected_status', [
+    (get_payment_request_with_service_fees(corp_type='BEN'), 'BUSINESS', 201),  # Business SA creating business invoice
+    (get_payment_request_with_service_fees(corp_type='BEN'), 'CSO', 403),  # Business SA creating CSO invoice
+    (get_payment_request_with_service_fees(corp_type='CSO', filing_type='CSCRMTFC'), 'CSO', 201)  # CSO SA and CSA inv
+])
+def test_payment_creation_with_service_account(session, client, jwt, app, payload, product_code_claim, expected_status):
     """Assert that the endpoint returns 201."""
-    token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value, Role.EDITOR.value]), token_header)
+    token = jwt.create_jwt(
+        get_claims(roles=[Role.SYSTEM.value, Role.EDITOR.value], product_code=product_code_claim),
+        token_header
+    )
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request_with_payment_method()),
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(payload),
                      headers=headers)
-    assert rv.status_code == 201
-    assert rv.json.get('_links') is not None
-
-    assert schema_utils.validate(rv.json, 'invoice')[0]
-
-
-def test_payment_creation_service_account_with_no_edit_role(session, client, jwt, app):
-    """Assert that the endpoint returns 403."""
-    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
-                     headers=headers)
-    assert rv.status_code == 403
+    assert rv.status_code == expected_status
 
 
 def test_payment_creation_for_unauthorized_user(session, client, jwt, app):

@@ -15,8 +15,9 @@
 """This manages all of the authorization service."""
 from flask import abort, current_app, g
 
+from pay_api.services.code import Code as CodeService
 from pay_api.services.oauth_service import OAuthService as RestService
-from pay_api.utils.enums import AccountType, AuthHeaderType, ContentType, PaymentMethod, Role
+from pay_api.utils.enums import AccountType, AuthHeaderType, Code, ContentType, PaymentMethod, Role
 from pay_api.utils.user_context import UserContext, user_context
 
 
@@ -27,17 +28,21 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
     user: UserContext = kwargs['user']
     is_authorized: bool = False
     auth_response = None
-
+    product_code = CodeService.find_code_value_by_type_and_code(Code.CORP_TYPE.value, corp_type_code).get('product')
     account_id = account_id or user.account_id
 
     call_auth_svc: bool = True
 
-    if Role.SYSTEM.value in user.roles \
-            and user.product_code != 'BUSINESS':  # Call auth only if it's business (entities)
-        call_auth_svc = False
+    if Role.SYSTEM.value in user.roles:
         is_authorized = bool(Role.EDITOR.value in user.roles)
-        # Add account name as the service client name
-        auth_response = {'account': {'id': user.user_name}}
+        if product_code:
+            is_authorized = is_authorized and product_code == user.product_code
+
+        # Call auth only if it's business (entities), as affiliation is the auhtorization
+        if user.product_code != 'BUSINESS':
+            call_auth_svc = False
+            # Add account name as the service client name
+            auth_response = {'account': {'id': user.account_id or user.user_name}}
 
     if call_auth_svc:
         bearer_token = user.bearer_token
@@ -46,7 +51,7 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
                                                                      f'/authorizations?expanded=true'
             additional_headers = None
             if corp_type_code:
-                additional_headers = {'Product-Code': corp_type_code}
+                additional_headers = {'Product-Code': product_code}
             auth_response = RestService.get(auth_url, bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
                                             additional_headers=additional_headers).json()
             roles: list = auth_response.get('roles', [])
@@ -64,7 +69,7 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
 
         g.user_permission = auth_response.get('roles')
         if kwargs.get('one_of_roles', None):
-            is_authorized = list(set(kwargs.get('one_of_roles')) & set(roles)) != []
+            is_authorized = len(list(set(kwargs.get('one_of_roles')) & set(roles))) > 0
         if kwargs.get('contains_role', None):
             is_authorized = kwargs.get('contains_role') in roles
         # Check if premium flag is required
