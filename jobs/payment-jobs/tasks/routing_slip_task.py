@@ -15,12 +15,15 @@
 from typing import List
 
 from flask import current_app
+from pay_api import db
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.utils.enums import CfsAccountStatus, RoutingSlipStatus
 from sentry_sdk import capture_message
+from sqlalchemy import and_
+from sqlalchemy.orm import aliased
 
 
 class RoutingSlipTask:  # pylint:disable=too-few-public-methods
@@ -34,12 +37,12 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         1. Find all pending rs with pending status.
         1. Notify mailer
         """
-        routing_slips: List[RoutingSlipModel] = RoutingSlipModel.search(
-            dict(
-                status=RoutingSlipStatus.LINKED.value
-            ),
-            page=1, limit=0, return_all=True
-        )[0]
+        child = aliased(RoutingSlipModel)
+        subquery = db.session.query(RoutingSlipModel.payment_account_id).filter(
+            RoutingSlipModel.number == child.parent_number).subquery()
+        routing_slips: List[RoutingSlipModel] = db.session.query(child).filter(and_(
+            child.status == RoutingSlipStatus.LINKED.value, child.payment_account_id != subquery)).all()
+
         for routing_slip in routing_slips:
 
             #
@@ -79,6 +82,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 routing_slip.save()
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
+                print('----------e', e)
                 capture_message(
                     f'Error on Linking Routing Slip number:={routing_slip.number}, '
                     f'routing slip : {routing_slip.id}, ERROR : {str(e)}', level='error')
