@@ -82,7 +82,6 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 routing_slip.save()
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                print('----------e', e)
                 capture_message(
                     f'Error on Linking Routing Slip number:={routing_slip.number}, '
                     f'routing slip : {routing_slip.id}, ERROR : {str(e)}', level='error')
