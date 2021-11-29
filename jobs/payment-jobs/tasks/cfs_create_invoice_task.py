@@ -77,8 +77,9 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 routing_slip.payment_account_id)
             cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
                 routing_slip_payment_account.id)
-            invoice_reference = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(invoice.id,
-                                                                                              status_code=InvoiceReferenceStatus.ACTIVE.value)
+            invoice_reference = InvoiceReferenceModel. \
+                find_reference_by_invoice_id_and_status(invoice.id,
+                                                        status_code=InvoiceReferenceStatus.ACTIVE.value)
             try:
                 # find receipts against the invoice and unapply
                 # apply receipt now
