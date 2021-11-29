@@ -157,7 +157,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     receipt = Receipt()
                     receipt.receipt_number = receipt_response.json().get('receipt_number', None)
                     # TODO verify if paybc response has a dollar
-                    receipt_amount = receipt_response.json().get('receipt_amount', None).replace('$', '')
+                    receipt_amount = receipt_response.json().get('receipt_amount', None)
                     receipt.receipt_amount = receipt_amount
                     receipt.invoice_id = invoice.id
                     receipt.receipt_date = datetime.now()
