@@ -30,7 +30,8 @@ from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.services.receipt import Receipt
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
+    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem,
+    RoutingSlipStatus)
 from sentry_sdk import capture_message
 
 from utils import mailer
@@ -120,7 +121,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             .order_by(InvoiceModel.created_on.asc()).all()
 
         current_app.logger.info(f'Found {len(invoices)} to be created in CFS.')
-        receipt_response = {}
         for invoice in invoices:
             # Create a CFS invoice
             has_any_error_in_cfs_creation = False
@@ -130,8 +130,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 routing_slip.payment_account_id)
 
             # apply invoice to the active CFS_ACCOUNT which will be the parent routing slip
-            active_cfs_account = CfsAccountModel.find_effective_by_account_id(
-                routing_slip_payment_account.id)
+            active_cfs_account = CfsAccountModel.find_effective_by_account_id(routing_slip_payment_account.id)
 
             invoice_response = CFSService.create_account_invoice(transaction_number=invoice.id,
                                                                  line_items=invoice.payment_line_items,
@@ -153,15 +152,25 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     cfs_account = CfsAccountModel.find_effective_by_account_id(
                         routing_slip_payment_account.id)
 
-                    receipt_response = CFSService.apply_receipt(cfs_account, routing_slip.number,
-                                                                invoice_number)
+                    receipt_number = routing_slip.number
+                    # For linked routing slips, new receipt numbers ends with 'L'
+                    if routing_slip.status == RoutingSlipStatus.LINKED.value:
+                        receipt_number = f'{routing_slip.number}L'
+
+                    receipt_before_apply = CFSService.get_receipt(cfs_account, receipt_number)
+
+                    # If balance of receipt is zero, continue to next receipt.
+                    if float(receipt_before_apply.get('unapplied_amount')) == 0:
+                        continue
+
+                    receipt_response = CFSService.apply_receipt(cfs_account, receipt_number, invoice_number)
 
                     current_app.logger.info(f'receipt_response----- {receipt_response.json()}  created receipt in CFS.')
                     # Create receipt.
                     receipt = Receipt()
                     receipt.receipt_number = receipt_response.json().get('receipt_number', None)
-                    # TODO verify if paybc response has a dollar
-                    receipt_amount = receipt_response.json().get('receipt_amount', None)
+                    receipt_amount = float(receipt_before_apply.get('receipt_amount')) - \
+                        float(receipt_response.json().get('receipt_amount'))
                     receipt.receipt_amount = receipt_amount
                     receipt.invoice_id = invoice.id
                     receipt.receipt_date = datetime.now()

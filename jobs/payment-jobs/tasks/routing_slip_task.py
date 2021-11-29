@@ -71,8 +71,10 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 parent_cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
                     parent_payment_account.id)
 
+                # For linked routing slip receipts, append 'L' to the number to avoid duplicate error
+                receipt_number = f'{routing_slip.number}L'
                 CFSService.create_cfs_receipt(cfs_account=parent_cfs_account,
-                                              rcpt_number=routing_slip.number,
+                                              rcpt_number=receipt_number,
                                               rcpt_date=routing_slip.routing_slip_date.strftime('%Y-%m-%d'),
                                               amount=routing_slip.total,
                                               payment_method=parent_payment_account.payment_method)
