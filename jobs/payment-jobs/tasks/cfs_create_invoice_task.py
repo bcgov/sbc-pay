@@ -85,7 +85,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 receipts: List[ReceiptModel] = ReceiptModel.find_all_receipts_for_invoice(invoice_id=invoice.id)
                 for receipt in receipts:
                     CFSService.unapply_receipt(cfs_account, receipt.receipt_number,
-                                               invoice_reference.json().get('invoice_number', None))
+                                               invoice_reference.invoice_number)
 
                 adjustment_negative_amount = -invoice.total
                 CFSService.adjust_invoice(cfs_account=cfs_account,
