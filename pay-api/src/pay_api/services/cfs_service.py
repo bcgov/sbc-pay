@@ -264,8 +264,8 @@ class CFSService(OAuthService):
                       f'/sites/{cfs_account.cfs_site}/rcpts/{receipt_number}/reverse'
         current_app.logger.debug('Receipt URL %s', receipt_url)
         payload = {
-            'Reversal Reason': CFS_REVERSAL_REASON,
-            'Reversal comment': 'Linking Routing Slip'
+            'reversal_reason': CFS_REVERSAL_REASON,
+            'reversal_comment': 'Linking Routing Slip'
         }
         return CFSService.post(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload)
 

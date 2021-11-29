@@ -77,14 +77,16 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 routing_slip.payment_account_id)
             cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
                 routing_slip_payment_account.id)
-            invoice_reference = InvoiceReferenceModel.find_any_active_reference_by_invoice_number(invoice.id)
+            invoice_reference = InvoiceReferenceModel. \
+                find_reference_by_invoice_id_and_status(invoice.id,
+                                                        status_code=InvoiceReferenceStatus.ACTIVE.value)
             try:
                 # find receipts against the invoice and unapply
                 # apply receipt now
                 receipts: List[ReceiptModel] = ReceiptModel.find_all_receipts_for_invoice(invoice_id=invoice.id)
                 for receipt in receipts:
                     CFSService.unapply_receipt(cfs_account, receipt.receipt_number,
-                                               invoice_reference.json().get('invoice_number', None))
+                                               invoice_reference.invoice_number)
 
                 adjustment_negative_amount = -invoice.total
                 CFSService.adjust_invoice(cfs_account=cfs_account,
@@ -135,6 +137,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                                                                  line_items=invoice.payment_line_items,
                                                                  cfs_account=active_cfs_account)
             invoice_number = invoice_response.json().get('invoice_number', None)
+            current_app.logger.info(f'invoice_response----- {invoice_response.json()}  created in CFS.')
             routing_slips: List[RoutingSlipModel] = RoutingSlipModel. \
                 find_all_by_payment_account_id(routing_slip_payment_account.id)
             # an invoice has to be applied to multiple receipts ; apply till the balance is zero
@@ -153,11 +156,12 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     receipt_response = CFSService.apply_receipt(cfs_account, routing_slip.number,
                                                                 invoice_number)
 
+                    current_app.logger.info(f'receipt_response----- {receipt_response.json()}  created receipt in CFS.')
                     # Create receipt.
                     receipt = Receipt()
                     receipt.receipt_number = receipt_response.json().get('receipt_number', None)
                     # TODO verify if paybc response has a dollar
-                    receipt_amount = receipt_response.json().get('receipt_amount', None).replace('$', '')
+                    receipt_amount = receipt_response.json().get('receipt_amount', None)
                     receipt.receipt_amount = receipt_amount
                     receipt.invoice_id = invoice.id
                     receipt.receipt_date = datetime.now()
