@@ -26,7 +26,7 @@ from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import (
-    CFS_ADJ_ACTIVITY_NAME, CFS_BATCH_SOURCE, CFS_CM_BATCH_SOURCE, CFS_CMS_TRX_TYPE, CFS_CUST_TRX_TYPE,
+    CFS_ADJ_ACTIVITY_NAME, CFS_BATCH_SOURCE, CFS_CASH_RCPT, CFS_CM_BATCH_SOURCE, CFS_CMS_TRX_TYPE, CFS_CUST_TRX_TYPE,
     CFS_CUSTOMER_PROFILE_CLASS, CFS_DRAWDOWN_BALANCE, CFS_LINE_TYPE, CFS_RCPT_EFT_WIRE, CFS_REVERSAL_REASON,
     CFS_TERM_NAME, DEFAULT_ADDRESS_LINE_1, DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION,
     DEFAULT_POSTAL_CODE, RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP)
@@ -473,7 +473,7 @@ class CFSService(OAuthService):
         adjustment_response = cls.post(adjustment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
                                        adjustment)
 
-        current_app.logger.debug('>Created Invoice NSF Adjustment')
+        current_app.logger.debug('>Created Invoice Adjustment')
         return adjustment_response.json()
 
     @staticmethod
@@ -483,14 +483,19 @@ class CFSService(OAuthService):
                            amount: float,
                            payment_method: str) -> Dict[str, str]:
         """Create Eft Wire receipt for the account."""
-        current_app.logger.debug('<create_credits')
+        current_app.logger.debug(f'<create_cfs_receipt : {cfs_account}, {rcpt_number}, {amount}, {payment_method}')
 
         access_token: str = CFSService.get_token().json().get('access_token')
         cfs_base: str = current_app.config.get('CFS_BASE_URL')
         receipt_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/' \
                       f'sites/{cfs_account.cfs_site}/rcpts/'
-        cfs_payment_method = CFS_DRAWDOWN_BALANCE if payment_method == PaymentMethod.DRAWDOWN.value \
-            else CFS_RCPT_EFT_WIRE
+
+        if payment_method == PaymentMethod.DRAWDOWN.value:
+            cfs_payment_method = CFS_DRAWDOWN_BALANCE
+        elif payment_method in (PaymentMethod.CASH.value, PaymentMethod.CHEQUE.value):
+            cfs_payment_method = CFS_CASH_RCPT
+        else:
+            cfs_payment_method = CFS_RCPT_EFT_WIRE
         payload = {
             'receipt_number': rcpt_number,
             'receipt_date': rcpt_date,
@@ -498,7 +503,7 @@ class CFSService(OAuthService):
             'payment_method': cfs_payment_method,
             'comments': ''
         }
-
+        current_app.logger.debug('>create_cfs_receipt')
         return CFSService.post(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload).json()
 
     @classmethod

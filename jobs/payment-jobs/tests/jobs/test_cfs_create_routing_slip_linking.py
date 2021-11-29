@@ -32,8 +32,8 @@ def test_link_rs(session):
     """Test link routing slip."""
     child_rs_number = '1234'
     parent_rs_number = '89799'
-    factory_routing_slip_account(number=child_rs_number)
-    factory_routing_slip_account(number=parent_rs_number)
+    factory_routing_slip_account(number=child_rs_number, status=CfsAccountStatus.ACTIVE.value)
+    factory_routing_slip_account(number=parent_rs_number, status=CfsAccountStatus.ACTIVE.value)
     child_rs = RoutingSlipModel.find_by_number(child_rs_number)
     parent_rs = RoutingSlipModel.find_by_number(parent_rs_number)
     # Do Link
@@ -53,9 +53,10 @@ def test_link_rs(session):
             mock_cfs_reverse.assert_called_with(cfs_account, child_rs.number)
             mock_create_cfs.assert_called()
 
-    child_rs = RoutingSlipModel.find_by_number(child_rs_number)
-    parent_rs = RoutingSlipModel.find_by_number(parent_rs_number)
-    assert child_rs.payment_account_id == parent_rs.payment_account_id
+    # child_rs = RoutingSlipModel.find_by_number(child_rs_number)
+    # parent_rs = RoutingSlipModel.find_by_number(parent_rs_number)
+    # PS This has changed, no longer updating child rs payment account with parent.
+    # assert child_rs.payment_account_id == parent_rs.payment_account_id
     cfs_account: CfsAccountModel = CfsAccountModel.find_by_id(cfs_account.id)
     assert cfs_account.status == CfsAccountStatus.INACTIVE.value
 
