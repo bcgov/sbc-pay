@@ -135,6 +135,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                                                                  line_items=invoice.payment_line_items,
                                                                  cfs_account=active_cfs_account)
             invoice_number = invoice_response.json().get('invoice_number', None)
+            current_app.logger.info(f'invoice_response----- {invoice_response.json()}  created in CFS.')
             routing_slips: List[RoutingSlipModel] = RoutingSlipModel. \
                 find_all_by_payment_account_id(routing_slip_payment_account.id)
             # an invoice has to be applied to multiple receipts ; apply till the balance is zero
@@ -153,6 +154,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     receipt_response = CFSService.apply_receipt(cfs_account, routing_slip.number,
                                                                 invoice_number)
 
+                    current_app.logger.info(f'receipt_response----- {receipt_response.json()}  created receipt in CFS.')
                     # Create receipt.
                     receipt = Receipt()
                     receipt.receipt_number = receipt_response.json().get('receipt_number', None)
