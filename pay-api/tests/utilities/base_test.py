@@ -41,7 +41,7 @@ fake = Faker()
 
 
 def get_claims(app_request=None, role: str = Role.EDITOR.value, username: str = 'CP0001234', login_source: str = None,
-               roles: list = []):
+               roles: list = [], product_code: str = 'BUSINESS'):
     """Return the claim with the role param."""
     claim = {
         'jti': 'a50fafa4-c4d6-4a9b-9e51-1e5e0d102878',
@@ -67,7 +67,8 @@ def get_claims(app_request=None, role: str = Role.EDITOR.value, username: str = 
             [
                 '{}'.format(role),
                 *roles
-            ]
+            ],
+        'product_code': product_code
     }
     return claim
 

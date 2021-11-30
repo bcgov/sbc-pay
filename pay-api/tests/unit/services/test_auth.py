@@ -35,7 +35,8 @@ def test_auth_role_for_service_account(session, monkeypatch):
                     'system',
                     'edit'
                 ]
-            }
+            },
+            'product_code': 'BUSINESS'
         }
 
     def mock_auth():  # pylint: disable=unused-argument; mocks of library methods
