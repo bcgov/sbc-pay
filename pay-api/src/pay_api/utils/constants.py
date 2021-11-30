@@ -34,6 +34,8 @@ CFS_CUSTOMER_PROFILE_CLASS = 'BCR_CORP_PROFILE'
 CFS_RCPT_EFT_WIRE = 'BC REG EFT Wire Cheque'
 CFS_DRAWDOWN_BALANCE = 'BC REG Drawdown Balance'
 
+CFS_REVERSAL_REASON = 'NSF'  # TODO is it constant? whats the value for linking
+
 EDIT_ROLE = 'edit'
 VIEW_ROLE = 'view'
 MAKE_PAYMENT = 'make_payment'
@@ -59,5 +61,6 @@ REFUND_SUCCESS_MESSAGES = {
     'ROUTINGSLIP.REFUND_AUTHORIZED': 'Routing slip refund has been authorised.',
     'ROUTINGSLIP.REFUND_REQUESTED': 'Routing slip refund is requested.',
     'ROUTINGSLIP.ACTIVE': 'Routing slip is active.',
-    'INTERNAL.PAID': 'Your transaction has been cancelled and a refund has been requested.'
+    'INTERNAL.REFUND_REQUESTED': 'Your transaction has been cancelled and a refund has been requested.',
+    'INTERNAL.REFUNDED': 'Your transaction has been cancelled and a refund has been done.'
 }
