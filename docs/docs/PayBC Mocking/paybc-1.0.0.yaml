@@ -497,8 +497,8 @@
                       party_name: receipt
                       account_number: '4101'
                       site_number: '29921'
-                      receipt_amount: $10.02
-                      unapplied_amount: 0
+                      receipt_amount: 10.02
+                      unapplied_amount: 10.02
                       payment_method: credit card
                       comments: This is post
                       invoices:
@@ -595,8 +595,8 @@
                       party_name: receipt
                       account_number: '4101'
                       site_number: '29921'
-                      receipt_amount: $10.02
-                      unapplied_amount: 0
+                      receipt_amount: 10.02
+                      unapplied_amount: 10.02
                       payment_method: credit card
                       comments: This is post
                       invoices:
@@ -742,7 +742,8 @@
                       account_number: '4101'
                       site_number: '29921'
                       receipt_date: 01-02-2019
-                      receipt_amount: $10.02
+                      receipt_amount: 10.02
+                      unapplied_amount: 10.02
                       payment_method: credit card
                       comments: This is post
                       invoices:
@@ -780,7 +781,8 @@
                           account_number: '4101'
                           site_number: '29921'
                           receipt_date: 01-02-2019
-                          receipt_amount: $10.02
+                          receipt_amount: 10.02
+                          unapplied_amount: 10.02
                           payment_method: credit card
                           comments: This is post
                           invoices:
@@ -2243,7 +2245,8 @@
                       account_number: '4101'
                       site_number: '29921'
                       receipt_date: 01-02-2019
-                      receipt_amount: $10.02
+                      receipt_amount: 10.02
+                      unapplied_amount: 10.02
                       payment_method: credit card
                       comments: This is post
                       invoices:
@@ -2260,7 +2263,8 @@
                       account_number: '4101'
                       site_number: '29921'
                       receipt_date: 01-02-2019
-                      receipt_amount: $10.02
+                      receipt_amount: 10.02
+                      unapplied_amount: 10.02
                       payment_method: credit card
                       comments: This is post
                       invoices:
@@ -2277,7 +2281,8 @@
                       account_number: '4101'
                       site_number: '29921'
                       receipt_date: 01-02-2019
-                      receipt_amount: $10.02
+                      receipt_amount: 10.02
+                      unapplied_amount: 10.02
                       payment_method: credit card
                       comments: This is post
                       invoices:
