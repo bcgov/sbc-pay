@@ -57,10 +57,10 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         cls._create_wire_invoices()
 
         # Cancel invoice is the only non-creation of invoice in this job.
-        cls._cancel_rs_invoices()
+        # cls._cancel_rs_invoices()
 
         # Cancel first then create, else receipt apply would fail.
-        cls._create_rs_invoices()
+        # cls._create_rs_invoices()
 
     @classmethod
     def _cancel_rs_invoices(cls):
