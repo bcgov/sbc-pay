@@ -57,10 +57,10 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         cls._create_wire_invoices()
 
         # Cancel invoice is the only non-creation of invoice in this job.
-        # cls._cancel_rs_invoices()
+        cls._cancel_rs_invoices()
 
         # Cancel first then create, else receipt apply would fail.
-        # cls._create_rs_invoices()
+        cls._create_rs_invoices()
 
     @classmethod
     def _cancel_rs_invoices(cls):
@@ -122,7 +122,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         # do the recipt apply
         invoices: List[InvoiceModel] = InvoiceModel.query \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.INTERNAL.value) \
-            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value) \
+            .filter(InvoiceModel.invoice_status_code.in_([InvoiceStatus.APPROVED.value, InvoiceStatus.CREATED.value])) \
             .filter(InvoiceModel.routing_slip is not None) \
             .order_by(InvoiceModel.created_on.asc()).all()
 
