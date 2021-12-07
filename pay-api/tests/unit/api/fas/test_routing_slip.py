@@ -417,10 +417,12 @@ def test_update_routing_slip_status(client, jwt, app):
     assert rv.status_code == 200
     assert rv.json.get('status') == RoutingSlipStatus.COMPLETE.value
 
+    # Update to NSF and validate the total
     rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
-                      data=json.dumps({'status': RoutingSlipStatus.BOUNCED.value}), headers=headers)
+                      data=json.dumps({'status': RoutingSlipStatus.NSF.value}), headers=headers)
     assert rv.status_code == 200
-    assert rv.json.get('status') == RoutingSlipStatus.BOUNCED.value
+    assert rv.json.get('status') == RoutingSlipStatus.NSF.value
+    assert rv.json.get('remainingAmount') == - float(rv.json.get('total'))
 
     # assert invalid action.
     rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action=TEST',

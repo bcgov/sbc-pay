@@ -103,7 +103,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         2. Reverse the receipt for the NSF routing slips.
         3. Add an invoice for NSF fees.
         """
-        routing_slips = db.session.query(RoutingSlipModel) \
+        routing_slips: List[RoutingSlipModel] = db.session.query(RoutingSlipModel) \
             .join(PaymentAccountModel, PaymentAccountModel.id == RoutingSlipModel.payment_account_id) \
             .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
             .filter(RoutingSlipModel.status == RoutingSlipStatus.NSF.value) \
@@ -133,7 +133,9 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
 
                 # Update all invoice status to CREATED.
                 invoices: List[InvoiceModel] = db.session.query(InvoiceModel)\
-                    .filter(routing_slip == routing_slip.number).all()
+                    .filter(InvoiceModel.routing_slip == routing_slip.number) \
+                    .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
+                    .all()
                 for inv in invoices:
                     # Reset the statuses
                     inv.invoice_status_code = InvoiceStatus.CREATED.value
@@ -145,7 +147,8 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     for receipt in ReceiptModel.find_all_receipts_for_invoice(inv.id):
                         db.session.delete(receipt)
 
-                cls._create_nsf_invoice(cfs_account, routing_slip.number, payment_account)
+                inv = cls._create_nsf_invoice(cfs_account, routing_slip.number, payment_account)
+                routing_slip.remaining_amount -= inv.total  # Reduce the NSF fee from remaining amount.
                 routing_slip.save()
 
             except Exception as e:  # NOQA # pylint: disable=broad-except

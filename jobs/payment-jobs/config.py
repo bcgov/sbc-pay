@@ -181,6 +181,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # disbursement delay
     DISBURSEMENT_DELAY_IN_DAYS = int(os.getenv('DISBURSEMENT_DELAY', 5))
 
+    # Is FAS-CFS integration disabled
+    DISABLE_CFS_FAS_INTEGRATION = os.getenv('DISABLE_CFS_FAS_INTEGRATION', 'false').lower() == 'true'
+
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     TESTING = False

@@ -56,6 +56,9 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         cls._create_eft_invoices()
         cls._create_wire_invoices()
 
+        if current_app.config.get('DISABLE_CFS_FAS_INTEGRATION'):
+            return
+
         # Cancel invoice is the only non-creation of invoice in this job.
         cls._cancel_rs_invoices()
 
@@ -119,7 +122,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
         # find all routing slip invoices [cash or cheque]
         # create invoices in csf
-        # do the recipt apply
+        # do the receipt apply
         invoices: List[InvoiceModel] = InvoiceModel.query \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.INTERNAL.value) \
             .filter(InvoiceModel.invoice_status_code.in_([InvoiceStatus.APPROVED.value, InvoiceStatus.CREATED.value])) \
@@ -182,7 +185,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     receipt.flush()
 
                     invoice_from_cfs = CFSService.get_invoice(active_cfs_account, invoice_number)
-                    if invoice_from_cfs.get('amount_due') <= 0:
+                    if invoice_from_cfs.get('amount_due') == 0:
                         break
 
                 except Exception as e:  # NOQA # pylint: disable=broad-except
@@ -199,7 +202,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
             invoice_reference: InvoiceReference = InvoiceReference.create(
                 invoice.id, invoice_number,
-                # TODO is pbc_ref_number correct?
                 invoice_response.json().get('pbc_ref_number', None))
 
             current_app.logger.debug('>create_invoice')
