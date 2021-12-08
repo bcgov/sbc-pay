@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to create CFS invoices offline."""
-from datetime import datetime
 from typing import List
 
 from flask import current_app
@@ -28,13 +27,13 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
-from pay_api.services.receipt import Receipt
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem,
-    RoutingSlipStatus)
+    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
 from sentry_sdk import capture_message
 
 from utils import mailer
+
+from .routing_slip_task import RoutingSlipTask
 
 
 class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
@@ -51,19 +50,31 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         2.1 Roll up all transactions and create one invoice in CFS.
         3. Update the invoice status as IN TRANSIT
         """
+        current_app.logger.info('<< Starting PAD Invoice Creation')
         cls._create_pad_invoices()
+        current_app.logger.info('>> Done PAD Invoice Creation')
+        current_app.logger.info('<< Starting Online Banking Invoice Creation')
         cls._create_online_banking_invoices()
+        current_app.logger.info('>> Done Online Banking Invoice Creation')
+        current_app.logger.info('<< Starting EFT Invoice Creation')
         cls._create_eft_invoices()
+        current_app.logger.info('>> Done EFT Invoice Creation')
+        current_app.logger.info('<< Starting Wire Invoice Creation')
         cls._create_wire_invoices()
+        current_app.logger.info('>> Done Wire Invoice Creation')
 
         if current_app.config.get('DISABLE_CFS_FAS_INTEGRATION'):
             return
 
         # Cancel invoice is the only non-creation of invoice in this job.
+        current_app.logger.info('<< Starting CANCEL Routing Slip Invoices')
         cls._cancel_rs_invoices()
+        current_app.logger.info('>> Done CANCEL Routing Slip Invoices')
 
         # Cancel first then create, else receipt apply would fail.
+        current_app.logger.info('<< Starting Routing Slip Invoice Creation')
         cls._create_rs_invoices()
+        current_app.logger.info('>> Done Routing Slip Invoice Creation')
 
     @classmethod
     def _cancel_rs_invoices(cls):
@@ -123,9 +134,12 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         # find all routing slip invoices [cash or cheque]
         # create invoices in csf
         # do the receipt apply
-        invoices: List[InvoiceModel] = InvoiceModel.query \
+        invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
+            .join(RoutingSlipModel, RoutingSlipModel.number == InvoiceModel.routing_slip) \
+            .join(CfsAccountModel, CfsAccountModel.account_id == RoutingSlipModel.payment_account_id) \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.INTERNAL.value) \
-            .filter(InvoiceModel.invoice_status_code.in_([InvoiceStatus.APPROVED.value, InvoiceStatus.CREATED.value])) \
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value) \
+            .filter(CfsAccountModel.status.in_([CfsAccountStatus.ACTIVE.value, CfsAccountStatus.FREEZE.value])) \
             .filter(InvoiceModel.routing_slip is not None) \
             .order_by(InvoiceModel.created_on.asc()).all()
 
@@ -133,7 +147,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
         for invoice in invoices:
             # Create a CFS invoice
-            has_any_error_in_cfs_creation = False
             current_app.logger.debug(f'Creating cfs invoice for invoice {invoice.id}')
             routing_slip = RoutingSlipModel.find_by_number(invoice.routing_slip)
             # If routing slip is not found in Pay-DB, assume legacy RS and move on to next one.
@@ -152,51 +165,12 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             invoice_number = invoice_response.json().get('invoice_number', None)
 
             current_app.logger.info(f'invoice_number  {invoice_number}  created in CFS.')
-            child_routing_slips: List[RoutingSlipModel] = RoutingSlipModel.find_children(routing_slip.number)
-            # an invoice has to be applied to multiple receipts (incl. all linked RS); apply till the balance is zero
-            for routing_slip in (routing_slip, *child_routing_slips):
-                try:
-                    # apply receipt now
-                    current_app.logger.debug(f'Apply receipt {routing_slip.number} on invoice {invoice_number} '
-                                             f'for routing slip {routing_slip.number}')
-                    receipt_number = routing_slip.number
-                    # For linked routing slips, new receipt numbers ends with 'L'
-                    if routing_slip.status == RoutingSlipStatus.LINKED.value:
-                        receipt_number = f'{routing_slip.number}L'
 
-                    receipt_before_apply = CFSService.get_receipt(active_cfs_account, receipt_number)
-                    # If balance of receipt is zero, continue to next receipt.
-                    receipt_balance_before_apply = float(receipt_before_apply.get('unapplied_amount'))
-                    current_app.logger.debug(f'Current balance on {receipt_number} = {receipt_balance_before_apply}')
-                    if receipt_balance_before_apply == 0:
-                        continue
+            has_error_in_apply_receipt = RoutingSlipTask.apply_routing_slips_to_invoice(
+                routing_slip_payment_account, active_cfs_account, routing_slip, invoice, invoice_number
+            )
 
-                    current_app.logger.debug(f'Applying receipt {receipt_number} to {invoice_number}')
-                    receipt_response = CFSService.apply_receipt(active_cfs_account, receipt_number, invoice_number)
-
-                    # Create receipt.
-                    receipt = Receipt()
-                    receipt.receipt_number = receipt_response.json().get('receipt_number', None)
-                    receipt_amount = receipt_balance_before_apply - \
-                        float(receipt_response.json().get('unapplied_amount'))
-                    receipt.receipt_amount = receipt_amount
-                    receipt.invoice_id = invoice.id
-                    receipt.receipt_date = datetime.now()
-                    receipt.flush()
-
-                    invoice_from_cfs = CFSService.get_invoice(active_cfs_account, invoice_number)
-                    if invoice_from_cfs.get('amount_due') == 0:
-                        break
-
-                except Exception as e:  # NOQA # pylint: disable=broad-except
-                    capture_message(
-                        f'Error on creating Routing Slip invoice: account id={routing_slip_payment_account.id}, '
-                        f'routing slip : {routing_slip.id}, ERROR : {str(e)}', level='error')
-                    current_app.logger.error(e)
-                    has_any_error_in_cfs_creation = True
-                    continue
-
-            if has_any_error_in_cfs_creation:
+            if has_error_in_apply_receipt:
                 # move on to next invoice
                 continue
 
