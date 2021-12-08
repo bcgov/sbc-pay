@@ -109,6 +109,8 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             .filter(RoutingSlipModel.status == RoutingSlipStatus.NSF.value) \
             .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value).all()
 
+        current_app.logger.info(f'Found {len(routing_slips)} to process NSF.')
+        print('routing_slips-->', routing_slips)
         for routing_slip in routing_slips:
             # 1. Reverse the routing slip receipt.
             # 2. Reverse all the child receipts.
@@ -121,12 +123,14 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 # Find all child routing slip and reverse it, as all linked routing slips are also considered as NSF.
                 child_routing_slips: List[RoutingSlipModel] = RoutingSlipModel.find_children(routing_slip.number)
                 for rs in (routing_slip, *child_routing_slips):
-                    if routing_slip.parent_number:
-                        receipt_number = f'{rs.number}L'
+                    receipt_number = rs.number
+                    if rs.parent_number:
+                        receipt_number = f'{receipt_number}L'
                     CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number)
 
-                    payment: PaymentModel = PaymentModel.find_payment_by_receipt_number(rs.number)
-                    payment.payment_status_code = PaymentStatus.FAILED.value
+                    for payment in db.session.query(PaymentModel)\
+                            .filter(PaymentModel.receipt_number == receipt_number).all():
+                        payment.payment_status_code = PaymentStatus.FAILED.value
 
                 # Update the CFS Account status to FREEZE.
                 cfs_account.status = CfsAccountStatus.FREEZE.value
@@ -148,7 +152,8 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                         db.session.delete(receipt)
 
                 inv = cls._create_nsf_invoice(cfs_account, routing_slip.number, payment_account)
-                routing_slip.remaining_amount -= inv.total  # Reduce the NSF fee from remaining amount.
+                # Reduce the NSF fee from remaining amount.
+                routing_slip.remaining_amount = float(routing_slip.remaining_amount) - inv.total
                 routing_slip.save()
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
