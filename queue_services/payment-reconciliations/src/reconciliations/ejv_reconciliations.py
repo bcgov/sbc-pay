@@ -150,25 +150,26 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
     invoice_return_message = line[319:469]
     # If the JV process failed, then mark the GL code against the invoice to be stopped
     # for further JV process for the credit GL.
+    logger.info('Is Credit or Debit %s - %s', line[104:105], ejv_file.is_distribution)
     if line[104:105] == 'C' and ejv_file.is_distribution:
         disbursement_status = _get_disbursement_status(invoice_return_code)
         invoice_link.disbursement_status_code = disbursement_status
         invoice_link.message = invoice_return_message
-
+        logger.info('disbursement_status %s', disbursement_status)
         if disbursement_status == DisbursementStatus.ERRORED.value:
             has_errors = True
             invoice.disbursement_status_code = DisbursementStatus.ERRORED.value
+            line_items: List[PaymentLineItemModel] = invoice.payment_line_items
+            for line_item in line_items:
+                # Line debit distribution
+                debit_distribution: DistributionCodeModel = DistributionCodeModel \
+                    .find_by_id(line_item.fee_distribution_id)
+                credit_distribution: DistributionCodeModel = DistributionCodeModel \
+                    .find_by_id(debit_distribution.disbursement_distribution_code_id)
+                credit_distribution.stop_ejv = True
         else:
             await _update_invoice_status(invoice)
 
-        line_items: List[PaymentLineItemModel] = invoice.payment_line_items
-        for line_item in line_items:
-            # Line debit distribution
-            debit_distribution: DistributionCodeModel = DistributionCodeModel \
-                .find_by_id(line_item.fee_distribution_id)
-            credit_distribution: DistributionCodeModel = DistributionCodeModel \
-                .find_by_id(debit_distribution.disbursement_distribution_code_id)
-            credit_distribution.stop_ejv = True
     elif line[104:105] == 'D' and not ejv_file.is_distribution:
 
         # This is for gov account payment JV.
