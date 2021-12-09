@@ -142,3 +142,61 @@ def test_process_nsf(session):
     with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_cfs_reverse_2:
         RoutingSlipTask.process_nsf()
         mock_cfs_reverse_2.assert_not_called()
+
+
+def test_link_to_nsf_rs(session):
+    """Test routing slip with NSF as parent."""
+    child_rs_number = '1234'
+    parent_rs_number = '89799'
+    factory_routing_slip_account(number=child_rs_number, status=CfsAccountStatus.ACTIVE.value)
+    pay_account = factory_routing_slip_account(number=parent_rs_number, status=CfsAccountStatus.ACTIVE.value)
+    child_rs = RoutingSlipModel.find_by_number(child_rs_number)
+    parent_rs = RoutingSlipModel.find_by_number(parent_rs_number)
+    # Do Link
+    child_rs.status = RoutingSlipStatus.LINKED.value
+    child_rs.parent_number = parent_rs.number
+    child_rs.save()
+
+    # Run link process
+    RoutingSlipTask.link_routing_slips()
+
+    # Create an invoice for the routing slip
+    # Create an invoice record against this routing slip.
+    invoice = factory_invoice(payment_account=pay_account, total=30,
+                              status_code=InvoiceStatus.PAID.value,
+                              payment_method_code=PaymentMethod.INTERNAL.value,
+                              routing_slip=parent_rs.number)
+
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    # Create a distribution for NSF -> As this is a manual step once in each env.
+    nsf_fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('BCR', 'NSF')
+    distribution = factory_distribution('NSF')
+    factory_distribution_link(distribution.distribution_code_id, nsf_fee_schedule.fee_schedule_id)
+
+    # Create invoice reference
+    factory_invoice_reference(invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value)
+
+    # Create receipts for the invoices
+    factory_receipt(invoice.id, parent_rs.number)
+    factory_receipt(invoice.id, child_rs.number)
+
+    # Mark parent as NSF
+    parent_rs.status = RoutingSlipStatus.NSF.value
+    RoutingSlipTask.process_nsf()
+
+    # Now create another RS and link it to the NSF RS, and assert status
+    child_rs_2_number = '8888'
+    factory_routing_slip_account(number=child_rs_2_number, status=CfsAccountStatus.ACTIVE.value)
+    child_2_rs = RoutingSlipModel.find_by_number(child_rs_2_number)
+    child_2_rs.status = RoutingSlipStatus.LINKED.value
+    child_2_rs.parent_number = parent_rs.number
+    child_2_rs.save()
+
+    # Run link process
+    RoutingSlipTask.link_routing_slips()
+
+    # Now the invoice status should be PAID as RS has recovered.
+    assert InvoiceModel.find_by_id(invoice.id).invoice_status_code == InvoiceStatus.PAID.value
