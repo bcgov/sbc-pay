@@ -179,6 +179,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         """
         current_app.logger.info('<<adjust_routing_slips')
         adjust_statuses = [RoutingSlipStatus.REFUND_AUTHORIZED.value, RoutingSlipStatus.WRITE_OFF.value]
+        # For any pending refund/write off balance should be more than $0
         routing_slips = db.session.query(RoutingSlipModel) \
             .filter(RoutingSlipModel.status.in_(adjust_statuses), RoutingSlipModel.remaining_amount > 0).all()
         current_app.logger.info(f'Found {len(routing_slips)} to write off or refund authorized.')
@@ -196,6 +197,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 is_refund = routing_slip.status == RoutingSlipStatus.REFUND_AUTHORIZED.value
                 if rs.parent_number:
                     receipt_number = f'{receipt_number}L'
+                # Adjust the receipt to zero in CFS
                 CFSService.adjust_receipt_to_zero(cfs_account, receipt_number, is_refund)
 
             routing_slip.remaining_amount = 0

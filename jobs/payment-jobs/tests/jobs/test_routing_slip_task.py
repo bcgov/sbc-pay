@@ -18,6 +18,7 @@ Test-Suite to ensure that the CreateAccountTask for routing slip is working as e
 """
 from unittest.mock import patch
 
+import pytest
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Invoice as InvoiceModel
@@ -200,3 +201,27 @@ def test_link_to_nsf_rs(session):
 
     # Now the invoice status should be PAID as RS has recovered.
     assert InvoiceModel.find_by_id(invoice.id).invoice_status_code == InvoiceStatus.PAID.value
+
+
+@pytest.mark.parametrize('rs_status', [RoutingSlipStatus.WRITE_OFF.value, RoutingSlipStatus.REFUND_AUTHORIZED.value])
+def test_receipt_adjustments(session, rs_status):
+    """Test routing slip adjustments."""
+    child_rs_number = '1234'
+    parent_rs_number = '89799'
+    factory_routing_slip_account(number=child_rs_number, status=CfsAccountStatus.ACTIVE.value)
+    factory_routing_slip_account(number=parent_rs_number, status=CfsAccountStatus.ACTIVE.value, total=10,
+                                 remaining_amount=10)
+    child_rs = RoutingSlipModel.find_by_number(child_rs_number)
+    parent_rs = RoutingSlipModel.find_by_number(parent_rs_number)
+    # Do Link
+    child_rs.status = RoutingSlipStatus.LINKED.value
+    child_rs.parent_number = parent_rs.number
+    child_rs.save()
+
+    parent_rs.status = rs_status
+
+    with patch('pay_api.services.CFSService.adjust_receipt_to_zero'):
+        RoutingSlipTask.adjust_routing_slips()
+
+    parent_rs = RoutingSlipModel.find_by_number(parent_rs.number)
+    assert parent_rs.remaining_amount == 0

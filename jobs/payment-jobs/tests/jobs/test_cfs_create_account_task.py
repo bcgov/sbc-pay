@@ -17,12 +17,13 @@
 Test-Suite to ensure that the CreateAccountTask is working as expected.
 """
 from unittest.mock import patch
+
 import requests
-from requests.exceptions import HTTPError
 from pay_api.models import CfsAccount, PaymentAccount
 from pay_api.services.online_banking_service import OnlineBankingService
 from pay_api.services.pad_service import PadService
 from pay_api.utils.enums import CfsAccountStatus
+from requests.exceptions import HTTPError
 
 from tasks.cfs_create_account_task import CreateAccountTask
 from utils import mailer
