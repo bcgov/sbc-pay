@@ -566,10 +566,10 @@ class CFSService(OAuthService):
     @classmethod
     def adjust_receipt_to_zero(cls, cfs_account: CfsAccountModel, receipt_number: str, is_refund: bool = False):
         """Adjust Receipt in CFS to bring it down to zero.
+
         1. Query the receipt and check if balance is more than zero.
         2. Adjust the receipt with activity name corresponding to refund or write off.
         """
-
         current_app.logger.debug('<adjust_receipt_to_zero: %s %s', cfs_account, receipt_number)
         access_token: str = CFSService.get_token().json().get('access_token')
         cfs_base: str = current_app.config.get('CFS_BASE_URL')
