@@ -576,7 +576,7 @@ class CFSService(OAuthService):
         receipt_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/' \
                       f'sites/{cfs_account.cfs_site}/rcpts/{receipt_number}/'
         adjustment_url = f'{receipt_url}adjustment'
-        current_app.logger.debug('Adjustment URL %s', adjustment_url)
+        current_app.logger.debug('Receipt Adjustment URL %s', adjustment_url)
 
         receipt_response = cls.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
         current_app.logger.info(f"Balance on {receipt_number} - {receipt_response.json().get('unapplied_amount')}")
