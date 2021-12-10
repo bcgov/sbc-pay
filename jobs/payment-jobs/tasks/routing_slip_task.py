@@ -170,6 +170,38 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 continue
 
     @classmethod
+    def adjust_routing_slips(cls):
+        """Adjust routing slips.
+
+        Steps:
+        1. Adjust routing slip receipts for any Write off routing slips.
+        2. Adjust routing slip receipts for any Refund approved routing slips.
+        """
+        current_app.logger.info('<<adjust_routing_slips')
+        adjust_statuses = [RoutingSlipStatus.REFUND_AUTHORIZED.value, RoutingSlipStatus.WRITE_OFF.value]
+        routing_slips = db.session.query(RoutingSlipModel) \
+            .filter(RoutingSlipModel.status.in_(adjust_statuses), RoutingSlipModel.remaining_amount > 0).all()
+        current_app.logger.info(f'Found {len(routing_slips)} to write off or refund authorized.')
+        for routing_slip in routing_slips:
+            # 1.Adjust the routing slip and it's child routing slips for the remaining balance.
+            current_app.logger.debug(f'Adjusting routing slip {routing_slip.number}')
+            payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(routing_slip.payment_account_id)
+            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
+
+            # reverse routing slip receipt
+            # Find all child routing slip and reverse it, as all linked routing slips are also considered as NSF.
+            child_routing_slips: List[RoutingSlipModel] = RoutingSlipModel.find_children(routing_slip.number)
+            for rs in (routing_slip, *child_routing_slips):
+                receipt_number = rs.number
+                is_refund = routing_slip.status == RoutingSlipStatus.REFUND_AUTHORIZED.value
+                if rs.parent_number:
+                    receipt_number = f'{receipt_number}L'
+                CFSService.adjust_receipt_to_zero(cfs_account, receipt_number, is_refund)
+
+            routing_slip.remaining_amount = 0
+            routing_slip.save()
+
+    @classmethod
     def _create_nsf_invoice(cls, cfs_account: CfsAccountModel, rs_number: str,
                             payment_account: PaymentAccountModel) -> InvoiceModel:
         """Create Invoice, line item and invoice reference records."""

@@ -14,5 +14,5 @@ pysftp
 Flask-Migrate<3
 
 -e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
--e git+https://github.com/bcgov/sbc-pay.git@main#egg=pay-api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-pay.git@cfs_rcpt_adjust#egg=pay-api&subdirectory=pay-api
 
