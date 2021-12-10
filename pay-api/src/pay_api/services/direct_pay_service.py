@@ -37,7 +37,7 @@ from .payment_line_item import PaymentLineItem
 PAYBC_DATE_FORMAT = '%Y-%m-%d'
 PAYBC_REVENUE_SEPARATOR = '|'
 DECIMAL_PRECISION = '.2f'
-STATUS_PAID = 'PAID'
+STATUS_PAID = ('PAID', 'CMPLT')
 
 
 class DirectPayService(PaymentSystemService, OAuthService):
@@ -180,7 +180,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
         if transaction_response:
             response_json = transaction_response.json()
-            if response_json.get('paymentstatus') == STATUS_PAID:
+            if response_json.get('paymentstatus') in STATUS_PAID:
                 return response_json.get('trnorderid'), parser.parse(
                     response_json.get('trndate')), float(response_json.get('trnamount'))
         return None

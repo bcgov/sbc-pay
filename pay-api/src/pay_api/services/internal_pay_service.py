@@ -124,10 +124,13 @@ class InternalPayService(PaymentSystemService, OAuthService):
             # legacy routing slip which doesnt exist in the system.No validations
             return
 
-        # check rs is active
+        # check rs is nsf
+        if routing_slip.status == RoutingSlipStatus.NSF.value and routing_slip.remaining_amount <= 0:
+            raise BusinessException(Error.RS_INSUFFICIENT_FUNDS)
 
+        # check rs is active
         if routing_slip.status not in (
-                RoutingSlipStatus.ACTIVE.value, RoutingSlipStatus.LINKED.value):
+                RoutingSlipStatus.ACTIVE.value, RoutingSlipStatus.LINKED.value, RoutingSlipStatus.NSF.value):
             raise BusinessException(Error.RS_NOT_ACTIVE)
 
         if routing_slip.parent:

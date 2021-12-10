@@ -340,7 +340,14 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
 
         if patch_action == PatchActions.UPDATE_STATUS:
-            routing_slip.status = request_json.get('status')
+            # Update the remaining amount as negative total of sum of all totals for that routing slip.
+            if (status := request_json.get('status')) == RoutingSlipStatus.NSF.value:
+                total_paid_to_reverse: float = 0
+                for rs in (routing_slip, *RoutingSlipModel.find_children(routing_slip.number)):
+                    total_paid_to_reverse += rs.total
+                routing_slip.remaining_amount = -total_paid_to_reverse
+
+            routing_slip.status = status
 
         routing_slip.save()
         return cls.find_by_number(rs_number)

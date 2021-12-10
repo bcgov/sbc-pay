@@ -24,7 +24,7 @@ from pay_api.models import (
     PaymentLineItem, Receipt, RoutingSlip, StatementSettings)
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
-    RoutingSlipStatus)
+    PaymentSystem, RoutingSlipStatus)
 
 
 def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='1234567890', auth_account_id='1234'):
@@ -113,10 +113,11 @@ def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees
     ).save()
 
 
-def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021'):
+def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021',
+                              status_code=InvoiceReferenceStatus.ACTIVE.value):
     """Return Factory."""
     return InvoiceReference(invoice_id=invoice_id,
-                            status_code=InvoiceReferenceStatus.ACTIVE.value,
+                            status_code=status_code,
                             invoice_number=invoice_number).save()
 
 
@@ -159,8 +160,7 @@ def factory_routing_slip_account(
         name=f'Test {auth_account_id}')
     payment_account.save()
 
-    """Return Factory."""
-    RoutingSlip(
+    rs = RoutingSlip(
         number=number,
         payment_account_id=payment_account.id,
         status=RoutingSlipStatus.ACTIVE.value,
@@ -169,6 +169,15 @@ def factory_routing_slip_account(
         created_by='test',
         routing_slip_date=routing_slip_date
     ).save()
+
+    Payment(payment_system_code=PaymentSystem.FAS.value,
+            payment_account_id=payment_account.id,
+            payment_method_code=PaymentMethod.CASH.value,
+            payment_status_code=PaymentStatus.COMPLETED.value,
+            receipt_number=number,
+            is_routing_slip=True,
+            paid_amount=rs.total,
+            created_by='TEST')
 
     CfsAccount(status=status, account_id=payment_account.id).save()
 

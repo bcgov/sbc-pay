@@ -13,13 +13,26 @@
 # limitations under the License.
 """Task to for linking routing slips."""
 
+from datetime import datetime
+from typing import List
+
 from flask import current_app
-from pay_api import db
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import DistributionCode as DistributionCodeModel
+from pay_api.models import FeeSchedule as FeeScheduleModel
+from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import InvoiceReference as InvoiceReferenceModel
+from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
+from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
-from pay_api.utils.enums import CfsAccountStatus, RoutingSlipStatus
+from pay_api.services.receipt import Receipt
+from pay_api.utils.enums import (
+    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
+    RoutingSlipStatus)
 from sentry_sdk import capture_message
 
 
@@ -59,7 +72,8 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 cfs_account.status = CfsAccountStatus.INACTIVE.value
 
                 # apply receipt to parent cfs account
-                parent_rs = RoutingSlipModel.find_by_number(routing_slip.parent_number)
+                parent_rs: RoutingSlipModel = RoutingSlipModel.find_by_number(routing_slip.parent_number)
+
                 parent_payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(
                     parent_rs.payment_account_id)
 
@@ -74,6 +88,10 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                                               amount=routing_slip.total,
                                               payment_method=parent_payment_account.payment_method)
 
+                # Add to the list if parent is NSF, to apply the receipts.
+                if parent_rs.status == RoutingSlipStatus.NSF.value:
+                    cls._apply_routing_slips_to_pending_invoices(parent_rs)
+
                 routing_slip.save()
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
@@ -82,3 +100,208 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     f'routing slip : {routing_slip.id}, ERROR : {str(e)}', level='error')
                 current_app.logger.error(e)
                 continue
+
+    @classmethod
+    def process_nsf(cls):
+        """Process NSF routing slips.
+
+        Steps:
+        1. Find all routing slips with NSF status.
+        2. Reverse the receipt for the NSF routing slips.
+        3. Add an invoice for NSF fees.
+        """
+        routing_slips: List[RoutingSlipModel] = db.session.query(RoutingSlipModel) \
+            .join(PaymentAccountModel, PaymentAccountModel.id == RoutingSlipModel.payment_account_id) \
+            .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
+            .filter(RoutingSlipModel.status == RoutingSlipStatus.NSF.value) \
+            .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value).all()
+
+        current_app.logger.info(f'Found {len(routing_slips)} to process NSF.')
+        for routing_slip in routing_slips:
+            # 1. Reverse the routing slip receipt.
+            # 2. Reverse all the child receipts.
+            # 3. Change the CFS Account status to FREEZE.
+            try:
+                current_app.logger.debug(f'Reverse receipt {routing_slip.number}')
+                payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(routing_slip.payment_account_id)
+                cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
+
+                # Find all child routing slip and reverse it, as all linked routing slips are also considered as NSF.
+                child_routing_slips: List[RoutingSlipModel] = RoutingSlipModel.find_children(routing_slip.number)
+                for rs in (routing_slip, *child_routing_slips):
+                    receipt_number = rs.number
+                    if rs.parent_number:
+                        receipt_number = f'{receipt_number}L'
+                    CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, is_nsf=True)
+
+                    for payment in db.session.query(PaymentModel) \
+                            .filter(PaymentModel.receipt_number == receipt_number).all():
+                        payment.payment_status_code = PaymentStatus.FAILED.value
+
+                # Update the CFS Account status to FREEZE.
+                cfs_account.status = CfsAccountStatus.FREEZE.value
+
+                # Update all invoice status to CREATED.
+                invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
+                    .filter(InvoiceModel.routing_slip == routing_slip.number) \
+                    .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
+                    .all()
+                for inv in invoices:
+                    # Reset the statuses
+                    inv.invoice_status_code = InvoiceStatus.CREATED.value
+                    inv_ref = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
+                        inv.id, InvoiceReferenceStatus.COMPLETED.value
+                    )
+                    inv_ref.status_code = InvoiceReferenceStatus.ACTIVE.value
+                    # Delete receipts as receipts are reversed in CFS.
+                    for receipt in ReceiptModel.find_all_receipts_for_invoice(inv.id):
+                        db.session.delete(receipt)
+
+                inv = cls._create_nsf_invoice(cfs_account, routing_slip.number, payment_account)
+                # Reduce the NSF fee from remaining amount.
+                routing_slip.remaining_amount = float(routing_slip.remaining_amount) - inv.total
+                routing_slip.save()
+
+            except Exception as e:  # NOQA # pylint: disable=broad-except
+                capture_message(
+                    f'Error on Processing NSF for :={routing_slip.number}, '
+                    f'routing slip : {routing_slip.id}, ERROR : {str(e)}', level='error')
+                current_app.logger.error(e)
+                continue
+
+    @classmethod
+    def _create_nsf_invoice(cls, cfs_account: CfsAccountModel, rs_number: str,
+                            payment_account: PaymentAccountModel) -> InvoiceModel:
+        """Create Invoice, line item and invoice reference records."""
+        fee_schedule: FeeScheduleModel = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type_code='BCR',
+                                                                                            filing_type_code='NSF')
+        invoice = InvoiceModel(
+            bcol_account=payment_account.bcol_account,
+            payment_account_id=payment_account.id,
+            cfs_account_id=cfs_account.id,
+            invoice_status_code=InvoiceStatus.CREATED.value,
+            total=fee_schedule.fee.amount,
+            service_fees=0,
+            paid=0,
+            payment_method_code=PaymentMethod.INTERNAL.value,
+            corp_type_code='BCR',
+            created_on=datetime.now(),
+            created_by='SYSTEM',
+            routing_slip=rs_number
+        )
+        invoice = invoice.save()
+        distribution: DistributionCodeModel = DistributionCodeModel.find_by_active_for_fee_schedule(
+            fee_schedule.fee_schedule_id)
+
+        line_item = PaymentLineItemModel(
+            invoice_id=invoice.id,
+            total=invoice.total,
+            fee_schedule_id=fee_schedule.fee_schedule_id,
+            description=fee_schedule.filing_type.description,
+            filing_fees=invoice.total,
+            gst=0,
+            priority_fees=0,
+            pst=0,
+            future_effective_fees=0,
+            line_item_status_code=LineItemStatus.ACTIVE.value,
+            service_fees=0,
+            fee_distribution_id=distribution.distribution_code_id)
+        line_item.save()
+
+        invoice_response = CFSService.create_account_invoice(transaction_number=invoice.id,
+                                                             line_items=invoice.payment_line_items,
+                                                             cfs_account=cfs_account)
+
+        invoice_number = invoice_response.json().get('invoice_number', None)
+        current_app.logger.info(f'invoice_number  {invoice_number}  created in CFS for NSF.')
+
+        InvoiceReferenceModel(
+            invoice_id=invoice.id,
+            invoice_number=invoice_number,
+            reference_number=invoice_response.json().get('pbc_ref_number', None),
+            status_code=InvoiceReferenceStatus.ACTIVE.value
+        ).save()
+
+        return invoice
+
+    @classmethod
+    def _apply_routing_slips_to_pending_invoices(cls, routing_slip: RoutingSlipModel):
+        """Apply the routing slips again, when routing slip is linked to an NSF parent."""
+        current_app.logger.info(f'Starting NSF recovery process for {routing_slip.number}')
+        routing_slip_payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(
+            routing_slip.payment_account_id)
+
+        # apply invoice to the active CFS_ACCOUNT which will be the parent routing slip
+        active_cfs_account = CfsAccountModel.find_effective_by_account_id(routing_slip_payment_account.id)
+
+        invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
+            .filter(InvoiceModel.routing_slip == routing_slip.number,
+                    InvoiceModel.invoice_status_code.in_([InvoiceStatus.CREATED.value, InvoiceStatus.APPROVED.value])) \
+            .all()
+        current_app.logger.info(f'Found {len(invoices)} to apply receipt')
+        for inv in invoices:
+            inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
+                inv.id, InvoiceReferenceStatus.ACTIVE.value
+            )
+            cls.apply_routing_slips_to_invoice(
+                routing_slip_payment_account, active_cfs_account, routing_slip, inv, inv_ref.invoice_number
+            )
+            # IF invoice balance is zero, then update records.
+            if CFSService.get_invoice(cfs_account=active_cfs_account, inv_number=inv_ref.invoice_number)\
+                    .get('amount_due') == 0:
+                inv_ref.status_code = InvoiceReferenceStatus.COMPLETED.value
+                inv.invoice_status_code = InvoiceStatus.PAID.value
+
+    @classmethod
+    def apply_routing_slips_to_invoice(cls,  # pylint: disable = too-many-arguments, too-many-locals
+                                       routing_slip_payment_account: PaymentAccountModel,
+                                       active_cfs_account: CfsAccountModel,
+                                       parent_routing_slip: RoutingSlipModel,
+                                       invoice: InvoiceModel,
+                                       invoice_number: str) -> bool:
+        """Apply routing slips (receipts in CFS) to invoice."""
+        has_errors = False
+        child_routing_slips: List[RoutingSlipModel] = RoutingSlipModel.find_children(parent_routing_slip.number)
+        # an invoice has to be applied to multiple receipts (incl. all linked RS); apply till the balance is zero
+        for routing_slip in (parent_routing_slip, *child_routing_slips):
+            try:
+                # apply receipt now
+                current_app.logger.debug(f'Apply receipt {routing_slip.number} on invoice {invoice_number} '
+                                         f'for routing slip {routing_slip.number}')
+                receipt_number = routing_slip.number
+                # For linked routing slips, new receipt numbers ends with 'L'
+                if routing_slip.status == RoutingSlipStatus.LINKED.value:
+                    receipt_number = f'{routing_slip.number}L'
+
+                # If balance of receipt is zero, continue to next receipt.
+                receipt_balance_before_apply = float(
+                    CFSService.get_receipt(active_cfs_account, receipt_number).get('unapplied_amount')
+                )
+                current_app.logger.debug(f'Current balance on {receipt_number} = {receipt_balance_before_apply}')
+                if receipt_balance_before_apply == 0:
+                    continue
+
+                current_app.logger.debug(f'Applying receipt {receipt_number} to {invoice_number}')
+                receipt_response = CFSService.apply_receipt(active_cfs_account, receipt_number, invoice_number)
+
+                # Create receipt.
+                receipt = Receipt()
+                receipt.receipt_number = receipt_response.json().get('receipt_number', None)
+                receipt_amount = receipt_balance_before_apply - float(receipt_response.json().get('unapplied_amount'))
+                receipt.receipt_amount = receipt_amount
+                receipt.invoice_id = invoice.id
+                receipt.receipt_date = datetime.now()
+                receipt.flush()
+
+                invoice_from_cfs = CFSService.get_invoice(active_cfs_account, invoice_number)
+                if invoice_from_cfs.get('amount_due') == 0:
+                    break
+
+            except Exception as e:  # NOQA # pylint: disable=broad-except
+                capture_message(
+                    f'Error on creating Routing Slip invoice: account id={routing_slip_payment_account.id}, '
+                    f'routing slip : {routing_slip.id}, ERROR : {str(e)}', level='error')
+                current_app.logger.error(e)
+                has_errors = True
+                continue
+        return has_errors
