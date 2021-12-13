@@ -5,7 +5,7 @@
   "title": "statement_notification_request",
   "required": [
     "statementNotificationEnabled",
-    "authAccountName"
+    "accountName"
   ],
   "additionalProperties": false,
   "properties": {
@@ -18,10 +18,10 @@
         true
       ]
     },
-    "authAccountName": {
-      "$id": "#/properties/authAccountName",
+    "accountName": {
+      "$id": "#/properties/accountName",
       "type": "string",
-      "title": "Auth account Name",
+      "title": "Account Name",
       "default": "",
         "examples": [
           "Foobar Inc."
