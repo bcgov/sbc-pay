@@ -563,6 +563,35 @@ class CFSService(OAuthService):
         current_app.logger.debug('>Received CMS response')
         return cms_response.json()
 
+    @classmethod
+    def adjust_receipt_to_zero(cls, cfs_account: CfsAccountModel, receipt_number: str, is_refund: bool = False):
+        """Adjust Receipt in CFS to bring it down to zero.
+
+        1. Query the receipt and check if balance is more than zero.
+        2. Adjust the receipt with activity name corresponding to refund or write off.
+        """
+        current_app.logger.debug('<adjust_receipt_to_zero: %s %s', cfs_account, receipt_number)
+        access_token: str = CFSService.get_token().json().get('access_token')
+        cfs_base: str = current_app.config.get('CFS_BASE_URL')
+        receipt_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/' \
+                      f'sites/{cfs_account.cfs_site}/rcpts/{receipt_number}/'
+        adjustment_url = f'{receipt_url}adjustment'
+        current_app.logger.debug('Receipt Adjustment URL %s', adjustment_url)
+
+        receipt_response = cls.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+        current_app.logger.info(f"Balance on {receipt_number} - {receipt_response.json().get('unapplied_amount')}")
+        if (unapplied_amount := float(receipt_response.json().get('unapplied_amount', 0))) > 0:
+            adjustment = dict(
+                activity_name='Refund Adjustment FAS' if is_refund else 'Write-off Adjustment FAS',
+                adjustment_amount=str(unapplied_amount)
+            )
+
+            cls.post(adjustment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, adjustment)
+            receipt_response = cls.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+            current_app.logger.info(f"Balance on {receipt_number} - {receipt_response.json().get('unapplied_amount')}")
+
+        current_app.logger.debug('>adjust_receipt_to_zero')
+
 
 def get_non_null_value(value: str, default_value: str):
     """Return non null value for the value by replacing default value."""
