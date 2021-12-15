@@ -200,6 +200,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 # Adjust the receipt to zero in CFS
                 CFSService.adjust_receipt_to_zero(cfs_account, receipt_number, is_refund)
 
+            routing_slip.refund_amount = routing_slip.remaining_amount
             routing_slip.remaining_amount = 0
             routing_slip.save()
 
