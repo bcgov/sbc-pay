@@ -106,8 +106,9 @@ class CgiAP(CgiEjv):
         for index in range(0, len(cheque_advice), char_limit):
             advice_line = f'{cheque_advice[index: index + char_limit]:<{char_limit}}'
             line_text = f'{index + 1}'.zfill(4)
-            ap_comment += f'{cls._feeder_number()}APIC{cls.DELIMITER}{cls._supplier_number()}{cls._supplier_location()}' \
-                          f'{routing_slip_number:<50}{line_text}{advice_line}{cls.DELIMITER}{os.linesep}'
+            ap_comment += f'{cls._feeder_number()}APIC{cls.DELIMITER}{cls._supplier_number()}' \
+                          f'{cls._supplier_location()}{routing_slip_number:<50}{line_text}{advice_line}' \
+                          f'{cls.DELIMITER}{os.linesep}'
         return ap_comment
 
     @classmethod

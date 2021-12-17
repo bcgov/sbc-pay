@@ -42,7 +42,7 @@ from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
 from pay_api.services.queue_publisher import publish
 from pay_api.utils.enums import (
-    DisbursementStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem, EjvFileType)
+    DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
 from sentry_sdk import capture_message
 
 from reconciliations import config

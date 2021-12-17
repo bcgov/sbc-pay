@@ -34,7 +34,8 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import (
-    CfsAccountStatus, DisbursementStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, EjvFileType)
+    CfsAccountStatus, DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
+    PaymentStatus)
 
 from .factory import (
     factory_create_ejv_account, factory_create_pad_account, factory_distribution, factory_invoice,
