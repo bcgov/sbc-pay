@@ -42,7 +42,7 @@ from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
 from pay_api.services.queue_publisher import publish
 from pay_api.utils.enums import (
-    DisbursementStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
+    DisbursementStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem, EjvFileType)
 from sentry_sdk import capture_message
 
 from reconciliations import config
@@ -77,7 +77,7 @@ def _update_acknowledgement():
 
     for ejv_header in ejv_headers:
         ejv_header.disbursement_status_code = DisbursementStatus.ACKNOWLEDGED.value
-        if ejv_file.is_distribution:
+        if ejv_file.file_type == EjvFileType.DISBURSEMENT.value:
             ejv_links: List[EjvInvoiceLinkModel] = db.session.query(EjvInvoiceLinkModel).filter(
                 EjvInvoiceLinkModel.ejv_header_id == ejv_header.id).all()
             for ejv_link in ejv_links:
@@ -124,7 +124,7 @@ async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-loca
                 if ejv_header.disbursement_status_code == DisbursementStatus.ERRORED.value:
                     has_errors = True
                 # Create a payment record if its a gov account payment.
-                elif not ejv_file.is_distribution:
+                elif ejv_file.file_type == EjvFileType.PAYMENT.value:
                     amount = float(line[42:57])
                     receipt_number = line[0:42].strip()
                     await _create_payment_record(amount, ejv_header, receipt_number)
@@ -150,8 +150,9 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
     invoice_return_message = line[319:469]
     # If the JV process failed, then mark the GL code against the invoice to be stopped
     # for further JV process for the credit GL.
+
     logger.info('Is Credit or Debit %s - %s', line[104:105], ejv_file.is_distribution)
-    if line[104:105] == 'C' and ejv_file.is_distribution:
+    if line[104:105] == 'C' and ejv_file.file_type == EjvFileType.DISBURSEMENT.value:
         disbursement_status = _get_disbursement_status(invoice_return_code)
         invoice_link.disbursement_status_code = disbursement_status
         invoice_link.message = invoice_return_message
@@ -170,8 +171,7 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
         else:
             await _update_invoice_status(invoice)
 
-    elif line[104:105] == 'D' and not ejv_file.is_distribution:
-
+    elif line[104:105] == 'D' and ejv_file.file_type == EjvFileType.PAYMENT.value:
         # This is for gov account payment JV.
         invoice_link.disbursement_status_code = _get_disbursement_status(invoice_return_code)
 
