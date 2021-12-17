@@ -71,7 +71,7 @@ class CgiAP(CgiEjv):
     def get_ap_address(cls, refund_details, routing_slip_number):
         """Get AP Address Override."""
         name_1 = f"{refund_details['name'][:40]:<40}"
-        name_2 = f"{refund_details['name'][40:]:<40}"
+        name_2 = f"{refund_details['name'][40:80]:<40}"
 
         street = refund_details['mailingAddress']['street']
         street_additional = f"{refund_details['mailingAddress']['streetAdditional'][:40]:<40}"
@@ -88,7 +88,7 @@ class CgiAP(CgiEjv):
 
         city = f"{refund_details['mailingAddress']['city'][:25]:<25}"
         prov = f"{refund_details['mailingAddress']['region'][:2]:<2}"
-        postal_code = f"{refund_details['mailingAddress']['postalCode'][:10]:<2}"
+        postal_code = f"{refund_details['mailingAddress']['postalCode'][:10]:<10}"
         country = f"{refund_details['mailingAddress']['country'][:2]:<2}"
 
         ap_address = f'{cls._feeder_number()}APNA{cls.DELIMITER}{cls._supplier_number()}{cls._supplier_location()}' \
@@ -99,7 +99,7 @@ class CgiAP(CgiEjv):
     @classmethod
     def get_ap_comment(cls, refund_details, routing_slip_number):
         """Get AP Comment Override."""
-        cheque_advice = refund_details['chequeAdvice']
+        cheque_advice = refund_details.get('chequeAdvice', '')
         char_limit = 40
         ap_comment = ''
         # Split advice by 40 characters each.

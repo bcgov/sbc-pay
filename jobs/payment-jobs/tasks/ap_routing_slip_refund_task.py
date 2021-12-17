@@ -45,7 +45,9 @@ class ApRoutingSlipRefundTask(CgiAP):
         """Create AP file for refund and upload."""
         # Find all routing slips with status REFUND_AUTHORIZED.
         routing_slips: List[RoutingSlipModel] = db.session.query(RoutingSlipModel) \
-            .filter(RoutingSlipModel.status == RoutingSlipStatus.REFUND_AUTHORIZED.value).all()
+            .filter(RoutingSlipModel.status == RoutingSlipStatus.REFUND_AUTHORIZED.value)\
+            .filter(RoutingSlipModel.refund_amount > 0)\
+            .all()
 
         current_app.logger.info(f'Found {len(routing_slips)} to refund.')
         if not routing_slips:
@@ -73,7 +75,6 @@ class ApRoutingSlipRefundTask(CgiAP):
                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
                 ejv_file_id=ejv_file_model.id
             ).flush()
-
             # AP Invoice Header
             ap_content = f'{ap_content}{cls.get_ap_header(routing_slip.refund_amount, routing_slip.number)}'
             ap_content = f'{ap_content}{cls.get_ap_invoice_line(routing_slip.refund_amount, routing_slip.number)}'
