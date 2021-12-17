@@ -41,12 +41,12 @@ class CgiAP(CgiEjv):
     @classmethod
     def get_ap_header(cls, total, routing_slip_number):
         """Get AP Invoice Header string."""
-        invoice_type = 'XX'  # TODO
-        remit_code = 'XXXX'  # TODO
+        invoice_type = 'ST'  # TODO ST/CM
+        remit_code = f"{'01':<4}"  # TODO
         currency = 'CAD'
         invoice_date = cls._get_invoice_date()
         oracle_invoice_batch_name = f"{'X':<30}"  # TODO
-        ap_header = f'{cls._feeder_number()}APIH{cls.DELIMITER}{cls._vendor_number()}{cls._location()}' \
+        ap_header = f'{cls._feeder_number()}APIH{cls.DELIMITER}{cls._supplier_number()}{cls._supplier_location()}' \
                     f'{routing_slip_number:<50}{cls._po_number()}{invoice_type}{invoice_date}GEN CHQ N' \
                     f'{remit_code}{cls.format_amount(total)}{currency}{invoice_date}' \
                     f'{cls.EMPTY:<50}{cls.EMPTY:<60}{cls.EMPTY:<8}{cls.EMPTY:<8}' \
@@ -56,10 +56,10 @@ class CgiAP(CgiEjv):
     @classmethod
     def get_ap_invoice_line(cls, total, routing_slip_number):
         """Get AP Invoice Line string."""
-        commit_line_number = '0001'  # TODO
+        commit_line_number = f'{cls.EMPTY:<4}'
         invoice_line_number = '0001'
-        line_code = 'D'  # TODO
-        ap_line = f'{cls._feeder_number()}APIL{cls.DELIMITER}{cls._vendor_number()}{cls._location()}' \
+        line_code = 'C'  # TODO C/D
+        ap_line = f'{cls._feeder_number()}APIL{cls.DELIMITER}{cls._supplier_number()}{cls._supplier_location()}' \
                   f'{routing_slip_number:<50}{invoice_line_number}{commit_line_number}{cls.format_amount(total)}' \
                   f'{line_code}{cls._distribution()}{cls.EMPTY:<55}{cls._get_invoice_date()}{cls.EMPTY:<10}' \
                   f'{cls.EMPTY:<15}{cls.EMPTY:<15}{cls.EMPTY:<15}{cls.EMPTY:<15}{cls.EMPTY:<20}{cls.EMPTY:<4}' \
@@ -91,7 +91,7 @@ class CgiAP(CgiEjv):
         postal_code = f"{refund_details['mailingAddress']['postalCode'][:10]:<2}"
         country = f"{refund_details['mailingAddress']['country'][:2]:<2}"
 
-        ap_address = f'{cls._feeder_number()}APNA{cls.DELIMITER}{cls._vendor_number()}{cls._location()}' \
+        ap_address = f'{cls._feeder_number()}APNA{cls.DELIMITER}{cls._supplier_number()}{cls._supplier_location()}' \
                      f'{routing_slip_number:<50}{name_1}{name_2}{address_1}{address_2}{address_3}' \
                      f'{city}{prov}{postal_code}{country}{cls.DELIMITER}{os.linesep}'
         return ap_address
@@ -106,14 +106,14 @@ class CgiAP(CgiEjv):
         for index in range(0, len(cheque_advice), char_limit):
             advice_line = f'{cheque_advice[index: index + char_limit]:<{char_limit}}'
             line_text = f'{index + 1}'.zfill(4)
-            ap_comment += f'{cls._feeder_number()}APIC{cls.DELIMITER}{cls._vendor_number()}{cls._location()}' \
+            ap_comment += f'{cls._feeder_number()}APIC{cls.DELIMITER}{cls._supplier_number()}{cls._supplier_location()}' \
                           f'{routing_slip_number:<50}{line_text}{advice_line}{cls.DELIMITER}{os.linesep}'
         return ap_comment
 
     @classmethod
-    def _vendor_number(cls):
+    def _supplier_number(cls):
         """Return vendor number."""
-        return f"{current_app.config.get('CGI_AP_VENDOR_NUMBER'):<9}"
+        return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<9}"
 
     @classmethod
     def _dist_vendor(cls):
@@ -121,14 +121,15 @@ class CgiAP(CgiEjv):
         return f"{current_app.config.get('CGI_AP_DISTRIBUTION_VENDOR_NUMBER'):<30}"
 
     @classmethod
-    def _location(cls):
+    def _supplier_location(cls):
         """Return location."""
-        return f"{current_app.config.get('CGI_AP_LOCATION'):<3}"
+        return f"{current_app.config.get('CGI_AP_SUPPLIER_LOCATION'):<3}"
 
     @classmethod
     def _po_number(cls):
         """Return PO Number."""
-        return f"{current_app.config.get('CGI_AP_PO_NUMBER'):<20}"
+        # return f"{current_app.config.get('CGI_AP_PO_NUMBER'):<20}"
+        return f'{cls.EMPTY:<20}'
 
     @classmethod
     def _get_invoice_date(cls):

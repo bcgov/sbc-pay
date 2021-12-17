@@ -178,7 +178,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         2. Adjust routing slip receipts for any Refund approved routing slips.
         """
         current_app.logger.info('<<adjust_routing_slips')
-        adjust_statuses = [RoutingSlipStatus.REFUND_AUTHORIZED.value, RoutingSlipStatus.WRITE_OFF.value]
+        adjust_statuses = [RoutingSlipStatus.REFUND_AUTHORIZED.value, RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value]
         # For any pending refund/write off balance should be more than $0
         routing_slips = db.session.query(RoutingSlipModel) \
             .filter(RoutingSlipModel.status.in_(adjust_statuses), RoutingSlipModel.remaining_amount > 0).all()
