@@ -484,7 +484,7 @@ async def test_succesful_payment_ejv_reconciliations(session, app, stan_server, 
     file_ref = f'INBOX.{datetime.now()}'
     ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
                                           disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                          type=EjvFileType.PAYMENT.value).save()
+                                          file_type=EjvFileType.PAYMENT.value).save()
     ejv_file_id = ejv_file.id
 
     feedback_content = f'..BG...........00000000{ejv_file_id}...\n' \
@@ -653,7 +653,7 @@ async def test_succesful_payment_reversal_ejv_reconciliations(session, app, stan
     file_ref = f'INBOX.{datetime.now()}'
     ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
                                           disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                          type=EjvFileType.PAYMENT.value).save()
+                                          file_type=EjvFileType.PAYMENT.value).save()
     ejv_file_id = ejv_file.id
 
     feedback_content = f'..BG...........00000000{ejv_file_id}...\n' \

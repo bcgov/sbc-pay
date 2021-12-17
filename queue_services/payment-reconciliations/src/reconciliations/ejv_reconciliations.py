@@ -150,8 +150,7 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
     invoice_return_message = line[319:469]
     # If the JV process failed, then mark the GL code against the invoice to be stopped
     # for further JV process for the credit GL.
-
-    logger.info('Is Credit or Debit %s - %s', line[104:105], ejv_file.is_distribution)
+    logger.info('Is Credit or Debit %s - %s', line[104:105], ejv_file.file_type)
     if line[104:105] == 'C' and ejv_file.file_type == EjvFileType.DISBURSEMENT.value:
         disbursement_status = _get_disbursement_status(invoice_return_code)
         invoice_link.disbursement_status_code = disbursement_status
