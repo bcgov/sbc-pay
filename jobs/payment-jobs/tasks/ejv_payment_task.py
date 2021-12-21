@@ -25,7 +25,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import db
-from pay_api.utils.enums import DisbursementStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
 from pay_api.utils.util import generate_transaction_number
 
 from tasks.common.cgi_ejv import CgiEjv
@@ -58,7 +58,7 @@ class EjvPaymentTask(CgiEjv):
 
         # Create a ejv file model record.
         ejv_file_model: EjvFileModel = EjvFileModel(
-            is_distribution=False,
+            file_type=EjvFileType.PAYMENT.value,
             file_ref=cls.get_file_name(),
             disbursement_status_code=DisbursementStatus.UPLOADED.value
         ).flush()

@@ -34,7 +34,8 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import (
-    CfsAccountStatus, DisbursementStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus)
+    CfsAccountStatus, DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
+    PaymentStatus)
 
 from .factory import (
     factory_create_ejv_account, factory_create_pad_account, factory_distribution, factory_invoice,
@@ -483,7 +484,7 @@ async def test_succesful_payment_ejv_reconciliations(session, app, stan_server, 
     file_ref = f'INBOX.{datetime.now()}'
     ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
                                           disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                          is_distribution=False).save()
+                                          file_type=EjvFileType.PAYMENT.value).save()
     ejv_file_id = ejv_file.id
 
     feedback_content = f'..BG...........00000000{ejv_file_id}...\n' \
@@ -652,7 +653,7 @@ async def test_succesful_payment_reversal_ejv_reconciliations(session, app, stan
     file_ref = f'INBOX.{datetime.now()}'
     ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
                                           disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                          is_distribution=False).save()
+                                          file_type=EjvFileType.PAYMENT.value).save()
     ejv_file_id = ejv_file.id
 
     feedback_content = f'..BG...........00000000{ejv_file_id}...\n' \

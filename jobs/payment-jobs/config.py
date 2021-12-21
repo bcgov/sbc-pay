@@ -184,6 +184,12 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # Is FAS-CFS integration disabled
     DISABLE_CFS_FAS_INTEGRATION = os.getenv('DISABLE_CFS_FAS_INTEGRATION', 'false').lower() == 'true'
 
+    # CP Job variables
+    CGI_AP_DISTRIBUTION = os.getenv('CGI_AP_DISTRIBUTION', '')
+    CGI_AP_SUPPLIER_NUMBER = os.getenv('CGI_AP_SUPPLIER_NUMBER', '')
+    CGI_AP_SUPPLIER_LOCATION = os.getenv('CGI_AP_SUPPLIER_LOCATION', '')
+    CGI_AP_DISTRIBUTION_VENDOR_NUMBER = os.getenv('CGI_AP_DISTRIBUTION_VENDOR_NUMBER', '')
+
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     TESTING = False

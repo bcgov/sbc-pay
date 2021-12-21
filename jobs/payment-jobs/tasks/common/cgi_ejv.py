@@ -25,12 +25,11 @@ from utils.minio import put_object
 from utils.sftp import upload_to_ftp
 
 
-DELIMITER = chr(29)  # '<0x1d>'
-EMPTY = ''
-
-
 class CgiEjv:
     """Base class for CGI EJV."""
+
+    DELIMITER = chr(29)  # '<0x1d>'
+    EMPTY = ''
 
     @classmethod
     def get_file_name(cls):
@@ -41,7 +40,7 @@ class CgiEjv:
     @classmethod
     def get_journal_batch_name(cls, batch_number: str):
         """Return journal batch name."""
-        return f'{cls.ministry()}{batch_number}{EMPTY:<14}'
+        return f'{cls.ministry()}{batch_number}{cls.EMPTY:<14}'
 
     @classmethod
     def _feeder_number(cls):
@@ -63,17 +62,17 @@ class CgiEjv:
                     batch_type, distribution, description, effective_date, flow_through, journal_name, amount,
                     line_number, credit_debit):
         """Return jv line string."""
-        return f'{cls._feeder_number()}{batch_type}JD{DELIMITER}{journal_name}' \
-               f'{line_number:0>5}{effective_date}{distribution}{EMPTY:<9}' \
+        return f'{cls._feeder_number()}{batch_type}JD{cls.DELIMITER}{journal_name}' \
+               f'{line_number:0>5}{effective_date}{distribution}{cls.EMPTY:<9}' \
                f'{cls.format_amount(amount)}{credit_debit}{description}{flow_through}' \
-               f'{DELIMITER}{os.linesep}'
+               f'{cls.DELIMITER}{os.linesep}'
 
     @classmethod
     def get_batch_header(cls, batch_number, batch_type):
         """Return batch header string."""
-        return f'{cls._feeder_number()}{batch_type}BH{DELIMITER}{cls._feeder_number()}' \
+        return f'{cls._feeder_number()}{batch_type}BH{cls.DELIMITER}{cls._feeder_number()}' \
                f'{get_fiscal_year(datetime.now())}' \
-               f'{batch_number}{cls._message_version()}{DELIMITER}{os.linesep}'
+               f'{batch_number}{cls._message_version()}{cls.DELIMITER}{os.linesep}'
 
     @classmethod
     def get_effective_date(cls):
@@ -99,7 +98,7 @@ class CgiEjv:
     def get_distribution_string(cls, dist_code: DistributionCodeModel):
         """Return GL code combination for the distribution."""
         return f'{dist_code.client}{dist_code.responsibility_centre}{dist_code.service_line}' \
-               f'{dist_code.stob}{dist_code.project_code}0000000000{EMPTY:<16}'
+               f'{dist_code.stob}{dist_code.project_code}0000000000{cls.EMPTY:<16}'
 
     @classmethod
     def upload(cls, ejv_content, file_name, file_path_with_name, trg_file_path):
@@ -113,17 +112,17 @@ class CgiEjv:
     @classmethod
     def get_jv_header(cls, batch_type, journal_batch_name, journal_name, total):
         """Get JV Header string."""
-        ejv_content = f'{cls._feeder_number()}{batch_type}JH{DELIMITER}{journal_name}' \
-                      f'{journal_batch_name}{cls.format_amount(total)}ACAD{EMPTY:<100}{EMPTY:<110}' \
-                      f'{DELIMITER}{os.linesep}'
+        ejv_content = f'{cls._feeder_number()}{batch_type}JH{cls.DELIMITER}{journal_name}' \
+                      f'{journal_batch_name}{cls.format_amount(total)}ACAD{cls.EMPTY:<100}{cls.EMPTY:<110}' \
+                      f'{cls.DELIMITER}{os.linesep}'
         return ejv_content
 
     @classmethod
     def get_batch_trailer(cls, batch_number, batch_total, batch_type, control_total):
         """Return batch trailer string."""
-        return f'{cls._feeder_number()}{batch_type}BT{DELIMITER}{cls._feeder_number()}' \
+        return f'{cls._feeder_number()}{batch_type}BT{cls.DELIMITER}{cls._feeder_number()}' \
                f'{get_fiscal_year(datetime.now())}{batch_number}' \
-               f'{control_total:0>15}{cls.format_amount(batch_total)}{DELIMITER}{os.linesep}'
+               f'{control_total:0>15}{cls.format_amount(batch_total)}{cls.DELIMITER}{os.linesep}'
 
     @classmethod
     def get_journal_name(cls, ejv_header_id: int):

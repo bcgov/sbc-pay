@@ -203,7 +203,9 @@ def test_link_to_nsf_rs(session):
     assert InvoiceModel.find_by_id(invoice.id).invoice_status_code == InvoiceStatus.PAID.value
 
 
-@pytest.mark.parametrize('rs_status', [RoutingSlipStatus.WRITE_OFF.value, RoutingSlipStatus.REFUND_AUTHORIZED.value])
+@pytest.mark.parametrize('rs_status', [
+    RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value, RoutingSlipStatus.REFUND_AUTHORIZED.value
+])
 def test_receipt_adjustments(session, rs_status):
     """Test routing slip adjustments."""
     child_rs_number = '1234'

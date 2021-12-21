@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 
 from pay_api.models import (
     CfsAccount, DistributionCode, DistributionCodeLink, Invoice, InvoiceReference, Payment, PaymentAccount,
-    PaymentLineItem, Receipt, RoutingSlip, StatementSettings)
+    PaymentLineItem, Receipt, Refund, RoutingSlip, StatementSettings)
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
     PaymentSystem, RoutingSlipStatus)
@@ -152,7 +152,9 @@ def factory_routing_slip_account(
         remaining_amount: int = 0,
         routing_slip_date=datetime.now(),
         payment_method=PaymentMethod.CASH.value,
-        auth_account_id='1234'
+        auth_account_id='1234',
+        routing_slip_status=RoutingSlipStatus.ACTIVE.value,
+        refund_amount=0
 ):
     """Create routing slip and return payment account with it."""
     payment_account = PaymentAccount(
@@ -163,11 +165,12 @@ def factory_routing_slip_account(
     rs = RoutingSlip(
         number=number,
         payment_account_id=payment_account.id,
-        status=RoutingSlipStatus.ACTIVE.value,
+        status=routing_slip_status,
         total=total,
         remaining_amount=remaining_amount,
         created_by='test',
-        routing_slip_date=routing_slip_date
+        routing_slip_date=routing_slip_date,
+        refund_amount=refund_amount
     ).save()
 
     Payment(payment_system_code=PaymentSystem.FAS.value,
@@ -259,3 +262,17 @@ def factory_receipt(
         receipt_date=receipt_date,
         receipt_amount=receipt_amount
     )
+
+
+def factory_refund(
+        routing_slip_id: int,
+        details={}
+):
+    """Return Factory."""
+    return Refund(
+        routing_slip_id=routing_slip_id,
+        requested_date=datetime.now(),
+        reason='TEST',
+        requested_by='TEST',
+        details=details
+    ).save()
