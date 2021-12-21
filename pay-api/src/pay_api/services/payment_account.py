@@ -443,6 +443,14 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         }
 
     @classmethod
+    def get_account_fees(cls, auth_account_id: str):
+        """Save multiple fee settings against the account."""
+        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        return {
+            'accountFees': AccountFeeSchema().dump(AccountFeeModel.find_by_account_id(payment_account.id), many=True)
+        }
+
+    @classmethod
     def save_account_fee(cls, auth_account_id: str, product: str, account_fee_request: dict):
         """Save fee overrides against the account."""
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
