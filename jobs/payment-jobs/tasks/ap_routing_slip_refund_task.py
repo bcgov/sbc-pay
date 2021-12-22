@@ -18,7 +18,6 @@ from typing import List
 import time
 from flask import current_app
 from pay_api.models import EjvFile as EjvFileModel
-from pay_api.models import EjvHeader as EjvHeaderModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
