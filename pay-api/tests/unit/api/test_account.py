@@ -494,6 +494,13 @@ def test_create_gov_accounts_with_account_fee(session, client, jwt, app):
     assert not rv.json.get('accountFees')[0]['applyFilingFees']
     assert rv.json.get('accountFees')[0]['serviceFeeCode'] == 'TRF01'
 
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.get(f'/api/v1/accounts/{account_id}/fees', headers=headers)
+
+    assert rv.json.get('accountFees')[0]['product'] == 'BUSINESS'
+    assert not rv.json.get('accountFees')[0]['applyFilingFees']
+    assert rv.json.get('accountFees')[0]['serviceFeeCode'] == 'TRF01'
+
 
 def test_update_gov_accounts_with_account_fee(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
