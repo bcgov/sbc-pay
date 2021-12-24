@@ -11,7 +11,9 @@
       "$id": "#/properties/number",
       "type": "string",
       "title": "Routing Slip Number",
-      "pattern": "^(.*)$"
+      "pattern": "^(.*)$",
+      "maxLength": 9,
+      "minLength": 9
     },
     "status": {
       "$id": "#/properties/status",

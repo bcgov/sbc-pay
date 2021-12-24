@@ -587,3 +587,17 @@ def test_get_invalid_comments(client, jwt):
     rv = client.get('/api/v1/fas/routing-slips/{}/comments'.format('invalid'), headers=headers)
     assert rv.status_code == 400
     assert rv.json.get('type') == 'FAS_INVALID_ROUTING_SLIP_NUMBER'
+
+
+def test_create_routing_slips_invalid_number(client, jwt, app):
+    """Assert that the search works."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    payload = get_routing_slip_request(number='123456')
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 400
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    payload = get_routing_slip_request(number='1234567891')
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 400
