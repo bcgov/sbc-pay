@@ -590,7 +590,7 @@ def test_get_invalid_comments(client, jwt):
 
 
 def test_create_routing_slips_invalid_number(client, jwt, app):
-    """Assert that the search works."""
+    """Assert that the rs number validation works."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     payload = get_routing_slip_request(number='123456')
