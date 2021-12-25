@@ -204,8 +204,8 @@ def test_link_routing_slip(client, jwt, app):
     assert rv.status_code == 400
 
     # assert transactions
-    child = get_routing_slip_request(number=fake.name())
-    parent = get_routing_slip_request(number=fake.name())
+    child = get_routing_slip_request(number='child2123')
+    parent = get_routing_slip_request(number='parent212')
     rv1 = client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
     rv2 = client.post('/api/v1/fas/routing-slips', data=json.dumps(parent), headers=headers)
     payment_account_id = rv1.json.get('paymentAccount').get('id')
@@ -230,7 +230,7 @@ def test_link_routing_slip(client, jwt, app):
     assert rv.json.get('type') == 'RS_CHILD_HAS_TRANSACTIONS'
     assert rv.status_code == 400
 
-    child1 = get_routing_slip_request(number=fake.name())
+    child1 = get_routing_slip_request(number='child2999')
     client.post('/api/v1/fas/routing-slips', data=json.dumps(child1), headers=headers)
 
     data = {'childRoutingSlipNumber': f"{child1.get('number')}", 'parentRoutingSlipNumber': f"{child1.get('number')}"}
