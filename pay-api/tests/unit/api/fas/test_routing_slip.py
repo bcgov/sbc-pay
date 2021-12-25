@@ -137,9 +137,9 @@ def test_link_routing_slip_parent_is_a_child(client, jwt):
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, Role.FAS_SEARCH.value]),
                            token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    child = get_routing_slip_request()
-    parent1 = get_routing_slip_request(number=fake.name())
-    parent2 = get_routing_slip_request(number=fake.name())
+    child = get_routing_slip_request('456789123')
+    parent1 = get_routing_slip_request('123456789')
+    parent2 = get_routing_slip_request('987654321')
     client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
     client.post('/api/v1/fas/routing-slips', data=json.dumps(parent1), headers=headers)
     client.post('/api/v1/fas/routing-slips', data=json.dumps(parent2), headers=headers)
@@ -163,8 +163,8 @@ def test_link_routing_slip(client, jwt, app):
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, Role.FAS_SEARCH.value]),
                            token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    child = get_routing_slip_request()
-    parent = get_routing_slip_request(number=fake.name())
+    child = get_routing_slip_request('123456789')
+    parent = get_routing_slip_request('abcdefghi')
     paid_amount_child = child.get('payments')[0].get('paidAmount')
     paid_amount_parent = parent.get('payments')[0].get('paidAmount')
     client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
@@ -204,8 +204,8 @@ def test_link_routing_slip(client, jwt, app):
     assert rv.status_code == 400
 
     # assert transactions
-    child = get_routing_slip_request(number=fake.name())
-    parent = get_routing_slip_request(number=fake.name())
+    child = get_routing_slip_request(number='child2123')
+    parent = get_routing_slip_request(number='parent212')
     rv1 = client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
     rv2 = client.post('/api/v1/fas/routing-slips', data=json.dumps(parent), headers=headers)
     payment_account_id = rv1.json.get('paymentAccount').get('id')
@@ -230,7 +230,7 @@ def test_link_routing_slip(client, jwt, app):
     assert rv.json.get('type') == 'RS_CHILD_HAS_TRANSACTIONS'
     assert rv.status_code == 400
 
-    child1 = get_routing_slip_request(number=fake.name())
+    child1 = get_routing_slip_request(number='child2999')
     client.post('/api/v1/fas/routing-slips', data=json.dumps(child1), headers=headers)
 
     data = {'childRoutingSlipNumber': f"{child1.get('number')}", 'parentRoutingSlipNumber': f"{child1.get('number')}"}
@@ -282,7 +282,7 @@ def test_create_routing_slips_search_with_folio_number(client, jwt, app):
 
     # create another routing slip with folo
 
-    payload = get_routing_slip_request(number='99999')
+    payload = get_routing_slip_request(number='999999999')
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
     assert rv.status_code == 201
     payment_account_id = rv.json.get('paymentAccount').get('id')
@@ -351,7 +351,7 @@ def test_create_routing_slips_search_with_receipt(client, jwt, app):
     items = rv.json.get('items')
     assert len(items) == 0
 
-    payload = get_routing_slip_request(number='TEST',
+    payload = get_routing_slip_request(number='TEST12345',
                                        cheque_receipt_numbers=[('211001', PaymentMethod.CASH.value, 100)])
 
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
@@ -587,3 +587,17 @@ def test_get_invalid_comments(client, jwt):
     rv = client.get('/api/v1/fas/routing-slips/{}/comments'.format('invalid'), headers=headers)
     assert rv.status_code == 400
     assert rv.json.get('type') == 'FAS_INVALID_ROUTING_SLIP_NUMBER'
+
+
+def test_create_routing_slips_invalid_number(client, jwt, app):
+    """Assert that the rs number validation works."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    payload = get_routing_slip_request(number='123456')
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 400
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    payload = get_routing_slip_request(number='1234567891')
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 400
