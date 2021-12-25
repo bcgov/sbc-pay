@@ -31,7 +31,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import InvoiceStatus, PatchActions, PaymentMethod, Role, RoutingSlipStatus
 from tests.utilities.base_test import (
-    activate_pad_account, fake, get_basic_account_payload, get_claims, get_gov_account_payload, get_payment_request,
+    activate_pad_account, get_basic_account_payload, get_claims, get_gov_account_payload, get_payment_request,
     get_payment_request_for_wills, get_payment_request_with_folio_number, get_payment_request_with_no_contact_info,
     get_payment_request_with_payment_method, get_payment_request_with_service_fees, get_payment_request_without_bn,
     get_premium_account_payload, get_routing_slip_request, get_unlinked_pad_account_payload,
