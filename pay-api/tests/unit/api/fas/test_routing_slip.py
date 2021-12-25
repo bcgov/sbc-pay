@@ -137,9 +137,9 @@ def test_link_routing_slip_parent_is_a_child(client, jwt):
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, Role.FAS_SEARCH.value]),
                            token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    child = get_routing_slip_request()
-    parent1 = get_routing_slip_request(number=fake.name())
-    parent2 = get_routing_slip_request(number=fake.name())
+    child = get_routing_slip_request('456789123')
+    parent1 = get_routing_slip_request('123456789')
+    parent2 = get_routing_slip_request('987654321')
     client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
     client.post('/api/v1/fas/routing-slips', data=json.dumps(parent1), headers=headers)
     client.post('/api/v1/fas/routing-slips', data=json.dumps(parent2), headers=headers)
@@ -163,8 +163,8 @@ def test_link_routing_slip(client, jwt, app):
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, Role.FAS_SEARCH.value]),
                            token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    child = get_routing_slip_request()
-    parent = get_routing_slip_request(number=fake.name())
+    child = get_routing_slip_request('123456789')
+    parent = get_routing_slip_request('abcdefghi')
     paid_amount_child = child.get('payments')[0].get('paidAmount')
     paid_amount_parent = parent.get('payments')[0].get('paidAmount')
     client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
@@ -282,7 +282,7 @@ def test_create_routing_slips_search_with_folio_number(client, jwt, app):
 
     # create another routing slip with folo
 
-    payload = get_routing_slip_request(number='99999')
+    payload = get_routing_slip_request(number='999999999')
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
     assert rv.status_code == 201
     payment_account_id = rv.json.get('paymentAccount').get('id')
@@ -351,7 +351,7 @@ def test_create_routing_slips_search_with_receipt(client, jwt, app):
     items = rv.json.get('items')
     assert len(items) == 0
 
-    payload = get_routing_slip_request(number='TEST',
+    payload = get_routing_slip_request(number='TEST12345',
                                        cheque_receipt_numbers=[('211001', PaymentMethod.CASH.value, 100)])
 
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)

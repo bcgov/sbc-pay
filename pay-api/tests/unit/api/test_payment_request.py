@@ -377,7 +377,7 @@ def test_payment_creation_with_existing_invalid_routing_slip_invalid(client, jwt
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     # create an RS with less balance
     cheque_amount = 1
-    payload = get_routing_slip_request(cheque_receipt_numbers=[('1234567890',
+    payload = get_routing_slip_request(cheque_receipt_numbers=[('123456789',
                                                                 PaymentMethod.CHEQUE.value, cheque_amount)])
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
     rs_number = rv.json.get('number')
