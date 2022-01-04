@@ -41,16 +41,16 @@ class CgiAP(CgiEjv):
     @classmethod
     def get_ap_header(cls, total, routing_slip_number):
         """Get AP Invoice Header string."""
-        invoice_type = 'ST'  # TODO ST/CM
-        remit_code = f"{'01':<4}"  # TODO
+        invoice_type = 'ST'
+        remit_code = f"{current_app.config.get('CGI_AP_REMITTANCE_CODE'):<4}"
         currency = 'CAD'
         invoice_date = cls._get_invoice_date()
-        oracle_invoice_batch_name = f"{'X':<30}"  # TODO
+        oracle_invoice_batch_name = f'REFUND_FAS_RS_{routing_slip_number}'[:30]
         ap_header = f'{cls._feeder_number()}APIH{cls.DELIMITER}{cls._supplier_number()}{cls._supplier_location()}' \
                     f'{routing_slip_number:<50}{cls._po_number()}{invoice_type}{invoice_date}GEN CHQ N' \
                     f'{remit_code}{cls.format_amount(total)}{currency}{invoice_date}' \
                     f'{cls.EMPTY:<50}{cls.EMPTY:<60}{cls.EMPTY:<8}{cls.EMPTY:<8}' \
-                    f'{oracle_invoice_batch_name}{cls.EMPTY:<9}Y{cls.EMPTY:<110}{cls.DELIMITER}{os.linesep}'
+                    f'{oracle_invoice_batch_name:<30}{cls.EMPTY:<9}Y{cls.EMPTY:<110}{cls.DELIMITER}{os.linesep}'
         return ap_header
 
     @classmethod
@@ -58,7 +58,7 @@ class CgiAP(CgiEjv):
         """Get AP Invoice Line string."""
         commit_line_number = f'{cls.EMPTY:<4}'
         invoice_line_number = '0001'
-        line_code = 'C'  # TODO C/D
+        line_code = 'D'  # TODO C/D
         ap_line = f'{cls._feeder_number()}APIL{cls.DELIMITER}{cls._supplier_number()}{cls._supplier_location()}' \
                   f'{routing_slip_number:<50}{invoice_line_number}{commit_line_number}{cls.format_amount(total)}' \
                   f'{line_code}{cls._distribution()}{cls.EMPTY:<55}{cls._get_invoice_date()}{cls.EMPTY:<10}' \
@@ -119,7 +119,7 @@ class CgiAP(CgiEjv):
     @classmethod
     def _dist_vendor(cls):
         """Return distribution vendor number."""
-        return f"{current_app.config.get('CGI_AP_DISTRIBUTION_VENDOR_NUMBER'):<30}"
+        return f"{current_app.config.get('CGI_AP_SUPPLIER_NUMBER'):<30}"
 
     @classmethod
     def _supplier_location(cls):
@@ -134,7 +134,7 @@ class CgiAP(CgiEjv):
 
     @classmethod
     def _get_invoice_date(cls):
-        """Return invoice date.."""
+        """Return invoice date."""
         return datetime.now().strftime('%Y%m%d')
 
     @classmethod

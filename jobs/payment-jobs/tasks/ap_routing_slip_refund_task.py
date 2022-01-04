@@ -61,7 +61,7 @@ class ApRoutingSlipRefundTask(CgiAP):
 
         batch_number = cls.get_batch_number(ejv_file_model.id)
 
-        # JV Batch Header
+        # AP Batch Header
         ap_content: str = cls.get_batch_header(batch_number)
 
         # Each routing slip will be one invoice in AP
