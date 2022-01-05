@@ -58,7 +58,7 @@ class CgiAP(CgiEjv):
         """Get AP Invoice Line string."""
         commit_line_number = f'{cls.EMPTY:<4}'
         invoice_line_number = '0001'
-        line_code = 'D'  # TODO C/D
+        line_code = 'D'
         ap_line = f'{cls._feeder_number()}APIL{cls.DELIMITER}{cls._supplier_number()}{cls._supplier_location()}' \
                   f'{routing_slip_number:<50}{invoice_line_number}{commit_line_number}{cls.format_amount(total)}' \
                   f'{line_code}{cls._distribution()}{cls.EMPTY:<55}{cls._get_invoice_date()}{cls.EMPTY:<10}' \
@@ -99,16 +99,11 @@ class CgiAP(CgiEjv):
     @classmethod
     def get_ap_comment(cls, refund_details, routing_slip_number):
         """Get AP Comment Override."""
-        cheque_advice = refund_details.get('chequeAdvice', '')
-        char_limit = 40
-        ap_comment = ''
-        # Split advice by 40 characters each.
-        for index in range(0, len(cheque_advice), char_limit):
-            advice_line = f'{cheque_advice[index: index + char_limit]:<{char_limit}}'
-            line_text = f'{index + 1}'.zfill(4)
-            ap_comment += f'{cls._feeder_number()}APIC{cls.DELIMITER}{cls._supplier_number()}' \
-                          f'{cls._supplier_location()}{routing_slip_number:<50}{line_text}{advice_line}' \
-                          f'{cls.DELIMITER}{os.linesep}'
+        cheque_advice = refund_details.get('chequeAdvice', '')[:40]
+        line_text = '0001'
+        ap_comment = f'{cls._feeder_number()}APIC{cls.DELIMITER}{cls._supplier_number()}' \
+                     f'{cls._supplier_location()}{routing_slip_number:<50}{line_text}{cheque_advice}' \
+                     f'{cls.DELIMITER}{os.linesep}'
         return ap_comment
 
     @classmethod
