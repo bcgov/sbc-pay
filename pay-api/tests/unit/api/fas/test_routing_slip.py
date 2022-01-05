@@ -26,6 +26,7 @@ from faker import Faker
 from pay_api.models import PaymentAccount
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.constants import DT_SHORT_FORMAT
+from pay_api.services.fas.routing_slip_status_transition_service import RoutingSlipStatusTransitionService
 from pay_api.utils.enums import PatchActions, PaymentMethod, Role, RoutingSlipStatus
 from tests.utilities.base_test import factory_invoice, get_claims, get_routing_slip_request, token_header
 
@@ -52,6 +53,8 @@ def test_create_routing_slips(client, jwt, payload):
     rv = client.get('/api/v1/fas/routing-slips/{}'.format(rv.json.get('number')), headers=headers)
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, 'routing_slip')[0]
+    allowed_statuses = rv.json.get('allowedStatuses')
+    assert len(allowed_statuses) == len(RoutingSlipStatusTransitionService.get_possible_transitions('ACTIVE'))
 
 
 def test_create_routing_slips_search(client, jwt, app):

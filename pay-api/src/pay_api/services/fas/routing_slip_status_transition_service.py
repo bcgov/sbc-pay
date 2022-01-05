@@ -21,7 +21,7 @@ from pay_api.utils.enums import RoutingSlipCustomStatus, RoutingSlipStatus
 from pay_api.utils.errors import Error
 
 
-class RsStatusTransitionService:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
+class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Service to manage Routing slip status transition related operations."""
 
     STATUS_TRANSITIONS: Dict[str, List] = {
@@ -54,12 +54,12 @@ class RsStatusTransitionService:  # pylint: disable=too-many-instance-attributes
     @classmethod
     def get_possible_transitions(cls, current_status: RoutingSlipStatus) -> List[RoutingSlipStatus]:
         """Return all the status transition available."""
-        return RsStatusTransitionService.STATUS_TRANSITIONS.get(current_status, [])
+        return RoutingSlipStatusTransitionService.STATUS_TRANSITIONS.get(current_status, [])
 
     @classmethod
     def validate_possible_transitions(cls, current_status: RoutingSlipStatus,
                                       future_status: RoutingSlipStatus):
         """Validate if its a legit status transition."""
-        allowed_statuses = RsStatusTransitionService.STATUS_TRANSITIONS.get(current_status, [])
+        allowed_statuses = RoutingSlipStatusTransitionService.STATUS_TRANSITIONS.get(current_status, [])
         if future_status not in allowed_statuses:
             raise BusinessException(Error.FAS_INVALID_RS_STATUS_CHANGE)
