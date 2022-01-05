@@ -81,6 +81,7 @@ class Error(Enum):
     RS_INSUFFICIENT_FUNDS = 'RS_INSUFFICIENT_FUNDS', HTTPStatus.BAD_REQUEST
     RS_DOESNT_EXIST = 'RS_DOESNT_EXIST', HTTPStatus.BAD_REQUEST
     RS_NOT_ACTIVE = 'RS_NOT_ACTIVE', HTTPStatus.BAD_REQUEST
+    FAS_INVALID_RS_STATUS_CHANGE = 'FAS_INVALID_RS_STATUS_CHANGE', HTTPStatus.BAD_REQUEST
 
     def __new__(cls, code, status, message=None, details=None):
         """Attributes for the enum."""

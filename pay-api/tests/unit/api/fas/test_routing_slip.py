@@ -414,8 +414,8 @@ def test_update_routing_slip_status(client, jwt, app):
 
     rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
                       data=json.dumps({'status': RoutingSlipStatus.COMPLETE.value}), headers=headers)
-    assert rv.status_code == 200
-    assert rv.json.get('status') == RoutingSlipStatus.COMPLETE.value
+    assert rv.status_code == 400
+    # assert rv.json.get('status') == RoutingSlipStatus.ACTIVE.value
 
     # Update to NSF and validate the total
     rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
