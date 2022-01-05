@@ -394,10 +394,10 @@ def test_payment_creation_with_existing_invalid_routing_slip_invalid(client, jwt
 
     # change status of routing slip to inactive
     rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
-                      data=json.dumps({'status': RoutingSlipStatus.COMPLETE.value}), headers=headers)
+                      data=json.dumps({'status': RoutingSlipStatus.NSF.value}), headers=headers)
 
     assert rv.status_code == 200
-    assert rv.json.get('status') == RoutingSlipStatus.COMPLETE.value
+    assert rv.json.get('status') == RoutingSlipStatus.NSF.value
 
     rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
     assert rv.status_code == 400
