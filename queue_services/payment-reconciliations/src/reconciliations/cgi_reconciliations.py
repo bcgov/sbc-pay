@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""EJV reconciliation file.
+"""CGI reconciliation file.
 
 The entry-point is the **cb_subscription_handler**
 
@@ -39,10 +39,12 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
+from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.services.queue_publisher import publish
 from pay_api.utils.enums import (
-    DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
+    DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem,
+    RoutingSlipStatus)
 from sentry_sdk import capture_message
 
 from reconciliations import config
@@ -88,12 +90,21 @@ def _update_acknowledgement():
 
 async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-locals, too-many-statements
     # Read the file and find records from the database, and update status.
-    has_errors: bool = False
     file_name: str = msg.get('data').get('fileName')
     minio_location: str = msg.get('data').get('location')
     file = get_object(minio_location, file_name)
     content = file.data.decode('utf-8-sig')
     group_batches: List[str] = _group_batches(content)
+    has_errors = await _process_ejv_feedback(group_batches['EJV'])
+    has_errors = await _process_ap_feedback(group_batches['AP']) or has_errors
+
+    if has_errors:
+        await _publish_mailer_events(file_name, minio_location)
+
+
+async def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-locals
+    """Process EJV Feedback contents."""
+    has_errors = False
     for group_batch in group_batches:
         ejv_file: Optional[EjvFileModel] = None
         receipt_number: Optional[str] = None
@@ -132,10 +143,8 @@ async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-loca
             elif is_jv_detail:
                 has_errors = await _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number)
 
-    if has_errors:
-        await _publish_mailer_events(file_name, minio_location)
-
     db.session.commit()
+    return has_errors
 
 
 async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  # pylint:disable=too-many-locals
@@ -231,20 +240,24 @@ async def _create_payment_record(amount, ejv_header, receipt_number):
         payment_date=datetime.now()).flush()
 
 
-def _group_batches(content: str):
-    """Group batches based on the group and trailer.."""
+def _group_batches(content: str) -> Dict[str, List]:
+    """Group batches based on the group and trailer."""
     # A batch starts from BG to BT.
-    group_batches: List[str] = []
+    group_batches: Dict[str, List] = {'EJV': [], 'AP': []}
     batch_content: str = ''
 
+    is_ejv = True
     for line in content.splitlines():
-        if line[2:4] == 'BG':  # batch starts from BG
+        if line[:4] in ('GABG', 'GIBG', 'APBG'):  # batch starts from GIBG or GABG for JV
+            is_ejv = line[:4] in ('GABG', 'GIBG')
             batch_content = line
         else:
             batch_content = batch_content + os.linesep + line
             if line[2:4] == 'BT':  # batch ends with BT
-                group_batches.append(batch_content)
-
+                if is_ejv:
+                    group_batches['EJV'].append(batch_content)
+                else:
+                    group_batches['AP'].append(batch_content)
     return group_batches
 
 
@@ -279,3 +292,40 @@ async def _publish_mailer_events(file_name: str, minio_location: str):
     except Exception as e:  # NOQA pylint: disable=broad-except
         logger.error(e)
         capture_message('EJV Failed message error', level='error')
+
+
+async def _process_ap_feedback(group_batches) -> bool:  # pylint:disable=too-many-locals
+    """Process AP Feedback contents."""
+    has_errors = False
+    for group_batch in group_batches:
+        ejv_file: Optional[EjvFileModel] = None
+        for line in group_batch.splitlines():
+            # For all these indexes refer the sharepoint docs refer : https://github.com/bcgov/entity/issues/6226
+            is_batch_group: bool = line[2:4] == 'BG'
+            is_batch_header: bool = line[2:4] == 'BH'
+            is_ap_header: bool = line[2:4] == 'IH'
+            if is_batch_group:
+                batch_number = int(line[15:24])
+                ejv_file = EjvFileModel.find_by_id(batch_number)
+            elif is_batch_header:
+                return_code = line[7:11]
+                return_message = line[11:161]
+                ejv_file.disbursement_status_code = _get_disbursement_status(return_code)
+                ejv_file.message = return_message
+                if ejv_file.disbursement_status_code == DisbursementStatus.ERRORED.value:
+                    has_errors = True
+            elif is_ap_header:
+                routing_slip_number = line[19:69].strip()
+                routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(routing_slip_number)
+                ap_header_return_code = line[414:418]
+                ap_header_error_message = line[418:568]
+                if _get_disbursement_status(ap_header_return_code) == DisbursementStatus.ERRORED.value:
+                    has_errors = True
+                    routing_slip.status = RoutingSlipStatus.REFUND_REJECTED.value
+                    capture_message(f'Refund failed for {routing_slip_number}, reason : {ap_header_error_message}',
+                                    level='error')
+                else:
+                    routing_slip.status = RoutingSlipStatus.REFUND_COMPLETED.value
+
+    db.session.commit()
+    return has_errors

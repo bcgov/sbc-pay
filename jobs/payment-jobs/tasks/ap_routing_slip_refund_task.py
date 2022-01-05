@@ -18,7 +18,6 @@ from typing import List
 import time
 from flask import current_app
 from pay_api.models import EjvFile as EjvFileModel
-from pay_api.models import EjvHeader as EjvHeaderModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
@@ -62,7 +61,7 @@ class ApRoutingSlipRefundTask(CgiAP):
 
         batch_number = cls.get_batch_number(ejv_file_model.id)
 
-        # JV Batch Header
+        # AP Batch Header
         ap_content: str = cls.get_batch_header(batch_number)
 
         # Each routing slip will be one invoice in AP
@@ -70,11 +69,7 @@ class ApRoutingSlipRefundTask(CgiAP):
         for routing_slip in routing_slips:
             current_app.logger.info(f'Creating refund for {routing_slip.number}, Amount {routing_slip.refund_amount}.')
             refund: RefundModel = RefundModel.find_by_routing_slip_id(routing_slip.id)
-            # Construct journal name
-            EjvHeaderModel(
-                disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                ejv_file_id=ejv_file_model.id
-            ).flush()
+
             # AP Invoice Header
             ap_content = f'{ap_content}{cls.get_ap_header(routing_slip.refund_amount, routing_slip.number)}'
             ap_content = f'{ap_content}{cls.get_ap_invoice_line(routing_slip.refund_amount, routing_slip.number)}'

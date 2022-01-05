@@ -11,7 +11,7 @@ certifi==2021.10.8
 click==7.1.2
 itsdangerous==1.1.0
 jaeger-client==4.8.0
-jsonschema==4.3.1
+jsonschema==4.3.2
 minio==7.1.2
 opentracing==2.4.0
 protobuf==3.19.1
@@ -27,4 +27,4 @@ urllib3==1.26.7
 -e git+https://github.com/bcgov/lear.git#egg=entity_queue_common&subdirectory=queue_services/common
 -e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
 # -e git+https://github.com/bcgov/sbc-pay.git@refunds#egg=pay-api&subdirectory=pay-api
--e git+https://github.com/bcgov/sbc-pay.git@ap#egg=pay-api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-pay.git@main#egg=pay-api&subdirectory=pay-api

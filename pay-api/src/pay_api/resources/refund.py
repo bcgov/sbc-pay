@@ -38,7 +38,7 @@ class Refund(Resource):
     @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.CREATE_CREDITS.value, Role.FAS_REFUND.value])
     def post(invoice_id):
         """Create the Refund for the Invoice."""
-        current_app.logger.info('<Refund.post')
+        current_app.logger.info(f'<Refund.post : {invoice_id}')
         request_json = request.get_json(silent=True)
         try:
             valid_format, errors = schema_utils.validate(request_json, 'refund') if request_json else (True, None)
@@ -49,5 +49,5 @@ class Refund(Resource):
 
         except BusinessException as exception:
             return exception.response()
-        current_app.logger.debug('>Refund.post')
+        current_app.logger.debug(f'>Refund.post : {invoice_id}')
         return jsonify(response), HTTPStatus.ACCEPTED

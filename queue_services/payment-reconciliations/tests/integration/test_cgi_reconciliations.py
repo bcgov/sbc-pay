@@ -33,13 +33,14 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
+from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.utils.enums import (
     CfsAccountStatus, DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
-    PaymentStatus)
+    PaymentStatus, RoutingSlipStatus)
 
 from .factory import (
     factory_create_ejv_account, factory_create_pad_account, factory_distribution, factory_invoice,
-    factory_invoice_reference, factory_payment_line_item)
+    factory_invoice_reference, factory_payment_line_item, factory_refund, factory_routing_slip_account)
 from .utils import helper_add_ejv_event_to_queue, upload_to_minio
 
 
@@ -126,7 +127,7 @@ async def test_successful_partner_ejv_reconciliations(session, app, stan_server,
 
     # Now upload a feedback file and check the status.
     # Just create feedback file to mock the real feedback file.
-    feedback_content = f'..BG...........00000000{ejv_file_id}...\n' \
+    feedback_content = f'GABG...........00000000{ejv_file_id}...\n' \
                        f'..BH...0000.................................................................................' \
                        f'.....................................................................CGI\n' \
                        f'..JH...FI0000000{ejv_header_id}.........................000000000090.00.....................' \
@@ -254,7 +255,7 @@ async def test_failed_partner_ejv_reconciliations(session, app, stan_server, eve
 
     # Now upload a feedback file and check the status.
     # Just create feedback file to mock the real feedback file.
-    feedback_content = f'..BG...........00000000{ejv_file_id}...\n' \
+    feedback_content = f'GABG...........00000000{ejv_file_id}...\n' \
                        f'..BH...1111TESTERRORMESSAGE................................................................' \
                        f'......................................................................CGI\n' \
                        f'..JH...FI0000000{ejv_header_id}.........................000000000090.00....................' \
@@ -386,7 +387,7 @@ async def test_successful_partner_reversal_ejv_reconciliations(session, app, sta
 
     # Now upload a feedback file and check the status.
     # Just create feedback file to mock the real feedback file.
-    feedback_content = f'..BG...........00000000{ejv_file_id}...\n' \
+    feedback_content = f'GABG...........00000000{ejv_file_id}...\n' \
                        f'..BH...0000.................................................................................' \
                        f'.....................................................................CGI\n' \
                        f'..JH...FI0000000{ejv_header_id}.........................000000000090.00.....................' \
@@ -487,7 +488,7 @@ async def test_succesful_payment_ejv_reconciliations(session, app, stan_server, 
                                           file_type=EjvFileType.PAYMENT.value).save()
     ejv_file_id = ejv_file.id
 
-    feedback_content = f'..BG...........00000000{ejv_file_id}...\n' \
+    feedback_content = f'GABG...........00000000{ejv_file_id}...\n' \
                        f'..BH...0000.................................................................................' \
                        f'.....................................................................CGI\n'
 
@@ -656,7 +657,7 @@ async def test_succesful_payment_reversal_ejv_reconciliations(session, app, stan
                                           file_type=EjvFileType.PAYMENT.value).save()
     ejv_file_id = ejv_file.id
 
-    feedback_content = f'..BG...........00000000{ejv_file_id}...\n' \
+    feedback_content = f'GABG...........00000000{ejv_file_id}...\n' \
                        f'..BH...0000.................................................................................' \
                        f'.....................................................................CGI\n'
 
@@ -766,3 +767,296 @@ async def test_succesful_payment_reversal_ejv_reconciliations(session, app, stan
                                                                      page=1, limit=100)[0]
         assert len(payment) == 1
         assert payment[0][0].paid_amount == inv_total_amount
+
+
+@pytest.mark.asyncio
+async def test_successful_refund_reconciliations(
+        session, app, stan_server, event_loop, client_id, events_stan, future, mock_publish
+):
+    """Test Reconciliations worker."""
+    # Call back for the subscription
+    from reconciliations.worker import cb_subscription_handler
+
+    # register the handler to test it
+    await subscribe_to_queue(events_stan,
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
+                             cb_subscription_handler)
+
+    # 1. Create a routing slip.
+    # 2. Mark the routing slip for refund.
+    # 3. Create a AP reconciliation file.
+    # 4. Assert the status.
+    rs_numbers = ('TEST00001', 'TEST00002')
+    for rs_number in rs_numbers:
+        factory_routing_slip_account(
+            number=rs_number,
+            status=CfsAccountStatus.ACTIVE.value,
+            total=100,
+            remaining_amount=50,
+            routing_slip_status=RoutingSlipStatus.REFUND_AUTHORIZED.value,
+            refund_amount=50)
+        routing_slip = RoutingSlipModel.find_by_number(rs_number)
+        factory_refund(routing_slip_id=routing_slip.id,
+                       details={
+                           'name': 'TEST',
+                           'mailingAddress': {
+                               'city': 'Victoria',
+                               'region': 'BC',
+                               'street': '655 Douglas St',
+                               'country': 'CA',
+                               'postalCode': 'V8V 0B6',
+                               'streetAdditional': ''
+                           }
+                       })
+        routing_slip.status = RoutingSlipStatus.REFUND_UPLOADED.value
+
+    # Now create AP records.
+    # Create EJV File model
+    file_ref = f'INBOX.{datetime.now()}'
+    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
+                                          disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+    ejv_file_id = ejv_file.id
+
+    # Upload an acknowledgement file
+    ack_file_name = f'ACK.{file_ref}'
+
+    with open(ack_file_name, 'a+') as jv_file:
+        jv_file.write('')
+        jv_file.close()
+
+    # Now upload the ACK file to minio and publish message.
+    upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
+
+    await helper_add_ejv_event_to_queue(events_stan, file_name=ack_file_name)
+
+    # Query EJV File and assert the status is changed
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+    assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
+
+    # Now upload a feedback file and check the status.
+    # Just create feedback file to mock the real feedback file.
+    feedback_content = f'APBG...........00000000{ejv_file_id}....\n' \
+                       f'APBH...0000.................................................................................' \
+                       f'.....................................................................CGI\n' \
+                       f'APIH...000000000...{rs_numbers[0]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'........................................................0000...............................' \
+                       f'...........................................................................................' \
+                       f'............................CGI\n' \
+                       f'APNA...............{rs_numbers[0]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.........................................0000..............................................' \
+                       f'...........................................................................................' \
+                       f'.............CGI\n' \
+                       f'APIL...............{rs_numbers[0]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.....................................................................................0000..' \
+                       f'...........................................................................................' \
+                       f'.........................................................CGI\n' \
+                       f'APIC...............{rs_numbers[0]}                                         ................' \
+                       f'............................0000...........................................................' \
+                       f'........................................................................................' \
+                       f'...CGI\n' \
+                       f'APIH...000000000...{rs_numbers[1]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'........................................................0000...............................' \
+                       f'...........................................................................................' \
+                       f'............................CGI\n' \
+                       f'APNA...............{rs_numbers[1]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.........................................0000..............................................' \
+                       f'...........................................................................................' \
+                       f'.............CGI\n' \
+                       f'APIL...............{rs_numbers[1]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.....................................................................................0000..' \
+                       f'...........................................................................................' \
+                       f'.........................................................CGI\n' \
+                       f'APIC...............{rs_numbers[1]}                                         ................' \
+                       f'............................0000...........................................................' \
+                       f'........................................................................................' \
+                       f'...CGI\n' \
+                       f'APBT...........00000000{ejv_file_id}..............................0000.....................' \
+                       f'...........................................................................................' \
+                       f'......................................CGI\n' \
+
+    feedback_file_name = f'FEEDBACK.{file_ref}'
+
+    with open(feedback_file_name, 'a+') as jv_file:
+        jv_file.write(feedback_content)
+        jv_file.close()
+
+    # Now upload the ACK file to minio and publish message.
+    with open(feedback_file_name, 'rb') as f:
+        upload_to_minio(f.read(), feedback_file_name)
+
+    await helper_add_ejv_event_to_queue(events_stan, file_name=feedback_file_name, message_type='FEEDBACKReceived')
+
+    # Query EJV File and assert the status is changed
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+    assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
+    for rs_number in rs_numbers:
+        routing_slip = RoutingSlipModel.find_by_number(rs_number)
+        assert routing_slip.status == RoutingSlipStatus.REFUND_COMPLETED.value
+
+
+@pytest.mark.asyncio
+async def test_failed_refund_reconciliations(
+        session, app, stan_server, event_loop, client_id, events_stan, future, mock_publish
+):
+    """Test Reconciliations worker."""
+    # Call back for the subscription
+    from reconciliations.worker import cb_subscription_handler
+
+    # register the handler to test it
+    await subscribe_to_queue(events_stan,
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
+                             cb_subscription_handler)
+
+    # 1. Create a routing slip.
+    # 2. Mark the routing slip for refund.
+    # 3. Create a AP reconciliation file.
+    # 4. Assert the status.
+    rs_numbers = ('TEST00001', 'TEST00002')
+    for rs_number in rs_numbers:
+        factory_routing_slip_account(
+            number=rs_number,
+            status=CfsAccountStatus.ACTIVE.value,
+            total=100,
+            remaining_amount=50,
+            routing_slip_status=RoutingSlipStatus.REFUND_AUTHORIZED.value,
+            refund_amount=50)
+        routing_slip = RoutingSlipModel.find_by_number(rs_number)
+        factory_refund(routing_slip_id=routing_slip.id,
+                       details={
+                           'name': 'TEST',
+                           'mailingAddress': {
+                               'city': 'Victoria',
+                               'region': 'BC',
+                               'street': '655 Douglas St',
+                               'country': 'CA',
+                               'postalCode': 'V8V 0B6',
+                               'streetAdditional': ''
+                           }
+                       })
+        routing_slip.status = RoutingSlipStatus.REFUND_UPLOADED.value
+
+    # Now create AP records.
+    # Create EJV File model
+    file_ref = f'INBOX.{datetime.now()}'
+    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
+                                          disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+    ejv_file_id = ejv_file.id
+
+    # Upload an acknowledgement file
+    ack_file_name = f'ACK.{file_ref}'
+
+    with open(ack_file_name, 'a+') as jv_file:
+        jv_file.write('')
+        jv_file.close()
+
+    # Now upload the ACK file to minio and publish message.
+    upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
+
+    await helper_add_ejv_event_to_queue(events_stan, file_name=ack_file_name)
+
+    # Query EJV File and assert the status is changed
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+    assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
+
+    # Now upload a feedback file and check the status.
+    # Just create feedback file to mock the real feedback file.
+    # Set first routing slip to be success and second to ve failed
+    feedback_content = f'APBG...........00000000{ejv_file_id}....\n' \
+                       f'APBH...0000.................................................................................' \
+                       f'.....................................................................CGI\n' \
+                       f'APIH...000000000...{rs_numbers[0]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'........................................................0000...............................' \
+                       f'...........................................................................................' \
+                       f'............................CGI\n' \
+                       f'APNA...............{rs_numbers[0]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.........................................0000..............................................' \
+                       f'...........................................................................................' \
+                       f'.............CGI\n' \
+                       f'APIL...............{rs_numbers[0]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.....................................................................................0000..' \
+                       f'...........................................................................................' \
+                       f'.........................................................CGI\n' \
+                       f'APIC...............{rs_numbers[0]}                                         ................' \
+                       f'............................0000...........................................................' \
+                       f'........................................................................................' \
+                       f'...CGI\n' \
+                       f'APIH...000000000...{rs_numbers[1]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'........................................................0001...............................' \
+                       f'...........................................................................................' \
+                       f'............................CGI\n' \
+                       f'APNA...............{rs_numbers[1]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.........................................0001..............................................' \
+                       f'...........................................................................................' \
+                       f'.............CGI\n' \
+                       f'APIL...............{rs_numbers[1]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.....................................................................................0001..' \
+                       f'...........................................................................................' \
+                       f'.........................................................CGI\n' \
+                       f'APIC...............{rs_numbers[1]}                                         ................' \
+                       f'............................0001...........................................................' \
+                       f'........................................................................................' \
+                       f'...CGI\n' \
+                       f'APBT...........00000000{ejv_file_id}..............................0000.....................' \
+                       f'...........................................................................................' \
+                       f'......................................CGI\n' \
+
+    feedback_file_name = f'FEEDBACK.{file_ref}'
+
+    with open(feedback_file_name, 'a+') as jv_file:
+        jv_file.write(feedback_content)
+        jv_file.close()
+
+    # Now upload the ACK file to minio and publish message.
+    with open(feedback_file_name, 'rb') as f:
+        upload_to_minio(f.read(), feedback_file_name)
+
+    await helper_add_ejv_event_to_queue(events_stan, file_name=feedback_file_name, message_type='FEEDBACKReceived')
+
+    # Query EJV File and assert the status is changed
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+    assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
+    routing_slip_1 = RoutingSlipModel.find_by_number(rs_numbers[0])
+    assert routing_slip_1.status == RoutingSlipStatus.REFUND_COMPLETED.value
+
+    routing_slip_2 = RoutingSlipModel.find_by_number(rs_numbers[1])
+    assert routing_slip_2.status == RoutingSlipStatus.REFUND_REJECTED.value

@@ -218,7 +218,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
     @user_context
     def create_refund(cls, invoice_id: int, request: Dict[str, str], **kwargs) -> Dict[str, str]:
         """Create refund."""
-        current_app.logger.debug('<create refund')
+        current_app.logger.debug(f'Starting refund : {invoice_id}')
         # Do validation by looking up the invoice
         invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
 
@@ -227,6 +227,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         )
 
         if invoice.invoice_status_code not in paid_statuses:
+            current_app.logger.info(f'Cannot process refund as status of {invoice_id} is {invoice.invoice_status_code}')
             raise BusinessException(Error.INVALID_REQUEST)
 
         refund: RefundService = RefundService()
@@ -244,4 +245,5 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         invoice.invoice_status_code = invoice_status or InvoiceStatus.REFUND_REQUESTED.value
         invoice.refund = invoice.total  # no partial refund
         invoice.save()
+        current_app.logger.debug(f'Completed refund : {invoice_id}')
         return {'message': message}

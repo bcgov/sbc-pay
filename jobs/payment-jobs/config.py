@@ -188,7 +188,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CGI_AP_DISTRIBUTION = os.getenv('CGI_AP_DISTRIBUTION', '')
     CGI_AP_SUPPLIER_NUMBER = os.getenv('CGI_AP_SUPPLIER_NUMBER', '')
     CGI_AP_SUPPLIER_LOCATION = os.getenv('CGI_AP_SUPPLIER_LOCATION', '')
-    CGI_AP_DISTRIBUTION_VENDOR_NUMBER = os.getenv('CGI_AP_DISTRIBUTION_VENDOR_NUMBER', '')
+    CGI_AP_REMITTANCE_CODE = os.getenv('CGI_AP_REMITTANCE_CODE', '78')
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
