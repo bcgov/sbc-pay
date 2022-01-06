@@ -27,7 +27,7 @@ def upgrade():
         [
             {
                 'code': 'FAS_INVALID_RS_STATUS_CHANGE',
-                'title': 'Routing slip refund is not allowed.',
+                'title': 'Routing slip status transition is not allowed.',
                 'detail': 'Routing slip status transition is not allowed.'
             }
         ]
