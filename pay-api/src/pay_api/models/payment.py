@@ -22,14 +22,16 @@ from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey, func, or_
 from sqlalchemy.orm import relationship
 
+from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import InvoiceReferenceStatus
 from pay_api.utils.enums import PaymentMethod as PaymentMethodEnum
 from pay_api.utils.enums import PaymentStatus
+from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
-from pay_api.utils.constants import DT_SHORT_FORMAT
 
 from .base_model import BaseModel
 from .base_schema import BaseSchema
+from .corp_type import CorpType
 from .db import db
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
@@ -146,14 +148,21 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query.all()
 
     @classmethod
+    @user_context
     def search_purchase_history(cls,  # pylint:disable=too-many-arguments, too-many-locals, too-many-branches
                                 auth_account_id: str, search_filter: Dict,
-                                page: int, limit: int, return_all: bool, max_no_records: int = 0):
+                                page: int, limit: int, return_all: bool, max_no_records: int = 0, **kwargs):
         """Search for purchase history."""
+        user: UserContext = kwargs['user']
+        product_code = user.product_code
+
         query = db.session.query(Invoice) \
             .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id) \
             .filter(PaymentAccount.auth_account_id == auth_account_id)
-
+        # If a product code is present in token (service account), then filter only that product's invoices.
+        if product_code:
+            query = query.join(CorpType, CorpType.code == Invoice.corp_type_code)\
+                .filter(CorpType.product == product_code)
         if search_filter.get('status', None):
             query = query.filter(Invoice.invoice_status_code == search_filter.get('status'))
         if search_filter.get('folioNumber', None):

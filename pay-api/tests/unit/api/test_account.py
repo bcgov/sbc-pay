@@ -21,8 +21,8 @@ import json
 from unittest.mock import patch
 
 import pytest
-from requests.exceptions import ConnectionError
 from faker import Faker
+from requests.exceptions import ConnectionError
 
 from pay_api.exceptions import ServiceUnavailableException
 from pay_api.models.invoice import Invoice
@@ -31,8 +31,9 @@ from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
     get_basic_account_payload, get_claims, get_gov_account_payload, get_gov_account_payload_with_no_revenue_account,
-    get_pad_account_payload, get_payment_request, get_premium_account_payload, get_unlinked_pad_account_payload,
-    token_header)
+    get_pad_account_payload, get_payment_request, get_payment_request_with_service_fees, get_premium_account_payload,
+    get_unlinked_pad_account_payload, token_header)
+
 
 fake = Faker()
 
@@ -72,6 +73,32 @@ def test_account_purchase_history_pagination(session, client, jwt, app):
     assert rv.status_code == 200
     assert rv.json.get('total') == 10
     assert len(rv.json.get('items')) == 5
+
+
+def test_account_purchase_history_with_service_account(session, client, jwt, app):
+    """Assert that purchase history returns only invoices for that product."""
+    # Create one invoice for CSO and one fpr BUSINESS.
+    # Then query without any filter and make sure only CSO invoice is returned for service account with CSO product_code
+    for corp_filing_type in (['CSO', 'CSBVFEE'], ['PPR', 'FSDIS']):
+        token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value], product_code=corp_filing_type[0]), token_header)
+        headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+        rv = client.post('/api/v1/payment-requests', data=json.dumps(
+            get_payment_request_with_service_fees(corp_type=corp_filing_type[0], filing_type=corp_filing_type[1])
+        ), headers=headers)
+
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
+
+    token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value], product_code='CSO'), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post(f'/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?page=1&limit=5',
+                     data=json.dumps({}),
+                     headers=headers)
+
+    assert rv.status_code == 200
+    assert rv.json.get('total') == 1
+    assert len(rv.json.get('items')) == 1
+    assert rv.json.get('items')[0]['corpTypeCode'] == 'CSO'
 
 
 def test_account_purchase_history_invalid_request(session, client, jwt, app):
