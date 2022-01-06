@@ -15,10 +15,11 @@
 import datetime
 
 from flask import current_app
-from pay_api.exceptions import BusinessException
+from pay_api.exceptions import BusinessException, Error
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.services import PaymentService, TransactionService
+from pay_api.utils.enums import TransactionStatus
 
 
 class StalePaymentTask:  # pylint: disable=too-few-public-methods
@@ -49,8 +50,15 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
                 current_app.logger.info(f'Stale Transaction Job Updated records.Payment Id: {transaction.payment_id}, '
                                         f'Transaction Id : {transaction.id}')
             except BusinessException as err:  # just catch and continue .Don't stop
-                current_app.logger.info('Stale Transaction Error on update_transaction')
-                current_app.logger.info(err)
+                # If the error is for COMPLETED PAYMENT, then mark the transaction as CANCELLED
+                # as there would be COMPLETED transaction in place and continue.
+                if err.code == Error.COMPLETED_PAYMENT.code:
+                    current_app.logger.info('Completed payment, marking transaction as CANCELLED.')
+                    transaction.status_code = TransactionStatus.CANCELLED.value
+                    transaction.save()
+                else:
+                    current_app.logger.info('Stale Transaction Error on update_transaction')
+                    current_app.logger.info(err)
 
     @classmethod
     def _delete_marked_payments(cls):
