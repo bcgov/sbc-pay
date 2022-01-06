@@ -222,6 +222,14 @@ class RoutingSlipStatus(Enum):
     WRITE_OFF_REQUESTED = 'WRITE_OFF_REQUESTED'
     WRITE_OFF_AUTHORIZED = 'WRITE_OFF_AUTHORIZED'
     WRITE_OFF_COMPLETED = 'WRITE_OFF_COMPLETED'
+    HOLD = 'HOLD'  # new
+
+
+class RoutingSlipCustomStatus(Enum):
+    """Routing slip  custom statuses."""
+
+    REVIEW_REFUND_REQUEST = 'REVIEW_REFUND_REQUEST'
+    CANCEL_REFUND_REQUEST = 'CANCEL_REFUND_REQUEST'
 
 
 class EjvFileType(Enum):

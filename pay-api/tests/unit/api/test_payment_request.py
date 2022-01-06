@@ -28,8 +28,9 @@ from requests.exceptions import ConnectionError
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.schemas import utils as schema_utils
-from pay_api.utils.enums import InvoiceStatus, PatchActions, PaymentMethod, Role, RoutingSlipStatus
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, Role, RoutingSlipStatus
 from tests.utilities.base_test import (
     activate_pad_account, get_basic_account_payload, get_claims, get_gov_account_payload, get_payment_request,
     get_payment_request_for_wills, get_payment_request_with_folio_number, get_payment_request_with_no_contact_info,
@@ -393,11 +394,10 @@ def test_payment_creation_with_existing_invalid_routing_slip_invalid(client, jwt
     assert f'${cheque_amount}.00' in rv.json.get('detail')
 
     # change status of routing slip to inactive
-    rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
-                      data=json.dumps({'status': RoutingSlipStatus.COMPLETE.value}), headers=headers)
 
-    assert rv.status_code == 200
-    assert rv.json.get('status') == RoutingSlipStatus.COMPLETE.value
+    rs_model = RoutingSlipModel.find_by_number(rs_number)
+    rs_model.status = RoutingSlipStatus.COMPLETE.value
+    rs_model.commit()
 
     rv = client.post('/api/v1/payment-requests', data=json.dumps(data), headers=headers)
     assert rv.status_code == 400

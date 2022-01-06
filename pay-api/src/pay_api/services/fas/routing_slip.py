@@ -26,6 +26,7 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import RoutingSlipSchema
+from pay_api.services.fas.routing_slip_status_transition_service import RoutingSlipStatusTransitionService
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import (
     AuthHeaderType, CfsAccountStatus, ContentType, PatchActions, PaymentMethod, PaymentStatus, PaymentSystem,
@@ -233,6 +234,8 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         if routing_slip:
             routing_slip_schema = RoutingSlipSchema()
             routing_slip_dict = routing_slip_schema.dump(routing_slip)
+            routing_slip_dict['allowedStatuses'] = RoutingSlipStatusTransitionService.\
+                get_possible_transitions(routing_slip.status)
         return routing_slip_dict
 
     @classmethod
@@ -341,7 +344,10 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
 
         if patch_action == PatchActions.UPDATE_STATUS:
             # Update the remaining amount as negative total of sum of all totals for that routing slip.
-            if (status := request_json.get('status')) == RoutingSlipStatus.NSF.value:
+            status = request_json.get('status')
+            RoutingSlipStatusTransitionService.validate_possible_transitions(routing_slip.status, status)
+
+            if status == RoutingSlipStatus.NSF.value:
                 total_paid_to_reverse: float = 0
                 for rs in (routing_slip, *RoutingSlipModel.find_children(routing_slip.number)):
                     total_paid_to_reverse += rs.total
