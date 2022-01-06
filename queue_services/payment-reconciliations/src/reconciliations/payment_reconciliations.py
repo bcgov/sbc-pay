@@ -489,7 +489,9 @@ def _get_payment_account(row) -> PaymentAccountModel:
         .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
         .filter(CfsAccountModel.cfs_account == account_number) \
         .filter(
-        CfsAccountModel.status.in_([CfsAccountStatus.ACTIVE.value, CfsAccountStatus.FREEZE.value])).one_or_none()
+        CfsAccountModel.status.in_(
+            [CfsAccountStatus.ACTIVE.value, CfsAccountStatus.FREEZE.value, CfsAccountStatus.INACTIVE.value]
+        )).one_or_none()
 
     return payment_account
 
