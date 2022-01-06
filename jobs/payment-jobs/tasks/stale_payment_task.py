@@ -52,7 +52,7 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
             except BusinessException as err:  # just catch and continue .Don't stop
                 # If the error is for COMPLETED PAYMENT, then mark the transaction as CANCELLED
                 # as there would be COMPLETED transaction in place and continue.
-                if err.code == Error.COMPLETED_PAYMENT.code:
+                if err.code == Error.COMPLETED_PAYMENT.name:
                     current_app.logger.info('Completed payment, marking transaction as CANCELLED.')
                     transaction.status_code = TransactionStatus.CANCELLED.value
                     transaction.save()
