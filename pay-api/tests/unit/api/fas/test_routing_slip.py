@@ -418,7 +418,6 @@ def test_update_routing_slip_status(client, jwt, app):
     rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
                       data=json.dumps({'status': RoutingSlipStatus.COMPLETE.value}), headers=headers)
     assert rv.status_code == 400
-    # assert rv.json.get('status') == RoutingSlipStatus.ACTIVE.value
 
     # Update to NSF and validate the total
     rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
@@ -604,3 +603,37 @@ def test_create_routing_slips_invalid_number(client, jwt, app):
     payload = get_routing_slip_request(number='1234567891')
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
     assert rv.status_code == 400
+
+
+def test_update_routing_slip_writeoff(client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_EDIT.value, Role.FAS_VIEW.value]),
+                           token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(get_routing_slip_request()), headers=headers)
+    rs_number = rv.json.get('number')
+
+    rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
+                      data=json.dumps({'status': RoutingSlipStatus.WRITE_OFF_REQUESTED.value}), headers=headers)
+    assert rv.status_code == 200
+
+    # Update to WRITEOFF_AUTHORIZED and assert 403, as it's not a supervisor token
+    rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
+                      data=json.dumps({'status': RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value}), headers=headers)
+    assert rv.status_code == 403
+
+    # Try CANCEL WRITE_OFF with a supervisor token and assert 200.
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_EDIT.value,
+                                             Role.FAS_REFUND_APPROVER.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
+                      data=json.dumps({'status': RoutingSlipStatus.ACTIVE.value}), headers=headers)
+    assert rv.status_code == 200
+
+    # Change it to WRITEOFF Requested and authorize it.
+    rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
+                      data=json.dumps({'status': RoutingSlipStatus.WRITE_OFF_REQUESTED.value}), headers=headers)
+    rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
+                      data=json.dumps({'status': RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value}), headers=headers)
+    assert rv.status_code == 200

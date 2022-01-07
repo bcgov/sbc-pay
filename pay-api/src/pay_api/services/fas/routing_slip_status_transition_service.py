@@ -39,8 +39,12 @@ class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-a
             RoutingSlipStatus.NSF.value
         ],
         RoutingSlipStatus.REFUND_REQUESTED.value: [
-            RoutingSlipCustomStatus.REVIEW_REFUND_REQUEST.value,
-            RoutingSlipCustomStatus.CANCEL_REFUND_REQUEST.value
+            RoutingSlipStatus.REFUND_AUTHORIZED.value,
+            RoutingSlipCustomStatus.CANCEL_REFUND_REQUEST.custom_status  # pylint: disable=no-member
+        ],
+        RoutingSlipStatus.WRITE_OFF_REQUESTED.value: [
+            RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value,
+            RoutingSlipCustomStatus.CANCEL_WRITE_OFF_REQUEST.custom_status  # pylint: disable=no-member
         ],
         RoutingSlipStatus.REFUND_AUTHORIZED.value: [
         ],
@@ -61,5 +65,11 @@ class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-a
                                       future_status: RoutingSlipStatus):
         """Validate if its a legit status transition."""
         allowed_statuses = RoutingSlipStatusTransitionService.STATUS_TRANSITIONS.get(current_status, [])
-        if future_status not in allowed_statuses:
+        has_match: bool = False
+        for allowed_status in allowed_statuses:
+            if allowed_status == future_status \
+                    or (custom := RoutingSlipCustomStatus.from_key(allowed_status)) \
+                    and custom.original_status == future_status:
+                has_match = True
+        if not has_match:
             raise BusinessException(Error.FAS_INVALID_RS_STATUS_CHANGE)
