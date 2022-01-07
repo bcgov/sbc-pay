@@ -27,7 +27,7 @@ from pay_api.models import PaymentAccount
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.services.fas.routing_slip_status_transition_service import RoutingSlipStatusTransitionService
-from pay_api.utils.enums import PatchActions, PaymentMethod, Role, RoutingSlipStatus
+from pay_api.utils.enums import PatchActions, PaymentMethod, Role, RoutingSlipCustomStatus, RoutingSlipStatus
 from tests.utilities.base_test import factory_invoice, get_claims, get_routing_slip_request, token_header
 
 fake = Faker()
@@ -628,7 +628,8 @@ def test_update_routing_slip_writeoff(client, jwt, app):
                                              Role.FAS_REFUND_APPROVER.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
-                      data=json.dumps({'status': RoutingSlipStatus.ACTIVE.value}), headers=headers)
+                      data=json.dumps({'status': RoutingSlipCustomStatus.CANCEL_WRITE_OFF_REQUEST.custom_status}),
+                      headers=headers)
     assert rv.status_code == 200
 
     # Change it to WRITEOFF Requested and authorize it.
