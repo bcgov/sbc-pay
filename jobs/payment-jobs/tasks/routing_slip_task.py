@@ -54,7 +54,6 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value).all()
 
         for routing_slip in routing_slips:
-
             # 1.reverse the child routing slip
             # 2.create receipt to the parent
             # 3.change the payment account of child to parent
@@ -73,13 +72,10 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
 
                 # apply receipt to parent cfs account
                 parent_rs: RoutingSlipModel = RoutingSlipModel.find_by_number(routing_slip.parent_number)
-
                 parent_payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(
                     parent_rs.payment_account_id)
-
                 parent_cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
                     parent_payment_account.id)
-
                 # For linked routing slip receipts, append 'L' to the number to avoid duplicate error
                 receipt_number = f'{routing_slip.number}L'
                 CFSService.create_cfs_receipt(cfs_account=parent_cfs_account,
@@ -91,6 +87,8 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 # Add to the list if parent is NSF, to apply the receipts.
                 if parent_rs.status == RoutingSlipStatus.NSF.value:
                     cls._apply_routing_slips_to_pending_invoices(parent_rs)
+                    # Update the parent routing slip status to ACTIVE
+                    parent_rs.status = RoutingSlipStatus.ACTIVE.value
 
                 routing_slip.save()
 
