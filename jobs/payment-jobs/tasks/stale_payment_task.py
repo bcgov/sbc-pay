@@ -17,9 +17,11 @@ import datetime
 from flask import current_app
 from pay_api.exceptions import BusinessException, Error
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
+from pay_api.models import db
 from pay_api.services import PaymentService, TransactionService
-from pay_api.utils.enums import TransactionStatus
+from pay_api.utils.enums import PaymentStatus, TransactionStatus
 
 
 class StalePaymentTask:  # pylint: disable=too-few-public-methods
@@ -40,9 +42,16 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
         is not up-to-date.
         """
         stale_transactions = PaymentTransactionModel.find_stale_records(minutes=30)
-        if len(stale_transactions) == 0:
+        # Find all payments which were failed due to service unavailable error.
+        service_unavailable_transactions = db.session.query(PaymentTransactionModel)\
+            .join(PaymentModel, PaymentModel.id == PaymentTransactionModel.payment_id) \
+            .filter(PaymentModel.payment_status_code == PaymentStatus.CREATED.value)\
+            .filter(PaymentTransactionModel.pay_system_reason_code == Error.SERVICE_UNAVAILABLE.name)\
+            .all()
+
+        if len(stale_transactions) == 0 and len(service_unavailable_transactions) == 0:
             current_app.logger.info(f'Stale Transaction Job Ran at {datetime.datetime.now()}.But No records found!')
-        for transaction in stale_transactions:
+        for transaction in [*stale_transactions, *service_unavailable_transactions]:
             try:
                 current_app.logger.info(f'Stale Transaction Job found records.Payment Id: {transaction.payment_id}, '
                                         f'Transaction Id : {transaction.id}')
