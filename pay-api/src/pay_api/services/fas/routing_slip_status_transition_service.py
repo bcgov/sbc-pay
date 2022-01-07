@@ -65,11 +65,11 @@ class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-a
                                       future_status: RoutingSlipStatus):
         """Validate if its a legit status transition."""
         allowed_statuses = RoutingSlipStatusTransitionService.STATUS_TRANSITIONS.get(current_status, [])
-        has_match: bool = False
-        for allowed_status in allowed_statuses:
-            if allowed_status == future_status \
-                    or (custom := RoutingSlipCustomStatus.from_key(allowed_status)) \
-                    and custom.original_status == future_status:
-                has_match = True
-        if not has_match:
+        if future_status not in allowed_statuses:
             raise BusinessException(Error.FAS_INVALID_RS_STATUS_CHANGE)
+
+    @classmethod
+    def get_actual_status(cls, status):
+        """Return actual status if it's a custom status enum."""
+        custom: RoutingSlipCustomStatus = RoutingSlipCustomStatus.from_key(status)
+        return custom.original_status if custom else status

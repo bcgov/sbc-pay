@@ -348,6 +348,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             # Update the remaining amount as negative total of sum of all totals for that routing slip.
             status = request_json.get('status')
             RoutingSlipStatusTransitionService.validate_possible_transitions(routing_slip.status, status)
+            status = RoutingSlipStatusTransitionService.get_actual_status(status)
 
             if status == RoutingSlipStatus.NSF.value:
                 total_paid_to_reverse: float = 0

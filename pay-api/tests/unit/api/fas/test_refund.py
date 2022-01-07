@@ -23,7 +23,7 @@ from faker import Faker
 
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
-from pay_api.utils.enums import PaymentMethod, Role, RoutingSlipStatus
+from pay_api.utils.enums import PaymentMethod, Role, RoutingSlipCustomStatus, RoutingSlipStatus
 from tests.utilities.base_test import get_claims, get_routing_slip_request, token_header
 
 fake = Faker()
@@ -105,7 +105,7 @@ def test_refund_routing_slips_reject(client, jwt):
     assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['ROUTINGSLIP.REFUND_REQUESTED']
 
     rv = client.post('/api/v1/fas/routing-slips/{}/refunds'.format(rs_number),
-                     data=json.dumps({'status': RoutingSlipStatus.REFUND_REJECTED.value}),
+                     data=json.dumps({'status': RoutingSlipCustomStatus.CANCEL_REFUND_REQUEST.custom_status}),
                      headers=headers)
     assert rv.status_code == 202
     assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['ROUTINGSLIP.ACTIVE']
