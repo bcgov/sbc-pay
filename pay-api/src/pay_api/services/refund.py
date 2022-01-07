@@ -27,7 +27,7 @@ from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
-from pay_api.utils.enums import InvoiceStatus, Role, RoutingSlipCustomStatus, RoutingSlipStatus
+from pay_api.utils.enums import InvoiceStatus, Role, RoutingSlipStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_str_by_path
@@ -179,8 +179,8 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             RefundService._is_authorised_refund()
 
         # Rejected refund makes routing slip active
-        if refund_status == RoutingSlipCustomStatus.CANCEL_REFUND_REQUEST.custom_status:  # pylint:disable=no-member
-            refund_status = RoutingSlipCustomStatus.CANCEL_REFUND_REQUEST.original_status  # pylint:disable=no-member
+        if refund_status == RoutingSlipStatus.REFUND_REJECTED.value:
+            refund_status = RoutingSlipStatus.ACTIVE.value
             reason = f'Refund Rejected by {user_name}'
 
         rs_model.status = refund_status
