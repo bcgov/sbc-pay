@@ -262,7 +262,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 try:
                     invoice_response = CFSService.get_invoice(cfs_account=cfs_account, inv_number=invoice_number)
                     has_invoice_created = invoice_response.json().get('invoice_number', None) == invoice_number
-                except Exception as e:  # NOQA # pylint: disable=broad-except,unused-variable
+                except Exception as exc:  # NOQA # pylint: disable=broad-except,unused-variable
                     # Ignore this error, as it is irrelevant and error on outer level is relevant.
                     pass
                 # If no invoice is created raise an error for sentry
