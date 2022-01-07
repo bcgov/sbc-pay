@@ -228,8 +228,23 @@ class RoutingSlipStatus(Enum):
 class RoutingSlipCustomStatus(Enum):
     """Routing slip  custom statuses."""
 
-    REVIEW_REFUND_REQUEST = 'REVIEW_REFUND_REQUEST'
-    CANCEL_REFUND_REQUEST = 'CANCEL_REFUND_REQUEST'
+    CANCEL_REFUND_REQUEST = 'CANCEL_REFUND_REQUEST', RoutingSlipStatus.ACTIVE.value
+    CANCEL_WRITE_OFF_REQUEST = 'CANCEL_WRITE_OFF_REQUEST', RoutingSlipStatus.ACTIVE.value
+
+    def __new__(cls, custom_status, original_status):
+        """Attributes for the enum."""
+        obj = object.__new__(cls)
+        obj.custom_status = custom_status
+        obj.original_status = original_status
+        return obj
+
+    @classmethod
+    def from_key(cls, key):
+        """Return instance from key of the enum."""
+        try:
+            return RoutingSlipCustomStatus[key]
+        except KeyError:
+            return None
 
 
 class EjvFileType(Enum):

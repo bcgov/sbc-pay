@@ -18,7 +18,7 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Dict, List
 
-from flask import current_app
+from flask import abort, current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
@@ -29,10 +29,10 @@ from pay_api.models import RoutingSlipSchema
 from pay_api.services.fas.routing_slip_status_transition_service import RoutingSlipStatusTransitionService
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import (
-    AuthHeaderType, CfsAccountStatus, ContentType, PatchActions, PaymentMethod, PaymentStatus, PaymentSystem,
+    AuthHeaderType, CfsAccountStatus, ContentType, PatchActions, PaymentMethod, PaymentStatus, PaymentSystem, Role,
     RoutingSlipStatus)
 from pay_api.utils.errors import Error
-from pay_api.utils.user_context import user_context
+from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_local_time, string_to_date
 
 
@@ -333,8 +333,10 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         return cls.find_by_number(rs_number)
 
     @classmethod
-    def update(cls, rs_number: str, action: str, request_json: Dict[str, any]) -> Dict[str, any]:
+    @user_context
+    def update(cls, rs_number: str, action: str, request_json: Dict[str, any], **kwargs) -> Dict[str, any]:
         """Update routing slip."""
+        user: UserContext = kwargs['user']
         if (patch_action := PatchActions.from_value(action)) is None:
             raise BusinessException(Error.PATCH_INVALID_ACTION)
 
@@ -352,6 +354,9 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                 for rs in (routing_slip, *RoutingSlipModel.find_children(routing_slip.number)):
                     total_paid_to_reverse += rs.total
                 routing_slip.remaining_amount = -total_paid_to_reverse
+            elif status in (RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value, RoutingSlipStatus.REFUND_AUTHORIZED.value) \
+                    and not user.has_role(Role.FAS_REFUND_APPROVER.value):
+                abort(403)
 
             routing_slip.status = status
 
