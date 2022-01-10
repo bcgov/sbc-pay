@@ -371,6 +371,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         try:
             receipt_details = pay_system_service.get_receipt(payment_account, pay_response_url, invoice_reference)
             txn_reason_code = None
+            transaction_dao.pay_system_reason_code = None
         except ServiceUnavailableException as exc:
             txn_reason_code = exc.status
             transaction_dao.pay_system_reason_code = txn_reason_code

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to create CFS invoices offline."""
+import time
 from typing import List
 
 from flask import current_app
@@ -260,9 +261,12 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 # and use it if it got created.
                 has_invoice_created: bool = False
                 try:
+                    # add a 60 seconds delay here as safe bet, as CFS takes time to create the invoice and
+                    # since this is a job, delay doesn't cause any performance issue
+                    time.sleep(60)
                     invoice_response = CFSService.get_invoice(cfs_account=cfs_account, inv_number=invoice_number)
                     has_invoice_created = invoice_response.json().get('invoice_number', None) == invoice_number
-                except Exception as e:  # NOQA # pylint: disable=broad-except,unused-variable
+                except Exception as exc:  # NOQA # pylint: disable=broad-except,unused-variable
                     # Ignore this error, as it is irrelevant and error on outer level is relevant.
                     pass
                 # If no invoice is created raise an error for sentry
