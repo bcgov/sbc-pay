@@ -316,6 +316,20 @@ class CFSService(OAuthService):
         current_app.logger.debug('>Getting token')
         return token_response
 
+    @staticmethod
+    def get_fas_token():
+        """Generate oauth token for FAS client which will be used for all communication."""
+        current_app.logger.debug('<Getting FAS token')
+        token_url = current_app.config.get('CFS_BASE_URL', None) + '/oauth/token'
+        basic_auth_encoded = base64.b64encode(
+            bytes(current_app.config.get('CFS_FAS_CLIENT_ID') + ':' + current_app.config.get('CFS_FAS_CLIENT_SECRET'),
+                  'utf-8')).decode('utf-8')
+        data = 'grant_type=client_credentials'
+        token_response = OAuthService.post(token_url, basic_auth_encoded, AuthHeaderType.BASIC,
+                                           ContentType.FORM_URL_ENCODED, data)
+        current_app.logger.debug('>Getting FAS token')
+        return token_response
+
     @classmethod
     def create_account_invoice(cls, transaction_number: str, line_items: List[PaymentLineItemModel],
                                cfs_account: CfsAccountModel) \
@@ -481,11 +495,12 @@ class CFSService(OAuthService):
                            rcpt_number: str,
                            rcpt_date: str,
                            amount: float,
-                           payment_method: str) -> Dict[str, str]:
+                           payment_method: str,
+                           access_token: str = None) -> Dict[str, str]:
         """Create Eft Wire receipt for the account."""
         current_app.logger.debug(f'<create_cfs_receipt : {cfs_account}, {rcpt_number}, {amount}, {payment_method}')
 
-        access_token: str = CFSService.get_token().json().get('access_token')
+        access_token: str = access_token or CFSService.get_token().json().get('access_token')
         cfs_base: str = current_app.config.get('CFS_BASE_URL')
         receipt_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/' \
                       f'sites/{cfs_account.cfs_site}/rcpts/'
