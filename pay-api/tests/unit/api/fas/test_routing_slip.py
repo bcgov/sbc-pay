@@ -264,7 +264,7 @@ def test_create_routing_slips_search_with_folio_number(client, jwt, app):
     folio_number = 'test_folio'
     another_folio_number = 'another_test_folio'
     invoice = factory_invoice(payment_account, folio_number=folio_number, routing_slip=rv.json.get('number'),
-                              payment_method_code=PaymentMethod.INTERNAL.value, total=50)
+                              payment_method_code=PaymentMethod.INTERNAL.value)
     invoice.save()
 
     # search with routing slip number works
