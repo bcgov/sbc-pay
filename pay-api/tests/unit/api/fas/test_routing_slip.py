@@ -264,7 +264,7 @@ def test_create_routing_slips_search_with_folio_number(client, jwt, app):
     folio_number = 'test_folio'
     another_folio_number = 'another_test_folio'
     invoice = factory_invoice(payment_account, folio_number=folio_number, routing_slip=rv.json.get('number'),
-                              payment_method_code=PaymentMethod.INTERNAL.value)
+                              payment_method_code=PaymentMethod.INTERNAL.value, total=50, remaining_amount=25)
     invoice.save()
 
     # search with routing slip number works
@@ -275,6 +275,7 @@ def test_create_routing_slips_search_with_folio_number(client, jwt, app):
 
     items = rv.json.get('items')
     assert len(items) == 1, 'folio and routing slip combo works.'
+    assert items['remaining_amount'] == 25
 
     rv = client.post('/api/v1/fas/routing-slips/queries',
                      data=json.dumps({'folioNumber': folio_number}),
