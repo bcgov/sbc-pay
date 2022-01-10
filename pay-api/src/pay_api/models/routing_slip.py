@@ -109,6 +109,9 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         if status := search_filter.get('status', None):
             query = query.filter(RoutingSlip.status == status)
 
+        if total_amount := search_filter.get('totalAmount', None):
+            query = query.filter(RoutingSlip.total == total_amount)
+
         if remaining_amount := search_filter.get('remainingAmount', None):
             query = query.filter(RoutingSlip.remaining_amount == remaining_amount)
 
