@@ -39,8 +39,12 @@ class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-a
             RoutingSlipStatus.NSF.value
         ],
         RoutingSlipStatus.REFUND_REQUESTED.value: [
-            RoutingSlipCustomStatus.REVIEW_REFUND_REQUEST.value,
-            RoutingSlipCustomStatus.CANCEL_REFUND_REQUEST.value
+            RoutingSlipStatus.REFUND_AUTHORIZED.value,
+            RoutingSlipCustomStatus.CANCEL_REFUND_REQUEST.custom_status  # pylint: disable=no-member
+        ],
+        RoutingSlipStatus.WRITE_OFF_REQUESTED.value: [
+            RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value,
+            RoutingSlipCustomStatus.CANCEL_WRITE_OFF_REQUEST.custom_status  # pylint: disable=no-member
         ],
         RoutingSlipStatus.REFUND_AUTHORIZED.value: [
         ],
@@ -63,3 +67,9 @@ class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-a
         allowed_statuses = RoutingSlipStatusTransitionService.STATUS_TRANSITIONS.get(current_status, [])
         if future_status not in allowed_statuses:
             raise BusinessException(Error.FAS_INVALID_RS_STATUS_CHANGE)
+
+    @classmethod
+    def get_actual_status(cls, status):
+        """Return actual status if it's a custom status enum."""
+        custom: RoutingSlipCustomStatus = RoutingSlipCustomStatus.from_key(status)
+        return custom.original_status if custom else status
