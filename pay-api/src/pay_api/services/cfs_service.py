@@ -491,7 +491,7 @@ class CFSService(OAuthService):
         return adjustment_response.json()
 
     @staticmethod
-    def create_cfs_receipt(cfs_account: CfsAccountModel,
+    def create_cfs_receipt(cfs_account: CfsAccountModel,  # pylint:disable=too-many-arguments
                            rcpt_number: str,
                            rcpt_date: str,
                            amount: float,
