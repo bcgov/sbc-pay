@@ -41,9 +41,9 @@ def upgrade():
                     unique=False)
     op.create_index(op.f('ix_account_fees_version_transaction_id'), 'account_fees_version', ['transaction_id'],
                     unique=False)
-    op.add_column('account_fees', sa.Column('created_on', sa.DateTime(), nullable=False))
+    op.add_column('account_fees', sa.Column('created_on', sa.DateTime(), nullable=True))
     op.add_column('account_fees', sa.Column('updated_on', sa.DateTime(), nullable=True))
-    op.add_column('account_fees', sa.Column('created_by', sa.String(length=50), nullable=False))
+    op.add_column('account_fees', sa.Column('created_by', sa.String(length=50), nullable=True))
     op.add_column('account_fees', sa.Column('created_name', sa.String(length=100), nullable=True))
     op.add_column('account_fees', sa.Column('updated_by', sa.String(length=50), nullable=True))
     op.add_column('account_fees', sa.Column('updated_name', sa.String(length=50), nullable=True))
