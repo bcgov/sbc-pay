@@ -48,6 +48,8 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         self._details: Optional[Dict] = None
         self._reason: Optional[str] = None
         self._requested_by: Optional[str] = None
+        self._decision_made_by: Optional[str] = None
+        self._decision_date: Optional[datetime] = None
 
     @property
     def _dao(self):
@@ -65,6 +67,8 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         self.reason: str = self._dao.reason
         self.requested_by: str = self._dao.requested_by
         self.details: Dict = self._dao.details
+        self.decision_made_by: str = self._dao.decision_made_by
+        self.decision_date: datetime = self._dao.decision_date
 
     @property
     def id(self) -> int:
@@ -133,6 +137,17 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         self._dao.requested_by = value
 
     @property
+    def decision_date(self) -> datetime:
+        """Return the decision_date."""
+        return self._decision_date
+
+    @decision_date.setter
+    def decision_date(self, value: datetime):
+        """Set the decision_date."""
+        self._decision_date = value
+        self._dao.decision_date = value
+
+    @property
     def details(self):
         """Return the details."""
         return self._details
@@ -142,6 +157,17 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         """Set the details."""
         self._details = value
         self._dao.details = value
+
+    @property
+    def decision_made_by(self) -> Optional[str]:
+        """Return the decision_made_by."""
+        return self.decision_made_by
+
+    @decision_made_by.setter
+    def decision_made_by(self, value: str):
+        """Set the decision_made_by."""
+        self._decision_made_by = value
+        self._dao.decision_made_by = value
 
     def save(self) -> RefundModel:
         """Save the information to the DB and commit."""
@@ -193,10 +219,12 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
 
         if not is_refund_finalized:
             # do not update these for approval/rejections
-
             refund.routing_slip_id = rs_model.id
             refund.requested_by = kwargs['user'].user_name
             refund.requested_date = datetime.now()
+        else:
+            refund.decision_made_by = kwargs['user'].user_name
+            refund.decision_date = datetime.now()
 
         refund.reason = reason
         if details := request.get('details'):
