@@ -190,6 +190,10 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CGI_AP_SUPPLIER_LOCATION = os.getenv('CGI_AP_SUPPLIER_LOCATION', '')
     CGI_AP_REMITTANCE_CODE = os.getenv('CGI_AP_REMITTANCE_CODE', '78')
 
+    # FAS Client and secret
+    CFS_FAS_CLIENT_ID = os.getenv('CFS_FAS_CLIENT_ID', '')
+    CFS_FAS_CLIENT_SECRET = os.getenv('CFS_FAS_CLIENT_SECRET', '')
+
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     TESTING = False

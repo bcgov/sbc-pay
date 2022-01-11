@@ -44,7 +44,8 @@ def create_cfs_account(cfs_account: CfsAccountModel, pay_account: PaymentAccount
                                       rcpt_number=routing_slip.number,
                                       rcpt_date=routing_slip.routing_slip_date.strftime('%Y-%m-%d'),
                                       amount=routing_slip.total,
-                                      payment_method=pay_account.payment_method)
+                                      payment_method=pay_account.payment_method,
+                                      access_token=CFSService.get_fas_token())
         cfs_account.commit()
         return
 
