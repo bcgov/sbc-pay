@@ -88,7 +88,7 @@ class CgiAP(CgiEjv):
 
         city = f"{refund_details['mailingAddress']['city'][:25]:<25}"
         prov = f"{refund_details['mailingAddress']['region'][:2]:<2}"
-        postal_code = f"{refund_details['mailingAddress']['postalCode'][:10]:<10}"
+        postal_code = f"{refund_details['mailingAddress']['postalCode'][:10].replace(' ', ''):<10}"
         country = f"{refund_details['mailingAddress']['country'][:2]:<2}"
 
         ap_address = f'{cls._feeder_number()}APNA{cls.DELIMITER}{cls._supplier_number()}{cls._supplier_location()}' \
