@@ -1,5 +1,5 @@
 -e git+https://github.com/bcgov/sbc-common-components.git@d9b4616826f8dce6ec16540f24a88bfb530971c2#egg=sbc_common_components&subdirectory=python
--e git+https://github.com/sumesh-aot/sbc-pay.git@37ef2a8411736d42c79bf230f01aee80da57c2dc#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-pay.git@4995411796dc637fa3452c34c7f91166e899ee8f#egg=pay_api&subdirectory=pay-api
 Flask-Caching==1.10.1
 Flask-Migrate==2.7.0
 Flask-Moment==1.0.2
@@ -38,13 +38,13 @@ gunicorn==20.1.0
 idna==3.3
 itsdangerous==1.1.0
 jaeger-client==4.8.0
-jsonschema==4.3.3
+jsonschema==4.4.0
 marshmallow-sqlalchemy==0.25.0
 marshmallow==3.14.1
 minio==7.1.2
 opentracing==2.4.0
 paramiko==2.9.2
-protobuf==3.19.2
+protobuf==3.19.3
 psycopg2-binary==2.9.3
 pyasn1==0.4.8
 pycparser==2.21

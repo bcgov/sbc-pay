@@ -99,7 +99,9 @@ class CgiAP(CgiEjv):
     @classmethod
     def get_ap_comment(cls, refund_details, routing_slip_number):
         """Get AP Comment Override."""
-        cheque_advice = refund_details.get('chequeAdvice', '')[:40]
+        if not (cheque_advice := refund_details.get('chequeAdvice', '')):
+            return None
+        cheque_advice = cheque_advice[:40]
         line_text = '0001'
         ap_comment = f'{cls._feeder_number()}APIC{cls.DELIMITER}{cls._supplier_number()}' \
                      f'{cls._supplier_location()}{routing_slip_number:<50}{line_text}{cheque_advice}' \

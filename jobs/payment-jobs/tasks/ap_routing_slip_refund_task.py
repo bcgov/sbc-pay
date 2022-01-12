@@ -44,8 +44,8 @@ class ApRoutingSlipRefundTask(CgiAP):
         """Create AP file for refund and upload."""
         # Find all routing slips with status REFUND_AUTHORIZED.
         routing_slips: List[RoutingSlipModel] = db.session.query(RoutingSlipModel) \
-            .filter(RoutingSlipModel.status == RoutingSlipStatus.REFUND_AUTHORIZED.value)\
-            .filter(RoutingSlipModel.refund_amount > 0)\
+            .filter(RoutingSlipModel.status == RoutingSlipStatus.REFUND_AUTHORIZED.value) \
+            .filter(RoutingSlipModel.refund_amount > 0) \
             .all()
 
         current_app.logger.info(f'Found {len(routing_slips)} to refund.')
@@ -66,6 +66,7 @@ class ApRoutingSlipRefundTask(CgiAP):
 
         # Each routing slip will be one invoice in AP
         batch_total = 0
+        total_line_count: int = 0
         for routing_slip in routing_slips:
             current_app.logger.info(f'Creating refund for {routing_slip.number}, Amount {routing_slip.refund_amount}.')
             refund: RefundModel = RefundModel.find_by_routing_slip_id(routing_slip.id)
@@ -74,12 +75,15 @@ class ApRoutingSlipRefundTask(CgiAP):
             ap_content = f'{ap_content}{cls.get_ap_header(routing_slip.refund_amount, routing_slip.number)}'
             ap_content = f'{ap_content}{cls.get_ap_invoice_line(routing_slip.refund_amount, routing_slip.number)}'
             ap_content = f'{ap_content}{cls.get_ap_address(refund.details, routing_slip.number)}'
-            ap_content = f'{ap_content}{cls.get_ap_comment(refund.details, routing_slip.number)}'
+            total_line_count += 3  # for the above 3 lines
+            if ap_comment := cls.get_ap_comment(refund.details, routing_slip.number):
+                ap_content = f'{ap_content}{ap_comment}'
+                total_line_count += 1
             batch_total += routing_slip.refund_amount
             routing_slip.status = RoutingSlipStatus.REFUND_UPLOADED.value
 
         # AP Batch Trailer
-        ap_content = f'{ap_content}{cls.get_batch_trailer(batch_number, batch_total, control_total=len(routing_slips))}'
+        ap_content = f'{ap_content}{cls.get_batch_trailer(batch_number, batch_total, control_total=total_line_count)}'
 
         # Create a file add this content.
         file_path_with_name, trg_file_path = cls.create_inbox_and_trg_files(ap_content)
