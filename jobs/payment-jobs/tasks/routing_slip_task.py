@@ -83,7 +83,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                                               rcpt_date=routing_slip.routing_slip_date.strftime('%Y-%m-%d'),
                                               amount=routing_slip.total,
                                               payment_method=parent_payment_account.payment_method,
-                                              access_token=CFSService.get_fas_token())
+                                              access_token=CFSService.get_fas_token().json().get('access_token'))
 
                 # Add to the list if parent is NSF, to apply the receipts.
                 if parent_rs.status == RoutingSlipStatus.NSF.value:
