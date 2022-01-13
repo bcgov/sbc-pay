@@ -258,7 +258,7 @@ class CFSService(OAuthService):
     def reverse_rs_receipt_in_cfs(cls, cfs_account, receipt_number, is_nsf: bool = False):
         """Reverse Receipt."""
         current_app.logger.debug('>Reverse receipt: %s', receipt_number)
-        access_token: str = CFSService.get_token().json().get('access_token')
+        access_token: str = CFSService.get_fas_token().json().get('access_token')
         cfs_base: str = current_app.config.get('CFS_BASE_URL')
         receipt_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}' \
                       f'/sites/{cfs_account.cfs_site}/rcpts/{receipt_number}/reverse'
@@ -588,7 +588,7 @@ class CFSService(OAuthService):
         2. Adjust the receipt with activity name corresponding to refund or write off.
         """
         current_app.logger.debug('<adjust_receipt_to_zero: %s %s', cfs_account, receipt_number)
-        access_token: str = CFSService.get_token().json().get('access_token')
+        access_token: str = CFSService.get_fas_token().json().get('access_token')
         cfs_base: str = current_app.config.get('CFS_BASE_URL')
         receipt_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/' \
                       f'sites/{cfs_account.cfs_site}/rcpts/{receipt_number}/'
