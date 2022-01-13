@@ -52,7 +52,6 @@ class OnlineBankingService(PaymentSystemService, CFSService):
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number for direct pay."""
-        current_app.logger.debug('<create_invoice_online_banking')
         # Do nothing here as the roll up happens later after creation of invoice.
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):

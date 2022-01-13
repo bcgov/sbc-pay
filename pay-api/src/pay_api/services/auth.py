@@ -23,7 +23,7 @@ from pay_api.utils.user_context import UserContext, user_context
 
 @user_context
 def check_auth(business_identifier: str, account_id: str = None, corp_type_code: str = None,
-               **kwargs):  # pylint: disable=unused-argument, too-many-branches
+               **kwargs):  # pylint: disable=unused-argument, too-many-branches, too-many-statements
     """Authorize the user for the business entity and return authorization response."""
     user: UserContext = kwargs['user']
     is_authorized: bool = False
@@ -33,7 +33,7 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
 
     call_auth_svc: bool = True
 
-    if Role.SYSTEM.value in user.roles:
+    if user.is_system():
         is_authorized = bool(Role.EDITOR.value in user.roles)
         if product_code:
             is_authorized = is_authorized and product_code == user.product_code
@@ -46,6 +46,11 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
 
     if call_auth_svc:
         bearer_token = user.bearer_token
+        current_app.logger.info(f'Checking auth for Account : {account_id}, Business : {business_identifier}, '
+                                f'Is Staff : {user.is_staff()}')
+        roles: list = []
+        auth_response = {}
+
         if account_id:
             auth_url = current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{account_id}' \
                                                                      f'/authorizations?expanded=true'
@@ -63,9 +68,11 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
 
             roles: list = auth_response.get('roles', [])
             g.account_id = auth_response.get('account').get('id') if auth_response.get('account', None) else None
-        elif Role.STAFF.value in user.roles:
+        elif user.is_staff():
             roles: list = user.roles
             auth_response = {}
+        else:
+            current_app.logger.info('No Auth Information Found')
 
         g.user_permission = auth_response.get('roles')
         if kwargs.get('one_of_roles', None):
@@ -77,12 +84,12 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
             is_authorized = False
         # For staff users, if the account is coming as empty add stub data
         # (businesses which are not affiliated won't have account)
-        if Role.STAFF.value in user.roles and not auth_response.get('account', None):
+        if user.is_staff() and not auth_response.get('account', None):
             auth_response['account'] = {
                 'id': f'PASSCODE_ACCOUNT_{business_identifier}'
             }
 
-        if Role.SYSTEM.value in user.roles and bool(Role.EDITOR.value in user.roles):
+        if user.is_system() and bool(Role.EDITOR.value in user.roles):
             is_authorized = True
 
     if not is_authorized:

@@ -142,6 +142,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
 
         payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
         try:
+            current_app.logger.info(f'Releasing record for invoice {invoice.id}')
             publish_response(payload=payload, subject=get_pay_subject_name(invoice.corp_type_code))
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(e)
@@ -152,6 +153,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def _refund_and_create_credit_memo(invoice: InvoiceModel):
         # Create credit memo in CFS if the invoice status is PAID.
         # Don't do anything is the status is APPROVED.
+        current_app.logger.info(f'Creating credit memo for invoice : {invoice.id}, {invoice.invoice_status_code}')
         if invoice.invoice_status_code == InvoiceStatus.APPROVED.value \
                 and InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
                     invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None:
@@ -175,6 +177,8 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         # Add up the credit amount and update payment account table.
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice.payment_account_id)
         payment_account.credit = (payment_account.credit or 0) + invoice.total
+        current_app.logger.info(
+            f'Updating credit amount to  {payment_account.credit} for account {payment_account.auth_account_id}')
         payment_account.flush()
 
     @staticmethod
@@ -215,8 +219,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
                 bcolAccount=invoice.bcol_account,
                 bcolUser=payment_account.bcol_user_id
             ))
-        current_app.logger.debug('Publishing payment refund request to mailer ')
-        current_app.logger.debug(q_payload)
+        current_app.logger.debug(f'Publishing payment refund request to mailer for {invoice.id} : {q_payload}')
         publish_response(payload=q_payload, client_name=current_app.config.get('NATS_MAILER_CLIENT_NAME'),
                          subject=current_app.config.get('NATS_MAILER_SUBJECT'))
 

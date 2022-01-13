@@ -55,26 +55,24 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 6.1.1 If failed adjust the invoice to zero and roll back the transaction.
             6.2 If fails rollback the transaction
         """
-        current_app.logger.debug('<create_invoice', payment_request)
         business_info = payment_request.get('businessInfo')
         filing_info = payment_request.get('filingInfo')
         account_info = payment_request.get('accountInfo', None)
-        filing_id = filing_info.get('filingIdentifier', None)
-        folio_number = filing_info.get('folioNumber', get_str_by_path(authorization, 'business/folioNumber'))
         corp_type = business_info.get('corpType', None)
+        business_identifier = business_info.get('businessIdentifier')
 
         payment_account = cls._find_payment_account(authorization)
-
         payment_method = _get_payment_method(payment_request, payment_account)
+        current_app.logger.info(f'Creating Payment Request : '
+                                f'{payment_method}, {corp_type}, {business_identifier}, '
+                                f'{payment_account.auth_account_id}')
 
         bcol_account = cls._get_bcol_account(account_info, payment_account)
 
         # Calculate the fees
-        current_app.logger.debug('Calculate the fees')
         fees = _calculate_fees(corp_type, filing_info)
 
         # Create payment system instance from factory
-        current_app.logger.debug('Creating PaymentSystemService impl')
         pay_service: PaymentSystemService = PaymentSystemFactory.create(
             payment_method=payment_method,
             corp_type=corp_type,
@@ -82,12 +80,12 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             account_info=account_info,
             payment_account=payment_account
         )
+        current_app.logger.info(f'Created Pay System Instance : {pay_service}')
 
         pay_system_invoice: Dict[str, any] = None
         invoice: Invoice = None
 
         try:
-            current_app.logger.debug('Creating Invoice record')
             invoice = Invoice()
             invoice.bcol_account = bcol_account
             invoice.payment_account_id = payment_account.id
@@ -98,10 +96,11 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice.paid = 0
             invoice.refund = 0
             invoice.routing_slip = get_str_by_path(account_info, 'routingSlip')
-            invoice.filing_id = filing_id
+            invoice.filing_id = filing_info.get('filingIdentifier', None)
             invoice.dat_number = get_str_by_path(account_info, 'datNumber')
-            invoice.folio_number = folio_number
-            invoice.business_identifier = business_info.get('businessIdentifier')
+            invoice.folio_number = filing_info.get('folioNumber',
+                                                   get_str_by_path(authorization, 'business/folioNumber'))
+            invoice.business_identifier = business_identifier
             invoice.payment_method_code = pay_service.get_payment_method_code()
             invoice.corp_type_code = corp_type
             invoice.details = payment_request.get('details', None)
@@ -109,14 +108,11 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
             line_items = []
             for fee in fees:
-                current_app.logger.debug('Creating line items')
                 line_items.append(PaymentLineItem.create(invoice.id, fee))
 
-            current_app.logger.debug('Handing off to payment system to create invoice')
+            current_app.logger.info(f'Handing off to payment system to create invoice for {invoice.id}')
             invoice_reference = pay_service.create_invoice(payment_account, line_items, invoice,
                                                            corp_type_code=invoice.corp_type_code)
-
-            current_app.logger.debug('Updating invoice record')
 
             invoice.commit()
 
@@ -136,7 +132,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 )
             raise
 
-        current_app.logger.debug('>create_invoice')
+        current_app.logger.debug('>Finished creating payment request')
 
         return invoice.asdict(include_dynamic_fields=True)
 
@@ -227,12 +223,11 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         2. Mark the payment and invoices records as deleted.
         3. Publish message to queue
         """
-        current_app.logger.debug('<delete_invoice')
-
         # update transaction function will update the status from PayBC
         _update_active_transactions(invoice_id)
 
         invoice: Invoice = Invoice.find_by_id(invoice_id, skip_auth_check=True)
+        current_app.logger.debug(f'<Delete Invoice {invoice_id}, {invoice.invoice_status_code}')
 
         # Create the payment system implementation
         pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(invoice.payment_method_code)
