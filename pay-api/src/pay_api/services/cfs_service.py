@@ -42,6 +42,7 @@ class CFSService(OAuthService):
                            payment_info: Dict[str, any] = None,
                            receipt_method: str = None, site_name=None) -> Dict[str, str]:
         """Create a cfs account and return the details."""
+        current_app.logger.info(f'Creating CFS Customer Profile Details for : {identifier}')
         party_id = f"{current_app.config.get('CFS_PARTY_PREFIX')}{identifier}"
         access_token = CFSService.get_token().json().get('access_token')
         party = CFSService._create_party(access_token, party_id)
@@ -156,7 +157,7 @@ class CFSService(OAuthService):
     @staticmethod
     def _create_paybc_account(access_token, party):
         """Create account record in PayBC."""
-        current_app.logger.debug('<Creating account')
+        current_app.logger.debug('<Creating CFS account')
         account_url = current_app.config.get('CFS_BASE_URL') + f"/cfs/parties/{party.get('party_number', None)}/accs/"
         account: Dict[str, Any] = {
             'account_description': current_app.config.get('CFS_ACCOUNT_DESCRIPTION'),
@@ -165,13 +166,13 @@ class CFSService(OAuthService):
 
         account_response = OAuthService.post(account_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
                                              account)
-        current_app.logger.debug('>Creating account')
+        current_app.logger.debug('>Creating CFS account')
         return account_response.json()
 
     @staticmethod
     def _create_site(access_token, account, contact_info, receipt_method, site_name=None):
         """Create site in PayBC."""
-        current_app.logger.debug('<Creating site ')
+        current_app.logger.debug('<Creating CFS site ')
         if not contact_info:
             contact_info = {}
         site_url = current_app.config.get(
@@ -202,7 +203,7 @@ class CFSService(OAuthService):
                         'items')[0]
             else:
                 raise e
-        current_app.logger.debug('>Creating site ')
+        current_app.logger.debug('>Creating CFS site ')
         return site_response
 
     @classmethod
@@ -210,7 +211,7 @@ class CFSService(OAuthService):
                            account_number: str,
                            site_number: str, payment_info: Dict[str, str]):
         """Save bank details to the site."""
-        current_app.logger.debug('<Creating payment details ')
+        current_app.logger.debug('<Creating CFS payment details ')
         site_payment_url = current_app.config.get(
             'CFS_BASE_URL') + f'/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/payment/'
 
@@ -238,20 +239,19 @@ class CFSService(OAuthService):
             'payment_instrument_number': site_payment_response.get('payment_instrument_number')
         }
 
-        current_app.logger.debug('>Creating payment details')
+        current_app.logger.debug('>Creating CFS payment details')
         return payment_details
 
     @classmethod
     def get_invoice(cls, cfs_account: CfsAccountModel, inv_number: str):
         """Get invoice from CFS."""
-        current_app.logger.debug('<get_invoice')
+        current_app.logger.debug(f'<Getting invoice from CFS : {inv_number}')
         access_token: str = CFSService.get_token().json().get('access_token')
         invoice_url = current_app.config.get(
             'CFS_BASE_URL') + f'/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/' \
                               f'sites/{cfs_account.cfs_site}/invs/{inv_number}/'
 
         invoice_response = CFSService.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
-        current_app.logger.debug('>get_invoice')
         return invoice_response.json()
 
     @classmethod
@@ -272,11 +272,13 @@ class CFSService(OAuthService):
     @classmethod
     def apply_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, invoice_number: str) -> Dict[str, any]:
         """Apply Invoice to Routing slip receipt from CFS."""
+        current_app.logger.debug(f'Apply receipt: {receipt_number} to invoice {invoice_number}')
         return cls._modify_rs_receipt_in_cfs(cfs_account, invoice_number, receipt_number)
 
     @classmethod
     def unapply_receipt(cls, cfs_account: CfsAccountModel, receipt_number: str, invoice_number: str) -> Dict[str, any]:
         """Unapply Invoice to Routing slip receipt from CFS."""
+        current_app.logger.debug(f'Unapply receipt: {receipt_number} from invoice {invoice_number}')
         return cls._modify_rs_receipt_in_cfs(cfs_account, invoice_number, receipt_number, verb='unapply')
 
     @classmethod
@@ -429,7 +431,7 @@ class CFSService(OAuthService):
     @staticmethod
     def reverse_invoice(inv_number: str):
         """Adjust the invoice to zero."""
-        current_app.logger.debug('<paybc_service_Getting token')
+        current_app.logger.info(f'Reverse CFS Invoice : {inv_number}')
         access_token: str = CFSService.get_token().json().get('access_token')
         cfs_base: str = current_app.config.get('CFS_BASE_URL')
         invoice_url = f'{cfs_base}/cfs/parties/invs/{inv_number}/creditbalance/'

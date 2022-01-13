@@ -112,5 +112,6 @@ class PaymentSystemFactory:  # pylint: disable=too-few-public-methods
             is_in_pad_confirmation_period = payment_account.pad_activation_date > datetime.now()
             is_cfs_account_in_pending_status = payment_account.cfs_account_status == \
                 CfsAccountStatus.PENDING_PAD_ACTIVATION.value
+
             if is_in_pad_confirmation_period or is_cfs_account_in_pending_status:
                 raise BusinessException(Error.ACCOUNT_IN_PAD_CONFIRMATION_PERIOD)

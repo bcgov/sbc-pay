@@ -49,7 +49,8 @@ class BcolService(PaymentSystemService, OAuthService):
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
                        line_items: [PaymentLineItem], invoice: Invoice, **kwargs) -> InvoiceReference:
         """Create Invoice in PayBC."""
-        current_app.logger.debug('<create_invoice')
+        current_app.logger.debug(f'<Creating BCOL records for Invoice: {invoice.id}, '
+                                 f'Auth Account : {payment_account.auth_account_id}')
         user: UserContext = kwargs['user']
         pay_endpoint = current_app.config.get('BCOL_API_ENDPOINT') + '/payments'
         corp_number = invoice.business_identifier
@@ -84,7 +85,7 @@ class BcolService(PaymentSystemService, OAuthService):
             pay_response = self.post(pay_endpoint, user.bearer_token, AuthHeaderType.BEARER, ContentType.JSON,
                                      payload, raise_for_error=False)
             response_json = pay_response.json()
-            current_app.logger.debug(response_json)
+            current_app.logger.debug(f'BCOL Response : {response_json}')
             pay_response.raise_for_status()
         except HTTPError as bol_err:
             current_app.logger.error(bol_err)
@@ -98,7 +99,6 @@ class BcolService(PaymentSystemService, OAuthService):
         invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id, response_json.get('key'),
                                                                       response_json.get('sequenceNo'))
 
-        current_app.logger.debug('>create_invoice')
         return invoice_reference
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):

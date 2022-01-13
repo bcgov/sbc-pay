@@ -55,13 +55,19 @@ class DistributionCodeConfig(SecuredView):
         """Edit form overrides."""
         form = super().edit_form(obj)
         form.account.render_kw = {'disabled': True}
+
         return form
 
     def create_form(self, obj=None):
         """Create form overrides."""
         form = super().create_form(obj)
-        form.account.render_kw = {'disabled': True}
         return form
+
+    def on_model_change(self, form, model, is_created):
+        """Trigger on model change."""
+        model.created_by = model.created_by or 'SYSTEM'
+        if is_created:
+            model.updated_by = 'SYSTEM'
 
 
 # If this view is going to be displayed for only special roles, do like below
