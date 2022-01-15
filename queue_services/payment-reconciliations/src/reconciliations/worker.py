@@ -35,7 +35,7 @@ from flask import Flask
 from pay_api.models import db
 
 from reconciliations import config
-from reconciliations.ejv_reconciliations import reconcile_distributions
+from reconciliations.cgi_reconciliations import reconcile_distributions
 from reconciliations.payment_reconciliations import reconcile_payments
 
 

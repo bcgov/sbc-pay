@@ -30,7 +30,6 @@ from pay_api.utils.errors import Error
 from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import cors_preflight
 
-
 API = Namespace('accounts', description='Payment System - Accounts')
 
 
@@ -133,8 +132,8 @@ class Account(Resource):
         return jsonify({}), HTTPStatus.NO_CONTENT
 
 
-@cors_preflight('POST')
-@API.route('/<string:account_number>/fees', methods=['POST', 'OPTIONS'])
+@cors_preflight('POST,GET')
+@API.route('/<string:account_number>/fees', methods=['POST', 'GET', 'OPTIONS'])
 class AccountFees(Resource):
     """Endpoint resource to create payment account fee settings."""
 
@@ -156,6 +155,17 @@ class AccountFees(Resource):
         except BusinessException as exception:
             return exception.response()
         current_app.logger.debug('>AccountFees.post')
+        return jsonify(response), status
+
+    @staticmethod
+    @cors.crossdomain(origin='*')
+    @_jwt.requires_auth
+    @_jwt.has_one_of_roles([Role.MANAGE_ACCOUNTS.value])
+    def get(account_number: str):
+        """Get Fee details for the account."""
+        current_app.logger.info('<AccountFees.get')
+        response, status = PaymentAccountService.get_account_fees(account_number), HTTPStatus.OK
+        current_app.logger.debug('>AccountFees.get')
         return jsonify(response), status
 
 

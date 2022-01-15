@@ -15,10 +15,13 @@
 import datetime
 
 from flask import current_app
-from pay_api.exceptions import BusinessException
+from pay_api.exceptions import BusinessException, Error
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
+from pay_api.models import db
 from pay_api.services import PaymentService, TransactionService
+from pay_api.utils.enums import PaymentStatus, TransactionStatus
 
 
 class StalePaymentTask:  # pylint: disable=too-few-public-methods
@@ -39,9 +42,16 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
         is not up-to-date.
         """
         stale_transactions = PaymentTransactionModel.find_stale_records(minutes=30)
-        if len(stale_transactions) == 0:
+        # Find all payments which were failed due to service unavailable error.
+        service_unavailable_transactions = db.session.query(PaymentTransactionModel)\
+            .join(PaymentModel, PaymentModel.id == PaymentTransactionModel.payment_id) \
+            .filter(PaymentModel.payment_status_code == PaymentStatus.CREATED.value)\
+            .filter(PaymentTransactionModel.pay_system_reason_code == Error.SERVICE_UNAVAILABLE.name)\
+            .all()
+
+        if len(stale_transactions) == 0 and len(service_unavailable_transactions) == 0:
             current_app.logger.info(f'Stale Transaction Job Ran at {datetime.datetime.now()}.But No records found!')
-        for transaction in stale_transactions:
+        for transaction in [*stale_transactions, *service_unavailable_transactions]:
             try:
                 current_app.logger.info(f'Stale Transaction Job found records.Payment Id: {transaction.payment_id}, '
                                         f'Transaction Id : {transaction.id}')
@@ -49,8 +59,15 @@ class StalePaymentTask:  # pylint: disable=too-few-public-methods
                 current_app.logger.info(f'Stale Transaction Job Updated records.Payment Id: {transaction.payment_id}, '
                                         f'Transaction Id : {transaction.id}')
             except BusinessException as err:  # just catch and continue .Don't stop
-                current_app.logger.info('Stale Transaction Error on update_transaction')
-                current_app.logger.info(err)
+                # If the error is for COMPLETED PAYMENT, then mark the transaction as CANCELLED
+                # as there would be COMPLETED transaction in place and continue.
+                if err.code == Error.COMPLETED_PAYMENT.name:
+                    current_app.logger.info('Completed payment, marking transaction as CANCELLED.')
+                    transaction.status_code = TransactionStatus.CANCELLED.value
+                    transaction.save()
+                else:
+                    current_app.logger.info('Stale Transaction Error on update_transaction')
+                    current_app.logger.info(err)
 
     @classmethod
     def _delete_marked_payments(cls):

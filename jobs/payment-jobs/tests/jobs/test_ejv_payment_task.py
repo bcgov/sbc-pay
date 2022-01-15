@@ -18,7 +18,7 @@ Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
 from pay_api.models import (
     DistributionCode, EjvFile, EjvHeader, EjvInvoiceLink, FeeSchedule, Invoice, InvoiceReference, db)
-from pay_api.utils.enums import DisbursementStatus, InvoiceReferenceStatus, InvoiceStatus
+from pay_api.utils.enums import DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus
 
 from tasks.ejv_payment_task import EjvPaymentTask
 
@@ -98,7 +98,7 @@ def test_payments_for_gov_accounts(session, monkeypatch):
         ejv_file: EjvFile = EjvFile.find_by_id(ejv_header.ejv_file_id)
         assert ejv_file
         assert ejv_file.disbursement_status_code == DisbursementStatus.UPLOADED.value
-        assert not ejv_file.is_distribution
+        assert not ejv_file.file_type == EjvFileType.DISBURSEMENT.value
 
     # Update the disbursement_status_code to COMPLETED, so that we can create records for Reversals
     for ejv_file in db.session.query(EjvFile).all():
@@ -136,4 +136,4 @@ def test_payments_for_gov_accounts(session, monkeypatch):
 
         ejv_file: EjvFile = EjvFile.find_by_id(ejv_header.ejv_file_id)
         assert ejv_file
-        assert not ejv_file.is_distribution
+        assert ejv_file.file_type == EjvFileType.PAYMENT.value

@@ -75,6 +75,7 @@ def run(job_name):
     from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
     from tasks.unpaid_invoice_notify_task import UnpaidInvoiceNotifyTask
     from tasks.ejv_payment_task import EjvPaymentTask
+    from tasks.ap_routing_slip_refund_task import ApRoutingSlipRefundTask
 
     application = create_app()
 
@@ -114,7 +115,9 @@ def run(job_name):
     elif job_name == 'EJV_PAYMENT':
         EjvPaymentTask.create_ejv_file()
         application.logger.info(f'<<<< Completed running EJV payment >>>>')
-
+    elif job_name == 'AP_REFUND':
+        ApRoutingSlipRefundTask.create_ap_file()
+        application.logger.info(f'<<<< Completed running AP Job for refund >>>>')
     else:
         application.logger.debug('No valid args passed.Exiting job without running any ***************')
 

@@ -26,7 +26,8 @@ from faker import Faker
 from pay_api.models import PaymentAccount
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.constants import DT_SHORT_FORMAT
-from pay_api.utils.enums import PatchActions, PaymentMethod, Role, RoutingSlipStatus
+from pay_api.services.fas.routing_slip_status_transition_service import RoutingSlipStatusTransitionService
+from pay_api.utils.enums import PatchActions, PaymentMethod, Role, RoutingSlipCustomStatus, RoutingSlipStatus
 from tests.utilities.base_test import factory_invoice, get_claims, get_routing_slip_request, token_header
 
 fake = Faker()
@@ -52,6 +53,8 @@ def test_create_routing_slips(client, jwt, payload):
     rv = client.get('/api/v1/fas/routing-slips/{}'.format(rv.json.get('number')), headers=headers)
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, 'routing_slip')[0]
+    allowed_statuses = rv.json.get('allowedStatuses')
+    assert len(allowed_statuses) == len(RoutingSlipStatusTransitionService.get_possible_transitions('ACTIVE'))
 
 
 def test_create_routing_slips_search(client, jwt, app):
@@ -137,9 +140,9 @@ def test_link_routing_slip_parent_is_a_child(client, jwt):
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, Role.FAS_SEARCH.value]),
                            token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    child = get_routing_slip_request()
-    parent1 = get_routing_slip_request(number=fake.name())
-    parent2 = get_routing_slip_request(number=fake.name())
+    child = get_routing_slip_request('456789123')
+    parent1 = get_routing_slip_request('123456789')
+    parent2 = get_routing_slip_request('987654321')
     client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
     client.post('/api/v1/fas/routing-slips', data=json.dumps(parent1), headers=headers)
     client.post('/api/v1/fas/routing-slips', data=json.dumps(parent2), headers=headers)
@@ -163,8 +166,8 @@ def test_link_routing_slip(client, jwt, app):
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, Role.FAS_SEARCH.value]),
                            token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    child = get_routing_slip_request()
-    parent = get_routing_slip_request(number=fake.name())
+    child = get_routing_slip_request('123456789')
+    parent = get_routing_slip_request('abcdefghi')
     paid_amount_child = child.get('payments')[0].get('paidAmount')
     paid_amount_parent = parent.get('payments')[0].get('paidAmount')
     client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
@@ -204,8 +207,8 @@ def test_link_routing_slip(client, jwt, app):
     assert rv.status_code == 400
 
     # assert transactions
-    child = get_routing_slip_request(number=fake.name())
-    parent = get_routing_slip_request(number=fake.name())
+    child = get_routing_slip_request(number='child2123')
+    parent = get_routing_slip_request(number='parent212')
     rv1 = client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
     rv2 = client.post('/api/v1/fas/routing-slips', data=json.dumps(parent), headers=headers)
     payment_account_id = rv1.json.get('paymentAccount').get('id')
@@ -230,7 +233,7 @@ def test_link_routing_slip(client, jwt, app):
     assert rv.json.get('type') == 'RS_CHILD_HAS_TRANSACTIONS'
     assert rv.status_code == 400
 
-    child1 = get_routing_slip_request(number=fake.name())
+    child1 = get_routing_slip_request(number='child2999')
     client.post('/api/v1/fas/routing-slips', data=json.dumps(child1), headers=headers)
 
     data = {'childRoutingSlipNumber': f"{child1.get('number')}", 'parentRoutingSlipNumber': f"{child1.get('number')}"}
@@ -282,7 +285,7 @@ def test_create_routing_slips_search_with_folio_number(client, jwt, app):
 
     # create another routing slip with folo
 
-    payload = get_routing_slip_request(number='99999')
+    payload = get_routing_slip_request(number='999999999')
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
     assert rv.status_code == 201
     payment_account_id = rv.json.get('paymentAccount').get('id')
@@ -351,7 +354,7 @@ def test_create_routing_slips_search_with_receipt(client, jwt, app):
     items = rv.json.get('items')
     assert len(items) == 0
 
-    payload = get_routing_slip_request(number='TEST',
+    payload = get_routing_slip_request(number='TEST12345',
                                        cheque_receipt_numbers=[('211001', PaymentMethod.CASH.value, 100)])
 
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
@@ -414,8 +417,7 @@ def test_update_routing_slip_status(client, jwt, app):
 
     rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
                       data=json.dumps({'status': RoutingSlipStatus.COMPLETE.value}), headers=headers)
-    assert rv.status_code == 200
-    assert rv.json.get('status') == RoutingSlipStatus.COMPLETE.value
+    assert rv.status_code == 400
 
     # Update to NSF and validate the total
     rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
@@ -587,3 +589,52 @@ def test_get_invalid_comments(client, jwt):
     rv = client.get('/api/v1/fas/routing-slips/{}/comments'.format('invalid'), headers=headers)
     assert rv.status_code == 400
     assert rv.json.get('type') == 'FAS_INVALID_ROUTING_SLIP_NUMBER'
+
+
+def test_create_routing_slips_invalid_number(client, jwt, app):
+    """Assert that the rs number validation works."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    payload = get_routing_slip_request(number='123456')
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 400
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    payload = get_routing_slip_request(number='1234567891')
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 400
+
+
+def test_update_routing_slip_writeoff(client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_EDIT.value, Role.FAS_VIEW.value]),
+                           token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(get_routing_slip_request()), headers=headers)
+    rs_number = rv.json.get('number')
+
+    rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
+                      data=json.dumps({'status': RoutingSlipStatus.WRITE_OFF_REQUESTED.value}), headers=headers)
+    assert rv.status_code == 200
+
+    # Update to WRITEOFF_AUTHORIZED and assert 403, as it's not a supervisor token
+    rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
+                      data=json.dumps({'status': RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value}), headers=headers)
+    assert rv.status_code == 403
+
+    # Try CANCEL WRITE_OFF with a supervisor token and assert 200.
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_EDIT.value,
+                                             Role.FAS_REFUND_APPROVER.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
+                      data=json.dumps({'status': RoutingSlipCustomStatus.CANCEL_WRITE_OFF_REQUEST.custom_status}),
+                      headers=headers)
+    assert rv.status_code == 200
+
+    # Change it to WRITEOFF Requested and authorize it.
+    rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
+                      data=json.dumps({'status': RoutingSlipStatus.WRITE_OFF_REQUESTED.value}), headers=headers)
+    rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
+                      data=json.dumps({'status': RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value}), headers=headers)
+    assert rv.status_code == 200

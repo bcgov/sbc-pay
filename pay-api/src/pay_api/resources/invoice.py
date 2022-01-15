@@ -43,9 +43,8 @@ class Invoice(Resource):
     @_tracing.trace()
     def post():
         """Create the payment request records."""
-        current_app.logger.info('<Invoice.post')
         request_json = request.get_json()
-        current_app.logger.debug(request_json)
+        current_app.logger.debug(f'<Payment Request : {request_json}')
         # Validate the input request
         valid_format, errors = schema_utils.validate(request_json, 'payment_request')
 

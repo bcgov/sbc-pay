@@ -46,7 +46,6 @@ class DirectPayService(PaymentSystemService, OAuthService):
     def get_payment_system_url_for_invoice(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
         today = current_local_time().strftime(PAYBC_DATE_FORMAT)
-
         url_params_dict = {'trnDate': today,
                            'pbcRefNumber': current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER'),
                            'glDate': today,
@@ -63,6 +62,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         url_params_dict['hashValue'] = HashingService.encode(unquote_plus(url_params))
         encoded_query_params = urlencode(url_params_dict)  # encode it again to inlcude the hash
         paybc_url = current_app.config.get('PAYBC_DIRECT_PAY_PORTAL_URL')
+        current_app.logger.debug(f'PayBC URL for {invoice.id} -> {paybc_url}?{encoded_query_params}')
         return f'{paybc_url}?{encoded_query_params}'
 
     @staticmethod
@@ -109,12 +109,8 @@ class DirectPayService(PaymentSystemService, OAuthService):
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number for direct pay."""
-        current_app.logger.debug('<create_invoice_direct_pay')
-
         invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id,
                                                                       generate_transaction_number(invoice.id), None)
-
-        current_app.logger.debug('>create_invoice_direct_pay')
         return invoice_reference
 
     def update_invoice(self, payment_account: PaymentAccount,  # pylint:disable=too-many-arguments
@@ -141,6 +137,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
     def process_cfs_refund(self, invoice: InvoiceModel):
         """Process refund in CFS."""
+        current_app.logger.debug(f'Processing refund for {invoice.id}')
         super()._publish_refund_to_mailer(invoice)
         payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
         payment.payment_status_code = PaymentStatus.REFUNDED.value
@@ -149,6 +146,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Get the receipt details by calling PayBC web service."""
         # If pay_response_url is present do all the pre-check, else check the status by using the invoice id
+        current_app.logger.debug(f'Getting receipt details {invoice_reference.invoice_id}. {pay_response_url}')
         if pay_response_url is not None:
             parsed_args = parse_url_params(pay_response_url)
 

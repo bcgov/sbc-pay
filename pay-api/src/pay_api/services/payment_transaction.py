@@ -200,17 +200,19 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
     @staticmethod
     def create_transaction_for_invoice(invoice_id: int, request_json: Dict) -> PaymentTransaction:
         """Create transaction record for invoice, by creating a payment record if doesn't exist."""
-        current_app.logger.debug('<create transaction')
         # Lookup invoice record
         invoice: Invoice = Invoice.find_by_id(invoice_id, skip_auth_check=True)
         if not invoice.id:
             raise BusinessException(Error.INVALID_INVOICE_ID)
+        current_app.logger.info(f'Creating a transaction record for invoice {invoice_id}, '
+                                f'{invoice.payment_method_code}, {invoice.invoice_status_code}')
         if invoice.payment_method_code == PaymentMethod.PAD.value:  # No transaction needed for PAD invoices.
             raise BusinessException(Error.INVALID_TRANSACTION)
 
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
             payment_method=invoice.payment_method_code
         )
+        current_app.logger.debug(f'Created Pay System instance : {pay_system_service}')
         # Check if return url is valid
         PaymentTransaction._validate_redirect_url_and_throw_error(
             invoice.payment_method_code, request_json.get('clientSystemUrl')
@@ -238,6 +240,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
     @staticmethod
     def _create_transaction(payment: Payment, request_json: Dict, invoice: Invoice = None):
         # Cannot start transaction on completed payment
+        current_app.logger.info(f'Creating transactional record {payment.invoice_number}, '
+                                f'{payment.payment_status_code}')
         if payment.payment_status_code in (PaymentStatus.COMPLETED.value, PaymentStatus.DELETED.value):
             raise BusinessException(Error.COMPLETED_PAYMENT)
 
@@ -249,6 +253,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         # If there are active transactions (status=CREATED), then invalidate all of them and create a new one.
         existing_transaction = PaymentTransactionModel.find_active_by_payment_id(payment.id)
         if existing_transaction and existing_transaction.status_code != TransactionStatus.CANCELLED.value:
+            current_app.logger.info('Found existing transaction. Setting as CANCELLED.')
             existing_transaction.status_code = TransactionStatus.CANCELLED.value
             existing_transaction.transaction_end_time = datetime.now()
             existing_transaction.save()
@@ -343,20 +348,24 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             raise BusinessException(Error.INVALID_TRANSACTION_ID)
         if transaction_dao.status_code == TransactionStatus.COMPLETED.value:
             raise BusinessException(Error.INVALID_TRANSACTION)
-
+        current_app.logger.info(f'Updating transaction record for {transaction_id}, {transaction_dao.status_code}')
         payment: Payment = Payment.find_by_id(transaction_dao.payment_id)
         payment_account: PaymentAccount = PaymentAccount.find_by_id(payment.payment_account_id)
+        current_app.logger.info(f'Updating transaction for {payment.invoice_number} ({payment.payment_status_code}), '
+                                f'Account {payment_account.auth_account_id}')
 
         # For transactions other than Credit Card, there could be more than one invoice per payment.
         invoices: [Invoice] = Invoice.find_invoices_for_payment(transaction_dao.payment_id)
 
         if payment.payment_status_code == PaymentStatus.COMPLETED.value:
+            current_app.logger.info('Stale payment found.')
             # if the transaction status is EVENT_FAILED then publish to queue and return, else raise error
             if transaction_dao.status_code == TransactionStatus.EVENT_FAILED.value:
                 transaction_dao.status_code = TransactionStatus.COMPLETED.value
 
                 # Publish status to Queue
                 for invoice in invoices:
+                    current_app.logger.info(f'Publishing stale payment for Invoice {invoice.id}.')
                     PaymentTransaction.publish_status(transaction_dao, invoice)
 
                 return PaymentTransaction.__wrap_dao(transaction_dao.save())
@@ -366,16 +375,17 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
             payment_method=payment.payment_method_code
         )
-
+        current_app.logger.info(f'Pay system instance created {pay_system_service}')
         invoice_reference = InvoiceReference.find_any_active_reference_by_invoice_number(payment.invoice_number)
         try:
             receipt_details = pay_system_service.get_receipt(payment_account, pay_response_url, invoice_reference)
             txn_reason_code = None
+            transaction_dao.pay_system_reason_code = None
         except ServiceUnavailableException as exc:
             txn_reason_code = exc.status
             transaction_dao.pay_system_reason_code = txn_reason_code
             receipt_details = None
-
+        current_app.logger.info(f'Receipt details for {payment.invoice_number} : {receipt_details}')
         if receipt_details:
             PaymentTransaction._update_receipt_details(invoices, payment, receipt_details, transaction_dao)
         else:
@@ -428,6 +438,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                 invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
                 # TODO If it's not PAD, publish message. Refactor and move to pay system service later.
                 if invoice.payment_method_code != PaymentMethod.PAD.value:
+                    current_app.logger.info(f'Release record for invoice : {invoice.id} ')
                     PaymentTransaction.publish_status(transaction_dao, invoice)
 
     @staticmethod

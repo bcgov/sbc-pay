@@ -21,7 +21,7 @@ from .base_model import BaseModel
 from .db import db, ma
 
 
-class Refund(BaseModel):
+class Refund(BaseModel):  # pylint:disable=too-many-instance-attributes
     """This class manages all of the base data about Routing Slip Invoice Refund."""
 
     __tablename__ = 'refunds'
@@ -37,6 +37,8 @@ class Refund(BaseModel):
     requested_date = db.Column(db.DateTime)
     reason = db.Column(db.String(250))
     requested_by = db.Column(db.String(50))
+    decision_made_by = db.Column(db.String(50))
+    decision_date = db.Column(db.DateTime)
     details = db.Column(JSONB)
 
     @classmethod

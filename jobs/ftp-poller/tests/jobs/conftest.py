@@ -78,8 +78,8 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
         sess = _db.session()
         for seq in [name for (name,) in sess.execute(text(sequence_sql))]:
             try:
-                sess.execute(text('DROP SEQUENCE public.%s ;' % seq))
-                print('DROP SEQUENCE public.%s ' % seq)
+                sess.execute(text(f'DROP SEQUENCE public.{seq} ;'))
+                print(f'DROP SEQUENCE public.{seq} ')
             except Exception as err:  # NOQA # pylint: disable=broad-except
                 print(f'Error: {err}')
         sess.commit()

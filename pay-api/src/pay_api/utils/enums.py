@@ -216,9 +216,43 @@ class RoutingSlipStatus(Enum):
     LINKED = 'LINKED'
     REFUND_REQUESTED = 'REFUND_REQUESTED'
     REFUND_AUTHORIZED = 'REFUND_AUTHORIZED'
+    REFUND_UPLOADED = 'REFUND_UPLOADED'
     REFUND_REJECTED = 'REFUND_REJECTED'
     REFUND_COMPLETED = 'REFUND_COMPLETED'
-    WRITE_OFF = 'WRITE_OFF'
+    WRITE_OFF_REQUESTED = 'WRITE_OFF_REQUESTED'
+    WRITE_OFF_AUTHORIZED = 'WRITE_OFF_AUTHORIZED'
+    WRITE_OFF_COMPLETED = 'WRITE_OFF_COMPLETED'
+    HOLD = 'HOLD'  # new
+
+
+class RoutingSlipCustomStatus(Enum):
+    """Routing slip  custom statuses."""
+
+    CANCEL_REFUND_REQUEST = 'CANCEL_REFUND_REQUEST', RoutingSlipStatus.ACTIVE.value
+    CANCEL_WRITE_OFF_REQUEST = 'CANCEL_WRITE_OFF_REQUEST', RoutingSlipStatus.ACTIVE.value
+
+    def __new__(cls, custom_status, original_status):
+        """Attributes for the enum."""
+        obj = object.__new__(cls)
+        obj.custom_status = custom_status
+        obj.original_status = original_status
+        return obj
+
+    @classmethod
+    def from_key(cls, key):
+        """Return instance from key of the enum."""
+        try:
+            return RoutingSlipCustomStatus[key]
+        except KeyError:
+            return None
+
+
+class EjvFileType(Enum):
+    """File types."""
+
+    PAYMENT = 'PAYMENT'
+    DISBURSEMENT = 'DISBURSEMENT'
+    REFUND = 'REFUND'
 
 
 class PatchActions(Enum):

@@ -1512,6 +1512,8 @@ components:
       description: <p>Object to store filing information for a payment request. </p>
     FilingType:
       type: object
+      title: Filing Type
+      description: <p>Object to store filing type information for creating a payment request. </p>
       properties:
         filingTypeCode:
           type: string
@@ -1531,10 +1533,11 @@ components:
         quantity:
           type: integer
           description: Quantity
+        fee:
+          type: number
+          description: Variable fee amount
       required:
         - filingTypeCode
-      title: Filing Type
-      description: <p>Object to store filing type information for creating a payment request. </p>
     BusinessInfo:
       type: object
       properties:

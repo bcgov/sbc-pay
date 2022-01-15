@@ -57,7 +57,7 @@ def test_link_rs(session):
     with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_cfs_reverse:
         with patch('pay_api.services.CFSService.create_cfs_receipt') as mock_create_cfs:
             RoutingSlipTask.link_routing_slips()
-            mock_cfs_reverse.assert_called
+            mock_cfs_reverse.assert_called()
             mock_cfs_reverse.assert_called_with(cfs_account, child_rs.number)
             mock_create_cfs.assert_called()
 
@@ -197,13 +197,18 @@ def test_link_to_nsf_rs(session):
     child_2_rs.save()
 
     # Run link process
-    RoutingSlipTask.link_routing_slips()
+    with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs'):
+        RoutingSlipTask.link_routing_slips()
 
     # Now the invoice status should be PAID as RS has recovered.
     assert InvoiceModel.find_by_id(invoice.id).invoice_status_code == InvoiceStatus.PAID.value
+    # Parent Routing slip status should be ACTIVE now
+    assert RoutingSlipModel.find_by_number(parent_rs.number).status == RoutingSlipStatus.ACTIVE.value
 
 
-@pytest.mark.parametrize('rs_status', [RoutingSlipStatus.WRITE_OFF.value, RoutingSlipStatus.REFUND_AUTHORIZED.value])
+@pytest.mark.parametrize('rs_status', [
+    RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value, RoutingSlipStatus.REFUND_AUTHORIZED.value
+])
 def test_receipt_adjustments(session, rs_status):
     """Test routing slip adjustments."""
     child_rs_number = '1234'

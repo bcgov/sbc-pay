@@ -47,10 +47,11 @@ class EjvPayService(PaymentSystemService, OAuthService):
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number."""
-        current_app.logger.debug('<create_invoice')
         invoice_reference: InvoiceReference = None
         # If the account is not billable, then create records,
         if not payment_account.billable:
+            current_app.logger.debug(f'Non billable invoice {invoice.id}, '
+                                     f'Auth Account : {payment_account.auth_account_id}')
             invoice_reference = InvoiceReference.create(invoice.id, generate_transaction_number(invoice.id), None)
         # else Do nothing here as the invoice references are created later.
         return invoice_reference
@@ -74,6 +75,7 @@ class EjvPayService(PaymentSystemService, OAuthService):
             2. If invoice status is PAID
             2.1 Return REFUND_REQUESTED
         """
+        current_app.logger.info(f'Received JV refund for invoice {invoice.id}, {invoice.invoice_status_code}')
         if invoice.invoice_status_code == InvoiceStatus.APPROVED.value:
             if InvoiceReference.find_active_reference_by_invoice_id(invoice.id):
                 return InvoiceStatus.REFUND_REQUESTED.value

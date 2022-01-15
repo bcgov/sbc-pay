@@ -29,7 +29,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
-from pay_api.utils.enums import DisbursementStatus, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import DisbursementStatus, EjvFileType, InvoiceStatus, PaymentMethod
 from sqlalchemy import Date, cast
 
 from tasks.common.cgi_ejv import CgiEjv
@@ -65,7 +65,7 @@ class EjvPartnerDistributionTask(CgiEjv):
 
         # Create a ejv file model record.
         ejv_file_model: EjvFileModel = EjvFileModel(
-            is_distribution=True,
+            file_type=EjvFileType.DISBURSEMENT.value,
             file_ref=cls.get_file_name(),
             disbursement_status_code=DisbursementStatus.UPLOADED.value
         ).flush()

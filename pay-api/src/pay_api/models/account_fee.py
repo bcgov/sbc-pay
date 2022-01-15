@@ -18,14 +18,15 @@ from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 
-from .base_model import BaseModel
+from .audit import Audit
+from .base_model import VersionedModel
 from .corp_type import CorpType
 from .db import db, ma
 from .fee_code import FeeCode
 from .payment_account import PaymentAccount
 
 
-class AccountFee(BaseModel):
+class AccountFee(Audit, VersionedModel):
     """This class manages all of the base data about Account Fees."""
 
     __tablename__ = 'account_fees'

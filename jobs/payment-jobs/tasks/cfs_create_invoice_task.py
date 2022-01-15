@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to create CFS invoices offline."""
+import time
 from typing import List
 
 from flask import current_app
@@ -248,17 +249,34 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             for invoice in account_invoices:
                 lines.extend(invoice.payment_line_items)
                 invoice_total += invoice.total
-
+            invoice_number = account_invoices[-1].id
             try:
                 # Get the first invoice id as the trx number for CFS
-                invoice_response = CFSService.create_account_invoice(transaction_number=account_invoices[-1].id,
+                invoice_response = CFSService.create_account_invoice(transaction_number=invoice_number,
                                                                      line_items=lines,
                                                                      cfs_account=cfs_account)
             except Exception as e:  # NOQA # pylint: disable=broad-except
-                capture_message(f'Error on creating PAD invoice: account id={payment_account.id}, '
-                                f'auth account : {payment_account.auth_account_id}, ERROR : {str(e)}', level='error')
-                current_app.logger.error(e)
-                continue
+                # There is a chance that the error is a timeout from CAS side,
+                # so to make sure we are not missing any data, make a GET call for the invoice we tried to create
+                # and use it if it got created.
+                has_invoice_created: bool = False
+                try:
+                    # add a 60 seconds delay here as safe bet, as CFS takes time to create the invoice and
+                    # since this is a job, delay doesn't cause any performance issue
+                    time.sleep(60)
+                    invoice_response = CFSService.get_invoice(cfs_account=cfs_account, inv_number=invoice_number)
+                    has_invoice_created = invoice_response.json().get('invoice_number', None) == invoice_number
+                except Exception as exc:  # NOQA # pylint: disable=broad-except,unused-variable
+                    # Ignore this error, as it is irrelevant and error on outer level is relevant.
+                    pass
+                # If no invoice is created raise an error for sentry
+                if not has_invoice_created:
+                    capture_message(f'Error on creating PAD invoice: account id={payment_account.id}, '
+                                    f'auth account : {payment_account.auth_account_id}, ERROR : {str(e)}',
+                                    level='error')
+                    current_app.logger.error(e)
+                    continue
+
             # emit account mailer event
             mailer.publish_mailer_events('pad.invoiceCreated', payment_account, {'invoice_total': invoice_total})
             # Iterate invoice and create invoice reference records

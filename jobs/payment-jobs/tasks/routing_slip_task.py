@@ -54,7 +54,6 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value).all()
 
         for routing_slip in routing_slips:
-
             # 1.reverse the child routing slip
             # 2.create receipt to the parent
             # 3.change the payment account of child to parent
@@ -73,24 +72,24 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
 
                 # apply receipt to parent cfs account
                 parent_rs: RoutingSlipModel = RoutingSlipModel.find_by_number(routing_slip.parent_number)
-
                 parent_payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(
                     parent_rs.payment_account_id)
-
                 parent_cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
                     parent_payment_account.id)
-
                 # For linked routing slip receipts, append 'L' to the number to avoid duplicate error
                 receipt_number = f'{routing_slip.number}L'
                 CFSService.create_cfs_receipt(cfs_account=parent_cfs_account,
                                               rcpt_number=receipt_number,
                                               rcpt_date=routing_slip.routing_slip_date.strftime('%Y-%m-%d'),
                                               amount=routing_slip.total,
-                                              payment_method=parent_payment_account.payment_method)
+                                              payment_method=parent_payment_account.payment_method,
+                                              access_token=CFSService.get_fas_token().json().get('access_token'))
 
                 # Add to the list if parent is NSF, to apply the receipts.
                 if parent_rs.status == RoutingSlipStatus.NSF.value:
                     cls._apply_routing_slips_to_pending_invoices(parent_rs)
+                    # Update the parent routing slip status to ACTIVE
+                    parent_rs.status = RoutingSlipStatus.ACTIVE.value
 
                 routing_slip.save()
 
@@ -178,7 +177,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         2. Adjust routing slip receipts for any Refund approved routing slips.
         """
         current_app.logger.info('<<adjust_routing_slips')
-        adjust_statuses = [RoutingSlipStatus.REFUND_AUTHORIZED.value, RoutingSlipStatus.WRITE_OFF.value]
+        adjust_statuses = [RoutingSlipStatus.REFUND_AUTHORIZED.value, RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value]
         # For any pending refund/write off balance should be more than $0
         routing_slips = db.session.query(RoutingSlipModel) \
             .filter(RoutingSlipModel.status.in_(adjust_statuses), RoutingSlipModel.remaining_amount > 0).all()

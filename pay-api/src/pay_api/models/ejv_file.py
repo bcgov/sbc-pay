@@ -15,8 +15,9 @@
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, ForeignKey
+from sqlalchemy import ForeignKey
 
+from pay_api.utils.enums import EjvFileType
 from .base_model import BaseModel
 from .db import db
 
@@ -29,7 +30,7 @@ class EjvFile(BaseModel):  # pylint: disable=too-many-instance-attributes
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
     completed_on = db.Column('completed_on', db.DateTime, nullable=True)
-    is_distribution = db.Column('is_distribution', Boolean(), default=True)
+    file_type = db.Column('file_type', db.String, nullable=True, default=EjvFileType.DISBURSEMENT.value)
     file_ref = db.Column('file_ref', db.String, nullable=False, index=True)
     disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
     message = db.Column('message', db.String, nullable=True, index=False)

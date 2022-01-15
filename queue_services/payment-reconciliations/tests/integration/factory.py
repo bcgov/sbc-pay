@@ -21,10 +21,10 @@ from datetime import datetime
 
 from pay_api.models import (
     CfsAccount, DistributionCode, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem,
-    PaymentTransaction, Receipt, StatementSettings)
+    PaymentTransaction, Receipt, Refund, RoutingSlip, StatementSettings)
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
-    PaymentSystem, TransactionStatus)
+    PaymentSystem, RoutingSlipStatus, TransactionStatus)
 
 
 def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='1234567890', auth_account_id='1234'):
@@ -184,3 +184,59 @@ def factory_distribution(name: str, client: str = '111', reps_centre: str = '222
                             disbursement_distribution_code_id=disbursement_dist_id,
                             start_date=datetime.today().date(),
                             created_by='test').save()
+
+
+def factory_routing_slip_account(
+        number: str = '1234',
+        status: str = CfsAccountStatus.PENDING.value,
+        total: int = 0,
+        remaining_amount: int = 0,
+        routing_slip_date=datetime.now(),
+        payment_method=PaymentMethod.CASH.value,
+        auth_account_id='1234',
+        routing_slip_status=RoutingSlipStatus.ACTIVE.value,
+        refund_amount=0
+) -> PaymentAccount:
+    """Create routing slip and return payment account with it."""
+    payment_account = PaymentAccount(
+        payment_method=payment_method,
+        name=f'Test {auth_account_id}')
+    payment_account.save()
+
+    rs = RoutingSlip(
+        number=number,
+        payment_account_id=payment_account.id,
+        status=routing_slip_status,
+        total=total,
+        remaining_amount=remaining_amount,
+        created_by='test',
+        routing_slip_date=routing_slip_date,
+        refund_amount=refund_amount
+    ).save()
+
+    Payment(payment_system_code=PaymentSystem.FAS.value,
+            payment_account_id=payment_account.id,
+            payment_method_code=PaymentMethod.CASH.value,
+            payment_status_code=PaymentStatus.COMPLETED.value,
+            receipt_number=number,
+            is_routing_slip=True,
+            paid_amount=rs.total,
+            created_by='TEST')
+
+    CfsAccount(status=status, account_id=payment_account.id).save()
+
+    return payment_account
+
+
+def factory_refund(
+        routing_slip_id: int,
+        details={}
+):
+    """Return Factory."""
+    return Refund(
+        routing_slip_id=routing_slip_id,
+        requested_date=datetime.now(),
+        reason='TEST',
+        requested_by='TEST',
+        details=details
+    ).save()

@@ -47,15 +47,16 @@ class InternalPayService(PaymentSystemService, OAuthService):
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number."""
-        current_app.logger.debug('<create_invoice')
         routing_slip = None
         is_zero_dollar_invoice = invoice.total == 0
         invoice_reference: InvoiceReference = None
         if routing_slip_number := invoice.routing_slip:
+            current_app.logger.info(f'Routing slip number {routing_slip_number}, for invoice {invoice.id}')
             routing_slip = RoutingSlipModel.find_by_number(routing_slip_number)
             InternalPayService._validate_routing_slip(routing_slip, invoice)
         if not is_zero_dollar_invoice and routing_slip is not None:
             # creating invoice in cfs is done in job
+            current_app.logger.info(f'FAS Routing slip found with remaining amount : {routing_slip.remaining_amount}')
             routing_slip.remaining_amount = routing_slip.remaining_amount - decimal.Decimal(invoice.total)
             routing_slip.flush()
         else:
@@ -64,7 +65,6 @@ class InternalPayService(PaymentSystemService, OAuthService):
             invoice.invoice_status_code = InvoiceStatus.CREATED.value
             invoice.save()
 
-        current_app.logger.debug('>create_invoice')
         return invoice_reference
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
@@ -104,7 +104,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
             raise BusinessException(Error.NO_FEE_REFUND)
         if not (routing_slip := RoutingSlipModel.find_by_number(routing_slip_number)):
             raise BusinessException(Error.ROUTING_SLIP_REFUND)
-
+        current_app.logger.info(f'Processing refund for {invoice.id}, on routing slip {routing_slip.number}')
         payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
         if payment:
             payment.payment_status_code = PaymentStatus.REFUNDED.value

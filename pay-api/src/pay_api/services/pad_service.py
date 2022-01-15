@@ -49,6 +49,7 @@ class PadService(PaymentSystemService, CFSService):
                        **kwargs) -> CfsAccountModel:
         """Create an account for the PAD transactions."""
         # Create CFS Account model instance and store the bank details, set the status as PENDING
+        current_app.logger.info(f'Creating PAD account details in PENDING status for {identifier}')
         cfs_account = CfsAccountModel()
         cfs_account.bank_number = payment_info.get('bankInstitutionNumber')
         cfs_account.bank_branch_number = payment_info.get('bankTransitNumber')
@@ -63,6 +64,7 @@ class PadService(PaymentSystemService, CFSService):
                 str(payment_info.get('bankAccountNumber')) != cfs_account.bank_account_number:
             # This means, PAD account details have changed. So update banking details for this CFS account
             # Call cfs service to add new bank info.
+            current_app.logger.info(f'Updating PAD account details for {cfs_account}')
             bank_details = CFSService.update_bank_details(name=cfs_account.payment_account.name,
                                                           party_number=cfs_account.cfs_party,
                                                           account_number=cfs_account.cfs_account,
@@ -98,10 +100,11 @@ class PadService(PaymentSystemService, CFSService):
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:  # pylint: disable=unused-argument
         """Return a static invoice number for direct pay."""
-        current_app.logger.debug('<create_invoice_pad_service')
         # Do nothing here as the invoice references are created later.
         # If the account have credit, deduct the credit amount which will be synced when reconciliation runs.
         account_credit = payment_account.credit or 0
+        if account_credit > 0:
+            current_app.logger.info(f'Account credit {account_credit}, found for {payment_account.auth_account_id}')
         payment_account.credit = 0 if account_credit < invoice.total else account_credit - invoice.total
         payment_account.flush()
 

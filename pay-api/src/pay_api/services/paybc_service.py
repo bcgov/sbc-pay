@@ -71,7 +71,6 @@ class PaybcService(PaymentSystemService, CFSService):
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
                        line_items: [PaymentLineItem], invoice: Invoice, **kwargs) -> InvoiceReference:
         """Create Invoice in PayBC."""
-        current_app.logger.debug('<create_invoice')
         # Build line item model array, as that's needed for CFS Service
         line_item_models: List[PaymentLineItemModel] = []
         for line_item in line_items:
@@ -83,7 +82,6 @@ class PaybcService(PaymentSystemService, CFSService):
             invoice.id, invoice_response.json().get('invoice_number', None),
             invoice_response.json().get('pbc_ref_number', None))
 
-        current_app.logger.debug('>create_invoice')
         return invoice_reference
 
     def update_invoice(self,  # pylint: disable=too-many-arguments
