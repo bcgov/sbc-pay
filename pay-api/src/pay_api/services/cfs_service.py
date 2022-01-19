@@ -27,9 +27,10 @@ from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import (
     CFS_ADJ_ACTIVITY_NAME, CFS_BATCH_SOURCE, CFS_CASH_RCPT, CFS_CM_BATCH_SOURCE, CFS_CMS_TRX_TYPE, CFS_CUST_TRX_TYPE,
-    CFS_CUSTOMER_PROFILE_CLASS, CFS_DRAWDOWN_BALANCE, CFS_LINE_TYPE, CFS_LINK_REVERSAL_REASON, CFS_NSF_REVERSAL_REASON,
-    CFS_RCPT_EFT_WIRE, CFS_TERM_NAME, DEFAULT_ADDRESS_LINE_1, DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY,
-    DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE, RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP)
+    CFS_CUSTOMER_PROFILE_CLASS, CFS_DRAWDOWN_BALANCE, CFS_FAS_CUSTOMER_PROFILE_CLASS, CFS_LINE_TYPE,
+    CFS_LINK_REVERSAL_REASON, CFS_NSF_REVERSAL_REASON, CFS_RCPT_EFT_WIRE, CFS_TERM_NAME, DEFAULT_ADDRESS_LINE_1,
+    DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
+    RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP)
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod
 from pay_api.utils.util import current_local_time, generate_transaction_number
 
@@ -40,14 +41,14 @@ class CFSService(OAuthService):
     @classmethod
     def create_cfs_account(cls, identifier: str, contact_info: Dict[str, Any],  # pylint: disable=too-many-arguments
                            payment_info: Dict[str, any] = None,
-                           receipt_method: str = None, site_name=None) -> Dict[str, str]:
+                           receipt_method: str = None, site_name=None, is_fas: bool = False) -> Dict[str, str]:
         """Create a cfs account and return the details."""
         current_app.logger.info(f'Creating CFS Customer Profile Details for : {identifier}')
         party_id = f"{current_app.config.get('CFS_PARTY_PREFIX')}{identifier}"
         access_token = CFSService.get_token().json().get('access_token')
         party = CFSService._create_party(access_token, party_id)
-        account = CFSService._create_paybc_account(access_token, party)
-        site = CFSService._create_site(access_token, account, contact_info, receipt_method, site_name)
+        account = CFSService._create_paybc_account(access_token, party, is_fas)
+        site = CFSService._create_site(access_token, account, contact_info, receipt_method, site_name, is_fas)
         account_details = {
             'party_number': party.get('party_number'),
             'account_number': account.get('account_number'),
@@ -155,13 +156,13 @@ class CFSService(OAuthService):
         return stripped_message
 
     @staticmethod
-    def _create_paybc_account(access_token, party):
+    def _create_paybc_account(access_token, party, is_fas: bool):
         """Create account record in PayBC."""
         current_app.logger.debug('<Creating CFS account')
         account_url = current_app.config.get('CFS_BASE_URL') + f"/cfs/parties/{party.get('party_number', None)}/accs/"
         account: Dict[str, Any] = {
             'account_description': current_app.config.get('CFS_ACCOUNT_DESCRIPTION'),
-            'customer_profile_class': CFS_CUSTOMER_PROFILE_CLASS
+            'customer_profile_class': CFS_FAS_CUSTOMER_PROFILE_CLASS if is_fas else CFS_CUSTOMER_PROFILE_CLASS
         }
 
         account_response = OAuthService.post(account_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
@@ -170,7 +171,8 @@ class CFSService(OAuthService):
         return account_response.json()
 
     @staticmethod
-    def _create_site(access_token, account, contact_info, receipt_method, site_name=None):
+    def _create_site(access_token, account, contact_info, receipt_method,  # pylint: disable=too-many-arguments
+                     site_name=None, is_fas: bool = False):
         """Create site in PayBC."""
         current_app.logger.debug('<Creating CFS site ')
         if not contact_info:
@@ -189,7 +191,7 @@ class CFSService(OAuthService):
             'country': country,
             'customer_site_id': '1',
             'primary_bill_to': 'Y',
-            'customer_profile_class': CFS_CUSTOMER_PROFILE_CLASS
+            'customer_profile_class': CFS_FAS_CUSTOMER_PROFILE_CLASS if is_fas else CFS_CUSTOMER_PROFILE_CLASS
         }
         if receipt_method:
             site['receipt_method'] = receipt_method
