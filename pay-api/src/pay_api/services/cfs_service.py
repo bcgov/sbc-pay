@@ -178,13 +178,15 @@ class CFSService(OAuthService):
         site_url = current_app.config.get(
             'CFS_BASE_URL') + f"/cfs/parties/{account.get('party_number', None)}" \
                               f"/accs/{account.get('account_number', None)}/sites/"
+        country = get_non_null_value(contact_info.get('country'), DEFAULT_COUNTRY)
+        province_tag = 'province' if country == DEFAULT_COUNTRY else 'state'
         site: Dict[str, Any] = {
             'site_name': site_name or 'Site 1',  # Make it dynamic if we ever need multiple sites per account
             'city': get_non_null_value(contact_info.get('city'), DEFAULT_CITY),
             'address_line_1': get_non_null_value(contact_info.get('addressLine1'), DEFAULT_ADDRESS_LINE_1),
             'postal_code': get_non_null_value(contact_info.get('postalCode'), DEFAULT_POSTAL_CODE).replace(' ', ''),
-            'province': get_non_null_value(contact_info.get('province'), DEFAULT_JURISDICTION),
-            'country': get_non_null_value(contact_info.get('country'), DEFAULT_COUNTRY),
+            province_tag: get_non_null_value(contact_info.get('province'), DEFAULT_JURISDICTION),
+            'country': country,
             'customer_site_id': '1',
             'primary_bill_to': 'Y',
             'customer_profile_class': CFS_CUSTOMER_PROFILE_CLASS
