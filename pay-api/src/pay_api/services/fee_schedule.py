@@ -355,7 +355,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         #  Handle it properly later
         if not user.is_staff() and \
                 not (user.is_system() and Role.EXCLUDE_SERVICE_FEES.value in user.roles) \
-                and fee_schedule_model.fee.amount > 0:
+                and fee_schedule_model.fee.amount > 0 and fee_schedule_model.service_fee:
             service_fee = (account_fee.service_fee if account_fee else None) or fee_schedule_model.service_fee
             if service_fee:
                 service_fees = FeeCodeModel.find_by_code(service_fee.code).amount
