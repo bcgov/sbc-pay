@@ -1683,6 +1683,8 @@ components:
           type: string
         updatedBy:
           type: string
+        updatedName:
+          type: string
     Transaction:
       type: object
       properties:
@@ -1891,17 +1893,28 @@ components:
     Refund:
       title: Refund
       type: object
+      description: Model to store refund details.
       properties:
         reason:
           type: string
-          description: Reason for refund
         requestedDate:
           type: string
           description: Date when refund was requested
         requestedBy:
           type: string
           description: Person who initiated refund
-      description: Model to store refund details.
+        id:
+          type: number
+        invoiceId:
+          type: number
+        routingSlipId:
+          type: number
+        decisionMadeBy:
+          type: string
+        decisionDate:
+          type: string
+        details:
+          type: object
   securitySchemes:
     JWT:
       type: http
