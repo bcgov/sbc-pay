@@ -64,7 +64,7 @@ class DistributionCode(Audit, VersionedModel):  # pylint:disable=too-many-instan
 
     distribution_code_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
-    name = db.Column(db.String(50), nullable=True)
+    name = db.Column(db.String(250), nullable=True)
     client = db.Column(db.String(50), nullable=True)
     responsibility_centre = db.Column(db.String(50), nullable=True)
     service_line = db.Column(db.String(50), nullable=True)
