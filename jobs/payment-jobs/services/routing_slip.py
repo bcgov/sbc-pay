@@ -33,7 +33,8 @@ def create_cfs_account(cfs_account: CfsAccountModel, pay_account: PaymentAccount
         cfs_account_details: Dict[str, any] = CFSService.create_cfs_account(
             identifier=pay_account.name,
             contact_info={},
-            site_name=routing_slip.number
+            site_name=routing_slip.number,
+            is_fas=True
         )
         cfs_account.cfs_account = cfs_account_details.get('account_number')
         cfs_account.cfs_party = cfs_account_details.get('party_number')

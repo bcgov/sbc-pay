@@ -30,6 +30,7 @@ from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
+from pay_api.utils.util import generate_transaction_number
 from sentry_sdk import capture_message
 
 from utils import mailer
@@ -259,12 +260,16 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 # There is a chance that the error is a timeout from CAS side,
                 # so to make sure we are not missing any data, make a GET call for the invoice we tried to create
                 # and use it if it got created.
+                current_app.logger.info(e)  # INFO is intentional as sentry alerted only after the following try/catch
                 has_invoice_created: bool = False
                 try:
                     # add a 60 seconds delay here as safe bet, as CFS takes time to create the invoice and
                     # since this is a job, delay doesn't cause any performance issue
                     time.sleep(60)
-                    invoice_response = CFSService.get_invoice(cfs_account=cfs_account, inv_number=invoice_number)
+                    invoice_number = generate_transaction_number(str(invoice_number))
+                    invoice_response = CFSService.get_invoice(
+                        cfs_account=cfs_account, inv_number=invoice_number
+                    )
                     has_invoice_created = invoice_response.json().get('invoice_number', None) == invoice_number
                 except Exception as exc:  # NOQA # pylint: disable=broad-except,unused-variable
                     # Ignore this error, as it is irrelevant and error on outer level is relevant.
