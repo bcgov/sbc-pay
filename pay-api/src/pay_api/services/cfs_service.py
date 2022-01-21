@@ -383,7 +383,7 @@ class CFSService(OAuthService):
             # Check if a line with same GL code exists, if YES just add up the amount. if NO, create a new line.
             line = lines_map[distribution_code.distribution_code_id]
 
-            if line is None:
+            if not line:
                 index = index + 1
                 distribution = [dict(
                     dist_line_number=index,
@@ -406,7 +406,7 @@ class CFSService(OAuthService):
             else:
                 # Add up the price and distribution
                 line['unit_price'] = line['unit_price'] + cls._get_amount(line_item.total, negate)
-                line['distribution']['amount'] = line['distribution']['amount'] + \
+                line['distribution'][0]['amount'] = line['distribution'][0]['amount'] + \
                     cls._get_amount(line_item.total, negate)
 
             lines_map[distribution_code.distribution_code_id] = line
@@ -415,7 +415,8 @@ class CFSService(OAuthService):
                 service_fee_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
                     distribution_code.service_fee_distribution_code_id)
                 service_line = lines_map[service_fee_distribution.distribution_code_id]
-                if service_line is None:
+
+                if not service_line:
                     index = index + 1
                     service_line = {
                         'line_number': index,
@@ -442,7 +443,7 @@ class CFSService(OAuthService):
                     # Add up the price and distribution
                     service_line['unit_price'] = service_line['unit_price'] + \
                         cls._get_amount(line_item.service_fees, negate)
-                    service_line['distribution']['amount'] = service_line['distribution']['amount'] + \
+                    service_line['distribution'][0]['amount'] = service_line['distribution'][0]['amount'] + \
                         cls._get_amount(line_item.service_fees, negate)
                 lines_map[service_fee_distribution.distribution_code_id] = service_line
         return list(lines_map.values())
