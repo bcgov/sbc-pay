@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" contentScriptType="application/ecmascript" contentStyleType="text/css" height="378px" preserveAspectRatio="none" style="width:546px;height:378px;background:#FFFFFF;" version="1.1" viewBox="0 0 546 378" width="546px" zoomAndPan="magnify"><defs><filter height="300%" id="ffozfocnq7w6k" width="300%" x="-1" y="-1"><feGaussianBlur result="blurOut" stdDeviation="2.0"/><feColorMatrix in="blurOut" result="blurOut2" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .4 0"/><feOffset dx="4.0" dy="4.0" in="blurOut2" result="blurOut3"/><feBlend in="SourceGraphic" in2="blurOut3" mode="normal"/></filter></defs><g><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:5.0,5.0;" x1="40" x2="40" y1="40.4883" y2="334.9727"/><line style="stroke:#A80036;stroke-width:1.0;stroke-dasharray:5.0,5.0;" x1="121" x2="121" y1="40.4883" y2="334.9727"/><rect fill="#FEFECE" filter="url(#ffozfocnq7w6k)" height="30.4883" style="stroke:#A80036;stroke-width:1.5;" width="66" x="5" y="5"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="52" x="12" y="25.5352">Pay_API</text><rect fill="#FEFECE" filter="url(#ffozfocnq7w6k)" height="30.4883" style="stroke:#A80036;stroke-width:1.5;" width="66" x="5" y="333.9727"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="52" x="12" y="354.5078">Pay_API</text><rect fill="#FEFECE" filter="url(#ffozfocnq7w6k)" height="30.4883" style="stroke:#A80036;stroke-width:1.5;" width="69" x="85" y="5"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="55" x="92" y="25.5352">CFS_API</text><rect fill="#FEFECE" filter="url(#ffozfocnq7w6k)" height="30.4883" style="stroke:#A80036;stroke-width:1.5;" width="69" x="85" y="333.9727"/><text fill="#000000" font-family="sans-serif" font-size="14" lengthAdjust="spacing" textLength="55" x="92" y="354.5078">CFS_API</text><polygon fill="#A80036" points="109.5,67.7988,119.5,71.7988,109.5,75.7988,113.5,71.7988" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="40" x2="115.5" y1="71.7988" y2="71.7988"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="50" x="47" y="67.0566">/parties</text><polygon fill="#A80036" points="51,94.4541,41,98.4541,51,102.4541,47,98.4541" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="45" x2="120.5" y1="98.4541" y2="98.4541"/><path d="M126,84.7988 L126,109.7988 L537,109.7988 L537,94.7988 L527,84.7988 L126,84.7988 " fill="#FBFB77" filter="url(#ffozfocnq7w6k)" style="stroke:#A80036;stroke-width:1.0;"/><path d="M527,84.7988 L527,94.7988 L537,94.7988 L527,84.7988 " fill="#FBFB77" style="stroke:#A80036;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="390" x="132" y="102.3672">Send customer name as the entity number or unique number ?</text><polygon fill="#A80036" points="109.5,136.4199,119.5,140.4199,109.5,144.4199,113.5,140.4199" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="40" x2="115.5" y1="140.4199" y2="140.4199"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="35" x="47" y="135.6777">/accs</text><polygon fill="#A80036" points="51,163.0752,41,167.0752,51,171.0752,47,167.0752" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="45" x2="120.5" y1="167.0752" y2="167.0752"/><path d="M126,153.4199 L126,178.4199 L347,178.4199 L347,163.4199 L337,153.4199 L126,153.4199 " fill="#FBFB77" filter="url(#ffozfocnq7w6k)" style="stroke:#A80036;stroke-width:1.0;"/><path d="M337,153.4199 L337,163.4199 L347,163.4199 L337,153.4199 " fill="#FBFB77" style="stroke:#A80036;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="200" x="132" y="170.9883">Create account with name BCR ?</text><polygon fill="#A80036" points="109.5,205.041,119.5,209.041,109.5,213.041,113.5,209.041" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="40" x2="115.5" y1="209.041" y2="209.041"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="37" x="47" y="204.2988">/sites</text><polygon fill="#A80036" points="51,231.6963,41,235.6963,51,239.6963,47,235.6963" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="45" x2="120.5" y1="235.6963" y2="235.6963"/><path d="M126,222.041 L126,247.041 L537,247.041 L537,232.041 L527,222.041 L126,222.041 " fill="#FBFB77" filter="url(#ffozfocnq7w6k)" style="stroke:#A80036;stroke-width:1.0;"/><path d="M527,222.041 L527,232.041 L537,232.041 L527,222.041 " fill="#FBFB77" style="stroke:#A80036;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="390" x="132" y="239.6094">Create site with hard coded values as no address is provided ?</text><polygon fill="#A80036" points="109.5,273.6621,119.5,277.6621,109.5,281.6621,113.5,277.6621" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="40" x2="115.5" y1="277.6621" y2="277.6621"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="39" x="47" y="272.9199">/rcpts</text><polygon fill="#A80036" points="51,300.3174,41,304.3174,51,308.3174,47,304.3174" style="stroke:#A80036;stroke-width:1.0;"/><line style="stroke:#A80036;stroke-width:1.0;" x1="45" x2="120.5" y1="304.3174" y2="304.3174"/><path d="M126,290.6621 L126,315.6621 L406,315.6621 L406,300.6621 L396,290.6621 L126,290.6621 " fill="#FBFB77" filter="url(#ffozfocnq7w6k)" style="stroke:#A80036;stroke-width:1.0;"/><path d="M396,290.6621 L396,300.6621 L406,300.6621 L396,290.6621 " fill="#FBFB77" style="stroke:#A80036;stroke-width:1.0;"/><text fill="#000000" font-family="sans-serif" font-size="13" lengthAdjust="spacing" textLength="259" x="132" y="308.2305">Create receipt with number as RS number</text><!--MD5=[1fdbf365f53a6066798b782b97126c7e]
+@startuml fas/routing_slip
+
+Pay_API -> CFS_API: /parties
+CFS_API -> Pay_API : 
+note right
+  Send customer name as the entity number or unique number ?
+end note
+
+Pay_API -> CFS_API: /accs
+CFS_API -> Pay_API : 
+note right
+  Create account with name BCR ?
+end note
+
+
+Pay_API -> CFS_API: /sites
+CFS_API -> Pay_API : 
+note right
+  Create site with hard coded values as no address is provided ?
+end note
+
+
+Pay_API -> CFS_API: /rcpts
+CFS_API -> Pay_API : 
+
+note right
+  Create receipt with number as RS number
+end note
+
+
+@enduml
+
+PlantUML version 1.2021.10(Mon Aug 30 06:43:48 PDT 2021)
+(GPL source distribution)
+Java Runtime: OpenJDK Runtime Environment
+JVM: OpenJDK 64-Bit Server VM
+Default Encoding: UTF-8
+Language: en
+Country: CA
+--></g></svg>
