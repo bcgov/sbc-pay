@@ -166,6 +166,10 @@ class DirectPayService(PaymentSystemService, OAuthService):
             # Get the transaction number from invoice reference
             paybc_transaction_number = invoice_reference.invoice_number
 
+        # If transaction number cannot be found, return None
+        if not paybc_transaction_number:
+            return None
+
         # Call PAYBC web service, get access token and use it in get txn call
         access_token = self.__get_token().json().get('access_token')
 
