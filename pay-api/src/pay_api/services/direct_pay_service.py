@@ -147,7 +147,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         """Get the receipt details by calling PayBC web service."""
         # If pay_response_url is present do all the pre-check, else check the status by using the invoice id
         current_app.logger.debug(f'Getting receipt details {invoice_reference.invoice_id}. {pay_response_url}')
-        if pay_response_url is not None:
+        if pay_response_url:
             parsed_args = parse_url_params(pay_response_url)
 
             # validate if hashValue matches with rest of the values hashed
@@ -165,6 +165,10 @@ class DirectPayService(PaymentSystemService, OAuthService):
         else:
             # Get the transaction number from invoice reference
             paybc_transaction_number = invoice_reference.invoice_number
+
+        # If transaction number cannot be found, return None
+        if not paybc_transaction_number:
+            return None
 
         # Call PAYBC web service, get access token and use it in get txn call
         access_token = self.__get_token().json().get('access_token')

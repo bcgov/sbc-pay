@@ -385,6 +385,9 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             txn_reason_code = exc.status
             transaction_dao.pay_system_reason_code = txn_reason_code
             receipt_details = None
+        except Exception as exc:  # noqa pylint: disable=unused-variable, broad-except
+            receipt_details = None
+
         current_app.logger.info(f'Receipt details for {payment.invoice_number} : {receipt_details}')
         if receipt_details:
             PaymentTransaction._update_receipt_details(invoices, payment, receipt_details, transaction_dao)
