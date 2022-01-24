@@ -147,7 +147,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         """Get the receipt details by calling PayBC web service."""
         # If pay_response_url is present do all the pre-check, else check the status by using the invoice id
         current_app.logger.debug(f'Getting receipt details {invoice_reference.invoice_id}. {pay_response_url}')
-        if pay_response_url is not None:
+        if pay_response_url:
             parsed_args = parse_url_params(pay_response_url)
 
             # validate if hashValue matches with rest of the values hashed

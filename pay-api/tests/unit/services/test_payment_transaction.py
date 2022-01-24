@@ -387,11 +387,11 @@ def test_transaction_update_on_paybc_connection_error(session, stan_server):
     # Mock here that the invoice update fails here to test the rollback scenario
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectionError('mocked error')):
         transaction = PaymentTransactionService.update_transaction(transaction.id,
-                                                                   pay_response_url='receipt_number=123451')
+                                                                   pay_response_url=None)
         assert transaction.pay_system_reason_code == 'SERVICE_UNAVAILABLE'
     with patch('pay_api.services.oauth_service.requests.post', side_effect=ConnectTimeout('mocked error')):
         transaction = PaymentTransactionService.update_transaction(transaction.id,
-                                                                   pay_response_url='receipt_number=123451')
+                                                                   pay_response_url=None)
         assert transaction.pay_system_reason_code == 'SERVICE_UNAVAILABLE'
 
     assert transaction is not None
