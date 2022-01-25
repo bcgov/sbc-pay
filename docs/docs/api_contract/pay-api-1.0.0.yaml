@@ -1630,6 +1630,8 @@ components:
             - APPROVED
             - COMPLETED
             - PAD Invoice Approved
+            - REFUND_REQUESTED
+            - REFUNDED
         references:
           type: array
           items:
