@@ -89,7 +89,7 @@ class BcolService(PaymentSystemService, OAuthService):
             current_app.logger.debug(f'BCOL Response : {response_json}')
             pay_response.raise_for_status()
         except HTTPError as bol_err:
-            current_app.logger.info(bol_err)
+            current_app.logger.error(bol_err)
             error_type: str = response_json.get('type')
             if error_type.isdigit():
                 error = get_bcol_error(int(error_type))
