@@ -48,6 +48,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         self._status_code: str = None
         self._total: Decimal = None
         self._remaining_amount: Decimal = None
+        self._total_usd: Decimal = None
 
     @property
     def _dao(self):
@@ -64,6 +65,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         self.payment_account_id: int = self._dao.payment_account_id
         self.total: Decimal = self._dao.total
         self.remaining_amount: Decimal = self._dao.remaining_amount
+        self._total_usd: Decimal = self._dao.total_usd
 
     @property
     def id(self):
@@ -130,6 +132,17 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         """Set the amount."""
         self._remaining_amount = value
         self._dao.remaining_amount = value
+
+    @property
+    def total_usd(self):
+        """Return the usd total."""
+        return self._total_usd
+
+    @total_usd.setter
+    def total_usd(self, value: Decimal):
+        """Set the usd total."""
+        self._total_usd = value
+        self._dao.total_usd = value
 
     def commit(self):
         """Save the information to the DB."""
@@ -283,6 +296,9 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
 
         total = sum(float(payment.get('paidAmount')) for payment in request_json.get('payments'))
 
+        # Calculate Total USD
+        total_usd = sum(float(payment.get('paidUsdAmount', 0)) for payment in request_json.get('payments'))
+
         # Create a routing slip record.
         routing_slip: RoutingSlipModel = RoutingSlipModel(
             number=rs_number,
@@ -290,7 +306,8 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             status=RoutingSlipStatus.ACTIVE.value,
             total=total,
             remaining_amount=total,
-            routing_slip_date=string_to_date(request_json.get('routingSlipDate'))
+            routing_slip_date=string_to_date(request_json.get('routingSlipDate')),
+            total_usd=total_usd if total_usd > 0 else None
         ).flush()
 
         for payment in request_json.get('payments'):
@@ -304,7 +321,8 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                 is_routing_slip=True,
                 paid_amount=payment.get('paidAmount'),
                 payment_date=string_to_date(payment.get('paymentDate')) if payment.get('paymentDate') else None,
-                created_by=kwargs['user'].user_name
+                created_by=kwargs['user'].user_name,
+                paid_usd_amount=payment.get('paidUsdAmount', None)
             ).flush()
 
         routing_slip.commit()

@@ -34,3 +34,15 @@ def test_payment(session):
     payment = factory_payment()
     payment.save()
     assert payment.id is not None
+
+
+def test_payment_usd_payment(session):
+    """Assert a payment with usd payment is stored.
+
+    Start with a blank database.
+    """
+    payment = Payment(payment_system_code='PAYBC', payment_method_code='CC',
+                      payment_status_code='CREATED', paid_usd_amount=100)
+    payment.save()
+    assert payment.id is not None
+    assert payment.paid_usd_amount == 100

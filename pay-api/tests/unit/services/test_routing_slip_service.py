@@ -77,3 +77,68 @@ def test_create_routing_slip(session, staff_user_mock):
     cfs_account_model: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
         rs.get('payment_account').get('id'))
     assert cfs_account_model.status == CfsAccountStatus.PENDING.value
+
+
+def test_create_routing_slip_usd_one_of_payments(session, staff_user_mock):
+    """Create a routing slip."""
+    routing_slip_payload: Dict[str, any] = {
+        'number': '1234567890',
+        'routingSlipDate': datetime.now().strftime(DT_SHORT_FORMAT),
+        'paymentAccount': {
+            'accountName': 'TEST'
+        },
+        'payments': [{
+            'paymentMethod': PaymentMethod.CHEQUE.value,
+            'paymentDate': datetime.now().strftime(DT_SHORT_FORMAT),
+            'chequeReceiptNumber': '123',
+            'paidAmount': 100
+        },
+            {
+                'paymentMethod': PaymentMethod.CHEQUE.value,
+                'paymentDate': datetime.now().strftime(DT_SHORT_FORMAT),
+                'chequeReceiptNumber': '123',
+                'paidAmount': 100,
+                'paidUsdAmount': 80
+            }
+        ]
+    }
+
+    rs = RoutingSlip_service.create(routing_slip_payload)
+    assert rs
+    assert rs.get('total_usd') == 80
+    cfs_account_model: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
+        rs.get('payment_account').get('id'))
+    assert cfs_account_model.status == CfsAccountStatus.PENDING.value
+
+
+def test_create_routing_slip_usd_both_payments(session, staff_user_mock):
+    """Create a routing slip."""
+    routing_slip_payload: Dict[str, any] = {
+        'number': '1234567890',
+        'routingSlipDate': datetime.now().strftime(DT_SHORT_FORMAT),
+        'paymentAccount': {
+            'accountName': 'TEST'
+        },
+        'payments': [{
+            'paymentMethod': PaymentMethod.CHEQUE.value,
+            'paymentDate': datetime.now().strftime(DT_SHORT_FORMAT),
+            'chequeReceiptNumber': '123',
+            'paidAmount': 120,
+            'paidUsdAmount': 100
+        },
+            {
+                'paymentMethod': PaymentMethod.CHEQUE.value,
+                'paymentDate': datetime.now().strftime(DT_SHORT_FORMAT),
+                'chequeReceiptNumber': '123',
+                'paidAmount': 100,
+                'paidUsdAmount': 80
+            }
+        ]
+    }
+
+    rs = RoutingSlip_service.create(routing_slip_payload)
+    assert rs
+    assert rs.get('total_usd') == 180
+    cfs_account_model: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
+        rs.get('payment_account').get('id'))
+    assert cfs_account_model.status == CfsAccountStatus.PENDING.value

@@ -368,6 +368,27 @@ def factory_payment(
     return payment
 
 
+def factory_usd_payment(
+        payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC',
+        payment_status_code: str = PaymentStatus.CREATED.value,
+        invoice_number: str = None,
+        payment_account_id: str = None,
+        invoice_amount=0,
+        paid_usd_amount=0
+):
+    """Return Factory."""
+    payment: Payment = Payment(
+        payment_system_code=payment_system_code,
+        payment_method_code=payment_method_code,
+        payment_status_code=payment_status_code,
+        invoice_number=invoice_number,
+        payment_account_id=payment_account_id,
+        invoice_amount=invoice_amount,
+        paid_usd_amount=paid_usd_amount
+    )
+    return payment
+
+
 def factory_routing_slip(
         number: str = None,
         payment_account_id=None,
@@ -385,6 +406,29 @@ def factory_routing_slip(
         remaining_amount=remaining_amount,
         created_by='test',
         routing_slip_date=routing_slip_date
+    )
+    return routing_slip
+
+
+def factory_routing_slip_usd(
+        number: str = None,
+        payment_account_id=None,
+        status: str = RoutingSlipStatus.ACTIVE.value,
+        total: int = 0,
+        remaining_amount: int = 0,
+        routing_slip_date=datetime.now(),
+        total_usd=0
+):
+    """Return Factory."""
+    routing_slip: RoutingSlip = RoutingSlip(
+        number=number or fake.name(),
+        payment_account_id=payment_account_id,
+        status=status,
+        total=total,
+        remaining_amount=remaining_amount,
+        created_by='test',
+        routing_slip_date=routing_slip_date,
+        total_usd=total_usd
     )
     return routing_slip
 
