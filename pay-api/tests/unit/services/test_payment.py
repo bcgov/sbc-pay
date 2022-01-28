@@ -23,9 +23,10 @@ import pytz
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.services.payment import Payment as Payment_service
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
-from tests.utilities.base_test import (
-    factory_invoice, factory_invoice_reference, factory_payment, factory_usd_payment,
-    factory_payment_account, factory_payment_line_item)
+from tests.utilities.base_test import \
+    (factory_invoice, factory_invoice_reference, factory_payment,
+     factory_payment_account, factory_payment_line_item, factory_usd_payment)
+# noqa: I005
 
 
 def test_payment_saved_from_new(session):

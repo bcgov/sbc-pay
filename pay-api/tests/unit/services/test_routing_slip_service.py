@@ -87,12 +87,13 @@ def test_create_routing_slip_usd_one_of_payments(session, staff_user_mock):
         'paymentAccount': {
             'accountName': 'TEST'
         },
-        'payments': [{
-            'paymentMethod': PaymentMethod.CHEQUE.value,
-            'paymentDate': datetime.now().strftime(DT_SHORT_FORMAT),
-            'chequeReceiptNumber': '123',
-            'paidAmount': 100
-        },
+        'payments': [
+            {
+                'paymentMethod': PaymentMethod.CHEQUE.value,
+                'paymentDate': datetime.now().strftime(DT_SHORT_FORMAT),
+                'chequeReceiptNumber': '123',
+                'paidAmount': 100
+            },
             {
                 'paymentMethod': PaymentMethod.CHEQUE.value,
                 'paymentDate': datetime.now().strftime(DT_SHORT_FORMAT),
@@ -119,13 +120,14 @@ def test_create_routing_slip_usd_both_payments(session, staff_user_mock):
         'paymentAccount': {
             'accountName': 'TEST'
         },
-        'payments': [{
-            'paymentMethod': PaymentMethod.CHEQUE.value,
-            'paymentDate': datetime.now().strftime(DT_SHORT_FORMAT),
-            'chequeReceiptNumber': '123',
-            'paidAmount': 120,
-            'paidUsdAmount': 100
-        },
+        'payments': [
+            {
+                'paymentMethod': PaymentMethod.CHEQUE.value,
+                'paymentDate': datetime.now().strftime(DT_SHORT_FORMAT),
+                'chequeReceiptNumber': '123',
+                'paidAmount': 120,
+                'paidUsdAmount': 100
+            },
             {
                 'paymentMethod': PaymentMethod.CHEQUE.value,
                 'paymentDate': datetime.now().strftime(DT_SHORT_FORMAT),
