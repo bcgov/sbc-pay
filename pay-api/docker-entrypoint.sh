@@ -1,4 +1,4 @@
 #!/bin/sh
 
 echo 'starting application'
-gunicorn -b 0.0.0.0:8080 wsgi:application --timeout 60
+gunicorn --bind 0.0.0.0:8080 --config /opt/app/gunicorn_config.py wsgi:application
