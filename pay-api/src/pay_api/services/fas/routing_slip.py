@@ -307,7 +307,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             total=total,
             remaining_amount=total,
             routing_slip_date=string_to_date(request_json.get('routingSlipDate')),
-            total_usd=total_usd if total_usd > 0 else None
+            total_usd=total_usd
         ).flush()
 
         for payment in request_json.get('payments'):
