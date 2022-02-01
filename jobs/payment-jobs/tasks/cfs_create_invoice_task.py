@@ -233,10 +233,11 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
             cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
             if cfs_account is None:
-                # Get the last invoice and look up cfs_account for it, as the account might have got upgraded.
-                cfs_account = CfsAccountModel.find_by_id(account_invoices[0].cfs_account_id)
+                # Get the last cfs_account for it, as the account might have got upgraded from PAD to DRAWDOWN.
+                cfs_account: CfsAccountModel = CfsAccountModel.query.\
+                    filter(CfsAccountModel.account_id == payment_account.id).order_by(CfsAccountModel.id.desc()).first()
 
-            # If the CFS Account status is not ACTIVE, raise error and continue
+            # If the CFS Account status is not ACTIVE or INACTIVE (for above case), raise error and continue
             if cfs_account.status not in (CfsAccountStatus.ACTIVE.value, CfsAccountStatus.INACTIVE.value):
                 capture_message(f'CFS Account status is not ACTIVE. for account {payment_account.auth_account_id} '
                                 f'is {payment_account.cfs_account_status}', level='error')
