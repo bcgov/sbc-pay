@@ -237,4 +237,4 @@ class PaymentSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     invoice_amount = fields.Float(data_key='invoice_amount')
     paid_amount = fields.Float(data_key='paid_amount')
     cheque_receipt_number = fields.String(data_key='cheque_receipt_number')
-    paid_usd_amount = fields.Float(data_key='paid_amount')
+    paid_usd_amount = fields.Float(data_key='paid_usd_amount')
