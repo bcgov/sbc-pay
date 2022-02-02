@@ -51,6 +51,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
     routing_slip_date = db.Column(db.Date, nullable=False)
     parent_number = db.Column(db.String(), ForeignKey('routing_slips.number'), nullable=True)
     refund_amount = db.Column(db.Numeric(), nullable=True, default=0)
+    total_usd = db.Column(db.Numeric(), nullable=True)  # Capture total usd payments if one of payments has USD payment
 
     payment_account = relationship(PaymentAccount, foreign_keys=[payment_account_id], lazy='select', innerjoin=True)
     payments = relationship(Payment,

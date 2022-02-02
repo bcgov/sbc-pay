@@ -19,7 +19,7 @@ Test-Suite to ensure that the Roting slip Class is working as expected.
 from faker import Faker
 
 from pay_api.models import RoutingSlip
-from tests.utilities.base_test import factory_payment_account, factory_routing_slip
+from tests.utilities.base_test import factory_payment_account, factory_routing_slip, factory_routing_slip_usd
 
 
 fake = Faker()
@@ -68,3 +68,20 @@ def test_routing_slip_find_search(session):
     res, count = routing_slip.search({}, page=1, limit=1, max_no_records=50, return_all=False)
     assert count == 21
     assert len(res) == 1, 'return all false'
+
+
+def test_routing_slip_usd_creation(session):
+    """Assert a routing slip is stored with total_usd column.
+
+    Start with a blank database.
+    """
+    payment_account = factory_payment_account()
+    payment_account.save()
+
+    rs = factory_routing_slip_usd(payment_account_id=payment_account.id, total_usd=50)
+    rs.save()
+    assert rs.id is not None
+    assert rs.total_usd == 50
+
+    routing_slip = RoutingSlip()
+    assert routing_slip.find_by_number(rs.number) is not None

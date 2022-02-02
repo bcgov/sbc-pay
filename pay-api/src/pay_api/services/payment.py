@@ -57,6 +57,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self._paid_amount: Decimal = None
         self._receipt_number: str = None
         self._created_by: str = None
+        self._paid_usd_amount: Decimal = None
 
     @property
     def _dao(self):
@@ -79,6 +80,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         self.paid_amount: Decimal = self._dao.paid_amount
         self.receipt_number: str = self._dao.receipt_number
         self.created_by: str = self._dao.created_by
+        self.paid_usd_amount: Decimal = self._dao.paid_usd_amount
 
     @property
     def id(self):
@@ -211,6 +213,17 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         """Set the created_by."""
         self._created_by = value
         self._dao.created_by = value
+
+    @property
+    def paid_usd_amount(self):
+        """Return the paid amount if it is paid in USD."""
+        return self._paid_usd_amount
+
+    @paid_usd_amount.setter
+    def paid_usd_amount(self, value: Decimal):
+        """Set the paid amount in USD."""
+        self._paid_usd_amount = value
+        self._dao.paid_usd_amount = value
 
     def commit(self):
         """Save the information to the DB."""

@@ -23,8 +23,10 @@ import pytz
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.services.payment import Payment as Payment_service
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
-from tests.utilities.base_test import (
-    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item)
+from tests.utilities.base_test import \
+    (factory_invoice, factory_invoice_reference, factory_payment,
+     factory_payment_account, factory_payment_line_item, factory_usd_payment)
+# noqa: I005
 
 
 def test_payment_saved_from_new(session):
@@ -522,3 +524,22 @@ def test_failed_payment_after_consolidation(session):
     assert new_payment_1.id != new_payment_2.id
     assert new_payment_2.invoice_amount == payment_1.invoice_amount + payment_2.invoice_amount + \
            payment_3.invoice_amount
+
+
+def test_payment_usd(session):
+    """Assert that the payment with usd is saved to the table."""
+    payment_account = factory_payment_account()
+    payment = factory_usd_payment(paid_usd_amount=100)
+    payment_account.save()
+    payment.save()
+    invoice = factory_invoice(payment_account)
+    invoice.save()
+    factory_invoice_reference(invoice.id).save()
+    p = Payment_service.find_by_id(payment.id)
+
+    assert p is not None
+    assert p.id is not None
+    assert p.payment_system_code is not None
+    assert p.payment_method_code is not None
+    assert p.payment_status_code is not None
+    assert p.paid_usd_amount == 100

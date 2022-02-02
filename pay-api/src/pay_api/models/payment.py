@@ -62,6 +62,8 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
 
     cons_inv_number = db.Column(db.String(50), nullable=True, index=True)
     invoice_amount = db.Column(db.Numeric(), nullable=True)
+    paid_usd_amount = db.Column(db.Numeric(), nullable=True, comment='Amount PAID as part of payment in USD')
+    # Capture payment made in USD
 
     payment_system = relationship(PaymentSystem, foreign_keys=[payment_system_code], lazy='select', innerjoin=True)
     payment_status = relationship(PaymentStatusCode, foreign_keys=[payment_status_code], lazy='select', innerjoin=True)
