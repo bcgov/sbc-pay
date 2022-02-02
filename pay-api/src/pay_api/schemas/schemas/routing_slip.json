@@ -27,6 +27,12 @@
       "title": "Total amount on routing slip",
       "pattern": "^(.*)$"
     },
+    "totalUsd": {
+      "$id": "#/properties/totalUsd",
+      "type": "number",
+      "title": "Total amount on routing slip paid in USD",
+      "pattern": "^(.*)$"
+    },
     "remainingAmount": {
       "$id": "#/properties/remainingAmount",
       "type": "number",

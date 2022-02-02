@@ -52,6 +52,11 @@
       "$id": "#/properties/paidAmount",
       "type": "number",
       "title": "Payment Amount"
+    },
+     "paidUsdAmount": {
+      "$id": "#/properties/paidUsdAmount",
+      "type": "number",
+      "title": "Payment Amount in USD"
     }
   }
 }

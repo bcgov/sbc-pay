@@ -217,3 +217,4 @@ class RoutingSlipSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-an
     invoices = ma.Nested(InvoiceSchema, many=True, data_key='invoices', exclude=['_links'])
     status = fields.String(data_key='status')
     parent_number = fields.String(data_key='parent_number')
+    total_usd = fields.Float(data_key='total')
