@@ -140,6 +140,12 @@ def _save_payment(payment_date, inv_number, invoice_amount,  # pylint: disable=t
         # pull out failed payment record if it exists and no COMPLETED payments are present.
         if not payment:
             payment = _get_payment_by_inv_number_and_status(inv_number, PaymentStatus.FAILED.value)
+    elif status == PaymentStatus.COMPLETED.value:
+        # if the payment status is COMPLETED, then make sure there are
+        # no other COMPLETED payment for same invoice_number.If found, return. This is to avoid duplicate entries.
+        payment = _get_payment_by_inv_number_and_status(inv_number, PaymentStatus.COMPLETED.value)
+        if payment:
+            return
 
     if not payment:
         payment = PaymentModel()
@@ -232,16 +238,18 @@ async def _process_consolidated_invoices(row):
         record_type = _get_row_value(row, Column.RECORD_TYPE)
         logger.debug('Processing invoice :  %s', inv_number)
 
-        inv_references: List[InvoiceReferenceModel] = db.session.query(InvoiceReferenceModel). \
-            filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.ACTIVE.value). \
-            filter(InvoiceReferenceModel.invoice_number == inv_number). \
-            all()
+        inv_references = _find_invoice_reference_by_number_and_status(inv_number, InvoiceReferenceStatus.ACTIVE.value)
 
         payment_account: PaymentAccountModel = _get_payment_account(row)
 
         if target_txn_status.lower() == Status.PAID.value.lower():
             logger.debug('Fully PAID payment.')
-            if not inv_references:
+            # if no inv reference is found, and if there are no COMPLETED inv ref, raise alert
+            completed_inv_references = _find_invoice_reference_by_number_and_status(
+                inv_number, InvoiceReferenceStatus.COMPLETED.value
+            )
+
+            if not inv_references and not completed_inv_references:
                 logger.error('No invoice found for %s in the system, and cannot process %s.', inv_number, row)
                 capture_message(f'No invoice found for {inv_number} in the system, and cannot process {row}.',
                                 level='error')
@@ -259,6 +267,14 @@ async def _process_consolidated_invoices(row):
             logger.error('Target Transaction Type is received as %s for PAD, and cannot process %s.', target_txn, row)
             capture_message(
                 f'Target Transaction Type is received as {target_txn} for PAD, and cannot process.', level='error')
+
+
+def _find_invoice_reference_by_number_and_status(inv_number: str, status: str):
+    inv_references: List[InvoiceReferenceModel] = db.session.query(InvoiceReferenceModel). \
+        filter(InvoiceReferenceModel.status_code == status). \
+        filter(InvoiceReferenceModel.invoice_number == inv_number). \
+        all()
+    return inv_references
 
 
 async def _process_unconsolidated_invoices(row):
