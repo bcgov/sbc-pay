@@ -27,4 +27,4 @@ urllib3==1.26.7
 -e git+https://github.com/bcgov/lear.git#egg=entity_queue_common&subdirectory=queue_services/common
 -e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
 # -e git+https://github.com/bcgov/sbc-pay.git@refunds#egg=pay-api&subdirectory=pay-api
--e git+https://github.com/bcgov/sbc-pay.git@main#egg=pay-api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-pay.git@8d836db213914c9fef471a051bf42c8f25c97cb1#egg=pay-api&subdirectory=pay-api
