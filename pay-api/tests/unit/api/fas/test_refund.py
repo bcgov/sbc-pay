@@ -62,6 +62,7 @@ def test_refund_routing_slips(client, jwt):
 
     rv = client.get('/api/v1/fas/routing-slips/{}'.format(rs_number), headers=headers)
     assert rv.json.get('status') == RoutingSlipStatus.REFUND_REQUESTED.value
+    assert RoutingSlipStatus.REFUND_AUTHORIZED.value not in rv.json.get('allowedStatuses')
     refund = rv.json.get('refunds')[0]
     assert refund_details is not None
     assert refund_details.get('name') in refund.get('details').get('name')

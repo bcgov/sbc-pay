@@ -54,7 +54,7 @@ def test_create_routing_slips(client, jwt, payload):
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, 'routing_slip')[0]
     allowed_statuses = rv.json.get('allowedStatuses')
-    assert len(allowed_statuses) == len(RoutingSlipStatusTransitionService.get_possible_transitions('ACTIVE'))
+    assert len(allowed_statuses) == len(RoutingSlipStatusTransitionService.STATUS_TRANSITIONS.get('ACTIVE'))
 
 
 def test_create_routing_slips_search(client, jwt, app):
