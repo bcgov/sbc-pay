@@ -89,7 +89,7 @@ cd: update-env
 	oc -n "$(OPENSHIFT_REPOSITORY)-tools" tag $(DOCKER_NAME):test $(DOCKER_NAME):$(TAG_NAME)
 else
 TAG_NAME=dev
-cd: build update-env tag
+cd: build tag
 endif
 
 build: ## Build the docker container

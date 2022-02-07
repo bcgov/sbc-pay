@@ -19,6 +19,9 @@ from typing import Dict, List
 from pay_api.exceptions import BusinessException
 from pay_api.utils.enums import RoutingSlipCustomStatus, RoutingSlipStatus
 from pay_api.utils.errors import Error
+from pay_api.utils.user_context import user_context
+from pay_api.models import Refund as RefundModel
+from pay_api.models import RoutingSlip as RoutingSlipModel
 
 
 class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -56,15 +59,25 @@ class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-a
     }
 
     @classmethod
-    def get_possible_transitions(cls, current_status: RoutingSlipStatus) -> List[RoutingSlipStatus]:
+    @user_context
+    def get_possible_transitions(cls, rs_model: RoutingSlipModel, **kwargs) -> List[RoutingSlipStatus]:
         """Return all the status transition available."""
-        return RoutingSlipStatusTransitionService.STATUS_TRANSITIONS.get(current_status, [])
+        transition_list: List[RoutingSlipStatus] = RoutingSlipStatusTransitionService.STATUS_TRANSITIONS.get(
+            rs_model.status, [])
+        if RoutingSlipStatus.REFUND_AUTHORIZED.value in transition_list:
+            # self approval not permitted
+            refund_model: RefundModel = RefundModel.find_by_routing_slip_id(rs_model.id)
+            is_same_user = refund_model.requested_by == kwargs['user'].user_name
+            if is_same_user:
+                transition_list.remove(RoutingSlipStatus.REFUND_AUTHORIZED.value)
+
+        return transition_list
 
     @classmethod
-    def validate_possible_transitions(cls, current_status: RoutingSlipStatus,
+    def validate_possible_transitions(cls, rs_model: RoutingSlipModel,
                                       future_status: RoutingSlipStatus):
         """Validate if its a legit status transition."""
-        allowed_statuses = RoutingSlipStatusTransitionService.STATUS_TRANSITIONS.get(current_status, [])
+        allowed_statuses = RoutingSlipStatusTransitionService.get_possible_transitions(rs_model)
         if future_status not in allowed_statuses:
             raise BusinessException(Error.FAS_INVALID_RS_STATUS_CHANGE)
 

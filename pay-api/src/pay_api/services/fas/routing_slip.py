@@ -250,7 +250,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             routing_slip_schema = RoutingSlipSchema()
             routing_slip_dict = routing_slip_schema.dump(routing_slip)
             routing_slip_dict['allowedStatuses'] = RoutingSlipStatusTransitionService.\
-                get_possible_transitions(routing_slip.status)
+                get_possible_transitions(routing_slip)
         return routing_slip_dict
 
     @classmethod
@@ -367,7 +367,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         if patch_action == PatchActions.UPDATE_STATUS:
             # Update the remaining amount as negative total of sum of all totals for that routing slip.
             status = request_json.get('status')
-            RoutingSlipStatusTransitionService.validate_possible_transitions(routing_slip.status, status)
+            RoutingSlipStatusTransitionService.validate_possible_transitions(routing_slip, status)
             status = RoutingSlipStatusTransitionService.get_actual_status(status)
 
             if status == RoutingSlipStatus.NSF.value:

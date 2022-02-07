@@ -18,9 +18,13 @@
 import os
 
 
-workers = int(os.environ.get('GUNICORN_PROCESSES', '1'))  # pylint: disable=invalid-name
-threads = int(os.environ.get('GUNICORN_THREADS', '1'))  # pylint: disable=invalid-name
-timeout = int(os.environ.get('GUNICORN_TIMEOUT', '30'))  # pylint: disable=invalid-name
+workers = int(os.environ.get('GUNICORN_PROCESSES', '2'))
+worker_class = os.environ.get('GUNICORN_WORKER_CLASS', 'gevent')
+worker_connections = int(os.environ.get('GUNICORN_WORKER_CONNECIONS', '1000'))
+threads = int(os.environ.get('GUNICORN_THREADS', '1'))
+timeout = int(os.environ.get('GUNICORN_TIMEOUT', '360'))
+keepalive = int(os.environ.get('GUNICORN_KEEPALIVE', '2'))
+
 
 forwarded_allow_ips = '*'  # pylint: disable=invalid-name
 secure_scheme_headers = {'X-Forwarded-Proto': 'https'}  # pylint: disable=invalid-name
