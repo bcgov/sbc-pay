@@ -213,11 +213,13 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                 no_of_cash += 1
                 # TODO check if the payment is CAD or USD.
                 total_cash_cad += float(routing_slip.total)
-                total_cash_usd += float(routing_slip.total_usd)
+                if routing_slip.total_usd:
+                    total_cash_usd += float(routing_slip.total_usd)
             else:
                 no_of_cheque += 1
                 total_cheque_cad += float(routing_slip.total)
-                total_cheque_usd += float(routing_slip.total_usd)
+                if routing_slip.total_usd:
+                    total_cheque_usd += float(routing_slip.total_usd)
 
         report_dict = dict(
             templateName='routing_slip_report',
