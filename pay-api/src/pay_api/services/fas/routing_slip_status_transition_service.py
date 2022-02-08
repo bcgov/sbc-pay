@@ -76,7 +76,7 @@ class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-a
             current_app.logger.info(f'is_same_user {is_same_user}')
             if is_same_user:
                 current_app.logger.info(f'is_same_user------ {is_same_user}')
-                transition_list.remove(RoutingSlipStatus.REFUND_AUTHORIZED.value)
+                return transition_list[1:]
 
         return transition_list
 
