@@ -22,6 +22,7 @@ from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
+from flask import current_app
 
 
 class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -62,12 +63,19 @@ class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-a
     @user_context
     def get_possible_transitions(cls, rs_model: RoutingSlipModel, **kwargs) -> List[RoutingSlipStatus]:
         """Return all the status transition available."""
+        current_app.logger.info(f'Processing get_possible_transitions fo')
         transition_list: List[RoutingSlipStatus] = RoutingSlipStatusTransitionService.STATUS_TRANSITIONS.get(
             rs_model.status, [])
+        current_app.logger.info(f'transition_list {transition_list}')
         if RoutingSlipStatus.REFUND_AUTHORIZED.value in transition_list:
             # self approval not permitted
             refund_model = RefundModel.find_by_routing_slip_id(rs_model.id)
-            if kwargs['user'].user_name == refund_model.requested_by :
+            current_app.logger.info(f'Type Processing get_possible_transitions for {type(refund_model)}')
+            current_app.logger.info(f'value Processing get_possible_transitions for {refund_model}')
+            is_same_user = refund_model.requested_by == kwargs['user'].user_name
+            current_app.logger.info(f'is_same_user {is_same_user}')
+            if is_same_user:
+                current_app.logger.info(f'is_same_user------ {is_same_user}')
                 transition_list.remove(RoutingSlipStatus.REFUND_AUTHORIZED.value)
 
         return transition_list
