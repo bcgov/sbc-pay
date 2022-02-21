@@ -325,6 +325,18 @@ class CFSService(OAuthService):
         current_app.logger.debug('>Getting token')
         return token_response
 
+    @classmethod
+    def get_bank_info(cls, party_number: str,  # pylint: disable=too-many-arguments
+                      account_number: str,
+                      site_number: str):
+        current_app.logger.debug('<Creating CFS payment details ')
+        access_token: str = CFSService.get_token().json().get('access_token')
+        site_payment_url = current_app.config.get(
+            'CFS_BASE_URL') + f'/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/payment/'
+
+        payment_details = CFSService.get(site_payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+        return payment_details.json()
+
     @staticmethod
     def get_fas_token():
         """Generate oauth token for FAS client which will be used for all communication."""
@@ -409,7 +421,7 @@ class CFSService(OAuthService):
                 # Add up the price and distribution
                 line['unit_price'] = line['unit_price'] + cls._get_amount(line_item.total, negate)
                 line['distribution'][0]['amount'] = line['distribution'][0]['amount'] + \
-                    cls._get_amount(line_item.total, negate)
+                                                    cls._get_amount(line_item.total, negate)
 
             lines_map[distribution_code.distribution_code_id] = line
 
@@ -444,9 +456,9 @@ class CFSService(OAuthService):
                 else:
                     # Add up the price and distribution
                     service_line['unit_price'] = service_line['unit_price'] + \
-                        cls._get_amount(line_item.service_fees, negate)
+                                                 cls._get_amount(line_item.service_fees, negate)
                     service_line['distribution'][0]['amount'] = service_line['distribution'][0]['amount'] + \
-                        cls._get_amount(line_item.service_fees, negate)
+                                                                cls._get_amount(line_item.service_fees, negate)
                 lines_map[service_fee_distribution.distribution_code_id] = service_line
         return list(lines_map.values())
 
