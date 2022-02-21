@@ -90,6 +90,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
             'bankInstitutionNumber': pending_account.bank_number,
             'bankTransitNumber': pending_account.bank_branch_number,
             'bankAccountNumber': pending_account.bank_account_number,
+            'bankAccountName': pay_account.name
         }
 
         # For an existing CFS Account, call update.. This is to handle PAD update when CFS is offline
