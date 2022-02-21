@@ -409,7 +409,7 @@ class CFSService(OAuthService):
                 # Add up the price and distribution
                 line['unit_price'] = line['unit_price'] + cls._get_amount(line_item.total, negate)
                 line['distribution'][0]['amount'] = line['distribution'][0]['amount'] + \
-                                                    cls._get_amount(line_item.total, negate)
+                    cls._get_amount(line_item.total, negate)
 
             lines_map[distribution_code.distribution_code_id] = line
 
@@ -444,9 +444,9 @@ class CFSService(OAuthService):
                 else:
                     # Add up the price and distribution
                     service_line['unit_price'] = service_line['unit_price'] + \
-                                                 cls._get_amount(line_item.service_fees, negate)
+                        cls._get_amount(line_item.service_fees, negate)
                     service_line['distribution'][0]['amount'] = service_line['distribution'][0]['amount'] + \
-                                                                cls._get_amount(line_item.service_fees, negate)
+                        cls._get_amount(line_item.service_fees, negate)
                 lines_map[service_fee_distribution.distribution_code_id] = service_line
         return list(lines_map.values())
 
