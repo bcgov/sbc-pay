@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Generate account statements.
+"""Update bank name for PAD accounts one time.
 
-This module will create statement records for each account.
+This module is a one time job to update the names.
 """
 import os
 import re
@@ -79,6 +79,7 @@ def run_update(pay_account_id, num_records):
         .all()
     access_token: str = CFSService.get_token().json().get('access_token')
     current_app.logger.info(f'<<<< Total number of records founds: {len(pad_accounts)}')
+    current_app.logger.info(f'<<<< records founds: {[accnt.id for accnt in pad_accounts]}')
     if len(pad_accounts) == 0:
         return
 
@@ -99,6 +100,9 @@ def run_update(pay_account_id, num_records):
         save_bank_details(access_token, cfs_account.cfs_party,
                           cfs_account.cfs_account,
                           cfs_account.cfs_site, payment_info)
+
+        current_app.logger.info(
+            f'<<<< Successfully Updated for account id :{payment_account.id} and cfs_account:{cfs_account.id} >>>>')
 
 
 def get_bank_info(party_number: str,  # pylint: disable=too-many-arguments
@@ -147,9 +151,11 @@ def save_bank_details(access_token, party_number: str,  # pylint: disable=too-ma
 
 
 if __name__ == '__main__':
+    # first arg is account id to start with. Pay Account ID
+    # second argument is how many records should it update.Just a stepper for reducing CFS load
     print('len:', len(sys.argv))
     if len(sys.argv) <= 2:
-        print('No valid args passed.Exiting job without running any ***************')
+        print('No valid args passed.Exiting job without running any actions***************')
     COUNT = sys.argv[2] if len(sys.argv) == 3 else 10
     application = create_app()
     application.app_context().push()
