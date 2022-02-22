@@ -325,18 +325,6 @@ class CFSService(OAuthService):
         current_app.logger.debug('>Getting token')
         return token_response
 
-    @classmethod
-    def get_bank_info(cls, party_number: str,  # pylint: disable=too-many-arguments
-                      account_number: str,
-                      site_number: str):
-        current_app.logger.debug('<Creating CFS payment details ')
-        access_token: str = CFSService.get_token().json().get('access_token')
-        site_payment_url = current_app.config.get(
-            'CFS_BASE_URL') + f'/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/payment/'
-
-        payment_details = CFSService.get(site_payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
-        return payment_details.json()
-
     @staticmethod
     def get_fas_token():
         """Generate oauth token for FAS client which will be used for all communication."""
