@@ -74,6 +74,7 @@ def run_update(pay_account_id, num_records):
     pad_accounts: List[PaymentAccountModel] = db.session.query(PaymentAccountModel).filter(
         PaymentAccountModel.payment_method == PaymentMethod.PAD.value) \
         .filter(PaymentAccountModel.id >= pay_account_id) \
+        .order_by(PaymentAccountModel.id.asc()) \
         .limit(num_records) \
         .all()
     access_token: str = CFSService.get_token().json().get('access_token')
@@ -85,7 +86,6 @@ def run_update(pay_account_id, num_records):
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
         current_app.logger.info(
             f'<<<< Running Update for account id :{payment_account.id} and cfs_account:{cfs_account.id} >>>>')
-
         # payment_details = get_bank_info(cfs_account.cfs_party, cfs_account.cfs_account, cfs_account.cfs_site)
         # current_app.logger.info(payment_details)
 
