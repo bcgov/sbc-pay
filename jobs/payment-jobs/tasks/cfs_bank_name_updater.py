@@ -16,18 +16,20 @@
 This module will create statement records for each account.
 """
 import os
+import re
 import sys
-from typing import List
+from typing import Dict, List
 
 import sentry_sdk
-from flask import Flask
-from flask import current_app
-from pay_api.models import CfsAccount
+from flask import Flask, current_app
+from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import db, ma
-from pay_api.utils.enums import PaymentMethod
-from sentry_sdk.integrations.flask import FlaskIntegration
 from pay_api.services.cfs_service import CFSService
+from pay_api.services.oauth_service import OAuthService
+from pay_api.utils.constants import DEFAULT_COUNTRY, DEFAULT_CURRENCY
+from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod
+from sentry_sdk.integrations.flask import FlaskIntegration
 
 import config
 from utils.logger import setup_logging
@@ -37,7 +39,6 @@ setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.
 
 def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     """Return a configured Flask App using the Factory method."""
-
     app = Flask(__name__)
 
     app.config.from_object(config.CONFIGURATION[run_mode])
@@ -68,32 +69,88 @@ def register_shellcontext(app):
 
 
 def run_update(pay_account_id, num_records):
+    """Update bank info."""
     current_app.logger.info(f'<<<< Running Update for account id from :{pay_account_id} and total:{num_records} >>>>')
     pad_accounts: List[PaymentAccountModel] = db.session.query(PaymentAccountModel).filter(
         PaymentAccountModel.payment_method == PaymentMethod.PAD.value) \
         .filter(PaymentAccountModel.id >= pay_account_id) \
         .limit(num_records) \
         .all()
+    access_token: str = CFSService.get_token().json().get('access_token')
     current_app.logger.info(f'<<<< Total number of records founds: {len(pad_accounts)}')
+    if len(pad_accounts) == 0:
+        return
+
     for payment_account in pad_accounts:
-        cfs_account: CfsAccount = CfsAccount.find_effective_by_account_id(payment_account.id)
+        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
         current_app.logger.info(
-            f'<<<< Running Update for account id :{payment_account.id} and cfs_account:{cfs_account.id} and bank account: {cfs_account.bank_account_number} >>>>')
+            f'<<<< Running Update for account id :{payment_account.id} and cfs_account:{cfs_account.id} >>>>')
 
-        payment_details = CFSService.get_bank_info(cfs_account.cfs_party, cfs_account.account_id,cfs_account.cfs_site)
-        current_app.logger.info('<<<<<<<<<<<<<<<<<<<<<<')
-        current_app.logger.info(payment_details)
+        # payment_details = get_bank_info(cfs_account.cfs_party, cfs_account.cfs_account, cfs_account.cfs_site)
+        # current_app.logger.info(payment_details)
+
+        payment_info: Dict[str, any] = {
+            'bankInstitutionNumber': cfs_account.bank_number,
+            'bankTransitNumber': cfs_account.bank_branch_number,
+            'bankAccountNumber': cfs_account.bank_account_number,
+            'bankAccountName': payment_account.name
+        }
+
+        save_bank_details(access_token, cfs_account.cfs_party,
+                          cfs_account.cfs_account,
+                          cfs_account.cfs_site, payment_info)
 
 
-def run(account_id, total_records):
-    application = create_app()
-    application.app_context().push()
-    run_update(account_id, total_records)
+def get_bank_info(party_number: str,  # pylint: disable=too-many-arguments
+                  account_number: str,
+                  site_number: str):
+    """Get bank details to the site."""
+    current_app.logger.debug('<Updating CFS payment details ')
+    site_payment_url = current_app.config.post(
+        'CFS_BASE_URL') + f'/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/payment/'
+    access_token: str = CFSService.get_token().json().get('access_token')
+    payment_details = CFSService.get(site_payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+    return payment_details.json()
 
 
-if __name__ == "__main__":
+def save_bank_details(access_token, party_number: str,  # pylint: disable=too-many-arguments
+                      account_number: str,
+                      site_number: str, payment_info: Dict[str, str]):
+    """Update bank details to the site."""
+    current_app.logger.debug('<Creating CFS payment details ')
+    site_payment_url = current_app.config.get(
+        'CFS_BASE_URL') + f'/cfs/parties/{party_number}/accs/{account_number}/sites/{site_number}/payment/'
+
+    bank_number = str(payment_info.get('bankInstitutionNumber'))
+    branch_number = str(payment_info.get('bankTransitNumber'))
+
+    # bank account name should match legal name
+    name = re.sub(r'[^a-zA-Z0-9]+', ' ', payment_info.get('bankAccountName', ''))
+
+    payment_details: Dict[str, str] = {
+        'bank_account_name': name,
+        'bank_number': f'{bank_number:0>4}',
+        'branch_number': f'{branch_number:0>5}',
+        'bank_account_number': str(payment_info.get('bankAccountNumber')),
+        'country_code': DEFAULT_COUNTRY,
+        'currency_code': DEFAULT_CURRENCY
+    }
+    site_payment_response = OAuthService.post(site_payment_url, access_token, AuthHeaderType.BEARER,
+                                              ContentType.JSON,
+                                              payment_details).json()
+    current_app.logger.debug('<<<<<<')
+    current_app.logger.debug(site_payment_response)
+    current_app.logger.debug('>>>>>>')
+
+    current_app.logger.debug('>Updated CFS payment details')
+    return payment_details
+
+
+if __name__ == '__main__':
     print('len:', len(sys.argv))
     if len(sys.argv) <= 2:
         print('No valid args passed.Exiting job without running any ***************')
-    cnt = sys.argv[2] if len(sys.argv) == 3 else 10
-    run(sys.argv[1], cnt)
+    COUNT = sys.argv[2] if len(sys.argv) == 3 else 10
+    application = create_app()
+    application.app_context().push()
+    run_update(sys.argv[1], COUNT)
