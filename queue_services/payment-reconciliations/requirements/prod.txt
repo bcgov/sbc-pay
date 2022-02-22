@@ -10,3 +10,4 @@ minio
 jaeger-client
 attrs
 sqlalchemy<1.4
+itsdangerous==2.0.1
