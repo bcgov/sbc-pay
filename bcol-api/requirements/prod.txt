@@ -15,3 +15,4 @@ attrs
 Werkzeug<2
 jaeger-client
 pycountry
+itsdangerous==2.0.1

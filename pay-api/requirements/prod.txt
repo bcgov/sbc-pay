@@ -25,3 +25,4 @@ SQLAlchemy-Continuum
 cryptography
 sqlalchemy_utils
 sqlalchemy<1.4
+itsdangerous==2.0.1
