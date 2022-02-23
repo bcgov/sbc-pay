@@ -227,7 +227,7 @@ class CFSService(OAuthService):
         name = re.sub(r'[^a-zA-Z0-9]+', ' ', payment_info.get('bankAccountName', ''))
 
         payment_details: Dict[str, str] = {
-            'bank_account_name': name,
+            'bank_account_name': name[:30],
             'bank_number': f'{bank_number:0>4}',
             'branch_number': f'{branch_number:0>5}',
             'bank_account_number': str(payment_info.get('bankAccountNumber')),

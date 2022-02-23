@@ -90,11 +90,13 @@ def run_update(pay_account_id, num_records):
         # payment_details = get_bank_info(cfs_account.cfs_party, cfs_account.cfs_account, cfs_account.cfs_site)
         # current_app.logger.info(payment_details)
 
+        name = re.sub(r'[^a-zA-Z0-9]+', ' ', payment_account.name)
+
         payment_info: Dict[str, any] = {
             'bankInstitutionNumber': cfs_account.bank_number,
             'bankTransitNumber': cfs_account.bank_branch_number,
             'bankAccountNumber': cfs_account.bank_account_number,
-            'bankAccountName': payment_account.name
+            'bankAccountName': name
         }
 
         save_bank_details(access_token, cfs_account.cfs_party,
