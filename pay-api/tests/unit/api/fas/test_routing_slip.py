@@ -635,6 +635,10 @@ def test_update_routing_slip_writeoff(client, jwt, app):
     # Change it to WRITEOFF Requested and authorize it.
     rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
                       data=json.dumps({'status': RoutingSlipStatus.WRITE_OFF_REQUESTED.value}), headers=headers)
+
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_EDIT.value, Role.FAS_REFUND_APPROVER.value]),
+                           token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
                       data=json.dumps({'status': RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value}), headers=headers)
     assert rv.status_code == 200
