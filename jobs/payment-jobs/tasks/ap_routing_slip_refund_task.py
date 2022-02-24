@@ -77,7 +77,7 @@ class ApRoutingSlipRefundTask(CgiAP):
             ap_content = f'{ap_content}{cls.get_ap_address(refund.details, routing_slip.number)}'
             total_line_count += 3  # for the above 3 lines
             if ap_comment := cls.get_ap_comment(refund.details, routing_slip.number):
-                ap_content = f'{ap_content}{ap_comment}'
+                ap_content = f'{ap_content}{ap_comment:<40}'
                 total_line_count += 1
             batch_total += routing_slip.refund_amount
             routing_slip.status = RoutingSlipStatus.REFUND_UPLOADED.value
