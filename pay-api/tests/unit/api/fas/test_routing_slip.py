@@ -618,10 +618,10 @@ def test_update_routing_slip_writeoff(client, jwt, app):
                       data=json.dumps({'status': RoutingSlipStatus.WRITE_OFF_REQUESTED.value}), headers=headers)
     assert rv.status_code == 200
 
-    # Update to WRITEOFF_AUTHORIZED and assert 403, as it's not a supervisor token
+    # Update to WRITEOFF_AUTHORIZED and assert 400, as it's a same token
     rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
                       data=json.dumps({'status': RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value}), headers=headers)
-    assert rv.status_code == 403
+    assert rv.status_code == 400
 
     # Try CANCEL WRITE_OFF with a supervisor token and assert 200.
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_EDIT.value,
@@ -630,16 +630,4 @@ def test_update_routing_slip_writeoff(client, jwt, app):
     rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
                       data=json.dumps({'status': RoutingSlipCustomStatus.CANCEL_WRITE_OFF_REQUEST.custom_status}),
                       headers=headers)
-    assert rv.status_code == 200
-
-    # Change it to WRITEOFF Requested and authorize it.
-    rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
-                      data=json.dumps({'status': RoutingSlipStatus.WRITE_OFF_REQUESTED.value}), headers=headers)
-
-    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_EDIT.value,
-                                             Role.FAS_REFUND_APPROVER.value]),
-                           token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action={PatchActions.UPDATE_STATUS.value}',
-                      data=json.dumps({'status': RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value}), headers=headers)
     assert rv.status_code == 200
