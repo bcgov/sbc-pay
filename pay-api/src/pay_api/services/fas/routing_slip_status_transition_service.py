@@ -65,11 +65,14 @@ class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-a
         transition_list: List[RoutingSlipStatus] = RoutingSlipStatusTransitionService.STATUS_TRANSITIONS.get(
             rs_model.status, [])
 
-        if any(status in transition_list for status in [RoutingSlipStatus.REFUND_AUTHORIZED.value,
-                                                        RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value]):
+        if RoutingSlipStatus.REFUND_AUTHORIZED.value in transition_list:
             # self approval not permitted
             refund_model = RefundModel.find_by_routing_slip_id(rs_model.id)
             is_same_user = refund_model.requested_by == kwargs['user'].user_name
+            if is_same_user:
+                return transition_list[1:]
+        elif RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value in transition_list:
+            is_same_user = rs_model.updated_by == kwargs['user'].user_name
             if is_same_user:
                 return transition_list[1:]
 
