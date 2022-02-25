@@ -11,7 +11,7 @@
       "$id": "#/properties/number",
       "type": "string",
       "title": "Routing Slip Number",
-      "pattern": "^(.*)$",
+      "pattern": "^([\\d]+)$",
       "maxLength": 9,
       "minLength": 9
     },
