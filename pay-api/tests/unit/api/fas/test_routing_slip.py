@@ -19,6 +19,7 @@ Test-Suite to ensure that the /routing-slips endpoint is working as expected.
 
 import json
 from datetime import date, datetime, timedelta
+from typing import Dict
 
 import pytest
 from faker import Faker
@@ -34,7 +35,7 @@ fake = Faker()
 
 
 @pytest.mark.parametrize('payload', [
-    get_routing_slip_request(),
+    get_routing_slip_request(number='456789123'),
     get_routing_slip_request(
         cheque_receipt_numbers=[('0001', PaymentMethod.CHEQUE.value, 100),
                                 ('0002', PaymentMethod.CHEQUE.value, 100),
@@ -62,7 +63,7 @@ def test_create_routing_slips_search(client, jwt, app):
     claims = get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value])
     token = jwt.create_jwt(claims, token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    payload = get_routing_slip_request()
+    payload = get_routing_slip_request(number='999555333')
     initiator = claims.get('name')
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
     assert rv.status_code == 201
@@ -167,7 +168,7 @@ def test_link_routing_slip(client, jwt, app):
                            token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     child = get_routing_slip_request('123456789')
-    parent = get_routing_slip_request('abcdefghi')
+    parent = get_routing_slip_request('452134543')
     paid_amount_child = child.get('payments')[0].get('paidAmount')
     paid_amount_parent = parent.get('payments')[0].get('paidAmount')
     client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
@@ -207,8 +208,8 @@ def test_link_routing_slip(client, jwt, app):
     assert rv.status_code == 400
 
     # assert transactions
-    child = get_routing_slip_request(number='child2123')
-    parent = get_routing_slip_request(number='parent212')
+    child = get_routing_slip_request(number='993344881')
+    parent = get_routing_slip_request(number='987333218')
     rv1 = client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
     rv2 = client.post('/api/v1/fas/routing-slips', data=json.dumps(parent), headers=headers)
     payment_account_id = rv1.json.get('paymentAccount').get('id')
@@ -233,7 +234,7 @@ def test_link_routing_slip(client, jwt, app):
     assert rv.json.get('type') == 'RS_CHILD_HAS_TRANSACTIONS'
     assert rv.status_code == 400
 
-    child1 = get_routing_slip_request(number='child2999')
+    child1 = get_routing_slip_request(number='199929923')
     client.post('/api/v1/fas/routing-slips', data=json.dumps(child1), headers=headers)
 
     data = {'childRoutingSlipNumber': f"{child1.get('number')}", 'parentRoutingSlipNumber': f"{child1.get('number')}"}
@@ -256,7 +257,7 @@ def test_create_routing_slips_search_with_folio_number(client, jwt, app):
     """Assert that the search works."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    payload = get_routing_slip_request()
+    payload = get_routing_slip_request(number='789555333')
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
     assert rv.status_code == 201
     payment_account_id = rv.json.get('paymentAccount').get('id')
@@ -327,7 +328,7 @@ def test_create_routing_slips_search_with_receipt(client, jwt, app):
     """Assert that the search works."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    payload = get_routing_slip_request()
+    payload = get_routing_slip_request(number='987555333')
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
     assert rv.status_code == 201
     receipt_number = payload.get('payments')[0].get('chequeReceiptNumber')
@@ -354,7 +355,7 @@ def test_create_routing_slips_search_with_receipt(client, jwt, app):
     items = rv.json.get('items')
     assert len(items) == 0
 
-    payload = get_routing_slip_request(number='TEST12345',
+    payload = get_routing_slip_request(number='674038203',
                                        cheque_receipt_numbers=[('211001', PaymentMethod.CASH.value, 100)])
 
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
@@ -371,7 +372,7 @@ def test_create_routing_slips_search_with_receipt(client, jwt, app):
 
 
 @pytest.mark.parametrize('payload', [
-    get_routing_slip_request(),
+    get_routing_slip_request(number='559555333'),
 ])
 def test_create_routing_slips_unauthorized(client, jwt, payload):
     """Assert that the endpoint returns 401 for users with no fas_editor role."""
@@ -383,7 +384,7 @@ def test_create_routing_slips_unauthorized(client, jwt, payload):
 
 
 @pytest.mark.parametrize('payload', [
-    get_routing_slip_request(),
+    get_routing_slip_request(number='933555333'),
 ])
 def test_routing_slips_for_errors(client, jwt, payload):
     """Assert that the endpoint returns 401 for users with no fas_editor role."""
@@ -631,3 +632,27 @@ def test_update_routing_slip_writeoff(client, jwt, app):
                       data=json.dumps({'status': RoutingSlipCustomStatus.CANCEL_WRITE_OFF_REQUEST.custom_status}),
                       headers=headers)
     assert rv.status_code == 200
+
+
+def test_create_routing_slip_null_cheque_date(client, jwt, app):
+    """Assert that the endpoint returns invalid request for null payment date."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_EDIT.value, Role.FAS_VIEW.value]),
+                           token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    routing_slip_payload: Dict[str, any] = {
+        'number': '345777543',
+        'routingSlipDate': datetime.now().strftime(DT_SHORT_FORMAT),
+        'paymentAccount': {
+            'accountName': 'TEST'
+        },
+        'payments': []
+    }
+    routing_slip_payload['payments'].append({
+            'paymentMethod': PaymentMethod.CHEQUE.value,
+            'chequeReceiptNumber': '1234567890',
+            'paidAmount': 100
+    })
+
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(routing_slip_payload), headers=headers)
+    assert rv.status_code == 400
