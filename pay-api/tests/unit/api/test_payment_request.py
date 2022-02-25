@@ -403,7 +403,7 @@ def test_payment_creation_with_existing_invalid_routing_slip_invalid(client, jwt
     assert rv.status_code == 400
     assert rv.json.get('type') == 'RS_NOT_ACTIVE'
 
-    parent1 = get_routing_slip_request(number='child1234')
+    parent1 = get_routing_slip_request(number='432000434')
     client.post('/api/v1/fas/routing-slips', data=json.dumps(parent1), headers=headers)
     link_data = {'childRoutingSlipNumber': rs_number, 'parentRoutingSlipNumber': f"{parent1.get('number')}"}
     client.post('/api/v1/fas/routing-slips/links', data=json.dumps(link_data), headers=headers)
