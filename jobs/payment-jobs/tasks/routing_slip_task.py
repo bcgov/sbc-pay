@@ -91,7 +91,8 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     current_app.logger.debug(f'Total Invoice Amount : {total_invoice_amount}')
                     # Update the parent routing slip status to ACTIVE
                     parent_rs.status = RoutingSlipStatus.ACTIVE.value
-                    parent_rs.remaining_amount = routing_slip.remaining_amount - total_invoice_amount
+                    # linking routing slip balance is transferred ,so use the total
+                    parent_rs.remaining_amount = float(routing_slip.total) - total_invoice_amount
 
                 routing_slip.save()
 
@@ -262,7 +263,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         return invoice
 
     @classmethod
-    def _apply_routing_slips_to_pending_invoices(cls, routing_slip: RoutingSlipModel) -> int:
+    def _apply_routing_slips_to_pending_invoices(cls, routing_slip: RoutingSlipModel) -> float:
         """Apply the routing slips again, when routing slip is linked to an NSF parent."""
         current_app.logger.info(f'Starting NSF recovery process for {routing_slip.number}')
         routing_slip_payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(
@@ -276,7 +277,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     InvoiceModel.invoice_status_code.in_([InvoiceStatus.CREATED.value, InvoiceStatus.APPROVED.value])) \
             .all()
         current_app.logger.info(f'Found {len(invoices)} to apply receipt')
-        applied_amount: int = 0
+        applied_amount = 0
         for inv in invoices:
             inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
                 inv.id, InvoiceReferenceStatus.ACTIVE.value
