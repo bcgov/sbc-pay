@@ -188,7 +188,6 @@ def test_link_routing_slip_invalid_status(client, jwt, app):
     data = {'childRoutingSlipNumber': f"{child.get('number')}", 'parentRoutingSlipNumber': f"{parent.get('number')}"}
     rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
     assert rv.status_code == 400
-    print('---------rv',rv.json)
     assert rv.json.get('type') == 'RS_IN_INVALID_STATUS', 'child is invalid.'
 
     rv = client.patch(f"/api/v1/fas/routing-slips/{parent.get('number')}?action={PatchActions.UPDATE_STATUS.value}",
