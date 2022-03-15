@@ -288,6 +288,12 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         if len(set(payment_methods)) != 1:
             raise BusinessException(Error.FAS_INVALID_PAYMENT_METHOD)
 
+        # If payment method is cheque and then there is no payment date then raise error
+        if payment_methods[0] == PaymentMethod.CHEQUE.value:
+            for payment in request_json.get('payments'):
+                if payment.get('paymentDate') is None:
+                    raise BusinessException(Error.INVALID_REQUEST)
+
         pay_account: PaymentAccountModel = PaymentAccountModel(
             name=request_json.get('paymentAccount').get('accountName'),
             payment_method=payment_methods[0],
@@ -324,7 +330,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                 cheque_receipt_number=payment.get('chequeReceiptNumber'),
                 is_routing_slip=True,
                 paid_amount=payment.get('paidAmount'),
-                payment_date=string_to_date(payment.get('paymentDate')) if payment.get('paymentDate') else None,
+                payment_date=string_to_date(payment.get('paymentDate')),
                 created_by=kwargs['user'].user_name,
                 paid_usd_amount=payment.get('paidUsdAmount', None)
             ).flush()

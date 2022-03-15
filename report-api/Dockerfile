@@ -35,6 +35,9 @@ LABEL org.label-schema.vcs-ref=${VCS_REF} \
 
 RUN apt-get -y update && apt-get install -y build-essential python3-dev python3-pip python3-setuptools python3-wheel python3-cffi libcairo2 libpango-1.0-0 libpangocairo-1.0-0 libgdk-pixbuf2.0-0 libffi-dev shared-mime-info
 
+RUN apt-get install -y fontforge
+RUN apt-get install -y cabextract
+RUN wget https://gist.github.com/maxwelleite/10774746/raw/ttf-vista-fonts-installer.sh -q -O - | bash
 
 COPY . /app
 WORKDIR /app

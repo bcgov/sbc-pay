@@ -408,8 +408,9 @@ def test_payment_creation_with_existing_invalid_routing_slip_invalid(client, jwt
     rs_model = RoutingSlipModel.find_by_number(rs_number)
     rs_model.status = RoutingSlipStatus.ACTIVE.value
     rs_model.commit()
+    
+    parent1 = get_routing_slip_request(number='432000434')
 
-    parent1 = get_routing_slip_request(number='child1234')
     client.post('/api/v1/fas/routing-slips', data=json.dumps(parent1), headers=headers)
     link_data = {'childRoutingSlipNumber': rs_number, 'parentRoutingSlipNumber': f"{parent1.get('number')}"}
     client.post('/api/v1/fas/routing-slips/links', data=json.dumps(link_data), headers=headers)
