@@ -163,27 +163,38 @@ def test_link_routing_slip_parent_is_a_child(client, jwt):
 
 def test_link_routing_slip_invalid_status(client, jwt, app):
     """Assert that the linking of routing slip works as expected."""
-    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, Role.FAS_SEARCH.value, Role.FAS_REFUND.value]),
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, Role.FAS_SEARCH.value, Role.FAS_REFUND.value, Role.FAS_EDIT.value]),
                            token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     child = get_routing_slip_request('123456789')
     parent = get_routing_slip_request('abcdefghi')
+    child1 = get_routing_slip_request('111111111')
     client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
     client.post('/api/v1/fas/routing-slips', data=json.dumps(parent), headers=headers)
+    client.post('/api/v1/fas/routing-slips', data=json.dumps(child1), headers=headers)
 
     rv = client.get(f"/api/v1/fas/routing-slips/{child.get('number')}/links", headers=headers)
     assert rv.json.get('parent') is None
-    print('-------',rv.json)
-    print('----child.get---', child.get('number'))
 
     rv = client.patch(f"/api/v1/fas/routing-slips/{child.get('number')}?action={PatchActions.UPDATE_STATUS.value}",
-                      data=json.dumps({'status': RoutingSlipStatus.REFUND_REQUESTED.value}), headers=headers)
+                      data=json.dumps({'status': RoutingSlipStatus.WRITE_OFF_REQUESTED.value}), headers=headers)
     assert rv.status_code == 200, 'status changed successfully.'
 
     # link them together ,success cases
     data = {'childRoutingSlipNumber': f"{child.get('number')}", 'parentRoutingSlipNumber': f"{parent.get('number')}"}
     rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
     assert rv.status_code == 400
+    assert rv.json.get('type') == 'RS_IN_INVALID_STATUS'
+
+    rv = client.patch(f"/api/v1/fas/routing-slips/{parent.get('number')}?action={PatchActions.UPDATE_STATUS.value}",
+                      data=json.dumps({'status': RoutingSlipStatus.WRITE_OFF_REQUESTED.value}), headers=headers)
+    assert rv.status_code == 200, 'status changed successfully.'
+
+    # link them together ,success cases
+    data = {'childRoutingSlipNumber': f"{child1.get('number')}", 'parentRoutingSlipNumber': f"{parent.get('number')}"}
+    rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
+    assert rv.status_code == 400
+    assert rv.json.get('type') == 'RS_IN_INVALID_STATUS'
 
 
 def test_link_routing_slip(client, jwt, app):

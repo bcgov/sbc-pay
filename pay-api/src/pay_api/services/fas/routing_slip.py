@@ -434,4 +434,4 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                                       RoutingSlipStatus.COMPLETE.value
                                       }
         if rs_statuses.intersection(invalid_statuses):
-            raise BusinessException(Error.RS_CHILD_HAS_TRANSACTIONS)
+            raise BusinessException(Error.RS_IN_INVALID_STATUS)
