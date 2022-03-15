@@ -170,7 +170,7 @@ def test_link_routing_slip_invalid_status(client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     child = get_routing_slip_request('123456789')
     parent = get_routing_slip_request('abcdefghi')
-    child1 = get_routing_slip_request('111111111')
+    child1 = get_routing_slip_request('123456788')
     client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
     client.post('/api/v1/fas/routing-slips', data=json.dumps(parent), headers=headers)
     client.post('/api/v1/fas/routing-slips', data=json.dumps(child1), headers=headers)
