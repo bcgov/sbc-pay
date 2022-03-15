@@ -31,6 +31,11 @@ def upgrade():
                 'code': 'RS_IN_INVALID_STATUS',
                 'title': 'Routing Slip is in invalid status.',
                 'detail': 'Linking cannot be performed since the routing is not in a linkable status.'
+            },
+            {
+                'code': 'RS_INSUFFICIENT_FUNDS',
+                'title': 'Routing Slip has insufficient funds.',
+                'detail': 'This routing slip has been marked as Non-Sufficient Funds and can not be used for payment.'
             }
         ]
     )
@@ -38,5 +43,5 @@ def upgrade():
 
 def downgrade():
 
-    op.execute("DELETE FROM error_codes where code in ('RS_IN_INVALID_STATUS')")
+    op.execute("DELETE FROM error_codes where code in ('RS_IN_INVALID_STATUS','RS_INSUFFICIENT_FUNDS')")
 
