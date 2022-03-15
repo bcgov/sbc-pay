@@ -163,7 +163,9 @@ def test_link_routing_slip_parent_is_a_child(client, jwt):
 
 def test_link_routing_slip_invalid_status(client, jwt, app):
     """Assert that the linking of routing slip works as expected."""
-    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, Role.FAS_EDIT.value]),
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value,
+                                             Role.FAS_SEARCH.value, Role.FAS_REFUND.value,
+                                             Role.FAS_EDIT.value]),
                            token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     child = get_routing_slip_request('123456789')
