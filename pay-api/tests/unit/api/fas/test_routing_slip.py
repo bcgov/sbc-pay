@@ -169,9 +169,10 @@ def test_link_routing_slip_invalid_status(client, jwt, app):
                                              Role.FAS_EDIT.value]),
                            token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    child = get_routing_slip_request('123456789')
-    parent = get_routing_slip_request('abcdefghi')
-    child1 = get_routing_slip_request('123456788')
+
+    child = get_routing_slip_request('123456780')
+    parent = get_routing_slip_request('123456790')
+    child1 = get_routing_slip_request('123456781')
     client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
     client.post('/api/v1/fas/routing-slips', data=json.dumps(parent), headers=headers)
     client.post('/api/v1/fas/routing-slips', data=json.dumps(child1), headers=headers)
@@ -187,7 +188,8 @@ def test_link_routing_slip_invalid_status(client, jwt, app):
     data = {'childRoutingSlipNumber': f"{child.get('number')}", 'parentRoutingSlipNumber': f"{parent.get('number')}"}
     rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
     assert rv.status_code == 400
-    assert rv.json.get('type') == 'RS_IN_INVALID_STATUS'
+    print('---------rv',rv.json)
+    assert rv.json.get('type') == 'RS_IN_INVALID_STATUS', 'child is invalid.'
 
     rv = client.patch(f"/api/v1/fas/routing-slips/{parent.get('number')}?action={PatchActions.UPDATE_STATUS.value}",
                       data=json.dumps({'status': RoutingSlipStatus.WRITE_OFF_REQUESTED.value}), headers=headers)
@@ -197,7 +199,7 @@ def test_link_routing_slip_invalid_status(client, jwt, app):
     data = {'childRoutingSlipNumber': f"{child1.get('number')}", 'parentRoutingSlipNumber': f"{parent.get('number')}"}
     rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
     assert rv.status_code == 400
-    assert rv.json.get('type') == 'RS_IN_INVALID_STATUS'
+    assert rv.json.get('type') == 'RS_IN_INVALID_STATUS', 'parent is invalid.'
 
 
 def test_link_routing_slip(client, jwt, app):
@@ -687,9 +689,9 @@ def test_create_routing_slip_null_cheque_date(client, jwt, app):
         'payments': []
     }
     routing_slip_payload['payments'].append({
-            'paymentMethod': PaymentMethod.CHEQUE.value,
-            'chequeReceiptNumber': '1234567890',
-            'paidAmount': 100
+        'paymentMethod': PaymentMethod.CHEQUE.value,
+        'chequeReceiptNumber': '1234567890',
+        'paidAmount': 100
     })
 
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(routing_slip_payload), headers=headers)
