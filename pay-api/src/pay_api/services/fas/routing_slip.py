@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Dict, List
+from typing import Dict, List, Set
 
 from flask import abort, current_app
 
@@ -251,7 +251,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         if routing_slip:
             routing_slip_schema = RoutingSlipSchema()
             routing_slip_dict = routing_slip_schema.dump(routing_slip)
-            routing_slip_dict['allowedStatuses'] = RoutingSlipStatusTransitionService.\
+            routing_slip_dict['allowedStatuses'] = RoutingSlipStatusTransitionService. \
                 get_possible_transitions(routing_slip)
         return routing_slip_dict
 
@@ -420,7 +420,24 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         if routing_slip.invoices:
             raise BusinessException(Error.RS_CHILD_HAS_TRANSACTIONS)
 
+        RoutingSlip._validate_status(parent_rs_slip, routing_slip)
+
     @staticmethod
     def _is_linked_already(routing_slip: RoutingSlipModel):
         """Find if the rs is already linked."""
         return routing_slip.parent or routing_slip.status == RoutingSlipStatus.LINKED.value
+
+    @staticmethod
+    def _validate_status(routing_slip: RoutingSlipModel, child_rs: RoutingSlipModel):
+        """Check if status belongs to any of these.These are invalid status for linking."""
+        rs_statuses: Set[str] = {routing_slip.status, child_rs.status}
+        invalid_statuses: Set[str] = {RoutingSlipStatus.REFUND_REQUESTED.value,
+                                      RoutingSlipStatus.REFUND_AUTHORIZED.value,
+                                      RoutingSlipStatus.REFUND_COMPLETED.value,
+                                      RoutingSlipStatus.WRITE_OFF_REQUESTED.value,
+                                      RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value,
+                                      RoutingSlipStatus.WRITE_OFF_COMPLETED.value,
+                                      RoutingSlipStatus.COMPLETE.value
+                                      }
+        if rs_statuses.intersection(invalid_statuses):
+            raise BusinessException(Error.RS_IN_INVALID_STATUS)

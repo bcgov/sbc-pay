@@ -378,7 +378,7 @@ def test_payment_creation_with_existing_invalid_routing_slip_invalid(client, jwt
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     # create an RS with less balance
     cheque_amount = 1
-    payload = get_routing_slip_request(cheque_receipt_numbers=[('123456789',
+    payload = get_routing_slip_request(cheque_receipt_numbers=[('111456789',
                                                                 PaymentMethod.CHEQUE.value, cheque_amount)])
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
     rs_number = rv.json.get('number')
@@ -403,7 +403,13 @@ def test_payment_creation_with_existing_invalid_routing_slip_invalid(client, jwt
     assert rv.status_code == 400
     assert rv.json.get('type') == 'RS_NOT_ACTIVE'
 
+    # change status of routing slip to inactive
+
+    rs_model = RoutingSlipModel.find_by_number(rs_number)
+    rs_model.status = RoutingSlipStatus.ACTIVE.value
+    rs_model.commit()
     parent1 = get_routing_slip_request(number='432000434')
+
     client.post('/api/v1/fas/routing-slips', data=json.dumps(parent1), headers=headers)
     link_data = {'childRoutingSlipNumber': rs_number, 'parentRoutingSlipNumber': f"{parent1.get('number')}"}
     client.post('/api/v1/fas/routing-slips/links', data=json.dumps(link_data), headers=headers)
