@@ -330,7 +330,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                 cheque_receipt_number=payment.get('chequeReceiptNumber'),
                 is_routing_slip=True,
                 paid_amount=payment.get('paidAmount'),
-                payment_date=string_to_date(payment.get('paymentDate')),
+                payment_date=string_to_date(payment.get('paymentDate')) if payment.get('paymentDate') else None,
                 created_by=kwargs['user'].user_name,
                 paid_usd_amount=payment.get('paidUsdAmount', None)
             ).flush()
