@@ -11,3 +11,4 @@ requests-futures
 wtforms
 Werkzeug<2
 sqlalchemy<1.4
+itsdangerous==2.0.1
