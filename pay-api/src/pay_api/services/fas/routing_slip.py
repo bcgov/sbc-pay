@@ -466,5 +466,5 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         # Subtract the 2nd digit of the sum from 10
         checksum = ((10 - (sum(data_digits) % 10)) % 10)
         # The difference should equal the 9th digit of the routing slip ID
-        if not validation_digit == checksum:
+        if validation_digit != checksum:
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
