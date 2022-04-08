@@ -461,7 +461,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         # -- If the sum is 2 digits, add the two digits together (this will always be a 1 digit number in this case)
         replacement_digits = [int(str(x)[0]) + int(str(x)[1]) if x > 9 else x for x in [i * 2 for i in data_digits[1::2]]]
         # -- Substitute the resulting digit for the original digit in the iteration
-        data_digits[1::2] = [replacement_digits.pop(0) for x in data_digits[1::2]]
+        data_digits[1::2] = [replacement_digits.pop(0) for _ in data_digits[1::2]]
         # Add all numbers together (of the 8 digits)
         # Subtract the 2nd digit of the sum from 10
         checksum = ((10 - (sum(data_digits) % 10)) % 10)
