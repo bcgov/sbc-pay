@@ -245,7 +245,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
 
     @classmethod
     def validate_and_find_by_number(cls, rs_number: str) -> Dict[str, any]:
-        """ Validate digits before finding by routing slip number. """
+        """Validate digits before finding by routing slip number."""
         RoutingSlip._validate_routing_slip_number_digits(rs_number)
         return cls.find_by_number(rs_number)
 
@@ -459,7 +459,8 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         # For every 2nd digit:
         # -- Multiply the digit by 2
         # -- If the sum is 2 digits, add the two digits together (this will always be a 1 digit number in this case)
-        replacement_digits = [int(str(x)[0]) + int(str(x)[1]) if x > 9 else x for x in [i * 2 for i in data_digits[1::2]]]
+        replacement_digits = [int(str(x)[0]) + int(str(x)[1]) if x >
+                              9 else x for x in [i * 2 for i in data_digits[1::2]]]
         # -- Substitute the resulting digit for the original digit in the iteration
         data_digits[1::2] = [replacement_digits.pop(0) for _ in data_digits[1::2]]
         # Add all numbers together (of the 8 digits)
@@ -468,4 +469,3 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         # The difference should equal the 9th digit of the routing slip ID
         if validation_digit != checksum:
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
-            

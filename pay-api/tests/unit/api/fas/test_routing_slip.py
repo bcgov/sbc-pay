@@ -227,7 +227,7 @@ def test_link_routing_slip(client, jwt, app):
     assert rv.json.get('parent') is not None
     assert rv.json.get('parent').get('number') == parent.get('number')
     assert rv.json.get('parent').get('remainingAmount') == paid_amount_child + \
-           paid_amount_parent
+        paid_amount_parent
     assert rv.json.get('parent').get('total') == paid_amount_parent
 
     rv = client.get(f"/api/v1/fas/routing-slips/{parent.get('number')}/links", headers=headers)
@@ -421,16 +421,6 @@ def test_create_routing_slips_unauthorized(client, jwt, payload):
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
     assert rv.status_code == 401
 
-@pytest.mark.parametrize('payload', [
-    get_routing_slip_request(number='559555333'),
-])
-def test_create_routing_slips_invalid_digits(client, jwt, payload):
-    """Assert POST returns 400 when providing invalid routing slip number"""
-    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_USER.value]), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-
-    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
-    assert rv.status_code == 400
 
 """
 Example valid routing slip numbers:
@@ -438,13 +428,28 @@ Example valid routing slip numbers:
 206380834, 206380842, 206380859, 206380867
 206380875, 206380883, 206380891, 206380909
 """
+
+
+@pytest.mark.parametrize('payload', [
+    get_routing_slip_request(number='559555333'),
+])
+def test_create_routing_slips_invalid_digits(client, jwt, payload):
+    """Assert POST returns 400 when providing invalid routing slip number."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_USER.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
+    assert rv.status_code == 400
+
+
 def test_get_routing_slips_invalid_digits(client, jwt, app):
-    """Assert GET returns 400 when providing invalid routing slip number"""
+    """Assert GET returns 400 when providing invalid routing slip number."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_VIEW.value, Role.FAS_CREATE.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.get('/api/v1/fas/routing-slips/206380555', headers=headers)
     assert rv.status_code == 400
+
 
 @pytest.mark.parametrize('payload', [
     get_routing_slip_request(number='206380883'),
