@@ -451,7 +451,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
     @staticmethod
     def _validate_routing_slip_number_digits(rs_number: str):
         if len(rs_number) != 9:
-            raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
+            raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_DIGITS)
 
         # Using the first 8 digits of the routing slip
         data_digits = list(map(int, rs_number[:8]))
@@ -469,4 +469,4 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         checksum = ((10 - (sum(data_digits) % 10)) % 10)
         # The difference should equal the 9th digit of the routing slip ID
         if validation_digit != checksum:
-            raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
+            raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_DIGITS)
