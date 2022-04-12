@@ -244,6 +244,12 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         return pdf_response, report_dict.get('reportName')
 
     @classmethod
+    def validate_and_find_by_number(cls, rs_number: str) -> Dict[str, any]:
+        """Validate digits before finding by routing slip number."""
+        RoutingSlip._validate_routing_slip_number_digits(rs_number)
+        return cls.find_by_number(rs_number)
+
+    @classmethod
     def find_by_number(cls, rs_number: str) -> Dict[str, any]:
         """Find by routing slip number."""
         routing_slip_dict: Dict[str, any] = None
@@ -278,9 +284,9 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         # 2. Create receipt in CFS
         # 3. Create routing slip and payment records.
 
-        # Validate if Routing slip number is unique.
         rs_number = request_json.get('number')
-        if cls.find_by_number(rs_number):
+        # Validate Routing slip digits and if slip number is unique.
+        if cls.validate_and_find_by_number(rs_number):
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
 
         payment_methods: [str] = [payment.get('paymentMethod') for payment in request_json.get('payments')]
@@ -441,3 +447,26 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                                       }
         if rs_statuses.intersection(invalid_statuses):
             raise BusinessException(Error.RS_IN_INVALID_STATUS)
+
+    @staticmethod
+    def _validate_routing_slip_number_digits(rs_number: str):
+        if len(rs_number) != 9:
+            raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_DIGITS)
+
+        # Using the first 8 digits of the routing slip
+        data_digits = list(map(int, rs_number[:8]))
+        validation_digit = int(rs_number[8])
+        # For every 2nd digit:
+        # -- Multiply the digit by 2
+        # -- If the sum is 2 digits, add the two digits together (this will always be a 1 digit number in this case)
+        replacement_digits = [int(str(x)[0]) + int(str(x)[1]) if x >
+                              9 else x for x in [i * 2 for i in data_digits[1::2]]]
+        # -- Substitute the resulting digit for the original digit in the iteration
+        replacement_digits.reverse()
+        data_digits[1::2] = replacement_digits[:len(data_digits[1::2])]
+        # Add all numbers together (of the 8 digits)
+        # Subtract the 2nd digit of the sum from 10
+        checksum = ((10 - (sum(data_digits) % 10)) % 10)
+        # The difference should equal the 9th digit of the routing slip ID
+        if validation_digit != checksum:
+            raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_DIGITS)

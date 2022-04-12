@@ -123,11 +123,14 @@ class RoutingSlip(Resource):
     def get(routing_slip_number: str):
         """Get routing slip."""
         current_app.logger.info('<RoutingSlips.get')
-        response = RoutingSlipService.find_by_number(routing_slip_number)
-        if response:
-            status = HTTPStatus.OK
-        else:
-            response, status = {}, HTTPStatus.NO_CONTENT
+        try:
+            response = RoutingSlipService.validate_and_find_by_number(routing_slip_number)
+            if response:
+                status = HTTPStatus.OK
+            else:
+                response, status = {}, HTTPStatus.NO_CONTENT
+        except (BusinessException) as exception:
+            return exception.response()
 
         current_app.logger.debug('>RoutingSlips.get')
         return jsonify(response), status
