@@ -22,6 +22,7 @@ from datetime import date, datetime, timedelta
 from typing import Dict
 
 import pytest
+from flask import current_app
 from faker import Faker
 
 from pay_api.models import PaymentAccount
@@ -438,8 +439,10 @@ def test_create_routing_slips_invalid_digits(client, jwt, payload):
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_USER.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
+    current_app.config['ALLOW_LEGACY_ROUTING_SLIPS'] = False
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
     assert rv.status_code == 400
+    current_app.config['ALLOW_LEGACY_ROUTING_SLIPS'] = True
 
 
 def test_get_routing_slips_invalid_digits(client, jwt, app):
@@ -447,8 +450,10 @@ def test_get_routing_slips_invalid_digits(client, jwt, app):
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_VIEW.value, Role.FAS_CREATE.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
+    current_app.config['ALLOW_LEGACY_ROUTING_SLIPS'] = False
     rv = client.get('/api/v1/fas/routing-slips/206380555', headers=headers)
     assert rv.status_code == 400
+    current_app.config['ALLOW_LEGACY_ROUTING_SLIPS'] = True
 
 
 @pytest.mark.parametrize('payload', [
