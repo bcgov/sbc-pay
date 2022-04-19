@@ -246,7 +246,8 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
     @classmethod
     def validate_and_find_by_number(cls, rs_number: str) -> Dict[str, any]:
         """Validate digits before finding by routing slip number."""
-        RoutingSlip._validate_routing_slip_number_digits(rs_number)
+        if not current_app.config.get('ALLOW_LEGACY_ROUTING_SLIPS'):
+            RoutingSlip._validate_routing_slip_number_digits(rs_number)
         return cls.find_by_number(rs_number)
 
     @classmethod
