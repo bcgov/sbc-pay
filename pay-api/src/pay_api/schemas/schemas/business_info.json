@@ -26,7 +26,7 @@
         "CP,PPR","BC"
       ],
       "pattern": "^(.*)$",
-      "minLength": 2
+      "minLength": 1
     },
     "businessName": {
       "$id": "#/properties/businessName",
