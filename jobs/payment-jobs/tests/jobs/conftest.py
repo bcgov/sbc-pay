@@ -14,6 +14,7 @@
 
 """Common setup and fixtures for the py-test suite used by this service."""
 
+import os
 import sys
 import time
 
@@ -93,8 +94,12 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
         # This is the path we'll use in legal_api!!
 
         # even though this isn't referenced directly, it sets up the internal configs that upgrade needs
-        migrations_path = [folder for folder in sys.path if 'pay-api/pay-api' in folder][0] \
-            .replace('/pay-api/src', '/pay-api/migrations')
+        migrations_path = [folder for folder in sys.path if 'pay-api/pay-api' in folder]
+        if len(migrations_path) > 0:
+            migrations_path = migrations_path[0].replace('/pay-api/src', '/pay-api/migrations')
+        # Fix for windows.
+        else:
+            migrations_path = os.path.abspath('../../pay-api/migrations')
 
         Migrate(app, _db, directory=migrations_path)
         upgrade()

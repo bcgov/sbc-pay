@@ -225,6 +225,14 @@ def test_receipt_adjustments(session, rs_status):
 
     parent_rs.status = rs_status
 
+    # Test exception path first.
+    with patch('pay_api.services.CFSService.adjust_receipt_to_zero') as mock:
+        mock.side_effect = Exception('ERROR!')
+        RoutingSlipTask.adjust_routing_slips()
+
+    parent_rs = RoutingSlipModel.find_by_number(parent_rs.number)
+    assert parent_rs.remaining_amount == 10
+
     with patch('pay_api.services.CFSService.adjust_receipt_to_zero'):
         RoutingSlipTask.adjust_routing_slips()
 
