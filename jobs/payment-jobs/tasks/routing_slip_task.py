@@ -206,7 +206,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 routing_slip.refund_amount = routing_slip.remaining_amount
                 routing_slip.remaining_amount = 0
                 routing_slip.save()
-            
+
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(
                     f'Error on Adjusting Routing Slip for :={routing_slip.number}, '
