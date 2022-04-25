@@ -225,7 +225,7 @@ def test_link_routing_slip(client, jwt, app):
 
     data = {'childRoutingSlipNumber': f"{nsf.get('number')}", 'parentRoutingSlipNumber': f"{parent.get('number')}"}
     rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
-    assert rv.json.get('type') == 'FAS_INVALID_RS_STATUS_CHANGE'
+    assert rv.json.get('type') == 'RS_CANT_LINK_NSF'
     assert rv.status_code == 400
 
     # link them together ,success cases

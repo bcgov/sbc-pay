@@ -427,7 +427,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
 
         # Stop the user from linking NSF. NSF can only be a parent.
         if routing_slip.status == RoutingSlipStatus.NSF.value:
-            raise BusinessException(Error.FAS_INVALID_RS_STATUS_CHANGE)
+            raise BusinessException(Error.RS_CANT_LINK_NSF)
 
         RoutingSlip._validate_status(parent_rs_slip, routing_slip)
 
