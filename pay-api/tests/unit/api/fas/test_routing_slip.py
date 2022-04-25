@@ -204,7 +204,8 @@ def test_link_routing_slip_invalid_status(client, jwt, app):
 
 def test_link_routing_slip(client, jwt, app):
     """Assert that the linking of routing slip works as expected."""
-    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, Role.FAS_SEARCH.value, Role.FAS_EDIT.value]),
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, 
+                                             Role.FAS_SEARCH.value, Role.FAS_EDIT.value]),
                            token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     child = get_routing_slip_request('206380834')
@@ -306,7 +307,7 @@ def test_link_routing_slip(client, jwt, app):
 
 def test_create_routing_slips_search_with_folio_number(client, jwt, app):
     """Assert that the search works."""
-    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value, Role.FAS_EDIT.value]), token_header)
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     payload = get_routing_slip_request(number='206380792')
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(payload), headers=headers)
