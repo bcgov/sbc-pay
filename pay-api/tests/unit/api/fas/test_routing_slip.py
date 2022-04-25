@@ -217,6 +217,17 @@ def test_link_routing_slip(client, jwt, app):
     rv = client.get(f"/api/v1/fas/routing-slips/{child.get('number')}/links", headers=headers)
     assert rv.json.get('parent') is None
 
+    # attempt to link NSF, should fail
+    nsf = get_routing_slip_request('933458069')
+    client.post('/api/v1/fas/routing-slips', data=json.dumps(parent), headers=headers)
+    rv = client.patch(f'/api/v1/fas/routing-slips/{nsf.get("number")}?action=updateStatus',
+                      data=json.dumps({'status': RoutingSlipStatus.NSF.value}), headers=headers)
+
+    data = {'childRoutingSlipNumber': {nsf.get('number')}, 'parentRoutingSlipNumber': f"{parent.get('number')}"}
+    rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
+    assert rv.json.get('type') == 'FAS_INVALID_RS_STATUS_CHANGE'
+    assert rv.status_code == 400
+
     # link them together ,success cases
     data = {'childRoutingSlipNumber': f"{child.get('number')}", 'parentRoutingSlipNumber': f"{parent.get('number')}"}
     rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
