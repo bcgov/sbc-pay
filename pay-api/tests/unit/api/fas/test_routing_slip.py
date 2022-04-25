@@ -223,7 +223,7 @@ def test_link_routing_slip(client, jwt, app):
     rv = client.patch(f'/api/v1/fas/routing-slips/{nsf.get("number")}?action=updateStatus',
                       data=json.dumps({'status': RoutingSlipStatus.NSF.value}), headers=headers)
 
-    data = {'childRoutingSlipNumber': {nsf.get('number')}, 'parentRoutingSlipNumber': f"{parent.get('number')}"}
+    data = {'childRoutingSlipNumber': f"{nsf.get('number')}", 'parentRoutingSlipNumber': f"{parent.get('number')}"}
     rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
     assert rv.json.get('type') == 'FAS_INVALID_RS_STATUS_CHANGE'
     assert rv.status_code == 400
