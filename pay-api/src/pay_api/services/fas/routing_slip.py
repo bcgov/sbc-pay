@@ -385,11 +385,12 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             RoutingSlipStatusTransitionService.validate_possible_transitions(routing_slip, status)
             status = RoutingSlipStatusTransitionService.get_actual_status(status)
 
+            # Our routing_slips job will create an invoice (under transactions in the UI).
             if status == RoutingSlipStatus.NSF.value:
                 total_paid_to_reverse: float = 0
                 for rs in (routing_slip, *RoutingSlipModel.find_children(routing_slip.number)):
                     total_paid_to_reverse += rs.total
-                routing_slip.remaining_amount = -total_paid_to_reverse
+                routing_slip.remaining_amount += -total_paid_to_reverse
             elif status in (RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value, RoutingSlipStatus.REFUND_AUTHORIZED.value) \
                     and not user.has_role(Role.FAS_REFUND_APPROVER.value):
                 abort(403)
@@ -426,6 +427,10 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         # has one of these has pending
         if routing_slip.invoices:
             raise BusinessException(Error.RS_CHILD_HAS_TRANSACTIONS)
+
+        # Stop the user from linking NSF. NSF can only be a parent.
+        if routing_slip.status == RoutingSlipStatus.NSF.value:
+            raise BusinessException(Error.RS_CANT_LINK_NSF)
 
         RoutingSlip._validate_status(parent_rs_slip, routing_slip)
 

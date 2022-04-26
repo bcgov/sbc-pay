@@ -204,7 +204,8 @@ def test_link_routing_slip_invalid_status(client, jwt, app):
 
 def test_link_routing_slip(client, jwt, app):
     """Assert that the linking of routing slip works as expected."""
-    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, Role.FAS_SEARCH.value]),
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value,
+                                             Role.FAS_SEARCH.value, Role.FAS_EDIT.value]),
                            token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     child = get_routing_slip_request('206380834')
@@ -216,6 +217,17 @@ def test_link_routing_slip(client, jwt, app):
 
     rv = client.get(f"/api/v1/fas/routing-slips/{child.get('number')}/links", headers=headers)
     assert rv.json.get('parent') is None
+
+    # attempt to link NSF, should fail
+    nsf = get_routing_slip_request('933458069')
+    client.post('/api/v1/fas/routing-slips', data=json.dumps(nsf), headers=headers)
+    rv = client.patch(f'/api/v1/fas/routing-slips/{nsf.get("number")}?action={PatchActions.UPDATE_STATUS.value}',
+                      data=json.dumps({'status': RoutingSlipStatus.NSF.value}), headers=headers)
+
+    data = {'childRoutingSlipNumber': f"{nsf.get('number')}", 'parentRoutingSlipNumber': f"{parent.get('number')}"}
+    rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
+    assert rv.json.get('type') == 'RS_CANT_LINK_NSF'
+    assert rv.status_code == 400
 
     # link them together ,success cases
     data = {'childRoutingSlipNumber': f"{child.get('number')}", 'parentRoutingSlipNumber': f"{parent.get('number')}"}
@@ -498,7 +510,7 @@ def test_update_routing_slip_status(client, jwt, app):
                       data=json.dumps({'status': RoutingSlipStatus.NSF.value}), headers=headers)
     assert rv.status_code == 200
     assert rv.json.get('status') == RoutingSlipStatus.NSF.value
-    assert rv.json.get('remainingAmount') == - float(rv.json.get('total'))
+    assert rv.json.get('remainingAmount') == 0
 
     # assert invalid action.
     rv = client.patch(f'/api/v1/fas/routing-slips/{rs_number}?action=TEST',
