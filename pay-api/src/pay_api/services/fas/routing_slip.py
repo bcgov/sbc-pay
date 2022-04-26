@@ -387,7 +387,9 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
 
             # Our routing_slips job will create an invoice (under transactions in the UI).
             if status == RoutingSlipStatus.NSF.value:
-                routing_slip.remaining_amount += -routing_slip.total
+                for rs in (routing_slip, *RoutingSlipModel.find_children(routing_slip.number)):
+                    total_paid_to_reverse += rs.total
+                routing_slip.remaining_amount += -total_paid_to_reverse
             elif status in (RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value, RoutingSlipStatus.REFUND_AUTHORIZED.value) \
                     and not user.has_role(Role.FAS_REFUND_APPROVER.value):
                 abort(403)
