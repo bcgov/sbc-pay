@@ -385,7 +385,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             RoutingSlipStatusTransitionService.validate_possible_transitions(routing_slip, status)
             status = RoutingSlipStatusTransitionService.get_actual_status(status)
 
-            # Set the balance to -total (ideally 0), our routing_slips job will create an invoice (under transactions in the UI).
+            # Our routing_slips job will create an invoice (under transactions in the UI).
             if status == RoutingSlipStatus.NSF.value:
                 routing_slip.remaining_amount += -routing_slip.total
             elif status in (RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value, RoutingSlipStatus.REFUND_AUTHORIZED.value) \
