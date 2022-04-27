@@ -163,6 +163,29 @@ def test_link_routing_slip_parent_is_a_child(client, jwt):
     assert rv.status_code == 400
 
 
+def test_link_nsf(client, jwt):
+    """Assert linking to a child fails."""
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, 
+                                             Role.FAS_SEARCH.value, Role.FAS_EDIT.value]),
+                           token_header)
+
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    child = get_routing_slip_request('206380842')
+    parent = get_routing_slip_request('206380867')
+    client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
+    client.post('/api/v1/fas/routing-slips', data=json.dumps(parent), headers=headers)
+
+    rv = client.patch(f"/api/v1/fas/routing-slips/{child.get('number')}?action={PatchActions.UPDATE_STATUS.value}",
+                      data=json.dumps({'status': RoutingSlipStatus.NSF.value}), headers=headers)
+    assert rv.status_code == 200, 'status changed successfully.'
+
+    data = {'childRoutingSlipNumber': f"{child.get('number')}", 'parentRoutingSlipNumber': f"{parent.get('number')}"}
+    rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
+    assert rv.status_code == 400
+    assert rv.json.get('type') == 'RS_CANT_LINK_NSF'
+    assert rv.json.get('title') == 'Routing Slip cannot be linked.'
+
+
 def test_link_routing_slip_invalid_status(client, jwt, app):
     """Assert that the linking of routing slip works as expected."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value,
