@@ -165,7 +165,7 @@ def test_link_routing_slip_parent_is_a_child(client, jwt):
 
 def test_link_nsf(client, jwt):
     """Assert linking to a child fails."""
-    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, 
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value,
                                              Role.FAS_SEARCH.value, Role.FAS_EDIT.value]),
                            token_header)
 
