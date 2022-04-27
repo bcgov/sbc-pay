@@ -452,6 +452,7 @@ def test_create_routing_slips_search_with_receipt(client, jwt, app):
     assert len(items) == 1
     assert items[0].get('payments')[0].get('chequeReceiptNumber') == receipt_number
 
+
 @pytest.mark.parametrize('payload', [
     get_routing_slip_request(number='559555333'),
 ])
