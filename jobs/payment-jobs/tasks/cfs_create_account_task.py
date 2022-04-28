@@ -76,25 +76,25 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
         current_app.logger.info(
             f'Creating pay system instance for {pay_account.payment_method} for account {pay_account.id}.')
 
-        account_contact = cls._get_account_contact(auth_token, pay_account.auth_account_id)
-
-        contact_info: Dict[str, str] = {
-            'city': account_contact.get('city'),
-            'postalCode': account_contact.get('postalCode'),
-            'province': account_contact.get('region'),
-            'addressLine1': account_contact.get('street'),
-            'country': account_contact.get('country')
-        }
-
-        payment_info: Dict[str, any] = {
-            'bankInstitutionNumber': pending_account.bank_number,
-            'bankTransitNumber': pending_account.bank_branch_number,
-            'bankAccountNumber': pending_account.bank_account_number,
-            'bankAccountName': pay_account.name
-        }
-
         # For an existing CFS Account, call update.. This is to handle PAD update when CFS is offline
         try:
+            account_contact = cls._get_account_contact(auth_token, pay_account.auth_account_id)
+
+            contact_info: Dict[str, str] = {
+                'city': account_contact.get('city'),
+                'postalCode': account_contact.get('postalCode'),
+                'province': account_contact.get('region'),
+                'addressLine1': account_contact.get('street'),
+                'country': account_contact.get('country')
+            }
+
+            payment_info: Dict[str, any] = {
+                'bankInstitutionNumber': pending_account.bank_number,
+                'bankTransitNumber': pending_account.bank_branch_number,
+                'bankAccountNumber': pending_account.bank_account_number,
+                'bankAccountName': pay_account.name
+            }
+
             if pending_account.cfs_account and pending_account.cfs_party and pending_account.cfs_site:
                 # This means, PAD account details have changed. So update banking details for this CFS account
                 bank_details = CFSService.update_bank_details(name=pay_account.auth_account_id,
