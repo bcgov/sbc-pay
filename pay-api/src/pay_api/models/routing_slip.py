@@ -195,7 +195,8 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
     def _add_folio_filter(cls, query, search_filter):
         if folio_number := search_filter.get('folioNumber', None):
             query = query.join(Invoice).filter(
-                and_(Invoice.routing_slip == RoutingSlip.number, Invoice.folio_number == folio_number))
+                Invoice.routing_slip == RoutingSlip.number).filter(
+                    Invoice.folio_number == folio_number)
         return query
 
     @classmethod
