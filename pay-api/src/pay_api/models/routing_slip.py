@@ -126,6 +126,8 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
 
         query = cls._add_folio_filter(query, search_filter)
 
+        query = cls._add_entity_filter(query, search_filter)
+
         # Add ordering
         query = query.order_by(RoutingSlip.created_on.desc())
 
@@ -196,6 +198,14 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
                 and_(Invoice.routing_slip == RoutingSlip.number, and_(Invoice.folio_number == folio_number,
                                                                       Invoice.payment_method_code.in_(
                                                                           [PaymentMethod.INTERNAL.value]))))
+        return query
+
+    @classmethod
+    def _add_entity_filter(cls, query, search_filter):
+        if account_name := search_filter.get('accountName', None):
+            query = query.filter(
+                and_(PaymentAccount.id == RoutingSlip.payment_account_id,
+                     PaymentAccount.name.ilike('%' + account_name + '%')))
         return query
 
 

@@ -430,6 +430,13 @@ def test_create_routing_slips_search_with_receipt(client, jwt, app):
     items = rv.json.get('items')
     assert len(items) == 0
 
+    # search with entity (accountName) works
+    rv = client.post('/api/v1/fas/routing-slips/queries', data=json.dumps({'accountName': 'TEST'}),
+                     headers=headers)
+
+    items = rv.json.get('items')
+    assert len(items) == 1
+
     payload = get_routing_slip_request(number='674038203',
                                        cheque_receipt_numbers=[('211001', PaymentMethod.CASH.value, 100)])
 
