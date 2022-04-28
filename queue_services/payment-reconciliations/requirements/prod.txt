@@ -10,3 +10,4 @@ minio
 jaeger-client
 attrs
 sqlalchemy<1.4
+Jinja2==3.0.3
