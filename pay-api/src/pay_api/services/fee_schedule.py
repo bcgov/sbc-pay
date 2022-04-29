@@ -310,6 +310,10 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         # Set transaction fees
         fee_schedule.service_fees = FeeSchedule.calculate_service_fees(fee_schedule_dao, account_fee)
 
+        #Special case for CSBFile type which is different from normal flow
+        if fee_schedule.corp_type_code == "CSO":
+            fee_schedule.service_fees = fee_schedule.service_fees * fee_schedule.quantity
+
         if kwargs.get('is_priority') and fee_schedule_dao.priority_fee and apply_filing_fees:
             fee_schedule.priority_fee = fee_schedule_dao.priority_fee.amount
         if kwargs.get('is_future_effective') and fee_schedule_dao.future_effective_fee and apply_filing_fees:
