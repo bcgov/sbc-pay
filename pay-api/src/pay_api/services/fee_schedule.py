@@ -297,7 +297,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
 
         fee_schedule = FeeSchedule()
         fee_schedule._dao = fee_schedule_dao  # pylint: disable=protected-access
-        fee_schedule.quantity = kwargs.get('quantity') or 0
+        fee_schedule.quantity = kwargs.get('quantity')
 
         # Find fee overrides for account.
         account_fee = AccountFeeModel.find_by_auth_account_id_and_corp_type(user.account_id, corp_type)
@@ -312,7 +312,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
 
         # Special case for CSO partner type which is different from normal flow
         if fee_schedule.corp_type_code == 'CSO':
-            fee_schedule.service_fees = fee_schedule.service_fees * fee_schedule.quantity
+            fee_schedule.service_fees = fee_schedule.service_fees * (fee_schedule.quantity or 0)
 
         if kwargs.get('is_priority') and fee_schedule_dao.priority_fee and apply_filing_fees:
             fee_schedule.priority_fee = fee_schedule_dao.priority_fee.amount
