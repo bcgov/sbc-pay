@@ -297,7 +297,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
 
         fee_schedule = FeeSchedule()
         fee_schedule._dao = fee_schedule_dao  # pylint: disable=protected-access
-        fee_schedule.quantity = kwargs.get('quantity')
+        fee_schedule.quantity = kwargs.get('quantity') or 0
 
         # Find fee overrides for account.
         account_fee = AccountFeeModel.find_by_auth_account_id_and_corp_type(user.account_id, corp_type)
