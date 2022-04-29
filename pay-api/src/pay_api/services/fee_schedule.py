@@ -310,8 +310,8 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         # Set transaction fees
         fee_schedule.service_fees = FeeSchedule.calculate_service_fees(fee_schedule_dao, account_fee)
 
-        #Special case for CSO partner type which is different from normal flow
-        if fee_schedule.corp_type_code == "CSO":
+        # Special case for CSO partner type which is different from normal flow
+        if fee_schedule.corp_type_code == 'CSO':
             fee_schedule.service_fees = fee_schedule.service_fees * fee_schedule.quantity
 
         if kwargs.get('is_priority') and fee_schedule_dao.priority_fee and apply_filing_fees:
