@@ -310,7 +310,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         # Set transaction fees
         fee_schedule.service_fees = FeeSchedule.calculate_service_fees(fee_schedule_dao, account_fee)
 
-        #Special case for CSBFile type which is different from normal flow
+        #Special case for CSO partner type which is different from normal flow
         if fee_schedule.corp_type_code == "CSO":
             fee_schedule.service_fees = fee_schedule.service_fees * fee_schedule.quantity
 
