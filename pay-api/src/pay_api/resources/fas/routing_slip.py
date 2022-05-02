@@ -76,11 +76,10 @@ class RoutingSlipSearch(Resource):
             return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
         # if no page param , return all results
-        if not request.args.get('page', None):
-            return_all = True
+        return_all = not request_json.get('page', None)
 
-        page: int = int(request.args.get('page', '1'))
-        limit: int = int(request.args.get('limit', '10'))
+        page: int = int(request_json.get('page', '1'))
+        limit: int = int(request_json.get('limit', '10'))
         response, status = RoutingSlipService.search(request_json, page,
                                                      limit, return_all=return_all), HTTPStatus.OK
         current_app.logger.debug('>RoutingSlips.query.post')

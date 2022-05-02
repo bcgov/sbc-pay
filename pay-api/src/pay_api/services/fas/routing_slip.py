@@ -456,7 +456,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
 
     @staticmethod
     def _validate_routing_slip_number_digits(rs_number: str):
-        if len(rs_number) != 9:
+        if len(rs_number) != 9 or not rs_number.isdigit():
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_DIGITS)
 
         # Using the first 8 digits of the routing slip

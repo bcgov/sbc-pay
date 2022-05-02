@@ -58,7 +58,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
                             secondary='join(PaymentAccount, Payment, PaymentAccount.id == Payment.payment_account_id)',
                             primaryjoin='and_(RoutingSlip.payment_account_id == PaymentAccount.id)',
                             viewonly=True,
-                            lazy='joined'
+                            lazy='select'
                             )
 
     invoices = relationship(Invoice,
@@ -66,7 +66,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
                                         f'Invoice.payment_method_code.in_('
                                         f"['{PaymentMethod.INTERNAL.value}']))",
                             viewonly=True,
-                            lazy='joined'
+                            lazy='select'
                             )
 
     refunds = relationship(Refund, viewonly=True,
@@ -74,7 +74,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
                                        f'RoutingSlip.status.in_('
                                        f'[f"{RoutingSlipStatus.REFUND_REQUESTED.value}",'
                                        f'f"{RoutingSlipStatus.REFUND_AUTHORIZED.value}"]))',
-                           lazy='joined')
+                           lazy='select')
 
     parent = relationship('RoutingSlip', remote_side=[number], lazy='select')
 

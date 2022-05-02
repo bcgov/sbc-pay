@@ -7,7 +7,7 @@
 
   ],
   "properties":{
-     "status":{
+     "routingSlipNumber":{
         "$id":"#/properties/routingSlipNumber",
         "type":"string",
         "title":"routing slip Number",
@@ -115,6 +115,26 @@
               ]
            }
         }
-     }
+     },
+     "page": {
+      "$id": "#/properties/page",
+      "type": "integer",
+      "title": "Page",
+      "description": "Used for Pagination.",
+      "default": 0,
+      "examples": [
+         1
+      ]
+   },
+   "limit": {
+      "$id": "#/properties/limit",
+      "type": "integer",
+      "title": "Limit",
+      "description": "Used limit the number of results.",
+      "default": 0,
+      "examples": [
+         30
+      ]
+   }
   }
 }
