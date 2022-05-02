@@ -57,7 +57,6 @@ six==1.16.0
 threadloop==1.0.2
 thrift==0.16.0
 tornado==6.1
-typing_extensions==4.2.0
 urllib3==1.26.9
 zipp==3.8.0
 -e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
