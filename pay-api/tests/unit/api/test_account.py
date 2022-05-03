@@ -102,7 +102,7 @@ def test_account_purchase_history_with_service_account(session, client, jwt, app
 
 
 def test_payment_request_for_cso_with_service_account(session, client, jwt, app):
-    """Assert Service charge is calculated based on quantity"""
+    """Assert Service charge is calculated based on quantity."""
     quantity = 2
     token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value], product_code="CSO"), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
