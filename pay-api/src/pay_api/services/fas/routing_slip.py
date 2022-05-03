@@ -179,7 +179,19 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             'total': total,
             'page': page,
             'limit': limit,
-            'items': RoutingSlipSchema().dump(routing_slips, many=True)
+            # We need these fields, to populate the UI.
+            'items': RoutingSlipSchema(only=('number',
+                                             'payments.receipt_number',
+                                             'payment_account.name',
+                                             'created_name',
+                                             'routing_slip_date',
+                                             'status',
+                                             'invoices.business_identifier',
+                                             'payments.cheque_receipt_number',
+                                             'remaining_amount',
+                                             'invoices.corp_type_code',
+                                             )
+                                       ).dump(routing_slips, many=True)
         }
 
         return data
