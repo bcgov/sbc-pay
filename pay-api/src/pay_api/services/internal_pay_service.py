@@ -48,7 +48,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number."""
         routing_slip = None
-        is_zero_dollar_invoice = invoice.total == 0
+        is_zero_dollar_invoice = decimal.Decimal(invoice.total).quantize(decimal.Decimal('1.00')) == 0
         invoice_reference: InvoiceReference = None
         if routing_slip_number := invoice.routing_slip:
             current_app.logger.info(f'Routing slip number {routing_slip_number}, for invoice {invoice.id}')
@@ -57,7 +57,8 @@ class InternalPayService(PaymentSystemService, OAuthService):
         if not is_zero_dollar_invoice and routing_slip is not None:
             # creating invoice in cfs is done in job
             current_app.logger.info(f'FAS Routing slip found with remaining amount : {routing_slip.remaining_amount}')
-            routing_slip.remaining_amount = routing_slip.remaining_amount - decimal.Decimal(invoice.total)
+            routing_slip.remaining_amount = routing_slip.remaining_amount - \
+                decimal.Decimal(invoice.total).quantize(decimal.Decimal('1.00'))
             routing_slip.flush()
         else:
             invoice_reference = InvoiceReference.create(invoice.id,
@@ -109,7 +110,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         if payment:
             payment.payment_status_code = PaymentStatus.REFUNDED.value
             payment.flush()
-        routing_slip.remaining_amount += decimal.Decimal(invoice.total)
+        routing_slip.remaining_amount += decimal.Decimal(invoice.total).quantize(decimal.Decimal('1.00'))
         routing_slip.flush()
         invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
         invoice.flush()
@@ -136,7 +137,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         if routing_slip.parent:
             detail = f'This Routing slip is linked, enter the parent Routing slip: {routing_slip.parent.number}'
             raise BusinessException(InternalPayService._create_error_object('LINKED_ROUTING_SLIP', detail))
-        if routing_slip.remaining_amount < invoice.total:
+        if routing_slip.remaining_amount < decimal.Decimal(invoice.total).quantize(decimal.Decimal('1.00')):
             detail = f'There is not enough balance in this Routing slip. ' \
                      f'The current balance is: ${routing_slip.remaining_amount:.2f}'
 

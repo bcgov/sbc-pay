@@ -18,6 +18,7 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 """
 
 from datetime import datetime
+from decimal import Decimal
 from random import randrange
 from typing import Dict, List, Tuple
 
@@ -71,6 +72,39 @@ def get_claims(app_request=None, role: str = Role.EDITOR.value, username: str = 
         'product_code': product_code
     }
     return claim
+
+
+def get_routing_slip_payment_request(business_identifier: str = 'CP0001234', corp_type: str = 'CP',
+                                     second_filing_type: str = 'OTADD'):
+    """Return a payment request object."""
+    return {
+        'businessInfo': {
+            'businessIdentifier': business_identifier,
+            'corpType': corp_type,
+            'businessName': 'ABC Corp',
+            'contactInfo': {
+                'city': 'Victoria',
+                'postalCode': 'V8P2P2',
+                'province': 'BC',
+                'addressLine1': '100 Douglas Street',
+                'country': 'CA'
+            }
+        },
+        'accountInfo': {
+            'routingSlip': '123456789'
+        },
+        'filingInfo': {
+            'filingTypes': [
+                {
+                    'filingTypeCode': second_filing_type,
+                    'filingDescription': 'TEST'
+                },
+                {
+                    'filingTypeCode': 'OTANN'
+                }
+            ]
+        }
+    }
 
 
 def get_payment_request(business_identifier: str = 'CP0001234', corp_type: str = 'CP',
@@ -394,7 +428,7 @@ def factory_routing_slip(
         payment_account_id=None,
         status: str = RoutingSlipStatus.ACTIVE.value,
         total: int = 0,
-        remaining_amount: int = 0,
+        remaining_amount: Decimal = 0.0,
         routing_slip_date=datetime.now()
 ):
     """Return Factory."""
@@ -564,6 +598,31 @@ def get_paybc_transaction_request():
     return {
         'clientSystemUrl': 'http://localhost:8080/abcd',
         'payReturnUrl': 'http://localhost:8081/xyz'
+    }
+
+
+def get_auth_staff(method_of_payment='CC'):
+    """Return authorization response for staff users."""
+    return {
+        'orgMembership': 'OWNER',
+        'roles': [
+            'view',
+            'edit',
+            'make_payment',
+            'staff'
+        ],
+        'business': {
+            'folioNumber': 'MOCK1234',
+            'name': 'Mock Business'
+        },
+        'account': {
+            'accountType': 'BASIC',
+            'id': '1234',
+            'name': 'Mock Account',
+            'paymentInfo': {
+                'methodOfPayment': 'INTERNAL'
+            }
+        }
     }
 
 
