@@ -21,7 +21,7 @@ from typing import Dict, List
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import ForeignKey, func, select
+from sqlalchemy import ForeignKey, func
 from sqlalchemy.orm import contains_eager, lazyload, load_only, relationship
 
 from pay_api.utils.constants import DT_SHORT_FORMAT
