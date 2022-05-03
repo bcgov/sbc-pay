@@ -19,19 +19,19 @@ Test-Suite to ensure that the FeeSchedule Service is working as expected.
 from unittest.mock import Mock, patch
 
 import pytest
-from requests import Response
-from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
-
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
-from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, RoutingSlip as RoutingSlipModel
+from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount
+from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.services import CFSService
 from pay_api.services.payment_service import PaymentService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus
+from requests import Response
+from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
     factory_payment_transaction, factory_routing_slip, get_auth_basic_user, get_auth_premium_user, get_auth_staff,
     get_payment_request, get_payment_request_with_payment_method, get_payment_request_with_service_fees,
-    get_zero_dollar_payment_request, get_routing_slip_payment_request)
+    get_routing_slip_payment_request, get_zero_dollar_payment_request)
 
 
 test_user_token = {'preferred_username': 'test'}
@@ -88,7 +88,6 @@ def test_create_payment_record_with_internal_pay(session, public_user_mock):
 
     rs = RoutingSlipModel.find_by_number(rs_number)
     assert rs.remaining_amount == 0.0
-
 
 
 def test_create_payment_record_rollback(session, public_user_mock):
