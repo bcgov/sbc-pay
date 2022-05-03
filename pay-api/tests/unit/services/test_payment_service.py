@@ -23,14 +23,15 @@ from requests import Response
 from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
-from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount
+from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount, RoutingSlip as RoutingSlipModel
 from pay_api.services import CFSService
 from pay_api.services.payment_service import PaymentService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
-    factory_payment_transaction, factory_routing_slip, get_auth_basic_user, get_auth_premium_user, get_payment_request,
-    get_payment_request_with_payment_method, get_payment_request_with_service_fees, get_zero_dollar_payment_request)
+    factory_payment_transaction, factory_routing_slip, get_auth_basic_user, get_auth_premium_user, get_auth_staff,
+    get_payment_request, get_payment_request_with_payment_method, get_payment_request_with_service_fees,
+    get_zero_dollar_payment_request, get_routing_slip_payment_request)
 
 
 test_user_token = {'preferred_username': 'test'}
@@ -63,6 +64,31 @@ def test_create_payment_record_with_direct_pay(session, public_user_mock):
     account_model = PaymentAccount.find_by_auth_account_id(get_auth_basic_user().get('account').get('id'))
 
     assert account_id == account_model.id
+
+
+def test_create_payment_record_with_internal_pay(session, public_user_mock):
+    """Assert that the payment records are created."""
+    # Create invoice without routing slip.
+    payment_response = PaymentService.create_invoice(
+        get_routing_slip_payment_request(), get_auth_staff())
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_staff().get('account').get('id'))
+    account_id = account_model.id
+    assert account_id is not None
+    assert payment_response.get('id') is not None
+
+    rs_number = '123456789'
+    rs = factory_routing_slip(number=rs_number, payment_account_id=account_id, remaining_amount=50.00)
+    rs.save()
+
+    # Create another invoice with a routing slip.
+    PaymentService.create_invoice(get_routing_slip_payment_request(), get_auth_staff())
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_staff().get('account').get('id'))
+
+    assert account_id == account_model.id
+
+    rs = RoutingSlipModel.find_by_number(rs_number)
+    assert rs.remaining_amount == 0.0
+
 
 
 def test_create_payment_record_rollback(session, public_user_mock):
