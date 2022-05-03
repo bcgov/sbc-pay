@@ -184,6 +184,29 @@ def get_payment_request_with_service_fees(business_identifier: str = 'CP0001234'
     }
 
 
+def get_payment_request_for_cso(csbfile_quantity: int = 2):
+    """Return a payment request object for cso."""
+    return {
+        'filingInfo': {
+            'filingIdentifier': '34522',
+            'folioNumber': '22',
+            'filingTypes': [{
+                'filingTypeCode': 'CSBVFEE',
+                'quantity': csbfile_quantity
+            }]
+        },
+        'businessInfo': {
+            'businessIdentifier': 'business_indentifier',
+            'businessName': 'business_name',
+            'corpType': 'CSO'
+        },
+        'details': [{
+            'label': 'A Label',
+            'value': 'A value'
+        }]
+    }
+
+
 def get_payment_request_with_folio_number(business_identifier: str = 'CP0001234', folio_number: str = '1234567890'):
     """Return a payment request object."""
     return {

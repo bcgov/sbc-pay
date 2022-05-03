@@ -101,7 +101,7 @@
     },
     "total": {
       "$id": "#/properties/line_items/items/properties/total",
-      "type": "integer",
+      "type": "number",
       "title": "Line Total",
       "default": 0,
       "examples": [
