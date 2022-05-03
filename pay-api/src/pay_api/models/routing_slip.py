@@ -101,7 +101,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     def search(cls, search_filter: Dict,  # pylint: disable=too-many-arguments
-               page: int, limit: int, return_all: bool, max_no_records: int = 0) -> (List[RoutingSlip], int):
+               page: int, limit: int, return_all: bool) -> (List[RoutingSlip], int):
         """Search for routing slips by the criteria provided."""
         query = db.session.query(RoutingSlip).\
             outerjoin(RoutingSlip.payments).\
@@ -146,6 +146,9 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         if initiator := search_filter.get('initiator', None):
             query = query.filter(RoutingSlip.created_name.ilike('%' + initiator + '%'))
 
+        if business_identifier := search_filter.get('businessIdentifier', None):
+            query = query.filter(Invoice.business_identifier == business_identifier)
+
         query = cls._add_receipt_number(query, search_filter)
 
         query = cls._add_folio_filter(query, search_filter)
@@ -156,17 +159,15 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         query = query.order_by(RoutingSlip.created_on.desc())
 
         if not return_all:
-            pagination = query.paginate(per_page=limit, page=page)
-            result, count = pagination.items, pagination.total
-            if max_no_records > 0:
-                count = max_no_records if max_no_records < count else count
-        else:
-            if max_no_records > 0:
-                pagination = query.paginate(per_page=max_no_records, page=1)
-                result, count = pagination.items, max_no_records
-            else:
-                result = query.all()
-                count = len(result)
+            sub_query = query.with_entities(RoutingSlip.id).\
+                             group_by(RoutingSlip.id).\
+                             limit(limit).\
+                             offset((page - 1) * limit).\
+                             subquery()
+            query = query.filter(RoutingSlip.id.in_(sub_query))
+
+        result = query.all()
+        count = len(result)
 
         return result, count
 
