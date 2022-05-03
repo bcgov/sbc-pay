@@ -189,7 +189,9 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                                              'invoices.business_identifier',
                                              'payments.cheque_receipt_number',
                                              'remaining_amount',
+                                             'total',
                                              'invoices.corp_type_code',
+                                             'payments.payment_method_code'
                                              )
                                        ).dump(routing_slips, many=True)
         }
