@@ -146,6 +146,9 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         if initiator := search_filter.get('initiator', None):
             query = query.filter(RoutingSlip.created_name.ilike('%' + initiator + '%'))
 
+        if business_identifier := search_filter.get('businessIdentifier', None):
+            query = query.filter(Invoice.business_identifier == business_identifier)
+
         query = cls._add_receipt_number(query, search_filter)
 
         query = cls._add_folio_filter(query, search_filter)
