@@ -48,7 +48,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number."""
         routing_slip = None
-        is_zero_dollar_invoice = invoice.total == 0
+        is_zero_dollar_invoice = decimal.Decimal(invoice.total).quantize(decimal.Decimal('1.00')) == 0
         invoice_reference: InvoiceReference = None
         if routing_slip_number := invoice.routing_slip:
             current_app.logger.info(f'Routing slip number {routing_slip_number}, for invoice {invoice.id}')
