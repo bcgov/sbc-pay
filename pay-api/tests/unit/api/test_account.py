@@ -30,9 +30,10 @@ from pay_api.models.payment_account import PaymentAccount
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
-    get_basic_account_payload, get_claims, get_gov_account_payload, get_gov_account_payload_with_no_revenue_account,
-    get_pad_account_payload, get_payment_request, get_payment_request_for_cso, get_payment_request_with_service_fees, get_premium_account_payload,
-    get_unlinked_pad_account_payload, token_header)
+    get_basic_account_payload, get_claims, get_gov_account_payload,
+    get_gov_account_payload_with_no_revenue_account, get_pad_account_payload,
+    get_payment_request, get_payment_request_for_cso, get_payment_request_with_service_fees,
+    get_premium_account_payload, get_unlinked_pad_account_payload, token_header)
 
 
 fake = Faker()
@@ -104,9 +105,11 @@ def test_account_purchase_history_with_service_account(session, client, jwt, app
 def test_payment_request_for_cso_with_service_account(session, client, jwt, app):
     """Assert Service charge is calculated based on quantity."""
     quantity = 2
-    token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value], product_code="CSO"), token_header)
+    token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value], product_code='CSO'), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request_for_cso(quantity)), headers=headers)
+    rv = client.post('/api/v1/payment-requests',
+                     data=json.dumps(get_payment_request_for_cso(quantity)),
+                     headers=headers)
     rv2 = client.get('/api/v1/fees/CSO/CSBVFEE', headers=headers)
     assert rv2.status_code == 200
     assert rv.status_code == 201
