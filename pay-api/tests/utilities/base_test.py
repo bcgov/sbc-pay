@@ -313,7 +313,7 @@ def get_payment_request_for_wills(will_alias_quantity: int = 1):
 
 
 def get_payment_request_for_cso(csbfile_quantity: int = 2):
-    """Return a payment request object for cso.""" 
+    """Return a payment request object for cso."""
     return {
         'filingInfo': {
             'filingIdentifier': '34522',

@@ -100,6 +100,7 @@ def test_account_purchase_history_with_service_account(session, client, jwt, app
     assert len(rv.json.get('items')) == 1
     assert rv.json.get('items')[0]['corpTypeCode'] == 'CSO'
 
+
 def test_payment_request_for_cso_with_service_account(session, client, jwt, app):
     """Assert Service charge is calculated based on quantity"""
     quantity = 2
@@ -110,6 +111,7 @@ def test_payment_request_for_cso_with_service_account(session, client, jwt, app)
     assert rv2.status_code == 200
     assert rv.status_code == 201
     assert rv.json.get('lineItems')[0]['serviceFees'] == rv2.json.get('serviceFees') * quantity
+
 
 def test_account_purchase_history_invalid_request(session, client, jwt, app):
     """Assert that the endpoint returns 400."""
