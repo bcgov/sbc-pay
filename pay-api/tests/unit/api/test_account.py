@@ -31,8 +31,8 @@ from pay_api.schemas import utils as schema_utils
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
     get_basic_account_payload, get_claims, get_gov_account_payload, get_gov_account_payload_with_no_revenue_account,
-    get_pad_account_payload, get_payment_request, get_payment_request_with_service_fees, get_premium_account_payload,
-    get_unlinked_pad_account_payload, token_header)
+    get_pad_account_payload, get_payment_request, get_payment_request_for_cso, get_payment_request_with_service_fees,
+    get_premium_account_payload, get_unlinked_pad_account_payload, token_header)
 
 
 fake = Faker()
