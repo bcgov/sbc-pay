@@ -338,7 +338,6 @@ def test_create_routing_slips_search_with_folio_number(client, jwt, app):
     payment_account_id = rv.json.get('paymentAccount').get('id')
     payment_account = PaymentAccount(id=payment_account_id)
     folio_number = 'test_folio'
-    another_folio_number = 'another_test_folio'
     invoice = factory_invoice(payment_account, folio_number=folio_number, routing_slip=rv.json.get('number'),
                               payment_method_code=PaymentMethod.INTERNAL.value)
     invoice.save()
@@ -371,7 +370,7 @@ def test_create_routing_slips_search_with_folio_number(client, jwt, app):
                               payment_method_code=PaymentMethod.INTERNAL.value)
     invoice.save()
 
-    invoice = factory_invoice(payment_account, folio_number=another_folio_number, routing_slip=rv.json.get('number'),
+    invoice = factory_invoice(payment_account, folio_number=folio_number, routing_slip=rv.json.get('number'),
                               payment_method_code=PaymentMethod.INTERNAL.value)
     invoice.save()
 
