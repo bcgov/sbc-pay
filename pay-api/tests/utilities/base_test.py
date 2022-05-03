@@ -312,6 +312,29 @@ def get_payment_request_for_wills(will_alias_quantity: int = 1):
     }
 
 
+def get_payment_request_for_cso(csbfile_quantity: int = 2):
+    """Return a payment request object for cso.""" 
+    return {
+        'filingInfo': {
+            'filingIdentifier': '34522',
+            'folioNumber': '22',
+            'filingTypes': [{
+                'filingTypeCode': 'CSBVFEE',
+                'quantity': csbfile_quantity
+            }]
+        },
+        'businessInfo': {
+            'businessIdentifier': 'business_indentifier',
+            'businessName': 'business_name',
+            'corpType': 'CSO'
+        },
+        'details': [{
+            'label': 'A Label',
+            'value': 'A value'
+        }]
+    }
+
+
 def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC', account_number='4101',
                             bcol_user_id='test',
                             auth_account_id: str = '1234',
