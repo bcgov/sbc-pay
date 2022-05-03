@@ -57,15 +57,15 @@ def test_routing_slip_find_search(session):
 
     routing_slip = RoutingSlip()
     search_dict = {'routingSlipNumber': rs.number}
-    res, count = routing_slip.search(search_dict, page=1, limit=1, max_no_records=50, return_all=True)
+    res, count = routing_slip.search(search_dict, page=1, limit=1, return_all=True)
     assert count == 50
     assert len(res) == 1, 'searched with routing slip.so only one record'
 
-    res, count = routing_slip.search({}, page=1, limit=1, max_no_records=50, return_all=True)
+    res, count = routing_slip.search({}, page=1, limit=1, return_all=True)
     assert count == 50
     assert len(res) == 21, 'retun all true ;so shud return all records'
 
-    res, count = routing_slip.search({}, page=1, limit=1, max_no_records=50, return_all=False)
+    res, count = routing_slip.search({}, page=1, limit=1, return_all=False)
     assert count == 21
     assert len(res) == 1, 'return all false'
 

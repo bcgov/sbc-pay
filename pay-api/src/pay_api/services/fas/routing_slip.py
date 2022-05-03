@@ -169,12 +169,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
     @classmethod
     def search(cls, search_filter: Dict, page: int, limit: int, return_all: bool = False):
         """Search for routing slip."""
-        max_no_records: int = 0
-        if not bool(search_filter) or not any(search_filter.values()):
-            max_no_records = current_app.config.get('ROUTING_SLIP_DEFAULT_TOTAL')
-
-        routing_slips, total = RoutingSlipModel.search(search_filter, page, limit, return_all,
-                                                       max_no_records)
+        routing_slips, total = RoutingSlipModel.search(search_filter, page, limit, return_all)
         data = {
             'total': total,
             'page': page,
