@@ -191,7 +191,9 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                                              'remaining_amount',
                                              'total',
                                              'invoices.corp_type_code',
-                                             'payments.payment_method_code'
+                                             'payments.payment_method_code',
+                                             'payments.payment_status_code',
+                                             'payment_account.payment_method'
                                              )
                                        ).dump(routing_slips, many=True)
         }
