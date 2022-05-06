@@ -26,6 +26,7 @@ from pay_api.models import FeeScheduleSchema
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
+from pay_api.utils.util import get_quantized
 
 
 @ServiceTracing.trace(ServiceTracing.enable_tracing, ServiceTracing.should_be_tracing)
@@ -227,7 +228,8 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         """Set the quantity."""
         self._quantity = value
         if self._quantity and self._quantity > 1:
-            self._fee_amount = self._fee_amount * self._quantity
+            # Need a float here, otherwise serialization wont work.
+            self._fee_amount = float(get_quantized(self._fee_amount * self._quantity))
 
     @description.setter
     def description(self, value: str):

@@ -29,7 +29,7 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem, RoutingSlipStatus
-from pay_api.utils.util import generate_transaction_number
+from pay_api.utils.util import generate_transaction_number, get_quantized
 
 from ..exceptions import BusinessException
 from ..utils.errors import Error
@@ -48,7 +48,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number."""
         routing_slip = None
-        is_zero_dollar_invoice = decimal.Decimal(invoice.total).quantize(decimal.Decimal('1.00')) == 0
+        is_zero_dollar_invoice = get_quantized(invoice.total) == 0
         invoice_reference: InvoiceReference = None
         if routing_slip_number := invoice.routing_slip:
             current_app.logger.info(f'Routing slip number {routing_slip_number}, for invoice {invoice.id}')
@@ -58,7 +58,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
             # creating invoice in cfs is done in job
             current_app.logger.info(f'FAS Routing slip found with remaining amount : {routing_slip.remaining_amount}')
             routing_slip.remaining_amount = routing_slip.remaining_amount - \
-                decimal.Decimal(invoice.total).quantize(decimal.Decimal('1.00'))
+                get_quantized(invoice.total)
             routing_slip.flush()
         else:
             invoice_reference = InvoiceReference.create(invoice.id,
@@ -110,7 +110,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         if payment:
             payment.payment_status_code = PaymentStatus.REFUNDED.value
             payment.flush()
-        routing_slip.remaining_amount += decimal.Decimal(invoice.total).quantize(decimal.Decimal('1.00'))
+        routing_slip.remaining_amount += get_quantized(invoice.total)
         routing_slip.flush()
         invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
         invoice.flush()
