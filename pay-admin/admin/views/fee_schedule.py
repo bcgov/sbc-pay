@@ -20,7 +20,8 @@ from .secured_view import SecuredView
 class FeeScheduleConfig(SecuredView):
     """Fee Schedule config."""
 
-    column_list = ['corp_type_code', 'filing_type_code', 'fee', 'future_effective_fee', 'priority_fee', 'service_fee']
+    column_list = ['corp_type_code', 'filing_type_code', 'fee',
+                   'future_effective_fee', 'priority_fee', 'service_fee', 'variable']
 
     column_labels = {
         'corp_type': 'Corp Type',
@@ -33,7 +34,8 @@ class FeeScheduleConfig(SecuredView):
         'future_effective_fee': 'Future Effective Fee',
         'priority_fee': 'Priority Fee',
         'service_fee': 'Service Fee',
-        'distribution_codes': 'Distribution Code'
+        'distribution_codes': 'Distribution Code',
+        'variable': 'Variable Fee Flag'
     }
     column_searchable_list = ('corp_type_code', 'filing_type_code')
     column_sortable_list = ('corp_type_code',)
@@ -44,7 +46,7 @@ class FeeScheduleConfig(SecuredView):
 
     form_columns = ['corp_type', 'filing_type', 'fee', 'fee_start_date',
                     'fee_end_date', 'future_effective_fee', 'priority_fee', 'service_fee',
-                    'distribution_codes']
+                    'distribution_codes', 'variable']
     edit_columns = ['corp_type', 'filing_type', 'fee_start_date',
                     'fee_end_date', 'priority_fee', 'service_fee',
                     'distribution_codes']
