@@ -168,6 +168,7 @@ def test_fees_with_quantity(session, client, jwt, app):
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, 'fees')[0]
 
+
 def test_fees_with_float_quantity(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(), token_header)
