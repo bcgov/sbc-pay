@@ -45,8 +45,7 @@ def error_to_response(error: Error, invalid_params=None):
         'detail': error.details,
         'invalidParams': invalid_params
     }
-    if Error.INVALID_REQUEST:
-        logging.debug(body)
+    logging.debug(body)
     return convert_to_response(body, status=error.status)
 
 
