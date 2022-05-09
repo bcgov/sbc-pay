@@ -2,7 +2,7 @@
 [![codecov](https://codecov.io/gh/bcgov/sbc-pay/branch/development/graph/badge.svg)](https://codecov.io/gh/bcgov/sbc-pay)
 [![Lifecycle:Maturing](https://img.shields.io/badge/Lifecycle-Maturing-007EC6)](https://github.com/bcgov/repomountie/blob/master/doc/lifecycle-badges.md)
 
-# BC Registiries payment services
+# BC Registries payment services
 
 BC Registries and Online Services is beginning a phased, multi-year modernization initiative to replace and improve the applications used for BC Online, the Corporate, Personal Property and Manufactured Homes Registries. Our vision is to develop a better service experience and make it easier for citizens and businesses to complete transactions and filings with the province of BC and across other jurisdictions, manage accounts and pay for services.
 
