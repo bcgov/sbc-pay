@@ -20,6 +20,7 @@ error - a description of the error {code / description: classname / full text}
 status_code - where possible use HTTP Error Codes
 """
 import json
+import logging
 from http import HTTPStatus
 from typing import Dict
 
@@ -27,6 +28,8 @@ from flask import Response
 
 from pay_api.utils.enums import Code
 from pay_api.utils.errors import Error
+
+logger = logging.getLogger('api-exceptions')
 
 
 def convert_to_response(body: Dict, status: int = HTTPStatus.BAD_REQUEST):
@@ -36,12 +39,15 @@ def convert_to_response(body: Dict, status: int = HTTPStatus.BAD_REQUEST):
 
 def error_to_response(error: Error, invalid_params=None):
     """Convert Error enum to response."""
-    return convert_to_response(body={
+    body = {
         'type': construct_type(error.code),
         'title': error.message,
         'detail': error.details,
         'invalidParams': invalid_params
-    }, status=error.status)
+    }
+    if Error.INVALID_REQUEST:
+        logging.debug(body)
+    return convert_to_response(body, status=error.status)
 
 
 def construct_type(code):
