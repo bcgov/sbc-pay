@@ -169,6 +169,22 @@ def test_fees_with_quantity(session, client, jwt, app):
     assert schema_utils.validate(rv.json, 'fees')[0]
 
 
+def test_fees_with_float_quantity(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    corp_type = 'XX'
+    filing_type_code = 'XOTANN'
+    factory_fee_schedule_model(
+        factory_filing_type_model('XOTANN', 'TEST'),
+        factory_corp_type_model('XX', 'TEST'),
+        factory_fee_model('XXX', 43.39))
+    rv = client.get(f'/api/v1/fees/{corp_type}/{filing_type_code}?quantity=6', headers=headers)
+    assert rv.status_code == 200
+    assert schema_utils.validate(rv.json, 'fees')[0]
+    assert rv.json.get('total') == 260.34
+
+
 def test_calculate_fees_for_service_fee(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(), token_header)

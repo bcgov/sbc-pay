@@ -19,6 +19,7 @@ A simple decorator to add the options method to a Request Class.
 import calendar
 from datetime import datetime, timedelta
 from typing import Dict
+from decimal import Decimal
 from urllib.parse import parse_qsl
 
 import pytz
@@ -235,3 +236,8 @@ def get_outstanding_txns_from_date() -> datetime:
 def string_to_date(date_val: str, dt_format: str = DT_SHORT_FORMAT):
     """Return formatted local time."""
     return datetime.strptime(date_val, dt_format).date()
+
+
+def get_quantized(amount: float) -> Decimal:
+    """Return rounded decimal. (Default = ROUND_HALF_EVEN)."""
+    return Decimal(amount).quantize(Decimal('1.00'))
