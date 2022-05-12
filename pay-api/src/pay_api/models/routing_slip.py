@@ -44,8 +44,8 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     number = db.Column(db.String(), unique=True)
-    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True)
-    status = db.Column(db.String(), ForeignKey('routing_slip_status_codes.code'), nullable=True)
+    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
+    status = db.Column(db.String(), ForeignKey('routing_slip_status_codes.code'), nullable=True, index=True)
     total = db.Column(db.Numeric(), nullable=True, default=0)
     remaining_amount = db.Column(db.Numeric(), nullable=True, default=0)
     routing_slip_date = db.Column(db.Date, nullable=False)

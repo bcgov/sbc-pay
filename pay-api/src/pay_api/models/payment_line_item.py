@@ -28,7 +28,7 @@ class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attribute
     __tablename__ = 'payment_line_items'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
+    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False, index=True)
     filing_fees = db.Column(db.Float, nullable=False)
     fee_schedule_id = db.Column(db.Integer, ForeignKey('fee_schedules.fee_schedule_id'), nullable=False)
     quantity = db.Column(db.Integer, nullable=True)

@@ -48,7 +48,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     payment_system_code = db.Column(db.String(10), ForeignKey('payment_systems.code'), nullable=False)
-    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True)
+    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
     payment_method_code = db.Column(db.String(15), ForeignKey('payment_methods.code'), nullable=False)
     payment_status_code = db.Column(db.String(20), ForeignKey('payment_status_codes.code'), nullable=True)
     invoice_number = db.Column(db.String(50), nullable=True, index=True, comment='CFS Invoice number')
