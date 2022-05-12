@@ -24,9 +24,10 @@ def upgrade():
     op.alter_column('account_fees', 'created_by',
                existing_type=sa.VARCHAR(length=50),
                nullable=False)
-    op.drop_index('invoices_payment_method_code_idx', table_name='invoices')
+                   # Remove hand made indexes. 
+    op.execute('DROP INDEX IF EXISTS invoices_payment_method_code_idx')
     op.create_index(op.f('ix_invoices_payment_method_code'), 'invoices', ['payment_method_code'], unique=False)
-    op.drop_index('routing_slips_status_idx', table_name='routing_slips')
+    op.execute('DROP INDEX IF EXISTS routing_slips_status_idx')
     op.create_index(op.f('ix_routing_slips_status'), 'routing_slips', ['status'], unique=False)
     # ### end Alembic commands ###
 
