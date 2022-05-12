@@ -24,7 +24,7 @@ def upgrade():
     op.alter_column('account_fees', 'created_by',
                existing_type=sa.VARCHAR(length=50),
                nullable=False)
-                   # Remove hand made indexes. 
+    # Remove hand made indexes. 
     op.execute('DROP INDEX IF EXISTS invoices_payment_method_code_idx')
     op.create_index(op.f('ix_invoices_payment_method_code'), 'invoices', ['payment_method_code'], unique=False)
     op.execute('DROP INDEX IF EXISTS routing_slips_status_idx')
