@@ -29,7 +29,7 @@ class Receipt(BaseModel):
     __tablename__ = 'receipts'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
+    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False, index=True)
     receipt_number = db.Column(db.String(50), nullable=False)
     receipt_date = db.Column(db.DateTime)
     receipt_amount = db.Column(db.Float)
