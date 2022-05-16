@@ -562,6 +562,8 @@
               <div class="detail-label">
                 {% if invoice['corpTypeCode'] == 'NRO' %}
                 NR #:
+                {% elif invoice['corpTypeCode'] in ('SP','GP') %}
+                Registration Number:
                 {% else %}
                 Incorporation Number:
                 {% endif %}
@@ -598,7 +600,7 @@
             {% if effectiveDateTime %}
             <div class="detail-row">
               <div class="detail-label">
-                Recognition Date and Time:
+                Effective Date and Time:
               </div>
               <div class="detail-value">
                 {{effectiveDateTime}}
@@ -756,7 +758,11 @@
             <span>Filing #{{filingIdentifier}}</span>
             {% endif %}
             {% if invoice['businessIdentifier'] %}
+            {% if invoice['corpTypeCode'] in ('SP','GP') %}
+            <span>Registration #{{invoice['businessIdentifier']}}</span>
+            {% else %}
             <span>Incorporation #{{invoice['businessIdentifier']}}</span>
+            {% endif %}
             {% endif %}
             {% endif %}
             <span>Page 1 of 1 </span>

@@ -22,7 +22,7 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
-from pay_api.utils.constants import INCORPORATION_LABEL
+from pay_api.utils.constants import INCORPORATION_LABEL, REGISTRATION_LABEL
 from pay_api.utils.enums import CorpType as CorpTypeEnum
 from pay_api.utils.enums import (
     InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus, Product)
@@ -176,6 +176,7 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
                 details: list[dict] = data.get('details')
                 if not details:
                     details = []
-                details.insert(0, dict(label=INCORPORATION_LABEL, value=data.get('business_identifier')))
+                label = REGISTRATION_LABEL if corp_type.code in ('SP', 'GP') else INCORPORATION_LABEL
+                details.insert(0, dict(label=label, value=data.get('business_identifier')))
                 data['details'] = details
         return data
