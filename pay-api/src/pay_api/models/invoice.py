@@ -176,7 +176,7 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
                 details: list[dict] = data.get('details')
                 if not details:
                     details = []
-                label = REGISTRATION_LABEL if corp_type.code in ('SP', 'GP', 'DBA') else INCORPORATION_LABEL
+                label = REGISTRATION_LABEL if corp_type.code in ('SP', 'GP') else INCORPORATION_LABEL
                 details.insert(0, dict(label=label, value=data.get('business_identifier')))
                 data['details'] = details
         return data

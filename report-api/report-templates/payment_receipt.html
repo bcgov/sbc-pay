@@ -562,7 +562,7 @@
               <div class="detail-label">
                 {% if invoice['corpTypeCode'] == 'NRO' %}
                 NR #:
-                {% elif invoice['corpTypeCode'] in ('SP','DBA','GP') %}
+                {% elif invoice['corpTypeCode'] in ('SP','GP') %}
                 Registration Number:
                 {% else %}
                 Incorporation Number:
@@ -758,7 +758,7 @@
             <span>Filing #{{filingIdentifier}}</span>
             {% endif %}
             {% if invoice['businessIdentifier'] %}
-            {% if invoice['corpTypeCode'] in ('SP','DBA','GP') %}
+            {% if invoice['corpTypeCode'] in ('SP','GP') %}
             <span>Registration #{{invoice['businessIdentifier']}}</span>
             {% else %}
             <span>Incorporation #{{invoice['businessIdentifier']}}</span>
