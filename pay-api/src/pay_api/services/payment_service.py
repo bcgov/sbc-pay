@@ -98,8 +98,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice.routing_slip = get_str_by_path(account_info, 'routingSlip')
             invoice.filing_id = filing_info.get('filingIdentifier', None)
             invoice.dat_number = get_str_by_path(account_info, 'datNumber')
-            invoice.folio_number = filing_info.get('folioNumber',
-                                                   get_str_by_path(authorization, 'business/folioNumber'))
+            invoice.folio_number = filing_info.get('folioNumber', None)
             invoice.business_identifier = business_identifier
             invoice.payment_method_code = pay_service.get_payment_method_code()
             invoice.corp_type_code = corp_type

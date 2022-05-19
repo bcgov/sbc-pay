@@ -603,7 +603,7 @@ def test_premium_payment_with_no_contact_info(session, client, jwt, app):
 
 @pytest.mark.parametrize('folio_number, payload', [
     ('1234567890', get_payment_request_with_folio_number(folio_number='1234567890')),
-    ('MOCK1234', get_payment_request())
+    (None, get_payment_request())
 ])
 def test_payment_creation_with_folio_number(session, client, jwt, app, folio_number, payload):
     """Assert that the endpoint returns 201."""
