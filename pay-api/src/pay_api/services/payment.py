@@ -361,7 +361,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             filtered_codes = [cd for cd in invoice_status_codes['codes'] if
                               cd['code'] == invoice['status_code']]
             if filtered_codes:
-                invoice['status_code'] = filtered_codes[0]['description']
+                invoice['status_code_description'] = filtered_codes[0]['description']
 
             data['items'].append(invoice)
 
