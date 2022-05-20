@@ -398,6 +398,11 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         """Prepare data and generate payment report by calling report api."""
         labels = ['Transaction', 'Transaction Details', 'Folio Number', 'Initiated By', 'Date', 'Purchase Amount',
                   'GST', 'Statutory Fee', 'BCOL Fee', 'Status', 'Corp Number']
+
+        # Attempt to use the status_code_description instead of status_code.
+        for invoice in results.get('items', None):
+            invoice['status_code'] = invoice.get('status_code_description', invoice['status_code'])
+
         if content_type == ContentType.CSV.value:
             template_vars = {
                 'columns': labels,
