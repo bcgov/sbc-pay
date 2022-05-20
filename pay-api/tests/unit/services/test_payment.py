@@ -85,6 +85,10 @@ def test_search_payment_history(session):
     assert results.get('items') is not None
     assert results.get('total') == 1
 
+    # Check for invoice status.
+    assert results.get('items')[0]['status_code'] == InvoiceStatus.CREATED.value
+    assert results.get('items')[0]['status_code_description'] == 'Pending'
+
     # Add one more payment
     payment_account.save()
     invoice = factory_invoice(payment_account)
