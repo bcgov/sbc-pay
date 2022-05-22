@@ -222,6 +222,11 @@ class AccountPurchaseHistory(Resource):
         limit: int = int(request.args.get('limit', '10'))
         response, status = Payment.search_purchase_history(account_number, request_json, page,
                                                            limit), HTTPStatus.OK
+
+        for invoice in response['items']:
+            if 'status_code_description' in invoice:
+                del invoice['status_code_description']
+
         current_app.logger.debug('>AccountPurchaseHistory.post')
         return jsonify(response), status
 
