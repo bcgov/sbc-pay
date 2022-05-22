@@ -87,7 +87,6 @@ def test_search_payment_history(session):
 
     # Check for invoice status.
     assert results.get('items')[0]['status_code'] == InvoiceStatus.CREATED.value
-    assert results.get('items')[0]['status_code_description'] == 'Pending'
 
     # Add one more payment
     payment_account.save()
