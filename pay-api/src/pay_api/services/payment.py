@@ -352,19 +352,11 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             data = {'items': []}
 
         invoice_ids = []
-        invoice_status_codes = CodeService.find_code_values_by_type(Code.INVOICE_STATUS.value)
         for invoice_dao in purchases:
             invoice_schema = InvoiceSchema(exclude=('receipts', 'payment_line_items', 'references'))
             invoice = invoice_schema.dump(invoice_dao)
             invoice['line_items'] = []
-
-            filtered_codes = [cd for cd in invoice_status_codes['codes'] if
-                              cd['code'] == invoice['status_code']]
-            if filtered_codes:
-                invoice['status_code_description'] = filtered_codes[0]['description']
-
             data['items'].append(invoice)
-
             invoice_ids.append(invoice_dao.id)
         # Query the payment line item to retrieve more details
         payment_line_items = PaymentLineItem.find_by_invoice_ids(invoice_ids)
@@ -399,9 +391,13 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         labels = ['Transaction', 'Transaction Details', 'Folio Number', 'Initiated By', 'Date', 'Purchase Amount',
                   'GST', 'Statutory Fee', 'BCOL Fee', 'Status', 'Corp Number']
 
-        # Attempt to use the status_code_description instead of status_code.
+        # Use the status_code_description instead of status_code.
+        invoice_status_codes = CodeService.find_code_values_by_type(Code.INVOICE_STATUS.value)
         for invoice in results.get('items', None):
-            invoice['status_code'] = invoice.get('status_code_description', invoice['status_code'])
+            filtered_codes = [cd for cd in invoice_status_codes['codes'] if
+                              cd['code'] == invoice['status_code']]
+            if filtered_codes:
+                invoice['status_code'] = filtered_codes[0]['description']
 
         if content_type == ContentType.CSV.value:
             template_vars = {
