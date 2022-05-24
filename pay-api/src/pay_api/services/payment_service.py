@@ -250,8 +250,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         for line in invoice.payment_line_items:
             line.line_item_status_code = LineItemStatus.CANCELLED.value
 
-        invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
-        invoice_reference.flush()
+        if invoice_reference:
+            invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
+            invoice_reference.flush()
 
         invoice.save()
 
