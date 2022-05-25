@@ -68,7 +68,7 @@ def upgrade():
     op.bulk_insert(
         corp_type_table,
         [
-            {'code': 'BUS', 'description': 'Business Search', 'is_online_banking_allowed': False, 'product': 'BUSINESS'}
+            {'code': 'BUS', 'description': 'Business Search', 'is_online_banking_allowed': False, 'product': 'BUSINESS_SEARCH'}
         ]
     )
 
