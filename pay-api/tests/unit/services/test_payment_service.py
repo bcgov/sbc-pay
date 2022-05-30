@@ -373,7 +373,6 @@ def test_internal_rs_back_active(session, public_user_mock):
     assert rs.remaining_amount == 0.0
     assert rs.status == RoutingSlipStatus.COMPLETE.name
 
-    # Create payment system instance from factory
     invoice = Invoice.find_by_id(invoice['id'])
     InternalPayService().process_cfs_refund(invoice)
 
