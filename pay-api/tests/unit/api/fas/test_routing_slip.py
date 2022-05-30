@@ -25,7 +25,7 @@ import pytest
 from flask import current_app
 from faker import Faker
 
-from pay_api.models import PaymentAccount
+from pay_api.models import PaymentAccount, RoutingSlip
 from pay_api.schemas import utils as schema_utils
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.services.fas.routing_slip_status_transition_service import RoutingSlipStatusTransitionService
@@ -770,3 +770,73 @@ def test_create_routing_slip_null_cheque_date(client, jwt, app):
 
     rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(routing_slip_payload), headers=headers)
     assert rv.status_code == 400
+
+
+def test_routing_slip_back_to_active(client, jwt, app):
+    """12033 - Scenario 1.
+
+    Routing slip is cancelled a transaction is cancelled
+    the balance is restored - Should move back to Active
+    """
+    pass
+
+
+def test_routing_slip_balance_zero_to_completed(client, jwt, app):
+    """12033 - Scenario 2.
+
+    Manual transaction reduces RS to 0.00
+    Routing slip status becomes Completed
+    """
+
+
+def test_routing_slip_link_attempt(client, jwt, app):
+    """12033 - Scenario 3.
+
+    Routing slip is Completed, attempt to be linked.
+    Linking shouldn't be allowed and explaining that completed routing
+    slip cannot be involved in linking.
+    """
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, Role.FAS_SEARCH.value]),
+                           token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    child = get_routing_slip_request('438607657')
+    parent1 = get_routing_slip_request('355336710')
+    client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
+    client.post('/api/v1/fas/routing-slips', data=json.dumps(parent1), headers=headers)
+
+    rs_model = RoutingSlip.find_by_number('438607657')
+    rs_model.status = RoutingSlipStatus.COMPLETE.value
+    rs_model.commit()
+
+    data = {'childRoutingSlipNumber': f"{child.get('number')}", 'parentRoutingSlipNumber': f"{parent1.get('number')}"}
+    rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
+    assert rv.json.get('type') == 'RS_CANT_LINK_COMPLETE'
+    assert rv.status_code == 400
+
+
+def test_routing_slip_status_to_nsf_attempt(client, jwt, app):
+    """12033 - Scenario 4.
+
+    Routing slip in Completed,
+    user attempts to move it into another status, can only set to NSF.
+    """
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, 
+                                             Role.FAS_SEARCH.value, Role.FAS_EDIT.value]),
+                           token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    child = get_routing_slip_request('438607657')
+    client.post('/api/v1/fas/routing-slips', data=json.dumps(child), headers=headers)
+
+    rs_model = RoutingSlip.find_by_number('438607657')
+    rs_model.status = RoutingSlipStatus.COMPLETE.value
+    rs_model.commit()
+
+    # Active shouldn't work.
+    rv = client.patch(f"/api/v1/fas/routing-slips/{child.get('number')}?action={PatchActions.UPDATE_STATUS.value}",
+                      data=json.dumps({'status': RoutingSlipStatus.ACTIVE.value}), headers=headers)
+    assert rv.status_code == 400
+
+    # NSF should work.
+    rv = client.patch(f"/api/v1/fas/routing-slips/{child.get('number')}?action={PatchActions.UPDATE_STATUS.value}",
+                      data=json.dumps({'status': RoutingSlipStatus.NSF.value}), headers=headers)
+    assert rv.status_code == 200, 'status changed successfully.'
