@@ -803,7 +803,7 @@ def test_routing_slip_status_to_nsf_attempt(client, jwt, app):
     Routing slip in Completed,
     user attempts to move it into another status, can only set to NSF.
     """
-    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, 
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value,
                                              Role.FAS_SEARCH.value, Role.FAS_EDIT.value]),
                            token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
