@@ -23,8 +23,9 @@ from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.services import CFSService
+from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.services.payment_service import PaymentService
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus, RoutingSlipStatus
 from requests import Response
 from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
 from tests.utilities.base_test import (
@@ -88,6 +89,12 @@ def test_create_payment_record_with_internal_pay(session, public_user_mock):
 
     rs = RoutingSlipModel.find_by_number(rs_number)
     assert rs.remaining_amount == 0.0
+    """12033 - Scenario 1.
+
+    Manual transaction reduces RS to 0.00
+    Routing slip status becomes Completed
+    """
+    assert rs.status == RoutingSlipStatus.COMPLETE.name
 
 
 def test_create_payment_record_rollback(session, public_user_mock):
@@ -337,3 +344,37 @@ def test_create_wire_payment(session, public_user_mock):
     assert payment_response is not None
     assert payment_response.get('payment_method') == PaymentMethod.WIRE.value
     assert payment_response.get('status_code') == 'CREATED'
+
+
+def test_internal_rs_back_active(session, public_user_mock):
+    """12033 - Scenario 2.
+
+    Routing slip is complete and a transaction is cancelled
+    the balance is restored - Should move back to Active
+    """
+    payment_response = PaymentService.create_invoice(
+        get_routing_slip_payment_request(), get_auth_staff())
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_staff().get('account').get('id'))
+    account_id = account_model.id
+    assert account_id is not None
+    assert payment_response.get('id') is not None
+
+    rs_number = '123456789'
+    rs = factory_routing_slip(number=rs_number, payment_account_id=account_id, remaining_amount=50.00)
+    rs.save()
+
+    # Create another invoice with a routing slip.
+    invoice = PaymentService.create_invoice(get_routing_slip_payment_request(), get_auth_staff())
+    account_model = PaymentAccount.find_by_auth_account_id(get_auth_staff().get('account').get('id'))
+
+    assert account_id == account_model.id
+
+    rs = RoutingSlipModel.find_by_number(rs_number)
+    assert rs.remaining_amount == 0.0
+    assert rs.status == RoutingSlipStatus.COMPLETE.name
+
+    # Create payment system instance from factory
+    invoice = Invoice.find_by_id(invoice['id'])
+    InternalPayService().process_cfs_refund(invoice)
+
+    assert rs.status == RoutingSlipStatus.ACTIVE.name

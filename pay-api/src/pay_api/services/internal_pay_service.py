@@ -58,9 +58,8 @@ class InternalPayService(PaymentSystemService, OAuthService):
             current_app.logger.info(f'FAS Routing slip found with remaining amount : {routing_slip.remaining_amount}')
             routing_slip.remaining_amount = routing_slip.remaining_amount - \
                 get_quantized(invoice.total)
-            # check if routing_slip is < 0.01
-            if get_quantized(routing_slip.remaining_amount) < 0.01:
-                routing_slip.status = RoutingSlipStatus.COMPLETE
+            if routing_slip.remaining_amount < 0.01:
+                routing_slip.status = RoutingSlipStatus.COMPLETE.value
             routing_slip.flush()
         else:
             invoice_reference = InvoiceReference.create(invoice.id,
@@ -114,8 +113,8 @@ class InternalPayService(PaymentSystemService, OAuthService):
             payment.flush()
         routing_slip.remaining_amount += get_quantized(invoice.total)
         # Move routing slip back to active on refund.
-        if routing_slip.status == RoutingSlipStatus.COMPLETE:
-            routing_slip.status = RoutingSlipStatus.ACTIVE
+        if routing_slip.status == RoutingSlipStatus.COMPLETE.value:
+            routing_slip.status = RoutingSlipStatus.ACTIVE.value
         routing_slip.flush()
         invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
         invoice.flush()

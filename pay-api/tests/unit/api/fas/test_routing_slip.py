@@ -772,23 +772,6 @@ def test_create_routing_slip_null_cheque_date(client, jwt, app):
     assert rv.status_code == 400
 
 
-def test_routing_slip_back_to_active(client, jwt, app):
-    """12033 - Scenario 1.
-
-    Routing slip is cancelled a transaction is cancelled
-    the balance is restored - Should move back to Active
-    """
-    pass
-
-
-def test_routing_slip_balance_zero_to_completed(client, jwt, app):
-    """12033 - Scenario 2.
-
-    Manual transaction reduces RS to 0.00
-    Routing slip status becomes Completed
-    """
-
-
 def test_routing_slip_link_attempt(client, jwt, app):
     """12033 - Scenario 3.
 
