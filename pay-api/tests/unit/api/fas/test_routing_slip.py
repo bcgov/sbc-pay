@@ -793,7 +793,7 @@ def test_routing_slip_link_attempt(client, jwt, app):
 
     data = {'childRoutingSlipNumber': f"{child.get('number')}", 'parentRoutingSlipNumber': f"{parent1.get('number')}"}
     rv = client.post('/api/v1/fas/routing-slips/links', data=json.dumps(data), headers=headers)
-    assert rv.json.get('type') == 'RS_CANT_LINK_COMPLETE'
+    assert rv.json.get('type') == 'RS_IN_INVALID_STATUS'
     assert rv.status_code == 400
 
     # Try the reverse:

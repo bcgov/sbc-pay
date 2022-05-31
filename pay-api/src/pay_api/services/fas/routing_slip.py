@@ -443,9 +443,6 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         if routing_slip.status == RoutingSlipStatus.NSF.value:
             raise BusinessException(Error.RS_CANT_LINK_NSF)
 
-        if routing_slip.status == RoutingSlipStatus.COMPLETE.value:
-            raise BusinessException(Error.RS_CANT_LINK_COMPLETE)
-
         RoutingSlip._validate_status(parent_rs_slip, routing_slip)
 
     @staticmethod
