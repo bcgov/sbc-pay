@@ -58,7 +58,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
             current_app.logger.info(f'FAS Routing slip found with remaining amount : {routing_slip.remaining_amount}')
             routing_slip.remaining_amount = routing_slip.remaining_amount - \
                 get_quantized(invoice.total)
-            if routing_slip.remaining_amount < 0.01:
+            if routing_slip.status == RoutingSlipStatus.ACTIVE.value and routing_slip.remaining_amount < 0.01:
                 routing_slip.status = RoutingSlipStatus.COMPLETE.value
             routing_slip.flush()
         else:
