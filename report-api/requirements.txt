@@ -3,14 +3,14 @@ Flask-WeasyPrint==0.6
 Flask==1.1.2
 Jinja2==3.0.3
 MarkupSafe==2.0.1
-Pillow==9.1.0
+Pillow==9.1.1
 Werkzeug==1.0.1
 aniso8601==9.0.1
 attrs==21.4.0
 blinker==1.4
-cachelib==0.6.0
+cachelib==0.7.0
 cairocffi==1.3.0
-certifi==2021.10.8
+certifi==2022.5.18.1
 cffi==1.15.0
 charset-normalizer==2.0.12
 click==8.1.3
@@ -22,7 +22,6 @@ fonttools==4.33.3
 gunicorn==20.1.0
 html5lib==1.1
 idna==3.3
-importlib-resources==5.7.1
 itsdangerous==2.0.1
 jaeger-client==4.8.0
 jsonschema==4.5.1
@@ -30,7 +29,7 @@ opentracing==2.4.0
 psycopg2-binary==2.9.3
 pyasn1==0.4.8
 pycparser==2.21
-pydyf==0.1.2
+pydyf==0.2.0
 pyphen==0.12.0
 pyrsistent==0.18.1
 python-dateutil==2.8.2
@@ -46,8 +45,7 @@ thrift==0.16.0
 tinycss2==1.1.1
 tornado==6.1
 urllib3==1.26.9
-weasyprint==54.3
+weasyprint==55.0
 webencodings==0.5.1
-zipp==3.8.0
 zopfli==0.2.1
 -e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
