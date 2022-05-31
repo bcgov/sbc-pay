@@ -30,7 +30,7 @@ from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.enums import InvoiceStatus, Role, RoutingSlipStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
-from pay_api.utils.util import get_str_by_path
+from pay_api.utils.util import get_quantized, get_str_by_path
 
 
 class RefundService:  # pylint: disable=too-many-instance-attributes
@@ -196,7 +196,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         if (refund_status := get_str_by_path(request, 'status')) is None:
             raise BusinessException(Error.INVALID_REQUEST)
         user_name = kwargs['user'].user_name
-        if rs_model.remaining_amount == 0:
+        if get_quantized(rs_model.remaining_amount) == 0:
             raise BusinessException(Error.INVALID_REQUEST)  # refund not possible for zero amount routing slips
 
         is_refund_finalized = refund_status in (RoutingSlipStatus.REFUND_AUTHORIZED.value,
