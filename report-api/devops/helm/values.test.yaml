@@ -2,16 +2,16 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-environment: "prod"
+environment: "test"
 role: "api"
 
 image:
   repository: "image-registry.openshift-image-registry.svc:5000"
   namespace: "d893f6-tools"
-  pullPolicy: "IfNotPresent"
+  pullPolicy: "Always"
   pullSecrets: ""
   digest: ""
-  tag: "prod"
+  tag: "test"
 
 migrations:
   enabled: false
@@ -98,8 +98,8 @@ route:
 autoscaling:
   # Specifies whether the autoscaling should be created
   create: true
-  minReplicas: 2
-  maxReplicas: 3
+  minReplicas: 1
+  maxReplicas: 1
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
 

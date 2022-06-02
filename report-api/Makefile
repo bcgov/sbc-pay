@@ -7,7 +7,12 @@ MKFILE_PATH:=$(abspath $(lastword $(MAKEFILE_LIST)))
 CURRENT_ABS_DIR:=$(patsubst %/,%,$(dir $(MKFILE_PATH)))
 
 PROJECT_NAME:=report_api
-DOCKER_NAME:=report-api
+ifndef DOCKER_NAME
+	DOCKER_NAME:=report_api
+endif
+
+echo-name:
+	echo $(DOCKER_NAME)
 
 #################################################################################
 # COMMANDS -- Setup                                                             #
@@ -83,13 +88,15 @@ cd: ## CD flow
 ifeq ($(TAG_NAME), test)
 cd: update-env
 	oc -n "$(OPENSHIFT_REPOSITORY)-tools" tag $(DOCKER_NAME):dev $(DOCKER_NAME):$(TAG_NAME)
+	oc -n "$(OPENSHIFT_REPOSITORY)-$(TAG_NAME)" rollout restart deployment $(DOCKER_NAME)-$(TAG_NAME)
 else ifeq ($(TAG_NAME), prod)
 cd: update-env
 	oc -n "$(OPENSHIFT_REPOSITORY)-tools" tag $(DOCKER_NAME):$(TAG_NAME) $(DOCKER_NAME):$(TAG_NAME)-$(shell date +%F)
 	oc -n "$(OPENSHIFT_REPOSITORY)-tools" tag $(DOCKER_NAME):test $(DOCKER_NAME):$(TAG_NAME)
+	oc -n "$(OPENSHIFT_REPOSITORY)-$(TAG_NAME)" rollout restart deployment $(DOCKER_NAME)-$(TAG_NAME)
 else
 TAG_NAME=dev
-cd: build tag
+cd: build update-env deploy
 endif
 
 build: ## Build the docker container
@@ -119,6 +126,12 @@ update-env: ## Update env from 1pass
 
 tag: push ## tag image
 	oc -n "$(OPENSHIFT_REPOSITORY)-tools" tag $(DOCKER_NAME):latest $(DOCKER_NAME):$(TAG_NAME)
+
+deploy: tag ## deploy image
+	oc -n "$(OPENSHIFT_REPOSITORY)-$(TAG_NAME)" rollout restart deployment $(DOCKER_NAME)-$(TAG_NAME)
+
+watch-deploy: ## watch deployment
+	oc -n "$(OPENSHIFT_REPOSITORY)-$(TAG_NAME)" rollout status -w deployment $(DOCKER_NAME)-$(TAG_NAME)
 
 #################################################################################
 # COMMANDS - Local                                                              #

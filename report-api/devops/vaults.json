@@ -2,14 +2,14 @@
     {
         "vault": "keycloak",
         "application": [
-            "jwt-base"
+            "jwt-base",
+            "account-services-account"
         ]
     },
     {
-        "vault": "relationship",
+        "vault": "sentry",
         "application": [
-            "sentry",
-            "jwt"
+            "relationship-api"
         ]
     }
 ]

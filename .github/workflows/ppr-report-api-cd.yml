@@ -1,4 +1,4 @@
-name: Report API CD
+name: PPR Report API CD
 
 on:
   push:
@@ -19,11 +19,11 @@ defaults:
     working-directory: ./report-api
 
 env:
-  APP_NAME: "report-api"
+  APP_NAME: "ppr-report-api"
   TAG_NAME: "dev"
 
 jobs:
-  report-api-cd-by-push:
+  ppr-report-api-cd-by-push:
     runs-on: ubuntu-20.04
 
     if: github.event_name == 'push' && github.repository == 'bcgov/sbc-pay'
@@ -45,7 +45,7 @@ jobs:
           OPENSHIFT_DOCKER_REGISTRY: ${{ secrets.OPENSHIFT4_DOCKER_REGISTRY }}
           OPENSHIFT_SA_NAME: ${{ secrets.OPENSHIFT4_SA_NAME }}
           OPENSHIFT_SA_TOKEN: ${{ secrets.OPENSHIFT4_SA_TOKEN }}
-          OPENSHIFT_REPOSITORY: ${{ secrets.OPENSHIFT4_REPORT_REPOSITORY }}
+          OPENSHIFT_REPOSITORY: ${{ secrets.OPENSHIFT4_REPORT_PPR_REPOSITORY }}
           TAG_NAME: ${{ env.TAG_NAME }}
         run: |
           make cd
@@ -53,7 +53,7 @@ jobs:
       - name: Watch new rollout
         shell: bash
         env:
-          OPENSHIFT_REPOSITORY: ${{ secrets.OPENSHIFT4_REPORT_REPOSITORY }}
+          OPENSHIFT_REPOSITORY: ${{ secrets.OPENSHIFT4_REPORT_PPR_REPOSITORY }}
           TAG_NAME: ${{ env.TAG_NAME }}
         run: |
           make watch-deploy
@@ -63,13 +63,13 @@ jobs:
         if: failure()
         with:
           type: ${{ job.status }}
-          job_name: "*Report API Built and Deployed to ${{env.TAG_NAME}}*"
+          job_name: "*PPR Report API Built and Deployed to ${{env.TAG_NAME}}*"
           channel: "#registries-bot"
           url: ${{ secrets.ROCKETCHAT_WEBHOOK }}
           commit: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
-  report-api-cd-by-dispatch:
+  ppr-report-api-cd-by-dispatch:
     runs-on: ubuntu-20.04
 
     if: github.event_name == 'workflow_dispatch' && github.repository == 'bcgov/sbc-pay'
@@ -94,7 +94,7 @@ jobs:
           OPENSHIFT_DOCKER_REGISTRY: ${{ secrets.OPENSHIFT4_DOCKER_REGISTRY }}
           OPENSHIFT_SA_NAME: ${{ secrets.OPENSHIFT4_SA_NAME }}
           OPENSHIFT_SA_TOKEN: ${{ secrets.OPENSHIFT4_SA_TOKEN }}
-          OPENSHIFT_REPOSITORY: ${{ secrets.OPENSHIFT4_REPORT_REPOSITORY }}
+          OPENSHIFT_REPOSITORY: ${{ secrets.OPENSHIFT4_REPORT_PPR_REPOSITORY }}
           TAG_NAME: ${{ env.TAG_NAME }}
         run: |
           make cd
@@ -102,7 +102,7 @@ jobs:
       - name: Watch new rollout
         shell: bash
         env:
-          OPENSHIFT_REPOSITORY: ${{ secrets.OPENSHIFT4_REPORT_REPOSITORY }}
+          OPENSHIFT_REPOSITORY: ${{ secrets.OPENSHIFT4_REPORT_PPR_REPOSITORY }}
           TAG_NAME: ${{ env.TAG_NAME }}
         run: |
           make watch-deploy
@@ -112,7 +112,7 @@ jobs:
         if: failure()
         with:
           type: ${{ job.status }}
-          job_name: "*Report API Built and Deployed to ${{env.TAG_NAME}}*"
+          job_name: "*PPR Report API Built and Deployed to ${{env.TAG_NAME}}*"
           channel: "#registries-bot"
           url: ${{ secrets.ROCKETCHAT_WEBHOOK }}
           commit: true
