@@ -175,11 +175,13 @@ class EjvPaymentTask(CgiEjv):
             # Create ejv invoice link records and set invoice status
             current_app.logger.info('Creating ejv invoice link records and setting invoice status.')
             for inv in invoices:
+                current_app.logger.debug(f'Creating EJV Invoice Link for invoice id: {inv.id}')
                 # Create Ejv file link and flush
                 EjvInvoiceLinkModel(invoice_id=inv.id, ejv_header_id=ejv_header_model.id,
                                     disbursement_status_code=DisbursementStatus.UPLOADED.value).flush()
                 # Set distribution status to invoice
                 # Create invoice reference record
+                current_app.logger.debug(f'Creating Invoice Reference for invoice id: {inv.id}')
                 inv_ref = InvoiceReferenceModel(
                     invoice_id=inv.id,
                     invoice_number=generate_transaction_number(inv.id),
