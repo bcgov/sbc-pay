@@ -86,7 +86,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
             # Publish message to the queue with payment token, so that they can release records on their side.
         self._release_payment(invoice=invoice)
 
-    def get_default_invoice_status(self) -> str:  # pylint: disable=no-self-use
+    def get_default_invoice_status(self) -> str:
         """Return the default status for invoice when created."""
         return InvoiceStatus.APPROVED.value
 
