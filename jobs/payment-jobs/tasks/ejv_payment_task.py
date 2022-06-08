@@ -115,8 +115,6 @@ class EjvPaymentTask(CgiEjv):
                     # Line can have 2 distribution, 1 for the total and another one for service fees.
                     line_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
                         line.fee_distribution_id)
-                    service_fee_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
-                        line_distribution_code.service_fee_distribution_code_id)
                     if line.total > 0:
                         total += line.total
                         line_distribution = cls.get_distribution_string(line_distribution_code)
@@ -141,6 +139,8 @@ class EjvPaymentTask(CgiEjv):
                                                                   line.total,
                                                                   line_number, 'D' if not is_jv_reversal else 'C')
                     if line.service_fees > 0:
+                        service_fee_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
+                            line_distribution_code.service_fee_distribution_code_id)
                         total += line.service_fees
                         service_fee_distribution = cls.get_distribution_string(service_fee_distribution_code)
                         flow_through = f'{line.invoice_id:<110}'
