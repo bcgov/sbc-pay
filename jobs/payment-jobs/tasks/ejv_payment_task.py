@@ -166,11 +166,13 @@ class EjvPaymentTask(CgiEjv):
                                                                   line_number, 'D' if not is_jv_reversal else 'C')
             batch_total += total
 
-            # A JV header for each account.
-            control_total += 1
-            account_jv = cls.get_jv_header(batch_type, cls.get_journal_batch_name(batch_number),
-                                           journal_name, total) + account_jv
-            ejv_content = ejv_content + account_jv
+            # Skip if we have no total from the invoices.
+            if total > 0:
+                # A JV header for each account.
+                control_total += 1
+                account_jv = cls.get_jv_header(batch_type, cls.get_journal_batch_name(batch_number),
+                                               journal_name, total) + account_jv
+                ejv_content = ejv_content + account_jv
 
             # Create ejv invoice link records and set invoice status
             current_app.logger.info('Creating ejv invoice link records and setting invoice status.')
