@@ -70,6 +70,7 @@ class EjvPaymentTask(CgiEjv):
         # JV Batch Header
         batch_header: str = cls.get_batch_header(batch_number, batch_type)
 
+        current_app.logger.info('Processing accounts.')
         for account_id in account_ids:
             account_jv: str = ''
             # Find all invoices for the gov account to pay.
@@ -96,6 +97,7 @@ class EjvPaymentTask(CgiEjv):
 
             line_number: int = 0
             total: float = 0
+            current_app.logger.info(f'Processing invoices for account_id: {account_id}.')
             for inv in invoices:
                 # If it's a JV reversal credit and debit is reversed.
                 is_jv_reversal = inv.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
@@ -171,6 +173,7 @@ class EjvPaymentTask(CgiEjv):
             ejv_content = ejv_content + account_jv
 
             # Create ejv invoice link records and set invoice status
+            current_app.logger.info('Creating ejv invoice link records and setting invoice status.')
             for inv in invoices:
                 # Create Ejv file link and flush
                 EjvInvoiceLinkModel(invoice_id=inv.id, ejv_header_id=ejv_header_model.id,
@@ -196,6 +199,8 @@ class EjvPaymentTask(CgiEjv):
 
         # Create a file add this content.
         file_path_with_name, trg_file_path = cls.create_inbox_and_trg_files(ejv_content)
+
+        current_app.logger.info('Uploading to ftp.')
 
         # Upload file and trg to FTP
         cls.upload(ejv_content, cls.get_file_name(), file_path_with_name, trg_file_path)
