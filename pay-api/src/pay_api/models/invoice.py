@@ -150,7 +150,7 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
     })
 
     @post_dump
-    def _clean_up(self, data, many):  # pylint: disable=unused-argument,no-self-use
+    def _clean_up(self, data, many):  # pylint: disable=unused-argument
         """Clean up attributes."""
         if data.get('line_items'):
             for line in list(data.get('line_items')):

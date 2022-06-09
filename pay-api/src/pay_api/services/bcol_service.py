@@ -108,7 +108,7 @@ class BcolService(PaymentSystemService, OAuthService):
         invoice = Invoice.find_by_id(invoice_reference.invoice_id, skip_auth_check=True)
         return f'{invoice_reference.invoice_number}', datetime.now(), invoice.total
 
-    def _get_fee_code(self, corp_type: str, is_staff: bool = False):  # pylint: disable=no-self-use
+    def _get_fee_code(self, corp_type: str, is_staff: bool = False):
         """Return BCOL fee code."""
         corp_type = CorpType.find_by_code(code=corp_type)
         return corp_type.bcol_staff_fee_code if is_staff else corp_type.bcol_fee_code

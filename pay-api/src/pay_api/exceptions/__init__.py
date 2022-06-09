@@ -90,7 +90,7 @@ class ServiceUnavailableException(Exception):  # noqa
         self.error = error
         self.status = Error.SERVICE_UNAVAILABLE.name
 
-    def response(self, error: Error = Error.SERVICE_UNAVAILABLE):  # pylint: disable=no-self-use
+    def response(self, error: Error = Error.SERVICE_UNAVAILABLE):
         """Response attributes."""
         from pay_api.services.code import Code as CodeService  # pylint: disable=import-outside-toplevel
 

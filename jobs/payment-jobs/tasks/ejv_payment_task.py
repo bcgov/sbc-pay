@@ -70,6 +70,7 @@ class EjvPaymentTask(CgiEjv):
         # JV Batch Header
         batch_header: str = cls.get_batch_header(batch_number, batch_type)
 
+        current_app.logger.info('Processing accounts.')
         for account_id in account_ids:
             account_jv: str = ''
             # Find all invoices for the gov account to pay.
@@ -96,6 +97,7 @@ class EjvPaymentTask(CgiEjv):
 
             line_number: int = 0
             total: float = 0
+            current_app.logger.info(f'Processing invoices for account_id: {account_id}.')
             for inv in invoices:
                 # If it's a JV reversal credit and debit is reversed.
                 is_jv_reversal = inv.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
@@ -112,11 +114,11 @@ class EjvPaymentTask(CgiEjv):
                 line_items = inv.payment_line_items
 
                 for line in line_items:
+                    if line.total == 0:
+                        continue
                     # Line can have 2 distribution, 1 for the total and another one for service fees.
                     line_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
                         line.fee_distribution_id)
-                    service_fee_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
-                        line_distribution_code.service_fee_distribution_code_id)
                     if line.total > 0:
                         total += line.total
                         line_distribution = cls.get_distribution_string(line_distribution_code)
@@ -141,6 +143,8 @@ class EjvPaymentTask(CgiEjv):
                                                                   line.total,
                                                                   line_number, 'D' if not is_jv_reversal else 'C')
                     if line.service_fees > 0:
+                        service_fee_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
+                            line_distribution_code.service_fee_distribution_code_id)
                         total += line.service_fees
                         service_fee_distribution = cls.get_distribution_string(service_fee_distribution_code)
                         flow_through = f'{line.invoice_id:<110}'
@@ -169,12 +173,15 @@ class EjvPaymentTask(CgiEjv):
             ejv_content = ejv_content + account_jv
 
             # Create ejv invoice link records and set invoice status
+            current_app.logger.info('Creating ejv invoice link records and setting invoice status.')
             for inv in invoices:
+                current_app.logger.debug(f'Creating EJV Invoice Link for invoice id: {inv.id}')
                 # Create Ejv file link and flush
                 EjvInvoiceLinkModel(invoice_id=inv.id, ejv_header_id=ejv_header_model.id,
                                     disbursement_status_code=DisbursementStatus.UPLOADED.value).flush()
                 # Set distribution status to invoice
                 # Create invoice reference record
+                current_app.logger.debug(f'Creating Invoice Reference for invoice id: {inv.id}')
                 inv_ref = InvoiceReferenceModel(
                     invoice_id=inv.id,
                     invoice_number=generate_transaction_number(inv.id),
@@ -194,6 +201,8 @@ class EjvPaymentTask(CgiEjv):
 
         # Create a file add this content.
         file_path_with_name, trg_file_path = cls.create_inbox_and_trg_files(ejv_content)
+
+        current_app.logger.info('Uploading to ftp.')
 
         # Upload file and trg to FTP
         cls.upload(ejv_content, cls.get_file_name(), file_path_with_name, trg_file_path)
