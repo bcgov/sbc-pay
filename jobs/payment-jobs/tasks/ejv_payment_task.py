@@ -179,8 +179,9 @@ class EjvPaymentTask(CgiEjv):
             for inv in invoices:
                 current_app.logger.debug(f'Creating EJV Invoice Link for invoice id: {inv.id}')
                 # Create Ejv file link and flush
-                EjvInvoiceLinkModel(invoice_id=inv.id, ejv_header_id=ejv_header_model.id,
-                                    disbursement_status_code=DisbursementStatus.UPLOADED.value).flush()
+                ejv_invoice_link = EjvInvoiceLinkModel(invoice_id=inv.id, ejv_header_id=ejv_header_model.id,
+                                                       disbursement_status_code=DisbursementStatus.UPLOADED.value)
+                db.session.add(ejv_invoice_link)
                 # Set distribution status to invoice
                 # Create invoice reference record
                 current_app.logger.debug(f'Creating Invoice Reference for invoice id: {inv.id}')
@@ -190,7 +191,8 @@ class EjvPaymentTask(CgiEjv):
                     reference_number=None,
                     status_code=InvoiceReferenceStatus.ACTIVE.value
                 )
-                inv_ref.flush()
+                db.session.add(inv_ref)
+            db.session.flush()  # Instead of flushing every entity, flush all at once.
 
         if not ejv_content:
             db.session.rollback()
