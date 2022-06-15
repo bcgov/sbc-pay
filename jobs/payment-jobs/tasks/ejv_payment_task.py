@@ -166,19 +166,22 @@ class EjvPaymentTask(CgiEjv):
                                                                   line_number, 'D' if not is_jv_reversal else 'C')
             batch_total += total
 
-            # A JV header for each account.
-            control_total += 1
-            account_jv = cls.get_jv_header(batch_type, cls.get_journal_batch_name(batch_number),
-                                           journal_name, total) + account_jv
-            ejv_content = ejv_content + account_jv
+            # Skip if we have no total from the invoices.
+            if total > 0:
+                # A JV header for each account.
+                control_total += 1
+                account_jv = cls.get_jv_header(batch_type, cls.get_journal_batch_name(batch_number),
+                                               journal_name, total) + account_jv
+                ejv_content = ejv_content + account_jv
 
             # Create ejv invoice link records and set invoice status
             current_app.logger.info('Creating ejv invoice link records and setting invoice status.')
             for inv in invoices:
                 current_app.logger.debug(f'Creating EJV Invoice Link for invoice id: {inv.id}')
                 # Create Ejv file link and flush
-                EjvInvoiceLinkModel(invoice_id=inv.id, ejv_header_id=ejv_header_model.id,
-                                    disbursement_status_code=DisbursementStatus.UPLOADED.value).flush()
+                ejv_invoice_link = EjvInvoiceLinkModel(invoice_id=inv.id, ejv_header_id=ejv_header_model.id,
+                                                       disbursement_status_code=DisbursementStatus.UPLOADED.value)
+                db.session.add(ejv_invoice_link)
                 # Set distribution status to invoice
                 # Create invoice reference record
                 current_app.logger.debug(f'Creating Invoice Reference for invoice id: {inv.id}')
@@ -188,7 +191,8 @@ class EjvPaymentTask(CgiEjv):
                     reference_number=None,
                     status_code=InvoiceReferenceStatus.ACTIVE.value
                 )
-                inv_ref.flush()
+                db.session.add(inv_ref)
+            db.session.flush()  # Instead of flushing every entity, flush all at once.
 
         if not ejv_content:
             db.session.rollback()
