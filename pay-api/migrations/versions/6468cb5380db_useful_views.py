@@ -26,7 +26,12 @@ def upgrade():
             i.id as invoice_id,
             payment_method_code,
             invoice_number,
-            pli.total
+            routing_slip,
+            pli.total as pli_total,
+            i.total as invoice_total,
+            i.paid as invoice_paid,
+            pli.service_fees as pli_service_fees,
+            i.service_fees
         from
             invoices i
         left join invoice_references ir on
