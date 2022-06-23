@@ -37,25 +37,25 @@ def upgrade():
             pli.invoice_id = i.id;
     ''')
     op.execute('''CREATE VIEW RPT_INVOICES as
-    select
-        pa.auth_account_id,
-        i.id as invoice_id,
-        invoice_number,
-        filing_id,
-        pa.bcol_account,
-        created_on at time zone 'utc' at time zone 'America/Vancouver' as created_on,
-        created_by,
-        created_name,
-        invoice_status_code,
-        total,
-        paid,
-        payment_method_code
-    from
-        invoices i
-    left join payment_accounts pa on
-        pa.id = i.payment_account_id
-    left join invoice_references ir on
-        i.id = ir.invoice_id
+        select
+            pa.auth_account_id,
+            i.id as invoice_id,
+            invoice_number,
+            filing_id,
+            pa.bcol_account,
+            created_on at time zone 'utc' at time zone 'America/Vancouver' as created_on,
+            created_by,
+            created_name,
+            invoice_status_code,
+            total,
+            paid,
+            payment_method_code
+        from
+            invoices i
+        left join payment_accounts pa on
+            pa.id = i.payment_account_id
+        left join invoice_references ir on
+            i.id = ir.invoice_id
     ''')
 
 def downgrade():
