@@ -19,12 +19,12 @@ depends_on = None
 def upgrade():
     op.execute('''CREATE VIEW RPT_INVOICES_PLI as
         select
-            pa.auth_account_id,
-            pa.name,
-            pa.payment_method,
             created_on at time zone 'utc' at time zone 'america/vancouver' as created_pst,
             updated_on at time zone 'utc' at time zone 'america/vancouver' as updated_pst,
-            i.id,
+            pa.auth_account_id,
+            pa.name,
+            i.id as invoice_id,
+            payment_method_code,
             invoice_number,
             pli.total
         from
@@ -38,18 +38,20 @@ def upgrade():
     ''')
     op.execute('''CREATE VIEW RPT_INVOICES as
         select
+            created_on at time zone 'utc' at time zone 'America/Vancouver' as created_pst,
+            updated_on at time zone 'utc' at time zone 'america/vancouver' as updated_pst,
             pa.auth_account_id,
+            pa.name,
             i.id as invoice_id,
+            payment_method_code,
             invoice_number,
             filing_id,
             pa.bcol_account,
-            created_on at time zone 'utc' at time zone 'America/Vancouver' as created_on,
             created_by,
             created_name,
             invoice_status_code,
             total,
-            paid,
-            payment_method_code
+            paid
         from
             invoices i
         left join payment_accounts pa on
