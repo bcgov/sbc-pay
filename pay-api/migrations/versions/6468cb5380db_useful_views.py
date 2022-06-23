@@ -1,4 +1,4 @@
-"""empty message
+"""These are views that are shortcuts for common questions.
 
 Revision ID: 6468cb5380db
 Revises: 7aff4af4be85
