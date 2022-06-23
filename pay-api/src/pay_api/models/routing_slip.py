@@ -139,7 +139,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
             query = query.filter(RoutingSlip.total == total_amount)
 
         if remaining_amount := search_filter.get('remainingAmount', None):
-            query = query.filter(RoutingSlip.remaining_amount == remaining_amount)
+            query = query.filter(RoutingSlip.remaining_amount == remaining_amount.replace('$', ''))
 
         query = cls._add_date_filter(query, search_filter)
 
