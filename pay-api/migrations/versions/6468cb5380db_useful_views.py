@@ -29,11 +29,11 @@ def upgrade():
             pli.total
         from
             invoices i
-        join invoice_references ir on
+        left join invoice_references ir on
             i.id = ir.invoice_id
-        join payment_accounts pa on
+        left join payment_accounts pa on
             pa.id = i.payment_account_id
-        join payment_line_items pli on
+        left join payment_line_items pli on
             pli.invoice_id = i.id;
     ''')
     op.execute('''CREATE VIEW RPT_INVOICES as
