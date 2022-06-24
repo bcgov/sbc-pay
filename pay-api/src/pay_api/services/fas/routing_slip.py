@@ -325,7 +325,8 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         total = get_quantized(sum(float(payment.get('paidAmount')) for payment in request_json.get('payments')))
 
         # Calculate Total USD
-        total_usd = get_quantized(sum(float(payment.get('paidUsdAmount', 0)) for payment in request_json.get('payments')))
+        total_usd = get_quantized(sum(float(payment.get('paidUsdAmount', 0))
+            for payment in request_json.get('payments')))
 
         # Create a routing slip record.
         routing_slip: RoutingSlipModel = RoutingSlipModel(

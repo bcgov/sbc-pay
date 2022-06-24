@@ -120,7 +120,7 @@ def test_refund_routing_slips_reject(client, jwt):
 
 def test_refund_routing_slips_zero_dollar_error(client, jwt):
     """Assert zero dollar refund fails."""
-    payload = get_routing_slip_request(cheque_receipt_numbers=[('1234567890', PaymentMethod.CHEQUE.value, 0.005)])
+    payload = get_routing_slip_request(cheque_receipt_numbers=[('1234567890', PaymentMethod.CHEQUE.value, 0.00)])
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value, Role.FAS_REFUND.value]),
                            token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
