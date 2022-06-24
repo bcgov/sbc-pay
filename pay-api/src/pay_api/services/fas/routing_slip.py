@@ -33,7 +33,7 @@ from pay_api.utils.enums import (
     RoutingSlipStatus)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
-from pay_api.utils.util import get_local_time, string_to_date
+from pay_api.utils.util import get_local_time, get_quantized, string_to_date
 
 
 class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -322,10 +322,10 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             status=CfsAccountStatus.PENDING.value
         ).flush()
 
-        total = sum(float(payment.get('paidAmount')) for payment in request_json.get('payments'))
+        total = get_quantized(sum(float(payment.get('paidAmount')) for payment in request_json.get('payments')))
 
         # Calculate Total USD
-        total_usd = sum(float(payment.get('paidUsdAmount', 0)) for payment in request_json.get('payments'))
+        total_usd = get_quantized(sum(float(payment.get('paidUsdAmount', 0)) for payment in request_json.get('payments')))
 
         # Create a routing slip record.
         routing_slip: RoutingSlipModel = RoutingSlipModel(
