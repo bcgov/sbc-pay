@@ -1052,7 +1052,7 @@ def test_payment_request_creation_using_variable_fee(session, client, jwt, app):
 
 
 def test_business_identifier_too_long(session, client, jwt, app):
-    """Assert that the endpoint returns 201."""
+    """Assert that the endpoint returns 400."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     payload = {
