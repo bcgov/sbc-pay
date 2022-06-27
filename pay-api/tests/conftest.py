@@ -74,9 +74,22 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
     Drops all existing tables - Meta follows Postgres FKs
     """
     with app.app_context():
+        # Clear out views
+        view_sql = """SELECT table_name FROM information_schema.views
+                WHERE table_schema='public'
+            """
+
+        sess = _db.session()
+        for seq in [name for (name,) in sess.execute(text(view_sql))]:
+            try:
+                sess.execute(text('DROP VIEW public.%s ;' % seq))
+                print('DROP VIEW public.%s ' % seq)
+            except Exception as err:  # NOQA pylint: disable=broad-except
+                print(f'Error: {err}')
+        sess.commit()
+
         # Clear out any existing tables
         metadata = MetaData(_db.engine)
-        metadata.reflect()
         for table in metadata.tables.values():
             for fk in table.foreign_keys:  # pylint: disable=invalid-name
                 _db.engine.execute(DropConstraint(fk.constraint))
