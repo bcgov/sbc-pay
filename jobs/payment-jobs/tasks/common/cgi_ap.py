@@ -74,7 +74,8 @@ class CgiAP(CgiEjv):
         name_2 = f"{refund_details['name'][40:80]:<40}"
 
         street = refund_details['mailingAddress']['street']
-        street_additional = f"{refund_details['mailingAddress']['streetAdditional'][:40]:<40}"
+        street_additional = f"{refund_details['mailingAddress']['streetAdditional'][:40]:<40}" \
+            if 'streetAdditional' in refund_details['mailingAddress'] else f'{cls.EMPTY:<40}'
         address_1 = f'{street[:40]:<40}'
         address_2, address_3 = None, None
         if len(street) > 80:
