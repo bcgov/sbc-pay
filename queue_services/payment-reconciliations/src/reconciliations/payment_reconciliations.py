@@ -260,9 +260,9 @@ async def _process_consolidated_invoices(row):
                 or record_type in (RecordType.PADR.value, RecordType.PAYR.value):
             logger.info('NOT PAID. NSF identified.')
             # NSF Condition. Publish to account events for NSF.
-            _process_failed_payments(row)
-            # Send mailer and account events to update status and send email notification
-            await _publish_account_events('lockAccount', payment_account, row)
+            if _process_failed_payments(row):
+                # Send mailer and account events to update status and send email notification
+                await _publish_account_events('lockAccount', payment_account, row)
         else:
             logger.error('Target Transaction Type is received as %s for PAD, and cannot process %s.', target_txn, row)
             capture_message(
@@ -415,7 +415,7 @@ def _process_failed_payments(row):
     )
     if payment:
         logger.info('Ignoring duplicate NSF message for invoice : %s ', inv_number)
-        return
+        return False
 
     # Set CFS Account Status.
     payment_account: PaymentAccountModel = _get_payment_account(row)
@@ -448,6 +448,7 @@ def _process_failed_payments(row):
     invoice = _create_nsf_invoice(cfs_account, inv_number, payment_account)
     # Adjust CFS invoice
     CFSService.add_nsf_adjustment(cfs_account=cfs_account, inv_number=inv_number, amount=invoice.total)
+    return True
 
 
 def _create_credit_records(csv_content: str):
