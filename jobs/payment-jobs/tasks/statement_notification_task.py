@@ -114,7 +114,7 @@ class StatementNotificationTask:  # pylint:disable=too-few-public-methods
         current_app.logger.info('send_email notify_response')
         if notify_response:
             response_json = json.loads(notify_response.text)
-            if response_json['notifyStatus']['code'] != 'FAILURE':
+            if response_json.get('notifyStatus', 'FAILURE') != 'FAILURE':
                 return True
 
         return False
