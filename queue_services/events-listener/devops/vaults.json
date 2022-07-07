@@ -7,6 +7,13 @@
         ]
     },
 	{
+        "vault": "relationship",
+        "application": [
+            "postgres-pay",
+            "jwt"
+        ]
+    },
+	{
         "vault": "sentry",
         "application": [
             "relationship-api"

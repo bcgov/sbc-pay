@@ -29,6 +29,16 @@
         ]
     },
 	{
+        "vault": "relationship",
+        "application": [
+            "postgres-pay",
+            "pay-api",
+            "jwt",
+            "payment-jobs",
+            "ftp-poller"
+        ]
+    },
+	{
         "vault": "sentry",
         "application": [
             "relationship-api"

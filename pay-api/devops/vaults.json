@@ -30,6 +30,14 @@
         ]
     },
 	{
+        "vault": "relationship",
+        "application": [
+            "postgres-pay",
+            "pay-api",
+            "jwt"
+        ]
+    },
+	{
         "vault": "sentry",
         "application": [
             "relationship-api"

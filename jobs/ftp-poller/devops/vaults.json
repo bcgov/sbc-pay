@@ -15,6 +15,13 @@
         ]
     },
 	{
+        "vault": "relationship",
+        "application": [
+            "postgres-pay",
+            "ftp-poller"
+        ]
+    },
+	{
         "vault": "sentry",
         "application": [
             "relationship-api"

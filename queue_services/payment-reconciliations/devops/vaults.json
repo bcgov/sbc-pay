@@ -29,6 +29,12 @@
         ]
     },
 	{
+        "vault": "relationship",
+        "application": [
+            "postgres-pay"
+        ]
+    },
+	{
         "vault": "sentry",
         "application": [
             "relationship-api"
