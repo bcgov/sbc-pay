@@ -14,11 +14,10 @@
             "payment-reconciliations"
         ]
     },
-    {
-        "vault": "relationship",
+	{
+        "vault": "sentry",
         "application": [
-            "postgres-pay",
-            "ftp-poller"
+            "relationship-api"
         ]
     }
 ]

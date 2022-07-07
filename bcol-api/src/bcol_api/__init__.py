@@ -41,12 +41,13 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     app.config.from_object(config.CONFIGURATION[run_mode])
 
     # Configure Sentry
-    if app.config.get('SENTRY_DSN', None):
-        sentry_sdk.init(
-            dsn=app.config.get('SENTRY_DSN'),
-            integrations=[FlaskIntegration()]
-        )
-
+    if app.config.get('SENTRY_ENABLE') == 'True':
+        if app.config.get('SENTRY_DSN', None):
+            sentry_sdk.init(
+                dsn=app.config.get('SENTRY_DSN'),
+                integrations=[FlaskIntegration()]
+            )
+            
     app.register_blueprint(API_BLUEPRINT)
     app.register_blueprint(OPS_BLUEPRINT)
     app.after_request(convert_to_camel)

@@ -137,6 +137,7 @@ class _Config():  # pylint: disable=too-few-public-methods
     BCOL_API_ENDPOINT = _get_config('BCOL_API_URL')
 
     # Sentry Config
+    SENTRY_ENABLE = _get_config('SENTRY_ENABLE', default=False) 
     SENTRY_DSN = _get_config('SENTRY_DSN', default=None)
 
     # Valid Payment redirect URLs
