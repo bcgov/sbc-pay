@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to create CFS invoices offline."""
+from datetime import datetime
 import time
 from typing import List
 
@@ -283,8 +284,11 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     current_app.logger.error(e)
                     continue
 
-            # emit account mailer event
-            mailer.publish_mailer_events('pad.invoiceCreated', payment_account, {'invoice_total': invoice_total})
+            additional_params = {
+                'invoice_total': invoice_total,
+                'invoice_process_date': f'{datetime.now()}'
+            }
+            mailer.publish_mailer_events('pad.invoiceCreated', payment_account, additional_params)
             # Iterate invoice and create invoice reference records
             for invoice in account_invoices:
                 # Create invoice reference, payment record and a payment transaction
