@@ -181,7 +181,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                 invoice.paid = invoice.total
                 invoice.save()
             elif (payment_account.credit or 0) <= invoice_balance:
-                invoice.paid = (invoice.paid or 0) + payment_account.credit
+                invoice.paid = (invoice.paid or 0) + (payment_account.credit or 0)
                 invoice.save()
 
             payment_account.credit = credit_balance
