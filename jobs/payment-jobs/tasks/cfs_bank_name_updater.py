@@ -48,7 +48,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
             sentry_sdk.init(
                 dsn=app.config.get('SENTRY_DSN'),
                 integrations=[FlaskIntegration()]
-            )     
+            )
     db.init_app(app)
     ma.init_app(app)
 
