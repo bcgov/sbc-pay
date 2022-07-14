@@ -18,7 +18,7 @@ depends_on = None
 
 
 def upgrade():
-    error_code_table = table('error_code',
+    error_code_table = table('error_codes',
                              column('code', String),
                              column('title', String),
                              column('detail', String)
