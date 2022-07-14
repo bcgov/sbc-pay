@@ -57,7 +57,6 @@ class CgiEjv:
         """Return message version."""
         return current_app.config.get('CGI_MESSAGE_VERSION')
 
-
     @classmethod
     def _supplier_number(cls):
         """Return supplier number (Vendor) - from 6.2.1.3 on the spec."""
