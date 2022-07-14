@@ -15,7 +15,6 @@
 """Common setup and fixtures for the py-test suite used by this service."""
 
 import asyncio
-import logging
 import os
 import random
 import time
