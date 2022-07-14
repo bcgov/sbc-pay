@@ -88,3 +88,4 @@ class CfsAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = CfsAccount
+        exclude = ['versions']

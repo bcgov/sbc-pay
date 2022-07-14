@@ -155,6 +155,7 @@ class DistributionCodeSchema(AuditSchema, ma.ModelSchema):  # pylint: disable=to
         """Returns all the fields from the SQLAlchemy class."""
 
         model = DistributionCode
+        exclude = ['versions']
 
     service_fee_distribution_code_id = fields.String(data_key='service_fee_distribution_code_id')
     disbursement_distribution_code_id = fields.String(data_key='disbursement_distribution_code_id')

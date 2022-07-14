@@ -70,6 +70,6 @@ class AccountFeeSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = AccountFee
-        exclude = ['service_fee']
+        exclude = ['versions', 'service_fee']
 
     service_fee_code = fields.String(data_key='service_fee_code')
