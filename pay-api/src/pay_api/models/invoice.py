@@ -45,7 +45,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 
     invoice_status_code = db.Column(db.String(20), ForeignKey('invoice_status_codes.code'), nullable=False)
-    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True)
+    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
     cfs_account_id = db.Column(db.Integer, ForeignKey('cfs_accounts.id'), nullable=True)
     payment_method_code = db.Column(db.String(15), ForeignKey('payment_methods.code'), nullable=False, index=True)
     corp_type_code = db.Column(db.String(10), ForeignKey('corp_types.code'), nullable=True)

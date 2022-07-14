@@ -15,6 +15,7 @@
 """Common setup and fixtures for the py-test suite used by this service."""
 
 import asyncio
+import logging
 import os
 import random
 import time
@@ -90,6 +91,7 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
 
         # Clear out any existing tables
         metadata = MetaData(_db.engine)
+        metadata.reflect()
         for table in metadata.tables.values():
             for fk in table.foreign_keys:  # pylint: disable=invalid-name
                 _db.engine.execute(DropConstraint(fk.constraint))
