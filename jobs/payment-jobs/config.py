@@ -148,6 +148,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CGI_DISBURSEMENT_DESC = os.getenv('CGI_DISBURSEMENT_DESC', 'BCREGISTRIES {} {} DISBURSEMENTS')
     CGI_MESSAGE_VERSION = os.getenv('CGI_MESSAGE_VERSION', '4010')
     CGI_BCREG_CLIENT_CODE = os.getenv('CGI_BCREG_CLIENT_CODE', '112')
+    CGI_EJV_SUPPLIER_NUMBER = os.getenv('CGI_EJV_SUPPLIER_NUMBER', '')
 
     # Minio configuration values
     MINIO_ENDPOINT = os.getenv('MINIO_ENDPOINT')
