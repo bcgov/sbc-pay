@@ -24,7 +24,7 @@ def upgrade():
                              column('detail', String)
                              )
     op.execute(
-        "delete from error_code where code in ('BCOL_ACCOUNT_CLOSED', 'BCOL_USER_REVOKED', 'BCOL_ACCOUNT_REVOKED', 'BCOL_ERROR') ")
+        "delete from error_codes where code in ('BCOL_ACCOUNT_CLOSED', 'BCOL_USER_REVOKED', 'BCOL_ACCOUNT_REVOKED', 'BCOL_ERROR') ")
     op.bulk_insert(
         error_code_table,
         [
