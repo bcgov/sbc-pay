@@ -58,12 +58,17 @@ class CgiEjv:
         return current_app.config.get('CGI_MESSAGE_VERSION')
 
     @classmethod
+    def _supplier_number(cls):
+        """Return supplier number (Vendor) - from 6.2.1.3 on the spec."""
+        return f"{current_app.config.get('CGI_EJV_SUPPLIER_NUMBER'):<9}"
+
+    @classmethod
     def get_jv_line(cls,  # pylint:disable=too-many-arguments
                     batch_type, distribution, description, effective_date, flow_through, journal_name, amount,
                     line_number, credit_debit):
         """Return jv line string."""
         return f'{cls._feeder_number()}{batch_type}JD{cls.DELIMITER}{journal_name}' \
-               f'{line_number:0>5}{effective_date}{distribution}{cls.EMPTY:<9}' \
+               f'{line_number:0>5}{effective_date}{distribution}{cls._supplier_number()}' \
                f'{cls.format_amount(amount)}{credit_debit}{description}{flow_through}' \
                f'{cls.DELIMITER}{os.linesep}'
 
