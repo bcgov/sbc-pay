@@ -5,5 +5,11 @@
       "postgres-pay",
       "pay-admin"
     ]
+  },
+  {
+	"vault": "sentry",
+	"application": [
+		"relationship-api"
+	]
   }
 ]

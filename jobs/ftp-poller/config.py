@@ -121,6 +121,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     MINIO_CGI_BUCKET_NAME = os.getenv('MINIO_CGI_BUCKET_NAME', 'cgi-ejv')
     MINIO_SECURE = True
 
+    SENTRY_ENABLE = os.getenv('SENTRY_ENABLE', 'False')
+    SENTRY_DSN = os.getenv('SENTRY_DSN', None)
+
     TESTING = False
     DEBUG = True
 

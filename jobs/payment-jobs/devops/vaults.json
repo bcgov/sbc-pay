@@ -28,15 +28,20 @@
             "cfs"
         ]
     },
-    {
+	{
         "vault": "relationship",
         "application": [
             "postgres-pay",
             "pay-api",
-            "sentry",
             "jwt",
             "payment-jobs",
             "ftp-poller"
+        ]
+    },
+	{
+        "vault": "sentry",
+        "application": [
+            "relationship-api"
         ]
     },
     {

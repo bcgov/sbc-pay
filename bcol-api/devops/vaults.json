@@ -11,11 +11,16 @@
             "bcol"
         ]
     },
-    {
+	{
         "vault": "relationship",
-        "application": [
-            "sentry",
+        "application": [            
             "jwt"
+        ]
+    },
+	{
+        "vault": "sentry",
+        "application": [
+            "relationship-api"
         ]
     }
 ]

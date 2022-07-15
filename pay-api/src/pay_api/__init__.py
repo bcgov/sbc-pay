@@ -48,11 +48,12 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     if run_mode != 'migration':
 
         # Configure Sentry
-        if app.config.get('SENTRY_DSN', None):  # pragma: no cover
-            sentry_sdk.init(  # pylint: disable=abstract-class-instantiated
-                dsn=app.config.get('SENTRY_DSN'),
-                integrations=[FlaskIntegration()]
-            )
+        if str(app.config.get('SENTRY_ENABLE')).lower() == 'true':
+            if app.config.get('SENTRY_DSN', None):  # pragma: no cover
+                sentry_sdk.init(  # pylint: disable=abstract-class-instantiated
+                    dsn=app.config.get('SENTRY_DSN'),
+                    integrations=[FlaskIntegration()]
+                )
         # pylint: disable=import-outside-toplevel
         from pay_api.resources import API_BLUEPRINT, OPS_BLUEPRINT
 
