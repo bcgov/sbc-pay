@@ -113,7 +113,7 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
             raise BusinessException(Error.SYSTEM_ERROR) from e
         return response
 
-    def __authenticate_user(self, user_id: str, password: str) -> bool:  # pylint: disable=no-self-use
+    def __authenticate_user(self, user_id: str, password: str) -> bool:
         """Validate the user by ldap lookup."""
         current_app.logger.debug('<<< _validate_user')
         ldap_conn = None
@@ -124,7 +124,7 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
             )
             ldap_conn.set_option(ldap.OPT_REFERRALS, 0)  # pylint: disable=no-member
             ldap_conn.set_option(ldap.OPT_PROTOCOL_VERSION, 3)  # pylint: disable=no-member
-            ldap_conn.set_option(ldap.OPT_X_TLS, ldap.OPT_X_TLS_DEMAND)  # pylint: disable=no-member
+            # ldap_conn.set_option(ldap.OPT_X_TLS, ldap.OPT_X_TLS_DEMAND)  # pylint: disable=no-member
             ldap_conn.set_option(ldap.OPT_X_TLS_DEMAND, True)  # pylint: disable=no-member
             ldap_conn.set_option(ldap.OPT_DEBUG_LEVEL, 255)  # pylint: disable=no-member
 
@@ -141,13 +141,13 @@ class BcolProfile:  # pylint:disable=too-few-public-methods
 
         current_app.logger.debug('>>> _validate_user')
 
-    def __get(self, value: object, key: object) -> str:  # pylint: disable=no-self-use
+    def __get(self, value: object, key: object) -> str:
         """Get the value from dict and strip."""
         if value and value[key]:
             return value[key].strip() if isinstance(value[key], str) else value[key]
         return None
 
-    def get_profile_response(self, data: Dict):  # pragma: no cover # pylint: disable=no-self-use
+    def get_profile_response(self, data: Dict):  # pragma: no cover
         """Get Query Profile Response."""
         client = BcolSoap().get_profile_client()
         return zeep.helpers.serialize_object(client.service.queryProfile(req=data))

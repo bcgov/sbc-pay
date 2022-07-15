@@ -90,23 +90,23 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
         current_app.logger.debug('>query_profile')
         return pay_response
 
-    def __get(self, value: object, key: object) -> str:  # pragma: no cover # pylint: disable=no-self-use
+    def __get(self, value: object, key: object) -> str:  # pragma: no cover
         """Get the value from dict and strip."""
         if value and value[key]:
             return value[key].strip() if isinstance(value[key], str) else value[key]
         return None
 
-    def debit_account(self, data: Dict):  # pragma: no cover # pylint: disable=no-self-use
+    def debit_account(self, data: Dict):  # pragma: no cover
         """Debit BCOL account."""
         client = BcolSoap().get_payment_client()
         return zeep.helpers.serialize_object(client.service.debitAccount(req=data))
 
-    def apply_charge(self, data: Dict):  # pragma: no cover # pylint: disable=no-self-use
+    def apply_charge(self, data: Dict):  # pragma: no cover
         """Debit BCOL account as a staff user."""
         client = BcolSoap().get_applied_chg_client()
         return zeep.helpers.serialize_object(client.service.appliedCharge(req=data))
 
-    def _pad_zeros(self, amount: str = '0'):  # pylint: disable=no-self-use
+    def _pad_zeros(self, amount: str = '0'):
         """Pad the amount with Zeroes to make sure the string is 10 chars."""
         if not amount:
             return None
