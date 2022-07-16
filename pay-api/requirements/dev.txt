@@ -26,6 +26,6 @@ isort
 
 # docker
 lovely-pytest-docker
-pytest-asyncio
+pytest-asyncio==0.18.3
 
 Faker
