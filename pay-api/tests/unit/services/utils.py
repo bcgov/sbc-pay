@@ -15,11 +15,11 @@
 import os
 from typing import Callable
 
-from stan.aio.client import Client, Msg
+import stan
 
 
-async def subscribe_to_queue(stan_client: Client,
-                             call_back: Callable[[Msg], None]) \
+async def subscribe_to_queue(stan_client: stan.aio.client.Client,
+                             call_back: Callable[[stan.aio.client.Msg], None]) \
         -> str:
     """Subscribe to the Queue using the environment setup.
 
