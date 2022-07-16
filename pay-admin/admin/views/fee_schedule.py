@@ -20,13 +20,14 @@ from .secured_view import SecuredView
 class FeeScheduleConfig(SecuredView):
     """Fee Schedule config."""
 
-    column_list = ['corp_type_code', 'filing_type_code', 'fee',
+    column_list = ['corp_type_code', 'filing_type_code', 'filing_type.description', 'fee',
                    'future_effective_fee', 'priority_fee', 'service_fee', 'variable']
 
     column_labels = {
         'corp_type': 'Corp Type',
         'corp_type_code': 'Corp Type',
         'filing_type': 'Filing Type',
+        'filing_type.description': 'Description',
         'filing_type_code': 'Filing Type',
         'fee': 'Filing Fee',
         'fee_start_date': 'Fee effective start date',

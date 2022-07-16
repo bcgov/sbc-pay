@@ -20,13 +20,15 @@ from sqlalchemy import Boolean, ForeignKey, func
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
 
+from pay_api.models.audit import Audit
+
 from .corp_type import CorpType, CorpTypeSchema
 from .db import db, ma
 from .fee_code import FeeCode
 from .filing_type import FilingType, FilingTypeSchema
 
 
-class FeeSchedule(db.Model):
+class FeeSchedule(Audit):
     """This class manages all of the base data about a fee schedule.
 
     Fee schedule holds the data related to filing type and fee code which is used to calculate the fees for a filing
@@ -86,11 +88,6 @@ class FeeSchedule(db.Model):
             fee_schedule = query.one_or_none()
 
         return fee_schedule
-
-    @classmethod
-    def find_by_id(cls, fee_schedule_id: int):
-        """Find and return fee schedule by id."""
-        return cls.query.get(fee_schedule_id)
 
     @classmethod
     def find_all(cls, corp_type_code: str = None, filing_type_code: str = None, description: str = None):

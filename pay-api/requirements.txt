@@ -1,6 +1,6 @@
 Flask-Caching==2.0.0
 Flask-Migrate==2.7.0
-Flask-Moment==1.0.2
+Flask-Moment==1.0.3
 Flask-SQLAlchemy==2.5.1
 Flask-Script==2.0.6
 Flask==1.1.2
@@ -52,7 +52,7 @@ python-jose==3.3.0
 pytz==2022.1
 requests==2.28.1
 rsa==4.8
-sentry-sdk==1.7.1
+sentry-sdk==1.7.2
 six==1.16.0
 threadloop==1.0.2
 thrift==0.16.0
