@@ -94,6 +94,7 @@ class _Config():  # pylint: disable=too-few-public-methods
     BCOL_APPLIED_CHARGE_WSDL_URL = _get_config('BCOL_APPLIED_CHARGE_WSDL_URL')
 
     # Sentry Config
+    SENTRY_ENABLE = _get_config('SENTRY_ENABLE', default=False)
     SENTRY_DSN = _get_config('SENTRY_DSN', default=None)
 
     TESTING = False

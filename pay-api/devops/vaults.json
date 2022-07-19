@@ -29,13 +29,18 @@
             "cfs"
         ]
     },
-    {
+	{
         "vault": "relationship",
         "application": [
             "postgres-pay",
             "pay-api",
-            "sentry",
             "jwt"
+        ]
+    },
+	{
+        "vault": "sentry",
+        "application": [
+            "relationship-api"
         ]
     }
 ]
