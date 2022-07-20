@@ -116,7 +116,7 @@ class _Config():  # pylint: disable=too-few-public-methods
     ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY')
 
     # Disable EJV Error Email
-    DISABLE_EJV_ERROR_EMAIL = os.getenv('DISABLE_EJV_ERROR_EMAIL', 'false').lower() == 'true'
+    DISABLE_EJV_ERROR_EMAIL = os.getenv('DISABLE_EJV_ERROR_EMAIL', 'true').lower() == 'true'
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
