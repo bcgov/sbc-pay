@@ -127,6 +127,8 @@ class FeeScheduleSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = FeeSchedule
+        exclude = ['distribution_codes', 'created_on', 'created_by',
+                   'created_name', 'updated_on', 'updated_by', 'updated_name']
 
     # pylint: disable=no-member
     corp_type = ma.Nested(CorpTypeSchema, many=False, data_key='corp_type_code',
