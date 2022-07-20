@@ -63,6 +63,7 @@ class FeeScheduleConfig(SecuredView):
         form.distribution_codes.label.text = 'Distribution Code (Mandatory for non-zero fees)'
 
     def on_model_change(self, form, model, is_created):
+        """On model change override."""
         user_context = UserContext()
         if is_created:
             model.created_by = user_context.user_name
