@@ -12,7 +12,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from datetime import datetime
 from pay_api.models import FeeSchedule, db
+from pay_api.utils.user_context import UserContext
 
 from .secured_view import SecuredView
 
@@ -60,6 +62,17 @@ class FeeScheduleConfig(SecuredView):
         form.service_fee.label.text = "Service Fee (Starts with 'TRF')"
         form.distribution_codes.label.text = 'Distribution Code (Mandatory for non-zero fees)'
 
+    def on_model_change(self, form, model, is_created):
+        user_context = UserContext()
+        if is_created:
+            model.created_by = user_context.user_name
+            model.created_on = datetime.now()
+            model.created_name = user_context.name
+        else:
+            model.updated_by = user_context.user_name
+            model.updated_on = datetime.now()
+            model.updated_name = user_context.name
+            
     def edit_form(self, obj=None):
         """Edit form overrides."""
         form = super().edit_form(obj)
