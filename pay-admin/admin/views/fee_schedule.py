@@ -72,7 +72,7 @@ class FeeScheduleConfig(SecuredView):
             model.updated_by = user_context.user_name
             model.updated_on = datetime.now()
             model.updated_name = user_context.name
-            
+
     def edit_form(self, obj=None):
         """Edit form overrides."""
         form = super().edit_form(obj)
