@@ -96,7 +96,9 @@ async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-loca
     content = file.data.decode('utf-8-sig')
     group_batches: List[str] = _group_batches(content)
     has_errors = await _process_ejv_feedback(group_batches['EJV'])
-    has_errors = await _process_ap_feedback(group_batches['AP']) or has_errors
+
+    if not APP_CONFIG.DISABLE_AP_FEEDBACK:
+        has_errors = await _process_ap_feedback(group_batches['AP']) or has_errors
 
     if has_errors and not APP_CONFIG.DISABLE_EJV_ERROR_EMAIL:
         await _publish_mailer_events(file_name, minio_location)
