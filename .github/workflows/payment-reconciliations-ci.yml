@@ -66,6 +66,7 @@ jobs:
       CFS_CLIENT_ID: "TEST"
       CFS_CLIENT_SECRET: "TEST"
       ACCOUNT_SECRET_KEY: "abcdefg"
+      DISABLE_AP_FEEDBACK: False
 
     runs-on: ubuntu-20.04
 
