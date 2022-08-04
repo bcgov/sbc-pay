@@ -44,7 +44,7 @@ marshmallow-sqlalchemy==0.25.0
 marshmallow==3.14.1
 minio==7.1.2
 opentracing==2.4.0
-paramiko==2.9.2
+paramiko==2.10.1
 protobuf==3.19.3
 psycopg2-binary==2.9.3
 pyasn1==0.4.8
