@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2022 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@ from pay_api.models.payment import Payment as PaymentModel
 from pay_api.models.payment_line_item import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.services.oauth_service import OAuthService
-from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import (AuthHeaderType, ContentType, DisbursementStatus,
+                                 InvoiceReferenceStatus, InvoiceStatus, PaymentMethod)
 
 
 STATUS_PAID = 'PAID'
@@ -37,14 +38,16 @@ class DistributionTask:
         """Update failed distributions.
 
         Steps:
-        1. Get all invoices with status UPDATE_REVENUE_ACCOUNT.
+        1. Get all invoices with status UPDATE_REVENUE_ACCOUNT or UPDATE_REVENUE_ACCOUNT_REFUND.
         2. Find the completed invoice reference for the invoice.
         3. Call the paybc GET service and check if there is any revenue not processed.
         4. If yes, update the revenue details.
-        5. Update the invoice status as PAID and save.
+        5. Update the invoice status as PAID or REFUNDED and save.
         """
-        gl_updated_invoices = InvoiceModel.query.filter_by(
-            invoice_status_code=InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value).all()
+        invoice_statuses = [InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value,
+                            InvoiceStatus.UPDATE_REVENUE_ACCOUNT_REFUND.value]
+        gl_updated_invoices = InvoiceModel.query.filter(
+            InvoiceModel.invoice_status_code.in_(invoice_statuses)).all()
         current_app.logger.debug(f'Found {len(gl_updated_invoices)} invoices to update revenue details.')
 
         if len(gl_updated_invoices) > 0:  # pylint:disable=too-many-nested-blocks
@@ -55,7 +58,7 @@ class DistributionTask:
                 payment: PaymentModel = PaymentModel.find_payment_for_invoice(gl_updated_invoice.id)
                 # For now handle only GL updates for Direct Pay, more to come in future
                 if payment.payment_method_code != PaymentMethod.DIRECT_PAY.value:
-                    cls._update_invoice_status(gl_updated_invoice, InvoiceStatus.PAID.value)
+                    cls._update_invoice(gl_updated_invoice, InvoiceStatus.PAID.value)
                 else:
                     active_reference = list(
                         filter(lambda reference: (reference.status_code == InvoiceReferenceStatus.COMPLETED.value),
@@ -98,7 +101,10 @@ class DistributionTask:
                             OAuthService.post(payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
                                               post_revenue_payload)
 
-                        cls._update_invoice_status(gl_updated_invoice, InvoiceStatus.PAID.value)
+                        if gl_updated_invoice.invoice_status_code == InvoiceStatus.UPDATE_REVENUE_ACCOUNT_REFUND.value:
+                            cls._update_invoice(gl_updated_invoice, InvoiceStatus.REFUNDED.value)
+                        else:
+                            cls._update_invoice(gl_updated_invoice, InvoiceStatus.PAID.value)
 
     @classmethod
     def get_payment_details(cls, payment_url: str, access_token: str):
@@ -141,7 +147,10 @@ class DistributionTask:
         return token_response
 
     @classmethod
-    def _update_invoice_status(cls, gl_updated_invoice, status: str):
+    def _update_invoice(cls, gl_updated_invoice, status: str):
+        if status == InvoiceStatus.UPDATE_REVENUE_ACCOUNT_REFUND.value:
+            # This filters out of our cfs_cc_automated_task_refund.py
+            gl_updated_invoice.disbursement_status = DisbursementStatus.REVERSED
         gl_updated_invoice.invoice_status_code = status
         gl_updated_invoice.save()
         current_app.logger.info(f'Updated invoice : {gl_updated_invoice.id}')
