@@ -18,7 +18,7 @@ isodate==0.6.1
 itsdangerous==2.0.1
 jaeger-client==4.8.0
 jsonschema==4.4.0
-lxml==4.8.0
+lxml==4.9.1
 opentracing==2.4.0
 platformdirs==2.5.1
 psycopg2-binary==2.9.3
