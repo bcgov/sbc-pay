@@ -115,9 +115,6 @@ class _Config():  # pylint: disable=too-few-public-methods
     PAYBC_DIRECT_PAY_CLIENT_ID = _get_config('PAYBC_DIRECT_PAY_CLIENT_ID')
     PAYBC_DIRECT_PAY_CLIENT_SECRET = _get_config('PAYBC_DIRECT_PAY_CLIENT_SECRET')
 
-    # PAYBC separate url for automated credit card refunds.
-    PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL = _get_config('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL')
-
     # NATS Config
     NATS_SERVERS = _get_config('NATS_SERVERS', default='nats://127.0.0.1:4222').split(',')
     NATS_CLUSTER_ID = _get_config('NATS_CLUSTER_ID', default='test-cluster')
@@ -298,8 +295,6 @@ NrQw+2OdQACBJiEHsdZzAkBcsTk7frTH4yGx0VfHxXDPjfTj4wmD6gZIlcIr9lZg
     PAYBC_DIRECT_PAY_BASE_URL = 'http://localhost:8080/paybc-api'
     PAYBC_DIRECT_PAY_CLIENT_ID = 'TEST'
     PAYBC_DIRECT_PAY_CLIENT_SECRET = 'TEST'
-
-    PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL = 'TEST'
 
     PAD_CONFIRMATION_PERIOD_IN_DAYS = 3
     # Secret key for encrypting bank account
