@@ -13,6 +13,7 @@ minio
 pysftp
 Flask-Migrate<3
 itsdangerous==2.0.1
+dataclass_wizard
 
 -e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
 -e git+https://github.com/bcgov/sbc-pay.git@main#egg=pay-api&subdirectory=pay-api
