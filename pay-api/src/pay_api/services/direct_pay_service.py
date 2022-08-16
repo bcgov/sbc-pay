@@ -152,8 +152,9 @@ class DirectPayService(PaymentSystemService, OAuthService):
         access_token: str = self._get_refund_token().json().get('access_token')
         data = self._build_automated_refund_payload(invoice)
         # TODO: handle response when we get manual endpoints working?
-        self.post(refund_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, data).json()
+        refund_response = self.post(refund_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, data).json()
         # These will trigger cfs_cc_automated_refund task.
+        # TODO: replace this
         invoice.disbursement_status_code = DisbursementStatus.UPLOADED.value
         invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
         invoice.save()

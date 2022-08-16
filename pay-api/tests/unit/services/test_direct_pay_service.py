@@ -201,6 +201,7 @@ def test_process_cfs_refund_success(monkeypatch):
         mock_post.return_value.ok = True
         mock_post.return_value.status_code = 200
         direct_pay_service.process_cfs_refund(invoice)
+        # TODO: replace this.
         assert invoice.disbursement_status_code == DisbursementStatus.UPLOADED.value
         assert invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
 

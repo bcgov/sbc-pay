@@ -150,6 +150,7 @@ class DistributionTask:
     def _update_invoice(cls, gl_updated_invoice, status: str):
         if status == InvoiceStatus.UPDATE_REVENUE_ACCOUNT_REFUND.value:
             # This filters out of our cfs_cc_automated_task_refund.py
+            # TODO: replace this
             gl_updated_invoice.disbursement_status = DisbursementStatus.REVERSED.value
         gl_updated_invoice.invoice_status_code = status
         gl_updated_invoice.save()

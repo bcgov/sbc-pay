@@ -144,6 +144,10 @@ def factory_create_pad_account(auth_account_id='1234', bank_number='001', bank_b
                bank_branch_number=bank_branch, bank_account_number=bank_account).save()
     return account
 
+def factory_create_direct_pay_account(auth_account_id='1234', payment_method=PaymentMethod.DIRECT_PAY.value):
+    """Return Factory."""
+    account = PaymentAccount(auth_account_id, payment_method)
+    return account
 
 def factory_routing_slip_account(
         number: str = '1234',

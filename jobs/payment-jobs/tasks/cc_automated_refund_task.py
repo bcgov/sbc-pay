@@ -50,24 +50,18 @@ class CCAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         Process non complete credit card refunds.
 
         1. Find all invoices that use Direct Pay (Credit Card) in REFUND_REQUESTED or REFUNDED
-            that don't have Disbursement Status in None (refunds previous to this service) or REVERSED
         2. Get order status for CFS (refundstatus, revenue.refundglstatus)
             2.1. Check for refundStatus = PAID and invoice = REFUND_REQUESTED:
-                Set disbursement status = UPLOADED (not filtered out)
                 Set invoice and payment = REFUNDED
             2.2. Check for refundStatus = CMPLT
-                Set disbursement status = REVERSED (filter out)
                 Set invoice and payment = REFUNDED (incase we skipped the condition above).
             2.3. Check for refundGLstatus = RJCT
-                Set disbursement status = ERRORED (filter out)
                 Set invoice = UPDATE_REVENUE_ACCOUNT_REFUND (should be picked up by distribution_task to update GL).
         """
         include_invoice_statuses = [InvoiceStatus.REFUND_REQUESTED.value, InvoiceStatus.REFUNDED.value]
         invoices: List[InvoiceModel] = InvoiceModel.query \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.DIRECT_PAY.value) \
             .filter(InvoiceModel.invoice_status_code.in_(include_invoice_statuses)) \
-            .filter(InvoiceModel.disbursement_status_code != DisbursementStatus.REVERSED) \
-            .filter(InvoiceModel.disbursement_status_code.is_not(None)) \
             .order_by(InvoiceModel.created_on.asc()).all()
 
         current_app.logger.info(f'Found {len(invoices)} invoices to process for refunds.')
@@ -77,7 +71,7 @@ class CCAutomatedRefundTask:  # pylint:disable=too-few-public-methods
                 status = cls._query_order_status(invoice)
                 if cls._is_glstatus_rejected(status):
                     cls._refund_update_revenue(invoice)
-                elif cls._is_status_paid(status):
+                elif cls._is_status_paid_and_invoice_refund_requested(status, invoice):
                     cls._refund_paid(invoice)
                 elif cls._is_status_complete(status):
                     cls._refund_complete(invoice)
@@ -92,11 +86,11 @@ class CCAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         access_token: str = DirectPayService().get_token().json().get('access_token')
         paybc_ref_number: str = current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')
         paybc_svc_base_url = current_app.config.get('PAYBC_DIRECT_PAY_BASE_URL')
-        active_reference = list(
-            filter(lambda reference: (reference.status_code == InvoiceReferenceStatus.ACTIVE.value),
+        completed_reference = list(
+            filter(lambda reference: (reference.status_code == InvoiceReferenceStatus.COMPLETED.value),
                    invoice.references))[0]
         payment_url: str = \
-            f'{paybc_svc_base_url}/paybc/payment/{paybc_ref_number}/{active_reference.invoice_number}'
+            f'{paybc_svc_base_url}/paybc/payment/{paybc_ref_number}/{completed_reference.invoice_number}'
         payment_response = OAuthService.get(payment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON).json()
         return payment_response
 
@@ -111,14 +105,12 @@ class CCAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         """Refund was paid by Bambora. Set disbursement to acknowledged."""
         if invoice.invoice_status_code != InvoiceStatus.REFUND_REQUESTED.value:
             return
-        invoice.disbursement_status_code = DisbursementStatus.ACKNOWLEDGED.value
         cls._set_invoice_and_payment_to_refunded(invoice)
 
     @classmethod
     def _refund_complete(cls, invoice: Invoice):
         """Refund was successfully posted to a GL. Set disbursement to reversed (filtered out)."""
         # Set these to refunded, incase we skipped the PAID state and went to CMPLT
-        invoice.disbursement_status_code = DisbursementStatus.REVERSED.value
         cls._set_invoice_and_payment_to_refunded(invoice)
 
     @staticmethod
@@ -129,9 +121,10 @@ class CCAutomatedRefundTask:  # pylint:disable=too-few-public-methods
                    status.revenue))) > 0
 
     @staticmethod
-    def _is_status_paid(status: OrderStatus) -> bool:
-        """Check for successful refund."""
-        return status.refundstatus == PaymentDetailsStatus.PAID.value
+    def _is_status_paid_and_invoice_refund_requested(status: OrderStatus, invoice: Invoice) -> bool:
+        """Check for successful refund and invoicestatus = REFUND_REQUESTED"""
+        return status.refundstatus == PaymentDetailsStatus.PAID.value \
+            and invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
 
     @staticmethod
     def _is_status_complete(status: OrderStatus) -> bool:
