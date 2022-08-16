@@ -12,24 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to create CFS invoices offline."""
+from datetime import datetime
 from typing import List
 
 from flask import current_app
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
+from pay_api.models import Refund as RefundModel
 from pay_api.models.invoice import Invoice
 from pay_api.services.direct_pay_service import DirectPayService
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import (
-    AuthHeaderType, ContentType, DisbursementStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
-    PaymentStatus)
+    AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus)
 from sentry_sdk import capture_message
 
 from tasks.common.dataclasses import OrderStatus
 from tasks.common.enums import PaymentDetailsGlStatus, PaymentDetailsStatus
 
 
-class CCAutomatedRefundTask:  # pylint:disable=too-few-public-methods
+class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
     """
     Task to query CAS for order statuses of invoices.
 
@@ -50,25 +51,29 @@ class CCAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         Process non complete credit card refunds.
 
         1. Find all invoices that use Direct Pay (Credit Card) in REFUND_REQUESTED or REFUNDED
+           excluding invoices with refunds that have gl_posted.
         2. Get order status for CFS (refundstatus, revenue.refundglstatus)
             2.1. Check for refundStatus = PAID and invoice = REFUND_REQUESTED:
                 Set invoice and payment = REFUNDED
             2.2. Check for refundStatus = CMPLT
                 Set invoice and payment = REFUNDED (incase we skipped the condition above).
+                Set refund.gl_posted = now()
             2.3. Check for refundGLstatus = RJCT
                 Set invoice = UPDATE_REVENUE_ACCOUNT_REFUND (should be picked up by distribution_task to update GL).
         """
         include_invoice_statuses = [InvoiceStatus.REFUND_REQUESTED.value, InvoiceStatus.REFUNDED.value]
         invoices: List[InvoiceModel] = InvoiceModel.query \
+            .outerjoin(RefundModel, RefundModel.invoice_id == Invoice.id)\
             .filter(InvoiceModel.payment_method_code == PaymentMethod.DIRECT_PAY.value) \
             .filter(InvoiceModel.invoice_status_code.in_(include_invoice_statuses)) \
+            .filter(RefundModel.gl_posted.is_(None)) \
             .order_by(InvoiceModel.created_on.asc()).all()
 
         current_app.logger.info(f'Found {len(invoices)} invoices to process for refunds.')
         for invoice in invoices:
             current_app.logger.debug(f'Processing invoice {invoice.id}')
             try:
-                status = cls._query_order_status(invoice)
+                status = OrderStatus.from_dict(cls._query_order_status(invoice))
                 if cls._is_glstatus_rejected(status):
                     cls._refund_update_revenue(invoice)
                 elif cls._is_status_paid_and_invoice_refund_requested(status, invoice):
@@ -112,17 +117,19 @@ class CCAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         """Refund was successfully posted to a GL. Set disbursement to reversed (filtered out)."""
         # Set these to refunded, incase we skipped the PAID state and went to CMPLT
         cls._set_invoice_and_payment_to_refunded(invoice)
+        refund = RefundModel.find_by_invoice_id(invoice.id)
+        refund.gl_posted = datetime.now()
+        refund.save()
 
     @staticmethod
     def _is_glstatus_rejected(status: OrderStatus) -> bool:
         """Check for bad refundglstatus."""
-        return len(list(
-            filter(lambda revenue: (revenue.refundglstatus == PaymentDetailsGlStatus.RJCT.value),
-                   status.revenue))) > 0
+        return any(line.refundglstatus.value == PaymentDetailsGlStatus.RJCT.value
+                   for line in status.revenue)
 
     @staticmethod
     def _is_status_paid_and_invoice_refund_requested(status: OrderStatus, invoice: Invoice) -> bool:
-        """Check for successful refund and invoicestatus = REFUND_REQUESTED"""
+        """Check for successful refund and invoice status = REFUND_REQUESTED."""
         return status.refundstatus == PaymentDetailsStatus.PAID.value \
             and invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
 

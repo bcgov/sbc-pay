@@ -29,8 +29,7 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import (
-    AuthHeaderType, ContentType, DisbursementStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
-    PaymentSystem)
+    AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentSystem)
 from pay_api.utils.util import current_local_time, generate_transaction_number, parse_url_params
 
 from ..exceptions import BusinessException
@@ -38,6 +37,7 @@ from ..utils.errors import Error
 from ..utils.paybc_transaction_error_message import PAYBC_TRANSACTION_ERROR_MESSAGE_DICT
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
+
 
 PAYBC_DATE_FORMAT = '%Y-%m-%d'
 PAYBC_REVENUE_SEPARATOR = '|'
@@ -152,12 +152,18 @@ class DirectPayService(PaymentSystemService, OAuthService):
         access_token: str = self._get_refund_token().json().get('access_token')
         data = self._build_automated_refund_payload(invoice)
         # TODO: handle response when we get manual endpoints working?
-        refund_response = self.post(refund_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, data).json()
-        # These will trigger cfs_cc_automated_refund task.
-        # TODO: replace this
-        invoice.disbursement_status_code = DisbursementStatus.UPLOADED.value
-        invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
-        invoice.save()
+        """ Response
+        {
+            "amount": 0,
+            "approved": 0,
+            "created": "2022-08-16T15:50:54.544Z",
+            "id": "string",
+            "message": "string",
+            "orderNumber": "string",
+            "txnNumber": "string"
+        }
+        """
+        self.post(refund_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, data).json()
         current_app.logger.debug('>process_cfs_refund')
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
@@ -188,7 +194,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
             return None
 
         # Call PAYBC web service, get access token and use it in get txn call
-        access_token = self.__get_token().json().get('access_token')
+        access_token = self.get_token().json().get('access_token')
 
         paybc_transaction_url: str = current_app.config.get('PAYBC_DIRECT_PAY_BASE_URL')
         paybc_ref_number: str = current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER')
@@ -204,7 +210,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
                     response_json.get('trndate')), float(response_json.get('trnamount'))
         return None
 
-    def __get_token(self):
+    def get_token(self):
         """Generate oauth token from payBC which will be used for all communication."""
         current_app.logger.debug('<Getting token')
         token_url = current_app.config.get('PAYBC_DIRECT_PAY_BASE_URL') + '/oauth/token'

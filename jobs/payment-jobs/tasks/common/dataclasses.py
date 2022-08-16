@@ -14,32 +14,22 @@
 """Common dataclasses for tasks, dataclasses allow for cleaner code with autocompletion in vscode."""
 from dataclasses import dataclass
 from typing import List
+from dataclass_wizard import JSONWizard
 
 from tasks.common.enums import PaymentDetailsGlStatus, PaymentDetailsStatus
 
 
 @dataclass
-class RevenueLine:
+class RevenueLine(JSONWizard):
     """Revenue line from order status query."""
 
-    linenumber: str
-    revenueaccount: str
-    revenueamount: str
-    glstatus: str
-    glerrormessage: str
     refundglstatus: PaymentDetailsGlStatus
     refundglerrormessage: str
 
 
 @dataclass
-class OrderStatus:  # pylint:disable=too-many-instance-attributes
+class OrderStatus(JSONWizard):  # pylint:disable=too-many-instance-attributes
     """Return from order status query."""
 
-    pbcrefnumber: str
-    trnnumber: str
-    trndate: str
-    trnamount: str
-    paymentstatus: str
-    trnorderid: str
     refundstatus: PaymentDetailsStatus
     revenue: List[RevenueLine]

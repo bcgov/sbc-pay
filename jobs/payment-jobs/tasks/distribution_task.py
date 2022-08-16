@@ -13,16 +13,17 @@
 # limitations under the License.
 """Service to manage PAYBC services."""
 import base64
+from datetime import datetime
 
 from flask import current_app
 from pay_api.models.distribution_code import DistributionCode as DistributionCodeModel
 from pay_api.models.invoice import Invoice as InvoiceModel
 from pay_api.models.payment import Payment as PaymentModel
 from pay_api.models.payment_line_item import PaymentLineItem as PaymentLineItemModel
+from pay_api.models.refund import Refund as RefundModel
 from pay_api.services.invoice import Invoice as InvoiceService
 from pay_api.services.oauth_service import OAuthService
-from pay_api.utils.enums import (
-    AuthHeaderType, ContentType, DisbursementStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod)
+from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
 
 
 STATUS_PAID = 'PAID'
@@ -150,8 +151,10 @@ class DistributionTask:
     def _update_invoice(cls, gl_updated_invoice, status: str):
         if status == InvoiceStatus.UPDATE_REVENUE_ACCOUNT_REFUND.value:
             # This filters out of our cfs_cc_automated_task_refund.py
-            # TODO: replace this
-            gl_updated_invoice.disbursement_status = DisbursementStatus.REVERSED.value
+            # No more work is needed to ensure it was posted to gl.
+            refund = RefundModel.find_by_invoice_id(gl_updated_invoice.id)
+            refund.gl_posted = datetime.now()
+            refund.save()
         gl_updated_invoice.invoice_status_code = status
         gl_updated_invoice.save()
         current_app.logger.info(f'Updated invoice : {gl_updated_invoice.id}')

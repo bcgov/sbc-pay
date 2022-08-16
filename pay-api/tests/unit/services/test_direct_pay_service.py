@@ -26,7 +26,7 @@ from pay_api.models import FeeSchedule
 from pay_api.services.direct_pay_service import DECIMAL_PRECISION, PAYBC_DATE_FORMAT, DirectPayService
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.hashing import HashingService
-from pay_api.utils.enums import DisbursementStatus, InvoiceReferenceStatus, InvoiceStatus
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.util import current_local_time, generate_transaction_number
 from tests.utilities.base_test import (
@@ -201,9 +201,6 @@ def test_process_cfs_refund_success(monkeypatch):
         mock_post.return_value.ok = True
         mock_post.return_value.status_code = 200
         direct_pay_service.process_cfs_refund(invoice)
-        # TODO: replace this.
-        assert invoice.disbursement_status_code == DisbursementStatus.UPLOADED.value
-        assert invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
 
 
 def test_process_cfs_refund_bad_request():
