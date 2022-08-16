@@ -14,19 +14,24 @@
 
 """Tests to assure the Direct Payment Service."""
 
+from unittest.mock import Mock, patch
+import pytest
 import urllib.parse
 
 from flask import current_app
 
+from pay_api.exceptions import BusinessException
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeSchedule
 from pay_api.services.direct_pay_service import DECIMAL_PRECISION, PAYBC_DATE_FORMAT, DirectPayService
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.hashing import HashingService
+from pay_api.utils.enums import DisbursementStatus, InvoiceReferenceStatus, InvoiceStatus
+from pay_api.utils.errors import Error
 from pay_api.utils.util import current_local_time, generate_transaction_number
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
-    get_distribution_code_payload)
+    factory_receipt, get_distribution_code_payload)
 
 
 def test_get_payment_system_url(session, public_user_mock):
@@ -167,3 +172,50 @@ def test_get_receipt(session, public_user_mock):
     # Test receipt without response_url
     rcpt = direct_pay_service.get_receipt(payment_account, None, invoice_ref)
     assert rcpt is not None
+
+
+def test_process_cfs_refund_success(monkeypatch):
+    """Assert refund is successful, when providing a PAID invoice, receipt, a COMPLETED invoice reference."""
+    payment_account = factory_payment_account()
+    invoice = factory_invoice(payment_account)
+    invoice.invoice_status_code = InvoiceStatus.PAID.value
+    invoice.save()
+    receipt = factory_receipt(invoice.id, invoice.id, receipt_amount=invoice.total).save()
+    receipt.save()
+    invoice_reference = factory_invoice_reference(invoice.id, invoice.id)
+    invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
+    invoice_reference.save()
+
+    direct_pay_service = DirectPayService()
+
+    def token_info(cls):  # pylint: disable=unused-argument; mocks of library methods
+        return Mock(status_code=201, json=lambda: {
+            'access_token': '5945-534534554-43534535',
+            'token_type': 'Bearer',
+            'expires_in': 3600
+        })
+
+    monkeypatch.setattr('pay_api.services.direct_pay_service.DirectPayService._get_refund_token', token_info)
+
+    with patch('pay_api.services.oauth_service.requests.post') as mock_post:
+        mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 200
+        direct_pay_service.process_cfs_refund(invoice)
+        assert invoice.disbursement_status_code == DisbursementStatus.UPLOADED.value
+        assert invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
+
+
+def test_process_cfs_refund_bad_request():
+    """
+    Assert refund is rejected, only PAID and UPDATE_REVENUE_ACCOUNT are allowed.
+
+    Users may only transition from PAID -> UPDATE_REVENUE_ACCOUNT.
+    """
+    payment_account = factory_payment_account()
+    invoice = factory_invoice(payment_account)
+    invoice.invoice_status_code = InvoiceStatus.APPROVED.value
+    invoice.save()
+    direct_pay_service = DirectPayService()
+    with pytest.raises(BusinessException) as excinfo:
+        direct_pay_service.process_cfs_refund(invoice)
+    assert excinfo.value.code == Error.INVALID_REQUEST.name

@@ -1,7 +1,7 @@
 """Add in new invoice status for refunds.
 
 Revision ID: c3a87b8ea180
-Revises: 59fc9d74101f
+Revises: cc2dcab68760
 Create Date: 2022-08-15 15:22:38.982600
 
 """
@@ -12,12 +12,12 @@ from sqlalchemy.sql import column, table
 
 # revision identifiers, used by Alembic.
 revision = 'c3a87b8ea180'
-down_revision = '59fc9d74101f'
+down_revision = 'cc2dcab68760'
 branch_labels = None
 depends_on = None
 
 def upgrade():
-    status_code_table = table('invoice_status_code',
+    status_code_table = table('invoice_status_codes',
                               column('code', String),
                               column('description', String)
                               )

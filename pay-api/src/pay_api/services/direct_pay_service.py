@@ -19,7 +19,8 @@ from dateutil import parser
 from flask import current_app
 
 from pay_api.models import Invoice as InvoiceModel
-from pay_api.models import Payment as PaymentModel
+from pay_api.models import InvoiceReference as InvoiceReferenceModel
+from pay_api.models import Receipt as ReceiptModel
 from pay_api.models.distribution_code import DistributionCode as DistributionCodeModel
 from pay_api.models.payment_line_item import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.base_payment_system import PaymentSystemService
@@ -27,9 +28,13 @@ from pay_api.services.hashing import HashingService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentStatus, PaymentSystem
+from pay_api.utils.enums import (
+    AuthHeaderType, ContentType, DisbursementStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
+    PaymentSystem)
 from pay_api.utils.util import current_local_time, generate_transaction_number, parse_url_params
 
+from ..exceptions import BusinessException
+from ..utils.errors import Error
 from ..utils.paybc_transaction_error_message import PAYBC_TRANSACTION_ERROR_MESSAGE_DICT
 from .oauth_service import OAuthService
 from .payment_line_item import PaymentLineItem
@@ -137,11 +142,22 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
     def process_cfs_refund(self, invoice: InvoiceModel):
         """Process refund in CFS."""
-        current_app.logger.debug(f'Processing refund for {invoice.id}')
-        super()._publish_refund_to_mailer(invoice)
-        payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
-        payment.payment_status_code = PaymentStatus.REFUNDED.value
-        payment.flush()
+        current_app.logger.debug('<process_cfs_refund creating automated refund for invoice: '
+                                 f'{invoice.id}, {invoice.invoice_status_code}')
+        # No APPROVED invoices allowed for refund. Invoices typically land on PAID right away.
+        if invoice.invoice_status_code not in (InvoiceStatus.PAID.value, InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value):
+            raise BusinessException(Error.INVALID_REQUEST)
+
+        refund_url = current_app.config.get('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL')
+        access_token: str = self._get_refund_token().json().get('access_token')
+        data = self._build_automated_refund_payload(invoice)
+        # TODO: handle response when we get manual endpoints working?
+        self.post(refund_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, data).json()
+        # These will trigger cfs_cc_automated_refund task.
+        invoice.disbursement_status_code = DisbursementStatus.UPLOADED.value
+        invoice.invoice_status_code = InvoiceStatus.REFUND_REQUESTED.value
+        invoice.save()
+        current_app.logger.debug('>process_cfs_refund')
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Get the receipt details by calling PayBC web service."""
@@ -199,3 +215,31 @@ class DirectPayService(PaymentSystemService, OAuthService):
                                    data)
         current_app.logger.debug('>Getting token')
         return token_response
+
+    @classmethod
+    def _get_refund_token(cls):
+        """Generate seperate oauth token from PayBC which is used for automated refunds."""
+        current_app.logger.debug('<Getting token')
+        token_url = current_app.config.get('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL') + '/oauth/token'
+        basic_auth_encoded = base64.b64encode(
+            bytes(current_app.config.get('PAYBC_DIRECT_PAY_CLIENT_ID') + ':' + current_app.config.get(
+                'PAYBC_DIRECT_PAY_CLIENT_SECRET'), 'utf-8')).decode('utf-8')
+        data = 'grant_type=client_credentials'
+        token_response = cls.post(token_url, basic_auth_encoded, AuthHeaderType.BASIC,
+                                  ContentType.FORM_URL_ENCODED,
+                                  data)
+        current_app.logger.debug('>Getting token')
+        return token_response
+
+    @staticmethod
+    def _build_automated_refund_payload(invoice: InvoiceModel):
+        """Build payload to create a refund in PAYBC."""
+        receipt = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=invoice.id)
+        invoice_reference = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
+            invoice.id, InvoiceReferenceStatus.COMPLETED.value)
+        return {
+            'orderNumber': receipt.receipt_number,
+            'pbcRefNumber': current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER'),
+            'txnAmount': invoice.total,
+            'txnNumber': invoice_reference.invoice_number
+        }
