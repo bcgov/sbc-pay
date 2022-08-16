@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+"""Common dataclasses for tasks, dataclasses allow for cleaner code with autocompletion in vscode."""
 from dataclasses import dataclass
 from typing import List
 
@@ -27,12 +27,12 @@ class RevenueLine:
     revenueamount: str
     glstatus: str
     glerrormessage: str
-    refundglstatus: str
+    refundglstatus: PaymentDetailsGlStatus
     refundglerrormessage: str
 
 
 @dataclass
-class OrderStatus:
+class OrderStatus:  # pylint:disable=too-many-instance-attributes
     """Return from order status query."""
 
     pbcrefnumber: str
@@ -43,5 +43,3 @@ class OrderStatus:
     trnorderid: str
     refundstatus: PaymentDetailsStatus
     revenue: List[RevenueLine]
-    refundglstatus: PaymentDetailsGlStatus
-    refundglerrormessage: str
