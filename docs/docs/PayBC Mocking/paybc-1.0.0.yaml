@@ -4,7 +4,7 @@
     description: PayBC API reference documentation
     version: 1.0.0
   paths:
-    /paybc-service/api/refund:
+    '/paybc-service/api/refund':
         post:
           tags:
           - Refund Service
@@ -22,7 +22,7 @@
             '200':
               description: OK
               content:
-                application/json::
+                "*/*":
                   schema:
                     "$ref": "#/components/schemas/RefundResponse"
             '201':
@@ -33,7 +33,7 @@
               description: Forbidden
             '404':
               description: Not Found
-    /paybc-service/oauth/token/:
+    '/paybc-service/oauth/token/':
       get:
         tags:
         - Token Service
@@ -52,7 +52,7 @@
           '200':
             description: OK
             content:
-              application/json::
+              "*/*":
                 schema:
                   "$ref": "#/components/schemas/TokenResponse"
           '401':
@@ -2476,13 +2476,15 @@
         type: object
         properties:
           orderNumber:
-            type: integer
+            type: number
+            format: biginteger
           pbcRefNumber:
             maxLength: 2147483647
             minLength: 1
             type: string
           txnAmount:
-            type: integer
+            type: number
+            format: bigdecimal
           txnNumber:
             maxLength: 2147483647
             minLength: 1
@@ -2492,11 +2494,14 @@
         type: object
         properties:
           amount:
-            type: integer
+            type: number
+            format: bigdecimal
           approved:
             type: integer
+            format: int32
           created:
             type: string
+            format: date-time
           id:
             type: string
           message:
@@ -2513,6 +2518,7 @@
             type: string
           expires_in:
             type: integer
+            format: int64
           token_type:
             type: string
       ErrorResponse:
