@@ -52,10 +52,11 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
 
         1. Find all invoices that use Direct Pay (Credit Card) in REFUND_REQUESTED or REFUNDED
            excluding invoices with refunds that have gl_posted.
+           Initial state for refunds is REFUND INPRG.
         2. Get order status for CFS (refundstatus, revenue.refundglstatus)
             2.1. Check for refundStatus = PAID and invoice = REFUND_REQUESTED:
                 Set invoice and payment = REFUNDED
-            2.2. Check for refundStatus = CMPLT
+            2.2. Check for refundStatus = CMPLT or None (None is for refunds done manually)
                 Set invoice and payment = REFUNDED (incase we skipped the condition above).
                 Set refund.gl_posted = now()
             2.3. Check for refundGLstatus = RJCT
@@ -71,7 +72,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
 
         current_app.logger.info(f'Found {len(invoices)} invoices to process for refunds.')
         for invoice in invoices:
-            current_app.logger.debug(f'Processing invoice {invoice.id}')
+            current_app.logger.debug(f'Processing invoice {invoice.id} - created on: {invoice.created_on}')
             try:
                 status = OrderStatus.from_dict(cls._query_order_status(invoice))
                 if cls._is_glstatus_rejected(status):
@@ -79,6 +80,9 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
                 elif cls._is_status_paid_and_invoice_refund_requested(status, invoice):
                     cls._refund_paid(invoice)
                 elif cls._is_status_complete(status):
+                    if status.refundstatus is None:
+                        current_app.logger.info(
+                            'Refund status was blank, setting to complete - this was an existing manual refund.')
                     cls._refund_complete(invoice)
             except Exception as e:  # NOQA # pylint: disable=broad-except disable=invalid-name
                 capture_message(f'Error on processing credit card refund - invoice id={invoice.id}'
@@ -124,19 +128,19 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
     @staticmethod
     def _is_glstatus_rejected(status: OrderStatus) -> bool:
         """Check for bad refundglstatus."""
-        return any(line.refundglstatus.value == PaymentDetailsGlStatus.RJCT.value
+        return any(line.refundglstatus == PaymentDetailsGlStatus.RJCT
                    for line in status.revenue)
 
     @staticmethod
     def _is_status_paid_and_invoice_refund_requested(status: OrderStatus, invoice: Invoice) -> bool:
         """Check for successful refund and invoice status = REFUND_REQUESTED."""
-        return status.refundstatus == PaymentDetailsStatus.PAID.value \
+        return status.refundstatus == PaymentDetailsStatus.PAID \
             and invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
 
     @staticmethod
     def _is_status_complete(status: OrderStatus) -> bool:
-        """Check for successful refund."""
-        return status.refundstatus == PaymentDetailsStatus.CMPLT.value
+        """Check for successful refund, or if the refund was done manually."""
+        return status.refundstatus == PaymentDetailsStatus.CMPLT or status.refundstatus is None
 
     @staticmethod
     def _set_invoice_and_payment_to_refunded(invoice: Invoice):

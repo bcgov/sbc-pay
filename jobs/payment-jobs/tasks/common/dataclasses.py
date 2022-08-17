@@ -13,7 +13,7 @@
 # limitations under the License.
 """Common dataclasses for tasks, dataclasses allow for cleaner code with autocompletion in vscode."""
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 from dataclass_wizard import JSONWizard
 
 from tasks.common.enums import PaymentDetailsGlStatus, PaymentDetailsStatus
@@ -23,7 +23,7 @@ from tasks.common.enums import PaymentDetailsGlStatus, PaymentDetailsStatus
 class RevenueLine(JSONWizard):
     """Revenue line from order status query."""
 
-    refundglstatus: PaymentDetailsGlStatus
+    refundglstatus: Optional[PaymentDetailsGlStatus]
     refundglerrormessage: str
 
 
@@ -31,5 +31,5 @@ class RevenueLine(JSONWizard):
 class OrderStatus(JSONWizard):  # pylint:disable=too-many-instance-attributes
     """Return from order status query."""
 
-    refundstatus: PaymentDetailsStatus
+    refundstatus: Optional[PaymentDetailsStatus]
     revenue: List[RevenueLine]

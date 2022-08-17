@@ -117,3 +117,46 @@ def test_bad_cfs_refund(session, monkeypatch):
     DirectPayAutomatedRefundTask().process_cc_refunds()
     assert invoice.invoice_status_code == InvoiceStatus.UPDATE_REVENUE_ACCOUNT_REFUND.value
     assert refund.gl_posted is None
+
+
+def test_manual_refund(session, monkeypatch):
+    """Assert manual refunds get set to REFUNDED."""
+    invoice = factory_invoice(factory_create_direct_pay_account(), status_code=InvoiceStatus.REFUNDED.value)
+    invoice.save()
+    factory_invoice_reference(invoice.id, invoice.id, InvoiceReferenceStatus.COMPLETED.value).save()
+    payment = factory_payment('PAYBC', invoice_number=invoice.id)
+    payment.save()
+    refund = factory_refund_invoice(invoice.id)
+    refund.save()
+
+    def payment_status(cls):  # pylint: disable=unused-argument; mocks of library methods
+        return {
+            'refundstatus': None,
+            'revenue': [
+                {
+                    'linenumber': '1',
+                    'revenueaccount': '112.32041.35301.1278.3200000.000000.0000',
+                    'revenueamount': '130',
+                    'glstatus': 'PAID',
+                    'glerrormessage': None,
+                    'refundglstatus': None,
+                    'refundglerrormessage': None
+                },
+                {
+                    'linenumber': '2',
+                    'revenueaccount': '112.32041.35301.1278.3200000.000000.0000',
+                    'revenueamount': '1.5',
+                    'glstatus': 'PAID',
+                    'glerrormessage': None,
+                    'refundglstatus': None,
+                    'refundglerrormessage': None
+                }
+            ]
+        }
+
+    target = 'tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status'
+    monkeypatch.setattr(target, payment_status)
+    DirectPayAutomatedRefundTask().process_cc_refunds()
+    assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
+    assert payment.payment_status_code == PaymentStatus.REFUNDED.value
+    assert refund.gl_posted is not None
