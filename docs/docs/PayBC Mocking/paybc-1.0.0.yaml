@@ -4,7 +4,7 @@
     description: PayBC API reference documentation
     version: 1.0.0
   paths:
-    '/paybc-service/api/refund':
+    /paybc-service/api/refund:
         post:
           tags:
           - Refund Service
@@ -33,7 +33,7 @@
               description: Forbidden
             '404':
               description: Not Found
-    '/paybc-service/oauth/token/':
+    /paybc-service/oauth/token/:
       get:
         tags:
         - Token Service
