@@ -22,7 +22,7 @@
             '200':
               description: OK
               content:
-                "*/*":
+                application/json:
                   schema:
                     "$ref": "#/components/schemas/RefundResponse"
             '201':
@@ -52,7 +52,7 @@
           '200':
             description: OK
             content:
-              "*/*":
+              application/json:
                 schema:
                   "$ref": "#/components/schemas/TokenResponse"
           '401':
