@@ -151,19 +151,12 @@ class DirectPayService(PaymentSystemService, OAuthService):
         refund_url = current_app.config.get('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL')
         access_token: str = self._get_refund_token().json().get('access_token')
         data = self._build_automated_refund_payload(invoice)
-        # TODO: handle response when we get manual endpoints working?
-        """ Response
-        {
-            "amount": 0,
-            "approved": 0,
-            "created": "2022-08-16T15:50:54.544Z",
-            "id": "string",
-            "message": "string",
-            "orderNumber": "string",
-            "txnNumber": "string"
-        }
-        """
-        self.post(refund_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, data).json()
+        refund_response = self.post(refund_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, data).json()
+        # Check if approved is 1=Success
+        if refund_response.get('approved') != 1:
+            message = 'Refund error: ' + refund_response.get('message')
+            current_app.logger.error(message)
+            raise BusinessException(Error.DIRECT_PAY_INVALID_RESPONSE)
         current_app.logger.debug('>process_cfs_refund')
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
