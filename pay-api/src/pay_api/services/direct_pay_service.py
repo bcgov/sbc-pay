@@ -148,7 +148,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         if invoice.invoice_status_code not in (InvoiceStatus.PAID.value, InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value):
             raise BusinessException(Error.INVALID_REQUEST)
 
-        refund_url = current_app.config.get('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL')
+        refund_url = current_app.config.get('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL') + '/paybc-service/api/refund'
         access_token: str = self._get_refund_token().json().get('access_token')
         data = self._build_automated_refund_payload(invoice)
         refund_response = self.post(refund_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, data).json()
@@ -220,7 +220,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
     def _get_refund_token(cls):
         """Generate seperate oauth token from PayBC which is used for automated refunds."""
         current_app.logger.debug('<Getting token')
-        token_url = current_app.config.get('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL') + '/oauth/token'
+        token_url = current_app.config.get('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL') + '/paybc-service/oauth/token'
         basic_auth_encoded = base64.b64encode(
             bytes(current_app.config.get('PAYBC_DIRECT_PAY_CLIENT_ID') + ':' + current_app.config.get(
                 'PAYBC_DIRECT_PAY_CLIENT_SECRET'), 'utf-8')).decode('utf-8')
