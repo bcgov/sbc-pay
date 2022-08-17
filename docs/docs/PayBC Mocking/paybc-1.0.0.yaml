@@ -4,7 +4,7 @@
     description: PayBC API reference documentation
     version: 1.0.0
   paths:
-    '/paybc-service/api/refund':
+    /paybc-service/api/refund:
         post:
           tags:
           - Refund Service
@@ -17,14 +17,14 @@
             content:
               application/json:
                 schema:
-                  "$ref": "#/components/schemas/RefundRequest"
+                  $ref: "#/components/schemas/RefundRequest"
           responses:
             '200':
               description: OK
               content:
                 "*/*":
                   schema:
-                    "$ref": "#/components/schemas/RefundResponse"
+                    $ref: "#/components/schemas/RefundResponse"
             '201':
               description: Created
             '401':
@@ -33,7 +33,7 @@
               description: Forbidden
             '404':
               description: Not Found
-    '/paybc-service/oauth/token/':
+    /paybc-service/oauth/token/:
       get:
         tags:
         - Token Service
@@ -54,7 +54,7 @@
             content:
               "*/*":
                 schema:
-                  "$ref": "#/components/schemas/TokenResponse"
+                  $ref: "#/components/schemas/TokenResponse"
           '401':
             description: Unauthorized
           '403':
