@@ -22,7 +22,7 @@
             '200':
               description: OK
               content:
-                application/json:
+                "*/*":
                   schema:
                     "$ref": "#/components/schemas/RefundResponse"
             '201':
@@ -52,7 +52,7 @@
           '200':
             description: OK
             content:
-              application/json:
+              "*/*":
                 schema:
                   "$ref": "#/components/schemas/TokenResponse"
           '401':
@@ -2477,14 +2477,12 @@
         properties:
           orderNumber:
             type: number
-            format: biginteger
           pbcRefNumber:
             maxLength: 2147483647
             minLength: 1
             type: string
           txnAmount:
             type: number
-            format: bigdecimal
           txnNumber:
             maxLength: 2147483647
             minLength: 1
@@ -2495,10 +2493,8 @@
         properties:
           amount:
             type: number
-            format: bigdecimal
           approved:
             type: integer
-            format: int32
           created:
             type: string
             format: date-time
@@ -2518,7 +2514,6 @@
             type: string
           expires_in:
             type: integer
-            format: int64
           token_type:
             type: string
       ErrorResponse:
