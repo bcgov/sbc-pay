@@ -2476,15 +2476,13 @@
         type: object
         properties:
           orderNumber:
-            type: number
-            format: biginteger
+            type: integer
           pbcRefNumber:
             maxLength: 2147483647
             minLength: 1
             type: string
           txnAmount:
-            type: number
-            format: bigdecimal
+            type: integer
           txnNumber:
             maxLength: 2147483647
             minLength: 1
@@ -2494,14 +2492,11 @@
         type: object
         properties:
           amount:
-            type: number
-            format: bigdecimal
+            type: integer
           approved:
             type: integer
-            format: int32
           created:
             type: string
-            format: date-time
           id:
             type: string
           message:
