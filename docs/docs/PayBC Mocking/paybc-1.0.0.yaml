@@ -4,6 +4,63 @@
     description: PayBC API reference documentation
     version: 1.0.0
   paths:
+  '/paybc-service/api/refund':
+      post:
+        tags:
+        - Refund Service
+        summary: Refund a transaction
+        description: Refunds can take around seven business days to reflect on your
+          customer's credit card statement, the timing depends on the cardholder's financial
+          institution and isn't within PayBC's control
+        operationId: refundUsingPOST
+        requestBody:
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/RefundRequest"
+        responses:
+          '200':
+            description: OK
+            content:
+              "*/*":
+                schema:
+                  "$ref": "#/components/schemas/RefundResponse"
+          '201':
+            description: Created
+          '401':
+            description: Unauthorized
+          '403':
+            description: Forbidden
+          '404':
+            description: Not Found
+    '/paybc-service/oauth/token/':
+      get:
+        tags:
+        - Token Service
+        summary: Fetch a token
+        description: Credentials should be passed in the form of 'Basic {encoded credentials}
+          to get a token which will be used as Bearer token in other end points
+        operationId: getTokenUsingGET
+        parameters:
+        - name: Basic-Token
+          in: header
+          description: Basic-Token
+          required: true
+          schema:
+            type: string
+        responses:
+          '200':
+            description: OK
+            content:
+              "*/*":
+                schema:
+                  "$ref": "#/components/schemas/TokenResponse"
+          '401':
+            description: Unauthorized
+          '403':
+            description: Forbidden
+          '404':
+            description: Not Found
     '/paybc/payment/{paybc_ref_number}/{transaction_number}':
       get:
         tags:
@@ -2409,6 +2466,61 @@
                 properties: {}
   components:
     schemas:
+      RefundRequest:
+        title: RefundRequest
+        required:
+        - orderNumber
+        - pbcRefNumber
+        - txnAmount
+        - txnNumber
+        type: object
+        properties:
+          orderNumber:
+            type: number
+            format: biginteger
+          pbcRefNumber:
+            maxLength: 2147483647
+            minLength: 1
+            type: string
+          txnAmount:
+            type: number
+            format: bigdecimal
+          txnNumber:
+            maxLength: 2147483647
+            minLength: 1
+            type: string
+      RefundResponse:
+        title: RefundResponse
+        type: object
+        properties:
+          amount:
+            type: number
+            format: bigdecimal
+          approved:
+            type: integer
+            format: int32
+          created:
+            type: string
+            format: date-time
+          id:
+            type: string
+          message:
+            type: string
+          orderNumber:
+            type: string
+          txnNumber:
+            type: string
+      TokenResponse:
+        title: TokenResponse
+        type: object
+        properties:
+          access_token:
+            type: string
+          expires_in:
+            type: integer
+            format: int64
+          token_type:
+            type: string
       ErrorResponse:
         type: object
         properties:
@@ -2898,3 +3010,4 @@
           CAS-Returned-Messages:
             type: string
             description: CAS Returned Message.
+  
