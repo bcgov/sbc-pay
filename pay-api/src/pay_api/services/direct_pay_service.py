@@ -207,7 +207,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
     def get_token(self):
         """Generate oauth token from payBC which will be used for all communication."""
         current_app.logger.debug('<Getting token')
-        token_url = current_app.config.get('PAYBC_DIRECT_PAY_BASE_URL') + '/oauth/token'
+        token_url = current_app.config.get('PAYBC_DIRECT_PAY_BASE_URL') + '/oauth/token/'
         basic_auth_encoded = base64.b64encode(
             bytes(current_app.config.get('PAYBC_DIRECT_PAY_CLIENT_ID') + ':' + current_app.config.get(
                 'PAYBC_DIRECT_PAY_CLIENT_SECRET'), 'utf-8')).decode('utf-8')
