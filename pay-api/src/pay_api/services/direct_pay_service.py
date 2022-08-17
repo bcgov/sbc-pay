@@ -238,7 +238,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         invoice_reference = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
             invoice.id, InvoiceReferenceStatus.COMPLETED.value)
         return {
-            'orderNumber': receipt.receipt_number,
+            'orderNumber': int(receipt.receipt_number),
             'pbcRefNumber': current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER'),
             'txnAmount': invoice.total,
             'txnNumber': invoice_reference.invoice_number

@@ -78,7 +78,7 @@ def test_create_refund_for_paid_invoice(session, monkeypatch, payment_method, in
     i.invoice_status_code = invoice_status
     i.save()
 
-    factory_receipt(invoice_id=i.id).save()
+    factory_receipt(invoice_id=i.id, receipt_number='1234569546456').save()
 
     monkeypatch.setattr('pay_api.services.payment_transaction.publish_response', lambda *args, **kwargs: None)
 
