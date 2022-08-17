@@ -38,12 +38,13 @@ class OAuthService:
              content_type: ContentType, data,
              raise_for_error: bool = True,
              additional_headers: Dict = None,
-             is_put: bool = False):
+             is_put: bool = False,
+             auth_header_name: str = 'Authorization'):
         """POST service."""
         current_app.logger.debug('<post')
 
         headers = {
-            'Authorization': auth_header_type.value.format(token),
+            auth_header_name: auth_header_type.value.format(token),
             'Content-Type': content_type.value
         }
 

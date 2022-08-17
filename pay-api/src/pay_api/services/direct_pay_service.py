@@ -151,7 +151,8 @@ class DirectPayService(PaymentSystemService, OAuthService):
         refund_url = current_app.config.get('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL') + '/paybc-service/api/refund'
         access_token: str = self._get_refund_token().json().get('access_token')
         data = self._build_automated_refund_payload(invoice)
-        refund_response = self.post(refund_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, data).json()
+        refund_response = self.post(refund_url, access_token, AuthHeaderType.BEARER,
+                                    ContentType.JSON, data, auth_header_name='Bearer-Token').json()
         # Check if approved is 1=Success
         if refund_response.get('approved') != 1:
             message = 'Refund error: ' + refund_response.get('message')
@@ -227,7 +228,8 @@ class DirectPayService(PaymentSystemService, OAuthService):
         data = 'grant_type=client_credentials'
         token_response = cls.post(token_url, basic_auth_encoded, AuthHeaderType.BASIC,
                                   ContentType.FORM_URL_ENCODED,
-                                  data)
+                                  data,
+                                  auth_header_name='Basic-Token')
         current_app.logger.debug('>Getting token')
         return token_response
 
