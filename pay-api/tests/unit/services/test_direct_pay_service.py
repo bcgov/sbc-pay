@@ -14,7 +14,7 @@
 
 """Tests to assure the Direct Payment Service."""
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 import urllib.parse
 import pytest
 
@@ -190,29 +190,8 @@ def test_process_cfs_refund_success(monkeypatch):
 
     direct_pay_service = DirectPayService()
 
-    def token_info(cls):  # pylint: disable=unused-argument; mocks of library methods
-        return Mock(status_code=201, json=lambda: {
-            'access_token': '5945-534534554-43534535',
-            'token_type': 'Basic',
-            'expires_in': 3600
-        })
-
-    monkeypatch.setattr('pay_api.services.direct_pay_service.DirectPayService._get_refund_token', token_info)
-
-    with patch('pay_api.services.oauth_service.requests.post') as mock_post:
-        mock_post.return_value.ok = True
-        mock_post.return_value.status_code = 200
-        mock_post.return_value.json.return_value = {
-            'id': '10006713',
-            'approved': 1,
-            'amount': 101.50,
-            'message': 'Approved',
-            'created': '2022-08-17T11:51:41.000+00:00',
-            'orderNumber': '19979',
-            'txnNumber': 'REGT00005433'
-        }
-
-        direct_pay_service.process_cfs_refund(invoice)
+    direct_pay_service.process_cfs_refund(invoice)
+    assert True
 
 
 def test_process_cfs_refund_bad_request():
@@ -248,15 +227,6 @@ def test_process_cfs_refund_duplicate_refund(monkeypatch):
     invoice_reference.save()
     direct_pay_service = DirectPayService()
 
-    def token_info(cls):  # pylint: disable=unused-argument; mocks of library methods
-        return Mock(status_code=201, json=lambda: {
-            'access_token': '5945-534534554-43534535',
-            'token_type': 'Basic',
-            'expires_in': 3600
-        })
-
-    monkeypatch.setattr('pay_api.services.direct_pay_service.DirectPayService._get_refund_token', token_info)
-
     with patch('pay_api.services.oauth_service.requests.post') as mock_post:
         mock_post.side_effect = HTTPError()
         mock_post.return_value.ok = False
@@ -272,7 +242,6 @@ def test_process_cfs_refund_duplicate_refund(monkeypatch):
             assert invoice.invoice_status_code == InvoiceStatus.PAID.value
 
     with patch('pay_api.services.oauth_service.requests.post') as mock_post:
-
         mock_post.return_value.ok = True
         mock_post.return_value.status_code = 200
         mock_post.return_value.json.return_value = {

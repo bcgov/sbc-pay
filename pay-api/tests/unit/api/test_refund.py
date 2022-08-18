@@ -20,7 +20,6 @@ Test-Suite to ensure that the /receipt endpoint is working as expected.
 import json
 
 from datetime import datetime
-from unittest.mock import Mock, patch
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
@@ -53,23 +52,13 @@ def test_create_refund(session, client, jwt, app, stan_server, monkeypatch):
     client.patch(f'/api/v1/payment-requests/{inv_id}/transactions/{txn_id}',
                  data=json.dumps({'receipt_number': receipt_number}), headers=headers)
 
-    def token_info(cls):  # pylint: disable=unused-argument; mocks of library methods
-        return Mock(status_code=201, json=lambda: {
-            'access_token': '5945-534534554-43534535',
-            'token_type': 'Bearer',
-            'expires_in': 3600
-        })
-
-    monkeypatch.setattr('pay_api.services.direct_pay_service.DirectPayService._get_refund_token', token_info)
-
-    with patch('pay_api.services.oauth_service.requests.post'):
-        token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
-        headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-        rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
-                         headers=headers)
-        assert rv.status_code == 202
-        assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['DIRECT_PAY.PAID']
-        assert RefundModel.find_by_invoice_id(inv_id) is not None
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
+                     headers=headers)
+    assert rv.status_code == 202
+    assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['DIRECT_PAY.PAID']
+    assert RefundModel.find_by_invoice_id(inv_id) is not None
 
 
 def test_create_drawdown_refund(session, client, jwt, app, stan_server):
@@ -291,20 +280,10 @@ def test_create_refund_fails(session, client, jwt, app, stan_server, monkeypatch
     invoice.invoice_status_code = InvoiceStatus.APPROVED.value
     invoice.save()
 
-    def token_info(cls):  # pylint: disable=unused-argument; mocks of library methods
-        return Mock(status_code=201, json=lambda: {
-            'access_token': '5945-534534554-43534535',
-            'token_type': 'Bearer',
-            'expires_in': 3600
-        })
-
-    monkeypatch.setattr('pay_api.services.direct_pay_service.DirectPayService._get_refund_token', token_info)
-
-    with patch('pay_api.services.oauth_service.requests.post'):
-        token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
-        headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-        rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
-                         headers=headers)
-        assert rv.status_code == 400
-        assert rv.json.get('type') == Error.INVALID_REQUEST.name
-        assert RefundModel.find_by_invoice_id(inv_id) is None
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
+                     headers=headers)
+    assert rv.status_code == 400
+    assert rv.json.get('type') == Error.INVALID_REQUEST.name
+    assert RefundModel.find_by_invoice_id(inv_id) is None
