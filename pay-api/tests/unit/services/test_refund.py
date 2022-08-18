@@ -107,7 +107,7 @@ def test_create_duplicate_refund_for_paid_invoice(session, monkeypatch):
     i.invoice_status_code = InvoiceStatus.PAID.value
     i.save()
 
-    factory_receipt(invoice_id=i.id).save()
+    factory_receipt(invoice_id=i.id, receipt_number='953959345343').save()
     monkeypatch.setattr('pay_api.services.payment_transaction.publish_response', lambda *args, **kwargs: None)
 
     RefundService.create_refund(invoice_id=i.id, request={'reason': 'Test'})
@@ -115,7 +115,6 @@ def test_create_duplicate_refund_for_paid_invoice(session, monkeypatch):
     payment: PaymentModel = PaymentModel.find_by_id(payment.id)
 
     assert i.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
-    assert payment.payment_status_code == PaymentStatus.REFUNDED.value
 
     with pytest.raises(Exception) as excinfo:
         RefundService.create_refund(invoice_id=i.id, request={'reason': 'Test'})
