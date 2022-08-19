@@ -291,10 +291,8 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         p.service_fees = fee.service_fees
 
         # Set distribution details to line item
-        distribution_code = None
-        if p.total > 0:
-            distribution_code = DistributionCodeModel.find_by_active_for_fee_schedule(fee.fee_schedule_id)
-            p.fee_distribution_id = distribution_code.distribution_code_id
+        distribution_code = DistributionCodeModel.find_by_active_for_fee_schedule(fee.fee_schedule_id)
+        p.fee_distribution_id = distribution_code.distribution_code_id
 
         if fee.waived_fee_amount > 0:
             if user.has_role(Role.STAFF.value):
