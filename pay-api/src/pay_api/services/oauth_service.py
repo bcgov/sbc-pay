@@ -118,11 +118,11 @@ class OAuthService:
             response = session.get(endpoint, headers=headers, timeout=current_app.config.get('CONNECT_TIMEOUT'))
             response.raise_for_status()
         except (ReqConnectionError, ConnectTimeout) as exc:
-            current_app.logger.error('---Error on POST---')
+            current_app.logger.error('---Error on GET---')
             current_app.logger.error(exc)
             raise ServiceUnavailableException(exc) from exc
         except HTTPError as exc:
-            current_app.logger.error(f"HTTPError on POST with status code {response.status_code if response else ''}")
+            current_app.logger.error(f"HTTPError on GET with status code {response.status_code if response else ''}")
             if response is not None:
                 if response.status_code >= 500:
                     raise ServiceUnavailableException(exc) from exc

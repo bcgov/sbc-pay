@@ -33,12 +33,9 @@ def test_successful_paid_refund(session, monkeypatch):
     """Bambora paid, but not GL complete."""
     payment_account = factory_create_direct_pay_account()
     invoice = factory_invoice(payment_account=payment_account, status_code=InvoiceStatus.REFUND_REQUESTED.value)
-    invoice.save()
     factory_invoice_reference(invoice.id, invoice.id, InvoiceReferenceStatus.COMPLETED.value).save()
     payment = factory_payment('PAYBC', invoice_number=invoice.id)
-    payment.save()
     refund = factory_refund_invoice(invoice.id)
-    refund.save()
 
     def payment_status(cls):  # pylint: disable=unused-argument; mocks of library methods
         return {
@@ -57,12 +54,9 @@ def test_successful_paid_refund(session, monkeypatch):
 def test_successful_completed_refund(session, monkeypatch):
     """Test successful refund (GL complete)."""
     invoice = factory_invoice(factory_create_direct_pay_account(), status_code=InvoiceStatus.REFUNDED.value)
-    invoice.save()
     factory_invoice_reference(invoice.id, invoice.id, InvoiceReferenceStatus.COMPLETED.value).save()
     payment = factory_payment('PAYBC', invoice_number=invoice.id)
-    payment.save()
     refund = factory_refund_invoice(invoice.id)
-    refund.save()
 
     def payment_status(cls):  # pylint: disable=unused-argument; mocks of library methods
         return {
@@ -82,9 +76,7 @@ def test_successful_completed_refund(session, monkeypatch):
 def test_bad_cfs_refund(session, monkeypatch):
     """Test RJCT refund."""
     invoice = factory_invoice(factory_create_direct_pay_account(), status_code=InvoiceStatus.REFUNDED.value)
-    invoice.save()
     refund = factory_refund_invoice(invoice.id)
-    refund.save()
     factory_invoice_reference(invoice.id, invoice.id, InvoiceReferenceStatus.COMPLETED.value).save()
 
     def payment_status(cls):  # pylint: disable=unused-argument; mocks of library methods
@@ -122,12 +114,9 @@ def test_bad_cfs_refund(session, monkeypatch):
 def test_manual_refund(session, monkeypatch):
     """Assert manual refunds get set to REFUNDED."""
     invoice = factory_invoice(factory_create_direct_pay_account(), status_code=InvoiceStatus.REFUNDED.value)
-    invoice.save()
     factory_invoice_reference(invoice.id, invoice.id, InvoiceReferenceStatus.COMPLETED.value).save()
     payment = factory_payment('PAYBC', invoice_number=invoice.id)
-    payment.save()
     refund = factory_refund_invoice(invoice.id)
-    refund.save()
 
     def payment_status(cls):  # pylint: disable=unused-argument; mocks of library methods
         return {
