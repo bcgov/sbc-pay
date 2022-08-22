@@ -123,7 +123,8 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         """Refund was successfully posted to a GL. Set disbursement to reversed (filtered out)."""
         # Set these to refunded, incase we skipped the PAID state and went to CMPLT
         cls._set_invoice_and_payment_to_refunded(invoice)
-        current_app.logger.info(f'Refund complete - GL was posted - Setting invoice id {invoice.id} refund gl_posted to now.')
+        current_app.logger.info(
+            'Refund complete - GL was posted - setting refund gl_posted to now.')
         refund = RefundModel.find_by_invoice_id(invoice.id)
         refund.gl_posted = datetime.now()
         refund.save()
