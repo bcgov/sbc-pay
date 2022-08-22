@@ -16,15 +16,15 @@
 
 Test-Suite to ensure that the DistributionTask is working as expected.
 """
-from pay_api.models import FeeSchedule, CorpType as CorpTypeModel
+from pay_api.models import CorpType as CorpTypeModel
+from pay_api.models import FeeSchedule
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus
 
 from tasks.distribution_task import DistributionTask
 
 from .factory import (
-    factory_create_direct_pay_account, factory_create_eft_account, factory_create_ejv_account, factory_distribution, factory_distribution_link,
+    factory_create_direct_pay_account, factory_create_ejv_account, factory_distribution, factory_distribution_link,
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_line_item, factory_refund_invoice)
-
 from .mocks import empty_refund_payload_response, paybc_token_response, refund_payload_response
 
 
@@ -97,7 +97,7 @@ def test_update_failed_distribution_payments(session, monkeypatch):
 
 
 def test_non_direct_pay_invoices(session, monkeypatch):
-    """Test non DIRECT_PAY invoices"""
+    """Test non DIRECT_PAY invoices."""
     invoice = factory_invoice(factory_create_ejv_account(), status_code=InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value)
     factory_invoice_reference(invoice.id, invoice.id, InvoiceReferenceStatus.COMPLETED.value)
     factory_payment('PAYBC', 'EJV', invoice_number=invoice.id)

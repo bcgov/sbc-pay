@@ -21,6 +21,7 @@ from datetime import datetime
 from pay_api.utils.util import get_nearest_business_day
 from pay_api.schemas import utils as schema_utils
 
+
 def test_next_business_day(session):
     """Assert that the get_nearest_business_day is working good."""
     # Jan 1st is Friday ,but a holiday.So assert Monday Jan 4th
