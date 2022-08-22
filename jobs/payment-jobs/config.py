@@ -230,6 +230,11 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     CFS_CLIENT_SECRET = 'TEST'
     USE_DOCKER_MOCK = os.getenv('USE_DOCKER_MOCK', None)
 
+    PAYBC_DIRECT_PAY_CLIENT_ID = 'abc'
+    PAYBC_DIRECT_PAY_CLIENT_SECRET = '123'
+    PAYBC_DIRECT_PAY_BASE_URL = 'http://localhost:8080/paybc-api'
+    PAYBC_DIRECT_PAY_REF_NUMBER = '123'
+    
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY', '1234')
 
