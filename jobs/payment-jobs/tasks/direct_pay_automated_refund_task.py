@@ -84,6 +84,8 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
                         current_app.logger.info(
                             'Refund status was blank, setting to complete - this was an existing manual refund.')
                     cls._refund_complete(invoice)
+                else:
+                    current_app.logger.info(f'No action taken for invoice {invoice.id}.')
             except Exception as e:  # NOQA # pylint: disable=broad-except disable=invalid-name
                 capture_message(f'Error on processing credit card refund - invoice id={invoice.id}'
                                 f'status={invoice.invoice_status_code} ERROR : {str(e)}', level='error')
