@@ -84,6 +84,8 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
                         current_app.logger.info(
                             'Refund status was blank, setting to complete - this was an existing manual refund.')
                     cls._refund_complete(invoice)
+                else:
+                    current_app.logger.info(f'No action taken for invoice {invoice.id}.')
             except Exception as e:  # NOQA # pylint: disable=broad-except disable=invalid-name
                 capture_message(f'Error on processing credit card refund - invoice id={invoice.id}'
                                 f'status={invoice.invoice_status_code} ERROR : {str(e)}', level='error')
@@ -121,6 +123,8 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         """Refund was successfully posted to a GL. Set disbursement to reversed (filtered out)."""
         # Set these to refunded, incase we skipped the PAID state and went to CMPLT
         cls._set_invoice_and_payment_to_refunded(invoice)
+        current_app.logger.info(
+            'Refund complete - GL was posted - setting refund gl_posted to now.')
         refund = RefundModel.find_by_invoice_id(invoice.id)
         refund.gl_posted = datetime.now()
         refund.save()
@@ -145,6 +149,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
     @staticmethod
     def _set_invoice_and_payment_to_refunded(invoice: Invoice):
         """Set invoice and payment to REFUNDED."""
+        current_app.logger.info(f'Setting invoice id {invoice.id} and payment to REFUNDED.')
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
         invoice.save()
         payment = PaymentModel.find_payment_for_invoice(invoice.id)

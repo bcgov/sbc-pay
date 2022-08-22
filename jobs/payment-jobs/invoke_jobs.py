@@ -77,6 +77,7 @@ def run(job_name):
     from tasks.unpaid_invoice_notify_task import UnpaidInvoiceNotifyTask
     from tasks.ejv_payment_task import EjvPaymentTask
     from tasks.ap_routing_slip_refund_task import ApRoutingSlipRefundTask
+    from tasks.direct_pay_automated_refund_task import DirectPayAutomatedRefundTask
 
     application = create_app()
 
@@ -119,6 +120,9 @@ def run(job_name):
     elif job_name == 'AP_REFUND':
         ApRoutingSlipRefundTask.create_ap_file()
         application.logger.info(f'<<<< Completed running AP Job for refund >>>>')
+    elif job_name == 'DIRECT_PAY_REFUND':
+        DirectPayAutomatedRefundTask.process_cc_refunds()
+        application.logger.info(f'<<<< Completed running Direct Pay Automated Refund Job >>>>')
     else:
         application.logger.debug('No valid args passed.Exiting job without running any ***************')
 
