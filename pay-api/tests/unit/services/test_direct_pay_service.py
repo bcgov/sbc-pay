@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2022 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,19 +14,26 @@
 
 """Tests to assure the Direct Payment Service."""
 
+from unittest.mock import patch
 import urllib.parse
+import pytest
+
 
 from flask import current_app
+from requests.exceptions import HTTPError
 
+from pay_api.exceptions import BusinessException
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeSchedule
 from pay_api.services.direct_pay_service import DECIMAL_PRECISION, PAYBC_DATE_FORMAT, DirectPayService
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.hashing import HashingService
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus
+from pay_api.utils.errors import Error
 from pay_api.utils.util import current_local_time, generate_transaction_number
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
-    get_distribution_code_payload)
+    factory_receipt, get_distribution_code_payload)
 
 
 def test_get_payment_system_url(session, public_user_mock):
@@ -167,3 +174,85 @@ def test_get_receipt(session, public_user_mock):
     # Test receipt without response_url
     rcpt = direct_pay_service.get_receipt(payment_account, None, invoice_ref)
     assert rcpt is not None
+
+
+def test_process_cfs_refund_success(monkeypatch):
+    """Assert refund is successful, when providing a PAID invoice, receipt, a COMPLETED invoice reference."""
+    payment_account = factory_payment_account()
+    invoice = factory_invoice(payment_account)
+    invoice.invoice_status_code = InvoiceStatus.PAID.value
+    invoice.save()
+    receipt = factory_receipt(invoice.id, invoice.id, receipt_amount=invoice.total).save()
+    receipt.save()
+    invoice_reference = factory_invoice_reference(invoice.id, invoice.id)
+    invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
+    invoice_reference.save()
+
+    direct_pay_service = DirectPayService()
+
+    direct_pay_service.process_cfs_refund(invoice)
+    assert True
+
+
+def test_process_cfs_refund_bad_request():
+    """
+    Assert refund is rejected, only PAID and UPDATE_REVENUE_ACCOUNT are allowed.
+
+    Users may only transition from PAID -> UPDATE_REVENUE_ACCOUNT.
+    """
+    payment_account = factory_payment_account()
+    invoice = factory_invoice(payment_account)
+    invoice.invoice_status_code = InvoiceStatus.APPROVED.value
+    invoice.save()
+    direct_pay_service = DirectPayService()
+    with pytest.raises(BusinessException) as excinfo:
+        direct_pay_service.process_cfs_refund(invoice)
+        assert excinfo.value.code == Error.INVALID_REQUEST.name
+
+
+def test_process_cfs_refund_duplicate_refund(monkeypatch):
+    """
+    Assert duplicate refund throws an exception.
+
+    Assert approved = 0, throws an exception.
+    """
+    payment_account = factory_payment_account()
+    invoice = factory_invoice(payment_account)
+    invoice.invoice_status_code = InvoiceStatus.PAID.value
+    invoice.save()
+    receipt = factory_receipt(invoice.id, invoice.id, receipt_amount=invoice.total).save()
+    receipt.save()
+    invoice_reference = factory_invoice_reference(invoice.id, invoice.id)
+    invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
+    invoice_reference.save()
+    direct_pay_service = DirectPayService()
+
+    with patch('pay_api.services.oauth_service.requests.post') as mock_post:
+        mock_post.side_effect = HTTPError()
+        mock_post.return_value.ok = False
+        mock_post.return_value.status_code = 400
+        mock_post.return_value.json.return_value = {
+            'message': 'Bad Request',
+            'errors': [
+                'Duplicate refund - Refund has been already processed'
+            ]
+        }
+        with pytest.raises(HTTPError) as excinfo:
+            direct_pay_service.process_cfs_refund(invoice)
+            assert invoice.invoice_status_code == InvoiceStatus.PAID.value
+
+    with patch('pay_api.services.oauth_service.requests.post') as mock_post:
+        mock_post.return_value.ok = True
+        mock_post.return_value.status_code = 200
+        mock_post.return_value.json.return_value = {
+            'id': '10006713',
+            'approved': 0,
+            'amount': 101.50,
+            'message': 'Error?',
+            'created': '2022-08-17T11:51:41.000+00:00',
+            'orderNumber': '19979',
+            'txnNumber': 'REGT00005433'
+        }
+        with pytest.raises(BusinessException) as excinfo:
+            direct_pay_service.process_cfs_refund(invoice)
+            assert excinfo.value.code == Error.DIRECT_PAY_INVALID_RESPONSE.name

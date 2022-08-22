@@ -263,11 +263,11 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         refund.reason = get_str_by_path(request, 'reason')
         refund.requested_by = kwargs['user'].user_name
         refund.requested_date = datetime.now()
-        refund.flush()
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
             payment_method=invoice.payment_method_code
         )
         invoice_status = pay_system_service.process_cfs_refund(invoice)
+        refund.flush()
         message = REFUND_SUCCESS_MESSAGES.get(f'{invoice.payment_method_code}.{invoice.invoice_status_code}')
         # set invoice status
         invoice.invoice_status_code = invoice_status or InvoiceStatus.REFUND_REQUESTED.value

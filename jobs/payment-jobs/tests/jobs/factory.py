@@ -145,6 +145,13 @@ def factory_create_pad_account(auth_account_id='1234', bank_number='001', bank_b
     return account
 
 
+def factory_create_direct_pay_account(auth_account_id='1234', payment_method=PaymentMethod.DIRECT_PAY.value):
+    """Return Factory."""
+    account = PaymentAccount(auth_account_id=auth_account_id,
+                             payment_method=payment_method, name=f'Test {auth_account_id}')
+    return account
+
+
 def factory_routing_slip_account(
         number: str = '1234',
         status: str = CfsAccountStatus.PENDING.value,
@@ -271,6 +278,20 @@ def factory_refund(
     """Return Factory."""
     return Refund(
         routing_slip_id=routing_slip_id,
+        requested_date=datetime.now(),
+        reason='TEST',
+        requested_by='TEST',
+        details=details
+    ).save()
+
+
+def factory_refund_invoice(
+        invoice_id: int,
+        details={}
+):
+    """Return Factory."""
+    return Refund(
+        invoice_id=invoice_id,
         requested_date=datetime.now(),
         reason='TEST',
         requested_by='TEST',

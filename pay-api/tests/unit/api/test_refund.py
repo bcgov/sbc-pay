@@ -18,19 +18,22 @@ Test-Suite to ensure that the /receipt endpoint is working as expected.
 """
 
 import json
+
 from datetime import datetime
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import Refund as RefundModel
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, Role
+from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
     get_claims, get_payment_request, get_payment_request_with_payment_method, get_payment_request_with_service_fees,
     get_routing_slip_request, get_unlinked_pad_account_payload, token_header)
 
 
-def test_create_refund(session, client, jwt, app, stan_server):
+def test_create_refund(session, client, jwt, app, stan_server, monkeypatch):
     """Assert that the endpoint  returns 202."""
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -55,6 +58,7 @@ def test_create_refund(session, client, jwt, app, stan_server):
                      headers=headers)
     assert rv.status_code == 202
     assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['DIRECT_PAY.PAID']
+    assert RefundModel.find_by_invoice_id(inv_id) is not None
 
 
 def test_create_drawdown_refund(session, client, jwt, app, stan_server):
@@ -235,7 +239,7 @@ def test_create_refund_with_existing_routing_slip(session, client,
 
 def test_create_refund_with_legacy_routing_slip(session, client,
                                                 jwt, app, stan_server):
-    """Assert that the endpoint  returns 202."""
+    """Assert that the endpoint returns 400."""
     claims = get_claims(
         roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value, Role.FAS_REFUND.value, Role.STAFF.value, 'make_payment'])
     token = jwt.create_jwt(claims, token_header)
@@ -251,3 +255,35 @@ def test_create_refund_with_legacy_routing_slip(session, client,
                      headers=headers)
     assert rv.status_code == 400
     assert rv.json.get('type') == 'ROUTING_SLIP_REFUND'
+
+
+def test_create_refund_fails(session, client, jwt, app, stan_server, monkeypatch):
+    """Assert that the endpoint returns 400."""
+    token = jwt.create_jwt(get_claims(app_request=app), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
+    inv_id = rv.json.get('id')
+
+    data = {
+        'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
+        'payReturnUrl': 'http://localhost:8080/pay-web'
+    }
+    receipt_number = '123451'
+    rv = client.post(f'/api/v1/payment-requests/{inv_id}/transactions', data=json.dumps(data),
+                     headers=headers)
+    txn_id = rv.json.get('id')
+    client.patch(f'/api/v1/payment-requests/{inv_id}/transactions/{txn_id}',
+                 data=json.dumps({'receipt_number': receipt_number}), headers=headers)
+
+    invoice = InvoiceModel.find_by_id(inv_id)
+    invoice.invoice_status_code = InvoiceStatus.APPROVED.value
+    invoice.save()
+
+    token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds', data=json.dumps({'reason': 'Test'}),
+                     headers=headers)
+    assert rv.status_code == 400
+    assert rv.json.get('type') == Error.INVALID_REQUEST.name
+    assert RefundModel.find_by_invoice_id(inv_id) is None
