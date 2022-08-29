@@ -25,6 +25,8 @@ from faker import Faker
 from requests.exceptions import ConnectionError
 
 from pay_api.exceptions import ServiceUnavailableException
+from pay_api.models.distribution_code import DistributionCodeLink as DistributionCodeLinkModel
+from pay_api.models.fee_schedule import FeeSchedule
 from pay_api.models.invoice import Invoice
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.schemas import utils as schema_utils
@@ -77,6 +79,14 @@ def test_account_purchase_history_pagination(session, client, jwt, app):
 
 def test_account_purchase_history_with_service_account(session, client, jwt, app):
     """Assert that purchase history returns only invoices for that product."""
+    # Point CSO fee schedule to a valid distribution code.
+    fee_schedule_id = FeeSchedule.find_by_filing_type_and_corp_type('CSO', 'CSBVFEE').fee_schedule_id
+    DistributionCodeLinkModel(fee_schedule_id=fee_schedule_id, distribution_code_id=1).save()
+
+    # Point PPR fee schedule to a valid distribution code.
+    fee_schedule_id = FeeSchedule.find_by_filing_type_and_corp_type('PPR', 'FSDIS').fee_schedule_id
+    DistributionCodeLinkModel(fee_schedule_id=fee_schedule_id, distribution_code_id=1).save()
+
     # Create one invoice for CSO and one fpr BUSINESS.
     # Then query without any filter and make sure only CSO invoice is returned for service account with CSO product_code
     for corp_filing_type in (['CSO', 'CSBVFEE'], ['PPR', 'FSDIS']):
@@ -103,6 +113,10 @@ def test_account_purchase_history_with_service_account(session, client, jwt, app
 
 def test_payment_request_for_cso_with_service_account(session, client, jwt, app):
     """Assert Service charge is calculated based on quantity."""
+    # Point CSO fee schedule to a valid distribution code.
+    fee_schedule_id = FeeSchedule.find_by_filing_type_and_corp_type('CSO', 'CSBVFEE').fee_schedule_id
+    DistributionCodeLinkModel(fee_schedule_id=fee_schedule_id, distribution_code_id=1).save()
+
     quantity = 2
     token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value], product_code='CSO'), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}

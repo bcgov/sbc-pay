@@ -25,7 +25,7 @@ import pytest
 from flask import current_app
 from requests.exceptions import ConnectionError
 
-from pay_api.models import DistributionCode as DistributionCodeModel
+from pay_api.models import DistributionCode as DistributionCodeModel, DistributionCodeLink as DistributionCodeLinkModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
@@ -78,6 +78,15 @@ def test_payment_creation_using_direct_pay(session, client, jwt, app):
 ])
 def test_payment_creation_with_service_account(session, client, jwt, app, payload, product_code_claim, expected_status):
     """Assert that the endpoint returns 201."""
+
+    # Point BEN fee schedule to a valid distribution code.
+    fee_schedule_id = FeeScheduleModel.find_by_filing_type_and_corp_type('BEN', 'BCINC').fee_schedule_id
+    DistributionCodeLinkModel(fee_schedule_id=fee_schedule_id, distribution_code_id=1).save()
+
+    # Point CSO fee schedule to a valid distribution code.
+    fee_schedule_id = FeeScheduleModel.find_by_filing_type_and_corp_type('CSO', 'CSCRMTFC').fee_schedule_id
+    DistributionCodeLinkModel(fee_schedule_id=fee_schedule_id, distribution_code_id=1).save()
+
     token = jwt.create_jwt(
         get_claims(roles=[Role.SYSTEM.value, Role.EDITOR.value], product_code=product_code_claim),
         token_header
