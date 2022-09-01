@@ -1598,6 +1598,9 @@ components:
         id:
           type: integer
           description: Unique identifier for invoice
+        bcolAccount:
+          type: string
+          description: BC Online account number
         businessIdentifier:
           type: string
           description: id of the account
