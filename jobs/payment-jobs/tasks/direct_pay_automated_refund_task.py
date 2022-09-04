@@ -113,9 +113,8 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         refund = RefundModel.find_by_invoice_id(invoice.id)
         refund.gl_error = errors
         refund.save()
-        # NOTE: Do not manually update the invoice to UPDATE_REVENUE_ACCOUNT_REFUND
-        # without consult with PAYBC first.
-        # Distribution service, when the GL is changed - behaviour might need to change for REFUNDS.
+        # NOTE: Do not manually update the invoice to UPDATE_REVENUE_ACCOUNT_REFUND without consulting PAYBC first.
+        # Distribution service, when the GL is changed - behaviour may need to change for refunds (works for payments)
 
     @classmethod
     def _refund_paid(cls, invoice: Invoice):
