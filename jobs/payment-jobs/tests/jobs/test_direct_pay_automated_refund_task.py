@@ -107,7 +107,7 @@ def test_bad_cfs_refund(session, monkeypatch):
     monkeypatch.setattr(target, payment_status)
 
     DirectPayAutomatedRefundTask().process_cc_refunds()
-    assert invoice.invoice_status_code == InvoiceStatus.UPDATE_REVENUE_ACCOUNT_REFUND.value
+    assert refund.gl_error == 'BAD BAD'
     assert refund.gl_posted is None
 
 

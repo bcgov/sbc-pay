@@ -60,14 +60,15 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
                 Set invoice and payment = REFUNDED (incase we skipped the condition above).
                 Set refund.gl_posted = now()
             2.3. Check for refundGLstatus = RJCT
-                Set invoice = UPDATE_REVENUE_ACCOUNT_REFUND (should be picked up by distribution_task to update GL).
+                Log the error down, contact PAYBC if this happens.
+                Set refund.gl_error = <message>
         """
         include_invoice_statuses = [InvoiceStatus.REFUND_REQUESTED.value, InvoiceStatus.REFUNDED.value]
         invoices: List[InvoiceModel] = InvoiceModel.query \
             .outerjoin(RefundModel, RefundModel.invoice_id == Invoice.id)\
             .filter(InvoiceModel.payment_method_code == PaymentMethod.DIRECT_PAY.value) \
             .filter(InvoiceModel.invoice_status_code.in_(include_invoice_statuses)) \
-            .filter(RefundModel.gl_posted.is_(None)) \
+            .filter(RefundModel.gl_posted.is_(None) & RefundModel.gl_error.is_(None)) \
             .order_by(InvoiceModel.created_on.asc()).all()
 
         current_app.logger.info(f'Found {len(invoices)} invoices to process for refunds.')
@@ -76,7 +77,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
             try:
                 status = OrderStatus.from_dict(cls._query_order_status(invoice))
                 if cls._is_glstatus_rejected(status):
-                    cls._refund_update_revenue(invoice)
+                    cls._log_error(status, invoice)
                 elif cls._is_status_paid_and_invoice_refund_requested(status, invoice):
                     cls._refund_paid(invoice)
                 elif cls._is_status_complete(status):
@@ -104,21 +105,27 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         return payment_response
 
     @classmethod
-    def _refund_update_revenue(cls, invoice: Invoice):
-        current_app.logger.info(f'Setting invoice id {invoice.id} to UPDATE_REVENUE_ACCOUNT_REFUND.')
-        invoice.invoice_status_code = InvoiceStatus.UPDATE_REVENUE_ACCOUNT_REFUND.value
-        invoice.save()
-
+    def _log_error(cls, status: OrderStatus, invoice: Invoice):
+        current_app.logger.error(f'Setting invoice id {invoice.id} detected state RJCT on refund, contact PAYBC.')
+        errors = ' '.join([revenue_line.refundglerrormessage for revenue_line in status.revenue])
+        current_app.logger.error(f'Refund glerrormessage: ${errors}')
+        refund = RefundModel.find_by_invoice_id(invoice.id)
+        refund.gl_error = errors
+        refund.save()
+        # NOTE: Do not manually update the invoice to UPDATE_REVENUE_ACCOUNT_REFUND
+        # without consult with PAYBC first.
+        # Distribution service, when the GL is changed - behaviour might need to change for REFUNDS.
+        
     @classmethod
     def _refund_paid(cls, invoice: Invoice):
-        """Refund was paid by Bambora. Set disbursement to acknowledged."""
+        """Refund was paid by Bambora. Update invoice and payment."""
         if invoice.invoice_status_code != InvoiceStatus.REFUND_REQUESTED.value:
             return
         cls._set_invoice_and_payment_to_refunded(invoice)
 
     @classmethod
     def _refund_complete(cls, invoice: Invoice):
-        """Refund was successfully posted to a GL. Set disbursement to reversed (filtered out)."""
+        """Refund was successfully posted to a GL. Set gl_posted to now (filtered out)."""
         # Set these to refunded, incase we skipped the PAID state and went to CMPLT
         cls._set_invoice_and_payment_to_refunded(invoice)
         refund = RefundModel.find_by_invoice_id(invoice.id)
