@@ -51,7 +51,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         Process non complete credit card refunds.
 
         1. Find all invoices that use Direct Pay (Credit Card) in REFUND_REQUESTED or REFUNDED
-           excluding invoices with refunds that have gl_posted.
+           excluding invoices with refunds that have gl_posted or gl_error.
            Initial state for refunds is REFUND INPRG.
         2. Get order status for CFS (refundstatus, revenue.refundglstatus)
             2.1. Check for refundStatus = PAID and invoice = REFUND_REQUESTED:
