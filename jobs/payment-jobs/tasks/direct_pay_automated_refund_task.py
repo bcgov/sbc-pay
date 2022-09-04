@@ -116,7 +116,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         # NOTE: Do not manually update the invoice to UPDATE_REVENUE_ACCOUNT_REFUND
         # without consult with PAYBC first.
         # Distribution service, when the GL is changed - behaviour might need to change for REFUNDS.
-        
+
     @classmethod
     def _refund_paid(cls, invoice: Invoice):
         """Refund was paid by Bambora. Update invoice and payment."""
