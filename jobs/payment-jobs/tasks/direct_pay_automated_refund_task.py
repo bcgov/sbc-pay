@@ -108,7 +108,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
     def _refund_error(cls, status: OrderStatus, invoice: Invoice):
         """Log error for rejected GL status."""
         current_app.logger.error(f'Setting invoice id {invoice.id} detected state RJCT on refund, contact PAYBC.')
-        errors = ' '.join([revenue_line.refundglerrormessage for revenue_line in status.revenue])[:200]
+        errors = ' '.join([revenue_line.refundglerrormessage for revenue_line in status.revenue])[:250]
         current_app.logger.error(f'Refund glerrormessage: ${errors}')
         refund = RefundModel.find_by_invoice_id(invoice.id)
         refund.gl_error = errors
