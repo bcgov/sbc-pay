@@ -77,7 +77,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
             try:
                 status = OrderStatus.from_dict(cls._query_order_status(invoice))
                 if cls._is_glstatus_rejected(status):
-                    cls._log_error(status, invoice)
+                    cls._refund_error(status, invoice)
                 elif cls._is_status_paid_and_invoice_refund_requested(status, invoice):
                     cls._refund_paid(invoice)
                 elif cls._is_status_complete(status):
@@ -105,16 +105,15 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         return payment_response
 
     @classmethod
-    def _log_error(cls, status: OrderStatus, invoice: Invoice):
+    def _refund_error(cls, status: OrderStatus, invoice: Invoice):
         """Log error for rejected GL status."""
         current_app.logger.error(f'Setting invoice id {invoice.id} detected state RJCT on refund, contact PAYBC.')
-        errors = ' '.join([revenue_line.refundglerrormessage for revenue_line in status.revenue])
+        errors = ' '.join([revenue_line.refundglerrormessage for revenue_line in status.revenue])[:200]
         current_app.logger.error(f'Refund glerrormessage: ${errors}')
         refund = RefundModel.find_by_invoice_id(invoice.id)
         refund.gl_error = errors
         refund.save()
-        # NOTE: Do not manually update the invoice to UPDATE_REVENUE_ACCOUNT_REFUND without consulting PAYBC first.
-        # Distribution service, when the GL is changed - behaviour may need to change for refunds (works for payments)
+        # NOTE: If this happens consult PAYBC.
 
     @classmethod
     def _refund_paid(cls, invoice: Invoice):

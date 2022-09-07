@@ -81,8 +81,8 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         for invoice in invoices:
             if invoice.invoice_status_code == InvoiceStatus.PAID.value:
                 invoice.invoice_status_code = InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value
-            # NOTE: This may need to be updated for InvoiceStatus.UPDATE_REVENUE_ACCOUNT_REFUND
-            # Consult PAYBC first.
+            if invoice.invoice_status_code == InvoiceStatus.REFUNDED.value:
+                invoice.invoice_status_code = InvoiceStatus.UPDATE_REVENUE_ACCOUNT_REFUND.value
         db.session.bulk_save_objects(invoices)
         cls.commit()
 
