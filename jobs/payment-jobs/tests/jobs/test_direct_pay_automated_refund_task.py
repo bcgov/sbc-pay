@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests for cfs cc automated refund."""
+"""Tests for direct pay automated refund task."""
+import datetime
+from freezegun import freeze_time
 from pay_api.models import Refund as RefundModel
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentStatus
 
@@ -66,11 +68,12 @@ def test_successful_completed_refund(session, monkeypatch):
     target = 'tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status'
     monkeypatch.setattr(target, payment_status)
 
-    DirectPayAutomatedRefundTask().process_cc_refunds()
-    refund = RefundModel.find_by_invoice_id(invoice.id)
-    assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
-    assert payment.payment_status_code == PaymentStatus.REFUNDED.value
-    assert refund.gl_posted is not None
+    with freeze_time(datetime.datetime.combine(datetime.datetime.utcnow().date(), datetime.time(18, 00))):
+        DirectPayAutomatedRefundTask().process_cc_refunds()
+        refund = RefundModel.find_by_invoice_id(invoice.id)
+        assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
+        assert payment.payment_status_code == PaymentStatus.REFUNDED.value
+        assert refund.gl_posted is not None
 
 
 def test_bad_cfs_refund(session, monkeypatch):
@@ -106,9 +109,10 @@ def test_bad_cfs_refund(session, monkeypatch):
     target = 'tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status'
     monkeypatch.setattr(target, payment_status)
 
-    DirectPayAutomatedRefundTask().process_cc_refunds()
-    assert refund.gl_error == 'BAD BAD'
-    assert refund.gl_posted is None
+    with freeze_time(datetime.datetime.combine(datetime.datetime.utcnow().date(), datetime.time(18, 00))):
+        DirectPayAutomatedRefundTask().process_cc_refunds()
+        assert refund.gl_error == 'BAD BAD'
+        assert refund.gl_posted is None
 
 
 def test_manual_refund(session, monkeypatch):
@@ -145,7 +149,30 @@ def test_manual_refund(session, monkeypatch):
 
     target = 'tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status'
     monkeypatch.setattr(target, payment_status)
-    DirectPayAutomatedRefundTask().process_cc_refunds()
-    assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
-    assert payment.payment_status_code == PaymentStatus.REFUNDED.value
-    assert refund.gl_posted is not None
+    with freeze_time(datetime.datetime.combine(datetime.datetime.utcnow().date(), datetime.time(18, 00))):
+        DirectPayAutomatedRefundTask().process_cc_refunds()
+        assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
+        assert payment.payment_status_code == PaymentStatus.REFUNDED.value
+        assert refund.gl_posted is not None
+
+
+def test_gl_not_processed_outside_slot(session, monkeypatch):
+    """ Shouldn't process GL outside of the time slot. """
+    invoice = factory_invoice(factory_create_direct_pay_account(), status_code=InvoiceStatus.REFUNDED.value)
+    factory_invoice_reference(invoice.id, invoice.id, InvoiceReferenceStatus.COMPLETED.value).save()
+    refund = factory_refund_invoice(invoice.id)
+
+    def payment_status(cls):  # pylint: disable=unused-argument; mocks of library methods
+        return {
+            'refundstatus': 'CMPLT',
+            'revenue': []
+        }
+    target = 'tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status'
+    monkeypatch.setattr(target, payment_status)
+
+    # Setup to process between 18:00 UTC to 19:00 UTC
+    with freeze_time(datetime.datetime.combine(datetime.datetime.utcnow().date(), datetime.time(20, 00))):
+        DirectPayAutomatedRefundTask().process_cc_refunds()
+        refund = RefundModel.find_by_invoice_id(invoice.id)
+        assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
+        assert refund.gl_posted is None

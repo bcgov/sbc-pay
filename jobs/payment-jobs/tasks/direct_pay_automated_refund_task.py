@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Task to create CFS invoices offline."""
-from datetime import datetime
+"""Task to handle Direct Pay automated refunds."""
+from datetime import datetime, time
 from typing import List
 
 from flask import current_app
@@ -73,8 +73,14 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
 
         current_app.logger.info(f'Found {len(invoices)} invoices to process for refunds.')
         for invoice in invoices:
-            current_app.logger.debug(f'Processing invoice {invoice.id} - created on: {invoice.created_on}')
+            current_app.logger.debug(f'Processing invoice: {invoice.id} - created on: {invoice.created_on}')
             try:
+                # 2 hour window to check for GL refunds. Feedback is updated after 11pm.
+                if invoice.invoice_status_code == InvoiceStatus.REFUNDED.value:
+                    now_time = datetime.utcnow().time()
+                    if now_time < time(18, 00) or now_time > time(20, 00):
+                        continue
+
                 status = OrderStatus.from_dict(cls._query_order_status(invoice))
                 if cls._is_glstatus_rejected(status):
                     cls._refund_error(status, invoice)
@@ -86,9 +92,9 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
                             'Refund status was blank, setting to complete - this was an existing manual refund.')
                     cls._refund_complete(invoice)
                 else:
-                    current_app.logger.info(f'No action taken for invoice {invoice.id}.')
+                    current_app.logger.info('No action taken for invoice.')
             except Exception as e:  # NOQA # pylint: disable=broad-except disable=invalid-name
-                capture_message(f'Error on processing credit card refund - invoice id={invoice.id}'
+                capture_message(f'Error on processing credit card refund - invoice: {invoice.id}'
                                 f'status={invoice.invoice_status_code} ERROR : {str(e)}', level='error')
                 current_app.logger.error(e)
 
@@ -109,13 +115,12 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _refund_error(cls, status: OrderStatus, invoice: Invoice):
         """Log error for rejected GL status."""
-        current_app.logger.error(f'Setting invoice id {invoice.id} detected state RJCT on refund, contact PAYBC.')
+        current_app.logger.error(f'Refund error - Invoice: {invoice.id} - detected RJCT on refund, contact PAYBC.')
         errors = ' '.join([revenue_line.refundglerrormessage.strip() for revenue_line in status.revenue])[:250]
-        current_app.logger.error(f'Refund glerrormessage: {errors}')
+        current_app.logger.error(f'Refund error - Invoice: {invoice.id} - glerrormessage: {errors}')
         refund = RefundModel.find_by_invoice_id(invoice.id)
         refund.gl_error = errors
         refund.save()
-        # NOTE: If this happens consult PAYBC.
 
     @classmethod
     def _refund_paid(cls, invoice: Invoice):
@@ -130,7 +135,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         # Set these to refunded, incase we skipped the PAID state and went to CMPLT
         cls._set_invoice_and_payment_to_refunded(invoice)
         current_app.logger.info(
-            'Refund complete - GL was posted - setting refund gl_posted to now.')
+            'Refund complete - GL was posted - setting refund.gl_posted to now.')
         refund = RefundModel.find_by_invoice_id(invoice.id)
         refund.gl_posted = datetime.now()
         refund.save()
@@ -155,7 +160,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
     @staticmethod
     def _set_invoice_and_payment_to_refunded(invoice: Invoice):
         """Set invoice and payment to REFUNDED."""
-        current_app.logger.info(f'Setting invoice id {invoice.id} and payment to REFUNDED.')
+        current_app.logger.info('Invoice & Payment set to REFUNDED.')
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
         invoice.save()
         payment = PaymentModel.find_payment_for_invoice(invoice.id)
