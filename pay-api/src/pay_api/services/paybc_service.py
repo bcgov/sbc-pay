@@ -36,7 +36,7 @@ from .payment_line_item import PaymentLineItem
 
 
 class PaybcService(PaymentSystemService, CFSService):
-    """Service to manage PayBC integration."""
+    """Service to manage PayBC integration. - This is legacy, we use direct pay service instead."""
 
     def get_payment_system_url_for_invoice(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""

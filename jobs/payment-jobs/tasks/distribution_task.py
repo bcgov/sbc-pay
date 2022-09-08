@@ -149,7 +149,6 @@ class DistributionTask:
     def update_invoice_to_refunded_or_paid(cls, invoice: InvoiceModel):
         """Update the invoice status."""
         if invoice.invoice_status_code == InvoiceStatus.UPDATE_REVENUE_ACCOUNT_REFUND.value:
-            # This filters out of our cfs_cc_automated_task_refund.py
             # No more work is needed to ensure it was posted to gl.
             refund = RefundModel.find_by_invoice_id(invoice.id)
             refund.gl_posted = datetime.now()
