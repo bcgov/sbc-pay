@@ -170,7 +170,7 @@ def test_gl_not_processed_outside_slot(session, monkeypatch):
     target = 'tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status'
     monkeypatch.setattr(target, payment_status)
 
-    # Setup to process between 18:00 UTC to 19:00 UTC
+    # Setup to process between 18:00 UTC to 20:00 UTC
     with freeze_time(datetime.datetime.combine(datetime.datetime.utcnow().date(), datetime.time(20, 00))):
         DirectPayAutomatedRefundTask().process_cc_refunds()
         refund = RefundModel.find_by_invoice_id(invoice.id)
