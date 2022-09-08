@@ -157,9 +157,10 @@ def test_manual_refund(session, monkeypatch):
 
 
 def test_gl_not_processed_outside_slot(session, monkeypatch):
-    """ Shouldn't process GL outside of the time slot. """
+    """Shouldn't process GL outside of the time slot."""
     invoice = factory_invoice(factory_create_direct_pay_account(), status_code=InvoiceStatus.REFUNDED.value)
     factory_invoice_reference(invoice.id, invoice.id, InvoiceReferenceStatus.COMPLETED.value).save()
+    factory_payment('PAYBC', invoice_number=invoice.id)
     refund = factory_refund_invoice(invoice.id)
 
     def payment_status(cls):  # pylint: disable=unused-argument; mocks of library methods
@@ -171,7 +172,7 @@ def test_gl_not_processed_outside_slot(session, monkeypatch):
     monkeypatch.setattr(target, payment_status)
 
     # Setup to process between 18:00 UTC to 20:00 UTC
-    with freeze_time(datetime.datetime.combine(datetime.datetime.utcnow().date(), datetime.time(20, 00))):
+    with freeze_time(datetime.datetime.combine(datetime.datetime.utcnow().date(), datetime.time(20, 1))):
         DirectPayAutomatedRefundTask().process_cc_refunds()
         refund = RefundModel.find_by_invoice_id(invoice.id)
         assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
