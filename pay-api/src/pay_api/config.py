@@ -179,6 +179,8 @@ class _Config():  # pylint: disable=too-few-public-methods
 
     ALLOW_LEGACY_ROUTING_SLIPS = os.getenv('ALLOW_LEGACY_ROUTING_SLIPS', 'True').lower() == 'true'
 
+    ENABLE_PAYBC_AUTOMATED_REFUNDS = os.getenv('ENABLE_PAYBC_AUTOMATED_REFUNDS', 'false').lower() == 'true'
+
     TESTING = False
     DEBUG = True
 
