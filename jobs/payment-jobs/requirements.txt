@@ -1,5 +1,5 @@
 -e git+https://github.com/bcgov/sbc-common-components.git@4efa1e6664dff321030eca7448a7d5af91c2f355#egg=sbc_common_components&subdirectory=python
--e git+https://github.com/seeker25/sbc-pay.git@f8fb8a8cb3990470446548d5ad7ed9d7c98e4b52#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-pay.git@95cd9254ed89d01cd571918aa845bbe7b85f348b#egg=pay_api&subdirectory=pay-api
 Flask-Caching==2.0.1
 Flask-Migrate==2.7.0
 Flask-Moment==1.0.4
@@ -11,7 +11,7 @@ Jinja2==3.0.3
 Mako==1.2.2
 MarkupSafe==2.1.1
 PyNaCl==1.5.0
-SQLAlchemy-Continuum==1.3.12
+SQLAlchemy-Continuum==1.3.13
 SQLAlchemy-Utils==0.38.3
 SQLAlchemy==1.3.24
 Werkzeug==1.0.1
@@ -23,12 +23,12 @@ attrs==22.1.0
 bcrypt==4.0.0
 blinker==1.5
 cachelib==0.9.0
-certifi==2022.6.15
+certifi==2022.6.15.2
 cffi==1.15.1
 charset-normalizer==2.1.1
 click==8.1.3
 croniter==1.3.7
-cryptography==37.0.4
+cryptography==38.0.1
 dataclass-wizard==0.22.1
 dpath==2.0.6
 ecdsa==0.18.0
@@ -36,12 +36,12 @@ flask-jwt-oidc==0.3.0
 flask-marshmallow==0.11.0
 flask-restx==0.5.1
 gunicorn==20.1.0
-idna==3.3
+idna==3.4
 importlib-metadata==4.12.0
 importlib-resources==5.9.0
 itsdangerous==2.0.1
 jaeger-client==4.8.0
-jsonschema==4.15.0
+jsonschema==4.16.0
 marshmallow-sqlalchemy==0.25.0
 marshmallow==3.17.1
 minio==7.1.11
@@ -49,7 +49,7 @@ opentracing==2.4.0
 packaging==21.3
 paramiko==2.11.0
 pkgutil_resolve_name==1.3.10
-protobuf==3.19.4
+protobuf==3.19.5
 psycopg2-binary==2.9.3
 pyasn1==0.4.8
 pycparser==2.21
