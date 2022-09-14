@@ -255,7 +255,8 @@ async def _process_consolidated_invoices(row):
                                 level='error')
                 return
             await _process_paid_invoices(inv_references, row)
-            await _publish_mailer_events('PAD.PaymentSuccess', payment_account, row)
+            if not APP_CONFIG.DISABLE_PAD_SUCCESS_EMAIL:
+                await _publish_mailer_events('PAD.PaymentSuccess', payment_account, row)
         elif target_txn_status.lower() == Status.NOT_PAID.value.lower() \
                 or record_type in (RecordType.PADR.value, RecordType.PAYR.value):
             logger.info('NOT PAID. NSF identified.')
