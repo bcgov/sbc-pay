@@ -68,7 +68,7 @@ def test_successful_completed_refund(session, monkeypatch):
     target = 'tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status'
     monkeypatch.setattr(target, payment_status)
 
-    with freeze_time(datetime.datetime.combine(datetime.datetime.utcnow().date(), datetime.time(18, 00))):
+    with freeze_time(datetime.datetime.combine(datetime.datetime.utcnow().date(), datetime.time(6, 00))):
         DirectPayAutomatedRefundTask().process_cc_refunds()
         refund = RefundModel.find_by_invoice_id(invoice.id)
         assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
@@ -109,7 +109,7 @@ def test_bad_cfs_refund(session, monkeypatch):
     target = 'tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status'
     monkeypatch.setattr(target, payment_status)
 
-    with freeze_time(datetime.datetime.combine(datetime.datetime.utcnow().date(), datetime.time(18, 00))):
+    with freeze_time(datetime.datetime.combine(datetime.datetime.utcnow().date(), datetime.time(6, 00))):
         DirectPayAutomatedRefundTask().process_cc_refunds()
         assert refund.gl_error == 'BAD BAD'
         assert refund.gl_posted is None
@@ -149,7 +149,7 @@ def test_manual_refund(session, monkeypatch):
 
     target = 'tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status'
     monkeypatch.setattr(target, payment_status)
-    with freeze_time(datetime.datetime.combine(datetime.datetime.utcnow().date(), datetime.time(18, 00))):
+    with freeze_time(datetime.datetime.combine(datetime.datetime.utcnow().date(), datetime.time(6, 00))):
         DirectPayAutomatedRefundTask().process_cc_refunds()
         assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
         assert payment.payment_status_code == PaymentStatus.REFUNDED.value
@@ -171,8 +171,8 @@ def test_gl_not_processed_outside_slot(session, monkeypatch):
     target = 'tasks.direct_pay_automated_refund_task.DirectPayAutomatedRefundTask._query_order_status'
     monkeypatch.setattr(target, payment_status)
 
-    # Setup to process between 18:00 UTC to 20:00 UTC
-    with freeze_time(datetime.datetime.combine(datetime.datetime.utcnow().date(), datetime.time(20, 1))):
+    # Setup to process between 6:00 UTC to 8:00 UTC
+    with freeze_time(datetime.datetime.combine(datetime.datetime.utcnow().date(), datetime.time(8, 1))):
         DirectPayAutomatedRefundTask().process_cc_refunds()
         refund = RefundModel.find_by_invoice_id(invoice.id)
         assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value

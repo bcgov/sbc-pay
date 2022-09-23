@@ -78,7 +78,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
                 # 2 hour window to check for GL refunds. Feedback is updated after 11pm.
                 if invoice.invoice_status_code == InvoiceStatus.REFUNDED.value:
                     now_time = datetime.utcnow().time()
-                    if now_time < time(18, 00) or now_time > time(20, 00):
+                    if now_time < time(6, 00) or now_time > time(8, 00):
                         continue
 
                 status = OrderStatus.from_dict(cls._query_order_status(invoice))
