@@ -73,14 +73,13 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
 
         current_app.logger.info(f'Found {len(invoices)} invoices to process for refunds.')
         for invoice in invoices:
-            current_app.logger.debug(f'Processing invoice: {invoice.id} - created on: {invoice.created_on}')
             try:
                 # 2 hour window to check for GL refunds. Feedback is updated after 11pm.
                 if invoice.invoice_status_code == InvoiceStatus.REFUNDED.value:
                     now_time = datetime.utcnow().time()
-                    if now_time < time(18, 00) or now_time > time(20, 00):
+                    if now_time < time(6, 00) or now_time > time(8, 00):
                         continue
-
+                current_app.logger.debug(f'Processing invoice: {invoice.id} - created on: {invoice.created_on}')
                 status = OrderStatus.from_dict(cls._query_order_status(invoice))
                 if cls._is_glstatus_rejected(status):
                     cls._refund_error(status, invoice)
