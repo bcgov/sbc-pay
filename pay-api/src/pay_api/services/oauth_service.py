@@ -38,12 +38,13 @@ class OAuthService:
              content_type: ContentType, data,
              raise_for_error: bool = True,
              additional_headers: Dict = None,
-             is_put: bool = False):
+             is_put: bool = False,
+             auth_header_name: str = 'Authorization'):
         """POST service."""
         current_app.logger.debug('<post')
 
         headers = {
-            'Authorization': auth_header_type.value.format(token),
+            auth_header_name: auth_header_type.value.format(token),
             'Content-Type': content_type.value
         }
 
@@ -94,12 +95,13 @@ class OAuthService:
     @staticmethod
     def get(endpoint, token, auth_header_type: AuthHeaderType,  # pylint:disable=too-many-arguments
             content_type: ContentType,
-            retry_on_failure: bool = False, return_none_if_404: bool = False, additional_headers: Dict = None):
+            retry_on_failure: bool = False, return_none_if_404: bool = False, additional_headers: Dict = None,
+            auth_header_name: str = 'Authorization'):
         """GET service."""
         current_app.logger.debug('<GET')
 
         headers = {
-            'Authorization': auth_header_type.value.format(token),
+            auth_header_name: auth_header_type.value.format(token),
             'Content-Type': content_type.value
         }
 
@@ -116,11 +118,11 @@ class OAuthService:
             response = session.get(endpoint, headers=headers, timeout=current_app.config.get('CONNECT_TIMEOUT'))
             response.raise_for_status()
         except (ReqConnectionError, ConnectTimeout) as exc:
-            current_app.logger.error('---Error on POST---')
+            current_app.logger.error('---Error on GET---')
             current_app.logger.error(exc)
             raise ServiceUnavailableException(exc) from exc
         except HTTPError as exc:
-            current_app.logger.error(f"HTTPError on POST with status code {response.status_code if response else ''}")
+            current_app.logger.error(f"HTTPError on GET with status code {response.status_code if response else ''}")
             if response is not None:
                 if response.status_code >= 500:
                     raise ServiceUnavailableException(exc) from exc

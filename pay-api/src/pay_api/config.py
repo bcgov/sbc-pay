@@ -114,6 +114,7 @@ class _Config():  # pylint: disable=too-few-public-methods
     PAYBC_DIRECT_PAY_BASE_URL = _get_config('PAYBC_DIRECT_PAY_BASE_URL')
     PAYBC_DIRECT_PAY_CLIENT_ID = _get_config('PAYBC_DIRECT_PAY_CLIENT_ID')
     PAYBC_DIRECT_PAY_CLIENT_SECRET = _get_config('PAYBC_DIRECT_PAY_CLIENT_SECRET')
+    PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL = _get_config('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL')
 
     # NATS Config
     NATS_SERVERS = _get_config('NATS_SERVERS', default='nats://127.0.0.1:4222').split(',')
@@ -177,6 +178,8 @@ class _Config():  # pylint: disable=too-few-public-methods
     OUTSTANDING_TRANSACTION_DAYS = int(os.getenv('OUTSTANDING_TRANSACTION_DAYS', '10'))
 
     ALLOW_LEGACY_ROUTING_SLIPS = os.getenv('ALLOW_LEGACY_ROUTING_SLIPS', 'True').lower() == 'true'
+
+    ENABLE_PAYBC_AUTOMATED_REFUNDS = os.getenv('ENABLE_PAYBC_AUTOMATED_REFUNDS', 'false').lower() == 'true'
 
     TESTING = False
     DEBUG = True
@@ -293,6 +296,7 @@ NrQw+2OdQACBJiEHsdZzAkBcsTk7frTH4yGx0VfHxXDPjfTj4wmD6gZIlcIr9lZg
     PAYBC_DIRECT_PAY_REF_NUMBER = 'REF1234'
     PAYBC_DIRECT_PAY_PORTAL_URL = 'https://paydev.gov.bc.ca/public/directsale'
     PAYBC_DIRECT_PAY_BASE_URL = 'http://localhost:8080/paybc-api'
+    PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL = PAYBC_DIRECT_PAY_BASE_URL
     PAYBC_DIRECT_PAY_CLIENT_ID = 'TEST'
     PAYBC_DIRECT_PAY_CLIENT_SECRET = 'TEST'
 

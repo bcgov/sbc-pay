@@ -39,6 +39,7 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
+from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.services.queue_publisher import publish
@@ -328,6 +329,9 @@ async def _process_ap_feedback(group_batches) -> bool:  # pylint:disable=too-man
                                     level='error')
                 else:
                     routing_slip.status = RoutingSlipStatus.REFUND_COMPLETED.value
+                    refund = RefundModel.find_by_routing_slip_id(routing_slip.id)
+                    refund.gl_posted = datetime.now()
+                    refund.save()
 
     db.session.commit()
     return has_errors

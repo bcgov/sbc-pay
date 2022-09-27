@@ -19,6 +19,7 @@ Test-Suite to ensure that the util functions are working as expected.
 from datetime import datetime
 
 from pay_api.utils.util import get_nearest_business_day
+from pay_api.schemas import utils as schema_utils
 
 
 def test_next_business_day(session):
@@ -47,3 +48,9 @@ def test_next_business_day(session):
     d = datetime(2021, 12, 31)
     business_date = get_nearest_business_day(d, include_today=False)
     assert business_date.date() == datetime(2022, 1, 3).date()
+
+
+def test_validate_schema():
+    """Assert get_schema works."""
+    schema_utils.get_schema('transaction_request.json')
+    assert True

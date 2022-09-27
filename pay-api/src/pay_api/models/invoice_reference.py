@@ -37,7 +37,7 @@ class InvoiceReference(BaseModel):  # pylint: disable=too-many-instance-attribut
 
     @classmethod
     def find_reference_by_invoice_id_and_status(cls, invoice_id: int, status_code: str):
-        """Return aactive Invoice Reference by invoice id."""
+        """Return active Invoice Reference by invoice id."""
         return cls.query.filter_by(invoice_id=invoice_id).filter_by(status_code=status_code).one_or_none()
 
     @classmethod

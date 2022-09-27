@@ -22,7 +22,7 @@ from .db import db, ma
 
 
 class Refund(BaseModel):  # pylint:disable=too-many-instance-attributes
-    """This class manages all of the base data about Routing Slip Invoice Refund."""
+    """This class manages all of the base data about Refunds."""
 
     __tablename__ = 'refunds'
 
@@ -40,6 +40,9 @@ class Refund(BaseModel):  # pylint:disable=too-many-instance-attributes
     decision_made_by = db.Column(db.String(50))
     decision_date = db.Column(db.DateTime)
     details = db.Column(JSONB)
+    # These two fields below are used for direct pay credit card refunds.
+    gl_posted = db.Column(db.DateTime, nullable=True)
+    gl_error = db.Column(db.String(250), nullable=True)
 
     @classmethod
     def find_by_invoice_id(cls, invoice_id: int):
