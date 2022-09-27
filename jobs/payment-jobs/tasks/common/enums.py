@@ -18,7 +18,7 @@ from enum import Enum
 class PaymentDetailsStatus(Enum):
     """Payment details status."""
 
-    REFUND_INPROG = 'REFUND_INPROG'
+    REFUND_INPRG = 'REFUND_INPRG'
     PAID = 'PAID'
     CMPLT = 'CMPLT'
 
