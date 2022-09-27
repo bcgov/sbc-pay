@@ -178,6 +178,7 @@ def test_get_receipt(session, public_user_mock):
 
 def test_process_cfs_refund_success(monkeypatch):
     """Assert refund is successful, when providing a PAID invoice, receipt, a COMPLETED invoice reference."""
+    current_app.config['ENABLE_PAYBC_AUTOMATED_REFUNDS'] = True
     payment_account = factory_payment_account()
     invoice = factory_invoice(payment_account)
     invoice.invoice_status_code = InvoiceStatus.PAID.value
@@ -200,6 +201,7 @@ def test_process_cfs_refund_bad_request():
 
     Users may only transition from PAID -> UPDATE_REVENUE_ACCOUNT.
     """
+    current_app.config['ENABLE_PAYBC_AUTOMATED_REFUNDS'] = True
     payment_account = factory_payment_account()
     invoice = factory_invoice(payment_account)
     invoice.invoice_status_code = InvoiceStatus.APPROVED.value
@@ -216,6 +218,7 @@ def test_process_cfs_refund_duplicate_refund(monkeypatch):
 
     Assert approved = 0, throws an exception.
     """
+    current_app.config['ENABLE_PAYBC_AUTOMATED_REFUNDS'] = True
     payment_account = factory_payment_account()
     invoice = factory_invoice(payment_account)
     invoice.invoice_status_code = InvoiceStatus.PAID.value
