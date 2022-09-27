@@ -14,7 +14,7 @@ jaeger-client==4.8.0
 jsonschema==4.3.2
 minio==7.1.2
 opentracing==2.4.0
-protobuf==3.19.1
+protobuf==3.19.5
 pycountry==20.7.3
 pyrsistent==0.18.0
 python-dotenv==0.19.2
