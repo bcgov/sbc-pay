@@ -253,6 +253,7 @@ async def reconcile_payments(msg: Dict[str, any]):
     _create_credit_records(content)
     # Sync credit memo and on account credits with CFS
     _sync_credit_records()
+
     cas_settlement.processed_on = datetime.now()
     cas_settlement.save()
 

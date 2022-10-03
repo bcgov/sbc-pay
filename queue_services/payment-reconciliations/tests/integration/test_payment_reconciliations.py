@@ -807,11 +807,3 @@ async def test_credits(session, app, stan_server, event_loop, client_id, events_
     assert pay_account.credit == onac_amount + cm_amount - cm_used_amount
     credit = CreditModel.find_by_id(credit_id)
     assert credit.remaining_amount == cm_amount - cm_used_amount
-
-    cas_settlement: CasSettlementModel = CasSettlementModel.find_by_id(1)
-    assert cas_settlement.processed_on is not None
-
-    await helper_add_event_to_queue(events_stan, file_name=file_name)
-
-    cas_settlement: CasSettlementModel = CasSettlementModel.find_by_id(2)
-    assert cas_settlement is None
