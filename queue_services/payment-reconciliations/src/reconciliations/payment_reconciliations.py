@@ -165,9 +165,9 @@ def _save_payment(payment_date, inv_number, invoice_amount,  # pylint: disable=t
 
 def _get_failed_payment_by_inv_number(inv_number: str) -> PaymentModel:
     """Get the failed payment record for the invoice number."""
-    payment: PaymentModel = db.session.query(PaymentModel).filter(
-        PaymentModel.invoice_number == inv_number,
-        PaymentModel.payment_status_code == PaymentStatus.FAILED.value) \
+    payment: PaymentModel = db.session.query(PaymentModel) \
+        .filter(PaymentModel.invoice_number == inv_number,
+                PaymentModel.payment_status_code == PaymentStatus.FAILED.value) \
         .order_by(PaymentModel.payment_date.desc()).first()
     return payment
 
@@ -757,7 +757,7 @@ def _get_settlement_type(payment_lines) -> str:
     return settlement_type
 
 
-def _create_cas_settlement(file_name):
+def _create_cas_settlement(file_name: str) -> CasSettlementModel:
     """Create a CAS settlement entry."""
     cas_settlement = CasSettlementModel()
     cas_settlement.file_name = file_name

@@ -73,7 +73,8 @@ def _update_acknowledgement(msg: Dict[str, any]):
 
     # Check to see that our ack file doesn't exist, if it exists, skip it.
     ack_file_name = msg.get('data').get('fileName')
-    ack_exists: EjvFileModel = db.session.query(EjvFileModel).filter(EjvFileModel.ack_file_ref == ack_file_name).first()
+    ack_exists: EjvFileModel = db.session.query(EjvFileModel).filter(
+        EjvFileModel.ack_file_ref == ack_file_name).first()
     if ack_exists:
         logger.warning('Ack file: %s - already exists, possible duplicate, skipping ack.', ack_file_name)
         return
