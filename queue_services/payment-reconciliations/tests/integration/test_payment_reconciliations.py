@@ -22,7 +22,6 @@ from datetime import datetime
 import pytest
 from entity_queue_common.service_utils import subscribe_to_queue
 from flask import current_app
-from pay_api.models import CasSettlement as CasSettlementModel
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Credit as CreditModel
 from pay_api.models import Invoice as InvoiceModel
