@@ -64,12 +64,19 @@ async def reconcile_distributions(msg: Dict[str, any], is_feedback: bool = False
     if is_feedback:
         await _update_feedback(msg)
     else:
-        _update_acknowledgement()
+        _update_acknowledgement(msg)
 
 
-def _update_acknowledgement():
+def _update_acknowledgement(msg: Dict[str, any]):
     # As per documentation, feedback file is timestamped by the date time when it is picked,
     # so query uploaded jv file records and mark it as acknowledged.
+
+    # Check to see that our ack file doesn't exist, if it exists, skip it.
+    ack_file_name = msg.get('data').get('fileName')
+    ack_exists: EjvFileModel = db.session.query(EjvFileModel).filter(EjvFileModel.ack_file_ref == ack_file_name).first()
+    if ack_exists:
+        logger.warning('Ack file: %s - already exists, possible duplicate, skipping ack.', ack_file_name)
+        return
 
     ejv_file: EjvFileModel = db.session.query(EjvFileModel).filter(
         EjvFileModel.disbursement_status_code == DisbursementStatus.UPLOADED.value).one_or_none()
@@ -77,6 +84,7 @@ def _update_acknowledgement():
         EjvHeaderModel.ejv_file_id == ejv_file.id).all()
 
     ejv_file.disbursement_status_code = DisbursementStatus.ACKNOWLEDGED.value
+    ejv_file.ack_file_ref = ack_file_name
 
     for ejv_header in ejv_headers:
         ejv_header.disbursement_status_code = DisbursementStatus.ACKNOWLEDGED.value

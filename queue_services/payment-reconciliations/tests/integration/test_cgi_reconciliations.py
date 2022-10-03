@@ -1060,3 +1060,41 @@ async def test_failed_refund_reconciliations(
 
     routing_slip_2 = RoutingSlipModel.find_by_number(rs_numbers[1])
     assert routing_slip_2.status == RoutingSlipStatus.REFUND_REJECTED.value
+
+
+@pytest.mark.asyncio
+async def test_prevent_duplicate_ack(
+    session, app, stan_server, event_loop, client_id, events_stan, future, mock_publish
+):
+    """Assert processing completes when existing ack."""
+    # Call back for the subscription
+    from reconciliations.worker import cb_subscription_handler
+
+    # register the handler to test it
+    await subscribe_to_queue(events_stan,
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
+                             cb_subscription_handler)
+
+    file_ref = f'INBOX.{datetime.now()}'
+    # Upload an acknowledgement file
+    ack_file_name = f'ACK.{file_ref}'
+
+    # Now create AP records.
+    # Create EJV File model
+    file_ref = f'INBOX.{datetime.now()}'
+    ejv = EjvFileModel(file_ref=file_ref, disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+    with open(ack_file_name, 'a+') as jv_file:
+        jv_file.write('')
+        jv_file.close()
+
+    await helper_add_ejv_event_to_queue(events_stan, file_name=ack_file_name)
+    assert ejv.ack_file_ref == ack_file_name
+    assert ejv.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
+
+    # Nothing should change, because it's already processed this ACK.
+    ejv.disbursement_status_code = DisbursementStatus.UPLOADED.value
+    await helper_add_ejv_event_to_queue(events_stan, file_name=ack_file_name)
+    assert ejv.ack_file_ref == ack_file_name
+    assert ejv.disbursement_status_code == DisbursementStatus.UPLOADED.value
