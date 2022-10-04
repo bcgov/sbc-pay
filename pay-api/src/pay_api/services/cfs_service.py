@@ -375,6 +375,8 @@ class CFSService(OAuthService):
         lines_map = defaultdict(dict)  # To group all the lines with same GL code together.
         index: int = 0
         for line_item in payment_line_items:
+            if line_item.total == 0 and line_item.service_fees == 0:
+                continue
             # Find the distribution from the above list
             distribution_code = [dist for dist in distribution_codes if
                                  dist.distribution_code_id == line_item.fee_distribution_id][0] \
