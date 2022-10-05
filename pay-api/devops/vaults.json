@@ -35,6 +35,7 @@
             "postgres-pay",
             "pay-api",
             "jwt"
+            "launchdarkly"
         ]
     },
 	{

@@ -27,6 +27,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration  # noqa: I001
 # import pay_api.config as config
 from pay_api import config
 from pay_api.config import _Config
+from pay_api.services import flags
 from pay_api.models import db, ma
 from pay_api.utils.auth import jwt
 from pay_api.utils.cache import cache
@@ -42,6 +43,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     app = Flask(__name__)
     app.config.from_object(config.CONFIGURATION[run_mode])
 
+    flags.init_app(app)
     db.init_app(app)
     ma.init_app(app)
 
