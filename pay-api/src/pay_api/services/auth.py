@@ -22,6 +22,7 @@ from pay_api.utils.user_context import UserContext, user_context
 
 PREMIUM_ACCOUNT_TYPES = (AccountType.PREMIUM.value, AccountType.SBC_STAFF.value, AccountType.STAFF.value)
 
+
 @user_context
 def check_auth(business_identifier: str, account_id: str = None, corp_type_code: str = None,
                **kwargs):  # pylint: disable=unused-argument, too-many-branches, too-many-statements
