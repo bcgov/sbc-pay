@@ -199,7 +199,7 @@ async def reconcile_payments(msg: Dict[str, any]):
     cas_settlement: CasSettlementModel = db.session.query(CasSettlementModel) \
         .filter(CasSettlementModel.file_name == file_name).one_or_none()
     if cas_settlement and not cas_settlement.processed_on:
-        logger.info('File: {file_name} has attempted to be processed before.')
+        logger.info('File: %s has attempted to be processed before.', file_name)
     elif cas_settlement and cas_settlement.processed_on:
         logger.info('File: %s already processed on: %s. Skipping file.', file_name, cas_settlement.processed_on)
         return

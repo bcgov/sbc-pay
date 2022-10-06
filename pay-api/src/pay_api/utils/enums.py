@@ -148,6 +148,8 @@ class AccountType(Enum):
 
     BASIC = 'BASIC'
     PREMIUM = 'PREMIUM'
+    STAFF = 'STAFF'
+    SBC_STAFF = 'SBC_STAFF'
 
 
 class StatementFrequency(Enum):
