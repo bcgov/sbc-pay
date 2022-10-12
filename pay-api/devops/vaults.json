@@ -35,13 +35,18 @@
             "postgres-pay",
             "pay-api",
             "jwt"
-            "launchdarkly"
         ]
     },
 	{
         "vault": "sentry",
         "application": [
             "relationship-api"
+        ]
+    },
+    {
+        "vault": "launchdarkly",
+        "application": [
+            "pay"
         ]
     }
 ]
