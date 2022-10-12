@@ -76,6 +76,8 @@ class _Config():  # pylint: disable=too-few-public-methods
 
     ALEMBIC_INI = 'migrations/alembic.ini'
 
+    PAY_LD_SDK_KEY = _get_config('PAY_LD_SDK_KEY')
+
     # POSTGRESQL
     DB_USER = _get_config('DATABASE_USERNAME')
     DB_PASSWORD = _get_config('DATABASE_PASSWORD')
