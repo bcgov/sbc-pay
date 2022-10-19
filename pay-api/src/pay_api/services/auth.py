@@ -20,6 +20,8 @@ from pay_api.services.oauth_service import OAuthService as RestService
 from pay_api.utils.enums import AccountType, AuthHeaderType, Code, ContentType, PaymentMethod, Role
 from pay_api.utils.user_context import UserContext, user_context
 
+PREMIUM_ACCOUNT_TYPES = (AccountType.PREMIUM.value, AccountType.SBC_STAFF.value, AccountType.STAFF.value)
+
 
 @user_context
 def check_auth(business_identifier: str, account_id: str = None, corp_type_code: str = None,
@@ -80,7 +82,7 @@ def check_auth(business_identifier: str, account_id: str = None, corp_type_code:
         if kwargs.get('contains_role', None):
             is_authorized = kwargs.get('contains_role') in roles
         # Check if premium flag is required
-        if kwargs.get('is_premium', False) and auth_response['account']['accountType'] != AccountType.PREMIUM.value:
+        if kwargs.get('is_premium', False) and auth_response['account']['accountType'] not in PREMIUM_ACCOUNT_TYPES:
             is_authorized = False
         # For staff users, if the account is coming as empty add stub data
         # (businesses which are not affiliated won't have account)
