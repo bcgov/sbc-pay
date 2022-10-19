@@ -19,7 +19,7 @@ WORKDIR /opt/app-root
 COPY ./requirements.txt .
 
 #RUN pip install --upgrade pip
-RUN pip install pip==20.1.1
+RUN pip install pip==22.2.2
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .

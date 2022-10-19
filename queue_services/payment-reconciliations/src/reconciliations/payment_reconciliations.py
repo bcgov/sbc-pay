@@ -31,6 +31,7 @@ from datetime import datetime
 from typing import Dict, List, Tuple
 
 from entity_queue_common.service_utils import logger
+from pay_api.models import CasSettlement as CasSettlementModel
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Credit as CreditModel
 from pay_api.models import DistributionCode as DistributionCodeModel
@@ -139,7 +140,8 @@ def _save_payment(payment_date, inv_number, invoice_amount,  # pylint: disable=t
         # Just to handle duplicate rows in settlement file,
         # pull out failed payment record if it exists and no COMPLETED payments are present.
         if not payment:
-            payment = _get_payment_by_inv_number_and_status(inv_number, PaymentStatus.FAILED.value)
+            # Select the latest failure.
+            payment = _get_failed_payment_by_inv_number(inv_number)
     elif status == PaymentStatus.COMPLETED.value:
         # if the payment status is COMPLETED, then make sure there are
         # no other COMPLETED payment for same invoice_number.If found, return. This is to avoid duplicate entries.
@@ -161,6 +163,15 @@ def _save_payment(payment_date, inv_number, invoice_amount,  # pylint: disable=t
     db.session.add(payment)
 
 
+def _get_failed_payment_by_inv_number(inv_number: str) -> PaymentModel:
+    """Get the failed payment record for the invoice number."""
+    payment: PaymentModel = db.session.query(PaymentModel) \
+        .filter(PaymentModel.invoice_number == inv_number,
+                PaymentModel.payment_status_code == PaymentStatus.FAILED.value) \
+        .order_by(PaymentModel.payment_date.desc()).first()
+    return payment
+
+
 def _get_payment_by_inv_number_and_status(inv_number: str, status: str) -> PaymentModel:
     """Get payment by invoice number and status."""
     payment: PaymentModel = db.session.query(PaymentModel) \
@@ -173,16 +184,29 @@ def _get_payment_by_inv_number_and_status(inv_number: str, status: str) -> Payme
 async def reconcile_payments(msg: Dict[str, any]):
     """Read the file and update payment details.
 
-    1: Parse the file and create a dict per row for easy access.
-    2: If the transaction is for invoice,
-    2.1 : If transaction status is PAID, update invoice and payment statuses, publish to account mailer.
+    1: Check to see if file has been processed already.
+    2: Parse the file and create a dict per row for easy access.
+    3: If the transaction is for invoice,
+    3.1 : If transaction status is PAID, update invoice and payment statuses, publish to account mailer.
         For Online Banking invoices, publish message to the payment queue.
-    2.2 : If transaction status is NOT PAID, update payment status, publish to account mailer and events to handle NSF.
-    2.3 : If transaction status is PARTIAL, update payment and invoice status, publish to account mailer.
-    3: If the transaction is On Account for Credit, apply the credit to the account.
+    3.2 : If transaction status is NOT PAID, update payment status, publish to account mailer and events to handle NSF.
+    3.3 : If transaction status is PARTIAL, update payment and invoice status, publish to account mailer.
+    4: If the transaction is On Account for Credit, apply the credit to the account.
     """
     file_name: str = msg.get('data').get('fileName')
     minio_location: str = msg.get('data').get('location')
+
+    cas_settlement: CasSettlementModel = db.session.query(CasSettlementModel) \
+        .filter(CasSettlementModel.file_name == file_name).one_or_none()
+    if cas_settlement and not cas_settlement.processed_on:
+        logger.info('File: %s has attempted to be processed before.', file_name)
+    elif cas_settlement and cas_settlement.processed_on:
+        logger.info('File: %s already processed on: %s. Skipping file.', file_name, cas_settlement.processed_on)
+        return
+    else:
+        logger.info('Creating cas_settlement record for file: %s', file_name)
+        cas_settlement = _create_cas_settlement(file_name)
+
     file = get_object(minio_location, file_name)
     content = file.data.decode('utf-8-sig')
     # Iterate the rows and create key value pair for each row
@@ -229,6 +253,9 @@ async def reconcile_payments(msg: Dict[str, any]):
     _create_credit_records(content)
     # Sync credit memo and on account credits with CFS
     _sync_credit_records()
+
+    cas_settlement.processed_on = datetime.now()
+    cas_settlement.save()
 
 
 async def _process_consolidated_invoices(row):
@@ -728,3 +755,12 @@ def _get_settlement_type(payment_lines) -> str:
             settlement_type = _get_row_value(row, Column.RECORD_TYPE)
             break
     return settlement_type
+
+
+def _create_cas_settlement(file_name: str) -> CasSettlementModel:
+    """Create a CAS settlement entry."""
+    cas_settlement = CasSettlementModel()
+    cas_settlement.file_name = file_name
+    cas_settlement.received_on = datetime.now()
+    cas_settlement.save()
+    return cas_settlement
