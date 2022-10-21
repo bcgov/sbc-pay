@@ -20,6 +20,7 @@ import json
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
+from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
@@ -52,6 +53,36 @@ def test_create_pad_invoice_single_transaction(session):
 
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+
+    CreateInvoiceTask.create_invoices()
+
+    updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
+    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
+        find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+
+    assert inv_ref
+    assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+
+
+def test_create_pad_invoice_mixed_pli_values(session):
+    """Assert PAD invoices are created with total = 0, service fees > 0."""
+    # Create an account and an invoice for the account
+    account = factory_create_pad_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
+    previous_day = datetime.now() - timedelta(days=1)
+    # Create an invoice for this account
+    invoice = factory_invoice(payment_account=account, created_on=previous_day, total=1.5,
+                              status_code=InvoiceStatus.APPROVED.value, payment_method_code=None)
+
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('PPR', 'FSREG')
+    dist_code = DistributionCodeModel.find_by_active_for_fee_schedule(fee_schedule.fee_schedule_id)
+    # We need a dist code, if we're charging service fees.
+    dist_code.service_fee_distribution_code_id = 1
+    dist_code.save()
+    line = factory_payment_line_item(
+        invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, total=0, service_fees=1.5
+    )
     line.save()
     assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 

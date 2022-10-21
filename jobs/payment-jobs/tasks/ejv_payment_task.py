@@ -114,8 +114,6 @@ class EjvPaymentTask(CgiEjv):
                 line_items = inv.payment_line_items
 
                 for line in line_items:
-                    if line.total == 0:
-                        continue
                     # Line can have 2 distribution, 1 for the total and another one for service fees.
                     line_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
                         line.fee_distribution_id)

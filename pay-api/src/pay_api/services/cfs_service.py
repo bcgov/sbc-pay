@@ -375,43 +375,42 @@ class CFSService(OAuthService):
         lines_map = defaultdict(dict)  # To group all the lines with same GL code together.
         index: int = 0
         for line_item in payment_line_items:
-            if line_item.total == 0:
-                continue
             # Find the distribution from the above list
             distribution_code = [dist for dist in distribution_codes if
                                  dist.distribution_code_id == line_item.fee_distribution_id][0] \
                 if line_item.fee_distribution_id else None
 
-            # Check if a line with same GL code exists, if YES just add up the amount. if NO, create a new line.
-            line = lines_map[distribution_code.distribution_code_id]
+            if line_item.total > 0:
+                # Check if a line with same GL code exists, if YES just add up the amount. if NO, create a new line.
+                line = lines_map[distribution_code.distribution_code_id]
 
-            if not line:
-                index = index + 1
-                distribution = [dict(
-                    dist_line_number=index,
-                    amount=cls._get_amount(line_item.total, negate),
-                    account=f'{distribution_code.client}.{distribution_code.responsibility_centre}.'
-                            f'{distribution_code.service_line}.{distribution_code.stob}.'
-                            f'{distribution_code.project_code}.000000.0000'
-                )] if distribution_code else None
+                if not line:
+                    index = index + 1
+                    distribution = [dict(
+                        dist_line_number=index,
+                        amount=cls._get_amount(line_item.total, negate),
+                        account=f'{distribution_code.client}.{distribution_code.responsibility_centre}.'
+                                f'{distribution_code.service_line}.{distribution_code.stob}.'
+                                f'{distribution_code.project_code}.000000.0000'
+                    )] if distribution_code else None
 
-                line = {
-                    'line_number': index,
-                    'line_type': CFS_LINE_TYPE,
-                    'description': line_item.description,
-                    'unit_price': cls._get_amount(line_item.total, negate),
-                    'quantity': 1,
-                    # 'attribute1': line_item.invoice_id,
-                    # 'attribute2': line_item.id,
-                    'distribution': distribution
-                }
-            else:
-                # Add up the price and distribution
-                line['unit_price'] = line['unit_price'] + cls._get_amount(line_item.total, negate)
-                line['distribution'][0]['amount'] = line['distribution'][0]['amount'] + \
-                    cls._get_amount(line_item.total, negate)
+                    line = {
+                        'line_number': index,
+                        'line_type': CFS_LINE_TYPE,
+                        'description': line_item.description,
+                        'unit_price': cls._get_amount(line_item.total, negate),
+                        'quantity': 1,
+                        # 'attribute1': line_item.invoice_id,
+                        # 'attribute2': line_item.id,
+                        'distribution': distribution
+                    }
+                else:
+                    # Add up the price and distribution
+                    line['unit_price'] = line['unit_price'] + cls._get_amount(line_item.total, negate)
+                    line['distribution'][0]['amount'] = line['distribution'][0]['amount'] + \
+                        cls._get_amount(line_item.total, negate)
 
-            lines_map[distribution_code.distribution_code_id] = line
+                lines_map[distribution_code.distribution_code_id] = line
 
             if line_item.service_fees > 0:
                 service_fee_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
