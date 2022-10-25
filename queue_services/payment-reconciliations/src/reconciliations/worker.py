@@ -47,6 +47,7 @@ FLASK_APP.config.from_object(APP_CONFIG)
 db.init_app(FLASK_APP)
 flag_service = Flags(FLASK_APP)
 
+
 async def process_event(event_message, flask_app):
     """Render the payment status."""
     if not flask_app:
