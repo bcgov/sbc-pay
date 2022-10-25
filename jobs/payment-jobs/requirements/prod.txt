@@ -14,6 +14,7 @@ pysftp
 Flask-Migrate<3
 itsdangerous==2.0.1
 dataclass_wizard
+launchdarkly-server-sdk
 
 -e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
 -e git+https://github.com/bcgov/sbc-pay.git@13309#egg=pay_api&subdirectory=pay-api
