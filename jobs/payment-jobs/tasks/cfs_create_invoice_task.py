@@ -227,10 +227,10 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             # Get cfs account
             payment_account: PaymentAccountService = PaymentAccountService.find_by_id(account.id)
 
-            current_app.logger.debug(
-                f'Found {len(account_invoices)} invoices for account {payment_account.auth_account_id}')
             if len(account_invoices) == 0:
                 continue
+            current_app.logger.debug(
+                f'Found {len(account_invoices)} invoices for account {payment_account.auth_account_id}')
 
             cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
             if cfs_account is None:
