@@ -33,6 +33,7 @@ from entity_queue_common.service import QueueServiceManager
 from entity_queue_common.service_utils import QueueException, logger
 from flask import Flask
 from pay_api.models import db
+from pay_api.services import Flags
 
 from reconciliations import config
 from reconciliations.cgi_reconciliations import reconcile_distributions
@@ -44,6 +45,7 @@ APP_CONFIG = config.get_named_config(os.getenv('DEPLOYMENT_ENV', 'production'))
 FLASK_APP = Flask(__name__)
 FLASK_APP.config.from_object(APP_CONFIG)
 db.init_app(FLASK_APP)
+flag_service = Flags(FLASK_APP)
 
 
 async def process_event(event_message, flask_app):

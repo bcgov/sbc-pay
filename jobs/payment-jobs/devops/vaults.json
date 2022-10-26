@@ -55,5 +55,11 @@
         "application": [
             "base"
         ]
+    },
+    {
+        "vault": "launchdarkly",
+        "application": [
+            "pay"
+        ]
     }
 ]

@@ -26,6 +26,7 @@ import config
 from tasks.routing_slip_task import RoutingSlipTask
 from utils.logger import setup_logging
 
+from pay_api.services import Flags
 
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
@@ -47,6 +48,8 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     app.logger.info(f'<<<< Starting Payment Jobs >>>>')
     db.init_app(app)
     ma.init_app(app)
+    flag_service = Flags()
+    flag_service.init_app(app)
 
     register_shellcontext(app)
 

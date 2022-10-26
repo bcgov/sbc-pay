@@ -56,6 +56,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
 
     ALEMBIC_INI = 'migrations/alembic.ini'
 
+    PAY_LD_SDK_KEY = os.getenv('PAY_LD_SDK_KEY', None)
+
     # POSTGRESQL
     DB_USER = os.getenv('DATABASE_USERNAME', '')
     DB_PASSWORD = os.getenv('DATABASE_PASSWORD', '')
