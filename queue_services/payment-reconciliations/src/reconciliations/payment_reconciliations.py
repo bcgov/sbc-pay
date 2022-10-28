@@ -510,9 +510,10 @@ def _sync_credit_records():
     account_ids: List[int] = []
     for credit in active_credits:
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(credit.account_id)
-        if not cfs_account:
-            logger.error('No Active CFS Account found for account id : %s', credit.account_id)
-            continue
+        if cfs_account is None:
+            # Get the last cfs_account for it, as the account might have got upgraded from PAD to DRAWDOWN.
+            cfs_account: CfsAccountModel = CfsAccountModel.query.\
+                filter(CfsAccountModel.account_id == credit.account_id).order_by(CfsAccountModel.id.desc()).first()
         account_ids.append(credit.account_id)
         if credit.is_credit_memo:
             credit_memo = CFSService.get_cms(cfs_account=cfs_account, cms_number=credit.cfs_identifier)
