@@ -215,9 +215,12 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             ))
         if invoice.payment_method_code == PaymentMethod.DRAWDOWN.value:
             payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice.payment_account_id)
+            filing_description += ','
+            filing_description += invoice_ref.invoice_number
             q_payload['data'].update(dict(
                 bcolAccount=invoice.bcol_account,
-                bcolUser=payment_account.bcol_user_id
+                bcolUser=payment_account.bcol_user_id,
+                filingDescription=filing_description
             ))
         current_app.logger.debug(f'Publishing payment refund request to mailer for {invoice.id} : {q_payload}')
         publish_response(payload=q_payload, client_name=current_app.config.get('NATS_MAILER_CLIENT_NAME'),
