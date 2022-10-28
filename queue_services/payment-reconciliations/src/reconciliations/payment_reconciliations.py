@@ -509,8 +509,12 @@ def _sync_credit_records():
     logger.info('Found %s credit records', len(active_credits))
     account_ids: List[int] = []
     for credit in active_credits:
-        account_ids.append(credit.account_id)
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(credit.account_id)
+        if cfs_account is None:
+            # Get the last cfs_account for it, as the account might have got upgraded from PAD to DRAWDOWN.
+            cfs_account: CfsAccountModel = CfsAccountModel.query.\
+                filter(CfsAccountModel.account_id == credit.account_id).order_by(CfsAccountModel.id.desc()).first()
+        account_ids.append(credit.account_id)
         if credit.is_credit_memo:
             credit_memo = CFSService.get_cms(cfs_account=cfs_account, cms_number=credit.cfs_identifier)
             credit.remaining_amount = abs(float(credit_memo.get('amount_due')))
