@@ -108,17 +108,17 @@ def test_ensure_totals_quantized(session):
     # results in 1.4000000000000001
     payment_line_items = [
         PaymentLineItem(
-            total=Decimal(0.3),
+            total=Decimal('0.3'),
             service_fees=0,
             fee_distribution_id=1
         ),
         PaymentLineItem(
-            total=Decimal(0.55),
+            total=Decimal('0.55'),
             service_fees=0,
             fee_distribution_id=1
         ),
         PaymentLineItem(
-            total=Decimal(0.55),
+            total=Decimal('0.55'),
             service_fees=0,
             fee_distribution_id=1,
         )

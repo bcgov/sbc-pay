@@ -539,7 +539,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
                 # For consolidated payment status will be CREATED, if so don't create another payment record.
                 elif failed_payment.payment_status_code == PaymentStatus.FAILED.value:
-                    invoice_total = Decimal(0)
+                    invoice_total = Decimal('0')
                     for inv in InvoiceModel.find_invoices_for_payment(payment_id=failed_payment.id):
                         invoice_total += inv.total
 
@@ -584,7 +584,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         consolidated_invoices: List[InvoiceModel] = []
         consolidated_line_items: List[PaymentLineItem] = []
 
-        invoice_total = Decimal(0)
+        invoice_total = Decimal('0')
         for failed_payment in failed_payments:
             # Reverse invoice balance
             CFSService.reverse_invoice(inv_number=failed_payment.invoice_number)
