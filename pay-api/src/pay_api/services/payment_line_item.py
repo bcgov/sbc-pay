@@ -33,21 +33,21 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         self.__dao = None
         self._id: int = None
         self._invoice_id: int = None
-        self._filing_fees: Decimal = None
+        self._filing_fees = None
         self._fee_schedule_id: int = None
-        self._priority_fees: Decimal = None
-        self._future_effective_fees: Decimal = None
+        self._priority_fees = None
+        self._future_effective_fees = None
         self._description: str = None
-        self._gst: Decimal = None
-        self._pst: Decimal = None
-        self._total: Decimal = None
+        self._gst = None
+        self._pst = None
+        self._total = None
         self._quantity: int = 1
         self._line_item_status_code: str = None
-        self._waived_fees: Decimal = 0
+        self._waived_fees = Decimal(0)
         self._waived_by: str = None
         self._fee_distribution_id: int = None
         self._fee_distribution: DistributionCodeModel = None
-        self._service_fees: Decimal = None
+        self._service_fees = None
 
     @property
     def _dao(self):
