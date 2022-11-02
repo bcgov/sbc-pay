@@ -177,7 +177,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
                     invoice.payment_method_code)
                 # Only release records, as the actual status change should happen during reconciliation.
                 pay_service.apply_credit(invoice)
-                credit_balance = payment_account.credit - invoice_balance
+                credit_balance = payment_account.credit - float(invoice_balance)
                 invoice.paid = invoice.total
                 invoice.save()
             elif (payment_account.credit or 0) <= invoice_balance:
