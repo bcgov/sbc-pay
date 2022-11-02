@@ -20,7 +20,6 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from requests import ConnectTimeout
-from pay_api.models.cfs_account import CfsAccount
 from pay_api.models.payment_line_item import PaymentLineItem
 
 from pay_api.services.cfs_service import CFSService
@@ -104,7 +103,7 @@ def test_validate_bank_account_exception(session):
 
 
 def test_ensure_totals_quantized(session):
-    """Test payment line items that add up to bad math."""
+    """Test payment line items that usually add up to bad float math."""
     # print(0.3+0.55+0.55)
     # results in 1.4000000000000001
     payment_line_items = [
@@ -117,12 +116,12 @@ def test_ensure_totals_quantized(session):
             total=Decimal(0.55),
             service_fees=0,
             fee_distribution_id=1
-        ), 
+        ),
         PaymentLineItem(
             total=Decimal(0.55),
             service_fees=0,
             fee_distribution_id=1,
         )
     ]
-    lines = cfs_service._build_lines(payment_line_items) # pylint: disable=protected-access
+    lines = cfs_service._build_lines(payment_line_items)  # pylint: disable=protected-access
     assert float(lines[0]['unit_price']) == 1.4
