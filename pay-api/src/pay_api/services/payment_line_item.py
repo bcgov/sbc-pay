@@ -13,6 +13,7 @@
 # limitations under the License.
 """Service to manage Payment Line Items."""
 
+from decimal import Decimal
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
@@ -32,21 +33,21 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         self.__dao = None
         self._id: int = None
         self._invoice_id: int = None
-        self._filing_fees: float = None
+        self._filing_fees: Decimal = None
         self._fee_schedule_id: int = None
-        self._priority_fees: float = None
-        self._future_effective_fees: float = None
+        self._priority_fees: Decimal = None
+        self._future_effective_fees: Decimal = None
         self._description: str = None
-        self._gst: float = None
-        self._pst: float = None
-        self._total: float = None
+        self._gst: Decimal = None
+        self._pst: Decimal = None
+        self._total: Decimal = None
         self._quantity: int = 1
         self._line_item_status_code: str = None
-        self._waived_fees: float = 0
+        self._waived_fees: Decimal = 0
         self._waived_by: str = None
         self._fee_distribution_id: int = None
         self._fee_distribution: DistributionCodeModel = None
-        self._service_fees: float = None
+        self._service_fees: Decimal = None
 
     @property
     def _dao(self):
@@ -59,20 +60,20 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         self.__dao = value
         self.id: int = self._dao.id
         self.invoice_id: int = self._dao.invoice_id
-        self.filing_fees: float = self._dao.filing_fees
+        self.filing_fees: Decimal = self._dao.filing_fees
         self.fee_schedule_id: int = self._dao.fee_schedule_id
-        self.priority_fees: float = self._dao.priority_fees
-        self.future_effective_fees: float = self._dao.future_effective_fees
+        self.priority_fees: Decimal = self._dao.priority_fees
+        self.future_effective_fees: Decimal = self._dao.future_effective_fees
         self.description: str = self._dao.description
-        self.gst: float = self._dao.gst
-        self.pst: float = self._dao.pst
-        self.total: float = self._dao.total
+        self.gst: Decimal = self._dao.gst
+        self.pst: Decimal = self._dao.pst
+        self.total: Decimal = self._dao.total
         self.quantity: int = self._dao.quantity
         self.line_item_status_code: str = self._dao.line_item_status_code
-        self.waived_fees: float = self._dao.waived_fees
+        self.waived_fees: Decimal = self._dao.waived_fees
         self.waived_by: str = self._dao.waived_by
         self.fee_distribution_id: int = self._dao.fee_distribution_id
-        self.service_fees: float = self._dao.service_fees
+        self.service_fees: Decimal = self._dao.service_fees
 
     @property
     def id(self):
@@ -102,7 +103,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         return self._filing_fees
 
     @filing_fees.setter
-    def filing_fees(self, value: float):
+    def filing_fees(self, value: Decimal):
         """Set the filing_fees."""
         self._filing_fees = value
         self._dao.filing_fees = value
@@ -124,7 +125,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         self._dao.fee_schedule_id = value
 
     @priority_fees.setter
-    def priority_fees(self, value: float):
+    def priority_fees(self, value: Decimal):
         """Set the priority_fees."""
         self._priority_fees = value
         self._dao.priority_fees = value
@@ -135,7 +136,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         return self._future_effective_fees
 
     @future_effective_fees.setter
-    def future_effective_fees(self, value: float):
+    def future_effective_fees(self, value: Decimal):
         """Set the future_effective_fees."""
         self._future_effective_fees = value
         self._dao.future_effective_fees = value
@@ -157,7 +158,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         return self._gst
 
     @gst.setter
-    def gst(self, value: float):
+    def gst(self, value: Decimal):
         """Set the gst."""
         self._gst = value
         self._dao.gst = value
@@ -168,7 +169,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         return self._pst
 
     @pst.setter
-    def pst(self, value: float):
+    def pst(self, value: Decimal):
         """Set the pst."""
         self._pst = value
         self._dao.pst = value
@@ -184,7 +185,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         return self._quantity
 
     @total.setter
-    def total(self, value: float):
+    def total(self, value: Decimal):
         """Set the total."""
         self._total = value
         self._dao.total = value
@@ -212,7 +213,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         return self._waived_fees
 
     @waived_fees.setter
-    def waived_fees(self, value: float):
+    def waived_fees(self, value: Decimal):
         """Set the waived_fees."""
         self._waived_fees = value
         self._dao.waived_fees = value
@@ -260,7 +261,7 @@ class PaymentLineItem:  # pylint: disable=too-many-instance-attributes, too-many
         return self._service_fees
 
     @service_fees.setter
-    def service_fees(self, value: float):
+    def service_fees(self, value: Decimal):
         """Set the service_fees."""
         self._service_fees = value
         self._dao.service_fees = value

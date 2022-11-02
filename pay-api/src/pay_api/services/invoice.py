@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from decimal import Decimal
 from typing import Dict, List, Tuple
 
 from flask import current_app
@@ -45,9 +46,9 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._invoice_status_code: str = None
         self._payment_account_id: str = None
         self._bcol_account: str = None
-        self._total: float = None
-        self._paid: float = None
-        self._refund: float = None
+        self._total: Decimal = None
+        self._paid: Decimal = None
+        self._refund: Decimal = None
         self._payment_date: datetime = None
         self._payment_line_items = None
         self._corp_type_code = None
@@ -55,7 +56,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._routing_slip: str = None
         self._filing_id: str = None
         self._folio_number: str = None
-        self._service_fees: float = None
+        self._service_fees: Decimal = None
         self._business_identifier: str = None
         self._dat_number: str = None
         self._cfs_account_id: int
@@ -76,17 +77,17 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.invoice_status_code: str = self._dao.invoice_status_code
         self.bcol_account: str = self._dao.bcol_account
         self.payment_account_id: str = self._dao.payment_account_id
-        self.refund: float = self._dao.refund
+        self.refund: Decimal = self._dao.refund
         self.payment_date: datetime = self._dao.payment_date
-        self.total: float = self._dao.total
-        self.paid: float = self._dao.paid
+        self.total: Decimal = self._dao.total
+        self.paid: Decimal = self._dao.paid
         self.payment_line_items = self._dao.payment_line_items
         self.corp_type_code = self._dao.corp_type_code
         self.receipts = self._dao.receipts
         self.routing_slip: str = self._dao.routing_slip
         self.filing_id: str = self._dao.filing_id
         self.folio_number: str = self._dao.folio_number
-        self.service_fees: float = self._dao.service_fees
+        self.service_fees: Decimal = self._dao.service_fees
         self.business_identifier: str = self._dao.business_identifier
         self.dat_number: str = self._dao.dat_number
         self.cfs_account_id: int = self._dao.cfs_account_id
@@ -153,7 +154,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return self._refund
 
     @refund.setter
-    def refund(self, value: float):
+    def refund(self, value: Decimal):
         """Set the refund."""
         self._refund = value
         self._dao.refund = value
@@ -175,7 +176,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return self._total
 
     @total.setter
-    def total(self, value: float):
+    def total(self, value: Decimal):
         """Set the fee_start_date."""
         self._total = value
         self._dao.total = value
@@ -186,7 +187,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return self._paid
 
     @paid.setter
-    def paid(self, value: float):
+    def paid(self, value: Decimal):
         """Set the paid."""
         self._paid = value
         self._dao.paid = value
@@ -263,7 +264,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return self._service_fees
 
     @service_fees.setter
-    def service_fees(self, value: float):
+    def service_fees(self, value: Decimal):
         """Set the service_fees."""
         self._service_fees = value
         self._dao.service_fees = value

@@ -13,6 +13,7 @@
 # limitations under the License.
 """Service to manage PayBC interaction."""
 
+from decimal import Decimal
 import urllib.parse
 from typing import Any, Dict, List
 
@@ -132,12 +133,12 @@ class PaybcService(PaymentSystemService, CFSService):
             receipt_response = self._get_receipt_by_number(access_token, receipt_url, receipt_number)
             receipt_date = parser.parse(receipt_response.get('receipt_date'))
 
-            amount: float = 0
+            amount: Decimal = 0
             for invoice in receipt_response.get('invoices'):
                 if invoice.get('invoice_number') == invoice_reference.invoice_number:
-                    amount += float(invoice.get('amount_applied'))
+                    amount += Decimal(invoice.get('amount_applied'))
 
-            return receipt_number, receipt_date, amount
+            return receipt_number, receipt_date, float(amount)
         return None
 
     def _get_receipt_by_number(self, access_token: str = None, receipt_url: str = None, receipt_number: str = None):
