@@ -21,7 +21,7 @@ class DecimalEncoder(JSONEncoder):
     """Used to provide Decimal JSON serialization."""
 
     def default(self, o):
-        """Convert decimal to float. Unfortunately we can't use string"""
+        """Convert decimal to float. Unfortunately we can't use string."""
         if isinstance(o, decimal.Decimal):
             return float(o)
         return super().default(o)
