@@ -106,6 +106,8 @@ def test_ensure_totals_quantized(session):
     """Test payment line items that usually add up to bad float math."""
     # print(0.3+0.55+0.55)
     # results in 1.4000000000000001
+    # print(float(Decimal('0.3')+Decimal('0.55')+Decimal('0.55')))
+    # results in 1.4
     payment_line_items = [
         PaymentLineItem(
             total=Decimal('0.3'),
