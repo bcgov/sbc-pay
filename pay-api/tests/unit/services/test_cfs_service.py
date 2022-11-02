@@ -16,9 +16,12 @@
 
 Test-Suite to ensure that the CFS Service layer is working as expected.
 """
+from decimal import Decimal
 from unittest.mock import patch
 
 from requests import ConnectTimeout
+from pay_api.models.cfs_account import CfsAccount
+from pay_api.models.payment_line_item import PaymentLineItem
 
 from pay_api.services.cfs_service import CFSService
 
@@ -98,3 +101,28 @@ def test_validate_bank_account_exception(session):
         bank_details = cfs_service.validate_bank_account(input_bank_details)
         assert bank_details.get('status_code') == 503
         assert 'mocked error' in bank_details.get('message')
+
+
+def test_ensure_totals_quantized(session):
+    """Test payment line items that add up to bad math."""
+    # print(0.3+0.55+0.55)
+    # results in 1.4000000000000001
+    payment_line_items = [
+        PaymentLineItem(
+            total=Decimal(0.3),
+            service_fees=0,
+            fee_distribution_id=1
+        ),
+        PaymentLineItem(
+            total=Decimal(0.55),
+            service_fees=0,
+            fee_distribution_id=1
+        ), 
+        PaymentLineItem(
+            total=Decimal(0.55),
+            service_fees=0,
+            fee_distribution_id=1,
+        )
+    ]
+    lines = cfs_service._build_lines(payment_line_items) # pylint: disable=protected-access
+    assert float(lines[0]['unit_price']) == 1.4
