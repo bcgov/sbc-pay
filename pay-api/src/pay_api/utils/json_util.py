@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2022 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,15 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Extra utility for JSON."""
 
-"""Version of this service in PEP440.
+import decimal
+from json import JSONEncoder
 
-[N!]N(.N)*[{a|b|rc}N][.postN][.devN]
-Epoch segment: N!
-Release segment: N(.N)*
-Pre-release segment: {a|b|rc}N
-Post-release segment: .postN
-Development release segment: .devN
-"""
 
-__version__ = '1.17.3'  # pylint: disable=invalid-name
+class DecimalEncoder(JSONEncoder):
+    """Used to provide Decimal JSON serialization."""
+
+    def default(self, o):
+        """Convert decimal to float. Unfortunately we can't use string."""
+        if isinstance(o, decimal.Decimal):
+            return float(o)
+        return super().default(o)

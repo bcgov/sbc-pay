@@ -53,16 +53,16 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now, index=True)
 
     business_identifier = db.Column(db.String(20), nullable=True)
-    total = db.Column(db.Float, nullable=False)
-    paid = db.Column(db.Float, nullable=True)
+    total = db.Column(db.Numeric(19, 2), nullable=False)
+    paid = db.Column(db.Numeric(19, 2), nullable=True)
     payment_date = db.Column(db.DateTime, nullable=True)
-    refund = db.Column(db.Float, nullable=True)
+    refund = db.Column(db.Numeric(19, 2), nullable=True)
     routing_slip = db.Column(db.String(50), nullable=True, index=True)
     filing_id = db.Column(db.String(50), nullable=True)
     folio_number = db.Column(db.String(50), nullable=True, index=True)
     dat_number = db.Column(db.String(50), nullable=True, index=True)
     bcol_account = db.Column(db.String(50), nullable=True, index=True)
-    service_fees = db.Column(db.Float, nullable=True)
+    service_fees = db.Column(db.Numeric(19, 2), nullable=True)
     details = db.Column(JSONB)
 
     payment_line_items = relationship('PaymentLineItem', lazy='joined')
@@ -150,6 +150,11 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
         'self': ma.URLFor('API.invoice_invoice', invoice_id='<id>'),
         'collection': ma.URLFor('API.invoice_invoices', invoice_id='<id>')
     })
+
+    total = fields.Float(data_key='total')
+    paid = fields.Float(data_key='paid')
+    refund = fields.Float(data_key='refund')
+    service_fees = fields.Float(data_key='service_fees')
 
     @post_dump
     def _clean_up(self, data, many):  # pylint: disable=unused-argument

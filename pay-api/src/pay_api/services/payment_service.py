@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to Payment."""
+from decimal import Decimal
 from threading import Thread
 from typing import Any, Dict, Tuple
 
@@ -91,8 +92,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice.payment_account_id = payment_account.id
             invoice.cfs_account_id = payment_account.cfs_account_id
             invoice.invoice_status_code = pay_service.get_default_invoice_status()
-            invoice.service_fees = sum(fee.service_fees for fee in fees) if fees else 0
-            invoice.total = sum(fee.total for fee in fees) if fees else 0
+            invoice.service_fees = sum(Decimal(str(fee.service_fees)) for fee in fees) if fees else 0
+            invoice.total = sum(Decimal(str(fee.total)) for fee in fees) if fees else 0
             invoice.paid = 0
             invoice.refund = 0
             invoice.routing_slip = get_str_by_path(account_info, 'routingSlip')
@@ -169,7 +170,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         invoice: Invoice = Invoice.find_by_id(invoice_id, skip_auth_check=False)
         # If the call is to apply credit, apply credit and release records.
         if is_apply_credit:
-            credit_balance: float = 0
+            credit_balance = Decimal('0')
             payment_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
             invoice_balance = invoice.total - (invoice.paid or 0)
             if (payment_account.credit or 0) >= invoice_balance:

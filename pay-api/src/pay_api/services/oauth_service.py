@@ -25,6 +25,7 @@ from urllib3.util.retry import Retry
 
 from pay_api.exceptions import ServiceUnavailableException
 from pay_api.utils.enums import AuthHeaderType, ContentType
+from pay_api.utils.json_util import DecimalEncoder
 
 
 RETRY_ADAPTER = HTTPAdapter(max_retries=Retry(total=5, backoff_factor=1, status_forcelist=[404]))
@@ -52,7 +53,7 @@ class OAuthService:
             headers.update(additional_headers)
 
         if content_type == ContentType.JSON:
-            data = json.dumps(data)
+            data = json.dumps(data, cls=DecimalEncoder)
 
         current_app.logger.debug(f'Endpoint : {endpoint}')
         current_app.logger.debug(f'headers : {headers}')

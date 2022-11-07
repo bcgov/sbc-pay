@@ -42,7 +42,7 @@ class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attri
     # when this is enabled , send out the  notifications
     statement_notification_enabled = db.Column('statement_notification_enabled', Boolean(), default=False)
 
-    credit = db.Column(db.Float, nullable=True)
+    credit = db.Column(db.Numeric(19, 2), nullable=True)
     billable = db.Column(Boolean(), default=True)
 
     # before this date , the account shouldn't get used
@@ -69,6 +69,7 @@ class PaymentAccountSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         model = PaymentAccount
         exclude = ['versions', 'pad_activation_date']
 
+    credit = fields.Float(data_key='float')
     payment_method = fields.String(data_key='payment_method')
     auth_account_id = fields.String(data_key='account_id')
     name = fields.String(data_key='account_name')

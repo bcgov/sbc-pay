@@ -15,6 +15,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from typing import Any, Dict, Optional, Tuple
 
 from flask import current_app
@@ -51,7 +52,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self._pad_activation_date: Optional[datetime] = None
         self._pad_tos_accepted_by: Optional[str] = None
         self._pad_tos_accepted_date: Optional[datetime] = None
-        self._credit: Optional[float] = None
+        self._credit: Optional[Decimal] = None
 
         self._cfs_account: Optional[str] = None
         self._cfs_party: Optional[str] = None
@@ -86,7 +87,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self.pad_activation_date: datetime = self._dao.pad_activation_date
         self.pad_tos_accepted_by: str = self._dao.pad_tos_accepted_by
         self.pad_tos_accepted_date: datetime = self._dao.pad_tos_accepted_date
-        self.credit: float = self._dao.credit
+        self.credit: Decimal = self._dao.credit
         self.billable: bool = self._dao.billable
 
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(self.id)
