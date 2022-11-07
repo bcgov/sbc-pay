@@ -92,8 +92,8 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice.payment_account_id = payment_account.id
             invoice.cfs_account_id = payment_account.cfs_account_id
             invoice.invoice_status_code = pay_service.get_default_invoice_status()
-            invoice.service_fees = sum(Decimal(str(fee.service_fees)) for fee in fees) if fees else 0
-            invoice.total = sum(Decimal(str(fee.total)) for fee in fees) if fees else 0
+            invoice.service_fees = sum(fee.service_fees for fee in fees) if fees else 0
+            invoice.total = sum(fee.total for fee in fees) if fees else 0
             invoice.paid = 0
             invoice.refund = 0
             invoice.routing_slip = get_str_by_path(account_info, 'routingSlip')
@@ -303,7 +303,7 @@ def _calculate_fees(corp_type, filing_info):
             service_fee_applied = True
 
         if fee.variable:
-            fee.fee_amount = float(filing_type_info.get('fee', 0))
+            fee.fee_amount = Decimal(str(filing_type_info.get('fee', 0)))
 
         if filing_type_info.get('filingDescription'):
             fee.description = filing_type_info.get('filingDescription')

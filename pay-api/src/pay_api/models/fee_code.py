@@ -13,6 +13,8 @@
 # limitations under the License.
 """Model to handle all operations related to Fee Code master data."""
 
+from marshmallow import fields
+
 from .code_table import CodeTable
 from .db import db, ma
 
@@ -26,7 +28,7 @@ class FeeCode(db.Model, CodeTable):
     __tablename__ = 'fee_codes'
 
     code = db.Column(db.String(10), primary_key=True)
-    amount = db.Column('amount', db.Float, nullable=False)
+    amount = db.Column('amount', db.Numeric(19, 2), nullable=False)
 
     def save(self):
         """Save fee code."""
@@ -45,3 +47,4 @@ class FeeCodeSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = FeeCode
+    amount = fields.Float(data_key='amount')

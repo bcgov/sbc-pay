@@ -14,6 +14,7 @@
 """Service to manage Fee Calculation."""
 
 from datetime import date
+from decimal import Decimal
 
 from flask import current_app
 from sbc_common_components.tracing.service_tracing import ServiceTracing
@@ -26,7 +27,6 @@ from pay_api.models import FeeScheduleSchema
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
-from pay_api.utils.util import get_quantized
 
 
 @ServiceTracing.trace(ServiceTracing.enable_tracing, ServiceTracing.should_be_tracing)
@@ -42,13 +42,13 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         self._fee_code: str = None
         self._fee_start_date: date = None
         self._fee_end_date: date = None
-        self._fee_amount: float = None
+        self._fee_amount: Decimal = None
         self._filing_type: str = None
-        self._priority_fee: float = 0
-        self._future_effective_fee: float = 0
-        self._waived_fee_amount: float = 0
+        self._priority_fee: Decimal = 0
+        self._future_effective_fee: Decimal = 0
+        self._waived_fee_amount: Decimal = 0
         self._quantity: int = 1
-        self._service_fees: float = 0
+        self._service_fees: Decimal = 0
         self._service_fee_code: str = None
         self._variable: bool = False
 
@@ -67,7 +67,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         self.fee_code: str = self._dao.fee_code
         self.fee_start_date: date = self._dao.fee_start_date
         self.fee_end_date: date = self._dao.fee_end_date
-        self._fee_amount: float = self._dao.fee.amount
+        self._fee_amount: Decimal = self._dao.fee.amount
         self._filing_type: str = self._dao.filing_type.description
         self._service_fee_code: str = self._dao.service_fee_code
         self._variable: bool = self._dao.variable
@@ -184,7 +184,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         return self._priority_fee
 
     @priority_fee.setter
-    def priority_fee(self, value: float):
+    def priority_fee(self, value: Decimal):
         """Set the priority fee."""
         self._priority_fee = value
 
@@ -194,7 +194,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         return self._future_effective_fee
 
     @future_effective_fee.setter
-    def future_effective_fee(self, value: float):
+    def future_effective_fee(self, value: Decimal):
         """Set the future_effective_fee."""
         self._future_effective_fee = value
 
@@ -204,7 +204,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         return self._service_fees
 
     @service_fees.setter
-    def service_fees(self, value: float):
+    def service_fees(self, value: Decimal):
         """Set the service_fees."""
         self._service_fees = value
 
@@ -228,8 +228,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         """Set the quantity."""
         self._quantity = value
         if self._quantity and self._quantity > 1:
-            # Need a float here, otherwise serialization wont work.
-            self._fee_amount = float(get_quantized(self._fee_amount * self._quantity))
+            self._fee_amount = self._fee_amount * self._quantity
 
     @description.setter
     def description(self, value: str):
@@ -258,15 +257,15 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         d = {
             'filing_type': self._filing_type,
             'filing_type_code': self.filing_type_code,
-            'filing_fees': self.fee_amount,
-            'priority_fees': self.priority_fee,
-            'future_effective_fees': self.future_effective_fee,
+            'filing_fees': float(self.fee_amount),
+            'priority_fees': float(self.priority_fee),
+            'future_effective_fees': float(self.future_effective_fee),
             'tax': {
-                'gst': self.gst,
-                'pst': self.pst
+                'gst': float(self.gst),
+                'pst': float(self.pst)
             },
-            'total': self.total,
-            'service_fees': self._service_fees,
+            'total': float(self.total),
+            'service_fees': float(self._service_fees),
             'processing_fees': 0
         }
         return d
