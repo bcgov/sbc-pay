@@ -13,6 +13,7 @@
 # limitations under the License.
 """Abstract class for payment system implementation."""
 
+from decimal import Decimal
 import functools
 from abc import ABC, abstractmethod
 from datetime import datetime

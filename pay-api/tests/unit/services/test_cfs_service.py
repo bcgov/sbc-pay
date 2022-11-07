@@ -20,8 +20,8 @@ from decimal import Decimal
 from unittest.mock import patch
 
 from requests import ConnectTimeout
-from pay_api.models.payment_line_item import PaymentLineItem
-
+from pay_api.models import DistributionCode as DistributionCodeModel
+from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.services.cfs_service import CFSService
 
 
@@ -108,22 +108,28 @@ def test_ensure_totals_quantized(session):
     # results in 1.4000000000000001
     # print(float(Decimal('0.3')+Decimal('0.55')+Decimal('0.55')))
     # results in 1.4
+
+    distribution_code = DistributionCodeModel.find_by_id(1)
+    distribution_code.service_fee_distribution_code_id = 1
+    distribution_code.save()
+
     payment_line_items = [
-        PaymentLineItem(
+        PaymentLineItemModel(
             total=Decimal('0.3'),
-            service_fees=0,
+            service_fees=Decimal('0.3'),
             fee_distribution_id=1
         ),
-        PaymentLineItem(
+        PaymentLineItemModel(
             total=Decimal('0.55'),
-            service_fees=0,
+            service_fees=Decimal('0.55'),
             fee_distribution_id=1
         ),
-        PaymentLineItem(
+        PaymentLineItemModel(
             total=Decimal('0.55'),
-            service_fees=0,
+            service_fees=Decimal('0.55'),
             fee_distribution_id=1,
         )
     ]
     lines = cfs_service._build_lines(payment_line_items)  # pylint: disable=protected-access
-    assert float(lines[0]['unit_price']) == 1.4
+    # Same distribution code for filing fees and service fees.
+    assert float(lines[0]['unit_price']) == 2.8

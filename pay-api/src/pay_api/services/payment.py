@@ -547,7 +547,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                         payment_method=PaymentMethod.CC.value,
                         payment_system=PaymentSystem.PAYBC.value,
                         invoice_number=failed_payment.invoice_number,
-                        invoice_amount=float(invoice_total - (failed_payment.paid_amount or 0)),
+                        invoice_amount=invoice_total - (failed_payment.paid_amount or 0),
                         payment_account_id=failed_payment.payment_account_id)
                 else:
                     payment = Payment._populate(failed_payment)

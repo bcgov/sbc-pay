@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the /receipt endpoint is working as expected.
 """
+from decimal import Decimal
 import json
 
 from datetime import datetime
@@ -147,10 +148,11 @@ def test_create_pad_refund(session, client, jwt, app, stan_server):
                                                                )
                      ),
                      headers=headers)
+    assert rv.status_code == 201
     inv_total = rv.json.get('total')
 
     pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-    credit -= inv_total
+    credit -= Decimal(str(inv_total))
     assert pay_account.credit == credit
 
     # Create an invoice again and assert that credit is updated.
@@ -164,6 +166,7 @@ def test_create_pad_refund(session, client, jwt, app, stan_server):
                          )
                      ),
                      headers=headers)
+    assert rv.status_code == 201
     inv_total = rv.json.get('total')
     # Credit must be zero now as the new invoice amount exceeds remaining credit.
     assert pay_account.credit == 0
