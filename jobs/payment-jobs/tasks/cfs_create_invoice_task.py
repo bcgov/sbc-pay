@@ -285,7 +285,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     continue
 
             additional_params = {
-                'invoice_total': invoice_total,
+                'invoice_total': float(invoice_total),
                 'invoice_process_date': f'{datetime.now()}'
             }
             mailer.publish_mailer_events('pad.invoiceCreated', payment_account, additional_params)

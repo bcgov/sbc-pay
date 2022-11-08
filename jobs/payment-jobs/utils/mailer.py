@@ -40,7 +40,7 @@ def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel,
         'datacontenttype': 'application/json',
         'data': {
             'accountId': pay_account.auth_account_id,
-            'nsfFee': fee_schedule.fee.amount,
+            'nsfFee': float(fee_schedule.fee.amount),
             **additional_params
         }
     }
