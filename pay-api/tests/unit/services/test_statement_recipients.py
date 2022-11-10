@@ -29,6 +29,13 @@ def test_statement_recipients_basic(session):
     statement_recipients.firstname = 'hey'
     statement_recipients.payment_account_id = 1
     statement_recipients.email = 'hallo@hallo.com'
+    data = statement_recipients.asdict()
+    assert data
+    assert data['id'] == 1
+    assert data['auth_user_id'] == 1
+    assert data['firstname'] == 'hey'
+    assert data['email'] == 'hallo@hallo.com'
+    assert 'payment_account_id' not in data
 
 
 def test_statement_recipients_find_statement_notification(session):
