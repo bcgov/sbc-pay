@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Test for the statement receipients service.
+
+Test-Suite to ensure that the Statement Receipients Service is working as expected.
+"""
 from pay_api.services.statement_recipients import StatementRecipients as StatementRecipientsService
 from pay_api.models.statement_recipients import StatementRecipients as StatementRecipientsModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-
-"""Tests to assure the Statement Recipients are working as expected.
-
-These provide us some unit test coverage, so confidence can remain high while refactoring or making changes.
-"""
 
 
 def test_statement_recipients_basic(session):
