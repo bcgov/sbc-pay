@@ -29,7 +29,6 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.constants import CFS_ADJ_ACTIVITY_NAME
 from pay_api.utils.enums import AuthHeaderType, CfsAccountStatus, ContentType, PaymentMethod, PaymentSystem
 from pay_api.utils.util import parse_url_params
 
@@ -145,43 +144,6 @@ class PaybcService(PaymentSystemService, CFSService):
         """Get receipt details by receipt number."""
         receipt_url = receipt_url + f'{receipt_number}/'
         return self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, True).json()
-
-    def _add_adjustment(self, payment_account: PaymentAccount,  # pylint: disable=too-many-arguments
-                        inv_number: str, comment: str, amount: float, line: int = 0, access_token: str = None):
-        """Add adjustment to the invoice."""
-        current_app.logger.debug(f'>Creating PayBC Adjustment  For Invoice: {inv_number}')
-        adjustment_url = current_app.config.get(
-            'CFS_BASE_URL') + f'/cfs/parties/{payment_account.cfs_party}/accs/{payment_account.cfs_account}' \
-                              f'/sites/{payment_account.cfs_site}/invs/{inv_number}/adjs/'
-        current_app.logger.debug(f'>Creating PayBC Adjustment URL {adjustment_url}')
-
-        adjustment = dict(
-            comment=comment,
-            lines=[
-                {
-                    'line_number': str(line),
-                    'adjustment_amount': str(amount),
-                    'activity_name': CFS_ADJ_ACTIVITY_NAME
-                }
-            ]
-        )
-
-        adjustment_response = self.post(adjustment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
-                                        adjustment)
-
-        current_app.logger.debug('>Created PayBC Invoice Adjustment')
-        return adjustment_response.json()
-
-    def _get_invoice(self, payment_account: PaymentAccount, inv_number: str, access_token: str):
-        """Get invoice from PayBC."""
-        current_app.logger.debug('<__get_invoice')
-        invoice_url = current_app.config.get(
-            'CFS_BASE_URL') + f'/cfs/parties/{payment_account.cfs_party}/accs/{payment_account.cfs_account}/' \
-                              f'sites/{payment_account.cfs_site}/invs/{inv_number}/'
-
-        invoice_response = self.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
-        current_app.logger.debug('>__get_invoice')
-        return invoice_response.json()
 
     def process_cfs_refund(self, invoice: InvoiceModel):
         """Process refund in CFS."""

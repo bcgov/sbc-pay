@@ -22,13 +22,28 @@ from freezegun import freeze_time
 
 from pay_api.models import PaymentAccount
 from pay_api.models import StatementSettings as StatementSettingsModel
-from pay_api.services.statement_settings import StatementSettings as StatementSettingsService
+from pay_api.services.statement_settings import StatementReceipts as StatementSettingsService
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import StatementFrequency
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_week_start_and_end_date
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_premium_payment_account,
     factory_statement_settings)
+
+
+def test_statement_settings_basic(session):
+    """Assert basic service works."""
+    statement_settings = StatementSettingsService()
+    statement_settings.id = 1
+    statement_settings.from_date = datetime.fromisoformat('2022-01-01')
+    statement_settings.to_date = datetime.fromisoformat('2022-01-01')
+    statement_settings.payment_account_id = 1
+    data = statement_settings.asdict()
+    assert data
+    assert data['id'] == 1
+    assert data['from_date'] == '2022-01-01'
+    assert data['to_date'] == '2022-01-01'
+    assert 'payment_account_id' not in data
 
 
 def test_statement_settings_find_by_account(session):
