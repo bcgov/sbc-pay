@@ -291,17 +291,15 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             mailer.publish_mailer_events('pad.invoiceCreated', payment_account, additional_params)
             # Iterate invoice and create invoice reference records
             for invoice in account_invoices:
-                # Create invoice reference, payment record and a payment transaction
-                InvoiceReference.create(
+                invoice_reference = InvoiceReferenceModel(
                     invoice_id=invoice.id,
                     invoice_number=invoice_response.json().get('invoice_number'),
-                    reference_number=invoice_response.json().get('pbc_ref_number', None))
-
-                # Misc
+                    reference_number=invoice_response.json().get('pbc_ref_number', None),
+                    status_code=InvoiceReferenceStatus.ACTIVE.value
+                )
+                db.session.add(invoice_reference)
                 invoice.cfs_account_id = payment_account.cfs_account_id
-                # no longer set to settlement sceduled
-                # invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
-                invoice.save()
+            db.session.commit()
 
     @classmethod
     def _create_online_banking_invoices(cls):
