@@ -72,7 +72,7 @@ class UnpaidInvoiceNotifyTask:  # pylint:disable=too-few-public-methods
                 cfs_account = CfsAccountModel.find_effective_by_account_id(payment_account_id)
 
                 # emit account mailer event
-                addition_params_to_mailer = {'transactionAmount': total[0][0],
+                addition_params_to_mailer = {'transactionAmount': float(total[0][0]),
                                              'cfsAccountId': cfs_account.cfs_account,
                                              'authAccountId': pay_account.auth_account_id,
                                              }
