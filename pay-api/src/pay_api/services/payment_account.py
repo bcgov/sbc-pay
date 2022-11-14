@@ -483,7 +483,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             current_app.logger.error(e)
             raise
 
-        current_app.logger.debug('>create payment account')
+        current_app.logger.debug('>update payment account')
         return cls.find_by_id(account.id)
 
     @staticmethod
@@ -538,12 +538,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @classmethod
     def find_by_id(cls, account_id: int):
         """Find pay account by id."""
-        current_app.logger.debug('<find_by_id')
-
         account = PaymentAccount()
         account._dao = PaymentAccountModel.find_by_id(account_id)  # pylint: disable=protected-access
-
-        current_app.logger.debug('>find_by_id')
         return account
 
     @staticmethod
