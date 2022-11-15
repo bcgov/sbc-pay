@@ -14,14 +14,15 @@
 """Model to handle all operations related to Fee related to accounts."""
 from __future__ import annotations
 
-from marshmallow import fields
+from marshmallow import fields, post_dump
 from sqlalchemy import Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 
 from .audit import Audit
 from .base_model import VersionedModel
+from .base_schema import BaseSchema
 from .corp_type import CorpType
-from .db import db, ma
+from .db import db
 from .fee_code import FeeCode
 from .payment_account import PaymentAccount
 
@@ -63,13 +64,17 @@ class AccountFee(Audit, VersionedModel):
         return account_fee
 
 
-class AccountFeeSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class AccountFeeSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the CFS Account."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = AccountFee
-        exclude = ['versions', 'service_fee']
+        exclude = ['service_fee']
+
+    @post_dump(pass_many=True)
+    def _remove_empty(self, data, many):
+        return data
 
     service_fee_code = fields.String(data_key='service_fee_code')
