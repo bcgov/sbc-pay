@@ -112,6 +112,7 @@ async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-loca
 
     if has_errors and not APP_CONFIG.DISABLE_EJV_ERROR_EMAIL:
         await _publish_mailer_events(file_name, minio_location)
+    logger.info('Done processing')
 
 
 async def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-locals
@@ -162,6 +163,9 @@ async def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-ma
 async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  # pylint:disable=too-many-locals
     journal_name: str = line[7:17]  # {ministry}{ejv_header_model.id:0>8}
     ejv_header_model_id = int(journal_name[2:])
+    # Work around for CAS, they said fix the feedback files.
+    if line[313:315] == '00':
+        line = line[:313] + '  ' + line[313:]
     invoice_id = int(line[205:315])
     invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
     invoice_link: EjvInvoiceLinkModel = db.session.query(EjvInvoiceLinkModel).filter(
