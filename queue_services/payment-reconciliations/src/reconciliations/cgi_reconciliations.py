@@ -164,8 +164,7 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
     journal_name: str = line[7:17]  # {ministry}{ejv_header_model.id:0>8}
     ejv_header_model_id = int(journal_name[2:])
     # Work around for CAS, they said fix the feedback files.
-    if line[313:315] == '00':
-        line = line[:313] + '  ' + line[313:]
+    line = line[:313] + '  ' + line[313:] if line[313:315] == '00' else line
     invoice_id = int(line[205:315])
     invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
     invoice_link: EjvInvoiceLinkModel = db.session.query(EjvInvoiceLinkModel).filter(
