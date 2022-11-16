@@ -96,7 +96,7 @@ jobs:
         run: |
           make test
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v1
         with:
           file: ./queue_services/payment-reconciliations/coverage.xml
           flags: paymentreconciliationsqueue
