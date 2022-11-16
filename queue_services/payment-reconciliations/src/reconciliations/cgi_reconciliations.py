@@ -105,19 +105,21 @@ async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-loca
     file = get_object(minio_location, file_name)
     content = file.data.decode('utf-8-sig')
     group_batches: List[str] = _group_batches(content)
-    has_errors = await _process_ejv_feedback(group_batches['EJV'])
+    has_errors, already_processed = await _process_ejv_feedback(group_batches['EJV'], file_name)
 
-    if not APP_CONFIG.DISABLE_AP_FEEDBACK:
-        has_errors = await _process_ap_feedback(group_batches['AP']) or has_errors
+    if not already_processed:
+        if not APP_CONFIG.DISABLE_AP_FEEDBACK:
+            has_errors = await _process_ap_feedback(group_batches['AP']) or has_errors
 
-    if has_errors and not APP_CONFIG.DISABLE_EJV_ERROR_EMAIL:
-        await _publish_mailer_events(file_name, minio_location)
-    logger.info('Done processing')
+        if has_errors and not APP_CONFIG.DISABLE_EJV_ERROR_EMAIL:
+            await _publish_mailer_events(file_name, minio_location)
+    logger.info('> update_feedback')
 
 
-async def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-locals
+async def _process_ejv_feedback(group_batches, file_name) -> bool:  # pylint:disable=too-many-locals
     """Process EJV Feedback contents."""
     has_errors = False
+    already_processed = False
     for group_batch in group_batches:
         ejv_file: Optional[EjvFileModel] = None
         receipt_number: Optional[str] = None
@@ -130,6 +132,13 @@ async def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-ma
             if is_batch_group:
                 batch_number = int(line[15:24])
                 ejv_file = EjvFileModel.find_by_id(batch_number)
+                if ejv_file.feedback_file_ref:
+                    logger.info(
+                        'EJV file id %s with feedback file %s has already been processed, skipping.',
+                        batch_number, file_name)
+                    already_processed = True
+                    return has_errors, already_processed
+                ejv_file.feedback_file_ref = file_name
             elif is_batch_header:
                 return_code = line[7:11]
                 return_message = line[11:161]
@@ -157,7 +166,7 @@ async def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-ma
                 has_errors = await _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number)
 
     db.session.commit()
-    return has_errors
+    return has_errors, already_processed
 
 
 async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  # pylint:disable=too-many-locals
