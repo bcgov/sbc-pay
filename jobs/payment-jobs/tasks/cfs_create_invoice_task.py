@@ -175,7 +175,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 try:
                     # add a 60 seconds delay here as safe bet, as CFS takes time to create the invoice and
                     # since this is a job, delay doesn't cause any performance issue
-                    # time.sleep(60)
+                    time.sleep(60)
                     invoice_number = generate_transaction_number(str(invoice.id))
                     invoice_response = CFSService.get_invoice(
                         cfs_account=active_cfs_account, inv_number=invoice_number
