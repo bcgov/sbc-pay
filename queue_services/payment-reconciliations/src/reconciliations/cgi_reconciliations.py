@@ -105,18 +105,21 @@ async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-loca
     file = get_object(minio_location, file_name)
     content = file.data.decode('utf-8-sig')
     group_batches: List[str] = _group_batches(content)
-    has_errors = await _process_ejv_feedback(group_batches['EJV'])
+    has_errors, already_processed = await _process_ejv_feedback(group_batches['EJV'], file_name)
 
-    if not APP_CONFIG.DISABLE_AP_FEEDBACK:
-        has_errors = await _process_ap_feedback(group_batches['AP']) or has_errors
+    if not already_processed:
+        if not APP_CONFIG.DISABLE_AP_FEEDBACK:
+            has_errors = await _process_ap_feedback(group_batches['AP']) or has_errors
 
-    if has_errors and not APP_CONFIG.DISABLE_EJV_ERROR_EMAIL:
-        await _publish_mailer_events(file_name, minio_location)
+        if has_errors and not APP_CONFIG.DISABLE_EJV_ERROR_EMAIL:
+            await _publish_mailer_events(file_name, minio_location)
+    logger.info('> update_feedback')
 
 
-async def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-locals
+async def _process_ejv_feedback(group_batches, file_name) -> bool:  # pylint:disable=too-many-locals
     """Process EJV Feedback contents."""
     has_errors = False
+    already_processed = False
     for group_batch in group_batches:
         ejv_file: Optional[EjvFileModel] = None
         receipt_number: Optional[str] = None
@@ -129,6 +132,13 @@ async def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-ma
             if is_batch_group:
                 batch_number = int(line[15:24])
                 ejv_file = EjvFileModel.find_by_id(batch_number)
+                if ejv_file.feedback_file_ref:
+                    logger.info(
+                        'EJV file id %s with feedback file %s has already been processed, skipping.',
+                        batch_number, file_name)
+                    already_processed = True
+                    return has_errors, already_processed
+                ejv_file.feedback_file_ref = file_name
             elif is_batch_header:
                 return_code = line[7:11]
                 return_message = line[11:161]
@@ -156,12 +166,14 @@ async def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-ma
                 has_errors = await _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number)
 
     db.session.commit()
-    return has_errors
+    return has_errors, already_processed
 
 
 async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  # pylint:disable=too-many-locals
     journal_name: str = line[7:17]  # {ministry}{ejv_header_model.id:0>8}
     ejv_header_model_id = int(journal_name[2:])
+    # Work around for CAS, they said fix the feedback files.
+    line = _fix_invoice_line(line)
     invoice_id = int(line[205:315])
     invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
     invoice_link: EjvInvoiceLinkModel = db.session.query(EjvInvoiceLinkModel).filter(
@@ -229,6 +241,15 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
                     ReceiptModel(invoice_id=invoice_id, receipt_number=receipt_number, receipt_date=datetime.now(),
                                  receipt_amount=float(line[89:104])).flush()
     return has_errors
+
+
+def _fix_invoice_line(line):
+    """Work around for CAS, they said fix the feedback files."""
+    # Check for zeros within 300->315 range. Bump them over with spaces.
+    if (zero_position := line[300:315].find('0')) > -1:
+        spaces_to_insert = 15 - zero_position
+        return line[:300+zero_position] + (' ' * spaces_to_insert) + line[300+zero_position:]
+    return line
 
 
 async def _update_invoice_status(invoice):
