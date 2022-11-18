@@ -18,7 +18,7 @@ Test-Suite to ensure that the CreateInvoiceTask is working as expected.
 """
 import json
 from datetime import datetime, timedelta
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
@@ -30,6 +30,8 @@ from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, Invoic
 from requests import Response
 
 from tasks.cfs_create_invoice_task import CreateInvoiceTask
+
+from .mocks import mocked_get_invoice_response
 
 from .factory import (
     factory_create_eft_account, factory_create_online_banking_account, factory_create_pad_account,
@@ -110,9 +112,35 @@ def test_create_rs_invoice_single_transaction(session):
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
-    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
-    CreateInvoiceTask.create_invoices()
+    invoice_failed_response = {
+        'invoice_number': '123',
+        'Transfer-Encoding': 'chunked',
+        'Content-Length': '11388',
+        'Content-Type': 'text/html',
+        'CAS-Returned-Messages': '[Trx Errors = [9999] Transaction not created'}
+
+    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+    the_response = Response()
+    the_response.status_code = 400
+    the_response._content = json.dumps(invoice_failed_response).encode('utf-8')
+
+    with patch.object(CFSService, 'create_account_invoice', return_value=the_response) as mock_cfs:
+        with patch.object(CFSService, 'get_invoice', return_value=mocked_get_invoice_response) as mock_get_invoice:
+            CreateInvoiceTask.create_invoices()
+            mock_cfs.assert_called()
+            mock_get_invoice.assert_called()
+
+    invoice_success_response = {
+        'invoice_number': '123', 'pbc_ref_number': '10005', 'party_number': '11111',
+        'party_name': 'invoice'}
+    the_response_success = Response()
+    the_response_success.status_code = 200
+    the_response_success._content = json.dumps(invoice_success_response).encode('utf-8')
+
+    with patch.object(CFSService, 'create_account_invoice', return_value=the_response_success) as mock_cfs:
+        CreateInvoiceTask.create_invoices()
+        mock_cfs.assert_called()
 
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \

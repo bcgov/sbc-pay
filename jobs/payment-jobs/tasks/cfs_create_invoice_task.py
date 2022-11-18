@@ -162,9 +162,37 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             # apply invoice to the active CFS_ACCOUNT which will be the parent routing slip
             active_cfs_account = CfsAccountModel.find_effective_by_account_id(routing_slip_payment_account.id)
 
-            invoice_response = CFSService.create_account_invoice(transaction_number=invoice.id,
-                                                                 line_items=invoice.payment_line_items,
-                                                                 cfs_account=active_cfs_account)
+            try:
+                invoice_response = CFSService.create_account_invoice(transaction_number=invoice.id,
+                                                                     line_items=invoice.payment_line_items,
+                                                                     cfs_account=active_cfs_account)
+            except Exception as e:  # NOQA # pylint: disable=broad-except
+                # There is a chance that the error is a timeout from CAS side,
+                # so to make sure we are not missing any data, make a GET call for the invoice we tried to create
+                # and use it if it got created.
+                current_app.logger.info(e)  # INFO is intentional as sentry alerted only after the following try/catch
+                has_invoice_created: bool = False
+                try:
+                    # add a 60 seconds delay here as safe bet, as CFS takes time to create the invoice and
+                    # since this is a job, delay doesn't cause any performance issue
+                    # time.sleep(60)
+                    invoice_number = generate_transaction_number(str(invoice.id))
+                    invoice_response = CFSService.get_invoice(
+                        cfs_account=active_cfs_account, inv_number=invoice_number
+                    )
+                    has_invoice_created = invoice_response.json().get('invoice_number', None) == invoice_number
+                except Exception as exc:  # NOQA # pylint: disable=broad-except,unused-variable
+                    # Ignore this error, as it is irrelevant and error on outer level is relevant.
+                    pass
+
+                # If no invoice is created raise an error for sentry
+                if not has_invoice_created:
+                    capture_message(f'Error on creating account invoice: account id={invoice.payment_account.id}, '
+                                    f'ERROR : {str(e)}',
+                                    level='error')
+                    current_app.logger.error(e)
+                    continue
+
             invoice_number = invoice_response.json().get('invoice_number', None)
 
             current_app.logger.info(f'invoice_number  {invoice_number}  created in CFS.')
@@ -182,10 +210,8 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 invoice_response.json().get('pbc_ref_number', None))
 
             current_app.logger.debug('>create_invoice')
-            # leave the status as PAID
+
             invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
-            invoice.invoice_status_code = InvoiceStatus.PAID.value
-            invoice.paid = invoice.total
 
             Payment.create(payment_method=PaymentMethod.INTERNAL.value,
                            payment_system=PaymentSystem.INTERNAL.value,
@@ -193,6 +219,10 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                            invoice_number=invoice_reference.invoice_number,
                            invoice_amount=invoice.total,
                            payment_account_id=invoice.payment_account_id)
+            # leave the status as PAID
+
+            invoice.invoice_status_code = InvoiceStatus.PAID.value
+            invoice.paid = invoice.total
             invoice.save()
 
     @classmethod
