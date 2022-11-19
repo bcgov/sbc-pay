@@ -14,7 +14,8 @@ flake8
 flake8-blind-except
 flake8-debugger
 flake8-docstrings
-flake8-isort
+# should stay at this verison until fixed.
+flake8-isort==5.0.0
 flake8-quotes
 pep8-naming
 autopep8
