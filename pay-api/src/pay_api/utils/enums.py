@@ -131,6 +131,7 @@ class Role(Enum):
     FAS_LINK = 'fas_link'
     FAS_REFUND_APPROVER = 'fas_refund_approver'
     SANDBOX = 'sandbox'
+    NON_STAFF_BCOL_OVERRIDE = 'non_staff_bcol_override'
 
 
 class Code(Enum):

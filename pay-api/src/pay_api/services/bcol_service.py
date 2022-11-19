@@ -25,6 +25,7 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models.corp_type import CorpType
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentStatus
 from pay_api.utils.enums import PaymentSystem as PaySystemCode
+from pay_api.utils.enums import Role
 from pay_api.utils.errors import get_bcol_error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import generate_transaction_number
@@ -61,6 +62,10 @@ class BcolService(PaymentSystemService, OAuthService):
         if user.first_name:
             remarks = f'{remarks}-{user.first_name}'
 
+        # Force regular bcol code is for partial refunds.
+        # CSO currently refunds an invoice, and creates a new invoice for partial refunds.
+        use_staff_fee_code = (user.is_staff() or user.is_system()) and not bool(
+            Role.NON_STAFF_BCOL_OVERRIDE in user.roles)
         payload: Dict = {
             # 'userId': payment_account.bcol_user_id if payment_account.bcol_user_id else 'PE25020',
             'userId': payment_account.bcol_user_id,
@@ -69,7 +74,7 @@ class BcolService(PaymentSystemService, OAuthService):
             'amount': str(amount_excluding_txn_fees),
             'rate': str(amount_excluding_txn_fees),
             'remarks': remarks[:50],
-            'feeCode': self._get_fee_code(invoice.corp_type_code, user.is_staff() or user.is_system())
+            'feeCode': self._get_fee_code(invoice.corp_type_code, use_staff_fee_code)
         }
 
         if user.is_staff() or user.is_system():
