@@ -31,6 +31,8 @@ from requests import Response
 
 from tasks.cfs_create_invoice_task import CreateInvoiceTask
 
+from .mocks import mocked_get_invoice_response
+
 from .factory import (
     factory_create_eft_account, factory_create_online_banking_account, factory_create_pad_account,
     factory_create_wire_account, factory_invoice, factory_payment_line_item, factory_routing_slip_account)
@@ -110,9 +112,32 @@ def test_create_rs_invoice_single_transaction(session):
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
-    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
-    CreateInvoiceTask.create_invoices()
+    invoice_data = {
+        'invoice_number': '123',
+        'pbc_ref_number': '10005',
+        'party_number': '11111',
+        'party_name': 'invoice'
+    }
+
+    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+    invoice_failed_res = Response()
+    invoice_failed_res.status_code = 400
+    invoice_failed_res._content = json.dumps(invoice_data).encode('utf-8')
+
+    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_failed_res) as mock_create_invoice:
+        with patch.object(CFSService, 'get_invoice', return_value=mocked_get_invoice_response) as mock_get_invoice:
+            CreateInvoiceTask.create_invoices()
+            mock_create_invoice.assert_called()
+            mock_get_invoice.assert_called()
+
+    invoice_success_res = Response()
+    invoice_success_res.status_code = 200
+    invoice_success_res._content = json.dumps(invoice_data).encode('utf-8')
+
+    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_success_res) as mock_create_invoice:
+        CreateInvoiceTask.create_invoices()
+        mock_create_invoice.assert_called()
 
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
