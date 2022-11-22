@@ -25,7 +25,6 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models.corp_type import CorpType
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentStatus
 from pay_api.utils.enums import PaymentSystem as PaySystemCode
-from pay_api.utils.enums import Role
 from pay_api.utils.errors import get_bcol_error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import generate_transaction_number
