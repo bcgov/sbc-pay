@@ -62,10 +62,12 @@ class BcolService(PaymentSystemService, OAuthService):
         if user.first_name:
             remarks = f'{remarks}-{user.first_name}'
 
+        use_staff_fee_code = (user.is_staff() or user.is_system())
         # Force regular bcol code is for partial refunds.
         # CSO currently refunds an invoice, and creates a new invoice for partial refunds.
-        use_staff_fee_code = (user.is_staff() or user.is_system()) and not bool(
-            Role.BCOL_FEE_OVERRIDE in user.roles)
+        # CSO only uses a single PLI per invoice.
+        if 'CSBVFEE' == filing_types:
+            use_staff_fee_code = False
         payload: Dict = {
             # 'userId': payment_account.bcol_user_id if payment_account.bcol_user_id else 'PE25020',
             'userId': payment_account.bcol_user_id,
