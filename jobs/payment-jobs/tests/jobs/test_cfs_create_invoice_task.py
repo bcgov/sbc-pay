@@ -18,7 +18,7 @@ Test-Suite to ensure that the CreateInvoiceTask is working as expected.
 """
 import json
 from datetime import datetime, timedelta
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
@@ -113,34 +113,31 @@ def test_create_rs_invoice_single_transaction(session):
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
 
-    invoice_failed_data = {
+    invoice_data = {
         'invoice_number': '123',
-        'Transfer-Encoding': 'chunked',
-        'Content-Length': '11388',
-        'Content-Type': 'text/html',
-        'CAS-Returned-Messages': '[Trx Errors = [9999] Transaction not created'}
+        'pbc_ref_number': '10005',
+        'party_number': '11111',
+        'party_name': 'invoice'
+    }
 
     assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
     invoice_failed_response = Response()
     invoice_failed_response.status_code = 400
-    invoice_failed_response._content = json.dumps(invoice_failed_data).encode('utf-8')
+    invoice_failed_response._content = json.dumps(invoice_data).encode('utf-8')
 
-    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_failed_response) as mock_cfs:
+    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_failed_response) as mock_create_invoice:
         with patch.object(CFSService, 'get_invoice', return_value=mocked_get_invoice_response) as mock_get_invoice:
             CreateInvoiceTask.create_invoices()
-            mock_cfs.assert_called()
+            mock_create_invoice.assert_called()
             mock_get_invoice.assert_called()
 
-    invoice_success_data = {
-        'invoice_number': '123', 'pbc_ref_number': '10005', 'party_number': '11111',
-        'party_name': 'invoice'}
     invoice_success_response = Response()
     invoice_success_response.status_code = 200
-    invoice_success_response._content = json.dumps(invoice_success_data).encode('utf-8')
+    invoice_success_response._content = json.dumps(invoice_data).encode('utf-8')
 
-    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_success_response) as mock_cfs:
+    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_success_response) as mock_create_invoice:
         CreateInvoiceTask.create_invoices()
-        mock_cfs.assert_called()
+        mock_create_invoice.assert_called()
 
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
