@@ -121,21 +121,21 @@ def test_create_rs_invoice_single_transaction(session):
     }
 
     assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
-    invoice_failed_response = Response()
-    invoice_failed_response.status_code = 400
-    invoice_failed_response._content = json.dumps(invoice_data).encode('utf-8')
+    invoice_failed_res = Response()
+    invoice_failed_res.status_code = 400
+    invoice_failed_res._content = json.dumps(invoice_data).encode('utf-8')
 
-    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_failed_response) as mock_create_invoice:
+    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_failed_res) as mock_create_invoice:
         with patch.object(CFSService, 'get_invoice', return_value=mocked_get_invoice_response) as mock_get_invoice:
             CreateInvoiceTask.create_invoices()
             mock_create_invoice.assert_called()
             mock_get_invoice.assert_called()
 
-    invoice_success_response = Response()
-    invoice_success_response.status_code = 200
-    invoice_success_response._content = json.dumps(invoice_data).encode('utf-8')
+    invoice_success_res = Response()
+    invoice_success_res.status_code = 200
+    invoice_success_res._content = json.dumps(invoice_data).encode('utf-8')
 
-    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_success_response) as mock_create_invoice:
+    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_success_res) as mock_create_invoice:
         CreateInvoiceTask.create_invoices()
         mock_create_invoice.assert_called()
 
