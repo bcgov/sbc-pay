@@ -601,7 +601,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             line_items=consolidated_line_items,
             cfs_account=cfs_account)
 
-        invoice_number: str = invoice_response.json().get('invoice_number')
+        invoice_number: str = invoice_response.get('invoice_number')
 
         # Mark all invoice references to status CANCELLED, and create a new one for the new invoice number.
         for invoice in consolidated_invoices:
@@ -613,7 +613,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 invoice_id=invoice.id,
                 status_code=InvoiceReferenceStatus.ACTIVE.value,
                 invoice_number=invoice_number,
-                reference_number=invoice_response.json().get('pbc_ref_number')).flush()
+                reference_number=invoice_response.get('pbc_ref_number')).flush()
 
         payment = Payment.create(
             payment_method=PaymentMethod.CC.value,

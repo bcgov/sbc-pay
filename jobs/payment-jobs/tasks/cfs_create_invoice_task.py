@@ -13,6 +13,7 @@
 # limitations under the License.
 """Task to create CFS invoices offline."""
 from datetime import datetime
+from decimal import Decimal
 import time
 from typing import List
 
@@ -173,14 +174,14 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.info(e)  # INFO is intentional as sentry alerted only after the following try/catch
                 has_invoice_created: bool = False
                 try:
-                    # add a 60 seconds delay here as safe bet, as CFS takes time to create the invoice and
+                    # add a 10 seconds delay here as safe bet, as CFS takes time to create the invoice and
                     # since this is a job, delay doesn't cause any performance issue
-                    time.sleep(60)
+                    time.sleep(10)
                     invoice_number = generate_transaction_number(str(invoice.id))
                     invoice_response = CFSService.get_invoice(
                         cfs_account=active_cfs_account, inv_number=invoice_number
                     )
-                    has_invoice_created = invoice_response.json().get('invoice_number', None) == invoice_number
+                    has_invoice_created = invoice_response.get('invoice_number', None) == invoice_number
                 except Exception as exc:  # NOQA # pylint: disable=broad-except,unused-variable
                     # Ignore this error, as it is irrelevant and error on outer level is relevant.
                     pass
@@ -193,7 +194,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     current_app.logger.error(e)
                     continue
 
-            invoice_number = invoice_response.json().get('invoice_number', None)
+            invoice_number = invoice_response.get('invoice_number', None)
 
             current_app.logger.info(f'invoice_number  {invoice_number}  created in CFS.')
 
@@ -207,7 +208,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
             invoice_reference: InvoiceReference = InvoiceReference.create(
                 invoice.id, invoice_number,
-                invoice_response.json().get('pbc_ref_number', None))
+                invoice_response.get('pbc_ref_number', None))
 
             current_app.logger.debug('>create_invoice')
 
@@ -278,7 +279,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
             # Add all lines together
             lines = []
-            invoice_total: float = 0
+            invoice_total = Decimal('0')
             for invoice in account_invoices:
                 lines.extend(invoice.payment_line_items)
                 invoice_total += invoice.total
@@ -295,14 +296,14 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.info(e)  # INFO is intentional as sentry alerted only after the following try/catch
                 has_invoice_created: bool = False
                 try:
-                    # add a 60 seconds delay here as safe bet, as CFS takes time to create the invoice and
-                    # since this is a job, delay doesn't cause any performance issue
-                    time.sleep(60)
+                    # add a 10 seconds delay here as safe bet, as CFS takes time to create the invoice
+                    time.sleep(10)
                     invoice_number = generate_transaction_number(str(invoice_number))
                     invoice_response = CFSService.get_invoice(
                         cfs_account=cfs_account, inv_number=invoice_number
                     )
-                    has_invoice_created = invoice_response.json().get('invoice_number', None) == invoice_number
+                    has_invoice_created = invoice_response.get('invoice_number', None) == invoice_number
+                    invoice_total_matches = Decimal(invoice_response.get('total', '0')) == invoice_total
                 except Exception as exc:  # NOQA # pylint: disable=broad-except,unused-variable
                     # Ignore this error, as it is irrelevant and error on outer level is relevant.
                     pass
@@ -310,6 +311,13 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 if not has_invoice_created:
                     capture_message(f'Error on creating PAD invoice: account id={payment_account.id}, '
                                     f'auth account : {payment_account.auth_account_id}, ERROR : {str(e)}',
+                                    level='error')
+                    current_app.logger.error(e)
+                    continue
+                if not invoice_total_matches:
+                    capture_message(f'Error on creating PAD invoice: account id={payment_account.id}, '
+                                    f'auth account : {payment_account.auth_account_id}, Invoice exists: '
+                                    f' CAS total: {invoice_response.get("total", 0)}, PAY-BC total: {invoice_total}',
                                     level='error')
                     current_app.logger.error(e)
                     continue
@@ -323,8 +331,8 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             for invoice in account_invoices:
                 invoice_reference = InvoiceReferenceModel(
                     invoice_id=invoice.id,
-                    invoice_number=invoice_response.json().get('invoice_number'),
-                    reference_number=invoice_response.json().get('pbc_ref_number', None),
+                    invoice_number=invoice_response.get('invoice_number'),
+                    reference_number=invoice_response.get('pbc_ref_number', None),
                     status_code=InvoiceReferenceStatus.ACTIVE.value
                 )
                 db.session.add(invoice_reference)
@@ -381,8 +389,8 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             # Create invoice reference, payment record and a payment transaction
             InvoiceReference.create(
                 invoice_id=invoice.id,
-                invoice_number=invoice_response.json().get('invoice_number'),
-                reference_number=invoice_response.json().get('pbc_ref_number', None))
+                invoice_number=invoice_response.get('invoice_number'),
+                reference_number=invoice_response.get('pbc_ref_number', None))
 
             # Misc
             invoice.cfs_account_id = payment_account.cfs_account_id

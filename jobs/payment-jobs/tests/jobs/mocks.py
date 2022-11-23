@@ -67,21 +67,3 @@ def mocked_invoice_response(cls, *args):  # pylint: disable=unused-argument; moc
         'total': '15',
         'amount_due': '15'
     })
-
-
-def mocked_get_invoice_response(cls, *args):  # pylint: disable=unused-argument; mocks of library methods
-    """Mock get invoice 200 payload response."""
-    return Mock(status_code=200, json=lambda: {'invoice_number': '123',
-                                               'pbc_ref_number': '10007',
-                                               'party_number': '104894',
-                                               'party_name': 'BCR-456',
-                                               'account_name': 'BCRD',
-                                               'account_number': '116225',
-                                               'customer_site_id': '1',
-                                               'site_number': '179145',
-                                               'cust_trx_type': 'BC_REGISTRIES',
-                                               'transaction_date': '2022-11-14T08:00:00Z',
-                                               'batch_source': 'BC REG MANUAL_OTHER',
-                                               'term_name': 'IMMEDIATE',
-                                               'term_due_date': '2022-11-14T08:00:00Z'
-                                               })
