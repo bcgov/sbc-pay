@@ -162,9 +162,7 @@ def test_create_payment_record_with_rs(session, public_user_mock):
     payment_account.save()
     rs = factory_routing_slip(payment_account_id=payment_account.id, total=1000, remaining_amount=1000)
     rs.save()
-    cfs_response = Mock(spec=Response)
-    cfs_response.json.return_value = {'invoice_number': 'abcde', }
-    cfs_response.status_code = 200
+    cfs_response = {'invoice_number': 'abcde', }
 
     request = get_payment_request()
     request['accountInfo'] = {'routingSlip': rs.number}
