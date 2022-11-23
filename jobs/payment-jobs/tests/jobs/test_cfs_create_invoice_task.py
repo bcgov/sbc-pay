@@ -123,20 +123,16 @@ def test_create_rs_invoice_single_transaction(session):
     invoice_failed_res = Response()
     invoice_failed_res.status_code = 400
 
-    invoice_success_res = Response()
-    invoice_success_res.status_code = 200
-    invoice_success_res._content = json.dumps(invoice_data).encode('utf-8')
-
     # Testing the flow where create_account_invoice already has an invoice.
     with patch.object(CFSService, 'create_account_invoice', return_value=invoice_failed_res, side_effect=HTTPError())  \
             as mock_create_invoice:
-        with patch.object(CFSService, 'get_invoice', return_value=invoice_success_res) as mock_get_invoice:
+        with patch.object(CFSService, 'get_invoice', return_value=invoice_data) as mock_get_invoice:
             CreateInvoiceTask.create_invoices()
             mock_create_invoice.assert_called()
             mock_get_invoice.assert_called()
 
     # Regular flow where create_account_invoice succeeds.
-    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_success_res) as mock_create_invoice:
+    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_data) as mock_create_invoice:
         CreateInvoiceTask.create_invoices()
         mock_create_invoice.assert_called()
 
@@ -163,10 +159,8 @@ def test_create_pad_invoice_single_transaction_run_again(session):
     invoice_response = {'invoice_number': '10021', 'pbc_ref_number': '10005', 'party_number': '11111',
                         'party_name': 'invoice'}
     assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
-    the_response = Response()
-    the_response._content = json.dumps(invoice_response).encode('utf-8')
 
-    with patch.object(CFSService, 'create_account_invoice', return_value=the_response) as mock_cfs:
+    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_response) as mock_cfs:
         CreateInvoiceTask.create_invoices()
         mock_cfs.assert_called()
 
@@ -177,7 +171,7 @@ def test_create_pad_invoice_single_transaction_run_again(session):
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
-    with patch.object(CFSService, 'create_account_invoice', return_value=the_response) as mock_cfs:
+    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_response) as mock_cfs:
         CreateInvoiceTask.create_invoices()
         mock_cfs.assert_not_called()
 
