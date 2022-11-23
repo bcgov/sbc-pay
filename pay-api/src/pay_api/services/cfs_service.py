@@ -258,7 +258,7 @@ class CFSService(OAuthService):
                               f'sites/{cfs_account.cfs_site}/invs/{inv_number}/'
 
         invoice_response = CFSService.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
-        return invoice_response.json()
+        return invoice_response
 
     @classmethod
     def reverse_rs_receipt_in_cfs(cls, cfs_account, receipt_number, is_nsf: bool = False):
