@@ -257,13 +257,13 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                                                              line_items=invoice.payment_line_items,
                                                              cfs_account=cfs_account)
 
-        invoice_number = invoice_response.json().get('invoice_number', None)
+        invoice_number = invoice_response.get('invoice_number', None)
         current_app.logger.info(f'invoice_number  {invoice_number}  created in CFS for NSF.')
 
         InvoiceReferenceModel(
             invoice_id=invoice.id,
             invoice_number=invoice_number,
-            reference_number=invoice_response.json().get('pbc_ref_number', None),
+            reference_number=invoice_response.get('pbc_ref_number', None),
             status_code=InvoiceReferenceStatus.ACTIVE.value
         ).save()
 
@@ -294,7 +294,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
             )
 
             # IF invoice balance is zero, then update records.
-            if CFSService.get_invoice(cfs_account=active_cfs_account, inv_number=inv_ref.invoice_number).json() \
+            if CFSService.get_invoice(cfs_account=active_cfs_account, inv_number=inv_ref.invoice_number) \
                     .get('amount_due') == 0:
                 applied_amount += inv.total
                 inv_ref.status_code = InvoiceReferenceStatus.COMPLETED.value
@@ -344,7 +344,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 receipt.flush()
 
                 invoice_from_cfs = CFSService.get_invoice(active_cfs_account, invoice_number)
-                if invoice_from_cfs.json().get('amount_due') == 0:
+                if invoice_from_cfs.get('amount_due') == 0:
                     break
 
             except Exception as e:  # NOQA # pylint: disable=broad-except

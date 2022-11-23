@@ -180,7 +180,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     invoice_response = CFSService.get_invoice(
                         cfs_account=active_cfs_account, inv_number=invoice_number
                     )
-                    has_invoice_created = invoice_response.json().get('invoice_number', None) == invoice_number
+                    has_invoice_created = invoice_response.get('invoice_number', None) == invoice_number
                 except Exception as exc:  # NOQA # pylint: disable=broad-except,unused-variable
                     # Ignore this error, as it is irrelevant and error on outer level is relevant.
                     pass
@@ -193,7 +193,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     current_app.logger.error(e)
                     continue
 
-            invoice_number = invoice_response.json().get('invoice_number', None)
+            invoice_number = invoice_response.get('invoice_number', None)
 
             current_app.logger.info(f'invoice_number  {invoice_number}  created in CFS.')
 
@@ -207,7 +207,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
             invoice_reference: InvoiceReference = InvoiceReference.create(
                 invoice.id, invoice_number,
-                invoice_response.json().get('pbc_ref_number', None))
+                invoice_response.get('pbc_ref_number', None))
 
             current_app.logger.debug('>create_invoice')
 
@@ -302,7 +302,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     invoice_response = CFSService.get_invoice(
                         cfs_account=cfs_account, inv_number=invoice_number
                     )
-                    has_invoice_created = invoice_response.json().get('invoice_number', None) == invoice_number
+                    has_invoice_created = invoice_response.get('invoice_number', None) == invoice_number
                 except Exception as exc:  # NOQA # pylint: disable=broad-except,unused-variable
                     # Ignore this error, as it is irrelevant and error on outer level is relevant.
                     pass
@@ -323,8 +323,8 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             for invoice in account_invoices:
                 invoice_reference = InvoiceReferenceModel(
                     invoice_id=invoice.id,
-                    invoice_number=invoice_response.json().get('invoice_number'),
-                    reference_number=invoice_response.json().get('pbc_ref_number', None),
+                    invoice_number=invoice_response.get('invoice_number'),
+                    reference_number=invoice_response.get('pbc_ref_number', None),
                     status_code=InvoiceReferenceStatus.ACTIVE.value
                 )
                 db.session.add(invoice_reference)
@@ -381,8 +381,8 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             # Create invoice reference, payment record and a payment transaction
             InvoiceReference.create(
                 invoice_id=invoice.id,
-                invoice_number=invoice_response.json().get('invoice_number'),
-                reference_number=invoice_response.json().get('pbc_ref_number', None))
+                invoice_number=invoice_response.get('invoice_number'),
+                reference_number=invoice_response.get('pbc_ref_number', None))
 
             # Misc
             invoice.cfs_account_id = payment_account.cfs_account_id
