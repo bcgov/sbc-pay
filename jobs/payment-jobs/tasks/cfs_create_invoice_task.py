@@ -173,9 +173,9 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.info(e)  # INFO is intentional as sentry alerted only after the following try/catch
                 has_invoice_created: bool = False
                 try:
-                    # add a 60 seconds delay here as safe bet, as CFS takes time to create the invoice and
+                    # add a 10 seconds delay here as safe bet, as CFS takes time to create the invoice and
                     # since this is a job, delay doesn't cause any performance issue
-                    time.sleep(60)
+                    time.sleep(10)
                     invoice_number = generate_transaction_number(str(invoice.id))
                     invoice_response = CFSService.get_invoice(
                         cfs_account=active_cfs_account, inv_number=invoice_number

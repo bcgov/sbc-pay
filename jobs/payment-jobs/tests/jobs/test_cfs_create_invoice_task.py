@@ -28,10 +28,9 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.services import CFSService
 from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
 from requests import Response
+from requests.exceptions import HTTPError
 
 from tasks.cfs_create_invoice_task import CreateInvoiceTask
-
-from .mocks import mocked_get_invoice_response
 
 from .factory import (
     factory_create_eft_account, factory_create_online_banking_account, factory_create_pad_account,
@@ -123,18 +122,20 @@ def test_create_rs_invoice_single_transaction(session):
     assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
     invoice_failed_res = Response()
     invoice_failed_res.status_code = 400
-    invoice_failed_res._content = json.dumps(invoice_data).encode('utf-8')
-
-    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_failed_res) as mock_create_invoice:
-        with patch.object(CFSService, 'get_invoice', return_value=mocked_get_invoice_response) as mock_get_invoice:
-            CreateInvoiceTask.create_invoices()
-            mock_create_invoice.assert_called()
-            mock_get_invoice.assert_called()
 
     invoice_success_res = Response()
     invoice_success_res.status_code = 200
     invoice_success_res._content = json.dumps(invoice_data).encode('utf-8')
 
+    # Testing the flow where create_account_invoice already has an invoice.
+    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_failed_res, side_effect=HTTPError())  \
+            as mock_create_invoice:
+        with patch.object(CFSService, 'get_invoice', return_value=invoice_success_res) as mock_get_invoice:
+            CreateInvoiceTask.create_invoices()
+            mock_create_invoice.assert_called()
+            mock_get_invoice.assert_called()
+
+    # Regular flow where create_account_invoice succeeds.
     with patch.object(CFSService, 'create_account_invoice', return_value=invoice_success_res) as mock_create_invoice:
         CreateInvoiceTask.create_invoices()
         mock_create_invoice.assert_called()
