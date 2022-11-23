@@ -22,6 +22,7 @@ from sqlalchemy.orm import relationship
 
 from .audit import Audit, AuditSchema, BaseModel
 from .base_model import VersionedModel
+from .base_schema import BaseSchema
 from .db import db, ma
 
 
@@ -148,14 +149,13 @@ class DistributionCodeLinkSchema(ma.ModelSchema):  # pylint: disable=too-many-an
         exclude = ['disbursement']
 
 
-class DistributionCodeSchema(AuditSchema, ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class DistributionCodeSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the DistributionCode."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = DistributionCode
-        exclude = ['versions']
 
     service_fee_distribution_code_id = fields.String(data_key='service_fee_distribution_code_id')
     disbursement_distribution_code_id = fields.String(data_key='disbursement_distribution_code_id')

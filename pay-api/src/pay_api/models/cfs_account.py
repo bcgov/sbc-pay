@@ -23,8 +23,9 @@ from sqlalchemy_utils.types.encrypted.encrypted_type import AesEngine, StringEnc
 
 from pay_api.utils.enums import CfsAccountStatus
 
+from .base_schema import BaseSchema
 from .base_model import VersionedModel
-from .db import db, ma
+from .db import db
 
 
 class CfsAccount(VersionedModel):  # pylint:disable=too-many-instance-attributes
@@ -81,11 +82,10 @@ class CfsAccount(VersionedModel):  # pylint:disable=too-many-instance-attributes
         return cls.query.filter_by(status=status).all()
 
 
-class CfsAccountSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class CfsAccountSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the CFS Account."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = CfsAccount
-        exclude = ['versions']

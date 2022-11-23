@@ -21,6 +21,12 @@ from .db import ma
 class BaseSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     """Base Schema."""
 
+    def __init__(self, *args, **kwargs):
+        """Excludes versions. Otherwise database will query <name>_versions table."""
+        if hasattr(self.opts.model, 'versions') and (len(self.opts.fields) == 0):
+            self.opts.exclude += ('versions',)
+        super().__init__(*args, **kwargs)
+
     class Meta:  # pylint: disable=too-few-public-methods
         """Meta class to declare any class attributes."""
 
