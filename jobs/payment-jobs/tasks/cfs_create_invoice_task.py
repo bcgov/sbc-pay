@@ -322,7 +322,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     current_app.logger.error(e)
                     continue
 
-
             additional_params = {
                 'invoice_total': float(invoice_total),
                 'invoice_process_date': f'{datetime.now()}'
