@@ -79,8 +79,8 @@ class PaybcService(PaymentSystemService, CFSService):
         invoice_response = self.create_account_invoice(invoice.id, line_item_models, payment_account)
 
         invoice_reference: InvoiceReference = InvoiceReference.create(
-            invoice.id, invoice_response.json().get('invoice_number', None),
-            invoice_response.json().get('pbc_ref_number', None))
+            invoice.id, invoice_response.get('invoice_number', None),
+            invoice_response.get('pbc_ref_number', None))
 
         return invoice_reference
 

@@ -257,13 +257,13 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                                                              line_items=invoice.payment_line_items,
                                                              cfs_account=cfs_account)
 
-        invoice_number = invoice_response.json().get('invoice_number', None)
+        invoice_number = invoice_response.get('invoice_number', None)
         current_app.logger.info(f'invoice_number  {invoice_number}  created in CFS for NSF.')
 
         InvoiceReferenceModel(
             invoice_id=invoice.id,
             invoice_number=invoice_number,
-            reference_number=invoice_response.json().get('pbc_ref_number', None),
+            reference_number=invoice_response.get('pbc_ref_number', None),
             status_code=InvoiceReferenceStatus.ACTIVE.value
         ).save()
 
