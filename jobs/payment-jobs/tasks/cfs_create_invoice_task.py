@@ -336,7 +336,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     status_code=InvoiceReferenceStatus.ACTIVE.value
                 )
                 db.session.add(invoice_reference)
-                invoice.cfs_account_id = payment_account.cfs_account_id
+                invoice.cfs_account_id = cfs_account.id
             db.session.commit()
 
     @classmethod
