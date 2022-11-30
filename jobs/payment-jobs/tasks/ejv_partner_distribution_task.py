@@ -160,11 +160,13 @@ class EjvPartnerDistributionTask(CgiEjv):
             # Create ejv invoice link records and set invoice status
             for inv in invoices:
                 # Create Ejv file link and flush
-                EjvInvoiceLinkModel(invoice_id=inv.id, ejv_header_id=ejv_header_model.id,
-                                    disbursement_status_code=DisbursementStatus.UPLOADED.value).flush()
+                link_model = EjvInvoiceLinkModel(invoice_id=inv.id, ejv_header_id=ejv_header_model.id,
+                                    disbursement_status_code=DisbursementStatus.UPLOADED.value)
                 # Set distribution status to invoice
+                db.session.add(link_model)
                 inv.disbursement_status_code = DisbursementStatus.UPLOADED.value
-                inv.flush()
+
+            db.session.flush()
 
         if not ejv_content:
             db.session.rollback()
