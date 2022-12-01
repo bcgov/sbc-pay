@@ -20,7 +20,6 @@ from decimal import Decimal
 import json
 
 from datetime import datetime
-from flask import current_app
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel

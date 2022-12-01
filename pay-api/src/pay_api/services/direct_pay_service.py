@@ -161,7 +161,6 @@ class DirectPayService(PaymentSystemService, OAuthService):
             raise BusinessException(Error.DIRECT_PAY_INVALID_RESPONSE)
         current_app.logger.debug('>process_cfs_refund')
 
-
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Get the receipt details by calling PayBC web service."""
         # If pay_response_url is present do all the pre-check, else check the status by using the invoice id
