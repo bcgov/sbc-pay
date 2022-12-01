@@ -23,14 +23,13 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models.distribution_code import DistributionCode as DistributionCodeModel
 from pay_api.models.payment_line_item import PaymentLineItem as PaymentLineItemModel
-from pay_api.models.payment import Payment as PaymentModel
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.hashing import HashingService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import (
-    AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
+    AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentSystem)
 from pay_api.utils.util import current_local_time, generate_transaction_number, parse_url_params
 
 from ..exceptions import BusinessException
