@@ -157,7 +157,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         if invoice.invoice_status_code == InvoiceStatus.APPROVED.value \
                 and InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
                     invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None:
-            return
+            return InvoiceStatus.CANCELLED.value
 
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(invoice.payment_account_id)
         line_items: List[PaymentLineItemModel] = []
@@ -180,6 +180,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         current_app.logger.info(
             f'Updating credit amount to  {payment_account.credit} for account {payment_account.auth_account_id}')
         payment_account.flush()
+        return InvoiceStatus.CREDITED.value
 
     @staticmethod
     def _publish_refund_to_mailer(invoice: InvoiceModel):

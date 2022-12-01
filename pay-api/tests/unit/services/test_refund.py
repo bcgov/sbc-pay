@@ -46,16 +46,16 @@ def test_create_refund_for_unpaid_invoice(session):
 
 @pytest.mark.parametrize('payment_method, invoice_status, pay_status, has_reference, expected_inv_status', [
     (PaymentMethod.PAD.value, InvoiceStatus.PAID.value, PaymentStatus.COMPLETED.value, True,
-     InvoiceStatus.REFUND_REQUESTED.value),
-    (PaymentMethod.PAD.value, InvoiceStatus.APPROVED.value, None, False, InvoiceStatus.REFUND_REQUESTED.value),
+     InvoiceStatus.CREDITED.value),
+    (PaymentMethod.PAD.value, InvoiceStatus.APPROVED.value, None, False, InvoiceStatus.CANCELLED.value),
     (PaymentMethod.ONLINE_BANKING.value, InvoiceStatus.PAID.value, PaymentStatus.COMPLETED.value, True,
-     InvoiceStatus.REFUND_REQUESTED.value),
+     InvoiceStatus.CREDITED.value),
     (PaymentMethod.DRAWDOWN.value, InvoiceStatus.PAID.value, PaymentStatus.COMPLETED.value, True,
      InvoiceStatus.REFUND_REQUESTED.value),
     (PaymentMethod.DIRECT_PAY.value, InvoiceStatus.PAID.value, PaymentStatus.COMPLETED.value, True,
      InvoiceStatus.REFUND_REQUESTED.value),
     (PaymentMethod.CC.value, InvoiceStatus.PAID.value, PaymentStatus.COMPLETED.value, True,
-     InvoiceStatus.REFUND_REQUESTED.value)
+     InvoiceStatus.CREDITED.value)
 ])
 def test_create_refund_for_paid_invoice(session, monkeypatch, payment_method, invoice_status, pay_status,
                                         has_reference, expected_inv_status):

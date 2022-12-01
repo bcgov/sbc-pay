@@ -55,6 +55,8 @@ class InvoiceStatus(Enum):
     REFUND_REQUESTED = 'REFUND_REQUESTED'
     PARTIAL = 'PARTIAL_PAID'
     REFUNDED = 'REFUNDED'
+    CANCELLED = 'CANCELLED'
+    CREDITED = 'CREDITED'
 
 
 class TransactionStatus(Enum):

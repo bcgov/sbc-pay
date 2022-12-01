@@ -36,7 +36,7 @@ from .payment_line_item import PaymentLineItem
 
 
 class PaybcService(PaymentSystemService, CFSService):
-    """Service to manage PayBC integration. - This is legacy, we use direct pay service instead."""
+    """Service to manage PayBC integration. - This is for NSF payments, we use direct pay service instead."""
 
     def get_payment_system_url_for_invoice(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
@@ -147,7 +147,7 @@ class PaybcService(PaymentSystemService, CFSService):
 
     def process_cfs_refund(self, invoice: InvoiceModel):
         """Process refund in CFS."""
-        super()._refund_and_create_credit_memo(invoice)
+        return super()._refund_and_create_credit_memo(invoice)
 
     def get_payment_system_url_for_payment(self, payment: Payment, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
