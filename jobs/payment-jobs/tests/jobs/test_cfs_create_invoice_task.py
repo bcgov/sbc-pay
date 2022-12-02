@@ -16,7 +16,6 @@
 
 Test-Suite to ensure that the CreateInvoiceTask is working as expected.
 """
-import json
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
@@ -28,6 +27,7 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.services import CFSService
 from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
 from requests import Response
+from requests.exceptions import HTTPError
 
 from tasks.cfs_create_invoice_task import CreateInvoiceTask
 
@@ -110,9 +110,30 @@ def test_create_rs_invoice_single_transaction(session):
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
-    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
-    CreateInvoiceTask.create_invoices()
+    invoice_data = {
+        'invoice_number': '123',
+        'pbc_ref_number': '10005',
+        'party_number': '11111',
+        'party_name': 'invoice'
+    }
+
+    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+    invoice_failed_res = Response()
+    invoice_failed_res.status_code = 400
+
+    # Testing the flow where create_account_invoice already has an invoice.
+    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_failed_res, side_effect=HTTPError())  \
+            as mock_create_invoice:
+        with patch.object(CFSService, 'get_invoice', return_value=invoice_data) as mock_get_invoice:
+            CreateInvoiceTask.create_invoices()
+            mock_create_invoice.assert_called()
+            mock_get_invoice.assert_called()
+
+    # Regular flow where create_account_invoice succeeds.
+    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_data) as mock_create_invoice:
+        CreateInvoiceTask.create_invoices()
+        mock_create_invoice.assert_called()
 
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
@@ -137,10 +158,8 @@ def test_create_pad_invoice_single_transaction_run_again(session):
     invoice_response = {'invoice_number': '10021', 'pbc_ref_number': '10005', 'party_number': '11111',
                         'party_name': 'invoice'}
     assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
-    the_response = Response()
-    the_response._content = json.dumps(invoice_response).encode('utf-8')
 
-    with patch.object(CFSService, 'create_account_invoice', return_value=the_response) as mock_cfs:
+    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_response) as mock_cfs:
         CreateInvoiceTask.create_invoices()
         mock_cfs.assert_called()
 
@@ -151,7 +170,7 @@ def test_create_pad_invoice_single_transaction_run_again(session):
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
-    with patch.object(CFSService, 'create_account_invoice', return_value=the_response) as mock_cfs:
+    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_response) as mock_cfs:
         CreateInvoiceTask.create_invoices()
         mock_cfs.assert_not_called()
 

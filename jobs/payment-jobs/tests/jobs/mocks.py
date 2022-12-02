@@ -54,3 +54,16 @@ def refund_payload_response(cls, *args):  # pylint: disable=unused-argument; moc
 def empty_refund_payload_response(cls, *args):  # pylint: disable=unused-argument; mocks of library methods
     """Mock empty refund payload response."""
     return Mock(status_code=201, json=lambda: {})
+
+
+def mocked_invoice_response(cls, *args):  # pylint: disable=unused-argument; mocks of library methods
+    """Mock POST invoice 200 payload response."""
+    return Mock(status_code=200, json=lambda: {
+        'invoice_number': '123',
+        'pbc_ref_number': '10007',
+        'party_number': '104894',
+        'account_number': '116225',
+        'site_number': '179145',
+        'total': '15',
+        'amount_due': '15'
+    })
