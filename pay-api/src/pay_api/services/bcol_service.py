@@ -62,10 +62,10 @@ class BcolService(PaymentSystemService, OAuthService):
         if user.first_name:
             remarks = f'{remarks}-{user.first_name}'
 
-        use_staff_fee_code = (user.is_staff() or user.is_system()) and force_non_staff_fee_code is None
+        use_staff_fee_code = (user.is_staff() or user.is_system())
         # CSO currently refunds an invoice, and creates a new invoice for partial refunds.
         # This only applies for CSBPDOC. CSO only uses a single PLI per invoice.
-        if filing_types == 'CSBPDOC':
+        if filing_types == 'CSBPDOC' or force_non_staff_fee_code:
             use_staff_fee_code = False
         payload: Dict = {
             # 'userId': payment_account.bcol_user_id if payment_account.bcol_user_id else 'PE25020',
