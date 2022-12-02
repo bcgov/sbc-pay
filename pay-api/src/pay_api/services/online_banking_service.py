@@ -68,4 +68,4 @@ class OnlineBankingService(PaymentSystemService, CFSService):
 
     def process_cfs_refund(self, invoice: InvoiceModel):
         """Process refund in CFS."""
-        super()._refund_and_create_credit_memo(invoice)
+        return super()._refund_and_create_credit_memo(invoice)
