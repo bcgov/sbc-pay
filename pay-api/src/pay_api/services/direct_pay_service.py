@@ -23,14 +23,13 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models.distribution_code import DistributionCode as DistributionCodeModel
 from pay_api.models.payment_line_item import PaymentLineItem as PaymentLineItemModel
-from pay_api.models.payment import Payment as PaymentModel
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.hashing import HashingService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import (
-    AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
+    AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentSystem)
 from pay_api.utils.util import current_local_time, generate_transaction_number, parse_url_params
 
 from ..exceptions import BusinessException
@@ -143,31 +142,24 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
     def process_cfs_refund(self, invoice: InvoiceModel):
         """Process refund in CFS."""
-        if current_app.config.get('ENABLE_PAYBC_AUTOMATED_REFUNDS'):
-            current_app.logger.debug('<process_cfs_refund creating automated refund for invoice: '
-                                     f'{invoice.id}, {invoice.invoice_status_code}')
-            # No APPROVED invoices allowed for refund. Invoices typically land on PAID right away.
-            if invoice.invoice_status_code not in \
-                    (InvoiceStatus.PAID.value, InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value):
-                raise BusinessException(Error.INVALID_REQUEST)
+        current_app.logger.debug('<process_cfs_refund creating automated refund for invoice: '
+                                 f'{invoice.id}, {invoice.invoice_status_code}')
+        # No APPROVED invoices allowed for refund. Invoices typically land on PAID right away.
+        if invoice.invoice_status_code not in \
+                (InvoiceStatus.PAID.value, InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value):
+            raise BusinessException(Error.INVALID_REQUEST)
 
-            refund_url = current_app.config.get('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL') + '/paybc-service/api/refund'
-            access_token: str = self._get_refund_token().json().get('access_token')
-            data = self._build_automated_refund_payload(invoice)
-            refund_response = self.post(refund_url, access_token, AuthHeaderType.BEARER,
-                                        ContentType.JSON, data, auth_header_name='Bearer-Token').json()
-            # Check if approved is 1=Success
-            if refund_response.get('approved') != 1:
-                message = 'Refund error: ' + refund_response.get('message')
-                current_app.logger.error(message)
-                raise BusinessException(Error.DIRECT_PAY_INVALID_RESPONSE)
-            current_app.logger.debug('>process_cfs_refund')
-        else:
-            current_app.logger.debug(f'Processing manual refund for {invoice.id}')
-            super()._publish_refund_to_mailer(invoice)
-            payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
-            payment.payment_status_code = PaymentStatus.REFUNDED.value
-            payment.flush()
+        refund_url = current_app.config.get('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL') + '/paybc-service/api/refund'
+        access_token: str = self._get_refund_token().json().get('access_token')
+        data = self._build_automated_refund_payload(invoice)
+        refund_response = self.post(refund_url, access_token, AuthHeaderType.BEARER,
+                                    ContentType.JSON, data, auth_header_name='Bearer-Token').json()
+        # Check if approved is 1=Success
+        if refund_response.get('approved') != 1:
+            message = 'Refund error: ' + refund_response.get('message')
+            current_app.logger.error(message)
+            raise BusinessException(Error.DIRECT_PAY_INVALID_RESPONSE)
+        current_app.logger.debug('>process_cfs_refund')
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Get the receipt details by calling PayBC web service."""

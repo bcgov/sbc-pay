@@ -20,7 +20,6 @@ from decimal import Decimal
 import json
 
 from datetime import datetime
-from flask import current_app
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
@@ -262,7 +261,6 @@ def test_create_refund_with_legacy_routing_slip(session, client,
 
 def test_create_refund_fails(session, client, jwt, app, stan_server, monkeypatch):
     """Assert that the endpoint returns 400."""
-    current_app.config['ENABLE_PAYBC_AUTOMATED_REFUNDS'] = True
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
