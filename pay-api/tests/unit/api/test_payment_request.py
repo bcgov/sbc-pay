@@ -493,7 +493,7 @@ def test_zero_dollar_payment_creation_with_waive_fees(session, client, jwt, app)
 
 
 def test_zero_dollar_payment_creation_with_waive_fees_unauthorized(session, client, jwt, app):
-    """Assert that the endpoint returns 201."""
+    """Assert that the endpoint returns 401."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
