@@ -52,6 +52,7 @@ class BcolService(PaymentSystemService, OAuthService):
         current_app.logger.debug(f'<Creating BCOL records for Invoice: {invoice.id}, '
                                  f'Auth Account : {payment_account.auth_account_id}')
         user: UserContext = kwargs['user']
+        force_non_staff_fee_code = 'force_non_staff_fee_code' in kwargs
         pay_endpoint = current_app.config.get('BCOL_API_ENDPOINT') + '/payments'
         invoice_number = generate_transaction_number(invoice.id)
         corp_number = invoice.business_identifier or ''
@@ -64,7 +65,7 @@ class BcolService(PaymentSystemService, OAuthService):
         use_staff_fee_code = (user.is_staff() or user.is_system())
         # CSO currently refunds an invoice, and creates a new invoice for partial refunds.
         # This only applies for CSBPDOC. CSO only uses a single PLI per invoice.
-        if filing_types == 'CSBPDOC':
+        if filing_types == 'CSBPDOC' or force_non_staff_fee_code:
             use_staff_fee_code = False
         payload: Dict = {
             # 'userId': payment_account.bcol_user_id if payment_account.bcol_user_id else 'PE25020',
