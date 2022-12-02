@@ -163,7 +163,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     def fee_amount(self, fee_amount):
         """Override the fee amount."""
         # set waived fees attribute to original fee amount
-        if fee_amount == 0:
+        if fee_amount == 0 and self._variable is False:
             self._waived_fee_amount = self._fee_amount + self._priority_fee + self._future_effective_fee
         # Override the fee amount
         self._fee_amount = fee_amount
