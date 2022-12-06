@@ -47,5 +47,5 @@ thrift==0.16.0
 tornado==6.2
 typing_extensions==4.4.0
 urllib3==1.26.13
--e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
--e git+https://github.com/bcgov/sbc-pay.git@main#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-common-components.git@dd41940a5465750bfed5c5fe1b06d3375ca13dcd#egg=sbc_common_components&subdirectory=python
+-e git+https://github.com/bcgov/sbc-pay.git@2fe81d748dd31c4e3ea5b5a050cda16e503c21d8#egg=pay_api&subdirectory=pay-api
