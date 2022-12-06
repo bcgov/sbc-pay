@@ -23,6 +23,7 @@ from flask import Flask
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 import config
+from services import oracle_db
 from tasks.routing_slip_task import RoutingSlipTask
 from utils.logger import setup_logging
 
@@ -31,7 +32,7 @@ from pay_api.services import Flags
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
 
-def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
+def create_app(run_mode=os.getenv('FLASK_ENV', 'production'), job_name='unknown', init_oracle=False):
     """Return a configured Flask App using the Factory method."""
     from pay_api.models import db, ma
 
@@ -43,10 +44,13 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
         if app.config.get('SENTRY_DSN', None):
             sentry_sdk.init(
                 dsn=app.config.get('SENTRY_DSN'),
-                integrations=[FlaskIntegration()]
+                integrations=[FlaskIntegration()],
+                release=f'payment-jobs-{job_name}@-',
             )
     app.logger.info(f'<<<< Starting Payment Jobs >>>>')
     db.init_app(app)
+    if init_oracle:
+        oracle_db.init_app(app)
     ma.init_app(app)
     flag_service = Flags()
     flag_service.init_app(app)
@@ -81,8 +85,10 @@ def run(job_name):
     from tasks.ejv_payment_task import EjvPaymentTask
     from tasks.ap_routing_slip_refund_task import ApRoutingSlipRefundTask
     from tasks.direct_pay_automated_refund_task import DirectPayAutomatedRefundTask
+    from tasks.bcol_refund_confirmation_task import BcolRefundConfirmationTask
 
-    application = create_app()
+    jobs_with_oracle_connections = ['BCOL_REFUND_CONFIRMATION']
+    application = create_app(job_name=job_name, init_oracle=job_name in jobs_with_oracle_connections)
 
     application.app_context().push()
     if job_name == 'UPDATE_GL_CODE':
@@ -126,6 +132,9 @@ def run(job_name):
     elif job_name == 'DIRECT_PAY_REFUND':
         DirectPayAutomatedRefundTask.process_cc_refunds()
         application.logger.info(f'<<<< Completed running Direct Pay Automated Refund Job >>>>')
+    elif job_name == 'BCOL_REFUND_CONFIRMATION':
+        BcolRefundConfirmationTask.update_bcol_refund_invoices()
+        application.logger.info(f'<<<< Completed running BCOL Refund Confirmation Job >>>>')
     else:
         application.logger.debug('No valid args passed.Exiting job without running any ***************')
 

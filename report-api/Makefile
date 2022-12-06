@@ -8,7 +8,7 @@ CURRENT_ABS_DIR:=$(patsubst %/,%,$(dir $(MKFILE_PATH)))
 
 PROJECT_NAME:=report_api
 ifndef DOCKER_NAME
-	DOCKER_NAME:=report_api
+	DOCKER_NAME:=report-api
 endif
 
 echo-name:
