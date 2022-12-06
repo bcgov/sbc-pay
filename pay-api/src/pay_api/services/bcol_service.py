@@ -68,7 +68,6 @@ class BcolService(PaymentSystemService, OAuthService):
         if filing_types == 'CSBPDOC' or force_non_staff_fee_code:
             use_staff_fee_code = False
         payload: Dict = {
-            # 'userId': payment_account.bcol_user_id if payment_account.bcol_user_id else 'PE25020',
             'userId': payment_account.bcol_user_id,
             'invoiceNumber': invoice_number,
             'folioNumber': invoice.folio_number,
@@ -84,7 +83,8 @@ class BcolService(PaymentSystemService, OAuthService):
             payload['accountNumber'] = invoice.bcol_account
             payload['formNumber'] = invoice.dat_number or ''
             payload['reduntantFlag'] = 'Y'
-            payload['rateType'] = 'C'
+            if use_staff_fee_code:
+                payload['rateType'] = 'C'
 
         if payload.get('folioNumber', None) is None:  # Set empty folio if None
             payload['folioNumber'] = ''
