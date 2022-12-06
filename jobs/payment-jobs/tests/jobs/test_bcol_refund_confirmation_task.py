@@ -34,13 +34,7 @@ from .factory import (
      InvoiceStatus.REFUND_REQUESTED.value, InvoiceStatus.REFUND_REQUESTED.value, True),
     ('drawdown_refund_none', PaymentMethod.DRAWDOWN.value, 31.5, 0,
      InvoiceStatus.REFUND_REQUESTED.value, InvoiceStatus.REFUND_REQUESTED.value, False),
-    ('pad_refund_full', PaymentMethod.PAD.value, 31.5, -31.5,
-     InvoiceStatus.REFUND_REQUESTED.value, InvoiceStatus.CREDITED.value, False),
-    ('pad_refund_partial', PaymentMethod.PAD.value, 31.5, -10,
-     InvoiceStatus.REFUND_REQUESTED.value, InvoiceStatus.REFUND_REQUESTED.value, True),
-    ('pad_refund_none', PaymentMethod.PAD.value, 31.5, 0,
-     InvoiceStatus.REFUND_REQUESTED.value, InvoiceStatus.REFUND_REQUESTED.value, False),
-    ('no_refund_requested', PaymentMethod.DRAWDOWN.value, 31.5, 0,
+    ('no_refund_requested', PaymentMethod.DRAWDOWN.value, 31.5, -31.5,
      InvoiceStatus.APPROVED.value, InvoiceStatus.APPROVED.value, False),
 
 ])

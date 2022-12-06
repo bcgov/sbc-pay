@@ -58,7 +58,7 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
         return db.session.query(InvoiceReference) \
             .join(Invoice, Invoice.id == InvoiceReference.invoice_id) \
             .join(Payment, Payment.invoice_number == InvoiceReference.invoice_number) \
-            .filter(Payment.payment_system.has(PaymentSystemModel.code == PaymentSystem.BCOL.value)) \
+            .filter(Payment.payment_system_code == PaymentSystem.BCOL.value) \
             .filter(Invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value).all()
 
     @classmethod
@@ -102,9 +102,6 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
                 continue
 
             # refund was processed and value is correct. Update invoice state.
-            if invoice.payment_method_code == PaymentMethod.PAD.value:
-                invoice.invoice_status_code = InvoiceStatus.CREDITED.value
-            else:
-                invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
+            invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
             db.session.add(invoice)
         db.session.commit()
