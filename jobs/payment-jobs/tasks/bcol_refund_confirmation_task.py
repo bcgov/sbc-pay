@@ -19,8 +19,7 @@ from typing import Dict, List
 
 from flask import current_app
 from pay_api.models import Invoice, InvoiceReference, Payment, db
-from pay_api.models.payment_system import PaymentSystem as PaymentSystemModel
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentSystem
+from pay_api.utils.enums import InvoiceStatus, PaymentSystem
 from sentry_sdk import capture_message
 
 from services import oracle_db
