@@ -61,5 +61,11 @@
         "application": [
             "pay"
         ]
+    },
+    {
+        "vault": "entity",
+        "application": [
+            "colin-api"
+        ]
     }
 ]

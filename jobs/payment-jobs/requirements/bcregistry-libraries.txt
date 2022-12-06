@@ -1,0 +1,2 @@
+-e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
+-e git+https://github.com/bcgov/sbc-pay.git@main#egg=pay_api&subdirectory=pay-api

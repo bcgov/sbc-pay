@@ -1,10 +1,11 @@
 gunicorn
 Flask
 Flask-SQLAlchemy
+SQLAlchemy<1.4
 flask-marshmallow==0.11.0
+marshmallow-sqlalchemy==0.25.0
 python-dotenv
 psycopg2-binary
-marshmallow-sqlalchemy
 jsonschema
 requests
 Werkzeug<2
@@ -15,7 +16,4 @@ Flask-Migrate<3
 itsdangerous==2.0.1
 dataclass_wizard
 launchdarkly-server-sdk
-
--e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
--e git+https://github.com/bcgov/sbc-pay.git@main#egg=pay_api&subdirectory=pay-api
-
+cx_Oracle

@@ -74,6 +74,12 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     )
     SQLALCHEMY_ECHO = False
 
+    ORACLE_USER = os.getenv('ORACLE_USER', '')
+    ORACLE_PASSWORD = os.getenv('ORACLE_PASSWORD', '')
+    ORACLE_DB_NAME = os.getenv('ORACLE_DB_NAME', '')
+    ORACLE_HOST = os.getenv('ORACLE_HOST', '')
+    ORACLE_PORT = int(os.getenv('ORACLE_PORT', '1521'))
+
     # PAYBC Direct Pay Settings
     PAYBC_DIRECT_PAY_REF_NUMBER = os.getenv('PAYBC_DIRECT_PAY_REF_NUMBER')
     PAYBC_DIRECT_PAY_API_KEY = os.getenv('PAYBC_DIRECT_PAY_API_KEY')
@@ -236,7 +242,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     PAYBC_DIRECT_PAY_CLIENT_SECRET = '123'
     PAYBC_DIRECT_PAY_BASE_URL = 'http://localhost:8080/paybc-api'
     PAYBC_DIRECT_PAY_REF_NUMBER = '123'
-    
+
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY', '1234')
 
