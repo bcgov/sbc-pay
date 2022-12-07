@@ -29,7 +29,7 @@ from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import (
     CFS_ADJ_ACTIVITY_NAME, CFS_BATCH_SOURCE, CFS_CASH_RCPT, CFS_CM_BATCH_SOURCE, CFS_CMS_TRX_TYPE, CFS_CUST_TRX_TYPE,
     CFS_CUSTOMER_PROFILE_CLASS, CFS_DRAWDOWN_BALANCE, CFS_FAS_CUSTOMER_PROFILE_CLASS, CFS_LINE_TYPE,
-    CFS_LINK_REVERSAL_REASON, CFS_NSF_REVERSAL_REASON, CFS_RCPT_EFT_WIRE, CFS_TERM_NAME, DEFAULT_ADDRESS_LINE_1,
+    CFS_PAYMENT_REVERSAL_REASON, CFS_NSF_REVERSAL_REASON, CFS_RCPT_EFT_WIRE, CFS_TERM_NAME, DEFAULT_ADDRESS_LINE_1,
     DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
     RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP)
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod
@@ -270,7 +270,7 @@ class CFSService(OAuthService):
                       f'/sites/{cfs_account.cfs_site}/rcpts/{receipt_number}/reverse'
         current_app.logger.debug('Receipt URL %s', receipt_url)
         payload = {
-            'reversal_reason': CFS_NSF_REVERSAL_REASON if is_nsf else CFS_LINK_REVERSAL_REASON,
+            'reversal_reason': CFS_NSF_REVERSAL_REASON if is_nsf else CFS_PAYMENT_REVERSAL_REASON,
             'reversal_comment': 'Non Sufficient Fund' if is_nsf else 'Linking Routing Slip'
         }
         return CFSService.post(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload)

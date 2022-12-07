@@ -52,6 +52,10 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
     parent_number = db.Column(db.String(), ForeignKey('routing_slips.number'), nullable=True)
     refund_amount = db.Column(db.Numeric(), nullable=True, default=0)
     total_usd = db.Column(db.Numeric(), nullable=True)  # Capture total usd payments if one of payments has USD payment
+    # It's not possible to update a receipt's amount or number in CAS (PUT/PATCH).
+    # Allows to create a new receipt in CAS for the same routing slip number.
+    # Earlier versions should be adjusted to zero before increasing the cas_version_suffix.
+    cas_version_suffix = db.Column(db.Integer, default=1)
 
     payment_account = relationship(PaymentAccount,
                                    primaryjoin='and_(RoutingSlip.payment_account_id == PaymentAccount.id)',
@@ -100,7 +104,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
         return cls.query.filter_by(payment_account_id=payment_account_id).all()
 
     @classmethod
-    def search(cls, search_filter: Dict,  # pylint: disable=too-many-arguments
+    def search(cls, search_filter: Dict,  # pylint: disable=too-many-arguments, too-many-locals
                page: int, limit: int, return_all: bool) -> (List[RoutingSlip], int):
         """Search for routing slips by the criteria provided."""
         query = db.session.query(RoutingSlip).\
@@ -134,6 +138,9 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
 
         if status := search_filter.get('status', None):
             query = query.filter(RoutingSlip.status == status)
+
+        if exclude_statuses := search_filter.get('excludeStatuses', None):
+            query = query.filter(~RoutingSlip.status.in_(exclude_statuses))
 
         if total_amount := search_filter.get('totalAmount', None):
             query = query.filter(RoutingSlip.total == total_amount)

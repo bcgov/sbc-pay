@@ -32,14 +32,17 @@ class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-a
             RoutingSlipStatus.HOLD.value,
             RoutingSlipStatus.NSF.value,
             RoutingSlipStatus.REFUND_REQUESTED.value,
-            RoutingSlipStatus.WRITE_OFF_REQUESTED.value
+            RoutingSlipStatus.WRITE_OFF_REQUESTED.value,
+            RoutingSlipStatus.VOID.value
         ],
         RoutingSlipStatus.COMPLETE.value: [
-            RoutingSlipStatus.NSF.value
+            RoutingSlipStatus.NSF.value,
+            RoutingSlipStatus.VOID.value
         ],
         RoutingSlipStatus.HOLD.value: [
             RoutingSlipStatus.ACTIVE.value,
-            RoutingSlipStatus.NSF.value
+            RoutingSlipStatus.NSF.value,
+            RoutingSlipStatus.VOID.value
         ],
         RoutingSlipStatus.REFUND_REQUESTED.value: [
             RoutingSlipStatus.REFUND_AUTHORIZED.value,
@@ -55,6 +58,8 @@ class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-a
         ],
         RoutingSlipStatus.LINKED.value: [
         ],
+        RoutingSlipStatus.VOID.value: [
+        ]
 
     }
 

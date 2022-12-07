@@ -236,7 +236,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
     def _build_automated_refund_payload(invoice: InvoiceModel):
         """Build payload to create a refund in PAYBC."""
         receipt = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=invoice.id)
-        invoice_reference = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
+        invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice.id, InvoiceReferenceStatus.COMPLETED.value)
         return {
             'orderNumber': int(receipt.receipt_number),
