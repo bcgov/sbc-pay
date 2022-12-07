@@ -19,7 +19,7 @@ import json
 from os import listdir, path
 from typing import Tuple
 
-from jsonschema import Draft7Validator, RefResolver, SchemaError, draft7_format_checker
+from jsonschema import Draft7Validator, RefResolver, SchemaError
 
 
 BASE_URI = 'https://bcrs.gov.bc.ca/.well_known/schemas'
