@@ -153,11 +153,11 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
                     .all()
                 for inv in invoices:
+                    inv.invoice_status_code = InvoiceStatus.CREATED.value
                     inv_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(
                             inv.id, InvoiceReferenceStatus.COMPLETED.value
                     )
                     inv_ref.status_code = InvoiceReferenceStatus.ACTIVE.value
-                    inv.invoice_status_code = InvoiceStatus.CREATED.value
                     for receipt in ReceiptModel.find_all_receipts_for_invoice(inv.id):
                         db.session.delete(receipt)
 
