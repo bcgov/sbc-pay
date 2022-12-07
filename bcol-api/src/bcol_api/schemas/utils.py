@@ -75,14 +75,14 @@ def validate(json_data: json,
         resolver = RefResolver(f'file://{schema_file_path}.json', schema, schema_store)
 
         if Draft7Validator(schema,
-                           format_checker=draft7_format_checker,
+                           format_checker=Draft7Validator.FORMAT_CHECKER,
                            resolver=resolver
                            ) \
                 .is_valid(json_data):
             return True, None
 
         errors = Draft7Validator(schema,
-                                 format_checker=draft7_format_checker,
+                                 format_checker=Draft7Validator.FORMAT_CHECKER,
                                  resolver=resolver
                                  ) \
             .iter_errors(json_data)
