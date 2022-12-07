@@ -148,7 +148,7 @@ def test_process_nsf(session):
 def test_process_void(session):
     """Test Routing slip set to VOID."""
     # 1. Link 2 child routing slips with parent.
-    # 2. Mark the parent as NSF and run job.
+    # 2. Mark the parent as VOID and run job.
     child_1 = '123456789'
     child_2 = '987654321'
     parent = '111111111'
