@@ -228,6 +228,7 @@ class RoutingSlipStatus(Enum):
     WRITE_OFF_AUTHORIZED = 'WRITE_OFF_AUTHORIZED'
     WRITE_OFF_COMPLETED = 'WRITE_OFF_COMPLETED'
     HOLD = 'HOLD'  # new
+    VOID = 'VOID'
 
 
 class RoutingSlipCustomStatus(Enum):

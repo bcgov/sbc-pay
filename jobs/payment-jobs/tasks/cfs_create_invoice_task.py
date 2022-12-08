@@ -101,7 +101,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 routing_slip_payment_account.id)
             # Find COMPLETED invoice reference; as unapply has to be done only if invoice is created and applied in CFS.
             invoice_reference = InvoiceReferenceModel. \
-                find_reference_by_invoice_id_and_status(invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value)
+                find_by_invoice_id_and_status(invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value)
             if invoice_reference:
                 current_app.logger.debug(f'Found invoice reference - {invoice_reference.invoice_number}')
                 try:

@@ -60,7 +60,7 @@ def test_create_pad_invoice_single_transaction(session):
 
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
-        find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+        find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
 
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
@@ -90,7 +90,7 @@ def test_create_pad_invoice_mixed_pli_values(session):
 
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
-        find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+        find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
 
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
@@ -137,7 +137,7 @@ def test_create_rs_invoice_single_transaction(session):
 
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
-        find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.COMPLETED.value)
+        find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.COMPLETED.value)
 
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.PAID.value
@@ -165,7 +165,7 @@ def test_create_pad_invoice_single_transaction_run_again(session):
 
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
-        find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+        find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
 
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
@@ -194,7 +194,7 @@ def test_create_pad_invoice_for_frozen_accounts(session):
 
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
-        find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+        find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
 
     assert inv_ref is None
     assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
@@ -244,7 +244,7 @@ def test_create_pad_invoice_before_cutoff(session):
 
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
-        find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+        find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
 
     assert inv_ref is not None  # As PAD will be summed up for all outstanding invoices
     assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
@@ -268,7 +268,7 @@ def test_create_online_banking_transaction(session):
 
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
-        find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+        find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
 
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
@@ -292,7 +292,7 @@ def test_create_eft_transaction(session):
 
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
-        find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+        find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
 
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
@@ -317,7 +317,7 @@ def test_create_wire_transaction(session):
 
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
-        find_reference_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+        find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
 
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
