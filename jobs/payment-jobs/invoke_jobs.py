@@ -120,7 +120,7 @@ def run(job_name):
         application.logger.info(f'<<<< Completed Sending notification for OB invoices >>>>')
     elif job_name == 'ROUTING_SLIP':
         RoutingSlipTask.link_routing_slips()
-        RoutingSlipTask.process_nsf()
+        RoutingSlipTask.process_nsf_and_void()
         RoutingSlipTask.adjust_routing_slips()
         application.logger.info(f'<<<< Completed Routing Slip tasks >>>>')
     elif job_name == 'EJV_PAYMENT':
@@ -136,7 +136,7 @@ def run(job_name):
         BcolRefundConfirmationTask.update_bcol_refund_invoices()
         application.logger.info(f'<<<< Completed running BCOL Refund Confirmation Job >>>>')
     else:
-        application.logger.debug('No valid args passed.Exiting job without running any ***************')
+        application.logger.debug('No valid args passed. Exiting job without running any ***************')
 
 
 if __name__ == "__main__":
