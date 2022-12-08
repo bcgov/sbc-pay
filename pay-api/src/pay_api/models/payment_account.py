@@ -69,7 +69,7 @@ class PaymentAccountSchema(BaseSchema):  # pylint: disable=too-many-ancestors
         model = PaymentAccount
         exclude = ['pad_activation_date']
 
-    credit = fields.Float(data_key='float')
+    credit = fields.Float(data_key='credit')
     payment_method = fields.String(data_key='payment_method')
     auth_account_id = fields.String(data_key='account_id')
     name = fields.String(data_key='account_name')

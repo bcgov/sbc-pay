@@ -63,22 +63,24 @@ class BcolService(PaymentSystemService, OAuthService):
             remarks = f'{remarks}-{user.first_name}'
 
         use_staff_fee_code = (user.is_staff() or user.is_system())
+        force_use_debit_account = False
         # CSO currently refunds an invoice, and creates a new invoice for partial refunds.
-        # This only applies for CSBPDOC. CSO only uses a single PLI per invoice.
+        # Only applies for CSBPDOC. CSO only uses a single PLI per invoice.
+        # This allows service fees to be charged via service account.
         if filing_types == 'CSBPDOC' or force_non_staff_fee_code:
             use_staff_fee_code = False
+            force_use_debit_account = True
         payload: Dict = {
-            # 'userId': payment_account.bcol_user_id if payment_account.bcol_user_id else 'PE25020',
             'userId': payment_account.bcol_user_id,
             'invoiceNumber': invoice_number,
             'folioNumber': invoice.folio_number,
             'amount': str(amount_excluding_txn_fees),
             'rate': str(amount_excluding_txn_fees),
             'remarks': remarks[:50],
-            'feeCode': self._get_fee_code(invoice.corp_type_code, use_staff_fee_code)
+            'feeCode': self._get_fee_code(invoice.corp_type_code, use_staff_fee_code),
+            'forceUseDebitAccount': force_use_debit_account,
         }
-
-        if user.is_staff() or user.is_system():
+        if use_staff_fee_code:
             payload['userId'] = user.user_name_with_no_idp if user.is_staff() else current_app.config[
                 'BCOL_USERNAME_FOR_SERVICE_ACCOUNT_PAYMENTS']
             payload['accountNumber'] = invoice.bcol_account
