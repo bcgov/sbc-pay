@@ -205,7 +205,8 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                     endDate=date,
                     startDate=date,
                     target='created_on'
-                )
+                ),
+                excludeStatuses=[RoutingSlipStatus.VOID.value]
             ),
             page=1, limit=0, return_all=True
         )[0]
@@ -213,24 +214,24 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         total: float = 0
         no_of_cash: int = 0
         no_of_cheque: int = 0
-        total_cash_usd: float = 0
-        total_cheque_usd: float = 0
-        total_cash_cad: float = 0
-        total_cheque_cad: float = 0
+        total_cash_usd = 0
+        total_cheque_usd = 0
+        total_cash_cad = 0
+        total_cheque_cad = 0
         # TODO Only CAD supported now, so just add up the total.
         for routing_slip in routing_slips:
             total += float(routing_slip.total)
             if routing_slip.payment_account.payment_method == PaymentMethod.CASH.value:
                 no_of_cash += 1
                 # TODO check if the payment is CAD or USD.
-                total_cash_cad += float(routing_slip.total)
+                total_cash_cad += routing_slip.total
                 if routing_slip.total_usd is not None:
-                    total_cash_usd += float(routing_slip.total_usd)
+                    total_cash_usd += routing_slip.total_usd
             else:
                 no_of_cheque += len(routing_slip.payments)
-                total_cheque_cad += float(routing_slip.total)
+                total_cheque_cad += routing_slip.total
                 if routing_slip.total_usd is not None:
-                    total_cheque_usd += float(routing_slip.total_usd)
+                    total_cheque_usd += routing_slip.total_usd
 
         report_dict = dict(
             templateName='routing_slip_report',
@@ -238,13 +239,13 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             templateVars=dict(
                 day=date,
                 reportDay=str(get_local_time(datetime.now())),
-                total=total,
+                total=float(total),
                 numberOfCashReceipts=no_of_cash,
                 numberOfChequeReceipts=no_of_cheque,
-                totalCashInUsd=total_cash_usd,
-                totalChequeInUsd=total_cheque_usd,
-                totalCashInCad=total_cash_cad,
-                totalChequeInCad=total_cheque_cad
+                totalCashInUsd=float(total_cash_usd),
+                totalChequeInUsd=float(total_cheque_usd),
+                totalCashInCad=float(total_cash_cad),
+                totalChequeInCad=float(total_cheque_cad)
             )
         )
 

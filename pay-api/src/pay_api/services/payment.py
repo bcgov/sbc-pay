@@ -605,7 +605,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
         # Mark all invoice references to status CANCELLED, and create a new one for the new invoice number.
         for invoice in consolidated_invoices:
-            inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
+            inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
                 invoice_id=invoice.id, status_code=InvoiceReferenceStatus.ACTIVE.value)
             inv_ref.status_code = InvoiceReferenceStatus.CANCELLED.value
 
