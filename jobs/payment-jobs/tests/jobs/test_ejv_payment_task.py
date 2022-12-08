@@ -83,7 +83,7 @@ def test_payments_for_gov_accounts(session, monkeypatch):
 
     # Lookup invoice and assert invoice status
     for inv_id in inv_ids:
-        invoice_ref = InvoiceReference.find_reference_by_invoice_id_and_status(inv_id,
+        invoice_ref = InvoiceReference.find_by_invoice_id_and_status(inv_id,
                                                                                InvoiceReferenceStatus.ACTIVE.value)
         assert invoice_ref
 
@@ -109,7 +109,7 @@ def test_payments_for_gov_accounts(session, monkeypatch):
     # Mark invoice as REFUND_REQUESTED and run a JV job again.
     for inv_id in inv_ids:
         # Set invoice ref status as COMPLETED, as that would be the status when the payment is reconciled.
-        invoice_ref = InvoiceReference.find_reference_by_invoice_id_and_status(inv_id,
+        invoice_ref = InvoiceReference.find_by_invoice_id_and_status(inv_id,
                                                                                InvoiceReferenceStatus.ACTIVE.value)
         invoice_ref.status_code = InvoiceReferenceStatus.COMPLETED.value
 
@@ -123,7 +123,7 @@ def test_payments_for_gov_accounts(session, monkeypatch):
 
     # Lookup invoice and assert invoice status
     for inv_id in inv_ids:
-        invoice_ref = InvoiceReference.find_reference_by_invoice_id_and_status(inv_id,
+        invoice_ref = InvoiceReference.find_by_invoice_id_and_status(inv_id,
                                                                                InvoiceReferenceStatus.ACTIVE.value)
         assert invoice_ref
 

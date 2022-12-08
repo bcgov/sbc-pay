@@ -105,7 +105,7 @@ class EjvPaymentTask(CgiEjv):
                 # If it's reversal, If there is no COMPLETED invoice reference, then no need to reverse it.
                 # Else mark it as CANCELLED, as new invoice reference will be created
                 if is_jv_reversal:
-                    if (inv_ref := InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
+                    if (inv_ref := InvoiceReferenceModel.find_by_invoice_id_and_status(
                         inv.id, InvoiceReferenceStatus.COMPLETED.value
                     )) is None:
                         continue

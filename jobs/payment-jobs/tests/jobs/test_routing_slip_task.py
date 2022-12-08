@@ -134,7 +134,7 @@ def test_process_nsf(session):
     # Assert the records.
     invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     assert invoice.invoice_status_code == InvoiceStatus.CREATED.value
-    assert InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
+    assert InvoiceReferenceModel.find_by_invoice_id_and_status(
         invoice.id, status_code=InvoiceReferenceStatus.ACTIVE.value
     )
     assert not ReceiptModel.find_all_receipts_for_invoice(invoice.id)
