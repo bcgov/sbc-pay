@@ -586,7 +586,7 @@ async def test_succesful_payment_ejv_reconciliations(session, app, stan_server, 
         invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
         assert invoice.disbursement_status_code is None
         assert invoice.invoice_status_code == InvoiceStatus.PAID.value
-        invoice_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
+        invoice_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
             inv_id, InvoiceReferenceStatus.COMPLETED.value
         )
         assert invoice_ref
@@ -755,7 +755,7 @@ async def test_succesful_payment_reversal_ejv_reconciliations(session, app, stan
         invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
         assert invoice.disbursement_status_code is None
         assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
-        invoice_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
+        invoice_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
             inv_id, InvoiceReferenceStatus.COMPLETED.value
         )
         assert invoice_ref

@@ -151,7 +151,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 for inv in invoices:
                     # Reset the statuses
                     inv.invoice_status_code = InvoiceStatus.CREATED.value
-                    inv_ref = InvoiceReferenceModel.find_by_invoice_id_and_status(
+                    inv_ref = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
                         inv.id, InvoiceReferenceStatus.COMPLETED.value
                     )
                     inv_ref.status_code = InvoiceReferenceStatus.ACTIVE.value
@@ -286,7 +286,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         current_app.logger.info(f'Found {len(invoices)} to apply receipt')
         applied_amount = 0
         for inv in invoices:
-            inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
+            inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
                 inv.id, InvoiceReferenceStatus.ACTIVE.value
             )
             cls.apply_routing_slips_to_invoice(

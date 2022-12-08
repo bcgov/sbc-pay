@@ -209,7 +209,7 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
 
         invoice_link.message = invoice_return_message
         logger.info('Invoice ID %s', invoice_id)
-        inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
+        inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
             invoice_id, InvoiceReferenceStatus.ACTIVE.value)
         logger.info('invoice_link.disbursement_status_code %s', invoice_link.disbursement_status_code)
         if invoice_link.disbursement_status_code == DisbursementStatus.ERRORED.value:
