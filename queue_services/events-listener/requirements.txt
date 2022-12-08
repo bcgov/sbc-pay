@@ -6,7 +6,7 @@ asyncio-nats-client==0.11.5
 asyncio-nats-streaming==0.4.0
 attrs==21.4.0
 blinker==1.4
-certifi==2021.10.8
+certifi==2022.12.7
 click==8.0.4
 importlib-resources==5.4.0
 itsdangerous==2.0.1
