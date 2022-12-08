@@ -58,6 +58,11 @@
       "$id": "#/properties/transactions/items/properties/reduntantFlag",
       "type": "string",
       "title": "Reduntant Payment Flag"
+    },
+    "forceUseDebitAccount": {
+      "$id": "#/properties/transactions/items/properties/forceUseDebitAccount",
+      "type": "boolean",
+      "title": "Force Use Debit Account"
     }
   },
   "required": [
