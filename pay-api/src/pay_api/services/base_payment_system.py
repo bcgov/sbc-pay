@@ -155,7 +155,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         # Don't do anything is the status is APPROVED.
         current_app.logger.info(f'Creating credit memo for invoice : {invoice.id}, {invoice.invoice_status_code}')
         if invoice.invoice_status_code == InvoiceStatus.APPROVED.value \
-                and InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
+                and InvoiceReferenceModel.find_by_invoice_id_and_status(
                     invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None:
             return InvoiceStatus.CANCELLED.value
 
@@ -187,7 +187,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Construct message and send to mailer queue."""
         from .payment_transaction import publish_response  # pylint:disable=import-outside-toplevel,cyclic-import
         receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=invoice.id)
-        invoice_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_reference_by_invoice_id_and_status(
+        invoice_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice_id=invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value)
         payment_transaction: PaymentTransactionModel = PaymentTransactionModel.find_recent_completed_by_invoice_id(
             invoice_id=invoice.id)
