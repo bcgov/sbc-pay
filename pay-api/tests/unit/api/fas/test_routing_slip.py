@@ -829,3 +829,44 @@ def test_routing_slip_status_to_nsf_attempt(client, jwt, app):
     rv = client.patch(f"/api/v1/fas/routing-slips/{child.get('number')}?action={PatchActions.UPDATE_STATUS.value}",
                       data=json.dumps({'status': RoutingSlipStatus.NSF.value}), headers=headers)
     assert rv.status_code == 200, 'status changed successfully.'
+
+
+def test_routing_slip_void(client, jwt, app):
+    """For testing void routing slips."""
+    # Success, has transactions, has no permissions.
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value,
+                                             Role.FAS_SEARCH.value, Role.FAS_EDIT.value]),
+                           token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rs = get_routing_slip_request('438607657')
+    rv = client.post('/api/v1/fas/routing-slips', data=json.dumps(rs), headers=headers)
+
+    # Create invoice.
+    invoice = factory_invoice(PaymentAccount(id=rv.json.get('paymentAccount').get('id')), folio_number='test_folio',
+                              routing_slip=rv.json.get('number'),
+                              payment_method_code=PaymentMethod.INTERNAL.value)
+    invoice.save()
+
+    # No permissions
+    rv = client.patch(f"/api/v1/fas/routing-slips/{rs.get('number')}?action={PatchActions.UPDATE_STATUS.value}",
+                      data=json.dumps({'status': RoutingSlipStatus.VOID.value}), headers=headers)
+    assert rv.status_code == 403
+
+    token = jwt.create_jwt(get_claims(roles=[Role.FAS_EDIT.value, Role.FAS_VOID.value]),
+                           token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    # Has transactions
+    rv = client.patch(f"/api/v1/fas/routing-slips/{rs.get('number')}?action={PatchActions.UPDATE_STATUS.value}",
+                      data=json.dumps({'status': RoutingSlipStatus.VOID.value}), headers=headers)
+    assert rv.json.get('type') == 'RS_HAS_TRANSACTIONS'
+    assert rv.status_code == 400
+
+    invoice.routing_slip = None
+    invoice.save()
+
+    # Success case
+    rv = client.patch(f"/api/v1/fas/routing-slips/{rs.get('number')}?action={PatchActions.UPDATE_STATUS.value}",
+                      data=json.dumps({'status': RoutingSlipStatus.VOID.value}), headers=headers)
+    assert rv.status_code == 200
+    assert rv.json.get('remainingAmount') == 0

@@ -404,6 +404,15 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                 for rs in (routing_slip, *RoutingSlipModel.find_children(routing_slip.number)):
                     total_paid_to_reverse += rs.total
                 routing_slip.remaining_amount += -total_paid_to_reverse
+            elif status == RoutingSlipStatus.VOID.value:
+                if not user.has_role(Role.FAS_VOID.value):
+                    abort(403)
+                if routing_slip.invoices:
+                    raise BusinessException(Error.RS_HAS_TRANSACTIONS)
+                routing_slip.remaining_amount = 0
+            # Future work.
+            elif status == RoutingSlipStatus.CORRECTION.value:
+                abort(403)
             elif status in (RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value, RoutingSlipStatus.REFUND_AUTHORIZED.value) \
                     and not user.has_role(Role.FAS_REFUND_APPROVER.value):
                 abort(403)
