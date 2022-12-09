@@ -107,10 +107,10 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         """Process VOID routing slips.
 
         Steps:
-            1. Reverse the routing slip receipt.
-            2. Reverse all the child receipts.
-            3. Change the CFS Account status.
-            4. Adjust the remaining amount and cas_version_suffix for VOID.
+        1. Reverse the routing slip receipt.
+        2. Reverse all the child receipts.
+        3. Change the CFS Account status.
+        4. Adjust the remaining amount and cas_version_suffix for VOID.
         """
         routing_slips: List[RoutingSlipModel] = db.session.query(RoutingSlipModel) \
             .join(PaymentAccountModel, PaymentAccountModel.id == RoutingSlipModel.payment_account_id) \
