@@ -475,7 +475,9 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                                       RoutingSlipStatus.WRITE_OFF_REQUESTED.value,
                                       RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value,
                                       RoutingSlipStatus.WRITE_OFF_COMPLETED.value,
-                                      RoutingSlipStatus.COMPLETE.value
+                                      RoutingSlipStatus.COMPLETE.value,
+                                      RoutingSlipStatus.VOID.value,
+                                      RoutingSlipStatus.CORRECTION.value
                                       }
         if rs_statuses.intersection(invalid_statuses):
             raise BusinessException(Error.RS_IN_INVALID_STATUS)
