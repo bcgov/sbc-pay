@@ -398,7 +398,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             RoutingSlipStatusTransitionService.validate_possible_transitions(routing_slip, status)
             status = RoutingSlipStatusTransitionService.get_actual_status(status)
 
-            RoutingSlip._check_roles(status, user)
+            RoutingSlip._check_roles_for_status_update(status, user)
             # Our routing_slips job will create an invoice (under transactions in the UI).
             if status == RoutingSlipStatus.NSF.value:
                 total_paid_to_reverse: float = 0
@@ -416,7 +416,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         return cls.find_by_number(rs_number)
 
     @staticmethod
-    def _check_roles(status: str, user: UserContext):
+    def _check_roles_for_status_update(status: str, user: UserContext):
         """Check roles for the status."""
         if status == RoutingSlipStatus.VOID.value and not user.has_role(Role.FAS_VOID.value):
             abort(403)
