@@ -154,6 +154,7 @@ def test_process_void(session):
     parent = '111111111'
     factory_routing_slip_account(number=child_1, status=CfsAccountStatus.ACTIVE.value, total=10)
     factory_routing_slip_account(number=child_2, status=CfsAccountStatus.ACTIVE.value, total=10)
+    factory_routing_slip_account(number=parent, status=CfsAccountStatus.ACTIVE.value, total=10)
 
     child_1_rs = RoutingSlipModel.find_by_number(child_1)
     child_2_rs = RoutingSlipModel.find_by_number(child_2)
