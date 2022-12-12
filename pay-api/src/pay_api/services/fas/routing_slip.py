@@ -398,20 +398,33 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             RoutingSlipStatusTransitionService.validate_possible_transitions(routing_slip, status)
             status = RoutingSlipStatusTransitionService.get_actual_status(status)
 
+            RoutingSlip._check_roles_for_status_update(status, user)
             # Our routing_slips job will create an invoice (under transactions in the UI).
             if status == RoutingSlipStatus.NSF.value:
                 total_paid_to_reverse: float = 0
                 for rs in (routing_slip, *RoutingSlipModel.find_children(routing_slip.number)):
                     total_paid_to_reverse += rs.total
                 routing_slip.remaining_amount += -total_paid_to_reverse
-            elif status in (RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value, RoutingSlipStatus.REFUND_AUTHORIZED.value) \
-                    and not user.has_role(Role.FAS_REFUND_APPROVER.value):
-                abort(403)
+            elif status == RoutingSlipStatus.VOID.value:
+                if routing_slip.invoices:
+                    raise BusinessException(Error.RS_HAS_TRANSACTIONS)
+                routing_slip.remaining_amount = 0
 
             routing_slip.status = status
 
         routing_slip.save()
         return cls.find_by_number(rs_number)
+
+    @staticmethod
+    def _check_roles_for_status_update(status: str, user: UserContext):
+        """Check roles for the status."""
+        if status == RoutingSlipStatus.VOID.value and not user.has_role(Role.FAS_VOID.value):
+            abort(403)
+        if status == RoutingSlipStatus.CORRECTION.value and not user.has_role(Role.FAS_CORRECTION.value):
+            abort(403)
+        if status in (RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value, RoutingSlipStatus.REFUND_AUTHORIZED.value) \
+                and not user.has_role(Role.FAS_REFUND_APPROVER.value):
+            abort(403)
 
     @staticmethod
     def _validate_linking(routing_slip: RoutingSlipModel, parent_rs_slip: RoutingSlipModel) -> None:
@@ -462,7 +475,9 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                                       RoutingSlipStatus.WRITE_OFF_REQUESTED.value,
                                       RoutingSlipStatus.WRITE_OFF_AUTHORIZED.value,
                                       RoutingSlipStatus.WRITE_OFF_COMPLETED.value,
-                                      RoutingSlipStatus.COMPLETE.value
+                                      RoutingSlipStatus.COMPLETE.value,
+                                      RoutingSlipStatus.VOID.value,
+                                      RoutingSlipStatus.CORRECTION.value
                                       }
         if rs_statuses.intersection(invalid_statuses):
             raise BusinessException(Error.RS_IN_INVALID_STATUS)

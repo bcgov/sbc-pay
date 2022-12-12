@@ -120,7 +120,8 @@ def run(job_name):
         application.logger.info(f'<<<< Completed Sending notification for OB invoices >>>>')
     elif job_name == 'ROUTING_SLIP':
         RoutingSlipTask.link_routing_slips()
-        RoutingSlipTask.process_nsf_and_void()
+        RoutingSlipTask.process_void()
+        RoutingSlipTask.process_nsf()
         RoutingSlipTask.adjust_routing_slips()
         application.logger.info(f'<<<< Completed Routing Slip tasks >>>>')
     elif job_name == 'EJV_PAYMENT':
