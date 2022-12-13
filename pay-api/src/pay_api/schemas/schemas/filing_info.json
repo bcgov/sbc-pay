@@ -10,12 +10,14 @@
         "filingIdentifier": {
           "$id": "#/properties/filingIdentifier",
           "type": "string",
-          "title": "Filing identifier from the filing system"
+          "title": "Filing identifier from the filing system",
+          "maxLength": 50
         },
         "folioNumber": {
           "$id": "#/properties/folioNumber",
           "type": "string",
-          "title": "Folio Number"
+          "title": "Folio Number",
+          "maxLength": 50
         },
         "date": {
           "$id": "#/properties/date",
