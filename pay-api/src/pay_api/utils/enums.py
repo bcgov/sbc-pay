@@ -132,6 +132,8 @@ class Role(Enum):
     FAS_CREATE = 'fas_create'
     FAS_LINK = 'fas_link'
     FAS_REFUND_APPROVER = 'fas_refund_approver'
+    FAS_VOID = 'fas_void'
+    FAS_CORRECTION = 'fas_correction'
     SANDBOX = 'sandbox'
 
 
@@ -229,6 +231,7 @@ class RoutingSlipStatus(Enum):
     WRITE_OFF_COMPLETED = 'WRITE_OFF_COMPLETED'
     HOLD = 'HOLD'  # new
     VOID = 'VOID'
+    CORRECTION = 'CORRECTION'
 
 
 class RoutingSlipCustomStatus(Enum):

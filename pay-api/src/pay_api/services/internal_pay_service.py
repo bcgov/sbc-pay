@@ -92,19 +92,15 @@ class InternalPayService(PaymentSystemService, OAuthService):
 
     def process_cfs_refund(self, invoice: InvoiceModel):
         """Process refund in CFS."""
-        # TODO handle Routing Slip refund CAS integration here
         if invoice.total == 0:
             raise BusinessException(Error.NO_FEE_REFUND)
-
-        # find if its a routing slip refund
-        # if yes -> check existing one or legacy
-        # if yes , add money back to rs after refunding
-
         if (routing_slip_number := invoice.routing_slip) is None:
             raise BusinessException(Error.INVALID_REQUEST)
         if invoice.total == 0:
             raise BusinessException(Error.NO_FEE_REFUND)
         if not (routing_slip := RoutingSlipModel.find_by_number(routing_slip_number)):
+            raise BusinessException(Error.ROUTING_SLIP_REFUND)
+        if routing_slip.status not in [RoutingSlipStatus.ACTIVE.value, RoutingSlipStatus.COMPLETE.value]:
             raise BusinessException(Error.ROUTING_SLIP_REFUND)
         current_app.logger.info(f'Processing refund for {invoice.id}, on routing slip {routing_slip.number}')
         payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
