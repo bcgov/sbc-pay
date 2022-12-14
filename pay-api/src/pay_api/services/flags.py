@@ -69,7 +69,7 @@ class Flags():
                 self.init_app(current_app)
                 client = current_app.extensions['featureflags']
             except KeyError:
-                logging.warning("Couldn\'t initialize launch darkly client.")
+                logging.warning("Couldn\'t retrieve launch darkly client from extensions.")
                 client = None
 
         return client
