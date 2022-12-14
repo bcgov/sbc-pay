@@ -1,18 +1,14 @@
 --BCA MONTHLY: Naming Convention should be BCA_MONTHLY_YYYYMMDD (example: BCA_MONTHLY_20221001)
-
 --(PAY-DB)
 
 SELECT 
-	to_char(i.updated_on,'MM-DD-YYYY') AS "DATE",
-	af.account_id AS "CUSTOMER ACCOUNT",
+	to_char(i.created_on,'MM-DD-YYYY') AS "DATE",
+	pa.auth_account_id AS "ACCOUNT NUMBER",
 	pa.name AS "ACCOUNT NAME",
-	pa.bcol_user_id AS "USER ID",
+	pa.bcol_user_id AS "BCOL USER ID",
 	i.created_name AS "USER NAME",
-	af.product AS "PRODUCT TYPE", --REMOVE IT LATER
 	ft.description AS "PRODUCT NAME",
 	ft.code AS "FEE CODE",
---	null as "TRANSACTION REMARKS", // SIDD can you please check where does this transaction remarks sit
-	i.folio_number AS "FOLIO",
 	i.id AS "INVOICE ID",
 	i.payment_method_code AS "PAYMENT METHOD",
 	i.invoice_status_code AS "INVOICE STATUS",
@@ -24,7 +20,6 @@ SELECT
 
 FROM 
 	(((invoices i
---	CROSS JOIN jsonb_array_elements(case jsonb_typeof(details) when 'array' then details else '[]' end) AS elem
     LEFT JOIN payment_accounts pa ON ((pa.id = i.payment_account_id)))
 	LEFT JOIN account_fees af ON af.account_id = pa.id)
 	LEFT JOIN invoice_references ir ON ((i.id = ir.invoice_id))
@@ -34,9 +29,6 @@ FROM
 	)
 	
 where
-to_char(i.created_on,'YYYY-MM') = '2022-12' ---change to month you need data for
---and ft.description IN ('Assessment Roll Report','Owner Location Report','Assessment Inventory Report') 
---OR
-and ft.code IN ('OLAARTAQ','OLAARTOQ','OLAARTIQ') --BCA has only these 3 fee codes
---and af.product = 'BCA'
+to_char(i.created_on,'YYYY-MM') = '2022-12'
+and i.corp_type_code = 'BCA'
 order by 1;
