@@ -103,7 +103,7 @@ class Flags():
 
         return bool(client.variation(flag, flag_user, None))
 
-    def value(self, flag: str, user: user_context = None) -> bool:
+    def value(self, flag: str, user: user_context = None):
         """Retrieve the value  of the (flag, user) tuple."""
         client = self._get_client()
 
