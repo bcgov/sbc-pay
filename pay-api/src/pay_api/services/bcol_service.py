@@ -23,6 +23,7 @@ from pay_api.exceptions import BusinessException, Error
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models.corp_type import CorpType
+from pay_api.services.flags import flags
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentStatus
 from pay_api.utils.enums import PaymentSystem as PaySystemCode
 from pay_api.utils.errors import get_bcol_error
@@ -49,7 +50,6 @@ class BcolService(PaymentSystemService, OAuthService):
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
                        line_items: [PaymentLineItem], invoice: Invoice, **kwargs) -> InvoiceReference:
         """Create Invoice in PayBC."""
-        from pay_api.services import flags  # pylint: disable=import-outside-toplevel
         current_app.logger.debug(f'<Creating BCOL records for Invoice: {invoice.id}, '
                                  f'Auth Account : {payment_account.auth_account_id}')
         user: UserContext = kwargs['user']

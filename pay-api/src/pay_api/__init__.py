@@ -27,7 +27,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration  # noqa: I001
 # import pay_api.config as config
 from pay_api import config
 from pay_api.config import _Config
-from pay_api.services import flags
+from pay_api.services.flags import flags
 from pay_api.models import db, ma
 from pay_api.utils.auth import jwt
 from pay_api.utils.cache import cache

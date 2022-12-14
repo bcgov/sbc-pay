@@ -60,12 +60,6 @@ class Flags():
             client = ldclient_get()
 
             app.extensions['featureflags'] = client
-            app.teardown_appcontext(self.teardown)
-
-    def teardown(self, exception):  # pylint: disable=unused-argument; flask method signature
-        """Destroy all objects created by this extension."""
-        client = current_app.extensions['featureflags']
-        client.close()
 
     def _get_client(self):
         try:
@@ -122,3 +116,5 @@ class Flags():
             flag_user = self._get_anonymous_user()
 
         return client.variation(flag, flag_user, None)
+
+flags = Flags()

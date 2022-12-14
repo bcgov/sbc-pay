@@ -30,6 +30,7 @@ from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.services.cfs_service import CFSService
+from pay_api.services.flags import flags
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
@@ -151,7 +152,6 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def _refund_and_create_credit_memo(invoice: InvoiceModel):
-        from pay_api.services import flags  # pylint: disable=import-outside-toplevel
         # Create credit memo in CFS if the invoice status is PAID.
         # Don't do anything is the status is APPROVED.
         current_app.logger.info(f'Creating credit memo for invoice : {invoice.id}, {invoice.invoice_status_code}')
