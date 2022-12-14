@@ -24,7 +24,6 @@ from pay_api.models import AccountFee as AccountFeeModel
 from pay_api.models import FeeCode as FeeCodeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import FeeScheduleSchema
-from pay_api.services import flags
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
@@ -285,6 +284,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
             **kwargs
     ):
         """Calculate fees for the filing by using the arguments."""
+        from pay_api.services import flags  # pylint: disable=import-outside-toplevel
         current_app.logger.debug(f'<get_fees_by_corp_type_and_filing_type : {corp_type}, {filing_type_code}, '
                                  f'{valid_date}')
         user: UserContext = kwargs['user']
