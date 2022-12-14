@@ -273,3 +273,12 @@ class PatchActions(Enum):
     def from_value(cls, value):
         """Return instance from value of the enum."""
         return PatchActions(value) if value in cls._value2member_map_ else None  # pylint: disable=no-member
+
+
+class ReverseOperation(Enum):
+    """Reverse Routing Operation, determines comment."""
+
+    NSF = 'NSF'
+    LINK_ROUTING_SLIP = 'LINK_ROUTING_SLIP'
+    VOID = 'VOID'
+    CORRECTION = 'CORRECTION'

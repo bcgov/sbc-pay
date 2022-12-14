@@ -32,7 +32,7 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.receipt import Receipt
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
-    RoutingSlipStatus)
+    ReverseOperation, RoutingSlipStatus)
 from sentry_sdk import capture_message
 
 
@@ -66,7 +66,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     payment_account.id)
 
                 # reverse routing slip receipt
-                CFSService.reverse_rs_receipt_in_cfs(cfs_account, routing_slip.number)
+                CFSService.reverse_rs_receipt_in_cfs(cfs_account, routing_slip.number, ReverseOperation.LINK.value)
                 cfs_account.status = CfsAccountStatus.INACTIVE.value
 
                 # apply receipt to parent cfs account
@@ -136,7 +136,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     receipt_number = rs.number
                     if rs.parent_number:
                         receipt_number = f'{receipt_number}L'
-                    CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number)
+                    CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
                 # Void routing slips aren't supposed to have pending transactions, so no need to look at invoices.
                 cfs_account.status = CfsAccountStatus.INACTIVE.value
                 routing_slip.remaining_amount = 0
@@ -181,7 +181,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     receipt_number = rs.number
                     if rs.parent_number:
                         receipt_number = f'{receipt_number}L'
-                    CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, is_nsf=True)
+                    CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.NSF.value)
 
                     for payment in db.session.query(PaymentModel) \
                             .filter(PaymentModel.receipt_number == receipt_number).all():

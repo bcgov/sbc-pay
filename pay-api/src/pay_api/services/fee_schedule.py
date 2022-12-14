@@ -17,13 +17,14 @@ from datetime import date
 from decimal import Decimal
 
 from flask import current_app
-from sbc_common_components.tracing.service_tracing import ServiceTracing
 
+from sbc_common_components.tracing.service_tracing import ServiceTracing
 from pay_api.exceptions import BusinessException
 from pay_api.models import AccountFee as AccountFeeModel
 from pay_api.models import FeeCode as FeeCodeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import FeeScheduleSchema
+from pay_api.services import flags
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
@@ -310,6 +311,10 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
 
         # Set transaction fees
         fee_schedule.service_fees = FeeSchedule.calculate_service_fees(fee_schedule_dao, account_fee)
+
+        # Special case for CSO partner type which is different from normal flow
+        if flags.is_on('BAD_CSO_SERVICE_FEE') and fee_schedule.corp_type_code == 'CSO' and fee_schedule.quantity:
+            fee_schedule.service_fees = fee_schedule.service_fees * fee_schedule.quantity
 
         if kwargs.get('is_priority') and fee_schedule_dao.priority_fee and apply_filing_fees:
             fee_schedule.priority_fee = fee_schedule_dao.priority_fee.amount

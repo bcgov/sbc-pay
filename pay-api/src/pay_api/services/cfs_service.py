@@ -32,7 +32,7 @@ from pay_api.utils.constants import (
     CFS_NSF_REVERSAL_REASON, CFS_PAYMENT_REVERSAL_REASON, CFS_RCPT_EFT_WIRE, CFS_TERM_NAME, DEFAULT_ADDRESS_LINE_1,
     DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
     RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP)
-from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod
+from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, ReverseOperation
 from pay_api.utils.util import current_local_time, generate_transaction_number
 
 
@@ -261,7 +261,7 @@ class CFSService(OAuthService):
         return invoice_response.json()
 
     @classmethod
-    def reverse_rs_receipt_in_cfs(cls, cfs_account, receipt_number, is_nsf: bool = False):
+    def reverse_rs_receipt_in_cfs(cls, cfs_account, receipt_number, operation: ReverseOperation):
         """Reverse Receipt."""
         current_app.logger.debug('>Reverse receipt: %s', receipt_number)
         access_token: str = CFSService.get_fas_token().json().get('access_token')
@@ -270,8 +270,9 @@ class CFSService(OAuthService):
                       f'/sites/{cfs_account.cfs_site}/rcpts/{receipt_number}/reverse'
         current_app.logger.debug('Receipt URL %s', receipt_url)
         payload = {
-            'reversal_reason': CFS_NSF_REVERSAL_REASON if is_nsf else CFS_PAYMENT_REVERSAL_REASON,
-            'reversal_comment': 'Non Sufficient Fund' if is_nsf else 'Linking Routing Slip'
+            'reversal_reason': CFS_NSF_REVERSAL_REASON if operation == ReverseOperation.NSF.value
+            else CFS_PAYMENT_REVERSAL_REASON,
+            'reversal_comment': cls._build_reversal_comment(operation)
         }
         return CFSService.post(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, payload)
 
@@ -366,6 +367,16 @@ class CFSService(OAuthService):
         invoice_response = CFSService.post(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
                                            invoice_payload)
         return invoice_response.json()
+
+    @classmethod
+    def _build_reversal_comment(cls, operation: ReverseOperation):
+        """Build the comment for the reversal."""
+        return {
+            ReverseOperation.NSF.value: 'Non Sufficient Fund',
+            ReverseOperation.LINK_ROUTING_SLIP.value: 'Linking Routing Slip',
+            ReverseOperation.VOID.value: 'Created In Error',
+            ReverseOperation.CORRECTION.value: 'Corrected In Revision'
+        }.get(operation)
 
     @classmethod
     def _build_lines(cls, payment_line_items: List[PaymentLineItemModel], negate: bool = False):
