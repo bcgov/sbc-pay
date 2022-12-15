@@ -279,6 +279,6 @@ class ReverseOperation(Enum):
     """Reverse Routing Slip Operation, determines comment."""
 
     NSF = 'NSF'
-    LINK_ROUTING_SLIP = 'LINK_ROUTING_SLIP'
+    LINK = 'LINK'
     VOID = 'VOID'
     CORRECTION = 'CORRECTION'
