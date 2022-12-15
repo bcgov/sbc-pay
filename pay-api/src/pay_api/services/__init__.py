@@ -28,5 +28,3 @@ from .statement import Statement
 from .statement_recipients import StatementRecipients
 from .statement_settings import StatementSettings
 from .flags import Flags
-
-flags = Flags()
