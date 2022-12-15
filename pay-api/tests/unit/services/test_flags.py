@@ -27,7 +27,7 @@ def setup():
     """Initialize app with dev env for testing."""
     global app
     app = Flask(__name__)
-    app.env = 'development'
+    app.env = 'testing'
 
 
 def test_flags_constructor_no_app(setup):
@@ -101,7 +101,7 @@ def test_init_app_prod_no_key(setup):
 ])
 def test_flags_read_from_json(setup, test_name, flag_name, expected):
     """Ensure that is_on is TRUE when reading flags from local JSON file."""
-    app.config['AUTH_LD_SDK_KEY'] = 'https://no.flag/avail'
+    app.config['PAY_LD_SDK_KEY'] = 'https://no.flag/avail'
 
     with app.app_context():
         flags = Flags()
@@ -112,7 +112,7 @@ def test_flags_read_from_json(setup, test_name, flag_name, expected):
 
 def test_flags_read_from_json_missing_flag(setup):
     """Ensure that is_on is FALSE when reading a flag that doesn't exist from local JSON file."""
-    app.config['AUTH_LD_SDK_KEY'] = 'https://no.flag/avail'
+    app.config['PAY_LD_SDK_KEY'] = 'https://no.flag/avail'
 
     with app.app_context():
         flags = Flags()
@@ -129,7 +129,7 @@ def test_flags_read_from_json_missing_flag(setup):
 ])
 def test_flags_read_flag_values_from_json(setup, test_name, flag_name, expected):
     """Ensure that values read from JSON == expected values when no user is passed."""
-    app.config['AUTH_LD_SDK_KEY'] = 'https://no.flag/avail'
+    app.config['PAY_LD_SDK_KEY'] = 'https://no.flag/avail'
 
     with app.app_context():
         flags = Flags()
@@ -146,7 +146,7 @@ def test_flags_read_flag_values_from_json(setup, test_name, flag_name, expected)
 ])
 def test_flags_read_flag_values_unique_user(setup, test_name, flag_name, expected):
     """Ensure that values read from JSON == expected values when passed with a user."""
-    app.config['AUTH_LD_SDK_KEY'] = 'https://no.flag/avail'
+    app.config['PAY_LD_SDK_KEY'] = 'https://no.flag/avail'
 
     user = UserContext()
 
@@ -159,7 +159,7 @@ def test_flags_read_flag_values_unique_user(setup, test_name, flag_name, expecte
         flags = Flags()
         flags.init_app(app)
         val = flags.value(flag_name, user)
-        flag_on = flags.is_on(flag_name, user)
+        flag_on = flags.is_on(flag_name, user, False)
 
     assert val == expected
     assert flag_on
