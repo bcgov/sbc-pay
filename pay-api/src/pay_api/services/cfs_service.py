@@ -373,7 +373,7 @@ class CFSService(OAuthService):
         """Build the comment for the reversal."""
         return {
             ReverseOperation.NSF.value: 'Non Sufficient Fund',
-            ReverseOperation.LINK_ROUTING_SLIP.value: 'Linking Routing Slip',
+            ReverseOperation.LINK.value: 'Linking Routing Slip',
             ReverseOperation.VOID.value: 'Created In Error',
             ReverseOperation.CORRECTION.value: 'Corrected In Revision'
         }.get(operation)
