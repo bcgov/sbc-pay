@@ -117,4 +117,5 @@ class Flags():
 
         return client.variation(flag, flag_user, None)
 
+
 flags = Flags()
