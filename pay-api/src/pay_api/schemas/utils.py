@@ -90,17 +90,15 @@ def validate(json_data: json,
         schema_file_path = path.join(schema_search_path, schema_id)
         resolver = RefResolver(f'file://{schema_file_path}.json', schema, schema_store)
 
-        if Draft7Validator(schema,
-                           format_checker=Draft7Validator.FORMAT_CHECKER,
-                           resolver=resolver
-                           ) \
+        draft_7_validator = Draft7Validator(schema,
+                                            format_checker=Draft7Validator.FORMAT_CHECKER,
+                                            resolver=resolver
+                                            )
+        if draft_7_validator \
                 .is_valid(json_data):
             return True, None
 
-        errors = Draft7Validator(schema,
-                                 format_checker=Draft7Validator.FORMAT_CHECKER,
-                                 resolver=resolver
-                                 ) \
+        errors = draft_7_validator \
             .iter_errors(json_data)
         return False, errors
 

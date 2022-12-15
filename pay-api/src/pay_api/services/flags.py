@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2022 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Manage the Feature Flags initialization, setup and service."""
+import logging
 from flask import current_app
 from ldclient import get as ldclient_get, set_config as ldclient_set_config  # noqa: I001
 from ldclient.config import Config  # noqa: I005
@@ -59,12 +60,6 @@ class Flags():
             client = ldclient_get()
 
             app.extensions['featureflags'] = client
-            app.teardown_appcontext(self.teardown)
-
-    def teardown(self, exception):  # pylint: disable=unused-argument; flask method signature
-        """Destroy all objects created by this extension."""
-        client = current_app.extensions['featureflags']
-        client.close()
 
     def _get_client(self):
         try:
@@ -74,6 +69,7 @@ class Flags():
                 self.init_app(current_app)
                 client = current_app.extensions['featureflags']
             except KeyError:
+                logging.warning("Couldn\'t retrieve launch darkly client from extensions.")
                 client = None
 
         return client
@@ -97,6 +93,9 @@ class Flags():
         """Assert that the flag is set for this user."""
         client = self._get_client()
 
+        if not client:
+            return False
+
         if user:
             flag_user = self._user_as_key(user)
         else:
@@ -104,9 +103,12 @@ class Flags():
 
         return bool(client.variation(flag, flag_user, None))
 
-    def value(self, flag: str, user: user_context = None) -> bool:
+    def value(self, flag: str, user: user_context = None):
         """Retrieve the value  of the (flag, user) tuple."""
         client = self._get_client()
+
+        if not client:
+            return None
 
         if user:
             flag_user = self._user_as_key(user)
@@ -114,3 +116,6 @@ class Flags():
             flag_user = self._get_anonymous_user()
 
         return client.variation(flag, flag_user, None)
+
+
+flags = Flags()
