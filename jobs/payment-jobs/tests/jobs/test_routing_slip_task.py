@@ -27,7 +27,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, RoutingSlipStatus)
+    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, ReverseOperation, RoutingSlipStatus)
 
 from tasks.routing_slip_task import RoutingSlipTask
 
@@ -58,7 +58,7 @@ def test_link_rs(session):
         with patch('pay_api.services.CFSService.create_cfs_receipt') as mock_create_cfs:
             RoutingSlipTask.link_routing_slips()
             mock_cfs_reverse.assert_called()
-            mock_cfs_reverse.assert_called_with(cfs_account, child_rs.number)
+            mock_cfs_reverse.assert_called_with(cfs_account, child_rs.number, ReverseOperation.LINK.value)
             mock_create_cfs.assert_called()
 
     # child_rs = RoutingSlipModel.find_by_number(child_rs_number)

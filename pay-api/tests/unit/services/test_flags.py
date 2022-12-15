@@ -24,7 +24,7 @@ app = None
 
 @pytest.fixture
 def setup():
-    """Initialize app with dev env for testing."""
+    """Initialize app with test env for testing."""
     global app
     app = Flask(__name__)
     app.env = 'testing'
