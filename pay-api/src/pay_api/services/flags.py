@@ -48,13 +48,13 @@ class Flags():
 
         if self.sdk_key or app.env != 'production':
 
-            if app.env == 'production':
-                config = Config(sdk_key=self.sdk_key)
-            else:
+            if app.env == 'testing':
                 factory = Files.new_data_source(paths=['flags.json'], auto_update=True)
                 config = Config(sdk_key=self.sdk_key,
                                 update_processor_class=factory,
                                 send_events=False)
+            else:
+                config = Config(sdk_key=self.sdk_key)
 
             ldclient_set_config(config)
             client = ldclient_get()
@@ -89,33 +89,33 @@ class Flags():
         }
         return user_json
 
-    def is_on(self, flag: str, user: user_context = None) -> bool:
+    def is_on(self, flag: str, default: bool = False, user: user_context = None) -> bool:
         """Assert that the flag is set for this user."""
         client = self._get_client()
 
         if not client:
-            return False
+            return default
 
         if user:
             flag_user = self._user_as_key(user)
         else:
             flag_user = self._get_anonymous_user()
 
-        return bool(client.variation(flag, flag_user, None))
+        return bool(client.variation(flag, flag_user, default))
 
-    def value(self, flag: str, user: user_context = None):
+    def value(self, flag: str, default=None, user: user_context = None):
         """Retrieve the value  of the (flag, user) tuple."""
         client = self._get_client()
 
         if not client:
-            return None
+            return default
 
         if user:
             flag_user = self._user_as_key(user)
         else:
             flag_user = self._get_anonymous_user()
 
-        return client.variation(flag, flag_user, None)
+        return client.variation(flag, flag_user, default)
 
 
 flags = Flags()

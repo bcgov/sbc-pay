@@ -313,7 +313,8 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         fee_schedule.service_fees = FeeSchedule.calculate_service_fees(fee_schedule_dao, account_fee)
 
         # Special case for CSO partner type which is different from normal flow
-        if flags.is_on('BAD_CSO_SERVICE_FEE') and fee_schedule.corp_type_code == 'CSO' and fee_schedule.quantity:
+        if flags.is_on('BAD_CSO_SERVICE_FEE', default=True) and fee_schedule.corp_type_code == 'CSO' \
+           and fee_schedule.quantity:
             fee_schedule.service_fees = fee_schedule.service_fees * fee_schedule.quantity
 
         if kwargs.get('is_priority') and fee_schedule_dao.priority_fee and apply_filing_fees:
