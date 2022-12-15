@@ -68,7 +68,7 @@ class BcolService(PaymentSystemService, OAuthService):
         # CSO currently refunds an invoice, and creates a new invoice for partial refunds.
         # Only applies for CSBPDOC. CSO only uses a single PLI per invoice.
         # This allows service fees to be charged via service account.
-        if (flags.is_on('CSO_BCOL_FIX') and filing_types == 'CSBPDOC') or force_non_staff_fee_code:
+        if (flags.is_on('CSO_BCOL_FIX', default=False) and filing_types == 'CSBPDOC') or force_non_staff_fee_code:
             use_staff_fee_code = False
             force_use_debit_account = True
         payload: Dict = {
