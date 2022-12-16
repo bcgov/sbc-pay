@@ -282,3 +282,7 @@ class ReverseOperation(Enum):
     LINK = 'LINK'
     VOID = 'VOID'
     CORRECTION = 'CORRECTION'
+
+
+class CfsReceiptStatus(Enum):
+    REV = 'REV'
