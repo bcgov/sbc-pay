@@ -63,24 +63,36 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _get_colin_bcol_records_for_invoices(cls, invoice_refs: List[InvoiceReference]) -> Dict[str, Decimal]:
         """Get BCOL refund records for the given invoice references."""
-        invoice_numbers_str = ', '.join("'" + str(x.invoice_number) + "'" for x in invoice_refs)
-        current_app.logger.debug('Refund requested BCOL invoice references: %s', invoice_numbers_str)
+        current_app.logger.debug('Refund requested BCOL invoice references: %s', invoice_refs)
+        # split invoice refs into groups of 1000
+        invoice_ref_chunks = []
+        for i in range(0, len(invoice_refs), 1000):
+            invoice_ref_chunks.append(invoice_refs[i:i + 1000])
 
         current_app.logger.debug('Connecting to Oracle instance...')
         cursor = oracle_db.connection.cursor()
-        current_app.logger.debug('Collecting COLIN BCOL refund records...')
-        # key == invoice_number
-        bcol_refunds = cursor.execute(
-            f"""
-            SELECT key, total_amt
-            FROM bconline_billing_record
-            WHERE key in ({invoice_numbers_str})
-                AND qty = -1
-            """
-        ).fetchall()
+
+        bcol_refunds_all = {}
+
+        # do for each group of 1000 (oracle wont let you do more)
+        for invoice_ref_grp in invoice_ref_chunks:
+            invoice_numbers_str = ', '.join("'" + str(x.invoice_number) + "'" for x in invoice_ref_grp)
+
+            current_app.logger.debug('Collecting COLIN BCOL refund records...')
+            # key == invoice_number
+            bcol_refunds = cursor.execute(
+                f"""
+                SELECT key, total_amt
+                FROM bconline_billing_record
+                WHERE key in ({invoice_numbers_str})
+                    AND qty = -1
+                """
+            ).fetchall()
+
+            bcol_refunds_all.update({x[0]: Decimal(x[1]) for x in bcol_refunds})
 
         # set invoice_number as the key (makes it easier map against)
-        return {x[0]: Decimal(x[1]) for x in bcol_refunds}
+        return bcol_refunds_all
 
     @classmethod
     def _compare_and_update_records(cls, invoice_refs: List[InvoiceReference], bcol_records: dict):
