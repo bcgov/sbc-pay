@@ -284,4 +284,6 @@ class ReverseOperation(Enum):
     CORRECTION = 'CORRECTION'
 
 class CfsReceiptStatus(Enum):
+    """Routing Slip Receipt Status."""
+    
     REV = 'REV'
