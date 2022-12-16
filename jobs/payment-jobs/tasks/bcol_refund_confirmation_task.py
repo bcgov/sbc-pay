@@ -89,10 +89,10 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
                 """
             ).fetchall()
 
-            bcol_refunds_all.update(bcol_refunds)
+            bcol_refunds_all.update({x[0]: Decimal(x[1]) for x in bcol_refunds})
 
         # set invoice_number as the key (makes it easier map against)
-        return {x[0]: Decimal(x[1]) for x in bcol_refunds_all}
+        return bcol_refunds_all
 
     @classmethod
     def _compare_and_update_records(cls, invoice_refs: List[InvoiceReference], bcol_records: dict):
