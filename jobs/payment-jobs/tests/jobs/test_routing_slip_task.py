@@ -28,9 +28,8 @@ from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, ReverseOperation, RoutingSlipStatus)
-
-from tasks.routing_slip_task import RoutingSlipTask
 from pay_api.services import CFSService
+from tasks.routing_slip_task import RoutingSlipTask
 
 from .factory import (
     factory_distribution, factory_distribution_link, factory_invoice, factory_invoice_reference,
