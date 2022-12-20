@@ -31,9 +31,8 @@ from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.receipt import Receipt
 from pay_api.utils.enums import (
-    CfsAccountStatus, CfsReceiptStatus, InvoiceReferenceStatus,
-    InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
-    ReverseOperation, RoutingSlipStatus)
+    CfsAccountStatus, CfsReceiptStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod,
+    PaymentStatus, ReverseOperation, RoutingSlipStatus)
 from sentry_sdk import capture_message
 
 
