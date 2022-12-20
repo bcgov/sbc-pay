@@ -8,7 +8,8 @@ SELECT
 	pa.bcol_user_id AS "BCOL USER ID",
 	i.created_name AS "USER NAME",
 	ft.description AS "PRODUCT NAME",
-	ft.code AS "FEE CODE",
+	ft.code AS "PRODUCT CODE",
+	i.folio_number as "FOILO NUMBER",
 	i.id AS "INVOICE ID",
 	i.payment_method_code AS "PAYMENT METHOD",
 	i.invoice_status_code AS "INVOICE STATUS",
@@ -17,7 +18,6 @@ SELECT
 	i.service_fees AS "SERVICE FEE AMOUNT",
 	pli.gst AS "SERVICE FEE GST",
 	i.total AS "TOTAL AMOUNT (stat fee+ service fee)"
-
 FROM 
 	(((invoices i
     LEFT JOIN payment_accounts pa ON ((pa.id = i.payment_account_id)))
@@ -27,8 +27,6 @@ FROM
 	LEFT JOIN fee_schedules fs ON ((pli.fee_schedule_id = fs.fee_schedule_id))
 	LEFT JOIN filing_types ft ON ((ft.code = fs.filing_type_code))
 	)
-	
-where
-to_char(i.created_on,'YYYY-MM') = '2022-12'
+where to_char(i.created_on,'YYYY-MM') = '2022-12'
 and i.corp_type_code = 'BCA'
 order by 1;
