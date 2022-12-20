@@ -31,8 +31,8 @@ from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.receipt import Receipt
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
-    ReverseOperation, RoutingSlipStatus)
+    CfsAccountStatus, CfsReceiptStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod,
+    PaymentStatus, ReverseOperation, RoutingSlipStatus)
 from sentry_sdk import capture_message
 
 
@@ -66,7 +66,8 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                     payment_account.id)
 
                 # reverse routing slip receipt
-                CFSService.reverse_rs_receipt_in_cfs(cfs_account, routing_slip.number, ReverseOperation.LINK.value)
+                if CFSService.get_receipt(cfs_account, routing_slip.number).get('status') != CfsReceiptStatus.REV.value:
+                    CFSService.reverse_rs_receipt_in_cfs(cfs_account, routing_slip.number, ReverseOperation.LINK.value)
                 cfs_account.status = CfsAccountStatus.INACTIVE.value
 
                 # apply receipt to parent cfs account
