@@ -2,7 +2,7 @@
 --(PAY-DB)
 
 SELECT 
-	to_char(i.created_on,'MM-DD-YYYY') AS "DATE",
+	to_char(i.created_on at time zone 'utc' at time zone 'pst','MM-DD-YYYY') AS "DATE(PST)",
 	pa.auth_account_id AS "ACCOUNT NUMBER",
 	pa.name AS "ACCOUNT NAME",
 	pa.bcol_user_id AS "BCOL USER ID",
@@ -27,6 +27,6 @@ FROM
 	LEFT JOIN fee_schedules fs ON ((pli.fee_schedule_id = fs.fee_schedule_id))
 	LEFT JOIN filing_types ft ON ((ft.code = fs.filing_type_code))
 	)
-where to_char(i.created_on,'YYYY-MM') = '2022-12'
+where to_char(i.created_on at time zone 'utc' at time zone 'pst','YYYY-MM') = '2022-12'
 and i.corp_type_code = 'BCA'
 order by 1;
