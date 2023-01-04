@@ -435,11 +435,15 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                 paid_amount = payment_request.get('paidAmount', 0)
                 correction_total += paid_amount - payment.paid_amount
                 if payment.payment_method_code == PaymentMethod.CASH.value:
-                    comment += f'Cash Payment on {payment.payment_date} - was adjusted from ' \
-                        f'${payment.paid_amount} to ${paid_amount}\n'
+                    comment += f'Cash Payment corrected amount' \
+                        f' ${payment.paid_amount} to ${paid_amount}\n'
                 else:
-                    comment += f'Cheque Number {payment.cheque_receipt_number} on {payment.payment_date} - ' \
-                        f'was adjusted from ${payment.paid_amount} to ${paid_amount}\n'
+                    comment += f'Cheque Payment {payment.cheque_receipt_number}'
+                    if cheque_receipt_number := payment_request.get('chequeReceiptNumber'):
+                        payment.cheque_receipt_number = cheque_receipt_number
+                        comment += f' cheque receipt number corrected to {cheque_receipt_number}'
+                    if paid_amount != payment.paid_amount:
+                        comment += f' corrected amount ${payment.paid_amount} to ${paid_amount}\n'
                 payment.paid_amount = paid_amount
                 payment.paid_usd_amount = payment_request.get('paidUsdAmount', 0)
                 payment.flush()
