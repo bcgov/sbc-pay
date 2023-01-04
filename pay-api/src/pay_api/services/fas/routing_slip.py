@@ -412,6 +412,8 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                 routing_slip.remaining_amount = 0
             # This is outside the normal flow of payments, thus why we've done it here in FAS.
             elif status == RoutingSlipStatus.CORRECTION.value:
+                if not request_json.get('payments'):
+                    raise BusinessException(Error.INVALID_REQUEST)
                 correction_total, comment = cls._calculate_correction_and_comment(rs_number, request_json)
                 routing_slip.total += correction_total
                 routing_slip.remaining_amount += correction_total
@@ -426,11 +428,8 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
     def _calculate_correction_and_comment(cls, rs_number: str, request_json: Dict[str, any]):
         correction_total = Decimal('0')
         comment: str = ''
-        payment_requests = request_json.get('payments')
-        if not payment_requests:
-            raise BusinessException(Error.INVALID_REQUEST)
         payments = PaymentModel.find_payments_for_routing_slip(rs_number)
-        for payment_request in payment_requests:
+        for payment_request in request_json.get('payments'):
             if (payment := next(x for x in payments if x.id == payment_request.get('id'))):
                 paid_amount = payment_request.get('paidAmount', 0)
                 correction_total += paid_amount - payment.paid_amount
