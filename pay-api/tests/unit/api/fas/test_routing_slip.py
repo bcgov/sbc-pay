@@ -925,4 +925,4 @@ def test_routing_slip_correction(client, jwt, app):
 
     rv = client.get(f"/api/v1/fas/routing-slips/{rs.get('number')}/comments", headers=headers)
     assert rv.status_code == 200
-    assert rv.json.comments
+    assert rv.json.get('comments')

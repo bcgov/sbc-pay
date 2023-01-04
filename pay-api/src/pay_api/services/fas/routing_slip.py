@@ -412,7 +412,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                 routing_slip.remaining_amount = 0
             # This is outside the normal flow of payments, thus why we've done it here in FAS.
             elif status == RoutingSlipStatus.CORRECTION.value:
-                correction_total, comment = cls._calculate_correction_and_comment(rs_number, rs_number)
+                correction_total, comment = cls._calculate_correction_and_comment(rs_number, request_json)
                 routing_slip.total += correction_total
                 routing_slip.remaining_amount += correction_total
                 CommentModel(comment=comment, routing_slip_number=rs_number).flush()
