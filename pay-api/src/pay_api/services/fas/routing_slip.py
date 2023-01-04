@@ -26,6 +26,7 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import RoutingSlipSchema
+from pay_api.models import Comment as CommentModel
 from pay_api.services.fas.routing_slip_status_transition_service import RoutingSlipStatusTransitionService
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.enums import (
@@ -393,7 +394,6 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
 
         if patch_action == PatchActions.UPDATE_STATUS:
-            # Update the remaining amount as negative total of sum of all totals for that routing slip.
             status = request_json.get('status')
             RoutingSlipStatusTransitionService.validate_possible_transitions(routing_slip, status)
             status = RoutingSlipStatusTransitionService.get_actual_status(status)
@@ -401,6 +401,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
             RoutingSlip._check_roles_for_status_update(status, user)
             # Our routing_slips job will create an invoice (under transactions in the UI).
             if status == RoutingSlipStatus.NSF.value:
+                # Update the remaining amount as negative total of sum of all totals for that routing slip.
                 total_paid_to_reverse: float = 0
                 for rs in (routing_slip, *RoutingSlipModel.find_children(routing_slip.number)):
                     total_paid_to_reverse += rs.total
@@ -409,11 +410,40 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                 if routing_slip.invoices:
                     raise BusinessException(Error.RS_HAS_TRANSACTIONS)
                 routing_slip.remaining_amount = 0
+            # This is outside the normal flow of payments, thus why we've done it here in FAS.
+            elif status == RoutingSlipStatus.CORRECTION.value:
+                correction_total, comment = cls._calculate_correction_and_comment(rs_number, rs_number)
+                routing_slip.total += correction_total
+                routing_slip.remaining_amount += correction_total
+                CommentModel(comment=comment, routing_slip_number=rs_number).flush()
 
             routing_slip.status = status
 
         routing_slip.save()
         return cls.find_by_number(rs_number)
+
+    @classmethod
+    def _calculate_correction_and_comment(cls, rs_number: str, request_json: Dict[str, any]):
+        correction_total = Decimal('0')
+        comment: str = ''
+        payment_requests = request_json.get('payments')
+        if not payment_requests:
+            raise BusinessException(Error.INVALID_REQUEST)
+        payments = PaymentModel.find_payments_for_routing_slip(rs_number)
+        for payment_request in payment_requests:
+            if (payment := next(x for x in payments if x.id == payment_request.get('id'))):
+                paid_amount = payment_request.get('paidAmount', 0)
+                correction_total += paid_amount - payment.paid_amount
+                if payment.payment_method_code == PaymentMethod.CASH.value:
+                    comment += f'Cash Payment on {payment.payment_date} - was adjusted from ' \
+                        f'${payment.paid_amount} to ${paid_amount}\n'
+                else:
+                    comment += f'Cheque Number {payment.cheque_receipt_number} on {payment.payment_date} - ' \
+                        f'was adjusted from ${payment.paid_amount} to ${paid_amount}\n'
+                payment.paid_amount = paid_amount
+                payment.paid_usd_amount = payment_request.get('paidUsdAmount', 0)
+                payment.flush()
+        return correction_total, comment
 
     @staticmethod
     def _check_roles_for_status_update(status: str, user: UserContext):

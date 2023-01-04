@@ -103,6 +103,14 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query.one_or_none()
 
     @classmethod
+    def find_payments_for_routing_slip(cls, routing_slip: str):
+        """Find payment records created for a routing slip."""
+        return db.session.query(Payment) \
+            .filter(Payment.receipt_number == routing_slip) \
+            .filter(Payment.is_routing_slip.is_(True)) \
+            .all()
+
+    @classmethod
     def search_account_payments(cls, auth_account_id: str, payment_status: str, page: int, limit: int):
         """Search payment records created for the account."""
         query = db.session.query(Payment, Invoice) \
