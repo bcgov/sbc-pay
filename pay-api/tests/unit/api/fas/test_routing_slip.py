@@ -911,7 +911,8 @@ def test_routing_slip_correction(client, jwt, app):
             {
                 'id': payment_id,
                 'paidAmount': 50,
-                'paidUsdAmount': 50
+                'paidUsdAmount': 50,
+                'chequeReceiptNumber': '911'
             }
         ]
     }
@@ -922,6 +923,10 @@ def test_routing_slip_correction(client, jwt, app):
     assert rv.json.get('total') == 50
     assert rv.json.get('remainingAmount') == 50
     assert rv.json.get('status') == RoutingSlipStatus.CORRECTION.value
+    assert rv.json.get('payments')
+    assert rv.json.get('payments')[0].get('paidAmount') == 50
+    assert rv.json.get('payments')[0].get('paidUsdAmount') == 50
+    assert rv.json.get('payments')[0].get('chequeReceiptNumber') == '911'
 
     rv = client.get(f"/api/v1/fas/routing-slips/{rs.get('number')}/comments", headers=headers)
     assert rv.status_code == 200

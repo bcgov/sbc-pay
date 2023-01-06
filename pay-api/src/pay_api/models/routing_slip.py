@@ -83,6 +83,15 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
 
     parent = relationship('RoutingSlip', remote_side=[number], lazy='select')
 
+    def generate_cas_receipt_number(self) -> str:
+        """Return a unique identifier - receipt number for CAS."""
+        receipt_number: str = self.number
+        if self.parent_number:
+            receipt_number += 'L'
+        if self.cas_version_suffix > 1:
+            receipt_number += f'R{self.cas_version_suffix}'
+        return receipt_number
+
     @classmethod
     def find_by_number(cls, number: str) -> RoutingSlip:
         """Return a routing slip by number."""
