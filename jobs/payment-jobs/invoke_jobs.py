@@ -119,9 +119,10 @@ def run(job_name):
         UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
         application.logger.info(f'<<<< Completed Sending notification for OB invoices >>>>')
     elif job_name == 'ROUTING_SLIP':
-        RoutingSlipTask.link_routing_slips()
-        RoutingSlipTask.process_void()
-        RoutingSlipTask.process_nsf()
+        # RoutingSlipTask.link_routing_slips()
+        # RoutingSlipTask.process_void()
+        # RoutingSlipTask.process_nsf()
+        RoutingSlipTask.process_correction()
         RoutingSlipTask.adjust_routing_slips()
         application.logger.info(f'<<<< Completed Routing Slip tasks >>>>')
     elif job_name == 'EJV_PAYMENT':
