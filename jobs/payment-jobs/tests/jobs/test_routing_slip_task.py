@@ -184,6 +184,46 @@ def test_process_void(session):
         mock_cfs_reverse_2.assert_not_called()
 
 
+def test_process_correction(session):
+    """Test Routing slip set to CORRECTION."""
+    # Scenarios:
+    # 1. Correction with 2 child routing slips.
+    # 2. Correction then link.
+    child_1 = '123456789'
+    child_2 = '987654321'
+    parent = '111111111'
+    factory_routing_slip_account(number=child_1, status=CfsAccountStatus.ACTIVE.value, total=10)
+    factory_routing_slip_account(number=child_2, status=CfsAccountStatus.ACTIVE.value, total=10)
+    factory_routing_slip_account(number=parent, status=CfsAccountStatus.ACTIVE.value, total=10)
+
+    child_1_rs = RoutingSlipModel.find_by_number(child_1)
+    child_2_rs = RoutingSlipModel.find_by_number(child_2)
+    parent_rs = RoutingSlipModel.find_by_number(parent)
+
+    # Do Link
+    for child in (child_2_rs, child_1_rs):
+        child.status = RoutingSlipStatus.LINKED.value
+        child.parent_number = parent_rs.number
+        child.save()
+
+    RoutingSlipTask.link_routing_slips()
+
+    parent_rs.status = RoutingSlipStatus.CORRECTION.value
+    parent_rs.total = 5
+    parent_rs.save()
+
+    with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_cfs_reverse:
+        RoutingSlipTask.process_correction()
+        mock_cfs_reverse.assert_called()
+
+    # Assert the records.
+    assert float(RoutingSlipModel.find_by_number(parent_rs.number).remaining_amount) == 0
+
+    with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_cfs_reverse_2:
+        RoutingSlipTask.process_correction()
+        mock_cfs_reverse_2.assert_not_called()
+
+
 def test_link_to_nsf_rs(session):
     """Test routing slip with NSF as parent."""
     child_rs_number = '1234'
