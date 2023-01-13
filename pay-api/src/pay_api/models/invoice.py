@@ -22,19 +22,15 @@ from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
-from pay_api.utils.constants import INCORPORATION_LABEL, REGISTRATION_LABEL
-from pay_api.utils.enums import CorpType as CorpTypeEnum
-from pay_api.utils.enums import (
-    InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus, Product)
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
 
 from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
-from .corp_type import CorpType
 from .db import db, ma
 from .invoice_reference import InvoiceReferenceSchema
+from .payment_account import PaymentAccountSchema
 from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from .receipt import ReceiptSchema
-from .payment_account import PaymentAccountSchema
 
 
 class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
@@ -175,15 +171,4 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
         if data.get('status_code') == InvoiceStatus.PAID.value:
             data['status_code'] = PaymentStatus.COMPLETED.value
 
-        # If it's a BUSINESS invoice, then push details.
-
-        if data.get('business_identifier', None):
-            corp_type: CorpType = CorpType.find_by_code(data.get('corp_type_code'))
-            if corp_type.product == Product.BUSINESS.value and corp_type.code != CorpTypeEnum.NRO.value:
-                details: list[dict] = data.get('details')
-                if not details:
-                    details = []
-                label = REGISTRATION_LABEL if corp_type.code in ('SP', 'GP') else INCORPORATION_LABEL
-                details.insert(0, dict(label=label, value=data.get('business_identifier')))
-                data['details'] = details
         return data
