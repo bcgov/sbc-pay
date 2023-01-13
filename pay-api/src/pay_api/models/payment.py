@@ -20,7 +20,7 @@ import pytz
 from flask import current_app
 from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey, func, or_
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import contains_eager, lazyload, relationship
 
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import InvoiceReferenceStatus
@@ -33,9 +33,11 @@ from .base_model import BaseModel
 from .base_schema import BaseSchema
 from .corp_type import CorpType
 from .db import db
+from .fee_schedule import FeeSchedule
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
 from .payment_account import PaymentAccount
+from .payment_line_item import PaymentLineItem
 from .payment_method import PaymentMethod
 from .payment_status_code import PaymentStatusCode
 from .payment_system import PaymentSystem
@@ -166,8 +168,19 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         user: UserContext = kwargs['user']
         product_code = user.product_code
 
+        # Exclude 'receipts', 'references', they aren't serialized, use specific fields that will be serialized.
         query = db.session.query(Invoice) \
             .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id) \
+            .outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id) \
+            .outerjoin(FeeSchedule, FeeSchedule.fee_schedule_id == PaymentLineItem.fee_schedule_id) \
+            .options(
+                lazyload('*'),
+                contains_eager(Invoice.payment_line_items).contains_eager(PaymentLineItem.fee_schedule)
+                .load_only(FeeSchedule.filing_type_code),
+                contains_eager(Invoice.payment_account).load_only(PaymentAccount.auth_account_id,
+                                                                  PaymentAccount.name,
+                                                                  PaymentAccount.billable)
+        ) \
             .filter(PaymentAccount.auth_account_id == auth_account_id)
         # If a product code is present in token (service account), then filter only that product's invoices.
         if product_code:
@@ -213,19 +226,24 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
 
         if not return_all:
             # Add pagination
-            pagination = query.paginate(per_page=limit, page=page)
-            result, count = pagination.items, pagination.total
+            sub_query = query.with_entities(Invoice.id).\
+                    group_by(Invoice.id).\
+                    limit(limit).\
+                    offset((page - 1) * limit).\
+                    subquery()
+            result, count = query.filter(Invoice.id.in_(sub_query)).all(), query.count()
             # If maximum number of records is provided, return it as total
             if max_no_records > 0:
                 count = max_no_records if max_no_records < count else count
-        else:
+        elif max_no_records > 0:
             # If maximum number of records is provided, set the page with that number
-            if max_no_records > 0:
-                pagination = query.paginate(per_page=max_no_records, page=1)
-                result, count = pagination.items, max_no_records
-            else:
-                result = query.all()
-                count = len(result)
+            sub_query = query.with_entities(Invoice.id).\
+                group_by(Invoice.id).\
+                limit(max_no_records)
+            result, count = query.filter(Invoice.id.in_(sub_query.subquery())).all(), sub_query.count()
+        else:
+            result = query.all()
+            count = len(result)
 
         return result, count
 
