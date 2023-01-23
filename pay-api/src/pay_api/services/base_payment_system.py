@@ -29,14 +29,14 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import CorpType
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.flags import flags
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus
+from pay_api.utils.enums import (
+    CorpType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus)
 from pay_api.utils.user_context import UserContext
 from pay_api.utils.util import get_local_formatted_date_time, get_pay_subject_name
 
