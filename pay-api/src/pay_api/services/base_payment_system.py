@@ -35,7 +35,8 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus
+from pay_api.utils.enums import (
+    CorpType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus)
 from pay_api.utils.user_context import UserContext
 from pay_api.utils.util import get_local_formatted_date_time, get_pay_subject_name
 
@@ -140,6 +141,9 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Release record."""
         from .payment_transaction import PaymentTransaction  # pylint:disable=import-outside-toplevel,cyclic-import
         from .payment_transaction import publish_response  # pylint:disable=import-outside-toplevel,cyclic-import
+
+        if invoice.corp_type_code == CorpType.CSO.value:
+            return
 
         payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
         try:
