@@ -195,6 +195,7 @@ class CorpType(Enum):
     NRO = 'NRO'
     PPR = 'PPR'
     VS = 'VS'
+    CSO = 'CSO'
 
 
 class DisbursementStatus(Enum):
@@ -282,3 +283,9 @@ class ReverseOperation(Enum):
     LINK = 'LINK'
     VOID = 'VOID'
     CORRECTION = 'CORRECTION'
+
+
+class CfsReceiptStatus(Enum):
+    """Routing Slip Receipt Status."""
+
+    REV = 'REV'
