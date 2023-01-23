@@ -83,7 +83,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
                 payment_line_item.fee_distribution_id)
 
             index = index + 1
-            revenue_string = DirectPayService._get_gl_coding(distribution_code, payment_line_item.total)
+            revenue_string = DirectPayService._get_gl_coding(distribution_code, payment_line_item.filing_fees)
 
             revenue_item.append(f'{index}:{revenue_string}')
             if payment_line_item.service_fees is not None and payment_line_item.service_fees > 0:
@@ -92,6 +92,14 @@ class DirectPayService(PaymentSystemService, OAuthService):
                     distribution_code.service_fee_distribution_code_id)
                 revenue_service_fee_string = DirectPayService._get_gl_coding(service_fee,
                                                                              payment_line_item.service_fees)
+                revenue_item.append(f'{index}:{revenue_service_fee_string}')
+
+            if payment_line_item.gst is not None and payment_line_item.gst > 0:
+                index = index + 1
+                gst_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
+                    distribution_code.gst_distribution_code_id)
+                revenue_service_fee_string = DirectPayService._get_gl_coding(gst_distribution_code,
+                                                                             payment_line_item.gst)
                 revenue_item.append(f'{index}:{revenue_service_fee_string}')
 
         return PAYBC_REVENUE_SEPARATOR.join(revenue_item)

@@ -29,10 +29,10 @@ from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import (
     CFS_ADJ_ACTIVITY_NAME, CFS_BATCH_SOURCE, CFS_CASH_RCPT, CFS_CM_BATCH_SOURCE, CFS_CMS_TRX_TYPE, CFS_CUST_TRX_TYPE,
     CFS_CUSTOMER_PROFILE_CLASS, CFS_DRAWDOWN_BALANCE, CFS_FAS_CUSTOMER_PROFILE_CLASS, CFS_LINE_TYPE,
-    CFS_NSF_REVERSAL_REASON, CFS_PAYMENT_REVERSAL_REASON, CFS_RCPT_EFT_WIRE, CFS_TERM_NAME, DEFAULT_ADDRESS_LINE_1,
-    DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
+    CFS_NSF_REVERSAL_REASON, CFS_PAYMENT_REVERSAL_REASON, CFS_RCPT_EFT_WIRE, CFS_TAX_LINE_TYPE, CFS_TERM_NAME,
+    DEFAULT_ADDRESS_LINE_1, DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
     RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP)
-from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, ReverseOperation
+from pay_api.utils.enums import AuthHeaderType, BuildLineType, ContentType, PaymentMethod, ReverseOperation
 from pay_api.utils.util import current_local_time, generate_transaction_number
 
 
@@ -391,78 +391,89 @@ class CFSService(OAuthService):
                                  dist.distribution_code_id == line_item.fee_distribution_id][0] \
                 if line_item.fee_distribution_id else None
 
-            if line_item.total > 0:
-                # Check if a line with same GL code exists, if YES just add up the amount. if NO, create a new line.
-                line = lines_map[distribution_code.distribution_code_id]
-
-                if not line:
-                    index = index + 1
-                    distribution = [dict(
-                        dist_line_number=index,
-                        amount=cls._get_amount(line_item.total, negate),
-                        account=f'{distribution_code.client}.{distribution_code.responsibility_centre}.'
-                                f'{distribution_code.service_line}.{distribution_code.stob}.'
-                                f'{distribution_code.project_code}.000000.0000'
-                    )] if distribution_code else None
-
-                    line = {
-                        'line_number': index,
-                        'line_type': CFS_LINE_TYPE,
-                        'description': line_item.description,
-                        'unit_price': cls._get_amount(line_item.total, negate),
-                        'quantity': 1,
-                        # 'attribute1': line_item.invoice_id,
-                        # 'attribute2': line_item.id,
-                        'distribution': distribution
-                    }
+            if line_item.filing_fees > 0:
+                if line := lines_map[distribution_code.distribution_code_id]:
+                    line = cls._add_price_and_distribution_to_existing_line(line, line_item.filing_fees, negate)
                 else:
-                    # Add up the price and distribution
-                    line['unit_price'] = line['unit_price'] + cls._get_amount(line_item.total, negate)
-                    line['distribution'][0]['amount'] = line['distribution'][0]['amount'] + \
-                        cls._get_amount(line_item.total, negate)
-
+                    index += 1
+                    line = cls._build_new_line(index, BuildLineType.FILING_FEES,
+                                               line_item, distribution_code, negate)
                 lines_map[distribution_code.distribution_code_id] = line
 
             if line_item.service_fees > 0:
                 service_fee_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
                     distribution_code.service_fee_distribution_code_id)
-                service_line = lines_map[service_fee_distribution.distribution_code_id]
-
-                if not service_line:
-                    index = index + 1
-                    service_line = {
-                        'line_number': index,
-                        'line_type': CFS_LINE_TYPE,
-                        'description': 'Service Fee',
-                        'unit_price': cls._get_amount(line_item.service_fees, negate),
-                        'quantity': 1,
-                        # 'attribute1': line_item.invoice_id,
-                        # 'attribute2': line_item.id,
-                        'distribution': [
-                            {
-                                'dist_line_number': index,
-                                'amount': cls._get_amount(line_item.service_fees, negate),
-                                'account': f'{service_fee_distribution.client}.'
-                                           f'{service_fee_distribution.responsibility_centre}.'
-                                           f'{service_fee_distribution.service_line}.'
-                                           f'{service_fee_distribution.stob}.'
-                                           f'{service_fee_distribution.project_code}.000000.0000'
-                            }
-                        ]
-                    }
-
+                if service_line := lines_map[service_fee_distribution.distribution_code_id]:
+                    service_line = cls._add_price_and_distribution_to_existing_line(service_line,
+                                                                                    line_item.service_fees, negate)
                 else:
-                    # Add up the price and distribution
-                    service_line['unit_price'] = service_line['unit_price'] + \
-                                                               cls._get_amount(line_item.service_fees, negate)
-                    service_line['distribution'][0]['amount'] = service_line['distribution'][0]['amount'] + \
-                        cls._get_amount(line_item.service_fees, negate)
+                    index += 1
+                    service_line = cls._build_new_line(index, BuildLineType.SERVICE_FEE, line_item,
+                                                       service_fee_distribution, negate)
                 lines_map[service_fee_distribution.distribution_code_id] = service_line
+
+            if line_item.gst > 0:
+                gst_distribution: DistributionCodeModel = DistributionCodeModel.find_by_id(
+                    service_fee_distribution.gst_distribution_code_id)
+                if gst_line := lines_map[gst_distribution.distribution_code_id]:
+                    gst_line = cls._add_price_and_distribution_to_existing_line(gst_line, line_item.gst, negate)
+                else:
+                    index += 1
+                    gst_line, index = cls._build_new_line(index, BuildLineType.GST, line_item, gst_distribution,
+                                                          negate)
+                lines_map[gst_distribution.distribution_code_id] = gst_line
+
         return list(lines_map.values())
 
     @classmethod
     def _get_amount(cls, amount, negate):
         return -amount if negate else amount
+
+    @classmethod
+    def _build_new_line(cls, index: int, line_type: BuildLineType,  # pylint: disable=too-many-arguments
+                        line_item: PaymentLineItemModel, distribution_code: DistributionCodeModel, negate: bool):
+        """Build the line item."""
+        distribution = [dict(
+                dist_line_number=index,
+                amount=cls._get_amount(line_item.total, negate),
+                account=f'{distribution_code.client}.{distribution_code.responsibility_centre}.'
+                        f'{distribution_code.service_line}.{distribution_code.stob}.'
+                        f'{distribution_code.project_code}.000000.0000'
+        )]
+
+        line = {
+            'line_number': index,
+            'quantity': 1,
+            'distribution': distribution
+        }
+        # When upgrading python, convert this to case switch equivalent.
+        if line_type == BuildLineType.FILING_FEES:
+            line.update({
+                'line_type': CFS_LINE_TYPE,
+                'description': line_item.description,
+                'unit_price': cls._get_amount(line_item.total, negate),
+            })
+        elif line_type == BuildLineType.SERVICE_FEE:
+            line.update({
+                'line_type': CFS_LINE_TYPE,
+                'description': 'Service Fee',
+                'unit_price': cls._get_amount(line_item.service_fees, negate),
+            })
+        elif line_type == BuildLineType.GST:
+            line.update({
+                'line_type': CFS_TAX_LINE_TYPE,
+                'description': 'GST',
+                'unit_price': cls._get_amount(line_item.gst, negate)
+            })
+
+        return line, index
+
+    @classmethod
+    def _add_price_and_distribution_to_existing_line(cls, line, amount, negate: bool):
+        line['unit_price'] = line['unit_price'] + cls._get_amount(amount, negate)
+        line['distribution'][0]['amount'] = line['distribution'][0]['amount'] + \
+            cls._get_amount(amount, negate)
+        return line
 
     @staticmethod
     def reverse_invoice(inv_number: str):

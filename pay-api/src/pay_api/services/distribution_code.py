@@ -55,6 +55,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         self._end_date: date = None
         self._service_fee_distribution_code_id: int = None
         self._disbursement_distribution_code_id: int = None
+        self._gst_distribution_code_id: int = None
         self._stop_ejv: bool = False
         self._account_id: int = None
 
@@ -92,6 +93,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         self._end_date: date = self._dao.end_date
         self._service_fee_distribution_code_id = self._dao.service_fee_distribution_code_id
         self._disbursement_distribution_code_id = self._dao.disbursement_distribution_code_id
+        self._gst_distribution_code_id = self._dao.gst_distribution_code_id
         self._stop_ejv: bool = self._dao.stop_ejv
         self._account_id: int = self._dao.account_id
 
@@ -121,6 +123,17 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         """Set the disbursement_distribution_code_id."""
         self._disbursement_distribution_code_id = value
         self._dao.disbursement_distribution_code_id = value
+
+    @property
+    def gst_distribution_code_id(self):
+        """Return the gst_distribution_code_id."""
+        return self._gst_distribution_code_id
+
+    @gst_distribution_code_id.setter
+    def gst_distribution_code_id(self, value: int):
+        """Set the gst_distribution_code_id."""
+        self._gst_distribution_code_id = value
+        self._dao.gst_distribution_code_id = value
 
     @property
     def end_date(self):
@@ -377,13 +390,17 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
         dist_code_svc.service_fee_distribution_code_id = distribution_details.get('serviceFeeDistributionCodeId', None)
         dist_code_svc.disbursement_distribution_code_id = distribution_details.get('disbursementDistributionCodeId',
                                                                                    None)
+        dist_code_svc.gst_distribution_code_id = distribution_details.get('gstDistributionCodeId',
+                                                                          None)
         dist_code_svc.account_id = distribution_details.get('accountId', None)
 
         if _has_code_changes and dist_id is not None:
             # Update all invoices which used this distribution for updating revenue account details
-            # If this is a service fee distribution, then find all distribution which uses this and update them.
+            # If this is a service / gst fee distribution, then find all distribution which uses this and update them.
             InvoiceModel.update_invoices_for_revenue_updates(dist_id)
             for dist in DistributionCodeModel.find_by_service_fee_distribution_id(dist_id):
+                InvoiceModel.update_invoices_for_revenue_updates(dist.distribution_code_id)
+            for dist in DistributionCodeModel.find_by_gst_fee_distribution_id(dist_id):
                 InvoiceModel.update_invoices_for_revenue_updates(dist.distribution_code_id)
 
         # Reset stop jv for every dave.

@@ -211,8 +211,8 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
 
     @property
     def gst(self):
-        """Return the fee amount."""
-        return 0  # TODO
+        """Return the gst amount."""
+        return self._fee_amount * Decimal('0.05')  ## TODO GST rate
 
     @property
     def pst(self):

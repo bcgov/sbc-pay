@@ -288,3 +288,11 @@ class CfsReceiptStatus(Enum):
     """Routing Slip Receipt Status."""
 
     REV = 'REV'
+
+
+class BuildLineType(Enum):
+    """Build line types."""
+
+    SERVICE_FEE = 'SERVICE_FEE'
+    FILING_FEES = 'FILING_FEES'
+    GST = 'GST'

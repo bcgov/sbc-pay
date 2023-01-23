@@ -78,8 +78,12 @@ class DistributionCode(Audit, VersionedModel):  # pylint:disable=too-many-instan
 
     service_fee_distribution_code_id = db.Column(db.Integer, ForeignKey('distribution_codes.distribution_code_id'),
                                                  nullable=True)
+
     disbursement_distribution_code_id = db.Column(db.Integer, ForeignKey('distribution_codes.distribution_code_id'),
                                                   nullable=True)
+
+    gst_distribution_code_id = db.Column(db.Integer, ForeignKey('distribution_codes.distribution_code_id'),
+                                         nullable=True)
     # account id for distribution codes for gov account. None for distribution codes for filing types
     account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
 
@@ -87,6 +91,9 @@ class DistributionCode(Audit, VersionedModel):  # pylint:disable=too-many-instan
                                                  remote_side=[distribution_code_id], lazy='select')
     disbursement_distribution_code = relationship('DistributionCode', foreign_keys=[disbursement_distribution_code_id],
                                                   remote_side=[distribution_code_id], lazy='select')
+    gst_distribution_code = relationship('DistributionCode', foreign_keys=[gst_distribution_code_id],
+                                         remote_side=[distribution_code_id], lazy='select')
+
     account = relationship('PaymentAccount', lazy='joined')
 
     def __str__(self):
@@ -112,6 +119,12 @@ class DistributionCode(Audit, VersionedModel):  # pylint:disable=too-many-instan
         """Find by service fee distribution id."""
         return cls.query.filter(
             DistributionCode.service_fee_distribution_code_id == service_fee_distribution_code_id).all()
+
+    @classmethod
+    def find_by_gst_fee_distribution_id(cls, gst_fee_distribution_code_id):
+        """Find by gst fee distribution id."""
+        return cls.query.filter(
+            DistributionCode.gst_fee_distribution_code_id == gst_fee_distribution_code_id).all()
 
     @classmethod
     def find_by_active_for_fee_schedule(cls, fee_schedule_id: int):
