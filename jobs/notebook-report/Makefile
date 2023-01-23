@@ -1,12 +1,19 @@
 .PHONY: license
 .PHONY: setup
 .PHONY: ci cd
-.PHONY: run
+.PHONY: db run
 
 MKFILE_PATH:=$(abspath $(lastword $(MAKEFILE_LIST)))
 CURRENT_ABS_DIR:=$(patsubst %/,%,$(dir $(MKFILE_PATH)))
 
-PROJECT_NAME:=pay-notebook-report
+PROJECT_NAME:=notebook-report
+DOCKER_NAME:=notebook-report
+
+#################################################################################
+# COMMANDS -- license                                                           #
+#################################################################################
+license: ## Verify source code license headers.
+	./scripts/verify_license_headers.sh $(CURRENT_ABS_DIR)/src $(CURRENT_ABS_DIR)/tests
 
 #################################################################################
 # COMMANDS -- Setup                                                             #
@@ -38,14 +45,14 @@ clean-test: ## clean test files
 build-req: clean ## Upgrade requirements
 	test -f venv/bin/activate || python3.8 -m venv  $(CURRENT_ABS_DIR)/venv ;\
 	. venv/bin/activate ;\
-	pip install pip==20.3.3 ;\
+	pip install pip==21.1.2 ;\
 	pip install -Ur requirements/prod.txt ;\
-	pip freeze | sort > requirements.txt ;\
+	pip freeze | sort > requirements.txt
 
 install: clean ## Install python virtrual environment
 	test -f venv/bin/activate || python3.8 -m venv  $(CURRENT_ABS_DIR)/venv ;\
 	. venv/bin/activate ;\
-	pip install pip==20.3.3 ;\
+	pip install pip==21.1.2 ;\
 	pip install -Ur requirements.txt
 
 install-dev: ## Install local application
@@ -56,36 +63,81 @@ install-dev: ## Install local application
 #################################################################################
 # COMMANDS - CI                                                                 #
 #################################################################################
-ci: lint flake8 test ## CI flow
+ci: pylint flake8 test ## CI flow
 
-lint: ## Linting with pylint
+pylint: ## Linting with pylint
 	. venv/bin/activate && pylint --rcfile=setup.cfg  notebookreport.py
 
 flake8: ## Linting with flake8
 	. venv/bin/activate && flake8 notebookreport.py
 
+lint: pylint flake8 ## run all lint type scripts
+
 test: ## Unit testing
 	. venv/bin/activate && pytest
 
-mac-cov: test ## Run the coverage report and display in a browser window (mac)
-	@open -a "Google Chrome" htmlcov/index.html
+mac-cov: local-test ## Run the coverage report and display in a browser window (mac)
+	open -a "Google Chrome" htmlcov/index.html
 
 #################################################################################
-# COMMANDS - CD                                                               #
+# COMMANDS - CD
+# expects the terminal to be docker login
+# expects export OPENSHIFT_DOCKER_REGISTRY=""
+# expects export OPENSHIFT_SA_NAME="$(oc whoami)"
+# expects export OPENSHIFT_SA_TOKEN="$(oc whoami -t)"
+# expects export OPENSHIFT_REPOSITORY=""
+# expects export TAG_NAME="dev/test/prod"
+# expects export OPS_REPOSITORY=""                                                        #
 #################################################################################
-cd: build ## CD flow
+cd: ## CD flow
+ifeq ($(TAG_NAME), test)
+cd: update-env
+	oc -n "$(OPENSHIFT_REPOSITORY)-tools" tag $(DOCKER_NAME):dev $(DOCKER_NAME):$(TAG_NAME)
+else ifeq ($(TAG_NAME), prod)
+cd: update-env
+	oc -n "$(OPENSHIFT_REPOSITORY)-tools" tag $(DOCKER_NAME):$(TAG_NAME) $(DOCKER_NAME):$(TAG_NAME)-$(shell date +%F)
+	oc -n "$(OPENSHIFT_REPOSITORY)-tools" tag $(DOCKER_NAME):test $(DOCKER_NAME):$(TAG_NAME)
+else
+TAG_NAME=dev
+cd: build update-env tag
+endif
 
 build: ## Build the docker container
-	docker build -t $(PROJECT_NAME) .
+	docker build . -t $(DOCKER_NAME) \
+		--build-arg VCS_REF=$(shell git rev-parse --short HEAD) \
+		--build-arg BUILD_DATE=$(shell date -u +"%Y-%m-%dT%H:%M:%SZ") \
 
 build-nc: ## Build the docker container without caching
-	docker build --no-cache -t $(PROJECT_NAME) .
+	docker build --no-cache -t $(DOCKER_NAME) .
+
+REGISTRY_IMAGE=$(OPENSHIFT_DOCKER_REGISTRY)/$(OPENSHIFT_REPOSITORY)-tools/$(DOCKER_NAME)
+push: #build ## Push the docker container to the registry & tag latest
+	@echo "$(OPENSHIFT_SA_TOKEN)" | docker login $(OPENSHIFT_DOCKER_REGISTRY) -u $(OPENSHIFT_SA_NAME) --password-stdin ;\
+    docker tag $(DOCKER_NAME) $(REGISTRY_IMAGE):latest ;\
+    docker push $(REGISTRY_IMAGE):latest
+
+VAULTS=`cat devops/vaults.json`
+update-env: ## Update env from 1pass
+	oc -n "$(OPS_REPOSITORY)-$(TAG_NAME)" exec "dc/vault-service-$(TAG_NAME)" -- ./scripts/1pass.sh \
+		-m "secret" \
+		-e "$(TAG_NAME)" \
+		-a "$(DOCKER_NAME)-$(TAG_NAME)" \
+		-n "$(OPENSHIFT_REPOSITORY)-$(TAG_NAME)" \
+		-v "$(VAULTS)" \
+		-r "false" \
+		-f "false"
+
+tag: push ## tag image
+	oc -n "$(OPENSHIFT_REPOSITORY)-tools" tag $(DOCKER_NAME):latest $(DOCKER_NAME):$(TAG_NAME)
+
 #################################################################################
 # COMMANDS - Local                                                              #
 #################################################################################
+run: db ## Run the project in local
+	. venv/bin/activate && python -m flask run -p 5000
 
-run: ## Run the project in local
-	. venv/bin/activate && python notebookreport.py
+db: ## Update the local database
+	. venv/bin/activate && python -m manage.py db upgrade
 
 #################################################################################
 # Self Documenting Commands                                                     #

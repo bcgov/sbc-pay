@@ -1,0 +1,9 @@
+[
+    {
+        "vault": "pay",
+        "application": [
+            "postgres-pay",
+            "notebook-report-pay"
+        ]
+    }
+]
