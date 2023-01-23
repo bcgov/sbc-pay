@@ -142,7 +142,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         from .payment_transaction import PaymentTransaction  # pylint:disable=import-outside-toplevel,cyclic-import
         from .payment_transaction import publish_response  # pylint:disable=import-outside-toplevel,cyclic-import
 
-        if invoice.corp_type_code == CorpType.CSO.value:
+        if invoice.corp_type_code in [CorpType.CSO.value, CorpType.RPT.value, CorpType.PPR.value, CorpType.VS.value]:
             return
 
         payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)

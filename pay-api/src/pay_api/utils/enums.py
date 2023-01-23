@@ -196,6 +196,7 @@ class CorpType(Enum):
     PPR = 'PPR'
     VS = 'VS'
     CSO = 'CSO'
+    RPT = 'RPT'
 
 
 class DisbursementStatus(Enum):
