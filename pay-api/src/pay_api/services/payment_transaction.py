@@ -511,7 +511,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             'paymentToken': {
                 'id': invoice.id,
                 'statusCode': status_code,
-                'filingIdentifier': invoice.filing_id
+                'filingIdentifier': invoice.filing_id,
+                'corpTypeCode': invoice.corp_type_code
             }
         }
         return payload
