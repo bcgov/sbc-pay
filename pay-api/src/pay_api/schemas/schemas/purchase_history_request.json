@@ -129,13 +129,14 @@
         ]
      },
      "paymentMethod":{
-        "$id":"#/properties/id",
+        "$id":"#/properties/paymentMethod",
         "type":"string",
-        "title":"Invoice id",
-        "description":"Invoice id Filter (filters on invoice id).",
+        "title":"Payment Method",
+        "description":"Payment Method used for payment (defined by api enum PaymentMethod).",
         "default":"",
         "examples":[
-           "1234"
+           "PAD",
+           "CC"
         ]
      },
      "weekFilter":{

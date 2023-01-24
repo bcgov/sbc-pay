@@ -240,6 +240,16 @@ def test_search_payment_history(session):
     assert results is not None
     assert results.get('items') is not None
     assert results.get('total') == 1
+    
+    # Search by different filter
+    search_filter = {
+        'paymentMethod': PaymentMethod.CC.value
+    }
+    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
+                                                      search_filter=search_filter, limit=1, page=1)
+    assert results is not None
+    assert results.get('items') is not None
+    assert results.get('total') == 2
 
 
 def test_search_payment_history_for_all(session):
