@@ -161,7 +161,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     @user_context
-    def search_purchase_history(cls,  # pylint:disable=too-many-arguments, too-many-locals, too-many-branches
+    def search_purchase_history(cls,  # noqa:E501; pylint:disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements;
                                 auth_account_id: str, search_filter: Dict,
                                 page: int, limit: int, return_all: bool, max_no_records: int = 0, **kwargs):
         """Search for purchase history."""

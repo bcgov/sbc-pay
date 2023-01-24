@@ -516,7 +516,8 @@ def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.va
 
 
 def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees: int = 10, total: int = 10,
-                              service_fees: int = 0, status: str = LineItemStatus.ACTIVE.value, description: str = None):
+                              service_fees: int = 0, status: str = LineItemStatus.ACTIVE.value,
+                              description: str = None):
     """Return Factory."""
     return PaymentLineItem(
         invoice_id=invoice_id,

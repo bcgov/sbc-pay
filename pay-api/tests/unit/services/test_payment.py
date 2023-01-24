@@ -190,7 +190,7 @@ def test_search_payment_history(session):
     assert results is not None
     assert results.get('items') is not None
     assert results.get('total') == 2
-    
+
     # Search by different filter
     search_filter = {
         'createdName': invoice.created_name
@@ -200,7 +200,7 @@ def test_search_payment_history(session):
     assert results is not None
     assert results.get('items') is not None
     assert results.get('total') == 2
-    
+
     # Search by different filter
     search_filter = {
         'createdName': invoice.created_name
@@ -210,7 +210,7 @@ def test_search_payment_history(session):
     assert results is not None
     assert results.get('items') is not None
     assert results.get('total') == 2
-    
+
     # Search by different filter
     search_filter = {
         'statusCode': InvoiceStatus.CREATED.value
@@ -220,7 +220,7 @@ def test_search_payment_history(session):
     assert results is not None
     assert results.get('items') is not None
     assert results.get('total') == 2
-    
+
     # Search by different filter
     search_filter = {
         'lineItems': line_item.description
@@ -230,7 +230,7 @@ def test_search_payment_history(session):
     assert results is not None
     assert results.get('items') is not None
     assert results.get('total') == 1
-    
+
     # Search by different filter
     search_filter = {
         'id': invoice.id
