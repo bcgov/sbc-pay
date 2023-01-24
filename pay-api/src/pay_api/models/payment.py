@@ -19,7 +19,7 @@ from typing import Dict
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import Boolean, ForeignKey, func, or_
+from sqlalchemy import Boolean, ForeignKey, String, cast, func, or_
 from sqlalchemy.orm import contains_eager, lazyload, relationship
 
 from pay_api.utils.constants import DT_SHORT_FORMAT
@@ -161,7 +161,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
 
     @classmethod
     @user_context
-    def search_purchase_history(cls,  # pylint:disable=too-many-arguments, too-many-locals, too-many-branches
+    def search_purchase_history(cls,  # noqa:E501; pylint:disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements;
                                 auth_account_id: str, search_filter: Dict,
                                 page: int, limit: int, return_all: bool, max_no_records: int = 0, **kwargs):
         """Search for purchase history."""
@@ -186,15 +186,27 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         if product_code:
             query = query.join(CorpType, CorpType.code == Invoice.corp_type_code)\
                 .filter(CorpType.product == product_code)
+        if status_code := search_filter.get('statusCode', None):
+            query = query.filter(Invoice.invoice_status_code == status_code)
         if search_filter.get('status', None):
+            # depreciating (replacing with statusCode)
             query = query.filter(Invoice.invoice_status_code == search_filter.get('status'))
         if search_filter.get('folioNumber', None):
             query = query.filter(Invoice.folio_number == search_filter.get('folioNumber'))
         if search_filter.get('businessIdentifier', None):
             query = query.filter(Invoice.business_identifier == search_filter.get('businessIdentifier'))
         if search_filter.get('createdBy', None):  # pylint: disable=no-member
+            # depreciating (replacing with createdName)
             query = query.filter(
                 Invoice.created_name.ilike('%' + search_filter.get('createdBy') + '%'))  # pylint: disable=no-member
+        if created_name := search_filter.get('createdName', None):
+            query = query.filter(Invoice.created_name.ilike(f'%{created_name}%'))
+        if invoice_id := search_filter.get('id', None):
+            query = query.filter(cast(Invoice.id, String).like(f'%{invoice_id}%'))
+        if line_item := search_filter.get('lineItems', None):
+            query = query.filter(PaymentLineItem.description.ilike(f'%{line_item}%'))
+        if payment_type := search_filter.get('paymentMethod', None):
+            query = query.filter(PaymentAccount.payment_method == payment_type)
 
         # Find start and end dates
         created_from: datetime = None
