@@ -86,7 +86,6 @@ def send_email(file_processing, emailtype, errormessage):
         with open(file, 'rb') as attachment:
             part.set_payload(attachment.read())
         encoders.encode_base64(part)
-
         message.attach(part)
 
     message['Subject'] = subject
@@ -105,7 +104,6 @@ def processnotebooks(notebookdirectory, data_dir):
     try:
         weekly_report_dates = ast.literal_eval(Config.WEEKLY_REPORT_DATES)
         monthly_report_dates = ast.literal_eval(Config.MONTHLY_REPORT_DATES)
-
     except Exception:  # noqa: B902
         logging.exception('Error: %s.', notebookdirectory)
         send_email(notebookdirectory, 'ERROR', traceback.format_exc())
