@@ -7,14 +7,13 @@ import os
 import smtplib
 import sys
 import traceback
-from datetime import datetime, timedelta, date
+from datetime import date, datetime, timedelta
 from email import encoders
 from email.mime.base import MIMEBase
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
 import papermill as pm
-from dateutil.relativedelta import relativedelta
 from flask import Flask, current_app
 
 from config import Config
@@ -49,41 +48,45 @@ def findfiles(directory, pattern):
 def send_email(file_processing, emailtype, errormessage):
     """Send email for results."""
     message = MIMEMultipart()
-    date = datetime.strftime(datetime.now() - timedelta(1), '%Y-%m-%d')
+    date_str = datetime.strftime(datetime.now() - timedelta(1), '%Y-%m-%d')
     ext = ''
     if not Config.ENVIRONMENT == 'prod':
         ext = ' on ' + Config.ENVIRONMENT
 
     if emailtype == 'ERROR':
-        subject = "Notebook Report Error '" + file_processing + "' on " + date + ext
+        subject = "Notebook Report Error '" + file_processing + "' on " + date_str + ext
         recipients = Config.ERROR_EMAIL_RECIPIENTS
         message.attach(MIMEText('ERROR!!! \n' + errormessage, 'plain'))
     else:
         if 'reconciliation_details' in file_processing:
-            subject = 'Daily Reconciliation Stats ' + datetime.strftime(datetime.now()-timedelta(1), '%Y-%m-%d') + ext
-            filenames = ['daily_reconciliation_' +
-                         datetime.strftime(datetime.now()-timedelta(1), '%Y-%m-%d') + '.csv']
+            subject = 'Daily Reconciliation Stats ' + date_str + ext
+            filenames = ['daily_reconciliation_' + date_str + '.csv']
             recipients = Config.DAILY_RECONCILIATION_RECIPIENTS
         elif 'pay' in file_processing:
-            subject = 'Weekly PAY Stats till ' + datetime.strftime(datetime.now()-timedelta(1), '%Y-%m-%d') + ext
-            filenames = ['weekly_pay_stats_till_' + datetime.strftime(datetime.now()-timedelta(1), '%Y-%m-%d') + '.csv']
+            subject = 'Weekly PAY Stats till ' + date_str + ext
+            filenames = ['weekly_pay_stats_till_' + date_str + '.csv']
             recipients = Config.WEEKLY_PAY_RECIPIENTS
         elif 'reconciliation_summary' in file_processing:
-            subject = 'Monthly Reconciliation Stats ' + datetime.strftime(datetime.now()-timedelta(1), '%Y-%m') + ext
-            filenames = ['monthly_reconciliation_summary_' +
-                         datetime.strftime(datetime.now()-timedelta(1), '%Y-%m') + '.csv', 'monthly_reconciliation_disbursed_' +
-                         datetime.strftime(datetime.now()-timedelta(1), '%Y-%m') + '.csv']
+            year_month = datetime.strftime(datetime.now() - timedelta(1), '%Y-%m')
+            subject = 'Monthly Reconciliation Stats ' + year_month + ext
+            filenames = ['monthly_reconciliation_summary_' + year_month + '.csv',
+                         'monthly_reconciliation_disbursed_' + year_month + '.csv']
             recipients = Config.MONTHLY_RECONCILIATION_RECIPIENTS
 
     # Add body to email
     message.attach(MIMEText('Please see attached.', 'plain'))
 
-    for f in filenames:
-        f = os.path.join(os.getcwd(), r'data/')+f
-        part = MIMEBase('application', "octet-stream")
-        part.set_payload(open(f, "rb").read())
+    for file in filenames:
+        part = MIMEBase('application', 'octet-stream')
+        part.add_header(
+            'Content-Disposition',
+            f'attachment; filename= {file}',
+        )
+        file = os.path.join(os.getcwd(), r'data/') + file
+        with open(file, 'rb') as attachment:
+            part.set_payload(attachment.read())
         encoders.encode_base64(part)
-        part.add_header('Content-Disposition', 'attachment; filename="%s"' % os.path.basename(f))
+
         message.attach(part)
 
     message['Subject'] = subject
@@ -103,8 +106,8 @@ def processnotebooks(notebookdirectory, data_dir):
         weekly_report_dates = ast.literal_eval(Config.WEEKLY_REPORT_DATES)
         monthly_report_dates = ast.literal_eval(Config.MONTHLY_REPORT_DATES)
 
-    except Exception:
-        logging.exception('Error: \'%s\'.', notebookdirectory)
+    except Exception:  # noqa: B902
+        logging.exception('Error: %s.', notebookdirectory)
         send_email(notebookdirectory, 'ERROR', traceback.format_exc())
 
     # Monday is 1 and Sunday is 7
@@ -118,8 +121,8 @@ def processnotebooks(notebookdirectory, data_dir):
                 # send email to receivers and remove files/directories which we don't want to keep
                 send_email(file, '', '')
                 os.remove(data_dir + 'temp.ipynb')
-            except Exception:
-                logging.exception('Error: \'%s\'.', file)
+            except Exception:  # noqa: B902
+                logging.exception('Error: %s.', file)
                 send_email(file, 'ERROR', traceback.format_exc())
 
 
