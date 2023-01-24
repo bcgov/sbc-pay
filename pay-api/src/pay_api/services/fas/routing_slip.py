@@ -430,18 +430,18 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         payments = PaymentModel.find_payments_for_routing_slip(rs_number)
         for payment_request in request_json.get('payments'):
             if (payment := next(x for x in payments if x.id == payment_request.get('id'))):
-                paid_amount = payment_request.get('paidAmount', 0)
+                paid_amount = Decimal(payment_request.get('paidAmount', 0))
                 correction_total += paid_amount - payment.paid_amount
                 if payment.payment_method_code == PaymentMethod.CASH.value:
                     comment += f'Cash Payment corrected amount' \
-                        f' ${payment.paid_amount} to ${paid_amount}\n'
+                        f' from ${payment.paid_amount} to ${paid_amount}\n'
                 else:
                     comment += f'Cheque Payment {payment.cheque_receipt_number}'
                     if cheque_receipt_number := payment_request.get('chequeReceiptNumber'):
                         payment.cheque_receipt_number = cheque_receipt_number
-                        comment += f' cheque receipt number corrected to {cheque_receipt_number}'
+                        comment += f', cheque receipt number corrected to {cheque_receipt_number}'
                     if paid_amount != payment.paid_amount:
-                        comment += f' corrected amount ${payment.paid_amount} to ${paid_amount}'
+                        comment += f', corrected amount from ${payment.paid_amount} to ${paid_amount}'
                     comment += '\n'
                 payment.paid_amount = paid_amount
                 payment.paid_usd_amount = payment_request.get('paidUsdAmount', 0)
