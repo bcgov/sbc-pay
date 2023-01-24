@@ -42,31 +42,31 @@ objects:
                   - -c
                   - cd /opt/app-root; ./run.sh
                 env:
-                  - name: PG_USER
+                  - name: PAY_USER
                     valueFrom:
                       secretKeyRef:
                         name: ${NAME}-${TAG}-secret
-                        key: DATABASE_USERNAME
-                  - name: PG_PASSWORD
+                        key: PAY_USER
+                  - name: PAY_PASSWORD
                     valueFrom:
                       secretKeyRef:
                         name: ${NAME}-${TAG}-secret
-                        key: DATABASE_PASSWORD
-                  - name: PG_DB_NAME
+                        key: PAY_PASSWORD
+                  - name: PAY_DB_NAME
                     valueFrom:
                       secretKeyRef:
                         name: ${NAME}-${TAG}-secret
-                        key: DATABASE_NAME
-                  - name: PG_HOST
+                        key: PAY_DB_NAME
+                  - name: PAY_HOST
                     valueFrom:
                       secretKeyRef:
                         name: ${NAME}-${TAG}-secret
-                        key: DATABASE_HOST
-                  - name: PG_PORT
+                        key: PAY_HOST
+                  - name: PAY_PORT
                     valueFrom:
                       secretKeyRef:
                         name: ${NAME}-${TAG}-secret
-                        key: DATABASE_PORT
+                        key: PAY_PORT
                   - name: APP_FILE
                     valueFrom:
                       secretKeyRef:
@@ -81,27 +81,27 @@ objects:
                     valueFrom:
                       secretKeyRef:
                         name: ${NAME}-${TAG}-secret
-                        key: ERROR_EMAIL_RECIPIENTS
-                  - name: WEEKLY_REPORT_RECIPIENTS
-                    valueFrom:
-                      secretKeyRef:
-                        name: ${NAME}-${TAG}-secret
-                        key: WEEKLY_REPORT_RECIPIENTS
+                        key: ERROR_EMAIL_RECIPIENTS    
                   - name: EMAIL_SMTP
                     valueFrom:
                       secretKeyRef:
                         name: ${NAME}-${TAG}-secret
                         key: EMAIL_SMTP
-                  - name: RETRY_TIMES
+                  - name: DAILY_RECONCILIATION_RECIPIENTS
                     valueFrom:
                       secretKeyRef:
                         name: ${NAME}-${TAG}-secret
-                        key: RETRY_TIMES
-                  - name: RETRY_INTERVAL
+                        key: DAILY_RECONCILIATION_RECIPIENTS
+                  - name: WEEKLY_PAY_RECIPIENTS
                     valueFrom:
                       secretKeyRef:
                         name: ${NAME}-${TAG}-secret
-                        key: RETRY_INTERVAL
+                        key: WEEKLY_PAY_RECIPIENTS
+                  - name: MONTHLY_RECONCILIATION_RECIPIENTS
+                    valueFrom:
+                      secretKeyRef:
+                        name: ${NAME}-${TAG}-secret
+                        key: MONTHLY_RECONCILIATION_RECIPIENTS
                   - name: ENVIRONMENT
                     valueFrom:
                       secretKeyRef:
@@ -111,9 +111,12 @@ objects:
                     valueFrom:
                       secretKeyRef:
                         name: ${NAME}-${TAG}-secret
-                        key: WEEKLY_REPORT_DATES
-                  - name: DATA_DIR
-                    value: '/opt/app-root/data/'     
+                        key: WEEKLY_REPORT_DATES 
+                  - name: MONTHLY_REPORT_DATES
+                    valueFrom:
+                      secretKeyRef:
+                        name: ${NAME}-${TAG}-secret
+                        key: MONTHLY_REPORT_DATES         
             restartPolicy: "Never"
             terminationGracePeriodSeconds: 30
             activeDeadlineSeconds: 1600

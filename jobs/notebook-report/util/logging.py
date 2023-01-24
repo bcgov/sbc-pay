@@ -6,7 +6,6 @@ import sys
 
 
 def setup_logging(conf='logging.conf'):
-    # log_file_path = path.join(path.dirname(path.abspath(__file__)), conf)
     log_file_path = path.join(Config.PROJECT_ROOT, conf)
 
     if path.isfile(log_file_path):
