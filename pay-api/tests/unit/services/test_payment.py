@@ -77,6 +77,8 @@ def test_search_payment_history(session):
     invoice = factory_invoice(payment_account)
     invoice.save()
     factory_invoice_reference(invoice.id).save()
+    line_item = factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1, description='test')
+    line_item.save()
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
     results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
@@ -188,6 +190,56 @@ def test_search_payment_history(session):
     assert results is not None
     assert results.get('items') is not None
     assert results.get('total') == 2
+    
+    # Search by different filter
+    search_filter = {
+        'createdName': invoice.created_name
+    }
+    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
+                                                      search_filter=search_filter, limit=1, page=1)
+    assert results is not None
+    assert results.get('items') is not None
+    assert results.get('total') == 2
+    
+    # Search by different filter
+    search_filter = {
+        'createdName': invoice.created_name
+    }
+    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
+                                                      search_filter=search_filter, limit=1, page=1)
+    assert results is not None
+    assert results.get('items') is not None
+    assert results.get('total') == 2
+    
+    # Search by different filter
+    search_filter = {
+        'statusCode': InvoiceStatus.CREATED.value
+    }
+    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
+                                                      search_filter=search_filter, limit=1, page=1)
+    assert results is not None
+    assert results.get('items') is not None
+    assert results.get('total') == 2
+    
+    # Search by different filter
+    search_filter = {
+        'lineItems': line_item.description
+    }
+    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
+                                                      search_filter=search_filter, limit=1, page=1)
+    assert results is not None
+    assert results.get('items') is not None
+    assert results.get('total') == 1
+    
+    # Search by different filter
+    search_filter = {
+        'id': invoice.id
+    }
+    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
+                                                      search_filter=search_filter, limit=1, page=1)
+    assert results is not None
+    assert results.get('items') is not None
+    assert results.get('total') == 1
 
 
 def test_search_payment_history_for_all(session):
