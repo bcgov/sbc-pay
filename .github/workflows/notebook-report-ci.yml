@@ -1,4 +1,4 @@
-name: FTP Poller CI
+name: Notebook Report CI
 
 on:
   pull_request:
