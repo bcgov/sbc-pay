@@ -10,7 +10,7 @@ papermill
 schedule
 attrs==19.2.0
 df2gspread
-future==0.18.2
+future==0.18.3
 gspread
 Jinja2==3.0
 markupsafe==2.0.1
