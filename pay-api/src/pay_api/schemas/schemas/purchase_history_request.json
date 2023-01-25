@@ -17,6 +17,18 @@
            "COMPLETED"
         ]
      },
+     "statusCode":{
+        "$id":"#/properties/statusCode",
+        "type":"string",
+        "title":"Invoice Status",
+        "description":"Invoice Status Filter (filters on invoice status code).",
+        "default":"",
+        "examples":[
+           "APPROVED",
+           "REFUNDED",
+           "PAID"
+        ]
+     },
      "folioNumber":{
         "$id":"#/properties/folioNumber",
         "type":"string",
@@ -45,6 +57,16 @@
         "default":"",
         "examples":[
            ""
+        ]
+     },
+     "createdName":{
+        "$id":"#/properties/createdName",
+        "type":"string",
+        "title":"Created Name",
+        "description":"A 'like' filter on created name.",
+        "default":"",
+        "examples":[
+           "BCREG"
         ]
      },
      "dateFilter":{
@@ -85,6 +107,37 @@
               ]
            }
         }
+     },
+     "id":{
+        "$id":"#/properties/id",
+        "type":"string",
+        "title":"Invoice id",
+        "description":"Invoice id filter (filters on invoice id).",
+        "default":"",
+        "examples":[
+           "1234"
+        ]
+     },
+     "lineItems":{
+        "$id":"#/properties/lineItems",
+        "type":"string",
+        "title":"Line Item",
+        "description":"Payment line item filter (filters on invoice details as well).",
+        "default":"",
+        "examples":[
+           "Business search"
+        ]
+     },
+     "paymentMethod":{
+        "$id":"#/properties/paymentMethod",
+        "type":"string",
+        "title":"Payment Method",
+        "description":"Payment Method used for payment (defined by api enum PaymentMethod).",
+        "default":"",
+        "examples":[
+           "PAD",
+           "CC"
+        ]
      },
      "weekFilter":{
         "$id":"#/properties/weekFilter",
