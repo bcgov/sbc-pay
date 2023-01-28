@@ -442,7 +442,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                         comment += f', cheque receipt number corrected to {cheque_receipt_number}'
                     if paid_amount != payment.paid_amount:
                         comment += f', corrected amount from ${payment.paid_amount} to ${paid_amount}'
-                    comment += '\n'
+                    comment += '. \n'
                 payment.paid_amount = paid_amount
                 payment.paid_usd_amount = payment_request.get('paidUsdAmount', 0)
                 payment.flush()

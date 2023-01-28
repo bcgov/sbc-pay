@@ -113,6 +113,11 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
         current_app.logger.info(f'Found {len(routing_slips)} to process CORRECTIONS.')
         for rs in routing_slips:
             try:
+                wait_for_create_invoice_job = any(x.invoice_status_code in [
+                                                   InvoiceStatus.APPROVED.value, InvoiceStatus.CREATED.value]
+                                                  for x in rs.invoices)
+                if wait_for_create_invoice_job:
+                    continue
                 current_app.logger.debug(f'Correcting Routing Slip: {rs.number}')
                 payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(rs.payment_account_id)
                 cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
@@ -121,6 +126,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                                                      ReverseOperation.CORRECTION.value)
                 # Update the version, which generates a new receipt number. This is to avoid duplicate receipt number.
                 rs.cas_version_suffix += 1
+                # Recreate the receipt with the modified total.
                 CFSService.create_cfs_receipt(cfs_account=cfs_account,
                                               rcpt_number=rs.generate_cas_receipt_number(),
                                               rcpt_date=rs.routing_slip_date.strftime('%Y-%m-%d'),
@@ -357,7 +363,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _apply_routing_slips_to_pending_invoices(cls, routing_slip: RoutingSlipModel) -> float:
         """Apply the routing slips again, when routing slip is linked to an NSF parent."""
-        current_app.logger.info(f'Starting NSF recovery process for {routing_slip.number}')
+        current_app.logger.info(f'Applying routing slips to pending invoices for routing slip: {routing_slip.number}')
         routing_slip_payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(
             routing_slip.payment_account_id)
 

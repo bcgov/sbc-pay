@@ -131,7 +131,8 @@ class InternalPayService(PaymentSystemService, OAuthService):
 
         # check rs is active
         if routing_slip.status not in (
-                RoutingSlipStatus.ACTIVE.value, RoutingSlipStatus.LINKED.value, RoutingSlipStatus.NSF.value):
+                RoutingSlipStatus.ACTIVE.value, RoutingSlipStatus.LINKED.value, RoutingSlipStatus.NSF.value,
+                RoutingSlipStatus.CORRECTION.value):
             raise BusinessException(Error.RS_NOT_ACTIVE)
 
         if routing_slip.parent:

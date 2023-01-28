@@ -188,42 +188,42 @@ def test_process_void(session):
 
 def test_process_correction(session):
     """Test Routing slip set to CORRECTION."""
-    # Scenarios:
-    # 1. Correction with 2 child routing slips.
-    # 2. Correction then link.
-    child_1 = '123456789'
-    child_2 = '987654321'
-    parent = '111111111'
-    factory_routing_slip_account(number=child_1, status=CfsAccountStatus.ACTIVE.value, total=10)
-    factory_routing_slip_account(number=child_2, status=CfsAccountStatus.ACTIVE.value, total=10)
-    factory_routing_slip_account(number=parent, status=CfsAccountStatus.ACTIVE.value, total=10)
+    number = '1111111'
+    pay_account = factory_routing_slip_account(number=number, status=CfsAccountStatus.ACTIVE.value, total=10)
+    # Create an invoice for the routing slip
+    # Create an invoice record against this routing slip.
+    invoice = factory_invoice(payment_account=pay_account, total=30,
+                              status_code=InvoiceStatus.PAID.value,
+                              payment_method_code=PaymentMethod.INTERNAL.value,
+                              routing_slip=number)
 
-    child_1_rs = RoutingSlipModel.find_by_number(child_1)
-    child_2_rs = RoutingSlipModel.find_by_number(child_2)
-    parent_rs = RoutingSlipModel.find_by_number(parent)
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
 
-    # Do Link
-    for child in (child_2_rs, child_1_rs):
-        child.status = RoutingSlipStatus.LINKED.value
-        child.parent_number = parent_rs.number
-        child.save()
+    # Create invoice reference
+    factory_invoice_reference(invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value)
 
-    RoutingSlipTask.link_routing_slips()
+    # Create receipts for the invoices
+    factory_receipt(invoice.id, number)
 
-    parent_rs.status = RoutingSlipStatus.CORRECTION.value
-    parent_rs.total = 5
-    parent_rs.save()
+    rs = RoutingSlipModel.find_by_number(number)
+    rs.status = RoutingSlipStatus.CORRECTION.value
+    rs.total = 900
+    rs.save()
 
-    with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_cfs_reverse:
-        RoutingSlipTask.process_correction()
-        mock_cfs_reverse.assert_called()
+    session.commit()
 
-    # Assert the records.
-    assert float(RoutingSlipModel.find_by_number(parent_rs.number).remaining_amount) == 0
+    with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_reverse:
+        with patch('pay_api.services.CFSService.create_cfs_receipt') as mock_create_receipt:
+            with patch('pay_api.services.CFSService.get_invoice') as mock_get_invoice:
+                RoutingSlipTask.process_correction()
+                mock_reverse.assert_called()
+                mock_get_invoice.assert_called()
+                mock_create_receipt.assert_called()
 
-    with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_cfs_reverse_2:
-        RoutingSlipTask.process_correction()
-        mock_cfs_reverse_2.assert_not_called()
+    assert rs.status == RoutingSlipStatus.COMPLETE.value
+    assert rs.cas_version_suffix == 2
 
 
 def test_link_to_nsf_rs(session):
