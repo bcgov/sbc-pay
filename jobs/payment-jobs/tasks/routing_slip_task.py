@@ -362,7 +362,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
 
     @classmethod
     def _apply_routing_slips_to_pending_invoices(cls, routing_slip: RoutingSlipModel) -> float:
-        """Apply the routing slips again, when routing slip is linked to an NSF parent."""
+        """Apply the routing slips again."""
         current_app.logger.info(f'Applying routing slips to pending invoices for routing slip: {routing_slip.number}')
         routing_slip_payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(
             routing_slip.payment_account_id)
