@@ -389,8 +389,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         if (patch_action := PatchActions.from_value(action)) is None:
             raise BusinessException(Error.PATCH_INVALID_ACTION)
 
-        routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(rs_number)
-        if routing_slip is None:
+        if (routing_slip := RoutingSlipModel.find_by_number(rs_number)) is None:
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
 
         if patch_action == PatchActions.UPDATE_STATUS:
@@ -443,7 +442,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                         comment += f', cheque receipt number corrected to {cheque_receipt_number}'
                     if paid_amount != payment.paid_amount:
                         comment += f', corrected amount from ${payment.paid_amount} to ${paid_amount}'
-                    comment += '\n'
+                    comment += '. \n'
                 payment.paid_amount = paid_amount
                 payment.paid_usd_amount = payment_request.get('paidUsdAmount', 0)
                 payment.flush()

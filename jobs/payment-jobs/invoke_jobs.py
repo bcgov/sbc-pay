@@ -122,6 +122,7 @@ def run(job_name):
         RoutingSlipTask.link_routing_slips()
         RoutingSlipTask.process_void()
         RoutingSlipTask.process_nsf()
+        RoutingSlipTask.process_correction()
         RoutingSlipTask.adjust_routing_slips()
         application.logger.info(f'<<<< Completed Routing Slip tasks >>>>')
     elif job_name == 'EJV_PAYMENT':

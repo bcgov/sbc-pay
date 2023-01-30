@@ -186,6 +186,46 @@ def test_process_void(session):
         mock_cfs_reverse_2.assert_not_called()
 
 
+def test_process_correction(session):
+    """Test Routing slip set to CORRECTION."""
+    number = '1111111'
+    pay_account = factory_routing_slip_account(number=number, status=CfsAccountStatus.ACTIVE.value, total=10)
+    # Create an invoice for the routing slip
+    # Create an invoice record against this routing slip.
+    invoice = factory_invoice(payment_account=pay_account, total=30,
+                              status_code=InvoiceStatus.PAID.value,
+                              payment_method_code=PaymentMethod.INTERNAL.value,
+                              routing_slip=number)
+
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    # Create invoice reference
+    factory_invoice_reference(invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value)
+
+    # Create receipts for the invoices
+    factory_receipt(invoice.id, number)
+
+    rs = RoutingSlipModel.find_by_number(number)
+    rs.status = RoutingSlipStatus.CORRECTION.value
+    rs.total = 900
+    rs.save()
+
+    session.commit()
+
+    with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_reverse:
+        with patch('pay_api.services.CFSService.create_cfs_receipt') as mock_create_receipt:
+            with patch('pay_api.services.CFSService.get_invoice') as mock_get_invoice:
+                RoutingSlipTask.process_correction()
+                mock_reverse.assert_called()
+                mock_get_invoice.assert_called()
+                mock_create_receipt.assert_called()
+
+    assert rs.status == RoutingSlipStatus.COMPLETE.value
+    assert rs.cas_version_suffix == 2
+
+
 def test_link_to_nsf_rs(session):
     """Test routing slip with NSF as parent."""
     child_rs_number = '1234'
