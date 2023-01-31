@@ -51,11 +51,18 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
 
         for pending_account in pending_accounts:
             # Find the payment account and create the pay system instance.
-            pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(pending_account.account_id)
-            if pay_account.payment_method in (PaymentMethod.CASH.value, PaymentMethod.CHEQUE.value):
-                routing_slip.create_cfs_account(pending_account, pay_account)
-            else:
-                cls._create_cfs_account(pending_account, pay_account, auth_token)
+            try:
+                pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(pending_account.account_id)
+                if pay_account.payment_method in (PaymentMethod.CASH.value, PaymentMethod.CHEQUE.value):
+                    routing_slip.create_cfs_account(pending_account, pay_account)
+                else:
+                    cls._create_cfs_account(pending_account, pay_account, auth_token)
+            except Exception as e:  # NOQA # pylint: disable=broad-except
+                capture_message(
+                    f'Error on creating cfs_account={pending_account.account_id}, '
+                    f'ERROR : {str(e)}', level='error')
+                current_app.logger.error(e)
+                continue
 
     @classmethod
     def _get_account_contact(cls, auth_token: str, auth_account_id: str):
