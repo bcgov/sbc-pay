@@ -24,7 +24,7 @@ from pay_api.services import Payment
 from pay_api.services.auth import check_auth
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.auth import jwt as _jwt
-from pay_api.utils.constants import EDIT_ROLE, VIEW_ROLE
+from pay_api.utils.constants import EDIT_ROLE, VIEW_ALL_TRANSACTIONS_ROLE, VIEW_ROLE
 from pay_api.utils.enums import CfsAccountStatus, ContentType, Role
 from pay_api.utils.errors import Error
 from pay_api.utils.trace import tracing as _tracing
@@ -215,12 +215,17 @@ class AccountPurchaseHistory(Resource):
         if not valid_format:
             return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
-        # Check if user is authorized to perform this action
-        check_auth(business_identifier=None, account_id=account_number, contains_role=EDIT_ROLE, is_premium=True)
+        # if viewAll -> searches transactions across all accounts -- needs special role
+        viewAll = request.args.get('viewAll', None) == 'true'
 
+        # Check if user is authorized to perform this action
+        required_roles = [EDIT_ROLE, VIEW_ALL_TRANSACTIONS_ROLE] if viewAll else [EDIT_ROLE]
+        check_auth(business_identifier=None, account_id=account_number, all_of_roles=required_roles, is_premium=True)
+
+        account_to_search = None if viewAll else account_number
         page: int = int(request.args.get('page', '1'))
         limit: int = int(request.args.get('limit', '10'))
-        response, status = Payment.search_purchase_history(account_number, request_json, page,
+        response, status = Payment.search_purchase_history(account_to_search, request_json, page,
                                                            limit), HTTPStatus.OK
         current_app.logger.debug('>AccountPurchaseHistory.post')
         return jsonify(response), status

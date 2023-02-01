@@ -19,8 +19,10 @@ from typing import Dict
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import Boolean, ForeignKey, String, cast, func, or_
+from sqlalchemy import Boolean, ForeignKey, String, cast, func, or_, select, text
+from sqlalchemy.dialects.postgresql import JSONB, array
 from sqlalchemy.orm import contains_eager, lazyload, relationship
+from sqlalchemy.sql.expression import literal
 
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import InvoiceReferenceStatus
@@ -180,12 +182,17 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                 contains_eager(Invoice.payment_account).load_only(PaymentAccount.auth_account_id,
                                                                   PaymentAccount.name,
                                                                   PaymentAccount.billable)
-        ) \
-            .filter(PaymentAccount.auth_account_id == auth_account_id)
+        )
+        if auth_account_id:
+            query = query.filter(PaymentAccount.auth_account_id == auth_account_id)
         # If a product code is present in token (service account), then filter only that product's invoices.
         if product_code:
+            # TODO: should remove this and have ^^ workflows filter by product
             query = query.join(CorpType, CorpType.code == Invoice.corp_type_code)\
                 .filter(CorpType.product == product_code)
+        if product := search_filter.get('product', None):
+            query = query.join(CorpType, CorpType.code == Invoice.corp_type_code)\
+                .filter(CorpType.product == product)
         if status_code := search_filter.get('statusCode', None):
             query = query.filter(Invoice.invoice_status_code == status_code)
         if search_filter.get('status', None):
@@ -193,8 +200,10 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             query = query.filter(Invoice.invoice_status_code == search_filter.get('status'))
         if search_filter.get('folioNumber', None):
             query = query.filter(Invoice.folio_number == search_filter.get('folioNumber'))
-        if search_filter.get('businessIdentifier', None):
-            query = query.filter(Invoice.business_identifier == search_filter.get('businessIdentifier'))
+        if business_identifier := search_filter.get('businessIdentifier', None):
+            query = query.filter(or_(Invoice.business_identifier.ilike(f'%{business_identifier}%'),
+                                     # ppr / business search / others don't set businessIdentifier so also need to check the details
+                                     Invoice.details[0]['value'].astext.ilike(f'%{business_identifier}%')))
         if search_filter.get('createdBy', None):  # pylint: disable=no-member
             # depreciating (replacing with createdName)
             query = query.filter(
@@ -203,10 +212,32 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             query = query.filter(Invoice.created_name.ilike(f'%{created_name}%'))
         if invoice_id := search_filter.get('id', None):
             query = query.filter(cast(Invoice.id, String).like(f'%{invoice_id}%'))
+        if payment_type := search_filter.get('paymentMethod', None):
+            if payment_type == 'NO_FEE':
+                # only include no fee transactions
+                query = query.filter(Invoice.total == 0)
+            else:
+                # don't include no fee transactions
+                query = query.filter(Invoice.total != 0)
+                query = query.filter(Invoice.payment_method_code == payment_type)
+        if invoice_number := search_filter.get('invoiceNumber', None):
+            # could have multiple invoice reference rows, but is handled in sub_query below (group by)
+            query = query.join(InvoiceReference, InvoiceReference.invoice_id == Invoice.id) \
+                .filter(InvoiceReference.invoice_number.ilike(f'%{invoice_number}%'))
+        if account_name := search_filter.get('accountName', None):
+            query = query.filter(PaymentAccount.name.ilike(f'%{account_name}%'))
         if line_item := search_filter.get('lineItems', None):
             query = query.filter(PaymentLineItem.description.ilike(f'%{line_item}%'))
-        if payment_type := search_filter.get('paymentMethod', None):
-            query = query.filter(PaymentAccount.payment_method == payment_type)
+        if details := search_filter.get('details', None):
+            query = query.join(func.jsonb_array_elements(Invoice.details), literal(True))
+            query = query.filter(or_(text("value ->> 'value' ilike :details"), text("value ->> 'label' ilike :details"))) \
+                .params(details=f'%{details}%')
+        if line_item_or_details := search_filter.get('lineItemsAndDetails', None):
+            query = query.join(func.jsonb_array_elements(Invoice.details), literal(True))
+            query = query.filter(or_(
+                PaymentLineItem.description.ilike(f'%{line_item_or_details}%'),
+                text("value ->> 'value' ilike :details"),
+                text("value ->> 'label' ilike :details"))).params(details=f'%{line_item_or_details}%')
 
         # Find start and end dates
         created_from: datetime = None

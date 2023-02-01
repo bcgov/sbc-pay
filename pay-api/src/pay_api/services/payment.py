@@ -27,7 +27,7 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.base_model import BaseModel
 from pay_api.models.invoice import InvoiceSchema
-from pay_api.models.invoice_reference import InvoiceReference as InvoiceReferenceModel
+from pay_api.models.invoice_reference import InvoiceReference as InvoiceReferenceModel, InvoiceReferenceSchema
 from pay_api.models.payment import PaymentSchema
 from pay_api.models.payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from pay_api.services.cfs_service import CFSService
@@ -360,6 +360,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 line_item_dict = line_item_schema.dump(payment_line_item)
                 line_item_dict['filing_type_code'] = payment_line_item.fee_schedule.filing_type_code
                 invoice['line_items'].append(line_item_dict)
+            if len(invoice_dao.references) > 0:
+                invoice['invoice_number'] = invoice_dao.references[0].invoice_number
+            invoice['product'] = payment_line_item.fee_schedule.corp_type.product
             data['items'].append(invoice)
 
         return data
