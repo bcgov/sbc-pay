@@ -360,6 +360,9 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 line_item_dict = line_item_schema.dump(payment_line_item)
                 line_item_dict['filing_type_code'] = payment_line_item.fee_schedule.filing_type_code
                 invoice['line_items'].append(line_item_dict)
+                invoice['product'] = payment_line_item.fee_schedule.corp_type.product
+            if len(invoice_dao.references) > 0:
+                invoice['invoice_number'] = invoice_dao.references[0].invoice_number
             data['items'].append(invoice)
 
         return data

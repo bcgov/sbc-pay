@@ -372,13 +372,15 @@ def get_payment_request_for_wills(will_alias_quantity: int = 1):
 def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC', account_number='4101',
                             bcol_user_id='test',
                             auth_account_id: str = '1234',
-                            cfs_account_status: str = CfsAccountStatus.ACTIVE.value):
+                            cfs_account_status: str = CfsAccountStatus.ACTIVE.value,
+                            name=None):
     """Return Factory."""
     # Create a payment account
     account = PaymentAccount(
         auth_account_id=auth_account_id,
         bcol_user_id=bcol_user_id,
         bcol_account='TEST',
+        name=name,
         payment_method=payment_method_code,
         pad_activation_date=datetime.now()
     ).save()
@@ -493,17 +495,21 @@ def factory_routing_slip_usd(
 def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.value,
                     corp_type_code='CP',
                     business_identifier: str = 'CP0001234',
-                    service_fees: float = 0.0, total=0,
+                    service_fees: float = 0.0,
+                    total=0,
                     payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
                     created_on: datetime = datetime.now(),
                     routing_slip=None,
-                    folio_number=1234567890):
+                    folio_number=1234567890,
+                    created_name='test name',
+                    details=[{'label': 'label', 'value': 'value'}]):
     """Return Factory."""
     return Invoice(
         invoice_status_code=status_code,
         payment_account_id=payment_account.id,
         total=total,
         created_by='test',
+        created_name=created_name,
         created_on=created_on,
         business_identifier=business_identifier,
         corp_type_code=corp_type_code,
@@ -511,7 +517,8 @@ def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.va
         service_fees=service_fees,
         bcol_account=payment_account.bcol_account,
         payment_method_code=payment_method_code,
-        routing_slip=routing_slip
+        routing_slip=routing_slip,
+        details=details
     )
 
 

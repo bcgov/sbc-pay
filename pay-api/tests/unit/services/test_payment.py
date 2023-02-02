@@ -18,6 +18,7 @@ Test-Suite to ensure that the FeeSchedule Service is working as expected.
 """
 from datetime import datetime
 
+import pytest
 import pytz
 
 from pay_api.models.payment_account import PaymentAccount
@@ -70,186 +71,98 @@ def test_payment_with_no_active_invoice(session):
     assert p.id is not None
 
 
-def test_search_payment_history(session):
+@pytest.mark.parametrize('test_name, search_filter, view_all, expected_total, expected_key, expected_value', [
+    ('no_filter', {}, False, 3, 'status_code', InvoiceStatus.CREATED.value),
+    ('no_filter_view_all', {}, True, 4, 'status_code', InvoiceStatus.CREATED.value),
+    ('status_created', {'status': 'CREATED'}, False, 3, 'status_code', InvoiceStatus.CREATED.value),
+    ('status_completed', {'status': 'COMPLETED'}, False, 0, None, None),
+    ('status_code_created', {'statusCode': 'CREATED'}, False, 3, 'status_code', InvoiceStatus.CREATED.value),
+    ('status_code_completed', {'statusCode': 'COMPLETED'}, False, 0, None, None),
+    ('folio', {'folioNumber': '1234567890'}, False, 3, 'folio_number', '1234567890'),
+    ('business_identifier', {'businessIdentifier': 'CP000'}, False, 3, 'business_identifier', 'CP0001234'),
+    ('date', {'dateFilter': {'createdFrom': datetime.now().strftime('%m/%d/%Y'),
+                             'createdTo': datetime.now().strftime('%m/%d/%Y')}},
+     False, 3, None, None),
+    ('week_no_match', {'weekFilter': {'index': 2}}, False, 0, None, None),
+    ('week_match_all', {'weekFilter': {'index': 0}}, False, 3, None, None),
+    ('month', {'monthFilter': {'month': datetime.now().month, 'year': datetime.now().year}},
+     False, 3, None, None),
+    ('created_by', {'createdBy': '1'}, False, 1, 'created_by', 'test'),
+    ('created_name', {'createdName': '1'}, False, 1, 'created_name', '1'),
+    ('created_name_view_all', {'createdName': '1'}, True, 2, 'created_name', '1'),
+    ('line_items', {'lineItems': 'test1'}, False, 1, None, None),
+    ('line_items_view_all', {'lineItems': 'test1'}, True, 2, None, None),
+    ('details_value', {'details': 'value1'}, False, 1, None, None),
+    ('details_value_view_all', {'details': 'value1'}, True, 2, None, None),
+    ('details_label', {'details': 'label1'}, False, 1, None, None),
+    ('details_label_view_all', {'details': 'label1'}, True, 2, None, None),
+    ('line_items_and_details_1', {'lineItemsAndDetails': 'test1'}, False, 1, None, None),
+    ('line_items_and_details_2', {'lineItemsAndDetails': 'label1'}, False, 1, None, None),
+    ('line_items_and_details_3', {'lineItemsAndDetails': 'value1'}, False, 1, None, None),
+    ('id', None, False, 1, 'id', None),
+    ('payment_method_no_match', {'paymentMethod': PaymentMethod.CC.value}, False, 0, None, None),
+    ('payment_method_match', {'paymentMethod': PaymentMethod.DIRECT_PAY.value},
+     False, 2, 'payment_method', PaymentMethod.DIRECT_PAY.value),
+    ('payment_method_match_view_all', {'paymentMethod': PaymentMethod.DIRECT_PAY.value},
+     True, 3, 'payment_method', PaymentMethod.DIRECT_PAY.value),
+    ('payment_method_nofee', {'paymentMethod': 'NO_FEE'}, False, 1, None, None),
+    ('invoice_number', {'invoiceNumber': '31'}, False, 1, 'invoice_number', '1231'),
+    ('invoice_number_view_all', {'invoiceNumber': '31'}, True, 2, 'invoice_number', '1231'),
+    ('account_name', {'accountName': 'account 1'}, False, 3, None, None),
+    ('account_name_view_all_1', {'accountName': 'account 2'}, True, 1, None, None),
+    ('account_name_view_all_2', {'accountName': 'account'}, True, 4, None, None),
+    ('product', {'product': 'BUSINESS'}, False, 3, 'product', 'BUSINESS'),
+    ('product_view_all', {'product': 'BUSINESS'}, True, 4, 'product', 'BUSINESS'),
+])
+def test_search_payment_history(session, test_name, search_filter, view_all,
+                                expected_total, expected_key, expected_value):
     """Assert that the search payment history is working."""
-    payment_account = factory_payment_account()
+    payment_account = factory_payment_account(name='account 1', auth_account_id='1')
     payment_account.save()
-    invoice = factory_invoice(payment_account)
+    # make 3 payments
+    for i in range(3):
+        invoice = factory_invoice(payment_account,
+                                  created_name=i,
+                                  total=i * 10,
+                                  details=[{'label': f'label{i}', 'value': f'value{i}'}])
+        invoice.save()
+        if expected_key == 'id' and not search_filter:
+            search_filter = {'id': invoice.id}
+            expected_value = invoice.id
+        factory_invoice_reference(invoice.id, f'123{i}').save()
+        line_item = factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1, description=f'test{i}')
+        line_item.save()
+
+    # create another account with a payment
+    payment_account2 = factory_payment_account(name='account 2', auth_account_id='2')
+    payment_account2.save()
+    invoice = factory_invoice(payment_account2,
+                              created_name='1',
+                              total=10,
+                              details=[{'label': 'label1', 'value': 'value1'}])
     invoice.save()
-    factory_invoice_reference(invoice.id).save()
-    line_item = factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1, description='test')
+    if expected_key == 'id' and not search_filter:
+        search_filter = {'id': invoice.id}
+        expected_value = invoice.id
+    factory_invoice_reference(invoice.id, '1231').save()
+    line_item = factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=1, description='test1')
     line_item.save()
-    auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
 
+    auth_account_id = payment_account.auth_account_id if not view_all else None
+
+    limit = 2
     results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
-                                                      search_filter={}, limit=1, page=1)
+                                                      search_filter=search_filter,
+                                                      limit=limit,
+                                                      page=1)
     assert results is not None
     assert results.get('items') is not None
-    assert results.get('total') == 1
+    assert results.get('total') == expected_total
+    assert len(results.get('items')) == expected_total if len(results.get('items')) < limit else limit
 
-    # Check for invoice status.
-    assert results.get('items')[0]['status_code'] == InvoiceStatus.CREATED.value
-
-    # Add one more payment
-    payment_account.save()
-    invoice = factory_invoice(payment_account)
-    invoice.save()
-    factory_invoice_reference(invoice.id).save()
-
-    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
-                                                      search_filter={}, limit=1, page=1)
-    assert results is not None
-    assert results.get('items') is not None
-    assert results.get('total') == 2
-
-    # Search by different filter
-    search_filter = {
-        'status': 'CREATED'
-    }
-    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
-                                                      search_filter=search_filter, limit=1, page=1)
-    assert results is not None
-    assert results.get('items') is not None
-    assert results.get('total') == 2
-
-    # Search by different filter
-    search_filter = {
-        'status': 'COMPLETED'
-    }
-    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
-                                                      search_filter=search_filter, limit=1, page=1)
-    assert results is not None
-    assert results.get('items') is not None
-    assert results.get('total') == 0
-
-    # Search by different filter
-    search_filter = {
-        'folioNumber': '1234567890'
-    }
-    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
-                                                      search_filter=search_filter, limit=1, page=1)
-    assert results is not None
-    assert results.get('items') is not None
-    assert results.get('total') == 2
-
-    # Search by different filter
-    search_filter = {
-        'businessIdentifier': invoice.business_identifier
-    }
-    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
-                                                      search_filter=search_filter, limit=1, page=1)
-    assert results is not None
-    assert results.get('items') is not None
-    assert results.get('total') == 2
-
-    # Search by different filter
-    search_filter = {
-        'dateFilter': {
-            'createdFrom': datetime.now().strftime('%m/%d/%Y'),
-            'createdTo': datetime.now().strftime('%m/%d/%Y')
-        }
-    }
-    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
-                                                      search_filter=search_filter, limit=1, page=1)
-    assert results is not None
-    assert results.get('items') is not None
-    assert results.get('total') == 2
-
-    # Search by different filter
-    search_filter = {
-        'weekFilter': {
-            'index': 2
-        }
-    }
-    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
-                                                      search_filter=search_filter, limit=1, page=1)
-    assert results is not None
-    assert results.get('items') is not None
-    assert results.get('total') == 0
-
-    # TODO
-    # # Search by different filter
-    search_filter = {
-        'monthFilter': {
-            'month': datetime.now().month,
-            'year': datetime.now().year
-        }
-    }
-    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
-                                                      search_filter=search_filter, limit=1, page=1)
-    assert results is not None
-    assert results.get('items') is not None
-    assert results.get('total') == 2
-
-    # Search by different filter
-    search_filter = {
-        'createdBy': invoice.created_name
-    }
-    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
-                                                      search_filter=search_filter, limit=1, page=1)
-    assert results is not None
-    assert results.get('items') is not None
-    assert results.get('total') == 2
-
-    # Search by different filter
-    search_filter = {
-        'createdName': invoice.created_name
-    }
-    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
-                                                      search_filter=search_filter, limit=1, page=1)
-    assert results is not None
-    assert results.get('items') is not None
-    assert results.get('total') == 2
-
-    # Search by different filter
-    search_filter = {
-        'createdName': invoice.created_name
-    }
-    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
-                                                      search_filter=search_filter, limit=1, page=1)
-    assert results is not None
-    assert results.get('items') is not None
-    assert results.get('total') == 2
-
-    # Search by different filter
-    search_filter = {
-        'statusCode': InvoiceStatus.CREATED.value
-    }
-    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
-                                                      search_filter=search_filter, limit=1, page=1)
-    assert results is not None
-    assert results.get('items') is not None
-    assert results.get('total') == 2
-
-    # Search by different filter
-    search_filter = {
-        'lineItems': line_item.description
-    }
-    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
-                                                      search_filter=search_filter, limit=1, page=1)
-    assert results is not None
-    assert results.get('items') is not None
-    assert results.get('total') == 1
-
-    # Search by different filter
-    search_filter = {
-        'id': invoice.id
-    }
-    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
-                                                      search_filter=search_filter, limit=1, page=1)
-    assert results is not None
-    assert results.get('items') is not None
-    assert results.get('total') == 1
-
-    # Search by different filter
-    search_filter = {
-        'paymentMethod': PaymentMethod.CC.value
-    }
-    results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
-                                                      search_filter=search_filter, limit=1, page=1)
-    assert results is not None
-    assert results.get('items') is not None
-    assert results.get('total') == 2
+    if expected_key:
+        for item in results.get('items'):
+            assert item[expected_key] == expected_value
 
 
 def test_search_payment_history_for_all(session):
