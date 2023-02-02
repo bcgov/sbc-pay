@@ -151,6 +151,24 @@ def test_account_purchase_history_invalid_request(session, client, jwt, app):
     assert schema_utils.validate(rv.json, 'problem')[0]
 
 
+def test_account_purchase_history_forbidden(session, client, jwt, app):
+    """Assert that the endpoint returns 403 when trying to view all transactions if not authorized."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+                     headers=headers)
+
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
+
+    rv = client.post(f'/api/v1/accounts/{pay_account.auth_account_id}/payments/queries?viewAll=true',
+                     data=json.dumps({}),
+                     headers=headers)
+
+    assert rv.status_code == 403
+
+
 def test_account_purchase_history_export_as_csv(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(), token_header)

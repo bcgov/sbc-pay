@@ -19,8 +19,7 @@ from typing import Dict
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import Boolean, ForeignKey, String, cast, func, or_, select, text
-from sqlalchemy.dialects.postgresql import JSONB, array
+from sqlalchemy import Boolean, ForeignKey, String, cast, func, or_, text
 from sqlalchemy.orm import contains_eager, lazyload, relationship
 from sqlalchemy.sql.expression import literal
 
@@ -201,9 +200,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         if search_filter.get('folioNumber', None):
             query = query.filter(Invoice.folio_number == search_filter.get('folioNumber'))
         if business_identifier := search_filter.get('businessIdentifier', None):
-            query = query.filter(or_(Invoice.business_identifier.ilike(f'%{business_identifier}%'),
-                                     # ppr / business search / others don't set businessIdentifier so also need to check the details
-                                     Invoice.details[0]['value'].astext.ilike(f'%{business_identifier}%')))
+            query = query.filter(Invoice.business_identifier.ilike(f'%{business_identifier}%'))
         if search_filter.get('createdBy', None):  # pylint: disable=no-member
             # depreciating (replacing with createdName)
             query = query.filter(
@@ -230,7 +227,8 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             query = query.filter(PaymentLineItem.description.ilike(f'%{line_item}%'))
         if details := search_filter.get('details', None):
             query = query.join(func.jsonb_array_elements(Invoice.details), literal(True))
-            query = query.filter(or_(text("value ->> 'value' ilike :details"), text("value ->> 'label' ilike :details"))) \
+            query = query.filter(or_(text("value ->> 'value' ilike :details"),
+                                     text("value ->> 'label' ilike :details"))) \
                 .params(details=f'%{details}%')
         if line_item_or_details := search_filter.get('lineItemsAndDetails', None):
             query = query.join(func.jsonb_array_elements(Invoice.details), literal(True))

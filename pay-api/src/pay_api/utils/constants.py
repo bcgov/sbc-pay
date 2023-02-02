@@ -43,7 +43,6 @@ EDIT_ROLE = 'edit'
 VIEW_ROLE = 'view'
 MAKE_PAYMENT = 'make_payment'
 CHANGE_STATEMENT_SETTINGS = 'change_statement_settings'
-VIEW_ALL_TRANSACTIONS_ROLE = 'view_all_transactions'
 
 ALL_ALLOWED_ROLES = (EDIT_ROLE, VIEW_ROLE)
 
