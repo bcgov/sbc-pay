@@ -46,6 +46,7 @@ db.init_app(FLASK_APP)
 flag_service = Flags(FLASK_APP)
 
 INCORPORATION_TYPE = 'bc.registry.business.incorporationApplication'
+REGISTRATION = 'bc.registry.business.registration'
 
 
 async def process_event(event_message, flask_app):
@@ -54,7 +55,7 @@ async def process_event(event_message, flask_app):
         raise QueueException('Flask App not available.')
 
     with flask_app.app_context():
-        if event_message.get('type', None) == INCORPORATION_TYPE \
+        if event_message.get('type', None) in [INCORPORATION_TYPE, REGISTRATION] \
                 and 'tempidentifier' in event_message \
                 and event_message.get('tempidentifier', None) is not None:
 
