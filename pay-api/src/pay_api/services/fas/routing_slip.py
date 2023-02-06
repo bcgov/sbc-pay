@@ -420,8 +420,8 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                 # Set the routing slip status back to ACTIVE or COMPLETE, if it isn't created in CFS yet.
                 cfs_account = CfsAccountModel.find_by_account_id(routing_slip.payment_account_id)
                 if cfs_account and cfs_account.status == CfsAccountStatus.PENDING or not cfs_account:
-                    routing_slip.status = RoutingSlipStatus.COMPLETE if routing_slip.remaining_amount == 0 \
-                        else RoutingSlipStatus.ACTIVE
+                    status = RoutingSlipStatus.COMPLETE.value if routing_slip.remaining_amount == 0 \
+                        else RoutingSlipStatus.ACTIVE.value
 
             routing_slip.status = status
 
