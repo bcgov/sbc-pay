@@ -562,7 +562,7 @@ def _validate_account(inv: InvoiceModel, row: Dict[str, str]):
         capture_message(f'Customer Account received as {account_number}, but expected {cfs_account.cfs_account}.',
                         level='error')
 
-        raise Exception('Invalid Account Number')
+        raise Exception('Invalid Account Number')  # pylint: disable=broad-exception-raised
 
 
 async def _publish_payment_event(inv: InvoiceModel):
