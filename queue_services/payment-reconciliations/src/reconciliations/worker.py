@@ -61,7 +61,7 @@ async def process_event(event_message, flask_app):
         elif message_type == 'bc.registry.payment.cgi.FEEDBACKReceived':
             await reconcile_distributions(event_message, is_feedback=True)
         else:
-            raise Exception('Invalid type')
+            raise Exception('Invalid type')  # pylint: disable=broad-exception-raised
 
 
 async def cb_subscription_handler(msg: nats.aio.client.Msg):

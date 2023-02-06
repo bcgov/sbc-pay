@@ -407,9 +407,10 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
             # Create distribution code details.
             if revenue_account := payment_info.get('revenueAccount'):
-                revenue_account.update(dict(accountId=payment_account.id,
-                                            name=payment_account.name,
-                                            ))
+                revenue_account.update({
+                    'accountId': payment_account.id,
+                    'name': payment_account.name
+                })
                 DistributionCode.save_or_update(revenue_account)
         else:
             if cfs_account is not None:
@@ -631,11 +632,12 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         }
 
         if include_pay_info:
-            payload['data']['paymentInfo'] = dict(
-                bankInstitutionNumber=self.bank_number,
-                bankTransitNumber=self.bank_branch_number,
-                bankAccountNumber=mask(self.bank_account_number, current_app.config['MASK_LEN']),
-                paymentStartDate=get_local_formatted_date(self.pad_activation_date, '%B %d, %y'))
+            payload['data']['paymentInfo'] = {
+                'bankInstitutionNumber': self.bank_number,
+                'bankTransitNumber': self.bank_branch_number,
+                'bankAccountNumber': mask(self.bank_account_number, current_app.config['MASK_LEN']),
+                'paymentStartDate': get_local_formatted_date(self.pad_activation_date, '%B %d, %y')
+            }
         return payload
 
     @staticmethod

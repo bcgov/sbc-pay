@@ -167,7 +167,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 if routing_slip.invoices:
                     # FUTURE: If this is hit, and needs to change, we can do something similar to NSF.
                     # EX. Reset the invoices to created, invoice reference to active.
-                    raise Exception('Routing slip has transactions/invoices, cannot be VOID.')
+                    raise Exception('VOID - has transactions/invoices.')  # pylint: disable=broad-exception-raised
 
                 payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(routing_slip.payment_account_id)
                 cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)

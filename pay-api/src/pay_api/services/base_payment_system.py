@@ -204,30 +204,31 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             if filing_description:
                 filing_description += ','
             filing_description += line_item.description
-        q_payload = dict(
-            specversion='1.x-wip',
-            type=message_type,
-            source=f'https://api.pay.bcregistry.gov.bc.ca/v1/invoices/{invoice.id}',
-            id=invoice.id,
-            datacontenttype='application/json',
-            data=dict(
-                identifier=invoice.business_identifier,
-                orderNumber=receipt.receipt_number,
-                transactionDateTime=get_local_formatted_date_time(transaction_date_time),
-                transactionAmount=receipt.receipt_amount,
-                transactionId=invoice_ref.invoice_number,
-                refundDate=get_local_formatted_date_time(datetime.now(), '%Y%m%d'),
-                filingDescription=filing_description
-            ))
+        q_payload = {
+            'specversion': '1.x-wip',
+            'type': message_type,
+            'source': f'https://api.pay.bcregistry.gov.bc.ca/v1/invoices/{invoice.id}',
+            'id': invoice.id,
+            'datacontenttype': 'application/json',
+            'data': {
+                'identifier': invoice.business_identifier,
+                'orderNumber': receipt.receipt_number,
+                'transactionDateTime': get_local_formatted_date_time(transaction_date_time),
+                'transactionAmount': receipt.receipt_amount,
+                'transactionId': invoice_ref.invoice_number,
+                'refundDate': get_local_formatted_date_time(datetime.now(), '%Y%m%d'),
+                'filingDescription': filing_description
+            }
+        }
         if invoice.payment_method_code == PaymentMethod.DRAWDOWN.value:
             payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice.payment_account_id)
             filing_description += ','
             filing_description += invoice_ref.invoice_number
-            q_payload['data'].update(dict(
-                bcolAccount=invoice.bcol_account,
-                bcolUser=payment_account.bcol_user_id,
-                filingDescription=filing_description
-            ))
+            q_payload['data'].update({
+                'bcolAccount': invoice.bcol_account,
+                'bcolUser': payment_account.bcol_user_id,
+                'filingDescription': filing_description
+            })
         current_app.logger.debug(f'Publishing payment refund request to mailer for {invoice.id} : {q_payload}')
         publish_response(payload=q_payload, client_name=current_app.config.get('NATS_MAILER_CLIENT_NAME'),
                          subject=current_app.config.get('NATS_MAILER_SUBJECT'))
