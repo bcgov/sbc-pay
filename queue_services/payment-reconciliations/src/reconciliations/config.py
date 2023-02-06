@@ -118,8 +118,6 @@ class _Config():  # pylint: disable=too-few-public-methods
 
     # Disable EJV Error Email
     DISABLE_EJV_ERROR_EMAIL = os.getenv('DISABLE_EJV_ERROR_EMAIL', 'true').lower() == 'true'
-    # Disable AP Feedback processing
-    DISABLE_AP_FEEDBACK = os.getenv('DISABLE_AP_FEEDBACK', 'true').lower() == 'true'
     # Disable PAD Success Email - Incase we need to reprocess records weeks/months later
     DISABLE_PAD_SUCCESS_EMAIL = os.getenv('DISABLE_PAD_SUCCESS_EMAIL', 'false').lower() == 'true'
 
