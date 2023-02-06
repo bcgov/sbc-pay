@@ -78,7 +78,7 @@ class Payments(Resource):
                     credit_request=credit_request
                 ).asdict(), HTTPStatus.CREATED
         else:
-            is_retry_payment: bool = (request.args.get('retryFailedPayment', 'false').lower() == 'true')
+            is_retry_payment: bool = request.args.get('retryFailedPayment', 'false').lower() == 'true'
 
             response, status = PaymentService.create_account_payment(
                 auth_account_id=account_id,

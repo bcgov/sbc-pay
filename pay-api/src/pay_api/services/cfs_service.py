@@ -352,16 +352,16 @@ class CFSService(OAuthService):
             'CFS_BASE_URL') + f'/cfs/parties/{cfs_account.cfs_party}' \
                               f'/accs/{cfs_account.cfs_account}/sites/{cfs_account.cfs_site}/invs/'
 
-        invoice_payload = dict(
-            batch_source=CFS_BATCH_SOURCE,
-            cust_trx_type=CFS_CUST_TRX_TYPE,
-            transaction_date=curr_time,
-            transaction_number=generate_transaction_number(transaction_number),
-            gl_date=curr_time,
-            term_name=CFS_TERM_NAME,
-            comments='',
-            lines=cls._build_lines(line_items)
-        )
+        invoice_payload = {
+            'batch_source': CFS_BATCH_SOURCE,
+            'cust_trx_type': CFS_CUST_TRX_TYPE,
+            'transaction_date': curr_time,
+            'transaction_number': generate_transaction_number(transaction_number),
+            'gl_date': curr_time,
+            'term_name': CFS_TERM_NAME,
+            'comments': '',
+            'lines': cls._build_lines(line_items)
+        }
 
         access_token = CFSService.get_token().json().get('access_token')
         invoice_response = CFSService.post(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
@@ -397,13 +397,13 @@ class CFSService(OAuthService):
 
                 if not line:
                     index = index + 1
-                    distribution = [dict(
-                        dist_line_number=index,
-                        amount=cls._get_amount(line_item.total, negate),
-                        account=f'{distribution_code.client}.{distribution_code.responsibility_centre}.'
-                                f'{distribution_code.service_line}.{distribution_code.stob}.'
-                                f'{distribution_code.project_code}.000000.0000'
-                    )] if distribution_code else None
+                    distribution = [{
+                        'dist_line_number': index,
+                        'amount': cls._get_amount(line_item.total, negate),
+                        'account': f'{distribution_code.client}.{distribution_code.responsibility_centre}.'
+                        f'{distribution_code.service_line}.{distribution_code.stob}.'
+                        f'{distribution_code.project_code}.000000.0000'
+                    }] if distribution_code else None
 
                     line = {
                         'line_number': index,
@@ -411,8 +411,6 @@ class CFSService(OAuthService):
                         'description': line_item.description,
                         'unit_price': cls._get_amount(line_item.total, negate),
                         'quantity': 1,
-                        # 'attribute1': line_item.invoice_id,
-                        # 'attribute2': line_item.id,
                         'distribution': distribution
                     }
                 else:
@@ -436,8 +434,6 @@ class CFSService(OAuthService):
                         'description': 'Service Fee',
                         'unit_price': cls._get_amount(line_item.service_fees, negate),
                         'quantity': 1,
-                        # 'attribute1': line_item.invoice_id,
-                        # 'attribute2': line_item.id,
                         'distribution': [
                             {
                                 'dist_line_number': index,
@@ -484,16 +480,16 @@ class CFSService(OAuthService):
                          f'{cfs_account.cfs_site}/invs/{inv_number}/adjs/'
         current_app.logger.debug('Adjustment URL %s', adjustment_url)
 
-        adjustment = dict(
-            comment='Non sufficient funds charge for rejected PAD Payment',
-            lines=[
+        adjustment = {
+            'comment': 'Non sufficient funds charge for rejected PAD Payment',
+            'lines': [
                 {
                     'line_number': '1',
                     'adjustment_amount': str(amount),
                     'activity_name': 'BC Registries - NSF Charge'
                 }
             ]
-        )
+        }
 
         adjustment_response = cls.post(adjustment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
                                        adjustment)
@@ -511,16 +507,16 @@ class CFSService(OAuthService):
                          f'{cfs_account.cfs_site}/invs/{inv_number}/adjs/'
         current_app.logger.debug('Adjustment URL %s', adjustment_url)
 
-        adjustment = dict(
-            comment='Invoice cancellation',
-            lines=[
+        adjustment = {
+            'comment': 'Invoice cancellation',
+            'lines': [
                 {
                     'line_number': '1',
                     'adjustment_amount': str(amount),
                     'activity_name': CFS_ADJ_ACTIVITY_NAME
                 }
             ]
-        )
+        }
 
         adjustment_response = cls.post(adjustment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
                                        adjustment)
@@ -602,14 +598,14 @@ class CFSService(OAuthService):
         now = current_local_time()
         curr_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        cms_payload = dict(
-            batch_source=CFS_CM_BATCH_SOURCE,
-            cust_trx_type=CFS_CMS_TRX_TYPE,
-            transaction_date=curr_time,
-            gl_date=curr_time,
-            comments='',
-            lines=cls._build_lines(line_items, negate=True)
-        )
+        cms_payload = {
+            'batch_source': CFS_CM_BATCH_SOURCE,
+            'cust_trx_type': CFS_CMS_TRX_TYPE,
+            'transaction_date': curr_time,
+            'gl_date': curr_time,
+            'comments': '',
+            'lines': cls._build_lines(line_items, negate=True)
+        }
 
         cms_response = CFSService.post(cms_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, cms_payload)
 
@@ -634,10 +630,10 @@ class CFSService(OAuthService):
         receipt_response = cls.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
         current_app.logger.info(f"Balance on {receipt_number} - {receipt_response.json().get('unapplied_amount')}")
         if (unapplied_amount := float(receipt_response.json().get('unapplied_amount', 0))) > 0:
-            adjustment = dict(
-                activity_name='Refund Adjustment FAS' if is_refund else 'Write-off Adjustment FAS',
-                adjustment_amount=str(unapplied_amount)
-            )
+            adjustment = {
+                'activity_name': 'Refund Adjustment FAS' if is_refund else 'Write-off Adjustment FAS',
+                'adjustment_amount': str(unapplied_amount)
+            }
 
             cls.post(adjustment_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, adjustment)
             receipt_response = cls.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)

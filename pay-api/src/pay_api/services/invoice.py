@@ -382,7 +382,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
     @staticmethod
     def find_invoices(business_identifier: str) -> Dict[str, any]:
         """Find invoices by business identifier."""
-        invoices: Dict[str, any] = dict(invoices=[])
+        invoices: Dict[str, any] = {'invoices': []}
         invoice_daos: [InvoiceModel] = InvoiceModel.find_by_business_identifier(business_identifier)
 
         for invoice_dao in invoice_daos:

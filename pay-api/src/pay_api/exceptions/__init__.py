@@ -71,7 +71,7 @@ class BusinessException(Exception):  # noqa
         from pay_api.services.code import Code as CodeService  # pylint: disable=import-outside-toplevel
         problem_json = CodeService.find_code_value_by_type_and_code(Code.ERROR.value, self.code)
         if not problem_json:  # If the error is not configured in DB, return details from Error object
-            problem_json = dict(type=self.code)
+            problem_json = {'type': self.code}
             if self.detail:
                 problem_json['detail'] = self.detail
         return problem_json
