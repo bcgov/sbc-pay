@@ -922,7 +922,7 @@ def test_routing_slip_correction(client, jwt, app):
     assert rv.status_code == 200
     assert rv.json.get('total') == 50
     assert rv.json.get('remainingAmount') == 50
-    assert rv.json.get('status') == RoutingSlipStatus.CORRECTION.value
+    assert rv.json.get('status') == RoutingSlipStatus.ACTIVE.value  # Active here, because we have no CFS account.
     assert rv.json.get('payments')
     assert rv.json.get('payments')[0].get('paidAmount') == 50
     assert rv.json.get('payments')[0].get('paidUsdAmount') == 50
