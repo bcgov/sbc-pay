@@ -33,7 +33,8 @@ class InvoiceReference(BaseModel):  # pylint: disable=too-many-instance-attribut
 
     invoice_number = db.Column(db.String(50), nullable=True, index=True)
     reference_number = db.Column(db.String(50), nullable=True)
-    status_code = db.Column(db.String(20), ForeignKey('invoice_reference_status_codes.code'), nullable=False, index=True)
+    status_code = db.Column(db.String(20), ForeignKey(
+        'invoice_reference_status_codes.code'), nullable=False, index=True)
 
     @classmethod
     def find_by_invoice_id_and_status(cls, invoice_id: int, status_code: str):
