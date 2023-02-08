@@ -1,8 +1,0 @@
-Generic single-database configuration.
-
-
-1. Example creation of migration:
-
-    alembic revision -m "add details for RS_CANT_LINK_NSF"
-
-2. Need to set PYTHONPATH to the code, also script_location = .
