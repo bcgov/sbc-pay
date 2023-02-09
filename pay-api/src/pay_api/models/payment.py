@@ -272,6 +272,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                 query = query.outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
             query = query.filter(InvoiceReference.invoice_number.ilike(f'%{invoice_number}%'))
 
+        query = cls.filter_corp_type(query, search_filter)
         query = cls.filter_no_fee(query, search_filter)
         query = cls.filter_details(query, search_filter, is_count)
         query = cls.filter_date(query, search_filter)
