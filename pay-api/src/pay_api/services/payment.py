@@ -354,7 +354,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         for invoice_dao in purchases:
             included_fields = ['id', 'corp_type_code', 'created_on', 'invoice_status_code', 'total', 'paid',
                                'service_fees', 'references', 'folio_number', 'created_name', 'payment_method_code',
-                               'details', 'payment_account']
+                               'details', 'payment_account', 'business_identifier', 'created_by']
             invoice_schema = InvoiceSchema(only=included_fields)
             invoice = invoice_schema.dump(invoice_dao)
             invoice['line_items'] = []

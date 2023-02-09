@@ -190,7 +190,9 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                           Invoice.created_name,
                           Invoice.invoice_status_code,
                           Invoice.payment_method_code,
-                          Invoice.details
+                          Invoice.details,
+                          Invoice.business_identifier,
+                          Invoice.created_by
                           ),
                 contains_eager(Invoice.payment_line_items)
                 .load_only(PaymentLineItem.description, PaymentLineItem.gst, PaymentLineItem.pst)
@@ -300,6 +302,12 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                 text("value ->> 'value' ilike :details"),
                 text("value ->> 'label' ilike :details"))).params(details=f'%{line_item_or_details}%')
 
+        query = cls.filter_date(query, search_filter)
+        return query
+
+    @classmethod
+    def filter_date(cls, query, search_filter: dict):
+        """Filter by date."""
         # Find start and end dates
         created_from: datetime = None
         created_to: datetime = None
