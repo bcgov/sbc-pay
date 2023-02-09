@@ -238,7 +238,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         query = db.session.query(Invoice) \
             .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
         query = cls.filter(query, auth_account_id, search_filter, is_count=True)
-        count = query.with_entities(func.count()).scalar()
+        count = query.group_by(Invoice.id).with_entities(func.count()).count()
         return count
 
     @classmethod
@@ -272,6 +272,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                 query = query.outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
             query = query.filter(InvoiceReference.invoice_number.ilike(f'%{invoice_number}%'))
 
+        query = cls.filter_no_fee(query, search_filter)
         query = cls.filter_details(query, search_filter, is_count)
         query = cls.filter_date(query, search_filter)
         return query
@@ -333,6 +334,8 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     def filter_details(cls, query, search_filter: dict, is_count: bool):
         """Filter by details."""
         if line_item := search_filter.get('lineItems', None):
+            if is_count:
+                query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
             query = query.filter(PaymentLineItem.description.ilike(f'%{line_item}%'))
         if details := search_filter.get('details', None):
             if is_count:
