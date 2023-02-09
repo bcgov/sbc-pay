@@ -226,7 +226,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             result, count = query.filter(Invoice.id.in_(sub_query.subquery())).all(), sub_query.count()
         else:
             count = cls.get_count(auth_account_id, search_filter)
-            if len(count) > 10000:
+            if count > 60000:
                 raise BusinessException(Error.PAYMENT_SEARCH_TOO_MANY_RECORDS)
             result = query.all()
         return result, count
@@ -273,7 +273,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             query = query.filter(InvoiceReference.invoice_number.ilike(f'%{invoice_number}%'))
 
         query = cls.filter_corp_type(query, search_filter)
-        query = cls.filter_no_fee(query, search_filter)
+        query = cls.filter_payment(query, search_filter)
         query = cls.filter_details(query, search_filter, is_count)
         query = cls.filter_date(query, search_filter)
         return query
@@ -290,8 +290,8 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return query
 
     @classmethod
-    def filter_no_fee(cls, query, search_filter: dict):
-        """Filter for no fee."""
+    def filter_payment(cls, query, search_filter: dict):
+        """Filter for payment."""
         if payment_type := search_filter.get('paymentMethod', None):
             if payment_type == 'NO_FEE':
                 # only include no fee transactions

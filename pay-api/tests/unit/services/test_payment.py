@@ -113,6 +113,7 @@ def test_payment_with_no_active_invoice(session):
     ('account_name_view_all_2', {'accountName': 'account'}, True, 4, None, None),
     ('product', {'product': 'BUSINESS'}, False, 3, 'product', 'BUSINESS'),
     ('product_view_all', {'product': 'BUSINESS'}, True, 4, 'product', 'BUSINESS'),
+    ('csv_export', {'product': 'BUSINESS'}, True, 4, None, None),
 ])
 def test_search_payment_history(session, test_name, search_filter, view_all,
                                 expected_total, expected_key, expected_value):
@@ -150,11 +151,16 @@ def test_search_payment_history(session, test_name, search_filter, view_all,
 
     auth_account_id = payment_account.auth_account_id if not view_all else None
 
+    if test_name == 'csv_export':
+        return_all = True
+    else:
+        return_all = False
     limit = 2
     results = Payment_service.search_purchase_history(auth_account_id=auth_account_id,
                                                       search_filter=search_filter,
                                                       limit=limit,
-                                                      page=1)
+                                                      page=1,
+                                                      return_all=return_all)
     assert results is not None
     assert results.get('items') is not None
     assert results.get('total') == expected_total
