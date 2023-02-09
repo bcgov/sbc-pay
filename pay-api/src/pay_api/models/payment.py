@@ -20,7 +20,7 @@ import pytz
 from flask import current_app
 from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey, String, cast, func, or_, text
-from sqlalchemy.orm import contains_eager, lazyload, relationship, load_only
+from sqlalchemy.orm import contains_eager, lazyload, load_only, relationship
 from sqlalchemy.sql.expression import literal
 
 from pay_api.exceptions import BusinessException
@@ -169,7 +169,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                                 page: int, limit: int, return_all: bool, max_no_records: int = 0, **kwargs):
         """Search for purchase history."""
         user: UserContext = kwargs['user']
-        product_code = user.product_code
+        search_filter['userProductCode'] = user.product_code
 
         # Exclude 'receipts' they aren't serialized, use specific fields that will be serialized.
         query = db.session.query(Invoice) \
@@ -205,9 +205,9 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                                                              InvoiceReference.reference_number,
                                                              InvoiceReference.status_code),
         )
-        query = cls.filter(query, auth_account_id, search_filter, product_code)
+        query = cls.filter(query, auth_account_id, search_filter)
         if not return_all:
-            count = cls.get_count(auth_account_id, search_filter, product_code)
+            count = cls.get_count(auth_account_id, search_filter)
             # Add pagination
             sub_query = query.with_entities(Invoice.id).\
                 group_by(Invoice.id).\
@@ -225,33 +225,29 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                 limit(max_no_records)
             result, count = query.filter(Invoice.id.in_(sub_query.subquery())).all(), sub_query.count()
         else:
-            count = cls.get_count(auth_account_id, search_filter, product_code)
+            count = cls.get_count(auth_account_id, search_filter)
             if len(count) > 10000:
                 raise BusinessException(Error.PAYMENT_SEARCH_TOO_MANY_RECORDS)
             result = query.all()
         return result, count
 
     @classmethod
-    def get_count(cls, auth_account_id: str, search_filter: Dict, product_code: str):
+    def get_count(cls, auth_account_id: str, search_filter: Dict):
         """Slimed downed version for count (less joins)."""
         # We need to exclude the outer joins for performance here, they get re-added in filter.
         query = db.session.query(Invoice) \
             .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
-        query = cls.filter(query, auth_account_id, search_filter, product_code, is_count=True)
+        query = cls.filter(query, auth_account_id, search_filter, is_count=True)
         count = query.with_entities(func.count()).scalar()
         return count
 
     @classmethod
-    def filter(cls, query, auth_account_id: str, search_filter: Dict, product_code: str, is_count=False):
+    def filter(cls, query, auth_account_id: str, search_filter: Dict, is_count=False):
         """For filtering queries."""
         if auth_account_id:
             query = query.filter(PaymentAccount.auth_account_id == auth_account_id)
-        if product_code:
-            query = query.join(CorpType, CorpType.code == Invoice.corp_type_code)\
-                .filter(CorpType.product == product_code)
-        if product := search_filter.get('product', None):
-            query = query.join(CorpType, CorpType.code == Invoice.corp_type_code)\
-                .filter(CorpType.product == product)
+        if account_name := search_filter.get('accountName', None):
+            query = query.filter(PaymentAccount.name.ilike(f'%{account_name}%'))
         if status_code := search_filter.get('statusCode', None):
             query = query.filter(Invoice.invoice_status_code == status_code)
         if search_filter.get('status', None):
@@ -261,14 +257,39 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             query = query.filter(Invoice.folio_number == search_filter.get('folioNumber'))
         if business_identifier := search_filter.get('businessIdentifier', None):
             query = query.filter(Invoice.business_identifier.ilike(f'%{business_identifier}%'))
-        if search_filter.get('createdBy', None):  # pylint: disable=no-member
+        if created_by := search_filter.get('createdBy', None):  # pylint: disable=no-member
             # depreciating (replacing with createdName)
             query = query.filter(
-                Invoice.created_name.ilike('%' + search_filter.get('createdBy') + '%'))  # pylint: disable=no-member
+                Invoice.created_name.ilike(f'%{created_by}%'))  # pylint: disable=no-member
         if created_name := search_filter.get('createdName', None):
             query = query.filter(Invoice.created_name.ilike(f'%{created_name}%'))
         if invoice_id := search_filter.get('id', None):
             query = query.filter(cast(Invoice.id, String).like(f'%{invoice_id}%'))
+
+        if invoice_number := search_filter.get('invoiceNumber', None):
+            # could have multiple invoice reference rows, but is handled in sub_query below (group by)
+            if is_count:
+                query = query.outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
+            query = query.filter(InvoiceReference.invoice_number.ilike(f'%{invoice_number}%'))
+
+        query = cls.filter_details(query, search_filter, is_count)
+        query = cls.filter_date(query, search_filter)
+        return query
+
+    @classmethod
+    def filter_corp_type(cls, query, search_filter: dict):
+        """Filter for corp type."""
+        if product := search_filter.get('userProductCode', None):
+            query = query.join(CorpType, CorpType.code == Invoice.corp_type_code)\
+                .filter(CorpType.product == product)
+        if product := search_filter.get('product', None):
+            query = query.join(CorpType, CorpType.code == Invoice.corp_type_code)\
+                .filter(CorpType.product == product)
+        return query
+
+    @classmethod
+    def filter_no_fee(cls, query, search_filter: dict):
+        """Filter for no fee."""
         if payment_type := search_filter.get('paymentMethod', None):
             if payment_type == 'NO_FEE':
                 # only include no fee transactions
@@ -277,32 +298,6 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                 # don't include no fee transactions
                 query = query.filter(Invoice.total != 0)
                 query = query.filter(Invoice.payment_method_code == payment_type)
-        if invoice_number := search_filter.get('invoiceNumber', None):
-            # could have multiple invoice reference rows, but is handled in sub_query below (group by)
-            if is_count:
-                query = query.outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
-            query = query.filter(InvoiceReference.invoice_number.ilike(f'%{invoice_number}%'))
-        if account_name := search_filter.get('accountName', None):
-            query = query.filter(PaymentAccount.name.ilike(f'%{account_name}%'))
-        if line_item := search_filter.get('lineItems', None):
-            query = query.filter(PaymentLineItem.description.ilike(f'%{line_item}%'))
-        if details := search_filter.get('details', None):
-            if is_count:
-                query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
-            query = query.join(func.jsonb_array_elements(Invoice.details), literal(True))
-            query = query.filter(or_(text("value ->> 'value' ilike :details"),
-                                     text("value ->> 'label' ilike :details"))) \
-                .params(details=f'%{details}%')
-        if line_item_or_details := search_filter.get('lineItemsAndDetails', None):
-            if is_count:
-                query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
-            query = query.join(func.jsonb_array_elements(Invoice.details), literal(True))
-            query = query.filter(or_(
-                PaymentLineItem.description.ilike(f'%{line_item_or_details}%'),
-                text("value ->> 'value' ilike :details"),
-                text("value ->> 'label' ilike :details"))).params(details=f'%{line_item_or_details}%')
-
-        query = cls.filter_date(query, search_filter)
         return query
 
     @classmethod
@@ -332,6 +327,29 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             created_to = created_to.replace(hour=23, minute=59, second=59, microsecond=999999).astimezone(tz_local)
             query = query.filter(
                 func.timezone(tz_name, func.timezone('UTC', Invoice.created_on)).between(created_from, created_to))
+        return query
+
+    @classmethod
+    def filter_details(cls, query, search_filter: dict, is_count: bool):
+        """Filter by details."""
+        if line_item := search_filter.get('lineItems', None):
+            query = query.filter(PaymentLineItem.description.ilike(f'%{line_item}%'))
+        if details := search_filter.get('details', None):
+            if is_count:
+                query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
+            query = query.join(func.jsonb_array_elements(Invoice.details), literal(True))
+            query = query.filter(or_(text("value ->> 'value' ilike :details"),
+                                     text("value ->> 'label' ilike :details"))) \
+                .params(details=f'%{details}%')
+        if line_item_or_details := search_filter.get('lineItemsAndDetails', None):
+            if is_count:
+                query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
+            query = query.join(func.jsonb_array_elements(Invoice.details), literal(True))
+            query = query.filter(or_(
+                PaymentLineItem.description.ilike(f'%{line_item_or_details}%'),
+                text("value ->> 'value' ilike :details"),
+                text("value ->> 'label' ilike :details"))).params(details=f'%{line_item_or_details}%')
+
         return query
 
 
