@@ -211,6 +211,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             # Add pagination
             sub_query = query.with_entities(Invoice.id).\
                 group_by(Invoice.id).\
+                order_by(Invoice.id.desc()). \
                 limit(limit).\
                 offset((page - 1) * limit).\
                 subquery()

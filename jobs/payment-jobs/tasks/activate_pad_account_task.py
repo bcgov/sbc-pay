@@ -13,7 +13,7 @@
 # limitations under the License.
 """Task to activate accounts with pending activation.Mostly for PAD with 3 day activation period."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List
 
 from flask import current_app
@@ -46,7 +46,7 @@ class ActivatePadAccountTask:  # pylint: disable=too-few-public-methods
             pay_account: PaymentAccountModel = PaymentAccountModel.find_by_id(pending_account.account_id)
 
             # check is still in the pad activation period
-            is_activation_period_over = pay_account.pad_activation_date < datetime.now()
+            is_activation_period_over = pay_account.pad_activation_date - timedelta(hours=1) < datetime.now()
             current_app.logger.info(
                 f'Account {pay_account.id} ready for activation:{is_activation_period_over}')
 
