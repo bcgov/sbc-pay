@@ -113,7 +113,7 @@ def test_payment_with_no_active_invoice(session):
     ('account_name_view_all_2', {'accountName': 'account'}, True, 4, None, None),
     ('product', {'product': 'BUSINESS'}, False, 3, 'product', 'BUSINESS'),
     ('product_view_all', {'product': 'BUSINESS'}, True, 4, 'product', 'BUSINESS'),
-    ('csv export', {'product': 'BUSINESS'}, True, 4, None, None),
+    ('csv_export', {'product': 'BUSINESS'}, True, 4, None, None),
 ])
 def test_search_payment_history(session, test_name, search_filter, view_all,
                                 expected_total, expected_key, expected_value):
@@ -151,7 +151,7 @@ def test_search_payment_history(session, test_name, search_filter, view_all,
 
     auth_account_id = payment_account.auth_account_id if not view_all else None
 
-    if test_name == 'csv export':
+    if test_name == 'csv_export':
         return_all = True
     else:
         return_all = False
