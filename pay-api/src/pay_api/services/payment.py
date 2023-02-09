@@ -352,11 +352,15 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             data = {'items': []}
 
         for invoice_dao in purchases:
-            invoice_schema = InvoiceSchema(exclude=('receipts', 'payment_line_items', 'references'))
+            included_fields = ['id', 'corp_type_code', 'created_on', 'invoice_status_code', 'total', 'paid',
+                               'service_fees', 'references', 'folio_number', 'created_name', 'payment_method_code',
+                               'details', 'payment_account']
+            invoice_schema = InvoiceSchema(only=included_fields)
             invoice = invoice_schema.dump(invoice_dao)
             invoice['line_items'] = []
             for payment_line_item in invoice_dao.payment_line_items:
-                line_item_schema = PaymentLineItemSchema(exclude=('id', 'line_item_status_code'))
+                # All we need for CSV and PDF and search.
+                line_item_schema = PaymentLineItemSchema(only=('gst', 'description', 'pst'))
                 line_item_dict = line_item_schema.dump(payment_line_item)
                 line_item_dict['filing_type_code'] = payment_line_item.fee_schedule.filing_type_code
                 invoice['line_items'].append(line_item_dict)

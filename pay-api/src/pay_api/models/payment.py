@@ -20,13 +20,15 @@ import pytz
 from flask import current_app
 from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey, String, cast, func, or_, text
-from sqlalchemy.orm import contains_eager, lazyload, relationship
+from sqlalchemy.orm import contains_eager, lazyload, relationship, load_only
 from sqlalchemy.sql.expression import literal
 
+from pay_api.exceptions import BusinessException
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import InvoiceReferenceStatus
 from pay_api.utils.enums import PaymentMethod as PaymentMethodEnum
 from pay_api.utils.enums import PaymentStatus
+from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import get_first_and_last_dates_of_month, get_str_by_path, get_week_start_and_end_date
 
@@ -169,24 +171,80 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         user: UserContext = kwargs['user']
         product_code = user.product_code
 
-        # Exclude 'receipts', 'references', they aren't serialized, use specific fields that will be serialized.
+        # Exclude 'receipts' they aren't serialized, use specific fields that will be serialized.
         query = db.session.query(Invoice) \
             .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id) \
             .outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id) \
             .outerjoin(FeeSchedule, FeeSchedule.fee_schedule_id == PaymentLineItem.fee_schedule_id) \
+            .outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id) \
             .options(
                 lazyload('*'),
-                contains_eager(Invoice.payment_line_items).contains_eager(PaymentLineItem.fee_schedule)
-                .load_only(FeeSchedule.filing_type_code),
+                load_only(Invoice.id,
+                          Invoice.corp_type_code,
+                          Invoice.created_on,
+                          Invoice.invoice_status_code,
+                          Invoice.total,
+                          Invoice.service_fees,
+                          Invoice.paid,
+                          Invoice.folio_number,
+                          Invoice.created_name,
+                          Invoice.invoice_status_code,
+                          Invoice.payment_method_code,
+                          Invoice.details
+                          ),
+                contains_eager(Invoice.payment_line_items)
+                .load_only(PaymentLineItem.description, PaymentLineItem.gst, PaymentLineItem.pst)
+                .contains_eager(PaymentLineItem.fee_schedule)
+                .load_only(FeeSchedule.filing_type_code, FeeSchedule.corp_type_code),
                 contains_eager(Invoice.payment_account).load_only(PaymentAccount.auth_account_id,
                                                                   PaymentAccount.name,
-                                                                  PaymentAccount.billable)
+                                                                  PaymentAccount.billable),
+                contains_eager(Invoice.references).load_only(InvoiceReference.invoice_number,
+                                                             InvoiceReference.reference_number,
+                                                             InvoiceReference.status_code),
         )
+        query = cls.filter(query, auth_account_id, search_filter, product_code)
+        if not return_all:
+            count = cls.get_count(auth_account_id, search_filter, product_code)
+            # Add pagination
+            sub_query = query.with_entities(Invoice.id).\
+                group_by(Invoice.id).\
+                limit(limit).\
+                offset((page - 1) * limit).\
+                subquery()
+            result = query.order_by(Invoice.id.desc()).filter(Invoice.id.in_(sub_query)).all()
+            # If maximum number of records is provided, return it as total
+            if max_no_records > 0:
+                count = max_no_records if max_no_records < count else count
+        elif max_no_records > 0:
+            # If maximum number of records is provided, set the page with that number
+            sub_query = query.with_entities(Invoice.id).\
+                group_by(Invoice.id).\
+                limit(max_no_records)
+            result, count = query.filter(Invoice.id.in_(sub_query.subquery())).all(), sub_query.count()
+        else:
+            count = cls.get_count(auth_account_id, search_filter, product_code)
+            if len(count) > 10000:
+                raise BusinessException(Error.PAYMENT_SEARCH_TOO_MANY_RECORDS)
+            result = query.all()
+        return result, count
+
+    @classmethod
+    def get_count(cls, auth_account_id: str, search_filter: Dict, product_code: str):
+        """Slimed downed version for count (less joins)."""
+        # We need to exclude the outer joins for performance here, they get re-added in filter.
+        query = db.session.query(Invoice) \
+            .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
+        query = cls.filter(query, auth_account_id, search_filter, product_code, is_count=True)
+        count = query.with_entities(func.count()).scalar()
+        return count
+
+    @classmethod
+    def filter(cls, query, auth_account_id: str, search_filter: Dict, product_code: str, is_count=False):
+        """For filtering queries."""
         if auth_account_id:
             query = query.filter(PaymentAccount.auth_account_id == auth_account_id)
-        # If a product code is present in token (service account), then filter only that product's invoices.
         if product_code:
-            # TODO: should remove this and have ^^ workflows filter by product
             query = query.join(CorpType, CorpType.code == Invoice.corp_type_code)\
                 .filter(CorpType.product == product_code)
         if product := search_filter.get('product', None):
@@ -219,18 +277,23 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                 query = query.filter(Invoice.payment_method_code == payment_type)
         if invoice_number := search_filter.get('invoiceNumber', None):
             # could have multiple invoice reference rows, but is handled in sub_query below (group by)
-            query = query.join(InvoiceReference, InvoiceReference.invoice_id == Invoice.id) \
-                .filter(InvoiceReference.invoice_number.ilike(f'%{invoice_number}%'))
+            if is_count:
+                query = query.outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
+            query = query.filter(InvoiceReference.invoice_number.ilike(f'%{invoice_number}%'))
         if account_name := search_filter.get('accountName', None):
             query = query.filter(PaymentAccount.name.ilike(f'%{account_name}%'))
         if line_item := search_filter.get('lineItems', None):
             query = query.filter(PaymentLineItem.description.ilike(f'%{line_item}%'))
         if details := search_filter.get('details', None):
+            if is_count:
+                query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
             query = query.join(func.jsonb_array_elements(Invoice.details), literal(True))
             query = query.filter(or_(text("value ->> 'value' ilike :details"),
                                      text("value ->> 'label' ilike :details"))) \
                 .params(details=f'%{details}%')
         if line_item_or_details := search_filter.get('lineItemsAndDetails', None):
+            if is_count:
+                query = query.outerjoin(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id)
             query = query.join(func.jsonb_array_elements(Invoice.details), literal(True))
             query = query.filter(or_(
                 PaymentLineItem.description.ilike(f'%{line_item_or_details}%'),
@@ -261,32 +324,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             created_to = created_to.replace(hour=23, minute=59, second=59, microsecond=999999).astimezone(tz_local)
             query = query.filter(
                 func.timezone(tz_name, func.timezone('UTC', Invoice.created_on)).between(created_from, created_to))
-
-        # Add ordering
-        query = query.order_by(Invoice.created_on.desc())
-
-        if not return_all:
-            # Add pagination
-            sub_query = query.with_entities(Invoice.id).\
-                    group_by(Invoice.id).\
-                    limit(limit).\
-                    offset((page - 1) * limit).\
-                    subquery()
-            result, count = query.filter(Invoice.id.in_(sub_query)).all(), query.count()
-            # If maximum number of records is provided, return it as total
-            if max_no_records > 0:
-                count = max_no_records if max_no_records < count else count
-        elif max_no_records > 0:
-            # If maximum number of records is provided, set the page with that number
-            sub_query = query.with_entities(Invoice.id).\
-                group_by(Invoice.id).\
-                limit(max_no_records)
-            result, count = query.filter(Invoice.id.in_(sub_query.subquery())).all(), sub_query.count()
-        else:
-            result = query.all()
-            count = len(result)
-
-        return result, count
+        return query
 
 
 class PaymentSchema(BaseSchema):  # pylint: disable=too-many-ancestors
