@@ -28,7 +28,7 @@ cffi==1.15.0
 charset-normalizer==2.0.10
 click==7.1.2
 croniter==1.1.0
-cryptography==36.0.1
+cryptography==39.0.1
 dpath==2.0.5
 ecdsa==0.17.0
 flask-jwt-oidc==0.3.0
