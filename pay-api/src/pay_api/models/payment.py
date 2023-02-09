@@ -226,7 +226,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             result, count = query.filter(Invoice.id.in_(sub_query.subquery())).all(), sub_query.count()
         else:
             count = cls.get_count(auth_account_id, search_filter)
-            if len(count) > 60000:
+            if count > 60000:
                 raise BusinessException(Error.PAYMENT_SEARCH_TOO_MANY_RECORDS)
             result = query.all()
         return result, count
