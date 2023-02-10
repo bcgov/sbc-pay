@@ -209,7 +209,10 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         if not return_all:
             count = cls.get_count(auth_account_id, search_filter)
             # Add pagination
-            sub_query = query.with_entities(Invoice.id).\
+            sub_query = db.session.query(Invoice) \
+                .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
+            sub_query = cls.filter(sub_query, auth_account_id, search_filter, add_outer_joins=True).\
+                with_entities(Invoice.id).\
                 group_by(Invoice.id).\
                 order_by(Invoice.id.desc()). \
                 limit(limit).\
@@ -238,12 +241,12 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         # We need to exclude the outer joins for performance here, they get re-added in filter.
         query = db.session.query(Invoice) \
             .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
-        query = cls.filter(query, auth_account_id, search_filter, is_count=True)
+        query = cls.filter(query, auth_account_id, search_filter, add_outer_joins=True)
         count = query.group_by(Invoice.id).with_entities(func.count()).count()
         return count
 
     @classmethod
-    def filter(cls, query, auth_account_id: str, search_filter: Dict, is_count=False):
+    def filter(cls, query, auth_account_id: str, search_filter: Dict, add_outer_joins=False):
         """For filtering queries."""
         if auth_account_id:
             query = query.filter(PaymentAccount.auth_account_id == auth_account_id)
@@ -269,13 +272,13 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
 
         if invoice_number := search_filter.get('invoiceNumber', None):
             # could have multiple invoice reference rows, but is handled in sub_query below (group by)
-            if is_count:
+            if add_outer_joins:
                 query = query.outerjoin(InvoiceReference, InvoiceReference.invoice_id == Invoice.id)
             query = query.filter(InvoiceReference.invoice_number.ilike(f'%{invoice_number}%'))
 
         query = cls.filter_corp_type(query, search_filter)
         query = cls.filter_payment(query, search_filter)
-        query = cls.filter_details(query, search_filter, is_count)
+        query = cls.filter_details(query, search_filter, add_outer_joins)
         query = cls.filter_date(query, search_filter)
         return query
 
