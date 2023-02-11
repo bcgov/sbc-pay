@@ -31,9 +31,9 @@ from .ejv_header import EjvHeader
 from .ejv_invoice_link import EjvInvoiceLink
 from .error_code import ErrorCode, ErrorCodeSchema
 from .fee_code import FeeCode, FeeCodeSchema  # noqa: I001
-from .fee_schedule import FeeSchedule, FeeScheduleSchema
+from .fee_schedule import FeeSchedule, FeeScheduleSchema, FeeScheduleSearchModel
 from .filing_type import FilingType, FilingTypeSchema
-from .invoice import Invoice, InvoiceSchema
+from .invoice import Invoice, InvoiceSchema, InvoiceSchemaSearchModel
 from .invoice_batch import InvoiceBatch
 from .invoice_batch_link import InvoiceBatchLink
 from .invoice_reference import InvoiceReference, InvoiceReferenceSchema
@@ -42,8 +42,8 @@ from .invoice_status_code import InvoiceStatusCode, InvoiceStatusCodeSchema
 from .line_item_status_code import LineItemStatusCode, LineItemStatusCodeSchema
 from .notification_status_code import NotificationStatusCode, NotificationStatusCodeSchema
 from .payment import Payment, PaymentSchema
-from .payment_account import PaymentAccount, PaymentAccountSchema  # noqa: I001
-from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
+from .payment_account import PaymentAccount, PaymentAccountSchema, PaymentAccountSearchModel  # noqa: I001
+from .payment_line_item import PaymentLineItem, PaymentLineItemSchema, PaymentLineItemSearchModel
 from .payment_method import PaymentMethod, PaymentMethodSchema
 from .payment_status_code import PaymentStatusCode, PaymentStatusCodeSchema
 from .payment_transaction import PaymentTransaction, PaymentTransactionSchema

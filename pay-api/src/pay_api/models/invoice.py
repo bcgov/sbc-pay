@@ -15,12 +15,14 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from marshmallow import fields, post_dump
+from pydantic import BaseModel, Field, validator
 from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
+from pay_api.models.payment_line_item import PaymentLineItemSearchModel
 
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
 
@@ -28,7 +30,7 @@ from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
 from .db import db, ma
 from .invoice_reference import InvoiceReferenceSchema
-from .payment_account import PaymentAccountSchema
+from .payment_account import PaymentAccountSchema, PaymentAccountSearchModel
 from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from .receipt import ReceiptSchema
 
@@ -173,3 +175,35 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
             data['status_code'] = PaymentStatus.COMPLETED.value
 
         return data
+
+
+# Newly added, Pydantic instead of marshmellow which is way faster.
+class InvoiceSchemaSearchModel(BaseModel):  # pylint: disable=too-few-public-methods
+    """Main schema used to serialize invoice searches, plus csv / pdf export."""
+
+    id: int
+    corp_type_code: str
+    created_on: str
+    total: float
+    paid: float
+    service_fees: float
+    folio_number: str
+    created_name: str
+    details: List[dict]
+    payment_account: Optional[PaymentAccountSearchModel]
+    business_identifier: str
+    created_by: str
+    status_code: Optional[str] = Field(alias='invoice_status_code')
+    payment_method: str = Field(alias='payment_method_code')
+    line_items: Optional[List[PaymentLineItemSearchModel]] = Field(alias='payment_line_items')
+
+    @validator('created_on', pre=True)
+    @classmethod
+    def parse_created_on(cls, value: datetime):  # pylint: disable=no-self-argument
+        """Parse created_on to isoformat."""
+        return value.isoformat()
+
+    class Config:  # pylint: disable=too-few-public-methods
+        """Config for InvoiceSchemaSearchModel."""
+
+        orm_mode = True

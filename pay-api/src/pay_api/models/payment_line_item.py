@@ -13,13 +13,15 @@
 # limitations under the License.
 """Model to handle all operations related to Payment Line Item."""
 
+from typing import Optional
 from marshmallow import fields
+from pydantic import BaseModel as BaseModelPydantic
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
 from .base_model import BaseModel
 from .db import db, ma
-from .fee_schedule import FeeSchedule
+from .fee_schedule import FeeSchedule, FeeScheduleSearchModel
 
 
 class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attributes
@@ -72,3 +74,18 @@ class PaymentLineItemSchema(ma.ModelSchema):  # pylint: disable=too-many-ancesto
     total = fields.Float(data_key='total')
     waived_fees = fields.Float(data_key='waived_fees')
     service_fees = fields.Float(data_key='service_fees')
+
+
+class PaymentLineItemSearchModel(BaseModelPydantic):
+    """Payment Line Item Search Model."""
+
+    gst: float
+    pst: float
+    description: str
+    filing_type_code: Optional[str]
+    fee_schedule: Optional[FeeScheduleSearchModel]
+
+    class Config:  # pylint: disable=too-few-public-methods, missing-class-docstring
+        """Config for PaymentLineItemSearchModel."""
+
+        orm_mode = True

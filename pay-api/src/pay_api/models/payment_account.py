@@ -13,7 +13,9 @@
 # limitations under the License.
 """Model to handle all operations related to Payment Account data."""
 
+from typing import Optional
 from marshmallow import fields
+from pydantic import BaseModel
 from sqlalchemy import Boolean, ForeignKey
 
 from .base_model import VersionedModel
@@ -73,3 +75,16 @@ class PaymentAccountSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     payment_method = fields.String(data_key='payment_method')
     auth_account_id = fields.String(data_key='account_id')
     name = fields.String(data_key='account_name')
+
+
+class PaymentAccountSearchModel(BaseModel):  # pylint: disable=too-few-public-methods
+    """Payment Account Search model."""
+
+    name: Optional[str]
+    billable: Optional[bool]
+    auth_account_id: str
+
+    class Config:  # pylint: disable=too-few-public-methods
+        """Config for PaymentAccountSearchModel."""
+
+        orm_mode = True

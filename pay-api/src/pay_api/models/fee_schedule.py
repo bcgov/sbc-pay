@@ -15,7 +15,9 @@
 
 from datetime import date, datetime
 from operator import or_
+from typing import Optional
 
+from pydantic import BaseModel
 from sqlalchemy import Boolean, ForeignKey, func
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
@@ -135,3 +137,14 @@ class FeeScheduleSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     corp_type = ma.Nested(CorpTypeSchema, many=False, data_key='corp_type_code',
                           exclude=['bcol_fee_code', 'bcol_staff_fee_code', 'batch_type'])
     filing_type = ma.Nested(FilingTypeSchema, many=False, data_key='filing_type_code')
+
+
+class FeeScheduleSearchModel(BaseModel):  # pylint: disable=too-few-public-methods
+    """Fee Schedule Search Model."""
+
+    filing_type_code: Optional[str]
+
+    class Config:  # pylint: disable=too-few-public-methods, missing-class-docstring
+        """Config for FeeScheduleSearchModel."""
+
+        orm_mode = True
