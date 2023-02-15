@@ -88,8 +88,8 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
                     AND qty = -1
                 """
             ).fetchall()
-
-            bcol_refunds_all.update({x[0]: Decimal(x[1]) for x in bcol_refunds})
+            # total_amt will be type float from oracle. Convert to str first to avoid Decimal cast adding extra decimals
+            bcol_refunds_all.update({x[0]: Decimal(str(x[1])) for x in bcol_refunds})
 
         # set invoice_number as the key (makes it easier map against)
         return bcol_refunds_all
