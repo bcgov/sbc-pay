@@ -20,7 +20,7 @@ sentry-sdk[flask]
 attrs
 jaeger-client
 dpath
-Werkzeug<2
+Werkzeug<3
 SQLAlchemy-Continuum
 cryptography
 sqlalchemy_utils
