@@ -1591,7 +1591,6 @@ components:
     Invoice:
       type: object
       title: Invoice
-      additionalProperties: true
       description: <p>Object to hold invoice information </p>
       properties:
         _links:
@@ -1693,6 +1692,7 @@ components:
           type: string
         updatedName:
           type: string
+        additionalProperties: true
     Transaction:
       type: object
       properties:
