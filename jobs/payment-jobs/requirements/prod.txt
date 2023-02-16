@@ -8,7 +8,7 @@ python-dotenv
 psycopg2-binary
 jsonschema
 requests
-Werkzeug<2
+Werkzeug<3
 jaeger-client
 minio
 pysftp
