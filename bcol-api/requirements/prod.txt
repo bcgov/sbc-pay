@@ -12,7 +12,7 @@ zeep
 python-ldap
 sentry-sdk[flask]
 attrs
-Werkzeug<2
+Werkzeug<3
 jaeger-client
 pycountry
 itsdangerous==2.0.1
