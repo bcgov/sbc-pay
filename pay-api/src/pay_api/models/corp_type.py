@@ -13,6 +13,7 @@
 # limitations under the License.
 """Model to handle all operations related to Corp type master data."""
 
+from attrs import define
 from sqlalchemy import Boolean
 
 from .code_table import CodeTable
@@ -52,3 +53,20 @@ class CorpTypeSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
         """Returns all the fields from the SQLAlchemy class."""
 
         model = CorpType
+
+
+@define
+class CorpTypeSearchModel:  # pylint: disable=too-few-public-methods
+    """Corp Type Search Model."""
+
+    code: str
+    description: str
+    product: str
+
+    @classmethod
+    def from_row(cls, row: CorpType):
+        """From row is used so we don't tightly couple to our database class.
+
+        https://www.attrs.org/en/stable/init.html
+        """
+        return cls(code=row.code, description=row.description, product=row.product)

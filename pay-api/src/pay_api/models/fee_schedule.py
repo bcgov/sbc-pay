@@ -15,6 +15,7 @@
 
 from datetime import date, datetime
 from operator import or_
+from attrs import define
 
 from sqlalchemy import Boolean, ForeignKey, func
 from sqlalchemy.ext.declarative import declared_attr
@@ -135,3 +136,18 @@ class FeeScheduleSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     corp_type = ma.Nested(CorpTypeSchema, many=False, data_key='corp_type_code',
                           exclude=['bcol_fee_code', 'bcol_staff_fee_code', 'batch_type'])
     filing_type = ma.Nested(FilingTypeSchema, many=False, data_key='filing_type_code')
+
+
+@define
+class FeeScheduleSearchModel:  # pylint: disable=too-few-public-methods
+    """Fee Schedule Search Model."""
+
+    filing_type_code: str
+
+    @classmethod
+    def from_row(cls, row):
+        """From row is used so we don't tightly couple to our database class.
+
+        https://www.attrs.org/en/stable/init.html
+        """
+        return cls(filing_type_code=row.filing_type_code)

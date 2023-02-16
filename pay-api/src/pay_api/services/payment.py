@@ -26,11 +26,12 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models.base_model import BaseModel
-from pay_api.models.invoice import InvoiceSchema
+from pay_api.models.invoice import InvoiceSchema, InvoiceSearchModel
 from pay_api.models.invoice_reference import InvoiceReference as InvoiceReferenceModel
 from pay_api.models.payment import PaymentSchema
-from pay_api.models.payment_line_item import PaymentLineItem, PaymentLineItemSchema
+from pay_api.models.payment_line_item import PaymentLineItem
 from pay_api.services.cfs_service import CFSService
+from pay_api.utils.converter import Converter
 from pay_api.utils.enums import (
     AuthHeaderType, Code, ContentType, InvoiceReferenceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
 from pay_api.utils.user_context import user_context
@@ -352,22 +353,15 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             data = {'items': []}
 
         for invoice_dao in purchases:
-            included_fields = ['id', 'corp_type_code', 'created_on', 'invoice_status_code', 'total', 'paid',
-                               'service_fees', 'references', 'folio_number', 'created_name', 'payment_method_code',
-                               'details', 'payment_account', 'business_identifier', 'created_by']
-            invoice_schema = InvoiceSchema(only=included_fields)
-            invoice = invoice_schema.dump(invoice_dao)
-            invoice['line_items'] = []
-            for payment_line_item in invoice_dao.payment_line_items:
-                # All we need for CSV and PDF and search.
-                line_item_schema = PaymentLineItemSchema(only=('gst', 'description', 'pst'))
-                line_item_dict = line_item_schema.dump(payment_line_item)
-                line_item_dict['filing_type_code'] = payment_line_item.fee_schedule.filing_type_code
-                invoice['line_items'].append(line_item_dict)
-                invoice['product'] = payment_line_item.fee_schedule.corp_type.product
-            if len(invoice_dao.references) > 0:
-                invoice['invoice_number'] = invoice_dao.references[0].invoice_number
-            data['items'].append(invoice)
+            invoice_dict = {
+                **Converter().unstructure(InvoiceSearchModel.from_row(invoice_dao)),
+                'product': invoice_dao.corp_type.product,
+                'invoice_number': invoice_dao.references[0].invoice_number if len(invoice_dao.references) > 0 else None,
+                'corp_type_code': invoice_dao.corp_type.code,
+            }
+            for line_item in invoice_dict['line_items']:
+                line_item['filing_type_code'] = line_item['fee_schedule']['filing_type_code']
+            data['items'].append(invoice_dict)
 
         return data
 

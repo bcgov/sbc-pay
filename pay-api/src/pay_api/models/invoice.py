@@ -15,12 +15,16 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import List
+from decimal import Decimal
+from typing import List, Optional
+from attrs import define
 
 from marshmallow import fields, post_dump
 from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
+from pay_api.models.corp_type import CorpTypeSearchModel
+from pay_api.models.payment_line_item import PaymentLineItemSearchModel
 
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
 
@@ -28,7 +32,7 @@ from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
 from .db import db, ma
 from .invoice_reference import InvoiceReferenceSchema
-from .payment_account import PaymentAccountSchema
+from .payment_account import PaymentAccountSchema, PaymentAccountSearchModel
 from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from .receipt import ReceiptSchema
 
@@ -66,6 +70,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     receipts = relationship('Receipt', lazy='joined')
     payment_account = relationship('PaymentAccount', lazy='joined')
     references = relationship('InvoiceReference', lazy='joined')
+    corp_type = relationship('CorpType', foreign_keys=[corp_type_code], lazy='select', innerjoin=True)
 
     @classmethod
     def update_invoices_for_revenue_updates(cls, fee_distribution_id: int):
@@ -173,3 +178,39 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
             data['status_code'] = PaymentStatus.COMPLETED.value
 
         return data
+
+
+@define
+class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-instance-attributes
+    """Main schema used to serialize invoice searches, plus csv / pdf export."""
+
+    id: int
+    corp_type_code: str  # TODO probably a good idea to move this.
+    corp_type: CorpTypeSearchModel
+    created_on: datetime
+    total: Decimal
+    paid: Decimal
+    service_fees: Decimal
+    folio_number: str
+    created_name: str
+    details: List[dict]
+    payment_account: Optional[PaymentAccountSearchModel]
+    business_identifier: str
+    created_by: str
+    status_code: str
+    payment_method: str
+    line_items: Optional[List[PaymentLineItemSearchModel]]
+
+    @classmethod
+    def from_row(cls, row):
+        """From row is used so we don't tightly couple to our database class.
+
+        https://www.attrs.org/en/stable/init.html
+        """
+        return cls(id=row.id, corp_type_code=row.corp_type.code, corp_type=CorpTypeSearchModel.from_row(row.corp_type),
+                   created_on=row.created_on, total=row.total, paid=row.paid,
+                   service_fees=row.service_fees, folio_number=row.folio_number, created_name=row.created_name,
+                   details=row.details, payment_account=PaymentAccountSearchModel.from_row(row.payment_account),
+                   business_identifier=row.business_identifier, created_by=row.created_by,
+                   status_code=row.invoice_status_code, payment_method=row.payment_method_code,
+                   line_items=[PaymentLineItemSearchModel.from_row(x) for x in row.payment_line_items])

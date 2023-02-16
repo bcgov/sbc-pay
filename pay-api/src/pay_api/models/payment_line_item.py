@@ -13,13 +13,16 @@
 # limitations under the License.
 """Model to handle all operations related to Payment Line Item."""
 
+from decimal import Decimal
+from typing import Optional
+from attrs import define
 from marshmallow import fields
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 
 from .base_model import BaseModel
 from .db import db, ma
-from .fee_schedule import FeeSchedule
+from .fee_schedule import FeeSchedule, FeeScheduleSearchModel
 
 
 class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attributes
@@ -72,3 +75,23 @@ class PaymentLineItemSchema(ma.ModelSchema):  # pylint: disable=too-many-ancesto
     total = fields.Float(data_key='total')
     waived_fees = fields.Float(data_key='waived_fees')
     service_fees = fields.Float(data_key='service_fees')
+
+
+@define
+class PaymentLineItemSearchModel:  # pylint: disable=too-few-public-methods
+    """Payment Line Item Search Model."""
+
+    gst: Decimal
+    pst: Decimal
+    description: str
+    filing_type_code: str
+    fee_schedule: Optional[FeeScheduleSearchModel]
+
+    @classmethod
+    def from_row(cls, row: PaymentLineItem):
+        """From row is used so we don't tightly couple to our database class.
+
+        https://www.attrs.org/en/stable/init.html
+        """
+        return cls(gst=row.gst, pst=row.pst, description=row.description, filing_type_code='',
+                   fee_schedule=FeeScheduleSearchModel.from_row(row.fee_schedule))

@@ -17,7 +17,7 @@ asyncio-nats-client
 asyncio-nats-streaming
 croniter
 sentry-sdk[flask]
-attrs
+cattrs
 jaeger-client
 dpath
 Werkzeug<2
