@@ -136,7 +136,7 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Invoice
-        exclude = []
+        exclude = ['corp_type']
 
     invoice_status_code = fields.String(data_key='status_code')
     corp_type_code = fields.String(data_key='corp_type_code')
@@ -200,6 +200,8 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
     status_code: str
     payment_method: str
     line_items: Optional[List[PaymentLineItemSearchModel]]
+    product: str
+    invoice_number: str
 
     @classmethod
     def from_row(cls, row):
@@ -213,4 +215,6 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
                    details=row.details, payment_account=PaymentAccountSearchModel.from_row(row.payment_account),
                    business_identifier=row.business_identifier, created_by=row.created_by,
                    status_code=row.invoice_status_code, payment_method=row.payment_method_code,
-                   line_items=[PaymentLineItemSearchModel.from_row(x) for x in row.payment_line_items])
+                   line_items=[PaymentLineItemSearchModel.from_row(x) for x in row.payment_line_items],
+                   product=row.corp_type.product,
+                   invoice_number=row.references[0].invoice_number if len(row.references) > 0 else None)

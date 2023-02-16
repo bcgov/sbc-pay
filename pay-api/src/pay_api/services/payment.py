@@ -353,14 +353,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             data = {'items': []}
 
         for invoice_dao in purchases:
-            invoice_dict = {
-                **Converter().unstructure(InvoiceSearchModel.from_row(invoice_dao)),
-                'product': invoice_dao.corp_type.product,
-                'invoice_number': invoice_dao.references[0].invoice_number if len(invoice_dao.references) > 0 else None,
-                'corp_type_code': invoice_dao.corp_type.code,
-            }
-            for line_item in invoice_dict['line_items']:
-                line_item['filing_type_code'] = line_item['fee_schedule']['filing_type_code']
+            invoice_dict = Converter().unstructure(InvoiceSearchModel.from_row(invoice_dao))
             data['items'].append(invoice_dict)
 
         return data

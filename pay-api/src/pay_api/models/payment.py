@@ -197,7 +197,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                 contains_eager(Invoice.payment_line_items)
                 .load_only(PaymentLineItem.description, PaymentLineItem.gst, PaymentLineItem.pst)
                 .contains_eager(PaymentLineItem.fee_schedule)
-                .load_only(FeeSchedule.filing_type_code, FeeSchedule.corp_type_code),
+                .load_only(FeeSchedule.filing_type_code),
                 contains_eager(Invoice.payment_account).load_only(PaymentAccount.auth_account_id,
                                                                   PaymentAccount.name,
                                                                   PaymentAccount.billable),
