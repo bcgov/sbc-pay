@@ -1692,6 +1692,7 @@ components:
           type: string
         updatedName:
           type: string
+        additionalProperties: true
     Transaction:
       type: object
       properties:
