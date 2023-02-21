@@ -26,9 +26,9 @@ the model to a standalone SQLAlchemy usage with an async engine would need
 to be pursued.
 """
 import csv
-from decimal import Decimal
 import os
 from datetime import datetime
+from decimal import Decimal
 from typing import Dict, List, Tuple
 
 from entity_queue_common.service_utils import logger
