@@ -98,12 +98,12 @@ class BcolService(PaymentSystemService, OAuthService):
             current_app.logger.debug(f'BCOL Response : {response_json}')
             pay_response.raise_for_status()
         except HTTPError as bol_err:
-            current_app.logger.error(bol_err)
-            error_type: str = response_json.get('type')
-            if error_type.isdigit():
-                error = get_bcol_error(int(error_type))
+            error_type: str = response_json.get('type', '-1')
+            error = get_bcol_error(int(error_type))
+            if error in [Error.BCOL_ERROR, Error.BCOL_UNAVAILABLE]:
+                current_app.logger.error(bol_err)
             else:
-                error = Error.BCOL_ERROR
+                current_app.logger.warning(bol_err)
             raise BusinessException(error) from bol_err
 
         invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id, response_json.get('key'),
