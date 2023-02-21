@@ -26,6 +26,7 @@ the model to a standalone SQLAlchemy usage with an async engine would need
 to be pursued.
 """
 import csv
+from decimal import Decimal
 import os
 from datetime import datetime
 from typing import Dict, List, Tuple
@@ -418,7 +419,7 @@ def _process_partial_paid_invoices(inv_ref: InvoiceReferenceModel, row):
     _validate_account(inv, row)
     logger.debug('Partial Invoice. Invoice Reference ID : %s, invoice ID : %s', inv_ref.id, inv_ref.invoice_id)
     inv.invoice_status_code = InvoiceStatus.PARTIAL.value
-    inv.paid = inv.total - float(_get_row_value(row, Column.TARGET_TXN_OUTSTANDING))
+    inv.paid = inv.total - Decimal(_get_row_value(row, Column.TARGET_TXN_OUTSTANDING))
     # Create Receipt records
     receipt: ReceiptModel = ReceiptModel()
     receipt.receipt_date = receipt_date
