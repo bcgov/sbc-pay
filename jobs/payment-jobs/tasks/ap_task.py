@@ -89,7 +89,8 @@ class ApTask(CgiAP):
             current_app.logger.info(f'Creating refund for {rs.number}, Amount {rs.refund_amount}.')
             refund: RefundModel = RefundModel.find_by_routing_slip_id(rs.id)
             ap_content = f'{ap_content}{cls.get_ap_header(rs.refund_amount, rs.number, datetime.now())}'
-            ap_line = APLine(total=rs.refund_amount, invoice_number=rs.number, line_number=1)
+            ap_line = APLine(total=rs.refund_amount, invoice_number=rs.number, line_number=1,
+                             invoice_date=datetime.now())
             ap_content = f'{ap_content}{cls.get_ap_invoice_line(ap_line)}'
             ap_content = f'{ap_content}{cls.get_ap_address(refund.details, rs.number)}'
             total_line_count += 3

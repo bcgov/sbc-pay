@@ -43,7 +43,7 @@ class CgiAP(CgiEjv):
                f'{control_total:0>15}{cls.format_amount(batch_total)}{cls.DELIMITER}{os.linesep}'
 
     @classmethod
-    def get_ap_header(cls, total, invoice_number, invoice_date=None):
+    def get_ap_header(cls, total, invoice_number, invoice_date):
         """Get AP Invoice Header string."""
         invoice_type = 'ST'
         remit_code = f"{current_app.config.get('CGI_AP_REMITTANCE_CODE'):<4}"
