@@ -104,7 +104,7 @@ class BcolService(PaymentSystemService, OAuthService):
         return invoice_reference
 
     def _handle_http_error(self, bol_err, response_json):
-        """Logs BCOL errors."""
+        """Log BCOL errors."""
         error_type: str = response_json.get('type')
         # It's possible raise_for_status, skips this part.
         if error_type and error_type.isdigit():
