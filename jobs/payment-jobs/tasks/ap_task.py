@@ -137,6 +137,8 @@ class ApTask(CgiAP):
         for inv in invoices:
             disbursement_invoice_total = inv.total - inv.service_fees
             batch_total += disbursement_invoice_total
+            if disbursement_invoice_total == 0:
+                continue
             ap_content = f'{ap_content}{cls.get_ap_header(disbursement_invoice_total, inv.id, inv.created_on)}'
             control_total += 1
             line_number: int = 0
