@@ -15,34 +15,57 @@
 
 from typing import List
 
+from datetime import date, datetime
 import time
 from flask import current_app
+from pay_api.models import CorpType as CorpTypeModel
+from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import EjvFile as EjvFileModel
+from pay_api.models import EjvHeader as EjvHeaderModel
+from pay_api.models import EjvInvoiceLink as EjvInvoiceLinkModel
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.utils.enums import DisbursementStatus, EjvFileType, RoutingSlipStatus
-
 from tasks.common.cgi_ap import CgiAP
+from tasks.common.dataclasses import APLine
+from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
 
 
-class ApRoutingSlipRefundTask(CgiAP):
-    """Task to create AP Files."""
+class ApTask(CgiAP):
+    """Task to create AP (Accounts Payable) Feeder Files.
+
+    Purpose:
+    1. Create mailed out cheques for unused amounts on routing slips.
+    2. Distribution of funds to non government partners without a GL code (EFT).
+
+    """
 
     @classmethod
-    def create_ap_file(cls):
-        """Create AP files and uplaod to CGI.
+    def create_ap_files(cls):
+        """Create AP files and upload to CGI.
 
         Steps:
-        1. Find all routing slip with status REFUND_AUTHORIZED
-        2. Create AP file and upload to SFTP
+        1. Find all routing slip with status REFUND_AUTHORIZED.
+        2. Create AP file and upload to SFTP.
+        3. After some time, a feedback file will arrive and Payment-reconciliation queue will move these
+           routing slips to REFUNDED. (filter out)
+        4. Find all BCA invoices with status PAID. (DRAWDOWN/INTERNAL EXCLUDED)
+           These invoices need to be disbursement status ERRORED or None
+        5. Find all BCA invoices with status REFUND_REQUESTED or REFUNDED. (DRAWDOWN/INTERNAL EXCLUDED)
+           These invoices need to be disbursement status COMPLETED
+        6. Create AP file and upload to SFTP.
+        7. After some time, a feedback file will arrive and Payment-reconciliation queue will set disbursement
+           status to COMPLETED or REVERSED (filter out)
         """
         cls._create_routing_slip_refund_file()
+        cls._create_non_gov_disbursement_file()
 
     @classmethod
     def _create_routing_slip_refund_file(cls):  # pylint:disable=too-many-locals, too-many-statements
-        """Create AP file for refund and upload."""
-        # Find all routing slips with status REFUND_AUTHORIZED.
+        """Create AP file for routing slip refunds (unapplied routing slip amounts) and upload to CGI."""
+        cls.ap_type = EjvFileType.REFUND
         routing_slips: List[RoutingSlipModel] = db.session.query(RoutingSlipModel) \
             .filter(RoutingSlipModel.status == RoutingSlipStatus.REFUND_AUTHORIZED.value) \
             .filter(RoutingSlipModel.refund_amount > 0) \
@@ -52,47 +75,103 @@ class ApRoutingSlipRefundTask(CgiAP):
         if not routing_slips:
             return
 
-        # Create a file model record.
         ejv_file_model: EjvFileModel = EjvFileModel(
-            file_type=EjvFileType.REFUND.value,
+            file_type=cls.ap_type.value,
             file_ref=cls.get_file_name(),
             disbursement_status_code=DisbursementStatus.UPLOADED.value
         ).flush()
 
-        batch_number = cls.get_batch_number(ejv_file_model.id)
-
-        # AP Batch Header
+        batch_number: str = cls.get_batch_number(ejv_file_model.id)
         ap_content: str = cls.get_batch_header(batch_number)
-
-        # Each routing slip will be one invoice in AP
         batch_total = 0
         total_line_count: int = 0
-        for routing_slip in routing_slips:
-            current_app.logger.info(f'Creating refund for {routing_slip.number}, Amount {routing_slip.refund_amount}.')
-            refund: RefundModel = RefundModel.find_by_routing_slip_id(routing_slip.id)
-
-            # AP Invoice Header
-            ap_content = f'{ap_content}{cls.get_ap_header(routing_slip.refund_amount, routing_slip.number)}'
-            ap_content = f'{ap_content}{cls.get_ap_invoice_line(routing_slip.refund_amount, routing_slip.number)}'
-            ap_content = f'{ap_content}{cls.get_ap_address(refund.details, routing_slip.number)}'
-            total_line_count += 3  # for the above 3 lines
-            if ap_comment := cls.get_ap_comment(refund.details, routing_slip.number):
+        for rs in routing_slips:
+            current_app.logger.info(f'Creating refund for {rs.number}, Amount {rs.refund_amount}.')
+            refund: RefundModel = RefundModel.find_by_routing_slip_id(rs.id)
+            ap_content = f'{ap_content}{cls.get_ap_header(rs.refund_amount, rs.number, datetime.now())}'
+            ap_line = APLine(total=rs.refund_amount, invoice_number=rs.number, line_number=1)
+            ap_content = f'{ap_content}{cls.get_ap_invoice_line(ap_line)}'
+            ap_content = f'{ap_content}{cls.get_ap_address(refund.details, rs.number)}'
+            total_line_count += 3
+            if ap_comment := cls.get_ap_comment(refund.details, rs.number):
                 ap_content = f'{ap_content}{ap_comment:<40}'
                 total_line_count += 1
-            batch_total += routing_slip.refund_amount
-            routing_slip.status = RoutingSlipStatus.REFUND_UPLOADED.value
+            batch_total += rs.refund_amount
+            rs.status = RoutingSlipStatus.REFUND_UPLOADED.value
+        batch_trailer = cls.get_batch_trailer(batch_number, float(batch_total), control_total=total_line_count)
+        ap_content = f'{ap_content}{batch_trailer}'
 
-        # AP Batch Trailer
-        ap_content = f'{ap_content}{cls.get_batch_trailer(batch_number, batch_total, control_total=total_line_count)}'
+        cls._create_file_and_upload(ap_content)
 
-        # Create a file add this content.
+    @classmethod
+    def _create_non_gov_disbursement_file(cls):  # pylint:disable=too-many-locals
+        """Create AP file for disbursement for non government entities without a GL code via EFT and upload to CGI."""
+        cls.ap_type = EjvFileType.NON_GOV_DISBURSEMENT
+        bca_partner = CorpTypeModel.find_by_code('BCA')
+        invoices: List[InvoiceModel] = EjvPartnerDistributionTask().get_invoices_for_disbursement(bca_partner) + \
+            EjvPartnerDistributionTask().get_invoices_for_refund_reversal(bca_partner)
+
+        current_app.logger.info(f'Found {len(invoices)} to disburse.')
+        if not invoices:
+            return
+
+        bca_distribution = cls._get_bca_distribution_string()
+        ejv_file_model: EjvFileModel = EjvFileModel(
+            file_type=cls.ap_type.value,
+            file_ref=cls.get_file_name(),
+            disbursement_status_code=DisbursementStatus.UPLOADED.value
+        ).flush()
+        # Create a single header record for this file, provides query ejv_file -> ejv_header -> ejv_invoice_links
+        # Note the inbox file doesn't include ejv_header when submitting.
+        ejv_header_model: EjvFileModel = EjvHeaderModel(
+            partner_code='BCA',
+            disbursement_status_code=DisbursementStatus.UPLOADED.value,
+            ejv_file_id=ejv_file_model.id
+        ).flush()
+
+        batch_number: str = cls.get_batch_number(ejv_file_model.id)
+        ap_content: str = cls.get_batch_header(batch_number)
+        batch_total = 0
+        control_total: int = 0
+        for inv in invoices:
+            disbursement_invoice_total = inv.total - inv.service_fees
+            batch_total += disbursement_invoice_total
+            ap_content = f'{ap_content}{cls.get_ap_header(disbursement_invoice_total, inv.id, inv.created_on)}'
+            control_total += 1
+            line_number: int = 0
+            for line_item in inv.payment_line_items:
+                if line_item.total == 0:
+                    continue
+                ap_line_item = APLine.from_invoice_and_line_item(inv, line_item, line_number + 1, bca_distribution)
+                ap_content = f'{ap_content}{cls.get_ap_invoice_line(ap_line_item)}'
+                line_number += 1
+            control_total += line_number
+        batch_trailer: str = cls.get_batch_trailer(batch_number, batch_total, control_total=control_total)
+        ap_content = f'{ap_content}{batch_trailer}'
+
+        for inv in invoices:
+            db.session.add(EjvInvoiceLinkModel(invoice_id=inv.id,
+                                               ejv_header_id=ejv_header_model.id,
+                                               disbursement_status_code=DisbursementStatus.UPLOADED.value))
+            inv.disbursement_status_code = DisbursementStatus.UPLOADED.value
+        db.session.flush()
+
+        cls._create_file_and_upload(ap_content)
+
+    @classmethod
+    def _create_file_and_upload(cls, ap_content):
         file_path_with_name, trg_file_path = cls.create_inbox_and_trg_files(ap_content)
-
-        # Upload file and trg to FTP
         cls.upload(ap_content, cls.get_file_name(), file_path_with_name, trg_file_path)
-
-        # commit changes to DB
         db.session.commit()
-
         # Add a sleep to prevent collision on file name.
         time.sleep(1)
+
+    @classmethod
+    def _get_bca_distribution_string(cls) -> str:
+        valid_date = date.today()
+        d = db.session.query(DistributionCodeModel). \
+            filter(DistributionCodeModel.name == 'BC Assessment'). \
+            filter(DistributionCodeModel.start_date <= valid_date). \
+            filter((DistributionCodeModel.end_date.is_(None)) | (DistributionCodeModel.end_date >= valid_date)).\
+            one_or_none()
+        return f'{d.client}{d.responsibility_centre}{d.service_line}{d.stob}{d.project_code}'

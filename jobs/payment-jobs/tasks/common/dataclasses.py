@@ -13,9 +13,12 @@
 # limitations under the License.
 """Common dataclasses for tasks, dataclasses allow for cleaner code with autocompletion in vscode."""
 from dataclasses import dataclass
+from datetime import datetime
 from typing import List, Optional
 from dataclass_wizard import JSONWizard
-
+from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import PaymentLineItem as LineItemModel
+from pay_api.utils.enums import InvoiceStatus
 from tasks.common.enums import PaymentDetailsGlStatus, PaymentDetailsStatus
 
 
@@ -33,3 +36,25 @@ class OrderStatus(JSONWizard):  # pylint:disable=too-many-instance-attributes
 
     refundstatus: Optional[PaymentDetailsStatus]
     revenue: List[RevenueLine]
+
+
+@dataclass
+class APLine:
+    """Used as a parameter to build AP inbox files."""
+
+    total: float
+    invoice_number: str
+    line_number: int
+    invoice_date: Optional[datetime] = None
+    is_reversal: Optional[bool] = None
+    distribution: Optional[str] = None
+
+    @classmethod
+    def from_invoice_and_line_item(cls, invoice: InvoiceModel, line_item: LineItemModel, line_number: int,
+                                   distribution: str):
+        """Build dataclass object from invoice."""
+        return cls(total=line_item.total, invoice_number=invoice.id, invoice_date=invoice.created_on,
+                   line_number=line_number,
+                   is_reversal=invoice.invoice_status_code in
+                   [InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value],
+                   distribution=distribution)

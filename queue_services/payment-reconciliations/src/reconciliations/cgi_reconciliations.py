@@ -200,7 +200,7 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
                     .find_by_id(debit_distribution.disbursement_distribution_code_id)
                 credit_distribution.stop_ejv = True
         else:
-            await _update_invoice_status(invoice)
+            await _update_invoice_disbursement_status(invoice)
 
     elif line[104:105] == 'D' and ejv_file.file_type == EjvFileType.PAYMENT.value:
         # This is for gov account payment JV.
@@ -251,7 +251,7 @@ def _fix_invoice_line(line):
     return line
 
 
-async def _update_invoice_status(invoice):
+async def _update_invoice_disbursement_status(invoice):
     """Update status to reversed if its a refund, else to completed."""
     invoice.disbursement_date = datetime.now()
     if invoice.invoice_status_code in (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value):
@@ -348,20 +348,63 @@ async def _process_ap_feedback(group_batches) -> bool:  # pylint:disable=too-man
                 if ejv_file.disbursement_status_code == DisbursementStatus.ERRORED.value:
                     has_errors = True
             elif is_ap_header:
-                routing_slip_number = line[19:69].strip()
-                routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(routing_slip_number)
-                ap_header_return_code = line[414:418]
-                ap_header_error_message = line[418:568]
-                if _get_disbursement_status(ap_header_return_code) == DisbursementStatus.ERRORED.value:
-                    has_errors = True
-                    routing_slip.status = RoutingSlipStatus.REFUND_REJECTED.value
-                    capture_message(f'Refund failed for {routing_slip_number}, reason : {ap_header_error_message}',
-                                    level='error')
-                else:
-                    routing_slip.status = RoutingSlipStatus.REFUND_COMPLETED.value
-                    refund = RefundModel.find_by_routing_slip_id(routing_slip.id)
-                    refund.gl_posted = datetime.now()
-                    refund.save()
+                has_errors = await _process_ap_header(line, ejv_file) or has_errors
 
     db.session.commit()
+    return has_errors
+
+
+async def _process_ap_header(line, ejv_file: EjvFileModel) -> bool:
+    has_errors = False
+    if ejv_file.file_type == EjvFileType.REFUND.value:
+        has_errors = await _process_ap_header_routing_slips(line)
+    else:
+        has_errors = await _process_ap_header_non_gov_disbursement(line, ejv_file)
+    return has_errors
+
+
+async def _process_ap_header_routing_slips(line) -> bool:
+    has_errors = False
+    routing_slip_number = line[19:69].strip()
+    routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(routing_slip_number)
+    ap_header_return_code = line[414:418]
+    ap_header_error_message = line[418:568]
+    if _get_disbursement_status(ap_header_return_code) == DisbursementStatus.ERRORED.value:
+        has_errors = True
+        routing_slip.status = RoutingSlipStatus.REFUND_REJECTED.value
+        capture_message(f'Refund failed for {routing_slip_number}, reason : {ap_header_error_message}',
+                        level='error')
+    else:
+        routing_slip.status = RoutingSlipStatus.REFUND_COMPLETED.value
+        refund = RefundModel.find_by_routing_slip_id(routing_slip.id)
+        refund.gl_posted = datetime.now()
+        refund.save()
+    return has_errors
+
+
+async def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) -> bool:
+    has_errors = False
+    invoice_id = line[19:69].strip()
+    invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
+    ap_header_return_code = line[414:418]
+    ap_header_error_message = line[418:568]
+    disbursement_status = _get_disbursement_status(ap_header_return_code)
+    invoice_link = db.session.query(EjvInvoiceLinkModel)\
+        .join(EjvHeaderModel).join(EjvFileModel)\
+        .filter(EjvFileModel.id == ejv_file.id)\
+        .filter(EjvInvoiceLinkModel.invoice_id == invoice_id)\
+        .one_or_none()
+    invoice_link.disbursement_status_code = disbursement_status
+    invoice_link.message = ap_header_error_message
+    if disbursement_status == DisbursementStatus.ERRORED.value:
+        invoice.disbursement_status_code = disbursement_status
+        has_errors = True
+        capture_message(f'AP - NON-GOV - Disbursement failed for {invoice_id}, reason : {ap_header_error_message}',
+                        level='error')
+    else:
+        await _update_invoice_disbursement_status(invoice)
+        if invoice.invoice_status_code != InvoiceStatus.PAID.value:
+            refund = RefundModel.find_by_invoice_id(invoice.id)
+            refund.gl_posted = datetime.now()
+            refund.save()
     return has_errors

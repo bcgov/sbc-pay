@@ -1,3 +1,3 @@
 #! /bin/sh
-echo 'run invoke_jobs.py AP_REFUND'
-python3 invoke_jobs.py AP_REFUND
+echo 'run invoke_jobs.py AP'
+python3 invoke_jobs.py AP
