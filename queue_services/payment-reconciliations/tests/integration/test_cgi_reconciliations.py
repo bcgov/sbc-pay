@@ -18,6 +18,7 @@ Test-Suite to ensure that the Payment Reconciliation queue service is working as
 """
 
 from datetime import datetime
+from time import sleep
 
 import pytest
 from entity_queue_common.service_utils import subscribe_to_queue
@@ -1181,7 +1182,7 @@ async def test_successful_ap_disbursement(
     assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
 
     invoice_str = [str(invoice_id).zfill(9) for invoice_id in invoice_ids]
-    feedback_content = f'APBG...........00000000{ejv_file_id}....\n' \
+    feedback_content = f'APBG...........{str(ejv_file_id).zfill(9)}....\n' \
                        f'APBH...0000.................................................................................' \
                        f'.....................................................................CGI\n' \
                        f'APIH...000000000...{invoice_str[0]}                                         ................' \
@@ -1341,8 +1342,8 @@ async def test_failure_ap_disbursement(
     invoice_str = [str(invoice_id).zfill(9) for invoice_id in invoice_ids]
     # Now upload a feedback file and check the status.
     # Just create feedback file to mock the real feedback file.
-    # Set first routing slip to be success and second to ve failed
-    feedback_content = f'APBG...........00000000{ejv_file_id}....\n' \
+    # Set first invoice to be success and second to be failed
+    feedback_content = f'APBG...........{str(ejv_file_id).zfill(9)}....\n' \
                        f'APBH...0000.................................................................................' \
                        f'.....................................................................CGI\n' \
                        f'APIH...000000000...{invoice_str[0]}                                         ................' \
