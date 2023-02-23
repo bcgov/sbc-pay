@@ -265,6 +265,7 @@ class EjvFileType(Enum):
     PAYMENT = 'PAYMENT'
     DISBURSEMENT = 'DISBURSEMENT'
     REFUND = 'REFUND'
+    NON_GOV_DISBURSEMENT = 'NON_GOV_DISBURSEMENT'
 
 
 class PatchActions(Enum):
