@@ -28,6 +28,7 @@ to be pursued.
 import csv
 import os
 from datetime import datetime
+from decimal import Decimal
 from typing import Dict, List, Tuple
 
 from entity_queue_common.service_utils import logger
@@ -418,7 +419,7 @@ def _process_partial_paid_invoices(inv_ref: InvoiceReferenceModel, row):
     _validate_account(inv, row)
     logger.debug('Partial Invoice. Invoice Reference ID : %s, invoice ID : %s', inv_ref.id, inv_ref.invoice_id)
     inv.invoice_status_code = InvoiceStatus.PARTIAL.value
-    inv.paid = inv.total - float(_get_row_value(row, Column.TARGET_TXN_OUTSTANDING))
+    inv.paid = inv.total - Decimal(_get_row_value(row, Column.TARGET_TXN_OUTSTANDING))
     # Create Receipt records
     receipt: ReceiptModel = ReceiptModel()
     receipt.receipt_date = receipt_date

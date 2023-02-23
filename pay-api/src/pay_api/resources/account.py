@@ -220,7 +220,7 @@ class AccountPurchaseHistory(Resource):
 
         # Check if user is authorized to perform this action
         required_roles = [Role.EDITOR.value, Role.VIEW_ALL_TRANSACTIONS.value] if view_all else [Role.EDITOR.value]
-        check_auth(business_identifier=None, account_id=account_number, all_of_roles=required_roles, is_premium=True)
+        check_auth(business_identifier=None, account_id=account_number, all_of_roles=required_roles)
 
         account_to_search = None if view_all else account_number
         page: int = int(request.args.get('page', '1'))

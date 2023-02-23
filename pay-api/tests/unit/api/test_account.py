@@ -30,12 +30,13 @@ from pay_api.models.fee_schedule import FeeSchedule
 from pay_api.models.invoice import Invoice
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.schemas import utils as schema_utils
+from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
-    get_basic_account_payload, get_claims, get_gov_account_payload, get_gov_account_payload_with_no_revenue_account,
-    get_pad_account_payload, get_payment_request, get_payment_request_for_cso, get_payment_request_with_service_fees,
-    get_premium_account_payload, get_unlinked_pad_account_payload, token_header)
-
+    get_auth_basic_user, get_basic_account_payload, get_claims, get_gov_account_payload,
+    get_gov_account_payload_with_no_revenue_account, get_pad_account_payload, get_payment_request,
+    get_payment_request_for_cso, get_payment_request_with_service_fees, get_premium_account_payload,
+    get_unlinked_pad_account_payload, token_header)
 
 fake = Faker()
 
@@ -50,6 +51,22 @@ def test_account_purchase_history(session, client, jwt, app):
 
     invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
     pay_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
+
+    rv = client.post(f'/api/v1/accounts/{pay_account.auth_account_id}/payments/queries', data=json.dumps({}),
+                     headers=headers)
+
+    assert rv.status_code == 200
+
+
+def test_account_purchase_history_with_basic_account(session, client, jwt, app):
+    """Assert that the endpoint returns 200."""
+    token = jwt.create_jwt(get_claims(), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+                     headers=headers)
+
+    pay_account: PaymentAccount = PaymentAccountService.find_account(get_auth_basic_user())
 
     rv = client.post(f'/api/v1/accounts/{pay_account.auth_account_id}/payments/queries', data=json.dumps({}),
                      headers=headers)
