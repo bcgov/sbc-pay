@@ -18,7 +18,6 @@ Test-Suite to ensure that the Payment Reconciliation queue service is working as
 """
 
 from datetime import datetime
-from time import sleep
 
 import pytest
 from entity_queue_common.service_utils import subscribe_to_queue
