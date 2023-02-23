@@ -83,7 +83,7 @@ def run(job_name):
     from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
     from tasks.unpaid_invoice_notify_task import UnpaidInvoiceNotifyTask
     from tasks.ejv_payment_task import EjvPaymentTask
-    from tasks.ap_routing_slip_refund_task import ApTask
+    from tasks.ap_task import ApTask
     from tasks.direct_pay_automated_refund_task import DirectPayAutomatedRefundTask
     from tasks.bcol_refund_confirmation_task import BcolRefundConfirmationTask
 
