@@ -50,6 +50,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._paid = None
         self._refund = None
         self._payment_date: datetime = None
+        self._refund_date: datetime = None
         self._payment_line_items = None
         self._corp_type_code = None
         self._receipts = None
@@ -79,6 +80,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self.payment_account_id: str = self._dao.payment_account_id
         self.refund: Decimal = self._dao.refund
         self.payment_date: datetime = self._dao.payment_date
+        self.refund_date: datetime = self._dao.refund_date
         self.total: Decimal = self._dao.total
         self.paid: Decimal = self._dao.paid
         self.payment_line_items = self._dao.payment_line_items
@@ -170,6 +172,17 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._payment_date = value
         self._dao.payment_date = value
 
+    @property
+    def refund_date(self):
+        """Return the refund_date."""
+        return self._refund_date
+
+    @refund_date.setter
+    def refund_date(self, value: datetime):
+        """Set the refund_date."""
+        self._refund_date = value
+        self._dao.refund_date = value
+        
     @property
     def total(self):
         """Return the total."""
