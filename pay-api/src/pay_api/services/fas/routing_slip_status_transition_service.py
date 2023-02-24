@@ -63,6 +63,7 @@ class RoutingSlipStatusTransitionService:  # pylint: disable=too-many-instance-a
         RoutingSlipStatus.VOID.value: [
         ],
         RoutingSlipStatus.CORRECTION.value: [
+            RoutingSlipStatus.CORRECTION.value
         ]
 
     }
