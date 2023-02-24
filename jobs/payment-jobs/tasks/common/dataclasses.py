@@ -54,7 +54,7 @@ class APLine:
                                    distribution: str):
         """Build dataclass object from invoice."""
         # Note the invoice_date should be the payment_date in the future.
-        return cls(total=line_item.total, invoice_number=invoice.id, invoice_date=datetime.now(),
+        return cls(total=line_item.total, invoice_number=invoice.id, invoice_date=invoice.created_on,
                    line_number=line_number,
                    is_reversal=invoice.invoice_status_code in
                    [InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value],

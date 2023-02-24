@@ -51,10 +51,11 @@ class CgiAP(CgiEjv):
         invoice_date = cls._get_invoice_date(invoice_date)
         oracle_invoice_batch_name = cls._get_oracle_invoice_batch_name(invoice_number)
         disbursement_method = 'CHQ' if cls.ap_type == EjvFileType.REFUND else 'EFT'
+        term = f'{cls.EMPTY:<50}' if cls.ap_type == EjvFileType.REFUND else f'Immediate{cls.EMPTY:<41}'
         ap_header = f'{cls._feeder_number()}APIH{cls.DELIMITER}{cls._supplier_number()}{cls._supplier_location()}' \
                     f'{invoice_number:<50}{cls._po_number()}{invoice_type}{invoice_date}GEN {disbursement_method} N' \
                     f'{remit_code}{cls.format_amount(total)}{currency}{invoice_date}' \
-                    f'{cls.EMPTY:<50}{cls.EMPTY:<60}{cls.EMPTY:<8}{cls.EMPTY:<8}' \
+                    f'{term}{cls.EMPTY:<60}{cls.EMPTY:<8}{cls.EMPTY:<8}' \
                     f'{oracle_invoice_batch_name:<30}{cls.EMPTY:<9}Y{cls.EMPTY:<110}{cls.DELIMITER}{os.linesep}'
         return ap_header
 
