@@ -18,7 +18,7 @@ from decimal import Decimal
 from typing import Dict, List
 
 from flask import current_app
-from pay_api.models import Invoice, InvoiceReference, Payment, db
+from pay_api.models import Invoice, InvoiceReference, Payment, Refund, db
 from pay_api.utils.enums import InvoiceStatus, PaymentSystem
 from sentry_sdk import capture_message
 
@@ -112,7 +112,10 @@ class BcolRefundConfirmationTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.error('Invoice refund total mismatch for %s', invoice_ref.invoice_number)
                 continue
 
-            # refund was processed and value is correct. Update invoice state.
+            refund = Refund.find_by_invoice_id(invoice_ref.invoice_id)
+
+            # refund was processed and value is correct. Update invoice state and refund date
             invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
+            invoice.refund_date = refund.requested_date
             db.session.add(invoice)
         db.session.commit()
