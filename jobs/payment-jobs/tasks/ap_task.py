@@ -145,8 +145,8 @@ class ApTask(CgiAP):
             for line_item in inv.payment_line_items:
                 if line_item.total == 0:
                     continue
-                ap_line_item = APLine.from_invoice_and_line_item(inv, line_item, line_number + 1, bca_distribution)
-                ap_content = f'{ap_content}{cls.get_ap_invoice_line(ap_line_item)}'
+                ap_line = APLine.from_invoice_and_line_item(inv, line_item, line_number + 1, bca_distribution)
+                ap_content = f'{ap_content}{cls.get_ap_invoice_line(ap_line)}'
                 line_number += 1
             control_total += line_number
         batch_trailer: str = cls.get_batch_trailer(batch_number, batch_total, control_total=control_total)
@@ -172,9 +172,9 @@ class ApTask(CgiAP):
     @classmethod
     def _get_bca_distribution_string(cls) -> str:
         valid_date = date.today()
-        d = db.session.query(DistributionCodeModel). \
-            filter(DistributionCodeModel.name == 'BC Assessment'). \
-            filter(DistributionCodeModel.start_date <= valid_date). \
-            filter((DistributionCodeModel.end_date.is_(None)) | (DistributionCodeModel.end_date >= valid_date)).\
-            one_or_none()
+        d = db.session.query(DistributionCodeModel) \
+            .filter(DistributionCodeModel.name == 'BC Assessment') \
+            .filter(DistributionCodeModel.start_date <= valid_date) \
+            .filter((DistributionCodeModel.end_date.is_(None)) | (DistributionCodeModel.end_date >= valid_date)) \
+            .one_or_none()
         return f'{d.client}{d.responsibility_centre}{d.service_line}{d.stob}{d.project_code}'

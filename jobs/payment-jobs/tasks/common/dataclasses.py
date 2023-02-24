@@ -53,7 +53,8 @@ class APLine:
     def from_invoice_and_line_item(cls, invoice: InvoiceModel, line_item: LineItemModel, line_number: int,
                                    distribution: str):
         """Build dataclass object from invoice."""
-        return cls(total=line_item.total, invoice_number=invoice.id, invoice_date=invoice.created_on,
+        # Note the invoice_date should be the payment_date in the future.
+        return cls(total=line_item.total, invoice_number=invoice.id, invoice_date=datetime.now(),
                    line_number=line_number,
                    is_reversal=invoice.invoice_status_code in
                    [InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value],

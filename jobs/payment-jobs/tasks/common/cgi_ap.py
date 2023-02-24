@@ -157,7 +157,7 @@ class CgiAP(CgiEjv):
     def _distribution(cls, distribution_code: str = None):
         """Return Distribution Code string."""
         if cls.ap_type == EjvFileType.NON_GOV_DISBURSEMENT:
-            return f'{distribution_code}{cls.EMPTY:<16}'
+            return f'{distribution_code}0000000000{cls.EMPTY:<16}'
         if cls.ap_type == EjvFileType.REFUND:
             return f"{current_app.config.get('CGI_AP_DISTRIBUTION')}{cls.EMPTY:<16}"
         raise RuntimeError('ap_type not selected.')
