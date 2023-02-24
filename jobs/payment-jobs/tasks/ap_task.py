@@ -18,6 +18,7 @@ from typing import List
 from datetime import date, datetime
 import time
 from flask import current_app
+from more_itertools import batched
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import EjvFile as EjvFileModel
@@ -109,57 +110,59 @@ class ApTask(CgiAP):
         """Create AP file for disbursement for non government entities without a GL code via EFT and upload to CGI."""
         cls.ap_type = EjvFileType.NON_GOV_DISBURSEMENT
         bca_partner = CorpTypeModel.find_by_code('BCA')
-        invoices: List[InvoiceModel] = EjvPartnerDistributionTask().get_invoices_for_disbursement(bca_partner) + \
+        total_invoices: List[InvoiceModel] = EjvPartnerDistributionTask().get_invoices_for_disbursement(bca_partner) + \
             EjvPartnerDistributionTask().get_invoices_for_refund_reversal(bca_partner)
 
-        current_app.logger.info(f'Found {len(invoices)} to disburse.')
-        if not invoices:
+        current_app.logger.info(f'Found {len(total_invoices)} to disburse.')
+        if not total_invoices:
             return
 
-        bca_distribution = cls._get_bca_distribution_string()
-        ejv_file_model: EjvFileModel = EjvFileModel(
-            file_type=cls.ap_type.value,
-            file_ref=cls.get_file_name(),
-            disbursement_status_code=DisbursementStatus.UPLOADED.value
-        ).flush()
-        # Create a single header record for this file, provides query ejv_file -> ejv_header -> ejv_invoice_links
-        # Note the inbox file doesn't include ejv_header when submitting.
-        ejv_header_model: EjvFileModel = EjvHeaderModel(
-            partner_code='BCA',
-            disbursement_status_code=DisbursementStatus.UPLOADED.value,
-            ejv_file_id=ejv_file_model.id
-        ).flush()
+        # 250 MAX is all the transactions the feeder can take per batch.
+        for invoices in batched(total_invoices, 250):
+            bca_distribution = cls._get_bca_distribution_string()
+            ejv_file_model: EjvFileModel = EjvFileModel(
+                file_type=cls.ap_type.value,
+                file_ref=cls.get_file_name(),
+                disbursement_status_code=DisbursementStatus.UPLOADED.value
+            ).flush()
+            # Create a single header record for this file, provides query ejv_file -> ejv_header -> ejv_invoice_links
+            # Note the inbox file doesn't include ejv_header when submitting.
+            ejv_header_model: EjvFileModel = EjvHeaderModel(
+                partner_code='BCA',
+                disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                ejv_file_id=ejv_file_model.id
+            ).flush()
 
-        batch_number: str = cls.get_batch_number(ejv_file_model.id)
-        ap_content: str = cls.get_batch_header(batch_number)
-        batch_total = 0
-        control_total: int = 0
-        for inv in invoices:
-            disbursement_invoice_total = inv.total - inv.service_fees
-            batch_total += disbursement_invoice_total
-            if disbursement_invoice_total == 0:
-                continue
-            ap_content = f'{ap_content}{cls.get_ap_header(disbursement_invoice_total, inv.id, inv.created_on)}'
-            control_total += 1
-            line_number: int = 0
-            for line_item in inv.payment_line_items:
-                if line_item.total == 0:
+            batch_number: str = cls.get_batch_number(ejv_file_model.id)
+            ap_content: str = cls.get_batch_header(batch_number)
+            batch_total = 0
+            control_total: int = 0
+            for inv in invoices:
+                disbursement_invoice_total = inv.total - inv.service_fees
+                batch_total += disbursement_invoice_total
+                if disbursement_invoice_total == 0:
                     continue
-                ap_line = APLine.from_invoice_and_line_item(inv, line_item, line_number + 1, bca_distribution)
-                ap_content = f'{ap_content}{cls.get_ap_invoice_line(ap_line)}'
-                line_number += 1
-            control_total += line_number
-        batch_trailer: str = cls.get_batch_trailer(batch_number, batch_total, control_total=control_total)
-        ap_content = f'{ap_content}{batch_trailer}'
+                ap_content = f'{ap_content}{cls.get_ap_header(disbursement_invoice_total, inv.id, inv.created_on)}'
+                control_total += 1
+                line_number: int = 0
+                for line_item in inv.payment_line_items:
+                    if line_item.total == 0:
+                        continue
+                    ap_line = APLine.from_invoice_and_line_item(inv, line_item, line_number + 1, bca_distribution)
+                    ap_content = f'{ap_content}{cls.get_ap_invoice_line(ap_line)}'
+                    line_number += 1
+                control_total += line_number
+            batch_trailer: str = cls.get_batch_trailer(batch_number, batch_total, control_total=control_total)
+            ap_content = f'{ap_content}{batch_trailer}'
 
-        for inv in invoices:
-            db.session.add(EjvInvoiceLinkModel(invoice_id=inv.id,
-                                               ejv_header_id=ejv_header_model.id,
-                                               disbursement_status_code=DisbursementStatus.UPLOADED.value))
-            inv.disbursement_status_code = DisbursementStatus.UPLOADED.value
-        db.session.flush()
+            for inv in invoices:
+                db.session.add(EjvInvoiceLinkModel(invoice_id=inv.id,
+                                                   ejv_header_id=ejv_header_model.id,
+                                                   disbursement_status_code=DisbursementStatus.UPLOADED.value))
+                inv.disbursement_status_code = DisbursementStatus.UPLOADED.value
+            db.session.flush()
 
-        cls._create_file_and_upload(ap_content)
+            cls._create_file_and_upload(ap_content)
 
     @classmethod
     def _create_file_and_upload(cls, ap_content):

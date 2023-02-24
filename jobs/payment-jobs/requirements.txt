@@ -1,5 +1,5 @@
 -e git+https://github.com/bcgov/sbc-common-components.git@a643801c373063dfa44a2f7213d9122d3ad03851#egg=sbc_common_components&subdirectory=python
--e git+https://github.com/bcgov/sbc-pay.git@e722e68450ac28e9c5f3352b10edce2d0388c327#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-pay.git@e6dcd5380c2a93c741bfbef9850b0a7309e53e87#egg=pay_api&subdirectory=pay-api
 Flask-Caching==2.0.2
 Flask-Migrate==2.7.0
 Flask-Moment==1.0.5
@@ -48,6 +48,7 @@ launchdarkly-server-sdk==8.1.1
 marshmallow-sqlalchemy==0.25.0
 marshmallow==3.19.0
 minio==7.1.13
+more-itertools==9.0.0
 opentracing==2.4.0
 packaging==23.0
 paramiko==3.0.0
@@ -60,7 +61,7 @@ pycparser==2.21
 pyrsistent==0.19.3
 pysftp==0.2.9
 python-dateutil==2.8.2
-python-dotenv==0.21.1
+python-dotenv==1.0.0
 python-jose==3.3.0
 pytz==2022.7.1
 requests==2.28.2
