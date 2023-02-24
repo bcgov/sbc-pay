@@ -118,13 +118,8 @@ class BcolService(PaymentSystemService, OAuthService):
         else:
             error = Error.BCOL_ERROR
             current_app.logger.error(bol_err)
-        error_type: str = response_json.get('type')
-        if error_type.isdigit():
-            error = get_bcol_error(int(error_type))
-        else:
-            error = Error.BCOL_ERROR
         raise BusinessException(error) from bol_err
-    
+
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Get receipt from bcol for the receipt number or get receipt against invoice number."""
         current_app.logger.debug('<get_receipt')
