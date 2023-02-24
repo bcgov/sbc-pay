@@ -362,9 +362,6 @@ async def _process_ap_feedback(group_batches) -> bool:  # pylint:disable=too-man
                     refund = RefundModel.find_by_routing_slip_id(routing_slip.id)
                     refund.gl_posted = datetime.now()
                     refund.save()
-                    invoice: InvoiceModel = InvoiceModel.find_by_id(refund.invoice_id)
-                    invoice.refund_date = refund.gl_posted
-                    invoice.save()
 
     db.session.commit()
     return has_errors
