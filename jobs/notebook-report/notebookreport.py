@@ -74,7 +74,7 @@ def send_email(file_processing, emailtype, errormessage):
             recipients = Config.MONTHLY_RECONCILIATION_RECIPIENTS
 
     # Add body to email
-    message.attach(MIMEText('Please see attached.', 'plain'))
+    message.attach(MIMEText('Please see the attachment(s).', 'plain'))
 
     for file in filenames:
         part = MIMEBase('application', 'octet-stream')
