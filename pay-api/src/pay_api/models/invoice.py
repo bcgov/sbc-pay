@@ -23,7 +23,6 @@ from marshmallow import fields, post_dump
 from sqlalchemy import ForeignKey
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
-from pay_api.models.corp_type import CorpTypeSearchModel
 from pay_api.models.payment_line_item import PaymentLineItemSearchModel
 
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus
@@ -184,21 +183,26 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
 class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-instance-attributes
     """Main schema used to serialize invoice searches, plus csv / pdf export."""
 
+    # NOTE CSO uses this model for reconciliation, so it needs to follow the spec fairly closely.
+    # https://github.com/bcgov/sbc-pay/blob/e722e68450ac28e9c5f3352b10edce2d0388c327/docs/docs/api_contract/pay-api-1.0.3.yaml#L1591
+
     id: int
-    corp_type_code: str  # TODO probably a good idea to move this.
-    corp_type: CorpTypeSearchModel
+    bcol_account: str
+    business_identifier: str
+    corp_type_code: str
+    created_by: str
     created_on: datetime
-    total: Decimal
     paid: Decimal
+    refund: Decimal
     service_fees: Decimal
+    total: Decimal
+    status_code: str
+    filing_id: str
     folio_number: str
+    payment_method: str
     created_name: str
     details: List[dict]
     payment_account: Optional[PaymentAccountSearchModel]
-    business_identifier: str
-    created_by: str
-    status_code: str
-    payment_method: str
     line_items: Optional[List[PaymentLineItemSearchModel]]
     product: str
     invoice_number: str
@@ -209,12 +213,13 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
 
         https://www.attrs.org/en/stable/init.html
         """
-        return cls(id=row.id, corp_type_code=row.corp_type.code, corp_type=CorpTypeSearchModel.from_row(row.corp_type),
-                   created_on=row.created_on, total=row.total, paid=row.paid,
-                   service_fees=row.service_fees, folio_number=row.folio_number, created_name=row.created_name,
-                   details=row.details, payment_account=PaymentAccountSearchModel.from_row(row.payment_account),
-                   business_identifier=row.business_identifier, created_by=row.created_by,
-                   status_code=row.invoice_status_code, payment_method=row.payment_method_code,
+        return cls(id=row.id, bcol_account=row.bcol_account, business_identifier=row.business_identifier,
+                   corp_type_code=row.corp_type.code,
+                   created_by=row.created_by, created_on=row.created_on, paid=row.paid, refund=row.refund,
+                   service_fees=row.service_fees, total=row.total, status_code=row.invoice_status_code,
+                   filing_id=row.filing_id, folio_number=row.folio_number, payment_method=row.payment_method_code,
+                   created_name=row.created_name, details=row.details,
+                   payment_account=PaymentAccountSearchModel.from_row(row.payment_account),
                    line_items=[PaymentLineItemSearchModel.from_row(x) for x in row.payment_line_items],
                    product=row.corp_type.product,
                    invoice_number=row.references[0].invoice_number if len(row.references) > 0 else None)
