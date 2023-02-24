@@ -223,6 +223,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             # leave the status as PAID
 
             invoice.invoice_status_code = InvoiceStatus.PAID.value
+            invoice.payment_date = datetime.now()
             invoice.paid = invoice.total
             invoice.save()
 
