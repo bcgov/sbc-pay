@@ -392,7 +392,6 @@ async def _process_paid_invoices(inv_references, row):
 
         inv.invoice_status_code = InvoiceStatus.PAID.value
         inv.paid = inv.total
-        inv.payment_date = receipt_date
         # Create Receipt records
         receipt: ReceiptModel = ReceiptModel()
         receipt.receipt_date = receipt_date
