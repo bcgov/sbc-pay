@@ -256,6 +256,7 @@ async def _update_invoice_status(invoice):
     invoice.disbursement_date = datetime.now()
     if invoice.invoice_status_code in (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value):
         invoice.disbursement_status_code = DisbursementStatus.REVERSED.value
+        invoice.refund_date = invoice.disbursement_date
     else:
         invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
 
@@ -362,6 +363,8 @@ async def _process_ap_feedback(group_batches) -> bool:  # pylint:disable=too-man
                     refund = RefundModel.find_by_routing_slip_id(routing_slip.id)
                     refund.gl_posted = datetime.now()
                     refund.save()
+                    invoice: InvoiceModel = InvoiceModel.find_by_id(refund.invoice_id)
+                    invoice.refund_date = refund.gl_posted
 
     db.session.commit()
     return has_errors

@@ -161,8 +161,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         """Set invoice and payment to REFUNDED."""
         current_app.logger.info('Invoice & Payment set to REFUNDED, add refund_date.')
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
-        refund = RefundModel.find_by_invoice_id(invoice.invoice_id)
-        invoice.refund_date = refund.requested_date
+        invoice.refund_date = datetime.now()
         invoice.save()
         payment = PaymentModel.find_payment_for_invoice(invoice.id)
         payment.payment_status_code = PaymentStatus.REFUNDED.value
