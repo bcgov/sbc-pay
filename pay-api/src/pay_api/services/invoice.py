@@ -182,7 +182,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         """Set the refund_date."""
         self._refund_date = value
         self._dao.refund_date = value
-        
+
     @property
     def total(self):
         """Return the total."""
