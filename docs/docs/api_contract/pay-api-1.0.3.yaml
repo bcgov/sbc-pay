@@ -1592,6 +1592,7 @@ components:
       type: object
       title: Invoice
       description: <p>Object to hold invoice information </p>
+      additionalProperties: true
       properties:
         _links:
           $ref: '#/components/schemas/Links'
@@ -1692,7 +1693,6 @@ components:
           type: string
         updatedName:
           type: string
-        additionalProperties: true
     Transaction:
       type: object
       properties:
