@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to handle Direct Pay automated refunds."""
-from datetime import datetime, time
+from datetime import datetime
 from typing import List
 
 from flask import current_app
