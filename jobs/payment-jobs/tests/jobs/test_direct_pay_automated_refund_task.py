@@ -154,4 +154,3 @@ def test_manual_refund(session, monkeypatch):
         assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
         assert payment.payment_status_code == PaymentStatus.REFUNDED.value
         assert refund.gl_posted is not None
-
