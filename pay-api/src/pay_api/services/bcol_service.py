@@ -101,7 +101,6 @@ class BcolService(PaymentSystemService, OAuthService):
             self._handle_http_error(bol_err, response_json)
         invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id, response_json.get('key'),
                                                                       response_json.get('sequenceNo'))
-
         return invoice_reference
 
     def _handle_http_error(self, bol_err, response_json):

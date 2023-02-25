@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2023 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,15 +18,18 @@ Test-Suite to ensure that the AP Refund Job is working as expected.
 """
 from unittest.mock import patch
 
+from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import RoutingSlip
-from pay_api.utils.enums import CfsAccountStatus, RoutingSlipStatus
+from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, InvoiceStatus, RoutingSlipStatus
 
-from tasks.ap_routing_slip_refund_task import ApRoutingSlipRefundTask
-from .factory import factory_refund, factory_routing_slip_account
+from tasks.ap_task import ApTask
+from .factory import (
+    factory_create_pad_account, factory_invoice, factory_payment_line_item, factory_refund,
+    factory_routing_slip_account)
 
 
 def test_routing_slip_refunds(session, monkeypatch):
-    """Test Routing slip refund job.
+    """Test Routing slip AP refund job.
 
     Steps:
     1) Create a routing slip with remaining_amount and status REFUND_AUTHORIZED
@@ -55,7 +58,7 @@ def test_routing_slip_refunds(session, monkeypatch):
         }
     })
     with patch('pysftp.Connection.put') as mock_upload:
-        ApRoutingSlipRefundTask.create_ap_file()
+        ApTask.create_ap_files()
         mock_upload.assert_called()
 
     routing_slip = RoutingSlip.find_by_number(rs_1)
@@ -63,5 +66,37 @@ def test_routing_slip_refunds(session, monkeypatch):
 
     # Run again and assert nothing is uploaded
     with patch('pysftp.Connection.put') as mock_upload:
-        ApRoutingSlipRefundTask.create_ap_file()
+        ApTask.create_ap_files()
         mock_upload.assert_not_called()
+
+
+def test_ap_disbursement(session, monkeypatch):
+    """Test AP Disbursement for Non-government entities.
+
+    Steps:
+    1) Create invoices, payment line items with BCA corp type.
+    2) Run the job and assert status
+    """
+    account = factory_create_pad_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
+    invoice = factory_invoice(
+        payment_account=account,
+        status_code=InvoiceStatus.PAID.value,
+        total=10,
+        corp_type_code='BCA'
+    )
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('BCA', 'OLAARTOQ')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    refund_invoice = factory_invoice(
+        payment_account=account,
+        status_code=InvoiceStatus.REFUNDED.value,
+        total=10,
+        disbursement_status_code=DisbursementStatus.COMPLETED.value,
+        corp_type_code='BCA'
+    )
+    line = factory_payment_line_item(refund_invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+    with patch('pysftp.Connection.put') as mock_upload:
+        ApTask.create_ap_files()
+        mock_upload.assert_called()

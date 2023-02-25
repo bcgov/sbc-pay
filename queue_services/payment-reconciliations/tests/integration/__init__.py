@@ -63,7 +63,8 @@ def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.va
                     business_identifier: str = 'CP0001234',
                     service_fees: float = 0.0, total=0,
                     payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
-                    created_on: datetime = datetime.now()):
+                    created_on: datetime = datetime.now(),
+                    disbursement_status_code=None):
     """Return Factory."""
     return Invoice(
         invoice_status_code=status_code,
@@ -76,7 +77,8 @@ def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.va
         folio_number='1234567890',
         service_fees=service_fees,
         bcol_account=payment_account.bcol_account,
-        payment_method_code=payment_method_code
+        payment_method_code=payment_method_code,
+        disbursement_status_code=disbursement_status_code
     ).save()
 
 
