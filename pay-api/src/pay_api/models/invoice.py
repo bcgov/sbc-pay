@@ -160,6 +160,7 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
     @post_dump
     def _clean_up(self, data, many):  # pylint: disable=unused-argument
         """Clean up attributes."""
+        # Invoice is always deleted in this scenario:
         if data.get('line_items'):
             for line in list(data.get('line_items')):
                 if line.get('status_code') == LineItemStatus.CANCELLED.value:
@@ -213,13 +214,22 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
 
         https://www.attrs.org/en/stable/init.html
         """
-        return cls(id=row.id, bcol_account=row.bcol_account, business_identifier=row.business_identifier,
+        # Similar to _clean_up in InvoiceSchema.
+        status_code = PaymentStatus.COMPLETED.value if row.invoice_status_code == InvoiceStatus.PAID.value \
+            else row.invoice_status_code
+        business_identifier = None if row.business_identifier and row.business_identifier.startswith('T') \
+            else row.business_identifier
+
+        line_items = [PaymentLineItemSearchModel.from_row(x) for x in row.payment_line_items]
+        invoice_number = row.references[0].invoice_number if len(row.references) > 0 else None
+
+        return cls(id=row.id, bcol_account=row.bcol_account, business_identifier=business_identifier,
                    corp_type_code=row.corp_type.code,
                    created_by=row.created_by, created_on=row.created_on, paid=row.paid, refund=row.refund,
-                   service_fees=row.service_fees, total=row.total, status_code=row.invoice_status_code,
+                   service_fees=row.service_fees, total=row.total, status_code=status_code,
                    filing_id=row.filing_id, folio_number=row.folio_number, payment_method=row.payment_method_code,
                    created_name=row.created_name, details=row.details,
                    payment_account=PaymentAccountSearchModel.from_row(row.payment_account),
-                   line_items=[PaymentLineItemSearchModel.from_row(x) for x in row.payment_line_items],
+                   line_items=line_items,
                    product=row.corp_type.product,
-                   invoice_number=row.references[0].invoice_number if len(row.references) > 0 else None)
+                   invoice_number=invoice_number)

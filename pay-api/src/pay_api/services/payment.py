@@ -354,6 +354,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
         for invoice_dao in purchases:
             invoice_dict = Converter().unstructure(InvoiceSearchModel.from_row(invoice_dao))
+            invoice_dict = Converter().remove_nones(invoice_dict)
             data['items'].append(invoice_dict)
 
         return data

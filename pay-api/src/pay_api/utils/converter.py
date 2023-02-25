@@ -1,6 +1,7 @@
 """Converter module to support decimal and datetime serialization."""
 from decimal import Decimal
 from datetime import datetime
+from typing import Any, Dict
 import cattrs
 
 
@@ -21,3 +22,14 @@ class Converter(cattrs.Converter):
     @staticmethod
     def _unstructure_datetime(obj: datetime) -> str:
         return obj.isoformat()
+
+    @staticmethod
+    def remove_nones(data: Dict[Any, Any]) -> Dict[str, Any]:
+        """Remove nones from payload."""
+        new_data = {}
+        for key, val in data.items():
+            if isinstance(val, dict):
+                new_data[key] = Converter.remove_nones(val)
+            elif val is not None:
+                new_data[key] = val
+        return new_data

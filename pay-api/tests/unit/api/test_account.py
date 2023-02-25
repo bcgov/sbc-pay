@@ -56,6 +56,16 @@ def test_account_purchase_history(session, client, jwt, app):
                      headers=headers)
 
     assert rv.status_code == 200
+    # Note this is used by CSO, they need these fields at a minimum.
+    assert rv.json
+    invoice = rv.json.get('items')[0]
+    assert invoice
+    required_fields = ['id', 'corpTypeCode', 'createdOn', 'statusCode', 'total', 'serviceFees',
+                       'paid', 'refund', 'folioNumber', 'createdName', 'paymentMethod', 'details',
+                       'businessIdentifier', 'createdBy', 'filingId']
+
+    for field in required_fields:
+        assert field in invoice
 
 
 def test_account_purchase_history_with_basic_account(session, client, jwt, app):
