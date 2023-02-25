@@ -14,7 +14,7 @@
 
 """Tests to assure the Direct Payment Service."""
 
-from datetime import date, datetime
+from datetime import datetime
 from unittest.mock import patch
 import urllib.parse
 import pytest
