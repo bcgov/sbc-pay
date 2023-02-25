@@ -352,11 +352,10 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         if data is None or 'items' not in data:
             data = {'items': []}
 
-        for invoice_dao in purchases:
-            invoice_dict = Converter().unstructure(InvoiceSearchModel.from_row(invoice_dao))
-            invoice_dict = Converter().remove_nones(invoice_dict)
-            data['items'].append(invoice_dict)
-
+        invoice_search_list = [InvoiceSearchModel.from_row(invoice_dao) for invoice_dao in purchases]
+        converter = Converter()
+        invoice_list = converter.unstructure(invoice_search_list)
+        data['items'] = [converter.remove_nones(invoice_dict) for invoice_dict in invoice_list]
         return data
 
     @staticmethod
