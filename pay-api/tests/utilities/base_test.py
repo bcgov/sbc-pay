@@ -124,6 +124,8 @@ def get_payment_request(business_identifier: str = 'CP0001234', corp_type: str =
             }
         },
         'filingInfo': {
+            'folioNumber': 'TEST',
+            'filingIdentifier': '55',
             'filingTypes': [
                 {
                     'filingTypeCode': second_filing_type,
