@@ -14,6 +14,7 @@
 
 """Tests to assure the Direct Payment Service."""
 
+from datetime import date, datetime
 from unittest.mock import patch
 import urllib.parse
 import pytest
@@ -181,6 +182,7 @@ def test_process_cfs_refund_success(monkeypatch):
     payment_account = factory_payment_account()
     invoice = factory_invoice(payment_account)
     invoice.invoice_status_code = InvoiceStatus.PAID.value
+    invoice.payment_date = datetime.now()
     invoice.save()
     receipt = factory_receipt(invoice.id, invoice.id, receipt_amount=invoice.total).save()
     receipt.save()
@@ -219,6 +221,7 @@ def test_process_cfs_refund_duplicate_refund(monkeypatch):
     payment_account = factory_payment_account()
     invoice = factory_invoice(payment_account)
     invoice.invoice_status_code = InvoiceStatus.PAID.value
+    invoice.payment_date = datetime.now()
     invoice.save()
     receipt = factory_receipt(invoice.id, invoice.id, receipt_amount=invoice.total).save()
     receipt.save()

@@ -243,13 +243,15 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
                        payment_account_id=invoice.payment_account_id)
         invoice.invoice_status_code = InvoiceStatus.PAID.value
         invoice.paid = invoice.total
+        current_time = datetime.now()
+        invoice.payment_date = current_time
         invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
         # Create receipt.
         receipt = Receipt()
         receipt.receipt_number = invoice_reference.invoice_number
         receipt.receipt_amount = invoice.total
         receipt.invoice_id = invoice.id
-        receipt.receipt_date = datetime.now()
+        receipt.receipt_date = current_time
         receipt.save()
 
 

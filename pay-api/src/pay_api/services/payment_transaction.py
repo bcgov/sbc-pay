@@ -437,6 +437,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                 PaymentTransaction.__save_receipt(invoice, receipt_details)
                 invoice.paid = invoice.total  # set the paid amount as total
                 invoice.invoice_status_code = InvoiceStatus.PAID.value
+                invoice.payment_date = payment.payment_date
                 invoice_reference = InvoiceReference.find_active_reference_by_invoice_id(invoice.id)
                 invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
                 # TODO If it's not PAD, publish message. Refactor and move to pay system service later.
