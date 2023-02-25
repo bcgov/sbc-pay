@@ -98,18 +98,27 @@ class BcolService(PaymentSystemService, OAuthService):
             current_app.logger.debug(f'BCOL Response : {response_json}')
             pay_response.raise_for_status()
         except HTTPError as bol_err:
-            error_type: str = response_json.get('type', '-1')
-            error = get_bcol_error(int(error_type))
-            if error in [Error.BCOL_ERROR, Error.BCOL_UNAVAILABLE]:
-                current_app.logger.error(bol_err)
-            else:
-                current_app.logger.warning(bol_err)
-            raise BusinessException(error) from bol_err
-
+            self._handle_http_error(bol_err, response_json)
         invoice_reference: InvoiceReference = InvoiceReference.create(invoice.id, response_json.get('key'),
                                                                       response_json.get('sequenceNo'))
 
         return invoice_reference
+
+    def _handle_http_error(self, bol_err, response_json):
+        """Log BCOL errors."""
+        error_type: str = response_json.get('type')
+        # It's possible raise_for_status, skips this part.
+        if error_type and error_type.isdigit():
+            error = get_bcol_error(int(error_type))
+            if error in [Error.BCOL_ERROR, Error.BCOL_UNAVAILABLE]:
+                current_app.logger.error(bol_err)
+            else:
+                # The other BCOL errors are related to BCOL account.
+                current_app.logger.warning(bol_err)
+        else:
+            error = Error.BCOL_ERROR
+            current_app.logger.error(bol_err)
+        raise BusinessException(error) from bol_err
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):
         """Get receipt from bcol for the receipt number or get receipt against invoice number."""
