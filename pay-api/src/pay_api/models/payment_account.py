@@ -82,7 +82,7 @@ class PaymentAccountSearchModel:  # pylint: disable=too-few-public-methods
 
     name: str
     billable: bool
-    auth_account_id: str
+    account_id: str
 
     @classmethod
     def from_row(cls, row: PaymentAccount):
@@ -90,4 +90,4 @@ class PaymentAccountSearchModel:  # pylint: disable=too-few-public-methods
 
         https://www.attrs.org/en/stable/init.html
         """
-        return cls(name=row.name, billable=row.billable, auth_account_id=row.auth_account_id)
+        return cls(name=row.name, billable=row.billable, account_id=row.auth_account_id)
