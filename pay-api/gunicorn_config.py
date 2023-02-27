@@ -22,7 +22,7 @@ workers = int(os.environ.get('GUNICORN_PROCESSES', '3'))
 worker_class = os.environ.get('GUNICORN_WORKER_CLASS', 'gevent')
 worker_connections = int(os.environ.get('GUNICORN_WORKER_CONNECIONS', '1000'))
 threads = int(os.environ.get('GUNICORN_THREADS', '1'))
-timeout = int(os.environ.get('GUNICORN_TIMEOUT', '60'))
+timeout = int(os.environ.get('GUNICORN_TIMEOUT', '100'))
 keepalive = int(os.environ.get('GUNICORN_KEEPALIVE', '2'))
 
 
