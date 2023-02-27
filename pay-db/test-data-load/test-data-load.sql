@@ -16,12 +16,13 @@ BEGIN
 for i in 0..number_of_invoices loop
 	SELECT ('[0:2]={PAD,DRAWDOWN,EJV}'::text[])[trunc(random()*3)] into v_payment_method_code; 
 	SELECT fee_schedule_id into v_fee_schedule_id FROM fee_schedules where corp_type_code = 'PPR' ORDER BY RANDOM() LIMIT 1;
-	SELECT NOW() + (random() * (interval '90 days')) + '30 days' into random_date;
+	SELECT NOW() - interval '1 year' + (random() * (interval '90 days')) + '30 days' into random_date;
 	SELECT floor(random() * (1000 - 1 + 1) + 1)::numeric into random_dollar_amount;
 	SELECT SUBSTRING(md5(random()::text),1,20) into random_text;
 	SELECT CONCAT('PERFORMANCE-TEST-', md5(random()::text)) as text into performance_random_text;
 	-- raise notice 'v_fee_schedule_id: %, random_date: % random_dollar_amount: %, random_text: %, performance_random_text: %', v_fee_schedule_id, random_date, random_dollar_amount, random_text, performance_random_text;
 
+	-- Note having more than one payment_accounts per auth_account_id can cause a one_or_none exception.
 	INSERT INTO payment_accounts (auth_account_id, name) values (v_auth_account_id, performance_random_text) RETURNING id INTO v_payment_account_id;
 	INSERT INTO cfs_accounts (account_id, status) values (v_payment_account_id, 'INACTIVE') RETURNING id INTO v_cfs_account_id;
 

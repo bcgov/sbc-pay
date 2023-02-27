@@ -13,6 +13,7 @@
 # limitations under the License.
 """Model to handle all operations related to Payment Account data."""
 
+from attrs import define
 from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey
 
@@ -73,3 +74,20 @@ class PaymentAccountSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     payment_method = fields.String(data_key='payment_method')
     auth_account_id = fields.String(data_key='account_id')
     name = fields.String(data_key='account_name')
+
+
+@define
+class PaymentAccountSearchModel:  # pylint: disable=too-few-public-methods
+    """Payment Account Search model."""
+
+    name: str
+    billable: bool
+    auth_account_id: str
+
+    @classmethod
+    def from_row(cls, row: PaymentAccount):
+        """From row is used so we don't tightly couple to our database class.
+
+        https://www.attrs.org/en/stable/init.html
+        """
+        return cls(name=row.name, billable=row.billable, auth_account_id=row.auth_account_id)
