@@ -42,7 +42,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         # We add a day here for override, because the target always looks at yesterday,
         # the date_override, is supposed to generate statements for the specified date.
         current_time = datetime.now() if date_override is None \
-              else datetime.strptime(date_override, '%Y-%m-%d') + timedelta(days=1)
+            else datetime.strptime(date_override, '%Y-%m-%d') + timedelta(days=1)
         current_time = get_local_time(current_time)
         cls.skip_notify = date_override is not None
         if date_override:
