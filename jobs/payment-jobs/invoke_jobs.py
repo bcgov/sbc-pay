@@ -72,7 +72,7 @@ def register_shellcontext(app):
     app.shell_context_processor(shell_context)
 
 
-def run(job_name, argument):
+def run(job_name, argument=None):
     from tasks.cfs_create_account_task import CreateAccountTask
     from tasks.cfs_create_invoice_task import CreateInvoiceTask
     from tasks.distribution_task import DistributionTask
@@ -143,4 +143,7 @@ def run(job_name, argument):
 
 if __name__ == "__main__":
     print('----------------------------Scheduler Ran With Argument--', sys.argv[1])
-    run(sys.argv[1], sys.argv[2])
+    if (len(sys.argv) > 2):
+        run(sys.argv[1], sys.argv[2])
+    else:
+        run(sys.argv[1])
