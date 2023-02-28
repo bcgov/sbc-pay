@@ -17,13 +17,13 @@
 
 import os
 
-
-workers = int(os.environ.get('GUNICORN_PROCESSES', '3'))
-worker_class = os.environ.get('GUNICORN_WORKER_CLASS', 'gevent')
-worker_connections = int(os.environ.get('GUNICORN_WORKER_CONNECIONS', '1000'))
-threads = int(os.environ.get('GUNICORN_THREADS', '1'))
-timeout = int(os.environ.get('GUNICORN_TIMEOUT', '60'))
-keepalive = int(os.environ.get('GUNICORN_KEEPALIVE', '2'))
+# https://docs.gunicorn.org/en/stable/settings.html#workers
+workers = int(os.environ.get('GUNICORN_PROCESSES', '3'))  # gunicorn default - 1
+worker_class = os.environ.get('GUNICORN_WORKER_CLASS', 'sync')  # gunicorn default - sync
+worker_connections = int(os.environ.get('GUNICORN_WORKER_CONNECIONS', '1000'))  # gunicorn default - 1000
+threads = int(os.environ.get('GUNICORN_THREADS', '1'))  # gunicorn default - 1
+timeout = int(os.environ.get('GUNICORN_TIMEOUT', '100'))  # gunicorn default - 30
+keepalive = int(os.environ.get('GUNICORN_KEEPALIVE', '2'))  # gunicorn default - 2
 
 
 forwarded_allow_ips = '*'  # pylint: disable=invalid-name

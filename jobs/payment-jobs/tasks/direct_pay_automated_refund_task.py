@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to handle Direct Pay automated refunds."""
-from datetime import datetime, time
+from datetime import datetime
 from typing import List
 
 from flask import current_app
@@ -74,11 +74,7 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
         current_app.logger.info(f'Found {len(invoices)} invoices to process for refunds.')
         for invoice in invoices:
             try:
-                # 2 hour window to check for GL refunds. Feedback is updated after 11pm.
-                if invoice.invoice_status_code == InvoiceStatus.REFUNDED.value:
-                    now_time = datetime.utcnow().time()
-                    if now_time < time(6, 00) or now_time > time(8, 00):
-                        continue
+                # Cron is setup to run between 6 to 8 UTC. Feedback is updated after 11pm.
                 current_app.logger.debug(f'Processing invoice: {invoice.id} - created on: {invoice.created_on}')
                 status = OrderStatus.from_dict(cls._query_order_status(invoice))
                 if cls._is_glstatus_rejected(status):

@@ -17,3 +17,4 @@ itsdangerous==2.0.1
 dataclass_wizard
 launchdarkly-server-sdk
 cx_Oracle
+more_itertools

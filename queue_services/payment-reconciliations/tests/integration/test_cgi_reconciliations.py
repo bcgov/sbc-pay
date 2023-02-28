@@ -33,7 +33,9 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
+from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
+from pay_api.models import db
 from pay_api.utils.enums import (
     CfsAccountStatus, DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
     PaymentStatus, RoutingSlipStatus)
@@ -817,6 +819,7 @@ async def test_successful_refund_reconciliations(
     # Create EJV File model
     file_ref = f'INBOX.{datetime.now()}'
     ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
+                                          file_type=EjvFileType.REFUND.value,
                                           disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
     ejv_file_id = ejv_file.id
 
@@ -843,8 +846,8 @@ async def test_successful_refund_reconciliations(
                        f'.....................................................................CGI\n' \
                        f'APIH...000000000...{rs_numbers[0]}                                         ................' \
                        f'...........................................................................................' \
-                       f'...........................................................................................' \
-                       f'...........................................................................................' \
+                       f'........................................................................................REF' \
+                       f'UND_FAS....................................................................................' \
                        f'........................................................0000...............................' \
                        f'...........................................................................................' \
                        f'............................CGI\n' \
@@ -868,8 +871,8 @@ async def test_successful_refund_reconciliations(
                        f'...CGI\n' \
                        f'APIH...000000000...{rs_numbers[1]}                                         ................' \
                        f'...........................................................................................' \
-                       f'...........................................................................................' \
-                       f'...........................................................................................' \
+                       f'........................................................................................REF' \
+                       f'UND_FAS....................................................................................' \
                        f'........................................................0000...............................' \
                        f'...........................................................................................' \
                        f'............................CGI\n' \
@@ -962,6 +965,7 @@ async def test_failed_refund_reconciliations(
     # Create EJV File model
     file_ref = f'INBOX.{datetime.now()}'
     ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
+                                          file_type=EjvFileType.REFUND.value,
                                           disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
     ejv_file_id = ejv_file.id
 
@@ -989,8 +993,8 @@ async def test_failed_refund_reconciliations(
                        f'.....................................................................CGI\n' \
                        f'APIH...000000000...{rs_numbers[0]}                                         ................' \
                        f'...........................................................................................' \
-                       f'...........................................................................................' \
-                       f'...........................................................................................' \
+                       f'........................................................................................REF' \
+                       f'UND_FAS....................................................................................' \
                        f'........................................................0000...............................' \
                        f'...........................................................................................' \
                        f'............................CGI\n' \
@@ -1014,8 +1018,8 @@ async def test_failed_refund_reconciliations(
                        f'...CGI\n' \
                        f'APIH...000000000...{rs_numbers[1]}                                         ................' \
                        f'...........................................................................................' \
-                       f'...........................................................................................' \
-                       f'...........................................................................................' \
+                       f'........................................................................................REF' \
+                       f'UND_FAS....................................................................................' \
                        f'........................................................0001...............................' \
                        f'...........................................................................................' \
                        f'............................CGI\n' \
@@ -1099,3 +1103,326 @@ async def test_prevent_duplicate_ack(
     await helper_add_ejv_event_to_queue(events_stan, file_name=ack_file_name)
     assert ejv.ack_file_ref == ack_file_name
     assert ejv.disbursement_status_code == DisbursementStatus.UPLOADED.value
+
+
+@pytest.mark.asyncio
+async def test_successful_ap_disbursement(
+    session, app, stan_server, event_loop, client_id, events_stan, future, mock_publish
+):
+    """Test Reconciliations worker for ap disbursement."""
+    from reconciliations.worker import cb_subscription_handler
+
+    await subscribe_to_queue(events_stan,
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
+                             cb_subscription_handler)
+
+    # 1. Create invoice.
+    # 2. Create a AP reconciliation file.
+    # 3. Assert the status.
+    invoice_ids = []
+    account = factory_create_pad_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
+    invoice = factory_invoice(
+        payment_account=account,
+        status_code=InvoiceStatus.PAID.value,
+        total=10,
+        corp_type_code='BCA'
+    )
+
+    invoice_ids.append(invoice.id)
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('BCA', 'OLAARTOQ')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    refund_invoice = factory_invoice(
+        payment_account=account,
+        status_code=InvoiceStatus.REFUNDED.value,
+        total=10,
+        disbursement_status_code=DisbursementStatus.COMPLETED.value,
+        corp_type_code='BCA'
+    )
+    invoice_ids.append(refund_invoice.id)
+
+    line = factory_payment_line_item(refund_invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    factory_refund(invoice_id=refund_invoice.id)
+
+    file_ref = f'INBOX.{datetime.now()}'
+    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
+                                          file_type=EjvFileType.NON_GOV_DISBURSEMENT.value,
+                                          disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+    ejv_file_id = ejv_file.id
+
+    ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                                ejv_file_id=ejv_file.id, payment_account_id=account.id).save()
+
+    EjvInvoiceLinkModel(
+        invoice_id=invoice.id, ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
+    ).save()
+
+    EjvInvoiceLinkModel(
+        invoice_id=refund_invoice.id, ejv_header_id=ejv_header.id,
+        disbursement_status_code=DisbursementStatus.UPLOADED.value
+    ).save()
+
+    ack_file_name = f'ACK.{file_ref}'
+
+    with open(ack_file_name, 'a+') as jv_file:
+        jv_file.write('')
+        jv_file.close()
+
+    upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
+
+    await helper_add_ejv_event_to_queue(events_stan, file_name=ack_file_name)
+
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+    assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
+
+    invoice_str = [str(invoice_id).zfill(9) for invoice_id in invoice_ids]
+    feedback_content = f'APBG...........{str(ejv_file_id).zfill(9)}....\n' \
+                       f'APBH...0000.................................................................................' \
+                       f'.....................................................................CGI\n' \
+                       f'APIH...000000000...{invoice_str[0]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'........................................................0000...............................' \
+                       f'...........................................................................................' \
+                       f'............................CGI\n' \
+                       f'APNA...............{invoice_str[0]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.........................................0000..............................................' \
+                       f'...........................................................................................' \
+                       f'.............CGI\n' \
+                       f'APIL...............{invoice_str[0]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.....................................................................................0000..' \
+                       f'...........................................................................................' \
+                       f'.........................................................CGI\n' \
+                       f'APIC...............{invoice_str[0]}                                         ................' \
+                       f'............................0000...........................................................' \
+                       f'........................................................................................' \
+                       f'...CGI\n' \
+                       f'APIH...000000000...{invoice_str[1]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'........................................................0000...............................' \
+                       f'...........................................................................................' \
+                       f'............................CGI\n' \
+                       f'APNA...............{invoice_str[1]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.........................................0000..............................................' \
+                       f'...........................................................................................' \
+                       f'.............CGI\n' \
+                       f'APIL...............{invoice_str[1]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.....................................................................................0000..' \
+                       f'...........................................................................................' \
+                       f'.........................................................CGI\n' \
+                       f'APIC...............{invoice_str[1]}                                         ................' \
+                       f'............................0000...........................................................' \
+                       f'........................................................................................' \
+                       f'...CGI\n' \
+                       f'APBT...........00000000{ejv_file_id}..............................0000.....................' \
+                       f'...........................................................................................' \
+                       f'......................................CGI\n' \
+
+
+    feedback_file_name = f'FEEDBACK.{file_ref}'
+
+    with open(feedback_file_name, 'a+') as jv_file:
+        jv_file.write(feedback_content)
+        jv_file.close()
+
+    with open(feedback_file_name, 'rb') as f:
+        upload_to_minio(f.read(), feedback_file_name)
+
+    await helper_add_ejv_event_to_queue(events_stan, file_name=feedback_file_name, message_type='FEEDBACKReceived')
+
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+    assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
+    for invoice_id in invoice_ids:
+        invoice = InvoiceModel.find_by_id(invoice_id)
+        if invoice.invoice_status_code == InvoiceStatus.PAID.value:
+            assert invoice.disbursement_status_code == DisbursementStatus.COMPLETED.value
+            assert invoice.disbursement_date is not None
+        if invoice.invoice_status_code == InvoiceStatus.REFUNDED.value:
+            assert invoice.disbursement_status_code == DisbursementStatus.REVERSED.value
+            assert invoice.disbursement_date is not None
+            refund = RefundModel.find_by_invoice_id(invoice.id)
+            assert refund.gl_posted is not None
+
+
+@pytest.mark.asyncio
+async def test_failure_ap_disbursement(
+    session, app, stan_server, event_loop, client_id, events_stan, future, mock_publish
+):
+    """Test Reconciliations worker for ap disbursement."""
+    from reconciliations.worker import cb_subscription_handler
+
+    await subscribe_to_queue(events_stan,
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
+                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
+                             cb_subscription_handler)
+
+    # 1. Create invoice.
+    # 2. Create a AP reconciliation file.
+    # 3. Assert the status.
+    invoice_ids = []
+    account = factory_create_pad_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
+    invoice = factory_invoice(
+        payment_account=account,
+        status_code=InvoiceStatus.PAID.value,
+        total=10,
+        corp_type_code='BCA'
+    )
+    invoice_ids.append(invoice.id)
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('BCA', 'OLAARTOQ')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    refund_invoice = factory_invoice(
+        payment_account=account,
+        status_code=InvoiceStatus.REFUNDED.value,
+        total=10,
+        disbursement_status_code=DisbursementStatus.COMPLETED.value,
+        corp_type_code='BCA'
+    )
+    invoice_ids.append(refund_invoice.id)
+    line = factory_payment_line_item(refund_invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    factory_refund(invoice_id=refund_invoice.id)
+
+    file_ref = f'INBOX.{datetime.now()}'
+    ejv_file: EjvFileModel = EjvFileModel(file_ref=file_ref,
+                                          file_type=EjvFileType.NON_GOV_DISBURSEMENT.value,
+                                          disbursement_status_code=DisbursementStatus.UPLOADED.value).save()
+    ejv_file_id = ejv_file.id
+
+    ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                                ejv_file_id=ejv_file.id, payment_account_id=account.id).save()
+
+    EjvInvoiceLinkModel(
+        invoice_id=invoice.id, ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
+    ).save()
+
+    EjvInvoiceLinkModel(
+        invoice_id=refund_invoice.id, ejv_header_id=ejv_header.id,
+        disbursement_status_code=DisbursementStatus.UPLOADED.value
+    ).save()
+
+    ack_file_name = f'ACK.{file_ref}'
+
+    with open(ack_file_name, 'a+') as jv_file:
+        jv_file.write('')
+        jv_file.close()
+
+    upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
+
+    await helper_add_ejv_event_to_queue(events_stan, file_name=ack_file_name)
+
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+    assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
+
+    # We need this, otherwise the feedback_content file will need to be changed.
+    invoice_str = [str(invoice_id).zfill(9) for invoice_id in invoice_ids]
+    # Now upload a feedback file and check the status.
+    # Just create feedback file to mock the real feedback file.
+    # Set first invoice to be success and second to be failed
+    feedback_content = f'APBG...........{str(ejv_file_id).zfill(9)}....\n' \
+                       f'APBH...0000.................................................................................' \
+                       f'.....................................................................CGI\n' \
+                       f'APIH...000000000...{invoice_str[0]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'........................................................0000...............................' \
+                       f'...........................................................................................' \
+                       f'............................CGI\n' \
+                       f'APNA...............{invoice_str[0]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.........................................0000..............................................' \
+                       f'...........................................................................................' \
+                       f'.............CGI\n' \
+                       f'APIL...............{invoice_str[0]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.....................................................................................0000..' \
+                       f'...........................................................................................' \
+                       f'.........................................................CGI\n' \
+                       f'APIC...............{invoice_str[0]}                                         ................' \
+                       f'............................0000...........................................................' \
+                       f'........................................................................................' \
+                       f'...CGI\n' \
+                       f'APIH...000000000...{invoice_str[1]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'........................................................0001...............................' \
+                       f'...........................................................................................' \
+                       f'............................CGI\n' \
+                       f'APNA...............{invoice_str[1]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.........................................0001..............................................' \
+                       f'...........................................................................................' \
+                       f'.............CGI\n' \
+                       f'APIL...............{invoice_str[1]}                                         ................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'...........................................................................................' \
+                       f'.....................................................................................0001..' \
+                       f'...........................................................................................' \
+                       f'.........................................................CGI\n' \
+                       f'APIC...............{invoice_str[1]}                                         ................' \
+                       f'............................0001...........................................................' \
+                       f'........................................................................................' \
+                       f'...CGI\n' \
+                       f'APBT...........00000000{ejv_file_id}..............................0000.....................' \
+                       f'...........................................................................................' \
+                       f'......................................CGI\n' \
+
+    feedback_file_name = f'FEEDBACK.{file_ref}'
+
+    with open(feedback_file_name, 'a+') as jv_file:
+        jv_file.write(feedback_content)
+        jv_file.close()
+
+    with open(feedback_file_name, 'rb') as f:
+        upload_to_minio(f.read(), feedback_file_name)
+
+    await helper_add_ejv_event_to_queue(events_stan, file_name=feedback_file_name, message_type='FEEDBACKReceived')
+
+    ejv_file = EjvFileModel.find_by_id(ejv_file_id)
+    assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
+    invoice_1 = InvoiceModel.find_by_id(invoice_ids[0])
+    assert invoice_1.disbursement_status_code == DisbursementStatus.COMPLETED.value
+    assert invoice_1.disbursement_date is not None
+    invoice_link = db.session.query(EjvInvoiceLinkModel)\
+        .filter(EjvInvoiceLinkModel.invoice_id == invoice_ids[0])\
+        .one_or_none()
+    assert invoice_link.disbursement_status_code == DisbursementStatus.COMPLETED.value
+
+    invoice_2 = InvoiceModel.find_by_id(invoice_ids[1])
+    assert invoice_2.disbursement_status_code == DisbursementStatus.ERRORED.value
+    invoice_link = db.session.query(EjvInvoiceLinkModel)\
+        .filter(EjvInvoiceLinkModel.invoice_id == invoice_ids[1])\
+        .one_or_none()
+    assert invoice_link.disbursement_status_code == DisbursementStatus.ERRORED.value

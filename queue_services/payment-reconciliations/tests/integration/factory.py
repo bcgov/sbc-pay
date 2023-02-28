@@ -52,7 +52,8 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
                     business_identifier: str = 'CP0001234',
                     service_fees: float = 0.0, total=0,
                     payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
-                    created_on: datetime = datetime.now()):
+                    created_on: datetime = datetime.now(),
+                    disbursement_status_code=None):
     """Return Factory."""
     cfs_account = CfsAccount.find_effective_by_account_id(payment_account.id)
     cfs_account_id = cfs_account.id if cfs_account else None
@@ -68,7 +69,8 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
         service_fees=service_fees,
         bcol_account=payment_account.bcol_account,
         cfs_account_id=cfs_account_id,
-        payment_method_code=payment_method_code or payment_account.payment_method
+        payment_method_code=payment_method_code or payment_account.payment_method,
+        disbursement_status_code=disbursement_status_code
     ).save()
 
 
@@ -229,11 +231,13 @@ def factory_routing_slip_account(
 
 
 def factory_refund(
-        routing_slip_id: int,
-        details={}
+        routing_slip_id: int = None,
+        details={},
+        invoice_id: int = None
 ):
     """Return Factory."""
     return Refund(
+        invoice_id=invoice_id,
         routing_slip_id=routing_slip_id,
         requested_date=datetime.now(),
         reason='TEST',
