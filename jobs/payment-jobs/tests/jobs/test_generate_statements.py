@@ -60,7 +60,7 @@ def test_statements(session):
     assert invoices[0].id == invoice.id
 
     # Test date override.
-    StatementTask.generate_statements(datetime.now().strftime("%Y-%m-%d"))
+    StatementTask.generate_statements(datetime.now().strftime('%Y-%m-%d'))
 
     statements = Statement.find_all_statements_for_account(auth_account_id=bcol_account.auth_account_id, page=1,
                                                            limit=100)

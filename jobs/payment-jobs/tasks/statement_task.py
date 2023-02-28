@@ -30,12 +30,13 @@ from pay_api.utils.util import (
 
 class StatementTask:  # pylint:disable=too-few-public-methods
     """Task to generate statements."""
+
     skip_notify: bool = False
 
     @classmethod
     def generate_statements(cls, date_override=None):
         """Generate statements.
-        
+
         Steps:
         1. Get all payment accounts and it's active statement settings.
         """
