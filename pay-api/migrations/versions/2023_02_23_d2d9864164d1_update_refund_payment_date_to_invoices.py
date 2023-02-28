@@ -19,6 +19,7 @@ def upgrade():
     """Update payment and refund date in invoices table."""
     # 1. Find all id and payment date from invoice table linking with invoice_reference table.
     # 2. Update payment_date with invoice_id.
+    op.execute("set statement_timeout=20000;")
     conn = op.get_bind()
     res = conn.execute(f'select i.id as "id", p.payment_date as "date"\
                                 from invoice_references ir \

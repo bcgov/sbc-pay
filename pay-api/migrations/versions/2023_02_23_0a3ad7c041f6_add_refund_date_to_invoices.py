@@ -17,8 +17,10 @@ depends_on = None
 
 
 def upgrade():
+    op.execute("set statement_timeout=20000;")
     op.add_column('invoices', sa.Column('refund_date', sa.DateTime(), nullable=True))
 
 
 def downgrade():
+    op.execute("set statement_timeout=20000;")
     op.drop_column('invoice', 'refund_date')
