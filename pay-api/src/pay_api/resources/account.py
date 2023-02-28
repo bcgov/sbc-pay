@@ -195,6 +195,10 @@ class AccountFee(Resource):
         current_app.logger.debug('>AccountFee.post')
         return jsonify(response), status
 
+#########################################################################################################
+# Note this route is used by CSO for reconciliation, so be careful if making any changes to the response.
+#########################################################################################################
+
 
 @cors_preflight('POST')
 @API.route('/<string:account_number>/payments/queries', methods=['POST', 'OPTIONS'])

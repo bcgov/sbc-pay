@@ -35,8 +35,8 @@ from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
     get_auth_basic_user, get_basic_account_payload, get_claims, get_gov_account_payload,
     get_gov_account_payload_with_no_revenue_account, get_pad_account_payload, get_payment_request,
-    get_payment_request_for_cso, get_payment_request_with_service_fees, get_premium_account_payload,
-    get_unlinked_pad_account_payload, token_header)
+    get_payment_request_for_cso, get_payment_request_with_folio_number, get_payment_request_with_service_fees,
+    get_premium_account_payload, get_unlinked_pad_account_payload, token_header)
 
 fake = Faker()
 
@@ -46,7 +46,7 @@ def test_account_purchase_history(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()),
+    rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request_with_folio_number()),
                      headers=headers)
 
     invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
@@ -56,6 +56,16 @@ def test_account_purchase_history(session, client, jwt, app):
                      headers=headers)
 
     assert rv.status_code == 200
+    # Note this is used by CSO, they need these fields at a minimum.
+    assert rv.json
+    invoice = rv.json.get('items')[0]
+    assert invoice
+    required_fields = ['id', 'corpTypeCode', 'createdOn', 'statusCode', 'total', 'serviceFees',
+                       'paid', 'refund', 'folioNumber', 'createdName', 'paymentMethod', 'details',
+                       'businessIdentifier', 'createdBy', 'filingId']
+
+    for field in required_fields:
+        assert field in invoice
 
 
 def test_account_purchase_history_with_basic_account(session, client, jwt, app):

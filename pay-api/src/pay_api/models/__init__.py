@@ -33,7 +33,7 @@ from .error_code import ErrorCode, ErrorCodeSchema
 from .fee_code import FeeCode, FeeCodeSchema  # noqa: I001
 from .fee_schedule import FeeSchedule, FeeScheduleSchema
 from .filing_type import FilingType, FilingTypeSchema
-from .invoice import Invoice, InvoiceSchema
+from .invoice import Invoice, InvoiceSchema, InvoiceSearchModel
 from .invoice_batch import InvoiceBatch
 from .invoice_batch_link import InvoiceBatchLink
 from .invoice_reference import InvoiceReference, InvoiceReferenceSchema

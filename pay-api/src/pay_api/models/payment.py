@@ -188,6 +188,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                           Invoice.total,
                           Invoice.service_fees,
                           Invoice.paid,
+                          Invoice.refund,
                           Invoice.folio_number,
                           Invoice.created_name,
                           Invoice.invoice_status_code,
@@ -196,12 +197,12 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                           Invoice.business_identifier,
                           Invoice.created_by,
                           Invoice.filing_id,
-                          Invoice.refund
+                          Invoice.bcol_account
                           ),
                 contains_eager(Invoice.payment_line_items)
                 .load_only(PaymentLineItem.description, PaymentLineItem.gst, PaymentLineItem.pst)
                 .contains_eager(PaymentLineItem.fee_schedule)
-                .load_only(FeeSchedule.filing_type_code, FeeSchedule.corp_type_code),
+                .load_only(FeeSchedule.filing_type_code),
                 contains_eager(Invoice.payment_account).load_only(PaymentAccount.auth_account_id,
                                                                   PaymentAccount.name,
                                                                   PaymentAccount.billable),
@@ -213,24 +214,14 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         if not return_all:
             count = cls.get_count(auth_account_id, search_filter)
             # Add pagination
-            sub_query = db.session.query(Invoice) \
-                .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
-            sub_query = cls.filter(sub_query, auth_account_id, search_filter, add_outer_joins=True).\
-                with_entities(Invoice.id).\
-                group_by(Invoice.id).\
-                order_by(Invoice.id.desc()). \
-                limit(limit).\
-                offset((page - 1) * limit).\
-                subquery()
-            result = query.order_by(Invoice.id.desc()).filter(Invoice.id.in_(sub_query)).all()
+            sub_query = cls.generate_subquery(auth_account_id, search_filter, limit, page)
+            result = query.order_by(Invoice.id.desc()).filter(Invoice.id.in_(sub_query.subquery())).all()
             # If maximum number of records is provided, return it as total
             if max_no_records > 0:
                 count = max_no_records if max_no_records < count else count
         elif max_no_records > 0:
             # If maximum number of records is provided, set the page with that number
-            sub_query = query.with_entities(Invoice.id).\
-                group_by(Invoice.id).\
-                limit(max_no_records)
+            sub_query = cls.generate_subquery(auth_account_id, search_filter, max_no_records, page=None)
             result, count = query.filter(Invoice.id.in_(sub_query.subquery())).all(), sub_query.count()
         else:
             count = cls.get_count(auth_account_id, search_filter)
@@ -363,6 +354,21 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                 text("value ->> 'label' ilike :details"))).params(details=f'%{line_item_or_details}%')
 
         return query
+
+    @classmethod
+    def generate_subquery(cls, auth_account_id, search_filter, limit, page):
+        """Generate subquery for invoices, used for pagination."""
+        sub_query = db.session.query(Invoice) \
+            .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
+        sub_query = cls.filter(sub_query, auth_account_id, search_filter, add_outer_joins=True).\
+            with_entities(Invoice.id).\
+            group_by(Invoice.id).\
+            order_by(Invoice.id.desc())
+        if limit:
+            sub_query = sub_query.limit(limit)
+        if limit and page:
+            sub_query = sub_query.offset((page - 1) * limit)
+        return sub_query
 
 
 class PaymentSchema(BaseSchema):  # pylint: disable=too-many-ancestors

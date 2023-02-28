@@ -224,6 +224,7 @@ def get_payment_request_with_folio_number(business_identifier: str = 'CP0001234'
         },
         'filingInfo': {
             'folioNumber': folio_number,
+            'filingIdentifier': '34522',
             'filingTypes': [
                 {
                     'filingTypeCode': 'OTADD',

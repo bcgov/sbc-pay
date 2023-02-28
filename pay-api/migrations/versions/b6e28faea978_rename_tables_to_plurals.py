@@ -74,7 +74,8 @@ def upgrade():
     conn = op.get_bind()
     inspector = Inspector.from_engine(conn)
     tables = inspector.get_table_names()
-    metadata = MetaData(conn, reflect=True)
+    metadata = MetaData(conn)
+    metadata.reflect()
 
     table: str
     for table in tables:
@@ -89,7 +90,8 @@ def downgrade():
     conn = op.get_bind()
     inspector = Inspector.from_engine(conn)
     tables = inspector.get_table_names()
-    metadata = MetaData(conn, reflect=True)
+    metadata = MetaData(conn)
+    metadata.reflect()
     table_mapping_reversed = {y: x for x, y in table_mapping.items()}
     table: str
     for table in tables:

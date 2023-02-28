@@ -83,7 +83,7 @@ def run(job_name):
     from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
     from tasks.unpaid_invoice_notify_task import UnpaidInvoiceNotifyTask
     from tasks.ejv_payment_task import EjvPaymentTask
-    from tasks.ap_routing_slip_refund_task import ApRoutingSlipRefundTask
+    from tasks.ap_task import ApTask
     from tasks.direct_pay_automated_refund_task import DirectPayAutomatedRefundTask
     from tasks.bcol_refund_confirmation_task import BcolRefundConfirmationTask
 
@@ -128,8 +128,8 @@ def run(job_name):
     elif job_name == 'EJV_PAYMENT':
         EjvPaymentTask.create_ejv_file()
         application.logger.info(f'<<<< Completed running EJV payment >>>>')
-    elif job_name == 'AP_REFUND':
-        ApRoutingSlipRefundTask.create_ap_file()
+    elif job_name == 'AP':
+        ApTask.create_ap_files()
         application.logger.info(f'<<<< Completed running AP Job for refund >>>>')
     elif job_name == 'DIRECT_PAY_REFUND':
         DirectPayAutomatedRefundTask.process_cc_refunds()

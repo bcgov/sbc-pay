@@ -52,6 +52,38 @@ class EjvPartnerDistributionTask(CgiEjv):
         cls._create_ejv_file_for_partner(batch_type='GI')  # Internal ministry
         cls._create_ejv_file_for_partner(batch_type='GA')  # External ministry
 
+    @staticmethod
+    def get_invoices_for_disbursement(partner):
+        """Return invoices for disbursement. Used by EJV and AP."""
+        disbursement_date = datetime.today() - timedelta(days=current_app.config.get('DISBURSEMENT_DELAY_IN_DAYS'))
+        invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
+            .filter(
+            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value])) \
+            .filter((InvoiceModel.disbursement_status_code.is_(None)) |
+                    (InvoiceModel.disbursement_status_code == DisbursementStatus.ERRORED.value)) \
+            .filter(~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date())) \
+            .filter(InvoiceModel.corp_type_code == partner.code) \
+            .all()
+        current_app.logger.info(invoices)
+        return invoices
+
+    @classmethod
+    def get_invoices_for_refund_reversal(cls, partner):
+        """Return invoices for refund reversal."""
+        # Refund_requested for credit card payments and REFUNDED for other payments.
+        refund_inv_statuses = (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
+
+        invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
+            .filter(InvoiceModel.invoice_status_code.in_(refund_inv_statuses)) \
+            .filter(
+            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value])) \
+            .filter(InvoiceModel.disbursement_status_code == DisbursementStatus.COMPLETED.value) \
+            .filter(InvoiceModel.corp_type_code == partner.code) \
+            .all()
+        current_app.logger.info(invoices)
+        return invoices
+
     @classmethod
     def _create_ejv_file_for_partner(cls, batch_type: str):  # pylint:disable=too-many-locals, too-many-statements
         """Create EJV file for the partner and upload."""
@@ -81,8 +113,8 @@ class EjvPartnerDistributionTask(CgiEjv):
         for partner in partners:
             # Find all invoices for the partner to disburse.
             # This includes invoices which are not PAID and invoices which are refunded.
-            payment_invoices = cls._get_invoices_for_disbursement(partner)
-            refund_reversals = cls._get_invoices_for_refund_reversal(partner)
+            payment_invoices = cls.get_invoices_for_disbursement(partner)
+            refund_reversals = cls.get_invoices_for_refund_reversal(partner)
             invoices = payment_invoices + refund_reversals
             # If no invoices continue.
             if not invoices:
@@ -198,38 +230,6 @@ class EjvPartnerDistributionTask(CgiEjv):
             .filter(PaymentLineItemModel.total > 0) \
             .filter(PaymentLineItemModel.fee_distribution_id == distribution_code_id)
         return line_items
-
-    @classmethod
-    def _get_invoices_for_disbursement(cls, partner):
-        """Return invoices for disbursement."""
-        disbursement_date = datetime.today() - timedelta(days=current_app.config.get('DISBURSEMENT_DELAY_IN_DAYS'))
-        invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
-            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
-            .filter(
-            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value])) \
-            .filter((InvoiceModel.disbursement_status_code.is_(None)) |
-                    (InvoiceModel.disbursement_status_code == DisbursementStatus.ERRORED.value)) \
-            .filter(~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date())) \
-            .filter(InvoiceModel.corp_type_code == partner.code) \
-            .all()
-        current_app.logger.info(invoices)
-        return invoices
-
-    @classmethod
-    def _get_invoices_for_refund_reversal(cls, partner):
-        """Return invoices for refund reversal."""
-        # Refund_requested for credit card payments and REFUNDED for other payments.
-        refund_inv_statuses = (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
-
-        invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
-            .filter(InvoiceModel.invoice_status_code.in_(refund_inv_statuses)) \
-            .filter(
-            InvoiceModel.payment_method_code.notin_([PaymentMethod.INTERNAL.value, PaymentMethod.DRAWDOWN.value])) \
-            .filter(InvoiceModel.disbursement_status_code == DisbursementStatus.COMPLETED.value) \
-            .filter(InvoiceModel.corp_type_code == partner.code) \
-            .all()
-        current_app.logger.info(invoices)
-        return invoices
 
     @classmethod
     def _get_partners_by_batch_type(cls, batch_type) -> List[CorpTypeModel]:
