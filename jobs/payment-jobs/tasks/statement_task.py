@@ -39,7 +39,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         Steps:
         1. Get all payment accounts and it's active statement settings.
         """
-        # We add a day here for override, because the target always looks at yesterday, 
+        # We add a day here for override, because the target always looks at yesterday,
         # the date_override, is supposed to generate statements for the specified date.
         current_time = datetime.now() if date_override is None \
               else datetime.strptime(date_override, '%Y-%m-%d') + timedelta(days=1)
