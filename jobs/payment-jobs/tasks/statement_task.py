@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service to manage PAYBC services."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from dateutil.parser import parse
 from flask import current_app
@@ -31,14 +31,23 @@ from pay_api.utils.util import (
 class StatementTask:  # pylint:disable=too-few-public-methods
     """Task to generate statements."""
 
+    skip_notify: bool = False
+
     @classmethod
-    def generate_statements(cls):
+    def generate_statements(cls, date_override=None):
         """Generate statements.
 
         Steps:
         1. Get all payment accounts and it's active statement settings.
         """
-        current_time = get_local_time(datetime.now())
+        # We add a day here for override because the target always looks at yesterday.
+        # The date_override is supposed to generate statements for the specified date.
+        current_time = datetime.now() if date_override is None \
+            else datetime.strptime(date_override, '%Y-%m-%d') + timedelta(days=1)
+        current_time = get_local_time(current_time)
+        cls.skip_notify = date_override is not None
+        if date_override:
+            current_app.logger.debug(f'Generating statements for: {date_override} using date override.')
         # If today is sunday - generate all weekly statements for pervious week
         # If today is month beginning - generate all monthly statements for previous month
         # For every day generate all daily statements for previous day
@@ -122,7 +131,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
                 from_date=statement_from,
                 to_date=statement_to,
                 notification_status_code=NotificationStatus.PENDING.value
-                if pay_account.statement_notification_enabled is True
+                if pay_account.statement_notification_enabled is True and cls.skip_notify is False
                 else NotificationStatus.SKIP.value
 
             )
@@ -143,5 +152,3 @@ class StatementTask:  # pylint:disable=too-few-public-methods
                     invoice_id=invoice.id
                 )
                 db.session.add(statement_invoice)
-
-            # TODO Send an email notification

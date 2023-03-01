@@ -59,6 +59,16 @@ def test_statements(session):
     assert invoices is not None
     assert invoices[0].id == invoice.id
 
+    # Test date override.
+    StatementTask.generate_statements(datetime.now().strftime('%Y-%m-%d'))
+
+    statements = Statement.find_all_statements_for_account(auth_account_id=bcol_account.auth_account_id, page=1,
+                                                           limit=100)
+    assert statements is not None
+    invoices = StatementInvoices.find_all_invoices_for_statement(statements[0][0].id)
+    assert invoices is not None
+    assert invoices[0].id == invoice.id
+
 
 def test_statements_for_empty_results(session):
     """Test dailiy statement generation works.
