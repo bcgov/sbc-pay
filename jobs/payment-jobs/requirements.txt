@@ -1,5 +1,5 @@
 -e git+https://github.com/bcgov/sbc-common-components.git@a643801c373063dfa44a2f7213d9122d3ad03851#egg=sbc_common_components&subdirectory=python
--e git+https://github.com/bcgov/sbc-pay.git@1c59def95ba7ef9b227df1d9d462ee65901f484c#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-pay.git@e952ae4da28387fce8f7e706d47be56ff6858135#egg=pay_api&subdirectory=pay-api
 Flask-Caching==2.0.2
 Flask-Migrate==2.7.0
 Flask-Moment==1.0.5
