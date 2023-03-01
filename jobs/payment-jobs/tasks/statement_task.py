@@ -44,7 +44,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
             else datetime.strptime(date_override, '%Y-%m-%d') + timedelta(days=1)
         cls.skip_notify = date_override is not None
         if date_override:
-            current_app.logger.debug(f'Generating statements for: {date_override - timedelta(days=1)} using date'
+            current_app.logger.debug(f'Generating statements for: {date_override} using date'
                                      ' override, this generates for the previous day/week/month.')
         # If today is sunday - generate all weekly statements for pervious week
         # If today is month beginning - generate all monthly statements for previous month
