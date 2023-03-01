@@ -40,9 +40,8 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         Steps:
         1. Get all payment accounts and it's active statement settings.
         """
-        target_time = datetime.now() if date_override is None \
+        target_time = get_local_time(datetime.now()) if date_override is None \
             else datetime.strptime(date_override, '%Y-%m-%d')
-        target_time = get_local_time(target_time)
         cls.skip_notify = date_override is not None
         if date_override:
             current_app.logger.debug(f'Generating statements for: {date_override} using date override,'
