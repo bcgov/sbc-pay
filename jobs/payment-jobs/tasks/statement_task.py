@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service to manage PAYBC services."""
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from dateutil.parser import parse
 from flask import current_app
@@ -40,37 +40,35 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         Steps:
         1. Get all payment accounts and it's active statement settings.
         """
-        # We add a day here for override because the target always looks at yesterday.
-        # The date_override is supposed to generate statements for the specified date.
-        current_time = datetime.now() if date_override is None \
-            else datetime.strptime(date_override, '%Y-%m-%d') + timedelta(days=1)
-        current_time = get_local_time(current_time)
+        target_time = datetime.now() if date_override is None \
+            else datetime.strptime(date_override, '%Y-%m-%d')
+        target_time = get_local_time(target_time)
         cls.skip_notify = date_override is not None
         if date_override:
-            current_app.logger.debug(f'Generating statements for: {date_override} using date override.')
+            current_app.logger.debug(f'Generating statements for: {date_override} using date override,'
+                                     ' this generates for the previous day/week/month.')
         # If today is sunday - generate all weekly statements for pervious week
         # If today is month beginning - generate all monthly statements for previous month
         # For every day generate all daily statements for previous day
-        generate_weekly = current_time.weekday() == 6  # Sunday is 6
-        generate_monthly = current_time.day == 1
+        generate_weekly = target_time.weekday() == 6  # Sunday is 6
+        generate_monthly = target_time.day == 1
 
-        cls._generate_daily_statements(current_time)
+        cls._generate_daily_statements(target_time)
         if generate_weekly:
-            cls._generate_weekly_statements(current_time)
+            cls._generate_weekly_statements(target_time)
         if generate_monthly:
-            cls._generate_monthly_statements(current_time)
+            cls._generate_monthly_statements(target_time)
 
         # Commit transaction
         db.session.commit()
 
     @classmethod
-    def _generate_daily_statements(cls, current_time: datetime):
+    def _generate_daily_statements(cls, target_time: datetime):
         """Generate daily statements for all accounts with settings to generate daily."""
-        previous_day = get_previous_day(current_time)
+        previous_day = get_previous_day(target_time)
         statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_day,
                                                                                         StatementFrequency.DAILY)
         current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate DAILY statements')
-
         search_filter = {
             'dateFilter': {
                 'startDate': previous_day.strftime('%Y-%m-%d'),
@@ -80,9 +78,10 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         cls._create_statement_records(previous_day, search_filter, statement_settings)
 
     @classmethod
-    def _generate_weekly_statements(cls, current_time: datetime):
+    def _generate_weekly_statements(cls, target_time: datetime):
         """Generate weekly statements for all accounts with settings to generate weekly."""
-        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(get_previous_day(current_time),
+        previous_day = get_previous_day(target_time)
+        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_day,
                                                                                         StatementFrequency.WEEKLY)
         current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate WEEKLY statements')
         search_filter = {
@@ -91,12 +90,13 @@ class StatementTask:  # pylint:disable=too-few-public-methods
             }
         }
 
-        cls._create_statement_records(current_time, search_filter, statement_settings)
+        cls._create_statement_records(previous_day, search_filter, statement_settings)
 
     @classmethod
-    def _generate_monthly_statements(cls, current_time: datetime):
+    def _generate_monthly_statements(cls, target_time: datetime):
         """Generate monthly statements for all accounts with settings to generate monthly."""
-        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(get_previous_day(current_time),
+        previous_day = get_previous_day(target_time)
+        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_day,
                                                                                         StatementFrequency.MONTHLY)
         current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate MONTHLY statements')
         last_month, last_month_year = get_previous_month_and_year()
@@ -107,46 +107,45 @@ class StatementTask:  # pylint:disable=too-few-public-methods
             }
         }
 
-        cls._create_statement_records(current_time, search_filter, statement_settings)
+        cls._create_statement_records(previous_day, search_filter, statement_settings)
 
     @classmethod
-    def _create_statement_records(cls, current_time, search_filter, statement_settings):
+    def _create_statement_records(cls, previous_day, search_filter, statement_settings):
         statement_from = None
         statement_to = None
         if search_filter.get('dateFilter', None):
             statement_from = parse(search_filter.get('dateFilter').get('startDate'))
             statement_to = parse(search_filter.get('dateFilter').get('endDate'))
+            current_app.logger.debug(f'Statements for day: {statement_from.date()}')
         elif search_filter.get('weekFilter', None):
             index = search_filter.get('weekFilter').get('index')
-            statement_from, statement_to = get_week_start_and_end_date(index)
+            statement_from, statement_to = get_week_start_and_end_date(target_date=previous_day, index=index)
+            current_app.logger.debug(f'Statements for week: {statement_from.date()} to {statement_to.date()}')
         elif search_filter.get('monthFilter', None):
             statement_from, statement_to = get_first_and_last_dates_of_month(
                 search_filter.get('monthFilter').get('month'), search_filter.get('monthFilter').get('year'))
-        for setting, pay_account in statement_settings:
-            statement = StatementModel(
+            current_app.logger.debug(f'Statements for month: {statement_from.date()} to {statement_to.date()}')
+        auth_account_ids = [pay_account.auth_account_id for _, pay_account in statement_settings]
+        search_filter['authAccountIds'] = auth_account_ids
+        invoices_and_auth_ids = PaymentModel.get_invoices_for_statements(search_filter)
+        statements = [StatementModel(
                 frequency=setting.frequency,
                 statement_settings_id=setting.id,
                 payment_account_id=pay_account.id,
-                created_on=current_time,
+                created_on=get_local_time(datetime.now()),
                 from_date=statement_from,
                 to_date=statement_to,
                 notification_status_code=NotificationStatus.PENDING.value
                 if pay_account.statement_notification_enabled is True and cls.skip_notify is False
                 else NotificationStatus.SKIP.value
+        ) for setting, pay_account in statement_settings]
+        # Return defaults which returns the id.
+        db.session.bulk_save_objects(statements, return_defaults=True)
+        db.session.flush()
 
-            )
-            # Add to DB session
-            statement = statement.flush()
-
-            purchases, total = PaymentModel.search_purchase_history(  # pylint:disable=unused-variable
-                auth_account_id=pay_account.auth_account_id,
-                return_all=True,
-                search_filter=search_filter,
-                page=None,
-                limit=None
-            )
-
-            for invoice in purchases:
+        for statement, auth_account_id in zip(statements, auth_account_ids):
+            invoices = [i for i in invoices_and_auth_ids if i.auth_account_id == auth_account_id]
+            for invoice in invoices:
                 statement_invoice = StatementInvoicesModel(
                     statement_id=statement.id,
                     invoice_id=invoice.id
