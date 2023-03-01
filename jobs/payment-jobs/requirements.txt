@@ -1,5 +1,5 @@
 -e git+https://github.com/bcgov/sbc-common-components.git@a643801c373063dfa44a2f7213d9122d3ad03851#egg=sbc_common_components&subdirectory=python
--e git+https://github.com/seeker25/sbc-pay.git@1f55ece9c9344e9ed29c0a80daf62c811b23f356#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-pay.git@e952ae4da28387fce8f7e706d47be56ff6858135#egg=pay_api&subdirectory=pay-api
 Flask-Caching==2.0.2
 Flask-Migrate==2.7.0
 Flask-Moment==1.0.5
@@ -23,6 +23,7 @@ attrs==22.2.0
 bcrypt==4.0.1
 blinker==1.5
 cachelib==0.9.0
+cattrs==22.2.0
 certifi==2022.12.7
 cffi==1.15.1
 charset-normalizer==3.0.1
@@ -33,6 +34,7 @@ cx-Oracle==8.3.0
 dataclass-wizard==0.22.2
 dpath==2.1.4
 ecdsa==0.18.0
+exceptiongroup==1.1.0
 expiringdict==1.2.2
 flask-jwt-oidc==0.3.0
 flask-marshmallow==0.11.0
@@ -48,7 +50,7 @@ launchdarkly-server-sdk==8.1.1
 marshmallow-sqlalchemy==0.25.0
 marshmallow==3.19.0
 minio==7.1.13
-more-itertools==9.0.0
+more-itertools==9.1.0
 opentracing==2.4.0
 packaging==23.0
 paramiko==3.0.0
@@ -67,11 +69,11 @@ pytz==2022.7.1
 requests==2.28.2
 rsa==4.9
 semver==2.13.0
-sentry-sdk==1.15.0
+sentry-sdk==1.16.0
 six==1.16.0
 threadloop==1.0.2
 thrift==0.16.0
 tornado==6.2
 typing_extensions==4.5.0
 urllib3==1.26.14
-zipp==3.14.0
+zipp==3.15.0
