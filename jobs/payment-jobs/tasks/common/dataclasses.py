@@ -45,7 +45,6 @@ class APLine:
     total: float
     invoice_number: str
     line_number: int
-    invoice_date: Optional[datetime] = None
     is_reversal: Optional[bool] = None
     distribution: Optional[str] = None
 
