@@ -264,10 +264,12 @@ class AccountPurchaseReport(Resource):
 
         # Check if user is authorized to perform this action
         check_auth(business_identifier=None, account_id=account_number, contains_role=EDIT_ROLE, is_premium=True)
-
-        report = Payment.create_payment_report(account_number, request_json, response_content_type, report_name)
-        response = Response(report, 201)
-        response.headers.set('Content-Disposition', 'attachment', filename=report_name)
-        response.headers.set('Content-Type', response_content_type)
-        response.headers.set('Access-Control-Expose-Headers', 'Content-Disposition')
-        return response
+        try:
+            report = Payment.create_payment_report(account_number, request_json, response_content_type, report_name)
+            response = Response(report, 201)
+            response.headers.set('Content-Disposition', 'attachment', filename=report_name)
+            response.headers.set('Content-Type', response_content_type)
+            response.headers.set('Access-Control-Expose-Headers', 'Content-Disposition')
+            return response
+        except BusinessException as exception:
+            return exception.response()
