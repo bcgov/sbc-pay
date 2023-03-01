@@ -49,6 +49,7 @@ def test_successful_paid_refund(session, monkeypatch):
 
     DirectPayAutomatedRefundTask().process_cc_refunds()
     assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
+    assert invoice.refund_date is not None
     assert payment.payment_status_code == PaymentStatus.REFUNDED.value
     assert refund.gl_posted is None
 
@@ -72,6 +73,7 @@ def test_successful_completed_refund(session, monkeypatch):
         DirectPayAutomatedRefundTask().process_cc_refunds()
         refund = RefundModel.find_by_invoice_id(invoice.id)
         assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
+        assert invoice.refund_date is not None
         assert payment.payment_status_code == PaymentStatus.REFUNDED.value
         assert refund.gl_posted is not None
 
@@ -152,5 +154,6 @@ def test_manual_refund(session, monkeypatch):
     with freeze_time(datetime.datetime.combine(datetime.datetime.utcnow().date(), datetime.time(6, 00))):
         DirectPayAutomatedRefundTask().process_cc_refunds()
         assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
+        assert invoice.refund_date is not None
         assert payment.payment_status_code == PaymentStatus.REFUNDED.value
         assert refund.gl_posted is not None

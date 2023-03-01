@@ -154,7 +154,7 @@ class DistributionTask:
             refund.gl_posted = datetime.now()
             refund.save()
             invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
-            invoice.refund_date = refund.gl_posted
+            invoice.refund_date = datetime.now()
         else:
             invoice.invoice_status_code = InvoiceStatus.PAID.value
             invoice.payment_date = datetime.now()

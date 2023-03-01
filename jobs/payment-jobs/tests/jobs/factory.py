@@ -88,7 +88,9 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
         bcol_account=payment_account.bcol_account,
         payment_method_code=payment_method_code or payment_account.payment_method,
         routing_slip=routing_slip,
-        disbursement_status_code=disbursement_status_code
+        disbursement_status_code=disbursement_status_code,
+        payment_date=None,
+        refund_date=None
     )
     if cfs_account_id != 0:
         invoice.cfs_account_id = cfs_account_id

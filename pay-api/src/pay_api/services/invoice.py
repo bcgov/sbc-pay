@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from decimal import Decimal
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from flask import current_app
 
@@ -49,8 +49,8 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         self._total = None
         self._paid = None
         self._refund = None
-        self._payment_date: datetime = None
-        self._refund_date: datetime = None
+        self._payment_date: Optional[datetime] = None
+        self._refund_date: Optional[datetime] = None
         self._payment_line_items = None
         self._corp_type_code = None
         self._receipts = None
