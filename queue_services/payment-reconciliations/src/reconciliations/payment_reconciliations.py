@@ -391,6 +391,7 @@ async def _process_paid_invoices(inv_references, row):
         logger.debug('PAID Invoice. Invoice Reference ID : %s, invoice ID : %s', inv_ref.id, inv_ref.invoice_id)
 
         inv.invoice_status_code = InvoiceStatus.PAID.value
+        inv.payment_date = datetime.now()
         inv.paid = inv.total
         # Create Receipt records
         receipt: ReceiptModel = ReceiptModel()

@@ -224,8 +224,7 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
             # Set the invoice status as REFUNDED if it's a JV reversal, else mark as PAID
             is_reversal = invoice.invoice_status_code in (
                 InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
-
-            invoice.invoice_status_code = InvoiceStatus.REFUNDED.value if is_reversal else InvoiceStatus.PAID.value
+            _set_invoice_jv_reversal(invoice, is_reversal)
 
             # Mark the invoice reference as COMPLETED, create a receipt
             if inv_ref:
@@ -240,6 +239,16 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
                     ReceiptModel(invoice_id=invoice_id, receipt_number=receipt_number, receipt_date=datetime.now(),
                                  receipt_amount=float(line[89:104])).flush()
     return has_errors
+
+
+def _set_invoice_jv_reversal(invoice: InvoiceModel, is_reversal: bool):
+    # Set the invoice status as REFUNDED if it's a JV reversal, else mark as PAID
+    if is_reversal:
+        invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
+        invoice.refund_date = datetime.now()
+    else:
+        invoice.invoice_status_code = InvoiceStatus.PAID.value
+        invoice.payment_date = datetime.now()
 
 
 def _fix_invoice_line(line):

@@ -182,6 +182,8 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                 load_only(Invoice.id,
                           Invoice.corp_type_code,
                           Invoice.created_on,
+                          Invoice.payment_date,
+                          Invoice.refund_date,
                           Invoice.invoice_status_code,
                           Invoice.total,
                           Invoice.service_fees,

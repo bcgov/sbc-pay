@@ -122,6 +122,7 @@ def test_create_pad_refund(session, client, jwt, app, stan_server):
 
     inv: InvoiceModel = InvoiceModel.find_by_id(inv_id)
     inv.invoice_status_code = InvoiceStatus.PAID.value
+    inv.payment_date = datetime.now()
     inv.save()
 
     token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
@@ -224,6 +225,7 @@ def test_create_refund_with_existing_routing_slip(session, client,
 
     inv: InvoiceModel = InvoiceModel.find_by_id(inv_id)
     inv.invoice_status_code = InvoiceStatus.PAID.value
+    inv.payment_date = datetime.now()
     inv.save()
 
     assert items[0].get('remainingAmount') == payload.get('payments')[0].get('paidAmount') - total

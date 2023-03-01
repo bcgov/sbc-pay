@@ -105,6 +105,7 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
     invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
     ejv_file.disbursement_status_code = DisbursementStatus.COMPLETED.value
     invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
+    invoice.refund_date = datetime.now()
     invoice.save()
 
     EjvPartnerDistributionTask.create_ejv_file()

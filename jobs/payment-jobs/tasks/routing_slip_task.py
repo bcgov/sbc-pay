@@ -390,6 +390,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 applied_amount += inv.total
                 inv_ref.status_code = InvoiceReferenceStatus.COMPLETED.value
                 inv.invoice_status_code = InvoiceStatus.PAID.value
+                inv.payment_date = datetime.now()
 
         return applied_amount
 

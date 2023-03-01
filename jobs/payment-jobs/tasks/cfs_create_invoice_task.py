@@ -128,6 +128,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 invoice_reference.status_code = InvoiceReferenceStatus.CANCELLED.value
 
             invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
+            invoice.refund_date = datetime.now()
             invoice.save()
 
     @classmethod
@@ -223,6 +224,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             # leave the status as PAID
 
             invoice.invoice_status_code = InvoiceStatus.PAID.value
+            invoice.payment_date = datetime.now()
             invoice.paid = invoice.total
             invoice.save()
 
