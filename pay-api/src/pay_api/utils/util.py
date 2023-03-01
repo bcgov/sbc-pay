@@ -75,14 +75,14 @@ def get_str_by_path(payload: Dict, path: str) -> str:
         return None
 
 
-def get_week_start_and_end_date(index: int = 0):
+def get_week_start_and_end_date(target_date: datetime = datetime.now(), index: int = 0):
     """Return first and last dates (sunday and saturday) for the index."""
     # index: 0 (current week), 1 (last week) and so on
-    current_date = datetime.now() - timedelta(days=index * 6)
-    rewind_days = current_date.weekday() + 1
+    date = target_date - timedelta(days=index * 6)
+    rewind_days = date.weekday() + 1
     # Fix for sunday.
     rewind_days = 0 if rewind_days == 7 else rewind_days
-    start = current_date - timedelta(days=rewind_days)
+    start = date - timedelta(days=rewind_days)
     end = start + timedelta(days=6)
     return start, end
 

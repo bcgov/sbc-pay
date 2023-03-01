@@ -229,8 +229,17 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         return result, count
 
     @classmethod
+    def get_invoices_for_statements(cls, search_filter: Dict):
+        """Slimmed down version for statements."""
+        query = db.session.query(Invoice) \
+            .join(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)\
+            .filter(PaymentAccount.auth_account_id.in_(search_filter.get('authAccountIds', [])))
+        query = cls.filter_date(query, search_filter).with_entities(Invoice.id, PaymentAccount.auth_account_id)
+        return query.all()
+
+    @classmethod
     def get_count(cls, auth_account_id: str, search_filter: Dict):
-        """Slimed downed version for count (less joins)."""
+        """Slimmed downed version for count (less joins)."""
         # We need to exclude the outer joins for performance here, they get re-added in filter.
         query = db.session.query(Invoice) \
             .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
@@ -311,7 +320,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             created_to = datetime.strptime(get_str_by_path(search_filter, 'dateFilter/endDate'), DT_SHORT_FORMAT)
         if get_str_by_path(search_filter, 'weekFilter/index'):
             created_from, created_to = get_week_start_and_end_date(
-                int(get_str_by_path(search_filter, 'weekFilter/index')))
+                index=int(get_str_by_path(search_filter, 'weekFilter/index')))
         if get_str_by_path(search_filter, 'monthFilter/month') and get_str_by_path(search_filter, 'monthFilter/year'):
             month = int(get_str_by_path(search_filter, 'monthFilter/month'))
             year = int(get_str_by_path(search_filter, 'monthFilter/year'))
