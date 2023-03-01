@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service to manage PAYBC services."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from dateutil.parser import parse
 from flask import current_app
@@ -41,11 +41,10 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         1. Get all payment accounts and it's active statement settings.
         """
         target_time = get_local_time(datetime.now()) if date_override is None \
-            else datetime.strptime(date_override, '%Y-%m-%d')
+            else datetime.strptime(date_override, '%Y-%m-%d') + timedelta(days=1)
         cls.skip_notify = date_override is not None
         if date_override:
-            current_app.logger.debug(f'Generating statements for: {date_override} using date override,'
-                                     ' this generates for the previous day/week/month.')
+            current_app.logger.debug(f'Generating statements for: {date_override} using date override.')
         # If today is sunday - generate all weekly statements for pervious week
         # If today is month beginning - generate all monthly statements for previous month
         # For every day generate all daily statements for previous day
@@ -98,7 +97,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_day,
                                                                                         StatementFrequency.MONTHLY)
         current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate MONTHLY statements')
-        last_month, last_month_year = get_previous_month_and_year()
+        last_month, last_month_year = get_previous_month_and_year(target_time)
         search_filter = {
             'monthFilter': {
                 'month': last_month,

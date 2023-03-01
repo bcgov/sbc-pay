@@ -48,13 +48,14 @@ class CgiAP(CgiEjv):
         invoice_type = 'ST'
         remit_code = f"{current_app.config.get('CGI_AP_REMITTANCE_CODE'):<4}"
         currency = 'CAD'
-        invoice_date = cls._get_invoice_date(invoice_date)
+        effective_date = cls._get_date(datetime.now())
+        invoice_date = cls._get_date(invoice_date)
         oracle_invoice_batch_name = cls._get_oracle_invoice_batch_name(invoice_number)
         disbursement_method = 'CHQ' if cls.ap_type == EjvFileType.REFUND else 'EFT'
         term = f'{cls.EMPTY:<50}' if cls.ap_type == EjvFileType.REFUND else f'Immediate{cls.EMPTY:<41}'
         ap_header = f'{cls._feeder_number()}APIH{cls.DELIMITER}{cls._supplier_number()}{cls._supplier_location()}' \
                     f'{invoice_number:<50}{cls._po_number()}{invoice_type}{invoice_date}GEN {disbursement_method} N' \
-                    f'{remit_code}{cls.format_amount(total)}{currency}{invoice_date}' \
+                    f'{remit_code}{cls.format_amount(total)}{currency}{effective_date}' \
                     f'{term}{cls.EMPTY:<60}{cls.EMPTY:<8}{cls.EMPTY:<8}' \
                     f'{oracle_invoice_batch_name:<30}{cls.EMPTY:<9}Y{cls.EMPTY:<110}{cls.DELIMITER}{os.linesep}'
         return ap_header
@@ -65,12 +66,12 @@ class CgiAP(CgiEjv):
         commit_line_number = f'{cls.EMPTY:<4}'
         # Pad Zeros to four digits. EG. 0001
         line_number = f'{ap_line.line_number:04}'
-        invoice_date = cls._get_invoice_date(ap_line.invoice_date)
+        effective_date = cls._get_date(datetime.now())
         line_code = cls._get_line_code(ap_line)
         ap_line = \
             f'{cls._feeder_number()}APIL{cls.DELIMITER}{cls._supplier_number()}{cls._supplier_location()}' \
             f'{ap_line.invoice_number:<50}{line_number}{commit_line_number}{cls.format_amount(ap_line.total)}' \
-            f'{line_code}{cls._distribution(ap_line.distribution)}{cls.EMPTY:<55}{invoice_date}{cls.EMPTY:<10}' \
+            f'{line_code}{cls._distribution(ap_line.distribution)}{cls.EMPTY:<55}{effective_date}{cls.EMPTY:<10}' \
             f'{cls.EMPTY:<15}{cls.EMPTY:<15}{cls.EMPTY:<15}{cls.EMPTY:<15}{cls.EMPTY:<20}{cls.EMPTY:<4}' \
             f'{cls.EMPTY:<30}{cls.EMPTY:<25}{cls.EMPTY:<30}{cls.EMPTY:<8}{cls.EMPTY:<1}{cls._dist_vendor()}' \
             f'{cls.EMPTY:<110}{cls.DELIMITER}{os.linesep}'
@@ -151,9 +152,9 @@ class CgiAP(CgiEjv):
         return f'{cls.EMPTY:<20}'
 
     @classmethod
-    def _get_invoice_date(cls, invoice_date):
-        """Return invoice date."""
-        return invoice_date.strftime('%Y%m%d')
+    def _get_date(cls, date):
+        """Return date."""
+        return date.strftime('%Y%m%d')
 
     @classmethod
     def _distribution(cls, distribution_code: str = None):

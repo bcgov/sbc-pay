@@ -94,9 +94,9 @@ def get_first_and_last_dates_of_month(month: int, year: int):
     return start_date, end_date
 
 
-def get_previous_month_and_year():
+def get_previous_month_and_year(target_date=datetime.now()):
     """Return last month and year."""
-    last_month = datetime.now().replace(day=1) - timedelta(days=1)
+    last_month = target_date.replace(day=1) - timedelta(days=1)
     return last_month.month, last_month.year
 
 
