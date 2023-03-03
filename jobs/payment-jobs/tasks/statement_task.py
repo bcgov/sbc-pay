@@ -31,7 +31,7 @@ from pay_api.utils.util import (
 class StatementTask:  # pylint:disable=too-few-public-methods
     """Task to generate statements."""
 
-    skip_notify: bool = False
+    has_date_override: bool = False
 
     @classmethod
     def generate_statements(cls, date_override=None):
@@ -42,7 +42,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         """
         target_time = get_local_time(datetime.now()) if date_override is None \
             else datetime.strptime(date_override, '%Y-%m-%d') + timedelta(days=1)
-        cls.skip_notify = date_override is not None
+        cls.has_date_override = date_override is not None
         if date_override:
             current_app.logger.debug(f'Generating statements for: {date_override} using date override.')
         # If today is sunday - generate all weekly statements for pervious week
@@ -126,6 +126,8 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         auth_account_ids = [pay_account.auth_account_id for _, pay_account in statement_settings]
         search_filter['authAccountIds'] = auth_account_ids
         invoices_and_auth_ids = PaymentModel.get_invoices_for_statements(search_filter)
+        if cls.has_date_override:
+            cls._clean_up_old_statements(statement_settings, statement_from, statement_to)
         statements = [StatementModel(
                 frequency=setting.frequency,
                 statement_settings_id=setting.id,
@@ -134,7 +136,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
                 from_date=statement_from,
                 to_date=statement_to,
                 notification_status_code=NotificationStatus.PENDING.value
-                if pay_account.statement_notification_enabled is True and cls.skip_notify is False
+                if pay_account.statement_notification_enabled is True and cls.has_date_override is False
                 else NotificationStatus.SKIP.value
         ) for setting, pay_account in statement_settings]
         # Return defaults which returns the id.
@@ -149,3 +151,21 @@ class StatementTask:  # pylint:disable=too-few-public-methods
                     invoice_id=invoice.id
                 )
                 db.session.add(statement_invoice)
+
+    @classmethod
+    def _cleanup_old_statements(cls, statement_settings, statement_from, statement_to):
+        """Clean up duplicate / old statements before generating."""
+        remove_statements = db.session.query(StatementModel)\
+            .filter_by(
+                frequency=statement_settings[0].StatementSettings.frequency,
+                from_date=statement_from, to_date=statement_to)\
+            .all()
+        current_app.logger.debug(f'Removing {len(remove_statements)} existing duplicate/stale statements.')
+        remove_statements_ids = [statement.id for statement in remove_statements]
+        remove_statement_invoices = db.session.query(StatementInvoicesModel)\
+            .filter(StatementInvoicesModel.statement_id.in_(remove_statements_ids))\
+            .all()
+        for statement_invoices in remove_statement_invoices:
+            db.session.delete(statement_invoices)
+        for statement in remove_statements:
+            db.session.delete(statement)
