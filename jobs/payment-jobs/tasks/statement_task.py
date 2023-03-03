@@ -155,10 +155,12 @@ class StatementTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _clean_up_old_statements(cls, statement_settings, statement_from, statement_to):
         """Clean up duplicate / old statements before generating."""
+        payment_account_ids = [pay_account.id for _, pay_account in statement_settings]
         remove_statements = db.session.query(StatementModel)\
             .filter_by(
                 frequency=statement_settings[0].StatementSettings.frequency,
                 from_date=statement_from, to_date=statement_to)\
+            .filter(StatementModel.payment_account_id.in_(payment_account_ids))\
             .all()
         current_app.logger.debug(f'Removing {len(remove_statements)} existing duplicate/stale statements.')
         remove_statements_ids = [statement.id for statement in remove_statements]
