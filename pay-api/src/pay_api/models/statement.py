@@ -18,6 +18,7 @@ from marshmallow import fields
 from sqlalchemy import ForeignKey, and_, case, literal_column
 
 from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
+from pay_api.utils.enums import StatementFrequency
 
 from .base_model import BaseModel
 from .db import db, ma
@@ -53,11 +54,11 @@ class Statement(BaseModel):
         frequency_case = case(
             [
                 (
-                    Statement.c.frequency == 'DAILY',
+                    Statement.c.frequency == StatementFrequency.DAILY.value,
                     literal_column("'1'")
                 ),
                 (
-                    Statement.c.frequency == 'WEEKLY',
+                    Statement.c.frequency == StatementFrequency.WEEKLY.value,
                     literal_column("'2'")
                 )
             ],
