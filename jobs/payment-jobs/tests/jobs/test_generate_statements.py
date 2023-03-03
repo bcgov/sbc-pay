@@ -49,6 +49,16 @@ def test_statements(session):
         from_date=previous_day,
         frequency='DAILY'
     )
+    factory_statement_settings(
+        pay_account_id=bcol_account.id,
+        from_date=get_previous_day(previous_day),
+        frequency='DAILY'
+    )
+    factory_statement_settings(
+        pay_account_id=bcol_account.id,
+        from_date=datetime.utcnow(),
+        frequency='DAILY'
+    )
     StatementTask.generate_statements()
 
     statements = Statement.find_all_statements_for_account(auth_account_id=bcol_account.auth_account_id, page=1,
