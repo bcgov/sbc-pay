@@ -15,7 +15,7 @@
 
 import pytz
 from marshmallow import fields
-from sqlalchemy import ForeignKey, and_
+from sqlalchemy import ForeignKey, and_, case, literal_column
 
 from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
 
@@ -50,7 +50,21 @@ class Statement(BaseModel):
             .filter(and_(PaymentAccount.id == cls.payment_account_id,
                          PaymentAccount.auth_account_id == auth_account_id))
 
-        query = query.order_by(Statement.to_date.desc())
+        frequency_case = case(
+            [
+                (
+                    Statement.c.frequency == 'DAILY',
+                    literal_column("'1'")
+                ),
+                (
+                    Statement.c.frequency == 'WEEKLY',
+                    literal_column("'2'")
+                )
+            ],
+            else_=literal_column("'3'")
+        )
+
+        query = query.order_by(Statement.to_date.desc(), frequency_case)
         pagination = query.paginate(per_page=limit, page=page)
         return pagination.items, pagination.total
 
