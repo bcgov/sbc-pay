@@ -15,9 +15,10 @@
 
 import pytz
 from marshmallow import fields
-from sqlalchemy import ForeignKey, and_
+from sqlalchemy import ForeignKey, and_, case, literal_column
 
 from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
+from pay_api.utils.enums import StatementFrequency
 
 from .base_model import BaseModel
 from .db import db, ma
@@ -50,7 +51,25 @@ class Statement(BaseModel):
             .filter(and_(PaymentAccount.id == cls.payment_account_id,
                          PaymentAccount.auth_account_id == auth_account_id))
 
-        query = query.order_by(Statement.id.desc())
+        frequency_case = case(
+            [
+                (
+                    Statement.frequency == StatementFrequency.MONTHLY.value,
+                    literal_column("'1'")
+                ),
+                (
+                    Statement.frequency == StatementFrequency.WEEKLY.value,
+                    literal_column("'2'")
+                ),
+                (
+                    Statement.frequency == StatementFrequency.DAILY.value,
+                    literal_column("'3'")
+                )
+            ],
+            else_=literal_column("'4'")
+        )
+
+        query = query.order_by(Statement.to_date.desc(), frequency_case)
         pagination = query.paginate(per_page=limit, page=page)
         return pagination.items, pagination.total
 
