@@ -63,7 +63,7 @@ class Statement(BaseModel):
                 ),
                 (
                     Statement.frequency == StatementFrequency.DAILY.value,
-                    literal_column("'1'")
+                    literal_column("'3'")
                 )
             ],
             else_=literal_column("'4'")
