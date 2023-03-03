@@ -153,7 +153,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
                 db.session.add(statement_invoice)
 
     @classmethod
-    def _cleanup_old_statements(cls, statement_settings, statement_from, statement_to):
+    def _clean_up_old_statements(cls, statement_settings, statement_from, statement_to):
         """Clean up duplicate / old statements before generating."""
         remove_statements = db.session.query(StatementModel)\
             .filter_by(
