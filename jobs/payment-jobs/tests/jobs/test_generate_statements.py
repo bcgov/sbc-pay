@@ -17,6 +17,7 @@
 Test-Suite to ensure that the UpdateStalePayment is working as expected.
 """
 from datetime import datetime, timedelta
+from freezegun import freeze_time
 
 from pay_api.models import Statement, StatementInvoices
 from pay_api.utils.util import get_previous_day
@@ -28,6 +29,7 @@ from .factory import (
     factory_statement_settings)
 
 
+@freeze_time('2023-01-02 12:00:00T08:00:00')
 def test_statements(session):
     """Test daily statement generation works.
 
@@ -36,7 +38,7 @@ def test_statements(session):
     2) Mark the account settings as DAILY settlement starting yesterday
     3) Generate statement and assert that the statement contains payment records
     """
-    previous_day = get_previous_day(datetime.now())
+    previous_day = get_previous_day(datetime.utcnow())
     bcol_account = factory_premium_payment_account()
     invoice = factory_invoice(payment_account=bcol_account, created_on=previous_day)
     inv_ref = factory_invoice_reference(invoice_id=invoice.id)
@@ -59,7 +61,7 @@ def test_statements(session):
 
     # Test date override.
     # Override computes for the target date, not the previous date like above.
-    StatementTask.generate_statements((datetime.now() - timedelta(days=1)).strftime('%Y-%m-%d'))
+    StatementTask.generate_statements((datetime.utcnow() - timedelta(days=1)).strftime('%Y-%m-%d'))
 
     statements = Statement.find_all_statements_for_account(auth_account_id=bcol_account.auth_account_id, page=1,
                                                            limit=100)
