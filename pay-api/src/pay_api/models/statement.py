@@ -54,15 +54,19 @@ class Statement(BaseModel):
         frequency_case = case(
             [
                 (
-                    Statement.frequency == StatementFrequency.DAILY.value,
+                    Statement.frequency == StatementFrequency.MONTHLY.value,
                     literal_column("'1'")
                 ),
                 (
                     Statement.frequency == StatementFrequency.WEEKLY.value,
                     literal_column("'2'")
+                ),
+                (
+                    Statement.frequency == StatementFrequency.DAILY.value,
+                    literal_column("'1'")
                 )
             ],
-            else_=literal_column("'3'")
+            else_=literal_column("'4'")
         )
 
         query = query.order_by(Statement.to_date.desc(), frequency_case)
