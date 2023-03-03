@@ -400,8 +400,9 @@ async def _process_paid_invoices(inv_references, row):
         receipt.invoice_id = inv.id
         receipt.receipt_number = receipt_number
         db.session.add(receipt)
-        # Publish to the queue if it's an Online Banking payment
-        if inv.payment_method_code in [PaymentMethod.ONLINE_BANKING.value, PaymentMethod.PAD.value]:
+        # Publish to the queue if it's an Online Banking payment / PAD / EJV.
+        if inv.payment_method_code in \
+                [PaymentMethod.ONLINE_BANKING.value, PaymentMethod.PAD.value, PaymentMethod.EJV.value]:
             logger.debug('Publishing payment event for OB. Invoice : %s', inv.id)
             await _publish_payment_event(inv)
 
