@@ -54,11 +54,11 @@ class Statement(BaseModel):
         frequency_case = case(
             [
                 (
-                    Statement.c.frequency == StatementFrequency.DAILY.value,
+                    Statement.frequency == StatementFrequency.DAILY.value,
                     literal_column("'1'")
                 ),
                 (
-                    Statement.c.frequency == StatementFrequency.WEEKLY.value,
+                    Statement.frequency == StatementFrequency.WEEKLY.value,
                     literal_column("'2'")
                 )
             ],
