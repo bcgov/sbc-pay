@@ -13,10 +13,10 @@
 # limitations under the License.
 """Service class to control all the operations related to Payment."""
 from decimal import Decimal
-from threading import Thread
 from typing import Any, Dict, Tuple
 
 from flask import copy_current_request_context, current_app
+import gevent
 
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
@@ -279,8 +279,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             PaymentService.delete_invoice(invoice_id)
 
         current_app.logger.debug('Starting thread to delete invoice.')
-        thread = Thread(target=run_delete)
-        thread.start()
+        gevent.spawn(run_delete)
         current_app.logger.debug('>accept_delete')
 
 
