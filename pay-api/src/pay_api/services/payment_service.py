@@ -279,7 +279,7 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             PaymentService.delete_invoice(invoice_id)
 
         current_app.logger.debug('Starting thread to delete invoice.')
-        # Note this runs synchronous when running under flask run (localdev), under gunicorn, it will be asynchronous.
+        # Note this runs synchronous when running under flask run (local dev), under gunicorn, it will be asynchronous.
         gevent.joinall([gevent.spawn(run_delete)])
         current_app.logger.debug('>accept_delete')
 
