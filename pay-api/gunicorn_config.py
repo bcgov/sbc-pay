@@ -19,7 +19,7 @@ import os
 
 # https://docs.gunicorn.org/en/stable/settings.html#workers
 workers = int(os.environ.get('GUNICORN_PROCESSES', '3'))  # gunicorn default - 1
-worker_class = os.environ.get('GUNICORN_WORKER_CLASS', 'sync')  # gunicorn default - sync
+worker_class = os.environ.get('GUNICORN_WORKER_CLASS', 'gevent')  # gunicorn default - sync
 worker_connections = int(os.environ.get('GUNICORN_WORKER_CONNECIONS', '1000'))  # gunicorn default - 1000
 threads = int(os.environ.get('GUNICORN_THREADS', '1'))  # gunicorn default - 1
 timeout = int(os.environ.get('GUNICORN_TIMEOUT', '100'))  # gunicorn default - 30
