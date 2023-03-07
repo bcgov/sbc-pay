@@ -169,5 +169,6 @@ class StatementTask:  # pylint:disable=too-few-public-methods
             .all()
         for statement_invoices in remove_statement_invoices:
             db.session.delete(statement_invoices)
+        db.session.flush()
         for statement in remove_statements:
             db.session.delete(statement)
