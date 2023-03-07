@@ -50,5 +50,16 @@ Are great starting points.
 
 9. How do I identify stale invoices that aren't being processed (stuck in APPROVED)?
 
+Via query:
+
+pay-db=# select count(*), payment_method_code from invoices where created_on < now() - interval '20' day and invoice_status_code = 'APPROVED' group by payment_method_code;
+ count | payment_method_code
+-------+---------------------
+  1015 | EJV
+     1 | INTERNAL
+   665 | PAD
+(3 rows)
+
+
 
 
