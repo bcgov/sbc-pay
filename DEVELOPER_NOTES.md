@@ -12,7 +12,7 @@ If you are updating a large table (i.e. invoices, invoice_references, etc.) add 
 
 If this doesn't work, it might be necessary to manually execute the migration.
 
-For example:
+For example - this kills the database connections, while it executes a manual migration:
 
 ```
 UPDATE pg_database SET datallowconn = 'false' WHERE datname = 'pay-db';
