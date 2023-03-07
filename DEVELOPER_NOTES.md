@@ -9,3 +9,7 @@ These are when the invoice has moved to PAID or CANCELLED/CREDITED/REFUNDED. Thi
 3. What should I watch out for while doing migrations?
 
 If you are updating a large table (i.e. invoices, invoice_references, etc.) add `op.execute("set statement_timeout=20000;")` to the top of your new migration scripts for upgrade/downgrade. This will prevent the deployment from causing errors in prod when it takes too long to complete (> 20 seconds).
+
+4. Why are we using two different serialization methods (Marshmallow and Cattrs)?
+
+We're slowly converting to Cattrs from Marshmallow, Cattrs is quite a bit faster and more modern. Marshmallow is fairly slow in performance, I've tried installing some helper packages to increase the performance but it's still fairly slow. Cattrs was used for the serialization of invoices (can be up to 60,000 invoices). 
