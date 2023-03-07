@@ -13,3 +13,7 @@ If you are updating a large table (i.e. invoices, invoice_references, etc.) add 
 4. Why are we using two different serialization methods (Marshmallow and Cattrs)?
 
 We're slowly converting to Cattrs from Marshmallow, Cattrs is quite a bit faster and more modern. Marshmallow is fairly slow in performance, I've tried installing some helper packages to increase the performance but it's still fairly slow. Cattrs was used for the serialization of invoices (can be up to 60,000 invoices). 
+
+5. Why is the service fee not included when sending a payload to BC Online?
+
+It's not included because it's set on the BC Online side. 
