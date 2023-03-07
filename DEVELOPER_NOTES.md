@@ -21,3 +21,7 @@ It's not included because it's set on the BC Online side.
 6. What is disbursement? 
 
 It's the terminology we use to pay our partners. For example there is EJV disbursement for Ministry partners, we have AP Disbursement (EFT) for Non-Ministry Partners. We debit our internal GL (excluding service fees) and credit an external GL or bank account. 
+
+7. How is the PAY-API spec updated?
+
+Right now it's a manual process.
