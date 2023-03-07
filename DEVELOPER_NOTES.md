@@ -60,6 +60,12 @@ pay-db=# select count(*), payment_method_code from invoices where created_on < n
    665 | PAD
 (3 rows)
 
+10. Why are there so many routing slip jobs? 
 
+FRCR doesn't allow us to do a PATCH or a PUT on the receipt object. We have to recreate the receipt from scratch for corrections.
+
+11. How do we tell if CAS/CFS are in sync with SBC-PAY? 
+
+Can spot check with invoices and hit the endpoints to compare the values. We're working on something in the future to get a dump of all of CAS/CFS so we can easily compare using that. 
 
 
