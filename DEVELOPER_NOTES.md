@@ -26,7 +26,7 @@ It's the terminology we use to pay our partners. For example there is EJV disbur
 
 Right now it's a manual process.
 
-8. Where is the payment documentation? 
+8. Where is the payment flow documentation? 
 
 There are bits of it everywhere right now, but Louise is building out all of the documentation - will be uploaded to github shortly.
 
