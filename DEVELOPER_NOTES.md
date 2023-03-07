@@ -16,7 +16,7 @@ We're slowly converting to Cattrs from Marshmallow, Cattrs is quite a bit faster
 
 5. Why is the service fee not included when sending a payload for BC Online?
 
-It's not included because it's set on the BC Online side. 
+It's not included because it's set on the BC Online side. It's also possible to check this in CPRD. 
 
 6. What is disbursement? 
 
