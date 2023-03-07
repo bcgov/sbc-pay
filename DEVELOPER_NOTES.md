@@ -68,4 +68,7 @@ FRCR doesn't allow us to do a PATCH or a PUT on the receipt object. We have to r
 
 Can spot check with invoices and hit the endpoints to compare the values. We're working on something in the future to get a dump of all of CAS/CFS so we can easily compare using that. 
 
+12. Why is there CANCELLED/CREDITED/REFUNDED? 
+
+Because we have no way of executing PAD refunds, we can only credit a CFS account or cancel the transaction before it happens. 
 
