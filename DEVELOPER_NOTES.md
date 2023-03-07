@@ -8,7 +8,19 @@ These are when the invoice has moved to PAID or CANCELLED/CREDITED/REFUNDED. Thi
 
 3. What should I watch out for while doing migrations?
 
-If you are updating a large table (i.e. invoices, invoice_references, etc.) add `op.execute("set statement_timeout=20000;")` to the top of your new migration scripts for upgrade/downgrade. This will prevent the deployment from causing errors in prod when it takes too long to complete (> 20 seconds).
+If you are updating a large table (i.e. invoices, invoice_references, etc.) add `op.execute("set statement_timeout=20000;")` to the top of your new migration scripts for upgrade/downgrade. This will prevent the deployment from causing errors in prod when it takes too long to complete (> 20 seconds). If this fails, it's possible to retry.
+
+If this doesn't work, it might be necessary to manually execute the migration.
+
+For example:
+
+```
+UPDATE pg_database SET datallowconn = 'false' WHERE datname = 'pay-db';
+SELECT pg_terminate_backend(pid)FROM pg_stat_activity WHERE datname = 'pay-db' and application_name <> 'psql'
+ALTER TABLE invoices ADD COLUMN disbursement_date TIMESTAMP;
+update alembic_version set version_num = '286acad5d366';
+UPDATE pg_database SET datallowconn = 'true' WHERE datname = 'pay-db'
+```
 
 4. Why are we using two different serialization methods (Marshmallow and Cattrs)?
 
@@ -35,3 +47,8 @@ https://github.com/bcgov-registries/documents/blob/main/pay/EJV.md
 https://github.com/bcgov-registries/documents/blob/main/pay/PAD.md
 
 Are great starting points.
+
+9. How do I identify stale invoices that aren't being processed (stuck in APPROVED)?
+
+
+
