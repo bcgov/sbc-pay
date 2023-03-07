@@ -29,3 +29,9 @@ Right now it's a manual process.
 8. Where is the payment documentation? 
 
 There are bits of it everywhere right now, but Louise is building out all of the documentation - will be uploaded to github shortly.
+
+https://github.com/bcgov/sbc-pay/blob/main/docs/docs/architecture/FAS_Intgeration.md
+https://github.com/bcgov-registries/documents/blob/main/pay/EJV.md
+https://github.com/bcgov-registries/documents/blob/main/pay/PAD.md
+
+Are great starting points.
