@@ -23,6 +23,25 @@ class EjvInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
     """This class manages linkages between EJV and invoices."""
 
     __tablename__ = 'ejv_invoice_links'
+    # this mapper is used so that new and old versions of the service can be run simultaneously,
+    # making rolling upgrades easier
+    # This is used by SQLAlchemy to explicitly define which fields we're interested
+    # so it doesn't freak out and say it can't map the structure if other fields are present.
+    # This could occur from a failed deploy or during an upgrade.
+    # The other option is to tell SQLAlchemy to ignore differences, but that is ambiguous
+    # and can interfere with Alembic upgrades.
+    #
+    # NOTE: please keep mapper names in alpha-order, easier to track that way
+    #       Exception, id is always first, _fields first
+    __mapper_args__ = {
+        'include_properties': [
+            'id',
+            'disbursement_status_code',
+            'ejv_header_id',
+            'invoice_id',
+            'message'
+        ]
+    }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)

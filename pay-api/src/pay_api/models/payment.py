@@ -50,6 +50,35 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Payment ."""
 
     __tablename__ = 'payments'
+    # this mapper is used so that new and old versions of the service can be run simultaneously,
+    # making rolling upgrades easier
+    # This is used by SQLAlchemy to explicitly define which fields we're interested
+    # so it doesn't freak out and say it can't map the structure if other fields are present.
+    # This could occur from a failed deploy or during an upgrade.
+    # The other option is to tell SQLAlchemy to ignore differences, but that is ambiguous
+    # and can interfere with Alembic upgrades.
+    #
+    # NOTE: please keep mapper names in alpha-order, easier to track that way
+    #       Exception, id is always first, _fields first
+    __mapper_args__ = {
+        'include_properties': [
+            'id',
+            'cheque_receipt_number',
+            'cons_inv_number',
+            'created_by',
+            'invoice_amount',
+            'invoice_number',
+            'is_routing_slip',
+            'paid_amount',
+            'paid_usd_amount',
+            'payment_account_id',
+            'payment_date',
+            'payment_system_code',
+            'payment_method_code',
+            'payment_status_code',
+            'receipt_number'
+        ]
+    }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     payment_system_code = db.Column(db.String(10), ForeignKey('payment_systems.code'), nullable=False)

@@ -40,6 +40,47 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Invoice."""
 
     __tablename__ = 'invoices'
+    # this mapper is used so that new and old versions of the service can be run simultaneously,
+    # making rolling upgrades easier
+    # This is used by SQLAlchemy to explicitly define which fields we're interested
+    # so it doesn't freak out and say it can't map the structure if other fields are present.
+    # This could occur from a failed deploy or during an upgrade.
+    # The other option is to tell SQLAlchemy to ignore differences, but that is ambiguous
+    # and can interfere with Alembic upgrades.
+    #
+    # NOTE: please keep mapper names in alpha-order, easier to track that way
+    #       Exception, id is always first, _fields first
+    __mapper_args__ = {
+        'include_properties': [
+            'id',
+            'bcol_account',
+            'business_identifier',
+            'corp_type_code',
+            'created_by',
+            'created_name',
+            'created_on',
+            'cfs_account_id',
+            'dat_number',
+            'details',
+            'disbursement_status_code',
+            'disbursement_date',
+            'filing_id',
+            'folio_number',
+            'invoice_status_code',
+            'payment_account_id',
+            'payment_date',
+            'payment_method_code',
+            'total',
+            'paid',
+            'refund',
+            'refund_date',
+            'routing_slip',
+            'service_fees',
+            'updated_by',
+            'updated_name',
+            'updated_on'
+        ]
+    }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
 

@@ -25,6 +25,23 @@ class ErrorCode(db.Model, CodeTable):
     """
 
     __tablename__ = 'error_codes'
+    # this mapper is used so that new and old versions of the service can be run simultaneously,
+    # making rolling upgrades easier
+    # This is used by SQLAlchemy to explicitly define which fields we're interested
+    # so it doesn't freak out and say it can't map the structure if other fields are present.
+    # This could occur from a failed deploy or during an upgrade.
+    # The other option is to tell SQLAlchemy to ignore differences, but that is ambiguous
+    # and can interfere with Alembic upgrades.
+    #
+    # NOTE: please keep mapper names in alpha-order, easier to track that way
+    #       Exception, id is always first, _fields first
+    __mapper_args__ = {
+        'include_properties': [
+            'code',
+            'detail',
+            'title'
+        ]
+    }
 
     code = db.Column(db.String(50), primary_key=True)
     title = db.Column(db.String(100))
