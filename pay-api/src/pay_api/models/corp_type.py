@@ -26,6 +26,27 @@ class CorpType(db.Model, CodeTable):
     """
 
     __tablename__ = 'corp_types'
+    # this mapper is used so that new and old versions of the service can be run simultaneously,
+    # making rolling upgrades easier
+    # This is used by SQLAlchemy to explicitly define which fields we're interested
+    # so it doesn't freak out and say it can't map the structure if other fields are present.
+    # This could occur from a failed deploy or during an upgrade.
+    # The other option is to tell SQLAlchemy to ignore differences, but that is ambiguous
+    # and can interfere with Alembic upgrades.
+    #
+    # NOTE: please keep mapper names in alpha-order, easier to track that way
+    #       Exception, id is always first, _fields first
+    __mapper_args__ = {
+        'include_properties': [
+            'batch_type',
+            'bcol_fee_code',
+            'bcol_staff_fee_code',
+            'code',
+            'description',
+            'is_online_banking_allowed',
+            'product'
+        ]
+    }
 
     code = db.Column('code', db.String(10), primary_key=True)
     description = db.Column('description', db.String(200), nullable=False)
