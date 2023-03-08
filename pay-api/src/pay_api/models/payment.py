@@ -70,8 +70,8 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             'invoice_number',
             'is_routing_slip',
             'paid_amount',
-            'paid_usd_amount'
-            'payment_account_id'
+            'paid_usd_amount',
+            'payment_account_id',
             'payment_date',
             'payment_system_code',
             'payment_method_code',

@@ -47,7 +47,7 @@ class Refund(BaseModel):  # pylint:disable=too-many-instance-attributes
             'decision_made_by',
             'details',
             'gl_posted',
-            'gl_error'
+            'gl_error',
             'invoice_id',
             'reason',
             'requested_by',

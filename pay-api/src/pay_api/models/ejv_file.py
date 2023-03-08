@@ -42,7 +42,7 @@ class EjvFile(BaseModel):  # pylint: disable=too-many-instance-attributes
             'ack_file_ref',
             'created_on',
             'completed_on',
-            'disbursement_status_code'
+            'disbursement_status_code',
             'feedback_file_ref',
             'file_type',
             'file_ref',

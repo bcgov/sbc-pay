@@ -42,7 +42,7 @@ class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attribute
         'include_properties': [
             'id',
             'description',
-            'fee_distribution_id'
+            'fee_distribution_id',
             'fee_schedule_id',
             'filing_fees',
             'future_effective_fees',

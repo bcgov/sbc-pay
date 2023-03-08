@@ -55,13 +55,13 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
             'id',
             'bcol_account',
             'business_identifier',
-            'corp_type_code'
+            'corp_type_code',
             'created_by',
             'created_name',
             'created_on',
-            'cfs_account_id'
+            'cfs_account_id',
             'dat_number',
-            'details'
+            'details',
             'disbursement_status_code',
             'disbursement_date',
             'filing_id',

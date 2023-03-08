@@ -45,8 +45,8 @@ class Comment(BaseModel):
         'include_properties': [
             'id',
             'comment',
-            'routing_slip_number'
-            'submitter_name'
+            'routing_slip_number',
+            'submitter_name',
             'timestamp'
         ]
     }

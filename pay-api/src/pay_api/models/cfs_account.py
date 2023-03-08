@@ -45,8 +45,8 @@ class CfsAccount(VersionedModel):  # pylint:disable=too-many-instance-attributes
     __mapper_args__ = {
         'include_properties': [
             'id',
-            'account_id'
-            'bank_account_number'
+            'account_id',
+            'bank_account_number',
             'bank_number',
             'bank_branch_number',
             'cfs_account',
