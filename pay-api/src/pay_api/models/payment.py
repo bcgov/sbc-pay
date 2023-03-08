@@ -75,7 +75,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             'payment_date',
             'payment_system_code',
             'payment_method_code',
-            'payment_satus_code',
+            'payment_status_code',
             'receipt_number'
         ]
     }
