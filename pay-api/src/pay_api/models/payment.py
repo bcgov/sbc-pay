@@ -65,7 +65,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             'id',
             'cheque_receipt_number',
             'cons_inv_number',
-            'created_by'
+            'created_by',
             'invoice_amount',
             'invoice_number',
             'is_routing_slip',
