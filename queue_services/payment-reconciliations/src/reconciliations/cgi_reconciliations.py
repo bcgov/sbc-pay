@@ -174,6 +174,7 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
     # Work around for CAS, they said fix the feedback files.
     line = _fix_invoice_line(line)
     invoice_id = int(line[205:315])
+    logger.info('Invoice id - %s', invoice_id)
     invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
     invoice_link: EjvInvoiceLinkModel = db.session.query(EjvInvoiceLinkModel).filter(
         EjvInvoiceLinkModel.ejv_header_id == ejv_header_model_id).filter(
