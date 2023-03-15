@@ -22,7 +22,11 @@ update alembic_version set version_num = '286acad5d366';
 UPDATE pg_database SET datallowconn = 'true' WHERE datname = 'pay-db'
 ```
 
-Migrations should be done one release at a time. Multiple micro-releases mitigate risk. 
+EX. Migrations should be done in two steps:
+Migrations are structure only
+Outside of that we migrate / modify the data
+
+This mitgates the risk of a bad migration.
 
 4. Why are we using two different serialization methods (Marshmallow and Cattrs)?
 
@@ -79,18 +83,28 @@ Because we have no way of executing PAD refunds, we can only credit a CFS accoun
 PAD:
 We have a few notebooks available - ideally check to see the if the CSV file has processed in the payment reconciliation queue. 
 
-Modify this notebook to look at invoices all, it will query CFS - if the amount_due is > 0, we know it's uncharged or unpaid. 
+Modify this notebook to look at all invoices, it will query CFS - if the amount_due is > 0, we know it's uncharged or unpaid. 
 
-If amount_due from CFS = 0, it's possible some of the CSV files (cas_settlements table) weren't processed. 
+If amount_due from CFS = 0, it's possible some of the CSV files (take a look at the cas_settlements table) weren't processed. 
 
 https://github.com/bcgov-registries/ops-support/blob/main/support/ops/relationships/datafetch/pad-pending-invoice-query-cas.ipynb
 
 EJV:
-We're currently in the process of building a notebook that can assist with this. 
+We're currently in the process of building a notebook that can assist with this. Basically make sure all of the FEEDBACK files were processed correctly. 
+If they weren't or are missing, contact CAS. 
 
 14. How do I execute a partial credit for PAD (we don't do PAD refunds)?
 
 Take a look at this notebook:
 https://github.com/bcgov-registries/ops-support/blob/main/support/ops/relationships/datafix/partial-refund-pad.ipynb
+
+15. How can we reconcile payments with CAS/CFS and BCOL? 
+
+It's possible to use CPRD to look at payments in BCOL and match them up to payments in SBC-PAY. 
+Example query:
+
+`SELECT * FROM BCONLINE_BILLING_RECORD where key = 'REG01788290';`
+
+For CAS/CFS - we're in the process of building a data warehousing solution so we can query cross database hopefully to line up some results. 
 
 
