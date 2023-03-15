@@ -175,6 +175,9 @@ def _get_failed_payment_by_inv_number(inv_number: str) -> PaymentModel:
 
 def _get_payment_by_inv_number_and_status(inv_number: str, status: str) -> PaymentModel:
     """Get payment by invoice number and status."""
+    # It's possible to look up null inv_number and return more than one.
+    if inv_number is None:
+        return None
     payment: PaymentModel = db.session.query(PaymentModel) \
         .filter(PaymentModel.invoice_number == inv_number,
                 PaymentModel.payment_status_code == status) \
