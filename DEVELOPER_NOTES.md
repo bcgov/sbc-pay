@@ -22,6 +22,8 @@ update alembic_version set version_num = '286acad5d366';
 UPDATE pg_database SET datallowconn = 'true' WHERE datname = 'pay-db'
 ```
 
+Migrations should be done one release at a time. Multiple micro-releases mitigate risk. 
+
 4. Why are we using two different serialization methods (Marshmallow and Cattrs)?
 
 We're slowly converting to Cattrs from Marshmallow, Cattrs is quite a bit faster and more modern. Marshmallow is fairly slow in performance, I've tried installing some helper packages to increase the performance but it's still fairly slow. Cattrs was used for the serialization of invoices (can be up to 60,000 invoices). 
@@ -71,4 +73,24 @@ Can spot check with invoices and hit the endpoints to compare the values. We're 
 12. Why is there CANCELLED/CREDITED/REFUNDED? 
 
 Because we have no way of executing PAD refunds, we can only credit a CFS account or cancel the transaction before it happens. 
+
+13. How do I get PAD/EJV invoices unstuck out of APPROVED or into their finalized state?
+
+PAD:
+We have a few notebooks available - ideally check to see the if the CSV file has processed in the payment reconciliation queue. 
+
+Modify this notebook to look at invoices all, it will query CFS - if the amount_due is > 0, we know it's uncharged or unpaid. 
+
+If amount_due from CFS = 0, it's possible some of the CSV files (cas_settlements table) weren't processed. 
+
+https://github.com/bcgov-registries/ops-support/blob/main/support/ops/relationships/datafetch/pad-pending-invoice-query-cas.ipynb
+
+EJV:
+We're currently in the process of building a notebook that can assist with this. 
+
+14. How do I execute a partial credit for PAD (we don't do PAD refunds)?
+
+Take a look at this notebook:
+https://github.com/bcgov-registries/ops-support/blob/main/support/ops/relationships/datafix/partial-refund-pad.ipynb
+
 
