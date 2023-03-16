@@ -82,9 +82,11 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_day,
                                                                                         StatementFrequency.WEEKLY)
         current_app.logger.debug(f'Found {len(statement_settings)} accounts to generate WEEKLY statements')
+        statement_from, statement_to = get_week_start_and_end_date(previous_day, index=1)
         search_filter = {
-            'weekFilter': {
-                'index': 1  # previous week
+            'dateFilter': {
+                'startDate': statement_from.strftime('%Y-%m-%d'),
+                'endDate': statement_to.strftime('%Y-%m-%d')
             }
         }
 
