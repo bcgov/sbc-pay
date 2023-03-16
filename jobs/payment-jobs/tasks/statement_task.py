@@ -116,11 +116,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         if search_filter.get('dateFilter', None):
             statement_from = parse(search_filter.get('dateFilter').get('startDate'))
             statement_to = parse(search_filter.get('dateFilter').get('endDate'))
-            current_app.logger.debug(f'Statements for day: {statement_from.date()}')
-        elif search_filter.get('weekFilter', None):
-            statement_from = parse(search_filter.get('dateFilter').get('startDate'))
-            statement_to = parse(search_filter.get('dateFilter').get('endDate'))
-            current_app.logger.debug(f'Statements for week: {statement_from.date()} to {statement_to.date()}')
+            current_app.logger.debug(f'Statements for range: {statement_from.date()} to {statement_to.date()}')
         elif search_filter.get('monthFilter', None):
             statement_from, statement_to = get_first_and_last_dates_of_month(
                 search_filter.get('monthFilter').get('month'), search_filter.get('monthFilter').get('year'))
