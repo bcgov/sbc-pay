@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Credit data."""
+from datetime import datetime
 from sqlalchemy import Boolean, ForeignKey
 
 from .base_model import BaseModel
@@ -38,6 +39,8 @@ class Credit(BaseModel):  # pylint:disable=too-many-instance-attributes
             'account_id',
             'amount',
             'cfs_identifier',
+            'created_on',
+            'details',
             'is_credit_memo',
             'remaining_amount'
         ]
@@ -49,6 +52,8 @@ class Credit(BaseModel):  # pylint:disable=too-many-instance-attributes
     is_credit_memo = db.Column(Boolean(), default=False)
     amount = db.Column(db.Float, nullable=False)
     remaining_amount = db.Column(db.Float, nullable=False)
+    details = db.Column(db.String(200), nullable=True)
+    created_on = db.Column('created_on', db.DateTime, nullable=True, default=datetime.now)
 
     account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
 

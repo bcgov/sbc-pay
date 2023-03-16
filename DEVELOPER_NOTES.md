@@ -107,4 +107,33 @@ Example query:
 
 For CAS/CFS - we're in the process of building a data warehousing solution so we can query cross database hopefully to line up some results. 
 
+16. How do I generate missing statements?
+
+This query should identify gaps after 2022-01-01:
+```
+select * from
+(
+select ('python3 invoke_jobs.py GENERATE_STATEMENTS ' || i::date) as command ,i::date, 'DAILY', (select count(*) from statements s where s.to_date = i::date and frequency = 'DAILY') as statement_count from generate_series('2022-01-01',now() - interval '2 day', '1 day'::interval) i
+) t1 where statement_count = 0;
+```
+
+EX It will spit out a command:
+`python3 invoke_jobs.py GENERATE_STATEMENTS 2022-06-25`
+
+Connect to the job pod, and run this line. 
+
+```
+$ python3 invoke_jobs.py GENERATE_STATEMENTS 2022-06-25
+----------------------------Scheduler Ran With Argument-- GENERATE_STATEMENTS
+2023-03-16 18:37:48,690 - invoke_jobs - INFO in invoke_jobs:invoke_jobs.py:50 - create_app: <<<< Starting Payment Jobs >>>>
+2023-03-16 18:37:49,035 - invoke_jobs - DEBUG in statement_task:statement_task.py:47 - generate_statements: Generating statements for: 2022-06-25 using date override.
+2023-03-16 18:37:49,094 - invoke_jobs - DEBUG in statement_task:statement_task.py:69 - _generate_daily_statements: Found 25 accounts to generate DAILY statements
+2023-03-16 18:37:49,094 - invoke_jobs - DEBUG in statement_task:statement_task.py:117 - _create_statement_records: Statements for day: 2022-06-25
+2023-03-16 18:37:49,909 - invoke_jobs - DEBUG in statement_task:statement_task.py:165 - _clean_up_old_statements: Removing 0 existing duplicate/stale statements.
+2023-03-16 18:37:52,090 - invoke_jobs - DEBUG in statement_task:statement_task.py:84 - _generate_weekly_statements: Found 12583 accounts to generate WEEKLY statements
+2023-03-16 18:37:52,090 - invoke_jobs - DEBUG in statement_task:statement_task.py:121 - _create_statement_records: Statements for week: 2022-06-19 to 2022-06-25
+2023-03-16 18:37:58,453 - invoke_jobs - DEBUG in statement_task:statement_task.py:165 - _clean_up_old_statements: Removing 1 existing duplicate/stale statements.
+2023-03-16 18:41:54,102 - invoke_jobs - INFO in invoke_jobs:invoke_jobs.py:99 - run: <<<< Completed Generating Statements >>>>
+```
+
 
