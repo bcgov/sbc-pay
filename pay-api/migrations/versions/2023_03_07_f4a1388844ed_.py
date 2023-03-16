@@ -16,7 +16,7 @@ branch_labels = None
 depends_on = None
 
 def upgrade():
-    op.execute('insert into fee_codes (code, amount) values (\'TRF04\', 0.00) ON CONFLICT DO NOTHING/UPDATE')
+    op.execute("insert into fee_codes (code, amount) values ('TRF04', 0.00) ON CONFLICT DO NOTHING;")
     op.add_column('credits', sa.Column('details', sa.String(length=200), nullable=True))
 
 def downgrade():
