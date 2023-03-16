@@ -18,7 +18,9 @@ depends_on = None
 def upgrade():
     op.execute("insert into fee_codes (code, amount) values ('TRF04', 0.00) ON CONFLICT DO NOTHING;")
     op.add_column('credits', sa.Column('details', sa.String(length=200), nullable=True))
+    op.add_column('credits', sa.Column('created_on', sa.DateTime(), nullable=True))
 
 def downgrade():
     op.execute("delete from fee_codes where code = 'TRF04';")
     op.drop_column('credits', 'details')
+    op.drop_column('credits', 'created_on')
