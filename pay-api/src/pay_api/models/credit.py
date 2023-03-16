@@ -38,6 +38,7 @@ class Credit(BaseModel):  # pylint:disable=too-many-instance-attributes
             'account_id',
             'amount',
             'cfs_identifier',
+            'details',
             'is_credit_memo',
             'remaining_amount'
         ]
@@ -49,6 +50,7 @@ class Credit(BaseModel):  # pylint:disable=too-many-instance-attributes
     is_credit_memo = db.Column(Boolean(), default=False)
     amount = db.Column(db.Float, nullable=False)
     remaining_amount = db.Column(db.Float, nullable=False)
+    details = db.Column(db.String(200), nullable=True)
 
     account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
 
