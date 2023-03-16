@@ -122,6 +122,7 @@ EX It will spit out a command:
 
 Connect to the job pod, and run this line. 
 
+```
 $ python3 invoke_jobs.py GENERATE_STATEMENTS 2022-06-25
 ----------------------------Scheduler Ran With Argument-- GENERATE_STATEMENTS
 2023-03-16 18:37:48,690 - invoke_jobs - INFO in invoke_jobs:invoke_jobs.py:50 - create_app: <<<< Starting Payment Jobs >>>>
@@ -133,6 +134,6 @@ $ python3 invoke_jobs.py GENERATE_STATEMENTS 2022-06-25
 2023-03-16 18:37:52,090 - invoke_jobs - DEBUG in statement_task:statement_task.py:121 - _create_statement_records: Statements for week: 2022-06-19 to 2022-06-25
 2023-03-16 18:37:58,453 - invoke_jobs - DEBUG in statement_task:statement_task.py:165 - _clean_up_old_statements: Removing 1 existing duplicate/stale statements.
 2023-03-16 18:41:54,102 - invoke_jobs - INFO in invoke_jobs:invoke_jobs.py:99 - run: <<<< Completed Generating Statements >>>>
-
+```
 
 
