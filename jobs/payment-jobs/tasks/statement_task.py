@@ -144,14 +144,14 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         db.session.bulk_save_objects(statements, return_defaults=True)
         db.session.flush()
 
+        statement_invoices = []
         for statement, auth_account_id in zip(statements, auth_account_ids):
             invoices = [i for i in invoices_and_auth_ids if i.auth_account_id == auth_account_id]
-            for invoice in invoices:
-                statement_invoice = StatementInvoicesModel(
-                    statement_id=statement.id,
-                    invoice_id=invoice.id
-                )
-                db.session.add(statement_invoice)
+            statement_invoices.append([StatementInvoicesModel(
+                statement_id=statement.id,
+                invoice_id=invoice.id
+            ) for invoice in invoices])
+        db.session.bulk_save_objects(statement_invoices)
 
     @classmethod
     def _clean_up_old_statements(cls, statement_settings, statement_from, statement_to):
