@@ -129,6 +129,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         invoices_and_auth_ids = PaymentModel.get_invoices_for_statements(search_filter)
         if cls.has_date_override:
             cls._clean_up_old_statements(statement_settings, statement_from, statement_to)
+        current_app.logger.debug(f'Inserting statements.')
         statements = [StatementModel(
                 frequency=setting.frequency,
                 statement_settings_id=setting.id,
@@ -144,6 +145,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         db.session.bulk_save_objects(statements, return_defaults=True)
         db.session.flush()
 
+        current_app.logger.debug(f'Inserting statement invoices.')
         statement_invoices = []
         for statement, auth_account_id in zip(statements, auth_account_ids):
             invoices = [i for i in invoices_and_auth_ids if i.auth_account_id == auth_account_id]
