@@ -174,8 +174,8 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         statement_invoice_ids = [statement_invoice.id for statement_invoice in remove_statement_invoices]
         delete_statement_invoice = delete(StatementInvoicesModel)\
             .where(StatementInvoicesModel.id.in_(statement_invoice_ids))
-        db.session.execute(delete_statement_invoice, execution_options={'synchronize_session': False})
+        db.session.execute(delete_statement_invoice)
         db.session.flush()
         statement_ids = [statement.id for statement in remove_statements]
         delete_statement = delete(StatementModel).where(StatementModel.id.in_(statement_ids))
-        db.session.execute(delete_statement, execution_options={'synchronize_session': False})
+        db.session.execute(delete_statement)
