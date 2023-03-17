@@ -26,6 +26,7 @@ from pay_api.utils.enums import NotificationStatus, StatementFrequency
 from pay_api.utils.util import (
     get_first_and_last_dates_of_month, get_local_time, get_previous_day, get_previous_month_and_year,
     get_week_start_and_end_date)
+from sqlalchemy import delete
 
 
 class StatementTask:  # pylint:disable=too-few-public-methods
@@ -129,6 +130,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         invoices_and_auth_ids = PaymentModel.get_invoices_for_statements(search_filter)
         if cls.has_date_override:
             cls._clean_up_old_statements(statement_settings, statement_from, statement_to)
+        current_app.logger.debug('Inserting statements.')
         statements = [StatementModel(
                 frequency=setting.frequency,
                 statement_settings_id=setting.id,
@@ -144,14 +146,15 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         db.session.bulk_save_objects(statements, return_defaults=True)
         db.session.flush()
 
+        current_app.logger.debug('Inserting statement invoices.')
+        statement_invoices = []
         for statement, auth_account_id in zip(statements, auth_account_ids):
             invoices = [i for i in invoices_and_auth_ids if i.auth_account_id == auth_account_id]
-            for invoice in invoices:
-                statement_invoice = StatementInvoicesModel(
-                    statement_id=statement.id,
-                    invoice_id=invoice.id
-                )
-                db.session.add(statement_invoice)
+            statement_invoices = statement_invoices + [StatementInvoicesModel(
+                statement_id=statement.id,
+                invoice_id=invoice.id
+            ) for invoice in invoices]
+        db.session.bulk_save_objects(statement_invoices)
 
     @classmethod
     def _clean_up_old_statements(cls, statement_settings, statement_from, statement_to):
@@ -168,8 +171,10 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         remove_statement_invoices = db.session.query(StatementInvoicesModel)\
             .filter(StatementInvoicesModel.statement_id.in_(remove_statements_ids))\
             .all()
-        for statement_invoices in remove_statement_invoices:
-            db.session.delete(statement_invoices)
+        statement_invoice_ids = [statement_invoice.id for statement_invoice in remove_statement_invoices]
+        delete_statement_invoice = delete(StatementInvoicesModel)\
+            .where(StatementInvoicesModel.id.in_(statement_invoice_ids))
+        db.session.execute(delete_statement_invoice)
         db.session.flush()
-        for statement in remove_statements:
-            db.session.delete(statement)
+        delete_statement = delete(StatementModel).where(StatementModel.id.in_(remove_statements_ids))
+        db.session.execute(delete_statement)
