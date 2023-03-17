@@ -26,6 +26,7 @@ from pay_api.utils.enums import NotificationStatus, StatementFrequency
 from pay_api.utils.util import (
     get_first_and_last_dates_of_month, get_local_time, get_previous_day, get_previous_month_and_year,
     get_week_start_and_end_date)
+from sqlalchemy import delete
 
 
 class StatementTask:  # pylint:disable=too-few-public-methods
@@ -172,7 +173,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
             .all()
         # This is done by SQL, it's faster than using the ORM.
         statement_invoice_ids = [statement_invoice.id for statement_invoice in remove_statement_invoices]
-        db.session.execute('delete from statement_invoices where id in :ids', ids=statement_invoice_ids)
+        delete(StatementInvoicesModel).where(StatementInvoicesModel.id.in_(statement_invoice_ids))
         db.session.flush()
         statement_ids = [statement.id for statement in remove_statements]
-        db.session.execute('delete from statements where id in :ids', ids=statement_ids)
+        delete(StatementModel).where(StatementModel.id.in_(statement_ids))
