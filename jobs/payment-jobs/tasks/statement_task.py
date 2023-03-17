@@ -149,10 +149,10 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         statement_invoices = []
         for statement, auth_account_id in zip(statements, auth_account_ids):
             invoices = [i for i in invoices_and_auth_ids if i.auth_account_id == auth_account_id]
-            statement_invoices.append([StatementInvoicesModel(
+            statement_invoices = statement_invoices + [StatementInvoicesModel(
                 statement_id=statement.id,
                 invoice_id=invoice.id
-            ) for invoice in invoices])
+            ) for invoice in invoices]
         db.session.bulk_save_objects(statement_invoices)
 
     @classmethod
