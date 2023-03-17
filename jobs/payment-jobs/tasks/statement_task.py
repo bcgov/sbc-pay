@@ -172,7 +172,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
             .all()
         # This is done by SQL, it's faster than using the ORM.
         statement_invoice_ids = [statement_invoice.id for statement_invoice in remove_statement_invoices]
-        db.session.execute('delete from statement_invoices where id in :ids', {'ids': statement_invoice_ids})
+        db.session.execute('delete from statement_invoices where id in :ids', ids=statement_invoice_ids)
         db.session.flush()
         statement_ids = [statement.id for statement in remove_statements]
-        db.session.execute('delete from statements where id in :ids', {'ids': statement_ids})
+        db.session.execute('delete from statements where id in :ids', ids=statement_ids)
