@@ -140,7 +140,7 @@ class BcolService(PaymentSystemService, OAuthService):
             return corp_type.bcol_code_partial_service_fee
         if service_fees == 0:
             return corp_type.bcol_code_no_service_fee
-        current_app.logger.warning(f'Service fees ${service_fees}, defaulting to full_service_fee.')
+        current_app.logger.error(f'Service fees ${service_fees}, defaulting to full_service_fee.')
         return corp_type.bcol_code_full_service_fee
 
     def get_payment_method_code(self):
