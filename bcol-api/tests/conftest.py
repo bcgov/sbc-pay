@@ -220,7 +220,7 @@ def payment_mock_error():
 @pytest.fixture(scope='session', autouse=True)
 def keycloak(docker_services, app):
     """Spin up a keycloak instance and initialize jwt."""
-    if app.config['USE_TEST_KEYCLOAK_DOCKER']:
+    if 'USE_TEST_KEYCLOAK_DOCKER' in app.config and app.config['USE_TEST_KEYCLOAK_DOCKER']:
         docker_services.start('keycloak')
         docker_services.wait_for_service('keycloak', 8081)
 

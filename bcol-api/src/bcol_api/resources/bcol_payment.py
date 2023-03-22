@@ -61,7 +61,7 @@ class AccountPayment(Resource):
                 return error_to_response(Error.INVALID_REQUEST,
                                          invalid_params=schema_utils.serialize(valid_format[1]))
 
-            # Override for apply charge, allows for service fees.
+            # Override for apply charge, allows for service fees, this is used by CSO's service account.
             if _jwt.validate_roles([Role.SYSTEM.value]) and req_json.get('forceUseDebitAccount') is True:
                 is_apply_charge = False
 

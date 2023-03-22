@@ -17,6 +17,7 @@
 Test-Suite to ensure that the BCOL Service layer is working as expected.
 """
 
+import pytest
 from pay_api.models.fee_schedule import FeeSchedule
 from pay_api.services.bcol_service import BcolService
 from pay_api.services.payment_line_item import PaymentLineItem
@@ -39,19 +40,25 @@ def test_get_payment_system_code(session):
     assert code == 'BCOL'
 
 
-def test_create_invoice(session):
+@pytest.mark.parametrize('test_name, service_fees', [
+    ('Greater than 1.5 (Invalid, but still executes)', 2.0),
+    ('$1.50 service fee', 1.5),
+    ('$1.05 service fee (ESRA)', 1.05),
+    ('$1 service fee', 1),
+    ('No service fee', 0)
+])
+def test_create_invoice(session, test_name, service_fees):
     """Test create_invoice."""
     pay_account = factory_payment_account(payment_system_code='BCOL', account_number='BCOL_ACC_1', bcol_user_id='test')
     pay_account.save()
     payment = factory_payment()
     payment.save()
-    i = factory_invoice(payment_account=pay_account)
+    i = factory_invoice(payment_account=pay_account, service_fees=service_fees)
     i.save()
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     line = factory_payment_line_item(i.id, fee_schedule_id=fee_schedule.fee_schedule_id)
     line.save()
     line = PaymentLineItem.find_by_id(line.id)
-    # payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice_id: str, **kwargs
     inv = bcol_service.create_invoice(payment_account=pay_account,
                                       line_items=[line],
                                       invoice=i,
