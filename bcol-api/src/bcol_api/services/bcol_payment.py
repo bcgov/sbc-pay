@@ -120,6 +120,6 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
     def _check_service_fees_match(self, ts_fee, invoice_service_fees):
         """Check to see if BCOL return matches passed in service fees."""
         ts_fee = -float(ts_fee) / 100 if ts_fee else 0
-        if ts_fee != invoice_service_fees:
+        if ts_fee != float(invoice_service_fees):
             current_app.logger.error(f"TSFee {ts_fee} from BCOL doesn\'t match"
                                      f' SBC-PAY invoice service fees: {invoice_service_fees}')
