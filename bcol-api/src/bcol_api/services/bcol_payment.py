@@ -58,7 +58,7 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
                 raise BusinessException(Error.PAYMENT_ERROR)
 
             ts_fee = self.__get(response, 'TSFee')
-            invoice_service_fees = pay_request.get('serviceFees')
+            invoice_service_fees = pay_request.get('serviceFees', '0')
             self._check_service_fees_match(ts_fee, invoice_service_fees)
 
             transaction = response['TranID']
