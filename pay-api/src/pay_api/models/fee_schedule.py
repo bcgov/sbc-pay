@@ -157,5 +157,6 @@ class FeeScheduleSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
 
     # pylint: disable=no-member
     corp_type = ma.Nested(CorpTypeSchema, many=False, data_key='corp_type_code',
-                          exclude=['bcol_fee_code', 'bcol_staff_fee_code', 'batch_type'])
+                          exclude=['bcol_code_full_service_fee', 'bcol_code_partial_service_fee',
+                                   'bcol_code_no_service_fee', 'bcol_staff_fee_code', 'batch_type'])
     filing_type = ma.Nested(FilingTypeSchema, many=False, data_key='filing_type_code')

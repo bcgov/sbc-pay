@@ -58,6 +58,9 @@ class BcolService(PaymentSystemService, OAuthService):
         invoice_number = generate_transaction_number(invoice.id)
         corp_number = invoice.business_identifier or ''
         amount_excluding_txn_fees = sum(line.total for line in line_items)
+        if invoice.service_fees > 1.5:
+            current_app.logger.error(f'Service fees ${invoice.service_fees} greater than $1.50 detected,'
+                                     ' BCONLINE only charges up to a max of $1.50 for a service fee.')
         filing_types = ','.join([item.filing_type_code for item in line_items])
         remarks = f'{corp_number}({filing_types})'
         if user.first_name:
@@ -78,8 +81,9 @@ class BcolService(PaymentSystemService, OAuthService):
             'amount': str(amount_excluding_txn_fees),
             'rate': str(amount_excluding_txn_fees),
             'remarks': remarks[:50],
-            'feeCode': self._get_fee_code(invoice.corp_type_code, use_staff_fee_code),
+            'feeCode': self._get_fee_code(invoice.service_fees, invoice.corp_type_code, use_staff_fee_code),
             'forceUseDebitAccount': force_use_debit_account,
+            'serviceFees': str(invoice.service_fees)
         }
         if use_staff_fee_code:
             payload['userId'] = user.user_name_with_no_idp if user.is_staff() else current_app.config[
@@ -125,10 +129,19 @@ class BcolService(PaymentSystemService, OAuthService):
         invoice = Invoice.find_by_id(invoice_reference.invoice_id, skip_auth_check=True)
         return f'{invoice_reference.invoice_number}', datetime.now(), invoice.total
 
-    def _get_fee_code(self, corp_type: str, is_staff: bool = False):
+    def _get_fee_code(self, service_fees: float, corp_type: str, is_staff: bool = False):
         """Return BCOL fee code."""
         corp_type = CorpType.find_by_code(code=corp_type)
-        return corp_type.bcol_staff_fee_code if is_staff else corp_type.bcol_fee_code
+        if is_staff:
+            return corp_type.bcol_staff_fee_code
+        if service_fees in (1.5, 1.05):
+            return corp_type.bcol_code_full_service_fee
+        if service_fees == 1:
+            return corp_type.bcol_code_partial_service_fee
+        if service_fees == 0:
+            return corp_type.bcol_code_no_service_fee
+        current_app.logger.error(f'Service fees ${service_fees}, defaulting to full_service_fee.')
+        return corp_type.bcol_code_full_service_fee
 
     def get_payment_method_code(self):
         """Return CC as the method code."""

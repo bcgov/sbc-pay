@@ -57,11 +57,15 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
             if self.__get(response, 'ReturnCode') != '0000':
                 raise BusinessException(Error.PAYMENT_ERROR)
 
+            ts_fee = self.__get(response, 'TSFee')
+            invoice_service_fees = pay_request.get('serviceFees')
+            self._check_service_fees_match(ts_fee, invoice_service_fees)
+
             transaction = response['TranID']
             pay_response = {
                 'statutoryFee': self.__get(response, 'StatFee'),
                 'totalAmount': self.__get(response, 'Totamt'),
-                'tsFee': self.__get(response, 'TSFee'),
+                'tsFee': ts_fee,
                 'gst': self.__get(response, 'Totgst'),
                 'pst': self.__get(response, 'Totpst'),
                 'accountNumber': self.__get(transaction, 'Account'),
@@ -112,3 +116,10 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
             return None
         amount = int(float(amount) * 100)  # Multiply with 100, as for e.g, 50.00 needs to be 5000
         return str(amount).zfill(10)
+
+    def _check_service_fees_match(self, ts_fee, invoice_service_fees):
+        """Check to see if BCOL return matches passed in service fees."""
+        ts_fee = -float(ts_fee) / 100 if ts_fee else 0
+        if ts_fee != invoice_service_fees:
+            current_app.logger.error(f"TSFee {ts_fee} from BCOL doesn\'t match"
+                                     f' SBC-PAY invoice service fees: {invoice_service_fees}')

@@ -39,7 +39,9 @@ class CorpType(db.Model, CodeTable):
     __mapper_args__ = {
         'include_properties': [
             'batch_type',
-            'bcol_fee_code',
+            'bcol_code_full_service_fee',
+            'bcol_code_no_service_fee',
+            'bcol_code_partial_service_fee',
             'bcol_staff_fee_code',
             'code',
             'description',
@@ -50,7 +52,9 @@ class CorpType(db.Model, CodeTable):
 
     code = db.Column('code', db.String(10), primary_key=True)
     description = db.Column('description', db.String(200), nullable=False)
-    bcol_fee_code = db.Column(db.String(20), nullable=True)
+    bcol_code_full_service_fee = db.Column(db.String(20), nullable=True)
+    bcol_code_partial_service_fee = db.Column(db.String(20), nullable=True)
+    bcol_code_no_service_fee = db.Column(db.String(20), nullable=True)
     bcol_staff_fee_code = db.Column(db.String(20), nullable=True)
     is_online_banking_allowed = db.Column(Boolean(), default=True)
     batch_type = db.Column(db.String(2), nullable=True)
