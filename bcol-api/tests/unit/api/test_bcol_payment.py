@@ -35,7 +35,8 @@ def test_post_payments(client, jwt, app, payment_mock):
             'rate': '',
             'amount': '',
             'remarks': 'TEST',
-            'reduntantFlag': ' '
+            'reduntantFlag': ' ',
+            'serviceFees': '1.50'
     }), headers=headers)
     assert rv.status_code == 200
 
@@ -64,6 +65,7 @@ def test_post_payments_error(client, jwt, app, payment_mock_error):
             'rate': '',
             'amount': '',
             'remarks': 'TEST',
-            'reduntantFlag': ' '
+            'reduntantFlag': ' ',
+            'serviceFees': '1.50'
     }), headers=headers)
     assert rv.status_code == 400
