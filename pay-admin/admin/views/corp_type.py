@@ -26,7 +26,8 @@ class CorpTypeConfig(SecuredView):
     column_labels = {
         'code': 'Code',
         'description': 'Description',
-        'bcol_code_full_service_fee': 'BCOL Fee Code used for Account transactions - Service Fee ($1.50 or $1.05 for ESRA)',
+        'bcol_code_full_service_fee': 'BCOL Fee Code used for Account transactions - '
+                                      'Service Fee ($1.50 or $1.05 for ESRA)',
         'bcol_code_no_service_fee': 'BCOL Fee Code used for Account transactions - Service Fee ($0)',
         'bcol_code_partial_service_fee': 'BCOL Fee Code used for Account transactions - Service Fee ($1.00)',
         'bcol_staff_fee_code': "BCOL Fee Code used for Staff transactions. (starts with 'C')",
