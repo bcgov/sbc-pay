@@ -26,7 +26,10 @@ class CorpTypeConfig(SecuredView):
     column_labels = {
         'code': 'Code',
         'description': 'Description',
-        'bcol_fee_code': 'BCOL Fee Code used for Account transactions',
+        'bcol_code_full_service_fee': 'BCOL Fee Code used for Account transactions - '
+                                      'Service Fee ($1.50 or $1.05 for ESRA)',
+        'bcol_code_no_service_fee': 'BCOL Fee Code used for Account transactions - Service Fee ($0)',
+        'bcol_code_partial_service_fee': 'BCOL Fee Code used for Account transactions - Service Fee ($1.00)',
         'bcol_staff_fee_code': "BCOL Fee Code used for Staff transactions. (starts with 'C')",
         'is_online_banking_allowed': 'Is Online Banking allowed',
         'product': 'Product to map in account products'
@@ -39,7 +42,8 @@ class CorpTypeConfig(SecuredView):
     form_choices = {
     }
 
-    form_columns = edit_columns = ['code', 'description', 'bcol_fee_code', 'bcol_staff_fee_code',
+    form_columns = edit_columns = ['code', 'description', 'bcol_code_full_service_fee',
+                                   'bcol_code_no_service_fee', 'bcol_code_partial_service_fee', 'bcol_staff_fee_code',
                                    'is_online_banking_allowed',
                                    'product']
 
