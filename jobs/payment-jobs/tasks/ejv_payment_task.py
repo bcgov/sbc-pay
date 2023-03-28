@@ -33,6 +33,7 @@ from pay_api.utils.enums import DisbursementStatus, EjvFileType, InvoiceReferenc
 from pay_api.utils.util import generate_transaction_number
 
 from tasks.common.cgi_ejv import CgiEjv
+from utils.date import is_holiday
 
 
 class EjvPaymentTask(CgiEjv):
@@ -50,11 +51,8 @@ class EjvPaymentTask(CgiEjv):
         5. Upload to sftp for processing. First upload JV file and then a TRG file.
         6. Update the statuses and create records to for the batch.
         """
-        current_app.logger.disabled = False
-        current_date_pacific = datetime.now(tz=pytz.utc).astimezone(pytz.timezone('US/Pacific')).strftime('%Y-%m-%d')
-        if holiday := holidays.CA(state='BC', observed=False).get(current_date_pacific):
-            current_app.logger.info(f'Today is a stat holiday {holiday} on {current_date_pacific}'
-                                    'deferring the EJV payment processing to the next day.')
+        if is_holiday():
+            current_app.logger.info('Deferring ejv payment task for another day.')
             return
 
         cls._create_ejv_file_for_gov_account(batch_type='GI')
