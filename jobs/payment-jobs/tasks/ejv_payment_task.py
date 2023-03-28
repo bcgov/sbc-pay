@@ -13,12 +13,8 @@
 # limitations under the License.
 """Task to create Journal Voucher for gov account payments."""
 
-from datetime import datetime
 import time
 from typing import List
-
-import pytz
-import holidays
 
 from flask import current_app
 from pay_api.models import DistributionCode as DistributionCodeModel

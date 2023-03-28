@@ -24,7 +24,6 @@ from pay_api.models import AccountFee as AccountFeeModel
 from pay_api.models import FeeCode as FeeCodeModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import FeeScheduleSchema
-from pay_api.services.flags import flags
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
