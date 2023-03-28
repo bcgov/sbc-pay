@@ -17,7 +17,7 @@ protobuf==3.19.5
 pycountry==22.1.10
 pyrsistent==0.18.1
 python-dotenv==0.19.2
-sentry-sdk==1.5.6
+sentry-sdk==1.14.0
 six==1.16.0
 threadloop==1.0.2
 thrift==0.15.0
