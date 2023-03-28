@@ -25,9 +25,7 @@ def setup_logging(conf):
     # log_file_path = path.join(path.abspath(path.dirname(__file__)), conf)
 
     if conf and path.isfile(conf):
-        # We need disable_existing_loggers=False so invoke_job logger actually outputs.
-        # I tried setting the log level in logging.conf, but couldn't get it to work.
-        logging.config.fileConfig(conf, disable_existing_loggers=False)
+        logging.config.fileConfig(conf)
         print(f'Configure logging, from conf:{conf}', file=sys.stdout)
     else:
         print(f'Unable to configure logging, attempted conf:{conf}', file=sys.stderr)
