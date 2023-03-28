@@ -13,8 +13,12 @@
 # limitations under the License.
 """Task to create Journal Voucher for gov account payments."""
 
+from datetime import datetime
 import time
 from typing import List
+
+import pytz
+import holidays
 
 from flask import current_app
 from pay_api.models import DistributionCode as DistributionCodeModel
@@ -46,6 +50,13 @@ class EjvPaymentTask(CgiEjv):
         5. Upload to sftp for processing. First upload JV file and then a TRG file.
         6. Update the statuses and create records to for the batch.
         """
+        current_app.logger.disabled = False
+        current_date_pacific = datetime.now(tz=pytz.utc).astimezone(pytz.timezone('US/Pacific')).strftime('%Y-%m-%d')
+        if holiday := holidays.CA(state='BC', observed=False).get(current_date_pacific):
+            current_app.logger.info(f'Today is a stat holiday {holiday} on {current_date_pacific}'
+                                    'deferring the EJV payment processing to the next day.')
+            return
+
         cls._create_ejv_file_for_gov_account(batch_type='GI')
         cls._create_ejv_file_for_gov_account(batch_type='GA')
 
