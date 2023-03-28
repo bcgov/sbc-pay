@@ -47,7 +47,6 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production'), job_name='unknown'
                 integrations=[FlaskIntegration()],
                 release=f'payment-jobs-{job_name}@-',
             )
-    app.logger.disabled = False
     app.logger.info(f'<<<< Starting Payment Jobs >>>>')
     db.init_app(app)
     if init_oracle:

@@ -25,6 +25,7 @@ from sqlalchemy import event, text
 from sqlalchemy.schema import DropConstraint, MetaData
 
 from invoke_jobs import create_app
+from utils.logger import setup_logging
 
 
 @pytest.fixture(scope='session')
@@ -118,6 +119,8 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
         Migrate(app, _db, directory=migrations_path)
         upgrade()
 
+        # Restore the logging, alembic and sqlalchemy have their own logging from alembic.ini.
+        setup_logging(os.path.abspath('logging.conf'))
         return _db
 
 
