@@ -165,6 +165,12 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             return InvoiceStatus.CANCELLED.value if flags.is_on('NEW_REFUNDED_STATUSES', default=False) else None
 
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(invoice.payment_account_id)
+        if cfs_account is None:
+            # Get the last cfs_account for it, as the account might have been changed from PAD to DRAWDOWN.
+            cfs_account = CfsAccountModel.query.\
+                    filter(CfsAccountModel.account_id == invoice.payment_account_id).\
+                    order_by(CfsAccountModel.id.desc()). \
+                    first()
         line_items: List[PaymentLineItemModel] = []
         for line_item in invoice.payment_line_items:
             line_items.append(PaymentLineItemModel.find_by_id(line_item.id))
