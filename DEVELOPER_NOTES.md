@@ -137,3 +137,12 @@ $ python3 invoke_jobs.py GENERATE_STATEMENTS 2022-06-25
 ```
 
 
+17. How to void a routing slip that already has transactions? 
+
+https://github.com/bcgov-registries/ops-support/issues/2535 - Perhaps in the future we'll build this into the job.
+
+18. How to restart CAS EJV inbox files that weren't processed for some reason? 
+
+I'd check the EJV_FILES table, if it's missing some feedback files, search invoice ids through those feedback files by using the download-pay-minio.ipynb in the ops repo. 
+If they don't exist in there and it's been a couple of days, you may need to manually rename some of the inbox files to the current date and upload them using oc rsync +
+SFTP commands on the ftp-poller pod.
