@@ -161,3 +161,15 @@ def test_ejv_skip_holidays(session):
         with freeze_time('2023-09-04 00:00:00T08:00:00'):
             EjvPaymentTask.create_ejv_file()
             assert [message for message in log.output if 'stat holiday' in message]
+
+    # Saturday
+    with test_case.assertLogs('invoke_jobs') as log:
+        with freeze_time('2023-04-15 00:00:00T08:00:00'):
+            EjvPaymentTask.create_ejv_file()
+            assert [message for message in log.output if 'saturday' in message]
+
+    # Sunday
+    with test_case.assertLogs('invoke_jobs') as log:
+        with freeze_time('2023-04-16 00:00:00T08:00:00'):
+            EjvPaymentTask.create_ejv_file()
+            assert [message for message in log.output if 'sunday' in message]
