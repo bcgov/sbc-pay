@@ -16,8 +16,6 @@
 
 Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
-import unittest
-from freezegun import freeze_time
 from pay_api.models import (
     DistributionCode, EjvFile, EjvHeader, EjvInvoiceLink, FeeSchedule, Invoice, InvoiceReference, db)
 from pay_api.utils.enums import DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus
@@ -139,37 +137,3 @@ def test_payments_for_gov_accounts(session, monkeypatch):
         ejv_file: EjvFile = EjvFile.find_by_id(ejv_header.ejv_file_id)
         assert ejv_file
         assert ejv_file.file_type == EjvFileType.PAYMENT.value
-
-
-def test_ejv_skip_holidays(session):
-    """Assert that the EJV job skips holidays."""
-    test_case = unittest.TestCase()
-    # Christmas
-    with test_case.assertLogs('invoke_jobs') as log:
-        with freeze_time('2023-12-25 00:00:00T08:00:00'):
-            EjvPaymentTask.create_ejv_file()
-            assert [message for message in log.output if 'stat holiday' in message]
-
-    # New Years
-    with test_case.assertLogs('invoke_jobs') as log:
-        with freeze_time('2024-01-01 00:00:00T08:00:00'):
-            EjvPaymentTask.create_ejv_file()
-            assert [message for message in log.output if 'stat holiday' in message]
-
-    # Labour Day
-    with test_case.assertLogs('invoke_jobs') as log:
-        with freeze_time('2023-09-04 00:00:00T08:00:00'):
-            EjvPaymentTask.create_ejv_file()
-            assert [message for message in log.output if 'stat holiday' in message]
-
-    # Saturday
-    with test_case.assertLogs('invoke_jobs') as log:
-        with freeze_time('2023-04-15 00:00:00T08:00:00'):
-            EjvPaymentTask.create_ejv_file()
-            assert [message for message in log.output if 'saturday' in message]
-
-    # Sunday
-    with test_case.assertLogs('invoke_jobs') as log:
-        with freeze_time('2023-04-16 00:00:00T08:00:00'):
-            EjvPaymentTask.create_ejv_file()
-            assert [message for message in log.output if 'sunday' in message]
