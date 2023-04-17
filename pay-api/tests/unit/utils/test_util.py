@@ -16,6 +16,7 @@
 
 Test-Suite to ensure that the util functions are working as expected.
 """
+import holidays
 from datetime import datetime
 
 from pay_api.utils.util import get_nearest_business_day
@@ -49,10 +50,15 @@ def test_next_business_day(session):
     business_date = get_nearest_business_day(d, include_today=False)
     assert business_date.date() == datetime(2022, 1, 3).date()
 
-    # Christmas - over boxing day. Boxing day was defined as a holiday previously in HOLIDAYS_LIST.
+    # Christmas - over boxing day.
     d = datetime(2023, 12, 25)
     business_date = get_nearest_business_day(d)
     assert business_date.date() == datetime(2023, 12, 27).date()
+
+    # Easter Monday
+    d = datetime(2023, 4, 10)
+    business_date = get_nearest_business_day(d)
+    assert business_date.date() == datetime(2023, 4, 11).date()
 
     # Labour Day
     d = datetime(2023, 9, 4)
@@ -63,6 +69,18 @@ def test_next_business_day(session):
     d = datetime(2023, 2, 18)
     business_date = get_nearest_business_day(d)
     assert business_date.date() == datetime(2023, 2, 21).date()
+
+    # Truth and reconciliation day: Tuesday Sept 30, 2025
+    d = datetime(2025, 9, 30)
+    business_date = get_nearest_business_day(d)
+    assert business_date.date() == datetime(2025, 10, 1).date()
+
+
+def test_print_holidays():
+    """Print holidays, can be used to take a quick peak at the holidays."""
+    for date, name in sorted(holidays.CA(state='BC', observed=False, years=2023).items()):
+        print(date, name)
+    assert True
 
 
 def test_validate_schema():

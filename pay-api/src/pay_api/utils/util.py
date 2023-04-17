@@ -207,11 +207,10 @@ def is_holiday(val: datetime) -> bool:
     saturday or sunday check
     check the BC holidays
     """
-    # To print off holidays:
-    # import holidays
-    # for date, name in sorted(holidays.CA(state='BC', observed=False, years=2023).items()):
-    #     print(date, name)
-    # Easter Monday & Boxing day - is not a stat - we'll include them for now.
+    # Truth and reconciliation day.
+    if val.year >= 2023 and val.month == 9 and val.day == 30:
+        return True
+    # Even though not officially a BC STAT - Union recognizes Easter Monday and Boxing Day.
     if holidays.CA(state='BC', observed=False).get(val.strftime('%Y-%m-%d')):
         return True
     if val.weekday() >= 5:
