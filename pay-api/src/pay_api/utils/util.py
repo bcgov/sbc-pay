@@ -207,6 +207,11 @@ def is_holiday(val: datetime) -> bool:
     saturday or sunday check
     check the BC holidays
     """
+    # To print off holidays:
+    # import holidays
+    # for date, name in sorted(holidays.CA(state='BC', observed=False, years=2023).items()):
+    #     print(date, name)
+    # Easter Monday & Boxing day - not is not a stat - we'll include them for now.
     if holidays.CA(state='BC', observed=False).get(val.strftime('%Y-%m-%d')):
         return True
     if val.weekday() >= 5:
