@@ -18,5 +18,3 @@ dataclass_wizard
 launchdarkly-server-sdk
 cx_Oracle
 more_itertools
-holidays
-pytz
