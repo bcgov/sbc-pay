@@ -49,7 +49,7 @@ def test_next_business_day(session):
     business_date = get_nearest_business_day(d, include_today=False)
     assert business_date.date() == datetime(2022, 1, 3).date()
 
-    # Christmas
+    # Christmas - over boxing day. Boxing day was defined as a holiday previously in HOLIDAYS_LIST.
     d = datetime(2023, 12, 25)
     business_date = get_nearest_business_day(d)
     assert business_date.date() == datetime(2023, 12, 27).date()
