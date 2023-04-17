@@ -22,8 +22,8 @@ from typing import Dict
 from decimal import Decimal
 from urllib.parse import parse_qsl
 
+import holidays
 import pytz
-from dateutil.parser import parse
 from dpath import util as dpath_util
 from flask import current_app
 
@@ -207,12 +207,9 @@ def is_holiday(val: datetime) -> bool:
     saturday or sunday check
     check the BC holidays
     """
-    week_number: int = val.weekday()
-    if week_number > 4:  # 5- saturday 6 sunday
+    if holidays.CA(state='BC', observed=False).get(val.strftime('%Y-%m-%d')):
         return True
-    holidays_list = current_app.config.get('HOLIDAYS_LIST')
-    holidays_dates_list = [parse(date).date() for date in holidays_list.split(',')]
-    if val.date() in holidays_dates_list:
+    if val.weekday() >= 5:
         return True
     return False
 

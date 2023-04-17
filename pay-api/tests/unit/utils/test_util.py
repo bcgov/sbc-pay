@@ -49,6 +49,21 @@ def test_next_business_day(session):
     business_date = get_nearest_business_day(d, include_today=False)
     assert business_date.date() == datetime(2022, 1, 3).date()
 
+    # Christmas
+    d = datetime(2023, 12, 25)
+    business_date = get_nearest_business_day(d)
+    assert business_date.date() == datetime(2023, 12, 27).date()
+
+    # Labour Day
+    d = datetime(2023, 9, 4)
+    business_date = get_nearest_business_day(d)
+    assert business_date.date() == datetime(2023, 9, 5).date()
+
+    # Sat before - Family Day (Monday Feb 20, 2023)
+    d = datetime(2023, 2, 18)
+    business_date = get_nearest_business_day(d)
+    assert business_date.date() == datetime(2023, 2, 21).date()
+
 
 def test_validate_schema():
     """Assert get_schema works."""

@@ -33,7 +33,6 @@ from pay_api.utils.enums import DisbursementStatus, EjvFileType, InvoiceStatus, 
 from sqlalchemy import Date, cast
 
 from tasks.common.cgi_ejv import CgiEjv
-from utils.date import is_holiday_or_weekend
 
 
 class EjvPartnerDistributionTask(CgiEjv):
@@ -50,10 +49,6 @@ class EjvPartnerDistributionTask(CgiEjv):
         4. Upload to sftp for processing. First upload JV file and then a TRG file.
         5. Update the statuses and create records to for the batch.
         """
-        if is_holiday_or_weekend():
-            current_app.logger.info('Deferring ejv disbursement task for another day.')
-            return
-
         cls._create_ejv_file_for_partner(batch_type='GI')  # Internal ministry
         cls._create_ejv_file_for_partner(batch_type='GA')  # External ministry
 
