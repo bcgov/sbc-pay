@@ -16,8 +16,6 @@
 
 Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
-import unittest
-from freezegun import freeze_time
 from pay_api.models import (
     DistributionCode, EjvFile, EjvHeader, EjvInvoiceLink, FeeSchedule, Invoice, InvoiceReference, db)
 from pay_api.utils.enums import DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus
