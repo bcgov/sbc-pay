@@ -6,7 +6,7 @@ These notes are specific to the operation of BCOL.
 
   `POST {{pay-api-base-url}}/api/v1/payment-requests`
 
-  Note: We don't send along the amount for the transactions fees, we use the appropriate code to bill for the correct service fees.
+  Note: We don't send along the amount for the service fees to the BCOL WEB SERVICE, we use the appropriate code to bill for the correct service fees.
 
 # Refunds:
 
