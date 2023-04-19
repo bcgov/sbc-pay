@@ -34,7 +34,7 @@ These notes are specific to the operation of BCOL.
 
   ![image](https://user-images.githubusercontent.com/3484109/233171890-cd840bde-c10a-45ea-88c1-0d0e3dd0ba7c.png)
 
-  These are the BCOL fees setup in BCONLINE:
+  These are the BCOL fees setup in BCONLINE (note we have non-billable fee codes, there are billable and non-billable BCOL accounts):
 
   ![image](https://user-images.githubusercontent.com/3484109/233184831-d8e55393-adfd-48a6-9330-a2ba9194a434.png)
 
@@ -43,9 +43,10 @@ These notes are specific to the operation of BCOL.
   It's possible to use CPRD to look at payments in BCOL and match them up to payments in SBC-PAY. Example query:
 
   SELECT * FROM BCONLINE_BILLING_RECORD where key = 'REG01788290';
+  
+  I'd recommend testing with a billable and non-billable BCOL account.
 
-
-  BCOL for CSO: 
+# BCOL for CSO: 
 
   CSO has a unique implementation as they use a service account to recharge for partial refunds. 
 
