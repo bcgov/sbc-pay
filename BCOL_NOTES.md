@@ -24,6 +24,10 @@ SBC-PAY calculates the service fee amount and includes it in the bcol_service th
 
 It determines by the service fee which BCOL fee code to use:
 
+$1.50 or $1.05 -> `bcol_code_full_service_fee`
+$1             -> `bcol_code_partial_service_fee`
+$0             -> `bcol_code_no_service_fee`
+
 ![image](https://user-images.githubusercontent.com/3484109/233172026-8bfaeeac-ea4f-45fb-842d-8fd918aa879b.png)
 
 These are the general BCOL fee codes we have:
@@ -39,6 +43,15 @@ How to test:
 It's possible to use CPRD to look at payments in BCOL and match them up to payments in SBC-PAY. Example query:
 
 SELECT * FROM BCONLINE_BILLING_RECORD where key = 'REG01788290';
+
+
+BCOL for CSO: 
+
+CSO has a unique implementation as they use a service account to recharge for partial refunds. 
+
+![image](https://user-images.githubusercontent.com/3484109/233185592-fa4534e5-a91f-4bc1-87a2-9f1363a34af1.png)
+
+They use a service account, which causes the STAFF BCOL to be used typically, but we've overridden this in the segment above.
 
 Outstanding issues:
 
