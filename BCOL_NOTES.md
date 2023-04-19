@@ -6,8 +6,6 @@ These notes are specific to the operation of BCOL.
 
   `POST {{pay-api-base-url}}/api/v1/payment-requests`
 
-  Note: We don't send along the amount for the service fees to the BCOL WEB SERVICE, we use the appropriate code to bill for the correct service fees.
-
 # Refunds:
 
   Refunds are not automated for BCOL. When the refund pay-api endpoint
@@ -18,11 +16,9 @@ These notes are specific to the operation of BCOL.
 
 # Service fees:
 
-  Mapping to BCOL service fees:
+  SBC-PAY calculates the service fee amount and passes it to the `bcol_service` and determines which BCOL fee code to use and passes that to the BCOL-API. 
 
-  SBC-PAY calculates the service fee amount and includes it in the bcol_service that calls the BCOL-API. 
-
-  It determines by the service fee which BCOL fee code to use:
+  It determines by the `corp_type` and `service_fee` which BCOL fee code to use:
 
   $1.50 or $1.05 -> `bcol_code_full_service_fee`
   $1             -> `bcol_code_partial_service_fee`
@@ -30,11 +26,11 @@ These notes are specific to the operation of BCOL.
 
   ![image](https://user-images.githubusercontent.com/3484109/233172026-8bfaeeac-ea4f-45fb-842d-8fd918aa879b.png)
 
-  These are the general BCOL fee codes we have:
+  These are the general BCOL fee codes we have in SBC-PAY:
 
   ![image](https://user-images.githubusercontent.com/3484109/233171890-cd840bde-c10a-45ea-88c1-0d0e3dd0ba7c.png)
 
-  These are the BCOL fees setup in BCONLINE (note we have non-billable fee codes, there are billable and non-billable BCOL accounts):
+  These are the BCOL fees setup in BCONLINE (note we have non-billable fee codes, this is determined by the type of BCOL account):
 
   ![image](https://user-images.githubusercontent.com/3484109/233184831-d8e55393-adfd-48a6-9330-a2ba9194a434.png)
 
@@ -42,9 +38,11 @@ These notes are specific to the operation of BCOL.
 
   It's possible to use CPRD to look at payments in BCOL and match them up to payments in SBC-PAY. Example query:
 
-  SELECT * FROM BCONLINE_BILLING_RECORD where key = 'REG01788290';
+  `SELECT TS_FEE, RATE, DEV_FEE, TOTAL_AMT FROM BCONLINE_BILLING_RECORD where key = 'REG01788290';`
   
-  I'd recommend testing with a billable and non-billable BCOL account.
+  You could include quantity in the query above to determine if it was a refund or not. I'd recommend testing with a billable and non-billable BCOL account.
+  
+  On the SBC-PAY side it's possible to look at the invoices table, or the transaction table on the staff dashboard.
 
 # BCOL for CSO: 
 
@@ -52,7 +50,9 @@ These notes are specific to the operation of BCOL.
 
   ![image](https://user-images.githubusercontent.com/3484109/233185592-fa4534e5-a91f-4bc1-87a2-9f1363a34af1.png)
 
-  They use a service account, which causes the STAFF BCOL to be used typically, but we've overridden this in the segment above.
+  They use a service account, which causes the STAFF BCOL fee code to be used typically, but we've overridden this in the segment above.
+  
+  This allows CSO to bill with a regular BCOL fee code (and avoid the $1 dev fee hopefully).
 
 # Outstanding issues:
 
