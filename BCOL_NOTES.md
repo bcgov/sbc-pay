@@ -18,7 +18,7 @@ These notes are specific to the operation of BCOL.
 
 # Service fees:
 
-  ## Mapping to BCOL service fees:
+  Mapping to BCOL service fees:
 
   SBC-PAY calculates the service fee amount and includes it in the bcol_service that calls the BCOL-API. 
 
