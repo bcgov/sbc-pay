@@ -257,6 +257,8 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             if count > 60000:
                 raise BusinessException(Error.PAYMENT_SEARCH_TOO_MANY_RECORDS)
             result = query.all()
+        if result is None:
+            result = []
         return result, count
 
     @classmethod
