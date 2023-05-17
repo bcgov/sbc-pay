@@ -355,7 +355,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         invoice_search_list = [InvoiceSearchModel.from_row(invoice_dao) for invoice_dao in purchases]
         converter = Converter()
         invoice_list = converter.unstructure(invoice_search_list)
-        current_app.logger.error("invoice_search_list is None, can't unstructure")
         data['items'] = [converter.remove_nones(invoice_dict) for invoice_dict in invoice_list]
         return data
 
