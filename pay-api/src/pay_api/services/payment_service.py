@@ -103,8 +103,9 @@ class PaymentService:  # pylint: disable=too-few-public-methods
             invoice.business_identifier = business_identifier
             invoice.payment_method_code = pay_service.get_payment_method_code()
             invoice.corp_type_code = corp_type
-            details = payment_request.get('details', [])
-            details = [] if details == 'null' else details
+            details = payment_request.get('details')
+            if not details or details == 'null':
+                details = []
             invoice.details = details
             invoice = invoice.flush()
 
