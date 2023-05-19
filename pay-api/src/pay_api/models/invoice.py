@@ -244,7 +244,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
     folio_number: str
     payment_method: str
     created_name: str
-    details: List[dict]
+    details: Optional[List[dict]]
     payment_account: Optional[PaymentAccountSearchModel]
     line_items: Optional[List[PaymentLineItemSearchModel]]
     product: str
