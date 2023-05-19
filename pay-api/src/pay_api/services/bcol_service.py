@@ -131,6 +131,7 @@ class BcolService(PaymentSystemService, OAuthService):
     def _get_fee_code(self, service_fees: float, corp_type: str, is_staff: bool = False):
         """Return BCOL fee code."""
         corp_type = CorpType.find_by_code(code=corp_type)
+        service_fees = float(service_fees)
         if is_staff:
             return corp_type.bcol_staff_fee_code
         if service_fees in (1.5, 1.05):
