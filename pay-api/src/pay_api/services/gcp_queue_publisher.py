@@ -28,10 +28,10 @@ def publish_to_queue(payload: dict, invoice: Invoice):
 
 def _send_to_queue(payload: bytes):
     """Send payload to the queue."""
-    if not ((gcp_auth_key := current_app.config.get('gcp_auth_key')) and
-            (audience := current_app.config.get('audience')) and
-            (topic_name := current_app.config.get('topic_name')) and
-            (publisher_audience := current_app.config.get('publisher_audience'))):
+    if not ((gcp_auth_key := current_app.config.get('GCP_AUTH_KEY')) and
+            (audience := current_app.config.get('AUDIENCE')) and
+            (topic_name := current_app.config.get('TOPIC_NAME')) and
+            (publisher_audience := current_app.config.get('PUBLISHER_AUDIENCE'))):
 
         raise Exception('missing setup arguments')  # pylint: disable=W0719
 
