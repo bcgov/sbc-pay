@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import uuid
+from contextlib import suppress
 from datetime import datetime
 from typing import Dict
 
@@ -27,6 +28,7 @@ from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import PaymentTransactionSchema
 from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.services.gcp_queue_publisher import publish_to_queue
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
@@ -497,6 +499,12 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
 
         try:
             publish_response(payload=payload, subject=get_pay_subject_name(invoice.corp_type_code))
+
+            # First stage in rolling in the new queue services
+            # It'll not block or disrupt any flows (in theory)
+            with suppress(Exception):
+                publish_to_queue(payload=payload, invoice=invoice)
+
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(e)
             current_app.logger.warning(
