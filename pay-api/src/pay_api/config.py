@@ -130,6 +130,12 @@ class _Config():  # pylint: disable=too-few-public-methods
     NATS_ACCOUNT_CLIENT_NAME = os.getenv('NATS_ACCOUNT_CLIENT_NAME', 'account.events.worker')
     NATS_ACCOUNT_SUBJECT = os.getenv('NATS_ACCOUNT_SUBJECT', 'account.events')
 
+    # GCP PubSub
+    AUDIENCE = os.getenv('AUDIENCE', None)
+    GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
+    PUBLISHER_AUDIENCE = os.getenv('PUBLISHER_AUDIENCE', None)
+    TOPIC_NAME = os.getenv('TOPIC_NAME', None)
+
     # Auth API Endpoint
     AUTH_API_ENDPOINT = f'{_get_config("AUTH_API_URL")}/'
 
