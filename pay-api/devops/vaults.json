@@ -23,6 +23,12 @@
         ]
     },
     {
+        "vault": "gcp-queue",
+        "application": [
+            "payment"
+        ]
+    },
+    {
         "vault": "payment-external-services",
         "application": [
             "paybc",
