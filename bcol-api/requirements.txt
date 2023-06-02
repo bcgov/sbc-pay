@@ -44,7 +44,7 @@ sentry-sdk==1.14.0
 six==1.16.0
 threadloop==1.0.2
 thrift==0.16.0
-tornado==6.2
+tornado==6.3.2
 urllib3==1.26.13
 zeep==4.2.1
 zipp==3.11.0
