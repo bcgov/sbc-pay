@@ -48,7 +48,8 @@ def test_next_business_day(session):
     # assert year end
     d = datetime(2021, 12, 31)
     business_date = get_nearest_business_day(d, include_today=False)
-    assert business_date.date() == datetime(2022, 1, 3).date()
+    # Observed holiday on the 3rd of January
+    assert business_date.date() == datetime(2022, 1, 4).date()
 
     # Christmas - over boxing day.
     d = datetime(2023, 12, 25)
