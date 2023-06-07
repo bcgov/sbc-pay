@@ -146,3 +146,22 @@ https://github.com/bcgov-registries/ops-support/issues/2535 - Perhaps in the fut
 I'd check the EJV_FILES table, if it's missing some feedback files, search invoice ids through those feedback files by using the download-pay-minio.ipynb in the ops repo. 
 If they don't exist in there and it's been a couple of days, you may need to manually rename some of the inbox files to the current date and upload them using oc rsync +
 SFTP commands on the ftp-poller pod.
+
+
+19. How do i deal with a broken index?
+
+Example:
+```
+self.dialect.do_execute(
+File "/usr/local/lib/python3.8/site-packages/sqlalchemy/engine/default.py", line 608, in do_execute
+cursor.execute(statement, parameters)
+sqlalchemy.exc.InternalError: (psycopg2.errors.IndexCorrupted) index "ix_invoices_payment_account_id" contains unexpected zero page at block 8311
+HINT: Please REINDEX it.
+```
+
+Log onto the postgres pod - run:
+
+REINDEX (VERBOSE) DATABASE CONCURRENTLY "pay-db";
+
+If you run into duplicate keys, remove them and keep re-running the indexing.
+
