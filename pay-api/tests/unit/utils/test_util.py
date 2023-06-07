@@ -78,7 +78,7 @@ def test_next_business_day(session):
 
 def test_print_holidays():
     """Print holidays, can be used to take a quick peak at the holidays."""
-    for date, name in sorted(holidays.CA(state='BC', observed=False, years=2023).items()):
+    for date, name in sorted(holidays.CA(subdiv='BC', observed=True, years=2023).items()):
         print(date, name)
     assert True
 
