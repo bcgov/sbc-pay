@@ -13,3 +13,4 @@ jaeger-client
 -e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
 -e git+https://github.com/bcgov/sbc-pay.git#egg=pay-api&subdirectory=pay-api
 # -e git+https://github.com/sumesh-aot/sbc-pay.git@offline_cfs_account#egg=pay-api&subdirectory=pay-api
+-e git+https://github.com/daxiom/simple-cloudevent.py.git@0.0.2
