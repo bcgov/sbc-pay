@@ -9,7 +9,8 @@ Werkzeug<2
 pysftp
 minio
 jaeger-client
+itsdangerous==2.0.1
+Jinja2==3.0.3
+protobuf~=3.19.5
+launchdarkly-server-sdk
 
--e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
--e git+https://github.com/bcgov/sbc-pay.git#egg=pay-api&subdirectory=pay-api
-# -e git+https://github.com/sumesh-aot/sbc-pay.git@offline_cfs_account#egg=pay-api&subdirectory=pay-api
