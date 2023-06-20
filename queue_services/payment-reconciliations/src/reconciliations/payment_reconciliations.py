@@ -554,7 +554,7 @@ def _get_payment_account(row) -> PaymentAccountModel:
         CfsAccountModel.status.in_(
             [CfsAccountStatus.ACTIVE.value, CfsAccountStatus.FREEZE.value, CfsAccountStatus.INACTIVE.value]
         )).all()
-    if not all([payment_account.id == payment_accounts[0].id for payment_account in payment_accounts]):
+    if not all(payment_account.id == payment_accounts[0].id for payment_account in payment_accounts):
         raise Exception('Multiple unique payment accounts for cfs_account.')  # pylint: disable=broad-exception-raised
     return payment_accounts[0] if payment_accounts else None
 
