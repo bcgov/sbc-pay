@@ -547,15 +547,16 @@ def _sync_credit_records():
 
 def _get_payment_account(row) -> PaymentAccountModel:
     account_number: str = _get_row_value(row, Column.CUSTOMER_ACC)
-    payment_account: PaymentAccountModel = db.session.query(PaymentAccountModel) \
+    payment_accounts: PaymentAccountModel = db.session.query(PaymentAccountModel) \
         .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
         .filter(CfsAccountModel.cfs_account == account_number) \
         .filter(
         CfsAccountModel.status.in_(
             [CfsAccountStatus.ACTIVE.value, CfsAccountStatus.FREEZE.value, CfsAccountStatus.INACTIVE.value]
-        )).one_or_none()
-
-    return payment_account
+        )).all()
+    if not all(payment_account.id == payment_accounts[0].id for payment_account in payment_accounts):
+        raise Exception('Multiple unique payment accounts for cfs_account.')  # pylint: disable=broad-exception-raised
+    return payment_accounts[0] if payment_accounts else None
 
 
 def _validate_account(inv: InvoiceModel, row: Dict[str, str]):
