@@ -453,6 +453,9 @@ def _process_failed_payments(row):
     # Set CFS Account Status.
     payment_account: PaymentAccountModel = _get_payment_account(row)
     cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
+    if cfs_account.status == CfsAccountStatus.FREEZE.value:
+        logger.info('Ignoring NSF message for invoice : %s as the account is already FREEZE', inv_number)
+        return False
     logger.info('setting payment account id : %s status as FREEZE', payment_account.id)
     cfs_account.status = CfsAccountStatus.FREEZE.value
     # Call CFS to stop any further PAD transactions on this account.
