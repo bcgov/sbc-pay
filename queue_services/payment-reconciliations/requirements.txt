@@ -82,7 +82,9 @@ requests==2.31.0
 rsa==4.9
 semver==2.13.0
 sentry-sdk==1.26.0
+simple-cloudevent @ git+https://github.com/daxiom/simple-cloudevent.py.git@447cabb988202206ac69e71177d7cd11b6c0b002
 six==1.16.0
+strict-rfc3339==0.7
 threadloop==1.0.2
 thrift==0.16.0
 tornado==6.3.2
