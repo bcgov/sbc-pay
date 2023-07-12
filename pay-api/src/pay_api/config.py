@@ -149,6 +149,9 @@ class _Config():  # pylint: disable=too-few-public-methods
     SENTRY_ENABLE = _get_config('SENTRY_ENABLE', default=False)
     SENTRY_DSN = _get_config('SENTRY_DSN', default=None)
 
+    # Disable valid redirect URLs - for DEV only
+    DISABLE_VALID_REDIRECT_URLS = _get_config('DISABLE_VALID_REDIRECT_URLS', default='False').lower() == 'true'
+
     # Valid Payment redirect URLs
     VALID_REDIRECT_URLS = [(val.strip() if val != '' else None)
                            for val in _get_config('VALID_REDIRECT_URLS', default='').split(',')]

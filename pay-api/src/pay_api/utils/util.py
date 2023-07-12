@@ -49,6 +49,9 @@ def cors_preflight(methods: str = 'GET'):
 
 def is_valid_redirect_url(url: str) -> bool:
     """Validate if the url is valid based on the VALID Redirect Url."""
+    disable_redirect_validation: bool = current_app.config.get('DISABLE_VALID_REDIRECT_URLS')
+    if disable_redirect_validation:
+        return True
     valid_urls: list = current_app.config.get('VALID_REDIRECT_URLS')
     is_valid = False
     for valid_url in valid_urls:
