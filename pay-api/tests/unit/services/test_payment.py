@@ -24,6 +24,7 @@ import pytz
 from pay_api.models.payment_account import PaymentAccount
 from pay_api.services.payment import Payment as Payment_service
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
+from pay_api.utils.util import current_local_time
 from tests.utilities.base_test import \
     (factory_invoice, factory_invoice_reference, factory_payment,
      factory_payment_account, factory_payment_line_item, factory_usd_payment)
@@ -85,7 +86,8 @@ def test_payment_with_no_active_invoice(session):
      False, 3, None, None),
     ('week_no_match', {'weekFilter': {'index': 2}}, False, 0, None, None),
     ('week_match_all', {'weekFilter': {'index': 0}}, False, 3, None, None),
-    ('month', {'monthFilter': {'month': datetime.now().month, 'year': datetime.now().year}},
+    ('month', {'monthFilter': {'month': current_local_time('America/Vancouver').month,
+                               'year': current_local_time('America/Vancouver').year}},
      False, 3, None, None),
     ('created_by', {'createdBy': '1'}, False, 1, 'created_by', 'test'),
     ('created_name', {'createdName': '1'}, False, 1, 'created_name', '1'),

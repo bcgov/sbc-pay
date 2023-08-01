@@ -3,7 +3,7 @@ Flask
 Flask-RESTplus
 python-dotenv
 psycopg2-binary
-jsonschema
+jsonschema==4.17.3
 requests
 Werkzeug<2
 pysftp
