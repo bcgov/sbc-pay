@@ -117,15 +117,15 @@ def parse_url_params(url_params: str) -> Dict:
     return parsed_url
 
 
-def current_local_time() -> datetime:
+def current_local_time(timezone_override=None) -> datetime:
     """Return current local time."""
     today = datetime.now()
-    return get_local_time(today)
+    return get_local_time(today, timezone_override)
 
 
-def get_local_time(date_val: datetime):
+def get_local_time(date_val: datetime, timezone_override=None):
     """Return local time value."""
-    tz_name = current_app.config['LEGISLATIVE_TIMEZONE']
+    tz_name = timezone_override or current_app.config['LEGISLATIVE_TIMEZONE']
     tz_local = pytz.timezone(tz_name)
     date_val = date_val.astimezone(tz_local)
     return date_val
