@@ -1,3 +1,5 @@
+Brotli==1.0.9	
+Flask-WeasyPrint==0.6
 Flask==1.1.2
 Jinja2==3.0.3
 MarkupSafe==2.0.1
@@ -33,6 +35,7 @@ pydyf==0.6.0
 pyphen==0.14.0
 pyrsistent==0.19.3
 python-dateutil==2.8.2
+python-dotenv==1.0.0
 python-jose==3.3.0
 pytz==2023.3
 requests==2.31.0
