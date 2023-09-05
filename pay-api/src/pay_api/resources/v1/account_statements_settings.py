@@ -55,8 +55,8 @@ def post_account_statement_settings(account_id):
     current_app.logger.info('<post_account_statement_settings')
     request_json = request.get_json()
     current_app.logger.debug(request_json)
-    # TODO add valid formatting
     frequency = request_json.get('frequency')
+    
     # Check if user is authorized to perform this action
     check_auth(business_identifier=None, account_id=account_id,
                contains_role=CHANGE_STATEMENT_SETTINGS, is_premium=True)

@@ -61,7 +61,7 @@ def post_account_notification(account_id):
         return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
     current_app.logger.debug(request_json)
-    # TODO add valid formatting
+
     # Check if user is authorized to perform this action
     check_auth(business_identifier=None, account_id=account_id,
                contains_role=CHANGE_STATEMENT_SETTINGS, is_premium=True)
