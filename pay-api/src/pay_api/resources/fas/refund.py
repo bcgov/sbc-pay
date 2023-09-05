@@ -14,42 +14,38 @@
 """Resource for FAS Refunds endpoints."""
 from http import HTTPStatus
 
-from flask import current_app, jsonify, request
-from flask_restx import Namespace, Resource, cors
+from flask import Blueprint, current_app, jsonify, request
+from flask_cors import cross_origin
 
 from pay_api.exceptions import BusinessException, error_to_response
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import RefundService
 from pay_api.utils.auth import jwt as _jwt
+from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
-from pay_api.utils.util import cors_preflight
 
-API = Namespace('fas', description='Fee Accounting System')
+bp = Blueprint('FAS_REFUNDS', __name__,
+               url_prefix=f'{EndpointEnum.API_V1.value}/fas/routing-slips/<string:routing_slip_number>/refunds')
 
 
-@cors_preflight('POST')
-@API.route('', methods=['POST', 'OPTIONS'])
-class Refund(Resource):
-    """Endpoint resource to create refunds against routing slips."""
+@bp.route('', methods=['POST', 'OPTIONS'])
+@cross_origin(origins='*', methods=['POST'])
+@_jwt.has_one_of_roles(
+    [Role.FAS_REFUND.value, Role.FAS_REFUND_APPROVER.value])
+def post_fas_refund(routing_slip_number):
+    """Create the Refund for the Invoice."""
+    current_app.logger.info('<post_fas_refund')
+    request_json = request.get_json(silent=True)
+    try:
+        valid_format, errors = schema_utils.validate(request_json, 'refund_routing_slip') if \
+            request_json else (True, None)
+        if not valid_format:
+            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles(
-        [Role.FAS_REFUND.value, Role.FAS_REFUND_APPROVER.value])
-    def post(routing_slip_number):
-        """Create the Refund for the Invoice."""
-        current_app.logger.info('<Refund.post')
-        request_json = request.get_json(silent=True)
-        try:
-            valid_format, errors = schema_utils.validate(request_json, 'refund_routing_slip') if \
-                request_json else (True, None)
-            if not valid_format:
-                return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+        response = RefundService.create_routing_slip_refund(routing_slip_number, request_json)
 
-            response = RefundService.create_routing_slip_refund(routing_slip_number, request_json)
-
-        except BusinessException as exception:
-            return exception.response()
-        current_app.logger.debug('>Refund.post')
-        return jsonify(response), HTTPStatus.ACCEPTED
+    except BusinessException as exception:
+        return exception.response()
+    current_app.logger.debug('>post_fas_refund')
+    return jsonify(response), HTTPStatus.ACCEPTED

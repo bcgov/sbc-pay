@@ -20,5 +20,5 @@ All services have 2 defaults sets of endpoints:
  - meta
 That are used to expose operational health information about the service, and meta information.
 """
-from .routing_slip import API as ROUTING_SLIP_API
-from .refund import API as ROUTING_SLIP_REFUND_API
+from .routing_slip import bp as fas_routing_slip_bp
+from .refund import bp as fas_refund_bp

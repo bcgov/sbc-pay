@@ -15,8 +15,8 @@
 from datetime import datetime
 from http import HTTPStatus
 
-from flask import Response, abort, current_app, jsonify, request
-from flask_restx import Namespace, Resource, cors
+from flask import Blueprint, Response, abort, current_app, jsonify, request
+from flask_cors import cross_origin
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException, error_to_response
 from pay_api.schemas import utils as schema_utils
@@ -25,251 +25,224 @@ from pay_api.services.auth import check_auth
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE, VIEW_ROLE
+from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import CfsAccountStatus, ContentType, Role
 from pay_api.utils.errors import Error
 from pay_api.utils.trace import tracing as _tracing
-from pay_api.utils.util import cors_preflight
 
-API = Namespace('accounts', description='Payment System - Accounts')
-
-
-@cors_preflight('POST')
-@API.route('', methods=['POST', 'OPTIONS'])
-class Accounts(Resource):
-    """Endpoint resource to create payment account."""
-
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_jwt.requires_auth
-    @_jwt.has_one_of_roles([Role.SYSTEM.value])
-    def post():
-        """Create the payment account records."""
-        current_app.logger.info('<Account.post')
-        request_json = request.get_json()
-        current_app.logger.debug(request_json)
-
-        # Check if sandbox request is authorized.
-        is_sandbox = request.args.get('sandbox', 'false').lower() == 'true'
-        if is_sandbox and not _jwt.validate_roles([Role.CREATE_SANDBOX_ACCOUNT.value]):
-            abort(HTTPStatus.FORBIDDEN)
-
-        # Validate the input request
-        valid_format, errors = schema_utils.validate(request_json, 'account_info')
-
-        if not valid_format:
-            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
-        try:
-            response = PaymentAccountService.create(request_json, is_sandbox)
-            status = HTTPStatus.ACCEPTED \
-                if response.cfs_account_id and response.cfs_account_status == CfsAccountStatus.PENDING.value \
-                else HTTPStatus.CREATED
-        except BusinessException as exception:
-            return exception.response()
-        current_app.logger.debug('>Account.post')
-        return jsonify(response.asdict()), status
+bp = Blueprint('ACCOUNTS', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/accounts')
 
 
-@cors_preflight('PUT,GET,DELETE')
-@API.route('/<string:account_number>', methods=['PUT', 'GET', 'DELETE', 'OPTIONS'])
-class Account(Resource):
-    """Endpoint resource to update and get payment account."""
+@bp.route('', methods=['POST', 'OPTIONS'])
+@cross_origin(origins='*', methods=['POST'])
+@_jwt.requires_auth
+@_jwt.has_one_of_roles([Role.SYSTEM.value])
+def post_account():
+    """Create the payment account records."""
+    current_app.logger.info('<post_account')
+    request_json = request.get_json()
+    current_app.logger.debug(request_json)
 
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.SYSTEM.value])
-    @_tracing.trace()
-    def put(account_number: str):
-        """Create the payment account records."""
-        current_app.logger.info('<Account.post')
-        request_json = request.get_json()
-        current_app.logger.debug(request_json)
-        # Validate the input request
-        valid_format, errors = schema_utils.validate(request_json, 'account_info')
+    # Check if sandbox request is authorized.
+    is_sandbox = request.args.get('sandbox', 'false').lower() == 'true'
+    if is_sandbox and not _jwt.validate_roles([Role.CREATE_SANDBOX_ACCOUNT.value]):
+        abort(HTTPStatus.FORBIDDEN)
 
-        if not valid_format:
-            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
-        try:
-            response = PaymentAccountService.update(account_number, request_json)
-        except ServiceUnavailableException as exception:
-            return exception.response()
+    # Validate the input request
+    valid_format, errors = schema_utils.validate(request_json, 'account_info')
 
+    if not valid_format:
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+    try:
+        response = PaymentAccountService.create(request_json, is_sandbox)
         status = HTTPStatus.ACCEPTED \
             if response.cfs_account_id and response.cfs_account_status == CfsAccountStatus.PENDING.value \
-            else HTTPStatus.OK
-
-        current_app.logger.debug('>Account.post')
-        return jsonify(response.asdict()), status
-
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_jwt.requires_auth
-    @_tracing.trace()
-    def get(account_number: str):
-        """Get payment account details."""
-        current_app.logger.info('<Account.get')
-        # Check if user is authorized to perform this action
-        check_auth(business_identifier=None, account_id=account_number, one_of_roles=[EDIT_ROLE, VIEW_ROLE])
-        response, status = PaymentAccountService.find_by_auth_account_id(account_number).asdict(), HTTPStatus.OK
-        current_app.logger.debug('>Account.get')
-        return jsonify(response), status
-
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_jwt.has_one_of_roles([Role.SYSTEM.value])
-    @_tracing.trace()
-    def delete(account_number: str):
-        """Get payment account details."""
-        current_app.logger.info('<Account.delete')
-        # Check if user is authorized to perform this action
-        check_auth(business_identifier=None, account_id=account_number, one_of_roles=[EDIT_ROLE, VIEW_ROLE])
-        try:
-            PaymentAccountService.delete_account(account_number)
-        except BusinessException as exception:
-            return exception.response()
-        except ServiceUnavailableException as exception:
-            return exception.response()
-        current_app.logger.debug('>Account.delete')
-        return jsonify({}), HTTPStatus.NO_CONTENT
+            else HTTPStatus.CREATED
+    except BusinessException as exception:
+        return exception.response()
+    current_app.logger.debug('>post_account')
+    return jsonify(response.asdict()), status
 
 
-@cors_preflight('POST,GET')
-@API.route('/<string:account_number>/fees', methods=['POST', 'GET', 'OPTIONS'])
-class AccountFees(Resource):
-    """Endpoint resource to create payment account fee settings."""
-
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_jwt.requires_auth
-    @_jwt.has_one_of_roles([Role.MANAGE_ACCOUNTS.value])
-    def post(account_number: str):
-        """Create or update the account fee settings."""
-        current_app.logger.info('<AccountFees.post')
-        request_json = request.get_json()
-        # Validate the input request
-        valid_format, errors = schema_utils.validate(request_json, 'account_fees')
-
-        if not valid_format:
-            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
-        try:
-            response, status = PaymentAccountService.save_account_fees(account_number, request_json), HTTPStatus.OK
-        except BusinessException as exception:
-            return exception.response()
-        current_app.logger.debug('>AccountFees.post')
-        return jsonify(response), status
-
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_jwt.requires_auth
-    @_jwt.has_one_of_roles([Role.MANAGE_ACCOUNTS.value])
-    def get(account_number: str):
-        """Get Fee details for the account."""
-        current_app.logger.info('<AccountFees.get')
-        response, status = PaymentAccountService.get_account_fees(account_number), HTTPStatus.OK
-        current_app.logger.debug('>AccountFees.get')
-        return jsonify(response), status
+@bp.route('/<string:account_number>', methods=['GET', 'OPTIONS'])
+@cross_origin(origins='*', methods=['GET', 'PUT', 'DELETE'])
+@_tracing.trace()
+@_jwt.requires_auth
+def get_account(account_number: str):
+    """Get payment account details."""
+    current_app.logger.info('<get_account')
+    # Check if user is authorized to perform this action
+    check_auth(business_identifier=None, account_id=account_number, one_of_roles=[EDIT_ROLE, VIEW_ROLE])
+    response, status = PaymentAccountService.find_by_auth_account_id(account_number).asdict(), HTTPStatus.OK
+    current_app.logger.debug('>get_account')
+    return jsonify(response), status
 
 
-@cors_preflight('PUT')
-@API.route('/<string:account_number>/fees/<string:product>', methods=['PUT', 'OPTIONS'])
-class AccountFee(Resource):
-    """Endpoint resource to update payment account fee settings."""
+@bp.route('/<string:account_number>', methods=['PUT'])
+@cross_origin(origins='*')
+@_tracing.trace()
+@_jwt.has_one_of_roles([Role.SYSTEM.value])
+def put_account(account_number: str):
+    """Update the payment account records."""
+    current_app.logger.info('<put_account')
+    request_json = request.get_json()
+    current_app.logger.debug(request_json)
+    # Validate the input request
+    valid_format, errors = schema_utils.validate(request_json, 'account_info')
 
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_jwt.requires_auth
-    @_jwt.has_one_of_roles([Role.MANAGE_ACCOUNTS.value])
-    def put(account_number: str, product: str):
-        """Create or update the account fee settings."""
-        current_app.logger.info('<AccountFee.post')
-        request_json = request.get_json()
-        # Validate the input request
-        valid_format, errors = schema_utils.validate(request_json, 'account_fee')
+    if not valid_format:
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+    try:
+        response = PaymentAccountService.update(account_number, request_json)
+    except ServiceUnavailableException as exception:
+        return exception.response()
 
-        if not valid_format:
-            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
-        try:
-            response, status = PaymentAccountService.save_account_fee(account_number, product,
-                                                                      request_json), HTTPStatus.OK
-        except BusinessException as exception:
-            return exception.response()
-        current_app.logger.debug('>AccountFee.post')
-        return jsonify(response), status
+    status = HTTPStatus.ACCEPTED \
+        if response.cfs_account_id and response.cfs_account_status == CfsAccountStatus.PENDING.value \
+        else HTTPStatus.OK
+
+    current_app.logger.debug('>put_account')
+    return jsonify(response.asdict()), status
+
+
+@bp.route('/<string:account_number>', methods=['DELETE'])
+@cross_origin(origins='*')
+@_tracing.trace()
+@_jwt.has_one_of_roles([Role.SYSTEM.value])
+def delete_account(account_number: str):
+    """Delete payment account details."""
+    current_app.logger.info('<delete_account')
+    # Check if user is authorized to perform this action
+    check_auth(business_identifier=None, account_id=account_number, one_of_roles=[EDIT_ROLE, VIEW_ROLE])
+    try:
+        PaymentAccountService.delete_account(account_number)
+    except BusinessException as exception:
+        return exception.response()
+    except ServiceUnavailableException as exception:
+        return exception.response()
+    current_app.logger.debug('>delete_account')
+    return jsonify({}), HTTPStatus.NO_CONTENT
+
+
+@bp.route('/<string:account_number>/fees', methods=['GET', 'OPTIONS'])
+@cross_origin(origins='*', methods=['GET', 'POST'])
+@_jwt.requires_auth
+@_jwt.has_one_of_roles([Role.MANAGE_ACCOUNTS.value])
+def get_account_fees(account_number: str):
+    """Get Fee details for the account."""
+    current_app.logger.info('<get_account_fees')
+    response, status = PaymentAccountService.get_account_fees(account_number), HTTPStatus.OK
+    current_app.logger.debug('>get_account_fees')
+    return jsonify(response), status
+
+
+@bp.route('/<string:account_number>/fees', methods=['POST'])
+@cross_origin(origins='*')
+@_jwt.requires_auth
+@_jwt.has_one_of_roles([Role.MANAGE_ACCOUNTS.value])
+def post_account_fees(account_number: str):
+    """Create or update the account fee settings."""
+    current_app.logger.info('<post_account_fees')
+    request_json = request.get_json()
+    # Validate the input request
+    valid_format, errors = schema_utils.validate(request_json, 'account_fees')
+
+    if not valid_format:
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+    try:
+        response, status = PaymentAccountService.save_account_fees(account_number, request_json), HTTPStatus.OK
+    except BusinessException as exception:
+        return exception.response()
+    current_app.logger.debug('>post_account_fees')
+    return jsonify(response), status
+
+
+@bp.route('/<string:account_number>/fees/<string:product>', methods=['PUT', 'OPTIONS'])
+@cross_origin(origins='*', methods=['PUT'])
+@_jwt.requires_auth
+@_jwt.has_one_of_roles([Role.MANAGE_ACCOUNTS.value])
+def put_account_fee_product(account_number: str, product: str):
+    """Create or update the account fee settings."""
+    current_app.logger.info('<put_account_fee_product')
+    request_json = request.get_json()
+    # Validate the input request
+    valid_format, errors = schema_utils.validate(request_json, 'account_fee')
+
+    if not valid_format:
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+    try:
+        response, status = PaymentAccountService.save_account_fee(account_number, product,
+                                                                  request_json), HTTPStatus.OK
+    except BusinessException as exception:
+        return exception.response()
+    current_app.logger.debug('>put_account_fee_product')
+    return jsonify(response), status
 
 #########################################################################################################
 # Note this route is used by CSO for reconciliation, so be careful if making any changes to the response.
 #########################################################################################################
 
 
-@cors_preflight('POST')
-@API.route('/<string:account_number>/payments/queries', methods=['POST', 'OPTIONS'])
-class AccountPurchaseHistory(Resource):
-    """Endpoint resource to query payment."""
+@bp.route('/<string:account_number>/payments/queries', methods=['POST', 'OPTIONS'])
+@cross_origin(origins='*', methods=['POST'])
+@_tracing.trace()
+@_jwt.requires_auth
+def post_search_purchase_history(account_number: str):
+    """Search purchase history."""
+    current_app.logger.info('<post_search_purchase_history')
+    request_json = request.get_json()
+    current_app.logger.debug(request_json)
+    # Validate the input request
+    valid_format, errors = schema_utils.validate(request_json, 'purchase_history_request')
+    if not valid_format:
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_jwt.requires_auth
-    @_tracing.trace()
-    def post(account_number: str):
-        """Create the payment records."""
-        current_app.logger.info('<AccountPurchaseHistory.post')
-        request_json = request.get_json()
-        current_app.logger.debug(request_json)
-        # Validate the input request
-        valid_format, errors = schema_utils.validate(request_json, 'purchase_history_request')
-        if not valid_format:
-            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+    # if viewAll -> searches transactions across all accounts -- needs special role
+    view_all = request.args.get('viewAll', None) == 'true'
 
-        # if viewAll -> searches transactions across all accounts -- needs special role
-        view_all = request.args.get('viewAll', None) == 'true'
+    # Check if user is authorized to perform this action
+    required_roles = [Role.EDITOR.value, Role.VIEW_ALL_TRANSACTIONS.value] if view_all else [Role.EDITOR.value]
+    check_auth(business_identifier=None, account_id=account_number, all_of_roles=required_roles)
 
-        # Check if user is authorized to perform this action
-        required_roles = [Role.EDITOR.value, Role.VIEW_ALL_TRANSACTIONS.value] if view_all else [Role.EDITOR.value]
-        check_auth(business_identifier=None, account_id=account_number, all_of_roles=required_roles)
-
-        account_to_search = None if view_all else account_number
-        page: int = int(request.args.get('page', '1'))
-        limit: int = int(request.args.get('limit', '10'))
-        response, status = Payment.search_purchase_history(account_to_search, request_json, page,
-                                                           limit), HTTPStatus.OK
-        current_app.logger.debug('>AccountPurchaseHistory.post')
-        return jsonify(response), status
+    account_to_search = None if view_all else account_number
+    page: int = int(request.args.get('page', '1'))
+    limit: int = int(request.args.get('limit', '10'))
+    response, status = Payment.search_purchase_history(account_to_search, request_json, page,
+                                                       limit), HTTPStatus.OK
+    current_app.logger.debug('>post_search_purchase_history')
+    return jsonify(response), status
 
 
-@cors_preflight('POST')
-@API.route('/<string:account_number>/payments/reports', methods=['POST', 'OPTIONS'])
-class AccountPurchaseReport(Resource):
-    """Endpoint resource to create payment."""
+@bp.route('/<string:account_number>/payments/reports', methods=['POST', 'OPTIONS'])
+@cross_origin(origins='*', methods=['POST'])
+@_tracing.trace()
+@_jwt.requires_auth
+def post_account_purchase_report(account_number: str):
+    """Create the account purchase report."""
+    current_app.logger.info('<post_account_purchase_report')
+    response_content_type = request.headers.get('Accept', ContentType.PDF.value)
+    request_json = request.get_json()
+    current_app.logger.debug(request_json)
+    # Validate the input request
+    valid_format, errors = schema_utils.validate(request_json, 'purchase_history_request')
+    if not valid_format:
+        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_jwt.requires_auth
-    @_tracing.trace()
-    def post(account_number: str):
-        """Create the payment records."""
-        current_app.logger.info('<AccountPurchaseReport.post')
-        response_content_type = request.headers.get('Accept', ContentType.PDF.value)
-        request_json = request.get_json()
-        current_app.logger.debug(request_json)
-        # Validate the input request
-        valid_format, errors = schema_utils.validate(request_json, 'purchase_history_request')
-        if not valid_format:
-            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+    report_name = f"bcregistry-transactions-{datetime.now().strftime('%m-%d-%Y')}"
 
-        report_name = f"bcregistry-transactions-{datetime.now().strftime('%m-%d-%Y')}"
+    if response_content_type == ContentType.PDF.value:
+        report_name = f'{report_name}.pdf'
+    else:
+        report_name = f'{report_name}.csv'
 
-        if response_content_type == ContentType.PDF.value:
-            report_name = f'{report_name}.pdf'
-        else:
-            report_name = f'{report_name}.csv'
-
-        # Check if user is authorized to perform this action
-        check_auth(business_identifier=None, account_id=account_number, contains_role=EDIT_ROLE, is_premium=True)
-        try:
-            report = Payment.create_payment_report(account_number, request_json, response_content_type, report_name)
-            response = Response(report, 201)
-            response.headers.set('Content-Disposition', 'attachment', filename=report_name)
-            response.headers.set('Content-Type', response_content_type)
-            response.headers.set('Access-Control-Expose-Headers', 'Content-Disposition')
-            return response
-        except BusinessException as exception:
-            return exception.response()
+    # Check if user is authorized to perform this action
+    check_auth(business_identifier=None, account_id=account_number, contains_role=EDIT_ROLE, is_premium=True)
+    try:
+        report = Payment.create_payment_report(account_number, request_json, response_content_type, report_name)
+        response = Response(report, 201)
+        response.headers.set('Content-Disposition', 'attachment', filename=report_name)
+        response.headers.set('Content-Type', response_content_type)
+        response.headers.set('Access-Control-Expose-Headers', 'Content-Disposition')
+        return response
+    except BusinessException as exception:
+        return exception.response()

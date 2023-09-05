@@ -14,36 +14,32 @@
 """Resource for Invoice endpoints."""
 from http import HTTPStatus
 
-from flask import jsonify
-from flask_restx import Namespace, Resource, cors
+from flask import Blueprint, jsonify
+from flask_cors import cross_origin
 
 from pay_api.exceptions import BusinessException
 from pay_api.services import InvoiceService
 from pay_api.utils.auth import jwt as _jwt
+from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.trace import tracing as _tracing
-from pay_api.utils.util import cors_preflight
 
 
-API = Namespace('invoices', description='Payment System - Payment Requests')
+bp = Blueprint('INVOICES', __name__,
+               url_prefix=f'{EndpointEnum.API_V1.value}/payment-requests/<int:invoice_id>/invoices')
 
 
-@cors_preflight(['GET'])
-@API.route('', methods=['GET', 'OPTIONS'], doc={'deprecated': True})
-class PaymentRequestInvoice(Resource):
-    """Temporary endpoint to unblock teams who are using this endpoint."""
+@bp.route('', methods=['GET', 'OPTIONS'])
+@cross_origin(origins='*', methods=['GET'])
+@_tracing.trace()
+@_jwt.requires_auth
+def get_invoice_by_id(invoice_id):
+    """Subject to remove once the change has been notified to teams."""
+    try:
+        response = {
+            'items': []
+        }
 
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_jwt.requires_auth
-    @_tracing.trace()
-    def get(invoice_id):
-        """Subject to remove once the change has been notified to teams."""
-        try:
-            response = {
-                'items': []
-            }
-
-            response['items'].append(InvoiceService.find_by_id(invoice_id).asdict())
-        except BusinessException as exception:
-            return exception.response()
-        return jsonify(response), HTTPStatus.OK
+        response['items'].append(InvoiceService.find_by_id(invoice_id).asdict())
+    except BusinessException as exception:
+        return exception.response()
+    return jsonify(response), HTTPStatus.OK

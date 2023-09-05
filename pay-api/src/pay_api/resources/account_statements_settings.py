@@ -14,64 +14,61 @@
 """Resource for Statement Settings."""
 from http import HTTPStatus
 
-from flask import current_app, jsonify, request
-from flask_restx import Namespace, Resource, cors
+from flask import Blueprint, current_app, jsonify, request
+from flask_cors import cross_origin
 
 from pay_api.exceptions import BusinessException
 from pay_api.services import StatementSettings as StatementSettingsService
 from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import CHANGE_STATEMENT_SETTINGS, EDIT_ROLE
+from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.trace import tracing as _tracing
-from pay_api.utils.util import cors_preflight
 
 
-API = Namespace('accounts', description='Payment System - Statements Settings')
+bp = Blueprint('ACCOUNT_SETTINGS', __name__,
+               url_prefix=f'{EndpointEnum.API_V1.value}/accounts/<string:account_id>/statements/settings')
 
 
-@cors_preflight('GET,POST')
-@API.route('', methods=['GET', 'POST', 'OPTIONS'])
-class AccountStatementsSettings(Resource):
-    """Endpoint resource for statements."""
+@bp.route('', methods=['GET', 'OPTIONS'])
+@cross_origin(origins='*', methods=['GET', 'POST'])
+@_tracing.trace()
+@_jwt.requires_auth
+def get_account_statement_settings(account_id):
+    """Get all statements records for an account."""
+    current_app.logger.info('<get_account_statement_settings')
 
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_jwt.requires_auth
-    @_tracing.trace()
-    def get(account_id):
-        """Get all statements records for an account."""
-        current_app.logger.info('<AccountStatementsSettings.get')
+    # Check if user is authorized to perform this action
+    check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE, is_premium=True)
 
-        # Check if user is authorized to perform this action
-        check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE, is_premium=True)
+    response, status = StatementSettingsService.find_by_account_id(account_id), HTTPStatus.OK
+    current_app.logger.debug('>get_account_statement_settings')
+    return jsonify(response), status
 
-        response, status = StatementSettingsService.find_by_account_id(account_id), HTTPStatus.OK
-        current_app.logger.debug('>AccountStatementsSettings.get')
-        return jsonify(response), status
 
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_jwt.requires_auth
-    @_tracing.trace()
-    def post(account_id):
-        """Update the statement settings ."""
-        current_app.logger.info('<AccountStatementsSettings.put')
-        request_json = request.get_json()
-        current_app.logger.debug(request_json)
-        # TODO add valid formatting
-        frequency = request_json.get('frequency')
-        # Check if user is authorized to perform this action
-        check_auth(business_identifier=None, account_id=account_id,
-                   contains_role=CHANGE_STATEMENT_SETTINGS, is_premium=True)
+@bp.route('', methods=['POST'])
+@cross_origin(origins='*')
+@_tracing.trace()
+@_jwt.requires_auth
+def post_account_statement_settings(account_id):
+    """Update the statement settings ."""
+    current_app.logger.info('<post_account_statement_settings')
+    request_json = request.get_json()
+    current_app.logger.debug(request_json)
+    # TODO add valid formatting
+    frequency = request_json.get('frequency')
+    # Check if user is authorized to perform this action
+    check_auth(business_identifier=None, account_id=account_id,
+               contains_role=CHANGE_STATEMENT_SETTINGS, is_premium=True)
 
-        try:
-            response, status = (
-                StatementSettingsService.update_statement_settings(
-                    account_id, frequency
-                ),
-                HTTPStatus.OK,
-            )
-        except BusinessException as exception:
-            return exception.response()
-        current_app.logger.debug('>Payment.put')
-        return jsonify(response), status
+    try:
+        response, status = (
+            StatementSettingsService.update_statement_settings(
+                account_id, frequency
+            ),
+            HTTPStatus.OK,
+        )
+    except BusinessException as exception:
+        return exception.response()
+    current_app.logger.debug('>post_account_statement_settings')
+    return jsonify(response), status

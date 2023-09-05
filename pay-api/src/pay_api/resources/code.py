@@ -14,37 +14,28 @@
 """Resource for code endpoints."""
 from http import HTTPStatus
 
-from flask_restx import Namespace, Resource, cors
+from flask import Blueprint
+from flask_cors import cross_origin
 
 from pay_api.services.code import Code as CodeService
 from pay_api.utils.trace import tracing as _tracing
-from pay_api.utils.util import cors_preflight
+from pay_api.utils.endpoints_enums import EndpointEnum
 
 
-API = Namespace('codes', description='Payment System - Codes')
+bp = Blueprint('CODES', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/codes')
 
 
-@cors_preflight('GET')
-@API.route('/<string:code_type>', methods=['GET', 'OPTIONS'])
-class Codes(Resource):
-    """Endpoint resource to return codes."""
-
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_tracing.trace()
-    def get(code_type):
-        """Return all codes based on code_type."""
-        return CodeService.find_code_values_by_type(code_type), HTTPStatus.OK
+@bp.route('/<string:code_type>', methods=['GET', 'OPTIONS'])
+@cross_origin(origins='*', methods=['GET'])
+@_tracing.trace()
+def get_codes_by_type(code_type):
+    """Return all codes based on code_type."""
+    return CodeService.find_code_values_by_type(code_type), HTTPStatus.OK
 
 
-@cors_preflight('GET')
-@API.route('/<string:code_type>/<string:code>', methods=['GET', 'OPTIONS'])
-class Code(Resource):
-    """Endpoint resource to return codes."""
-
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_tracing.trace()
-    def get(code_type, code):
-        """Return all codes based on code_type."""
-        return CodeService.find_code_value_by_type_and_code(code_type, code), HTTPStatus.OK
+@bp.route('/<string:code_type>/<string:code>', methods=['GET', 'OPTIONS'])
+@cross_origin(origins='*', methods=['GET'])
+@_tracing.trace()
+def get_code(code_type, code):
+    """Return all codes based on code_type."""
+    return CodeService.find_code_value_by_type_and_code(code_type, code), HTTPStatus.OK

@@ -27,6 +27,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration  # noqa: I001
 # import pay_api.config as config
 from pay_api import config
 from pay_api.config import _Config
+from pay_api.resources import endpoints
 from pay_api.services.flags import flags
 from pay_api.models import db, ma
 from pay_api.utils.auth import jwt
@@ -47,6 +48,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     flags.init_app(app)
     db.init_app(app)
     ma.init_app(app)
+    endpoints.init_app(app)
 
     if run_mode != 'migration':
 
@@ -57,11 +59,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
                     dsn=app.config.get('SENTRY_DSN'),
                     integrations=[FlaskIntegration()]
                 )
-        # pylint: disable=import-outside-toplevel
-        from pay_api.resources import API_BLUEPRINT, OPS_BLUEPRINT
 
-        app.register_blueprint(API_BLUEPRINT)
-        app.register_blueprint(OPS_BLUEPRINT)
         app.after_request(convert_to_camel)
 
         setup_jwt_manager(app, jwt)
@@ -69,6 +67,16 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
         ExceptionHandler(app)
 
         @app.after_request
+        def handle_after_request(response):  # pylint: disable=unused-variable
+            add_version(response)
+            set_access_control_header(response)
+            return response
+
+        def set_access_control_header(response):
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, registries-trace-id, ' \
+                                                               'Account-Id'
+
         def add_version(response):  # pylint: disable=unused-variable
             version = get_run_version()
             response.headers['API'] = f'pay_api/{version}'

@@ -14,35 +14,30 @@
 """Resource for Fee Calculation endpoints."""
 from http import HTTPStatus
 
-from flask import jsonify, request
-from flask_restx import Namespace, Resource, cors
+from flask import Blueprint, jsonify, request
+from flask_cors import cross_origin
 
 from pay_api.exceptions import BusinessException
 from pay_api.services import FeeSchedule
+from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.trace import tracing as _tracing
-from pay_api.utils.util import cors_preflight
 
-API = Namespace('fee-schedules', description='Payment System - Fee Schedules')
+bp = Blueprint('FEE_SCHEDULE', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/fees/schedules')
 
 
-@cors_preflight('GET')
-@API.route('', methods=['GET', 'OPTIONS'])
-class FeeSchedules(Resource):
-    """Endpoint resource to calculate fee."""
-
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_tracing.trace()
-    def get():
-        """Calculate the fee for the filing using the corp type/filing type and return fee."""
-        try:
-            corp_type = request.args.get('corp_type', None)
-            filing_type = request.args.get('filing_type', None)
-            description = request.args.get('description', None)
-            response, status = (
-                FeeSchedule.find_all(corp_type=corp_type, filing_type_code=filing_type, description=description),
-                HTTPStatus.OK,
-            )
-        except BusinessException as exception:
-            return exception.response()
-        return jsonify(response), status
+@bp.route('', methods=['GET', 'OPTIONS'])
+@cross_origin(origins='*', methods=['GET'])
+@_tracing.trace()
+def get_fee_schedules():
+    """Calculate the fee for the filing using the corp type/filing type and return fee."""
+    try:
+        corp_type = request.args.get('corp_type', None)
+        filing_type = request.args.get('filing_type', None)
+        description = request.args.get('description', None)
+        response, status = (
+            FeeSchedule.find_all(corp_type=corp_type, filing_type_code=filing_type, description=description),
+            HTTPStatus.OK,
+        )
+    except BusinessException as exception:
+        return exception.response()
+    return jsonify(response), status

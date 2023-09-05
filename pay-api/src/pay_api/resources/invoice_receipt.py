@@ -13,63 +13,60 @@
 # limitations under the License.
 """Resource for Transaction endpoints."""
 
-from flask import Response, current_app, jsonify, request
-from flask_restx import Namespace, Resource, cors
+from flask import Blueprint, Response, current_app, jsonify, request
+from flask_cors import cross_origin
 
 from pay_api.exceptions import BusinessException, error_to_response
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import ReceiptService
 from pay_api.utils.auth import jwt as _jwt
+from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.errors import Error
-from pay_api.utils.util import cors_preflight
 
 
-API = Namespace('invoice-receipts', description='Payment System - Receipts')
+bp = Blueprint('INVOICE_RECEIPTS', __name__,
+               url_prefix=f'{EndpointEnum.API_V1.value}/payment-requests/<int:invoice_id>')
 
 
-@cors_preflight('POST,GET')
-@API.route('/receipts', methods=['GET', 'POST', 'OPTIONS'])
-class InvoiceReceipt(Resource):
-    """Endpoint resource to create receipt.Use this endpoint when no invoice number is available."""
+@bp.route('/receipts', methods=['GET', 'OPTIONS'])
+@cross_origin(origins='*', methods=['GET', 'POST'])
+@_jwt.requires_auth
+def get_invoice_receipt(invoice_id):
+    """Return the receipt details."""
+    current_app.logger.info('<get_invoice_receipt')
+    try:
+        receipt_details = ReceiptService.get_receipt_details({}, invoice_id, skip_auth_check=False)
+        receipt_details.pop('paymentMethodDescription', None)
 
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_jwt.requires_auth
-    def post(invoice_id):
-        """Create the Receipt for the Invoice."""
-        request_json = request.get_json()
-        current_app.logger.info('<Receipt.post')
-        try:
-            valid_format, errors = schema_utils.validate(request_json, 'payment_receipt_input')
-            if not valid_format:
-                return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+    except BusinessException as exception:
+        return exception.response()
+    current_app.logger.debug('>get_invoice_receipt')
+    return jsonify(receipt_details), 200
 
-            pdf = ReceiptService.create_receipt(invoice_id, request_json)
-            current_app.logger.info('<InvoiceReceipt received pdf')
-            response = Response(pdf, 201)
-            file_name = request_json.get('fileName')
-            file_name = 'Coops-Filing' if not file_name else file_name
-            response.headers.set('Content-Disposition', 'attachment', filename=f'{file_name}.pdf')
-            response.headers.set('Content-Type', 'application/pdf')
-            response.headers.set('Access-Control-Expose-Headers', 'Content-Disposition')
-            return response
 
-        except BusinessException as exception:
-            return exception.response()
-        current_app.logger.debug('>Transaction.post')
-        return jsonify(response), 200
+@bp.route('/receipts', methods=['POST'])
+@cross_origin(origins='*')
+@_jwt.requires_auth
+def post_invoice_receipt(invoice_id):
+    """Create the Receipt for the Invoice."""
+    request_json = request.get_json()
+    current_app.logger.info('<post_invoice_receipt')
+    try:
+        valid_format, errors = schema_utils.validate(request_json, 'payment_receipt_input')
+        if not valid_format:
+            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
 
-    @staticmethod
-    @cors.crossdomain(origin='*')
-    @_jwt.requires_auth
-    def get(invoice_id):
-        """Return the receipt details."""
-        current_app.logger.info('<Receipt.get')
-        try:
-            receipt_details = ReceiptService.get_receipt_details({}, invoice_id, skip_auth_check=False)
-            receipt_details.pop('paymentMethodDescription', None)
+        pdf = ReceiptService.create_receipt(invoice_id, request_json)
+        current_app.logger.info('<InvoiceReceipt received pdf')
+        response = Response(pdf, 201)
+        file_name = request_json.get('fileName')
+        file_name = 'Coops-Filing' if not file_name else file_name
+        response.headers.set('Content-Disposition', 'attachment', filename=f'{file_name}.pdf')
+        response.headers.set('Content-Type', 'application/pdf')
+        response.headers.set('Access-Control-Expose-Headers', 'Content-Disposition')
+        return response
 
-        except BusinessException as exception:
-            return exception.response()
-        current_app.logger.debug('>Transaction.post')
-        return jsonify(receipt_details), 200
+    except BusinessException as exception:
+        return exception.response()
+    current_app.logger.debug('>post_invoice_receipt')
+    return jsonify(response), 200
