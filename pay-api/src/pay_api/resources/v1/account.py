@@ -236,7 +236,7 @@ def post_account_purchase_report(account_number: str):
         report_name = f'{report_name}.csv'
 
     # Check if user is authorized to perform this action
-    check_auth(business_identifier=None, account_id=account_number, contains_role=EDIT_ROLE, is_premium=True)
+    check_auth(business_identifier=None, account_id=account_number, contains_role=EDIT_ROLE)
     try:
         report = Payment.create_payment_report(account_number, request_json, response_content_type, report_name)
         response = Response(report, 201)
