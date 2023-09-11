@@ -11,19 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Meta information about the service.
+"""Exposes all of the resource endpoints mounted in Flask-Blueprint style.
 
-to support swagger on http
+Uses restplus namespaces to mount individual api endpoints into the service.
+
+All services have 2 defaults sets of endpoints:
+ - ops
+ - meta
+That are used to expose operational health information about the service, and meta information.
 """
-from flask import url_for
-from flask_restx import Api as BaseApi
-
-
-class Api(BaseApi):
-    """Monkey patch Swagger API to return HTTPS URLs."""
-
-    @property
-    def specs_url(self):
-        """Return URL for endpoint."""
-        scheme = 'http' if '5000' in self.base_url else 'https'
-        return url_for(self.endpoint('specs'), _external=True, _scheme=scheme)
+from .routing_slip import bp as fas_routing_slip_bp
+from .refund import bp as fas_refund_bp

@@ -190,8 +190,8 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
     payment_account = ma.Nested(PaymentAccountSchema(only=('auth_account_id', 'name', 'billable')), many=False)
 
     _links = ma.Hyperlinks({
-        'self': ma.URLFor('API.invoice_invoice', invoice_id='<id>'),
-        'collection': ma.URLFor('API.invoice_invoices', invoice_id='<id>')
+        'self': ma.URLFor('INVOICE.get_invoice', invoice_id='<id>'),
+        'collection': ma.URLFor('INVOICE.get_invoices', invoice_id='<id>')
     })
 
     total = fields.Float(data_key='total')

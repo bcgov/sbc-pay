@@ -1,11 +1,11 @@
 gunicorn
 Flask
 Flask-Caching
+Flask-Cors
 Flask-Migrate<3
 Flask-Script
 Flask-Moment
 Flask-SQLAlchemy
-flask-restx
 flask-marshmallow==0.11.0
 flask-jwt-oidc
 python-dotenv
