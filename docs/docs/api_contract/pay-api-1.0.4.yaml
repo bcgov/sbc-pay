@@ -5,7 +5,7 @@ info:
     <p>BC Registries Pay system is used by the BC Registries account services and integrated systems to create payment transactions to pay for the products purchased. This abstracts the integrated systems from the underlying payment integrations and payment methods. <br/>
     With this API you can submit the following transactions:<ul><li>Create payment transactions</li><li>Get payment status</li><li>Delete unpaid payment transactions</li><li>Generate PDF receipt</li><li>Retrieve account statements</li><li>Generate account transactions reports</li></ul>
     <p>All requests must include an Account ID.</p>
-  version: 1.0.3
+  version: 1.0.4
   contact:
     name: BC Registries
 paths:
@@ -1614,12 +1614,18 @@ components:
         createdOn:
           type: string
           description: date made payment
+        disbursementDate:
+          type: string
+          description: date when disbursement status code was set
         paid:
           type: number
           description: amount paid
         refund:
           type: number
           description: reference number
+        refundDate:
+          type: string
+          description: date when received confirmation invoice was refunded
         serviceFees:
           type: number
           description: service fees
@@ -1681,6 +1687,9 @@ components:
           type: string
         folioNumber:
           type: string
+        paymentDate:
+          type: string
+          description: date when invoice was marked as paid
         paymentMethod:
           type: string
         receipts:
