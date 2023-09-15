@@ -1616,7 +1616,7 @@ components:
           description: date made payment
         disbursementDate:
           type: string
-          description: date in which invoice the disbursement status code was set
+          description: date when disbursement status code was set
         paid:
           type: number
           description: amount paid
@@ -1625,7 +1625,7 @@ components:
           description: reference number
         refundDate:
           type: string
-          description: date in which BC Registries received confirmation invoice was refunded
+          description: date when received confirmation invoice was refunded
         serviceFees:
           type: number
           description: service fees
@@ -1689,7 +1689,7 @@ components:
           type: string
         paymentDate:
           type: string
-          description: Date when invoice was marked as paid
+          description: date when invoice was marked as paid
         paymentMethod:
           type: string
         receipts:
