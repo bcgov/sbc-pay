@@ -70,12 +70,13 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
             'payment_account_id',
             'payment_date',
             'payment_method_code',
-            'total',
             'paid',
+            'overdue_date',
             'refund',
             'refund_date',
             'routing_slip',
             'service_fees',
+            'total',
             'updated_by',
             'updated_name',
             'updated_on'
@@ -97,6 +98,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
     total = db.Column(db.Numeric(19, 2), nullable=False)
     paid = db.Column(db.Numeric(19, 2), nullable=True)
     payment_date = db.Column(db.DateTime, nullable=True)
+    overdue_date = db.Column(db.DateTime, nullable=True)
     refund_date = db.Column(db.DateTime, nullable=True)
     refund = db.Column(db.Numeric(19, 2), nullable=True)
     routing_slip = db.Column(db.String(50), nullable=True, index=True)

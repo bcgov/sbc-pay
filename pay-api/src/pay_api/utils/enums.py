@@ -57,6 +57,7 @@ class InvoiceStatus(Enum):
     REFUNDED = 'REFUNDED'
     CANCELLED = 'CANCELLED'
     CREDITED = 'CREDITED'
+    OVERDUE = 'OVERDUE'
 
 
 class TransactionStatus(Enum):
