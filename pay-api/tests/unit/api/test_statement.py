@@ -17,11 +17,13 @@
 Test-Suite to ensure that the /accounts endpoint is working as expected.
 """
 
+from datetime import datetime
 import json
 
 from pay_api.models import PaymentAccount
 from pay_api.models.invoice import Invoice
-from pay_api.utils.enums import ContentType, StatementFrequency
+from pay_api.utils.enums import ContentType, InvoiceStatus, StatementFrequency
+from pay_api.utils.util import get_local_formatted_date
 from tests.utilities.base_test import (
     factory_statement, factory_statement_invoices, factory_statement_settings, get_claims, get_payment_request,
     token_header)
@@ -222,3 +224,55 @@ def test_get_monthly_statement_report_as_csv(session, client, jwt, app):
     rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/{statement_model.id}',
                     headers=headers)
     assert rv.status_code == 200
+
+
+def test_statement_summary(session, client, jwt, app):
+    """Assert the statement summary is working."""
+    headers = {
+        'Authorization': f'Bearer {jwt.create_jwt(get_claims(), token_header)}',
+        'content-type': 'application/json'
+    }
+
+    # Check if this works without any invoices in OVERDUE.
+    rv = client.post('/api/v1/payment-requests',
+                     data=json.dumps(get_payment_request(business_identifier='CP0002000')),
+                     headers=headers)
+    invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+    payment_account_id = invoice.payment_account_id
+    pay_account: PaymentAccount = PaymentAccount.find_by_id(payment_account_id)
+    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/summary',
+                    headers=headers)
+    assert rv.status_code == 200
+    assert rv.json.get('totalDue') == 0
+    assert rv.json.get('oldestDueDate') is None
+
+    # Create multiple OVERDUE invoices and check they add up.
+    total_due = 0
+    payment_account_id = 0
+    invoice_ids = []
+    oldest_due_date = datetime.now()
+    for _ in range(5):
+        rv = client.post('/api/v1/payment-requests',
+                         data=json.dumps(get_payment_request(business_identifier='CP0002000')),
+                         headers=headers)
+
+        invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
+        invoice_ids.append(invoice.id)
+        invoice.invoice_status_code = InvoiceStatus.OVERDUE.value
+        invoice.overdue_date = oldest_due_date
+        total_due += invoice.total - invoice.paid
+        invoice.save()
+
+    settings_model = factory_statement_settings(payment_account_id=pay_account.id,
+                                                frequency=StatementFrequency.MONTHLY.value)
+    statement_model = factory_statement(payment_account_id=pay_account.id,
+                                        frequency=StatementFrequency.MONTHLY.value,
+                                        statement_settings_id=settings_model.id)
+    for invoice_id in invoice_ids:
+        factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice_id)
+
+    rv = client.get(f'/api/v1/accounts/{pay_account.auth_account_id}/statements/summary',
+                    headers=headers)
+    assert rv.status_code == 200
+    assert rv.json.get('totalDue') == float(total_due)
+    assert rv.json.get('oldestDueDate') == get_local_formatted_date(oldest_due_date)
