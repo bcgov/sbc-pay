@@ -37,10 +37,10 @@ bp = Blueprint('ACCOUNT_STATEMENTS', __name__,
 @_jwt.requires_auth
 def get_account_statements(account_id):
     """Get all statements records for an account."""
-    current_app.logger.info('<Aget_account_statements')
+    current_app.logger.info('<get_account_statements')
 
     # Check if user is authorized to perform this action
-    check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE, is_premium=True)
+    check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE)
 
     page: int = int(request.args.get('page', '1'))
     limit: int = int(request.args.get('limit', '10'))
@@ -60,7 +60,7 @@ def get_account_statement(account_id: str, statement_id: str):
     response_content_type = request.headers.get('Accept', ContentType.PDF.value)
 
     # Check if user is authorized to perform this action
-    auth = check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE, is_premium=True)
+    auth = check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE)
 
     report, report_name = StatementService.get_statement_report(statement_id=statement_id,
                                                                 content_type=response_content_type, auth=auth)
@@ -68,4 +68,18 @@ def get_account_statement(account_id: str, statement_id: str):
     response.headers.set('Content-Disposition', 'attachment', filename=report_name)
     response.headers.set('Content-Type', response_content_type)
     response.headers.set('Access-Control-Expose-Headers', 'Content-Disposition')
+    current_app.logger.info('>get_account_statement')
     return response
+
+
+@bp.route('/summary', methods=['GET', 'OPTIONS'])
+@cross_origin(origins='*', methods=['GET'])
+@_tracing.trace()
+@_jwt.requires_auth
+def get_account_statement_summary(account_id: str):
+    """Create the statement report."""
+    current_app.logger.info('<get_account_statement_summary')
+    check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE)
+    response, status = StatementService.get_summary(account_id), HTTPStatus.OK
+    current_app.logger.info('>get_account_statement_summary')
+    return jsonify(response), status

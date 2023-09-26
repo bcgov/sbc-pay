@@ -15,12 +15,17 @@
 from datetime import date, datetime
 
 from flask import current_app
+from sqlalchemy import func
 
+from pay_api.models import db
+from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
+from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.models import StatementSchema as StatementModelSchema
-from pay_api.utils.enums import ContentType, StatementFrequency
+from pay_api.utils.enums import ContentType, InvoiceStatus, StatementFrequency
 from pay_api.utils.constants import DT_SHORT_FORMAT
-
+from pay_api.utils.util import get_local_formatted_date
 from .payment import Payment as PaymentService
 
 
@@ -163,3 +168,26 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         current_app.logger.debug('>get_statement_report')
 
         return report_response, report_name
+
+    @staticmethod
+    def get_summary(auth_account_id: str):
+        """Get summary for statements by account id."""
+        # This is written outside of the model, because we have multiple model references that need to be included.
+        # If we include these references inside of a model, it runs the risk of having circular dependencies.
+        # It's easier to build out features if our models don't rely on other models.
+        result = db.session.query(func.sum(InvoiceModel.total - InvoiceModel.paid).label('total_due'),
+                                  func.min(InvoiceModel.overdue_date).label('oldest_overdue_date')) \
+            .join(PaymentAccountModel) \
+            .join(StatementInvoicesModel) \
+            .filter(PaymentAccountModel.auth_account_id == auth_account_id) \
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.OVERDUE.value) \
+            .filter(StatementInvoicesModel.invoice_id == InvoiceModel.id) \
+            .group_by(InvoiceModel.payment_account_id) \
+            .one_or_none()
+
+        total_due = float(result.total_due) if result else 0
+        oldest_overdue_date = get_local_formatted_date(result.oldest_overdue_date) if result else None
+        return {
+            'total_due': total_due,
+            'oldest_overdue_date': oldest_overdue_date
+        }
