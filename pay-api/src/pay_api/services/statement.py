@@ -176,7 +176,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         # If we include these references inside of a model, it runs the risk of having circular dependencies.
         # It's easier to build out features if our models don't rely on other models.
         result = db.session.query(func.sum(InvoiceModel.total - InvoiceModel.paid).label('total_due'),
-                                  func.min(InvoiceModel.overdue_date).label('oldest_due_date')) \
+                                  func.min(InvoiceModel.overdue_date).label('oldest_overdue_date')) \
             .join(PaymentAccountModel) \
             .join(StatementInvoicesModel) \
             .filter(PaymentAccountModel.auth_account_id == auth_account_id) \
@@ -186,8 +186,8 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             .one_or_none()
 
         total_due = float(result.total_due) if result else 0
-        oldest_due_date = get_local_formatted_date(result.oldest_due_date) if result else None
+        oldest_overdue_date = get_local_formatted_date(result.oldest_overdue_date) if result else None
         return {
             'total_due': total_due,
-            'oldest_due_date': oldest_due_date
+            'oldest_overdue_date': oldest_overdue_date
         }

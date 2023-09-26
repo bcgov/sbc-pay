@@ -244,13 +244,13 @@ def test_statement_summary(session, client, jwt, app):
                     headers=headers)
     assert rv.status_code == 200
     assert rv.json.get('totalDue') == 0
-    assert rv.json.get('oldestDueDate') is None
+    assert rv.json.get('oldestOverdueDate') is None
 
     # Create multiple OVERDUE invoices and check they add up.
     total_due = 0
     payment_account_id = 0
     invoice_ids = []
-    oldest_due_date = datetime.now()
+    oldest_overdue_date = datetime.now()
     for _ in range(5):
         rv = client.post('/api/v1/payment-requests',
                          data=json.dumps(get_payment_request(business_identifier='CP0002000')),
@@ -259,7 +259,7 @@ def test_statement_summary(session, client, jwt, app):
         invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
         invoice_ids.append(invoice.id)
         invoice.invoice_status_code = InvoiceStatus.OVERDUE.value
-        invoice.overdue_date = oldest_due_date
+        invoice.overdue_date = oldest_overdue_date
         total_due += invoice.total - invoice.paid
         invoice.save()
 
@@ -275,4 +275,4 @@ def test_statement_summary(session, client, jwt, app):
                     headers=headers)
     assert rv.status_code == 200
     assert rv.json.get('totalDue') == float(total_due)
-    assert rv.json.get('oldestDueDate') == get_local_formatted_date(oldest_due_date)
+    assert rv.json.get('oldestOverdueDate') == get_local_formatted_date(oldest_overdue_date)
