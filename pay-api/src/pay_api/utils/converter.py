@@ -21,7 +21,7 @@ class Converter(cattrs.Converter):
 
     @staticmethod
     def _unstructure_datetime(obj: datetime) -> str:
-        return obj.isoformat()
+        return obj.isoformat() if obj else None
 
     @staticmethod
     def remove_nones(data: Dict[Any, Any]) -> Dict[str, Any]:
