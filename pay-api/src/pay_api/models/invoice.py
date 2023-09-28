@@ -251,6 +251,9 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
     line_items: Optional[List[PaymentLineItemSearchModel]]
     product: str
     invoice_number: str
+    payment_date: datetime
+    refund_date: datetime
+    disbursement_date: datetime
 
     @classmethod
     def from_row(cls, row):
@@ -276,4 +279,7 @@ class InvoiceSearchModel:  # pylint: disable=too-few-public-methods, too-many-in
                    payment_account=PaymentAccountSearchModel.from_row(row.payment_account),
                    line_items=line_items,
                    product=row.corp_type.product,
+                   payment_date=row.payment_date,
+                   refund_date=row.refund_date,
+                   disbursement_date=row.disbursement_date,
                    invoice_number=invoice_number)
