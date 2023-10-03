@@ -186,7 +186,8 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             .one_or_none()
 
         total_due = float(result.total_due) if result else 0
-        oldest_overdue_date = get_local_formatted_date(result.oldest_overdue_date) if result else None
+        oldest_overdue_date = get_local_formatted_date(result.oldest_overdue_date) \
+            if result and result.oldest_overdue_date else None
         return {
             'total_due': total_due,
             'oldest_overdue_date': oldest_overdue_date
