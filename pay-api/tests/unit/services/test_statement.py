@@ -19,7 +19,7 @@ Test-Suite to ensure that the Statement Service is working as expected.
 
 from pay_api.models import PaymentAccount
 from pay_api.services.statement import Statement as StatementService
-from pay_api.utils.enums import StatementFrequency
+from pay_api.utils.enums import InvoiceStatus, StatementFrequency
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_line_item,
     factory_premium_payment_account, factory_statement, factory_statement_invoices, factory_statement_settings,
@@ -33,7 +33,7 @@ def test_statement_find_by_account(session):
 
     payment = factory_payment()
     payment.save()
-    i = factory_invoice(payment_account=bcol_account)
+    i = factory_invoice(payment_account=bcol_account, status_code=InvoiceStatus.OVERDUE.value)
     i.save()
     factory_invoice_reference(i.id).save()
 
@@ -48,6 +48,7 @@ def test_statement_find_by_account(session):
     statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
     assert statements is not None
     assert statements.get('total') == 1
+    assert statements.get('items')[0].get('is_overdue') is True
 
 
 def test_get_statement_report(session):

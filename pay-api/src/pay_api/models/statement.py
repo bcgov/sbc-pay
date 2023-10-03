@@ -125,3 +125,4 @@ class StatementSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
 
     from_date = fields.Date(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))
     to_date = fields.Date(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))
+    is_overdue = fields.Boolean()
