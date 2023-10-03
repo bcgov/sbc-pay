@@ -13,6 +13,7 @@
 # limitations under the License.
 """Service class to control all the operations related to statements."""
 from datetime import date, datetime
+from typing import List
 
 from flask import current_app
 from sqlalchemy import func
@@ -194,7 +195,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         }
 
     @staticmethod
-    def populate_overdue_from_invoices(statements):
+    def populate_overdue_from_invoices(statements: List[StatementModel]):
         """Populate is_overdue field for statements."""
         # Invoice status can change after a statement has been generated.
         statement_ids = [statements.id for statements in statements]
