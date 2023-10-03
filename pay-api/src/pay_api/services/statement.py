@@ -122,7 +122,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         """Find statements by account id."""
         current_app.logger.debug(f'<search_purchase_history {auth_account_id}')
         statements, total = StatementModel.find_all_statements_for_account(auth_account_id, page, limit)
-
+        statements = Statement.populate_overdue_from_invoices(statements)
         statements_schema = StatementModelSchema()
         data = {
             'total': total,
@@ -192,3 +192,21 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             'total_due': total_due,
             'oldest_overdue_date': oldest_overdue_date
         }
+
+    @staticmethod
+    def populate_overdue_from_invoices(statements):
+        """Populate is_overdue field for statements."""
+        # Invoice status can change after a statement has been generated.
+        statement_ids = [statements.id for statements in statements]
+        overdue_statements = db.session.query(func.count(InvoiceModel.id).label('overdue_invoices'),
+                                              StatementInvoicesModel.statement_id) \
+            .join(StatementInvoicesModel) \
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.OVERDUE.value) \
+            .filter(StatementInvoicesModel.invoice_id == InvoiceModel.id) \
+            .filter(StatementInvoicesModel.statement_id.in_(statement_ids)) \
+            .group_by(StatementInvoicesModel.statement_id) \
+            .all()
+        overdue_statements = {statement.statement_id: statement.overdue_invoices for statement in overdue_statements}
+        for statement in statements:
+            statement.is_overdue = overdue_statements.get(statement.id, 0) > 0
+        return statements
