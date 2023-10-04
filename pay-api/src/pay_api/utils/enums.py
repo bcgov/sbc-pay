@@ -293,3 +293,20 @@ class CfsReceiptStatus(Enum):
     """Routing Slip Receipt Status."""
 
     REV = 'REV'
+
+
+class EFTProcessStatus(Enum):
+    """EFT Process Status."""
+
+    COMPLETED = 'COMPLETED'
+    IN_PROGRESS = 'INPROGRESS'
+    FAILED = 'FAILED'
+    PARTIAL = 'PARTIAL'
+
+
+class EFTFileLineType(Enum):
+    """EFT File (TDI17) Line types."""
+
+    HEADER = 'HEADER'
+    TRANSACTION = 'TRANSACTION'
+    TRAILER = 'TRAILER'
