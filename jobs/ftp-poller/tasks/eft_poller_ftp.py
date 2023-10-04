@@ -22,7 +22,6 @@ from utils.constants import EFT_MESSAGE_TYPE
 from utils.utils import publish_to_queue, upload_to_minio
 
 
-
 class EFTPollerFtpTask:  # pylint:disable=too-few-public-methods
     """Task to Poll EFT FTP."""
 
