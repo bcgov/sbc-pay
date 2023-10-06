@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2023 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,15 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Defines the structure of EFT Errors."""
+from reconciliations.eft.eft_errors import EFTError
 
-"""Version of this service in PEP440.
 
-[N!]N(.N)*[{a|b|rc}N][.postN][.devN]
-Epoch segment: N!
-Release segment: N(.N)*
-Pre-release segment: {a|b|rc}N
-Post-release segment: .postN
-Development release segment: .devN
-"""
+class EFTParseError:  # pylint: disable=too-few-public-methods
+    """Defines the structure of a parse error when parsing an EFT File."""
 
-__version__ = '1.1.1'  # pylint: disable=invalid-name
+    code: str
+    message: str
+    index: int
+
+    def __init__(self, eft_error: EFTError, index: int = None) -> object:
+        """Return an EFT Parse Error."""
+        self.code = eft_error.name
+        self.message = eft_error.value
+        self.index = index
