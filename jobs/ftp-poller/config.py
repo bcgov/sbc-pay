@@ -73,6 +73,16 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CGI_SFTP_BACKUP_DIRECTORY = os.getenv('CGI_SFTP_BACKUP_DIRECTORY', '/backup')
     CGI_SFTP_DIRECTORY = os.getenv('CGI_SFTP_DIRECTORY', '/data')
 
+    # EFT FTP CONFIG
+    EFT_SFTP_HOST = os.getenv('EFT_SFTP_HOST', 'localhost')
+    EFT_SFTP_USER_NAME = os.getenv('EFT_SFTP_USER_NAME', 'foo')
+    EFT_SFTP_PASSWORD = os.getenv('EFT_SFTP_PASSWORD', '')
+    EFT_SFTP_DIRECTORY = os.getenv('EFT_SFTP_DIRECTORY', '/eft')
+    EFT_SFTP_BACKUP_DIRECTORY = os.getenv('EFT_SFTP_BACKUP_DIRECTORY', '/backup')
+    EFT_SFTP_VERIFY_HOST = os.getenv('EFT_SFTP_VERIFY_HOST', 'True')
+    EFT_SFTP_PORT = os.getenv('EFT_SFTP_PORT', 22)
+    EFT_SFTP_HOST_KEY = os.getenv('EFT_SFTP_HOST_KEY', '')
+
     # CGI File specific configs
     CGI_TRIGGER_FILE_SUFFIX = os.getenv('CGI_TRIGGER_FILE_SUFFIX', '.TRG')
     CGI_ACK_FILE_PREFIX = os.getenv('CGI_ACK_FILE_PREFIX', 'ACK')
@@ -110,6 +120,17 @@ class _Config(object):  # pylint: disable=too-few-public-methods
             'SFTP_PORT': CAS_SFTP_PORT,  # same as CAS
             'FTP_PRIVATE_KEY_LOCATION': BCREG_CGI_FTP_PRIVATE_KEY_LOCATION,  # different user.so not same as CAS
             'BCREG_FTP_PRIVATE_KEY_PASSPHRASE': BCREG_CGI_FTP_PRIVATE_KEY_PASSPHRASE
+        },
+        # FUTURE - specific configuration values TBD - initial set up code
+        'EFT': {
+            'SFTP_HOST': EFT_SFTP_HOST,
+            'SFTP_USERNAME': EFT_SFTP_USER_NAME,
+            'SFTP_PASSWORD': EFT_SFTP_PASSWORD,
+            'SFTP_VERIFY_HOST': EFT_SFTP_VERIFY_HOST,
+            'SFTP_HOST_KEY': EFT_SFTP_HOST_KEY,
+            'SFTP_PORT': EFT_SFTP_PORT,
+            'FTP_PRIVATE_KEY_LOCATION': BCREG_FTP_PRIVATE_KEY_LOCATION,
+            'BCREG_FTP_PRIVATE_KEY_PASSPHRASE': BCREG_FTP_PRIVATE_KEY_PASSPHRASE
         }
     }
 
@@ -119,6 +140,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     MINIO_ACCESS_SECRET = os.getenv('MINIO_ACCESS_SECRET')
     MINIO_BUCKET_NAME = os.getenv('MINIO_BUCKET_NAME', 'payment-sftp')
     MINIO_CGI_BUCKET_NAME = os.getenv('MINIO_CGI_BUCKET_NAME', 'cgi-ejv')
+    MINIO_EFT_BUCKET_NAME = os.getenv('MINIO_EFT_BUCKET_NAME', 'eft-sftp')
     MINIO_SECURE = True
 
     SENTRY_ENABLE = os.getenv('SENTRY_ENABLE', 'False')

@@ -67,6 +67,7 @@ def register_shellcontext(app):
 def run(job_name):
     from tasks.cas_poller_ftp import CASPollerFtpTask
     from tasks.cgi_feeder_poller_task import CGIFeederPollerTask
+    from tasks.eft_poller_ftp import EFTPollerFtpTask
 
     application = create_app()
 
@@ -77,6 +78,9 @@ def run(job_name):
     elif job_name == 'CGI_FTP_POLLER':
         CGIFeederPollerTask.poll_ftp()
         application.logger.info(f'<<<< Completed Polling CGI FTP >>>>')
+    elif job_name == 'EFT_FTP_POLLER':
+        EFTPollerFtpTask.poll_ftp()
+        application.logger.info(f'<<<< Completed Polling EFT FTP >>>>')
     else:
         application.logger.debug('No valid args passed.Exiting job without running any ***************')
 
