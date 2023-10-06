@@ -26,6 +26,9 @@ from .credit import Credit
 from .db import db, ma  # noqa: I001
 from .disbursement_status_code import DisbursementStatusCode
 from .distribution_code import DistributionCode, DistributionCodeLink
+from .eft_file import EFTFile
+from .eft_process_status_code import EFTProcessStatusCode
+from .eft_transaction import EFTTransaction
 from .ejv_file import EjvFile
 from .ejv_header import EjvHeader
 from .ejv_invoice_link import EjvInvoiceLink
