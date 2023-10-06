@@ -11,6 +11,50 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# TDI17 File Specifications
+# One header record:
+# .  Columns Len  Purpose
+# .  1 -   1   1  Record type (always 1)
+# .  2 -  16  15  "CREATION DATE: "
+# . 17 -  24   8  File creation date in YYYYMMDD format
+# . 25 -  41  17  "CREATION TIME:   "
+# . 42 -  45   8  File creation time in HHMM format
+# . 46 -  69  24  "DEPOSIT DATE(S) FROM:   "
+# . 70 -  77   8  Starting deposit date in YYYYMMDD format
+# . 78 -  89  12  " TO DATE :  "
+# . 90 -  97   8  Ending deposit date in YYYYMMDD format
+#
+# Zero or more detail records:
+# .  Columns Len  Purpose
+# .  1 -   1   1  Record type (always 2)
+# .  2 -   3   2  Ministry code
+# .  4 -   7   4  Program code
+# .  8 -  15   8  Deposit date in YYYYMMDD format
+# . 16 -  20   5  Location ID
+# . 21 -  24   4  Deposit time in YYYYMMDD format (optional)
+# . 25 -  27   3  Transaction sequence number (optional)
+# . 28 -  67  40  Transaction description
+# . 68 -  80  13  Deposit amount in the specified currency, in cents
+# . 81 -  82   2  Currency (blank = CAD, US = USD)
+# . 83 -  95  13  Exchange adjustment amount, in cents
+# . 96 - 108  13  Deposit amount in CAD, in cents
+# .109 - 112   4  Destination bank number
+# .113 - 121   9  Batch number (optional; specified only if posted to GL)
+# .122 - 122   1  JV type (I = inter, J = intra; mandatory if JV batch specified)
+# .123 - 131   9  JV number (mandatory if JV batch specified)
+# .132 - 139   8  Transaction date (optional)
+#
+# One trailer record:
+# .  Columns Len  Purpose
+# .  1 -   1   1  Record type (always 7)
+# .  2 -   7   6  Number of details (left zero filled)
+# .  8 -  21  14  Total deposit amount, in CAD (left zero filled)
+#
+# All numbers are right justified and left padded with zeroes.
+#
+# In a money field, the rightmost character is either blank or a minus sign.
+
 """This manages the EFT base class."""
 import decimal
 from datetime import datetime
@@ -46,6 +90,10 @@ class EFTBase:
         if not self.record_type == expected_record_type:
             self.add_error(EFTParseError(EFTError.INVALID_RECORD_TYPE, self.index))
 
+    def extract_value(self, start_index: int, end_index: int) -> str:
+        """Extract and strip content value."""
+        return self.content[start_index:end_index].strip()
+
     def parse_decimal(self, value: str, error: EFTError) -> decimal:
         """Try to parse decimal value from a string, return None if it fails and add an error."""
         try:
@@ -53,7 +101,7 @@ class EFTBase:
             if value.endswith('-'):
                 value = '-' + value[:-1]
 
-            result = decimal.Decimal(value)
+            result = decimal.Decimal(str(value))
         except (ValueError, TypeError, decimal.InvalidOperation):
             result = None
             self.add_error(EFTParseError(error))

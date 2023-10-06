@@ -61,31 +61,31 @@ class EFTRecord(EFTBase):
             return
 
         # Confirm record type is as expected
-        self.record_type = self.content[0:1]
+        self.record_type = self.extract_value(0, 1)
         self.validate_record_type(EFTConstants.TRANSACTION_RECORD_TYPE.value)
 
-        self.ministry_code = self.content[1:3].strip()
-        self.program_code = self.content[3:7].strip()
-        self.deposit_datetime = self.parse_datetime(self.content[7:15] + self.content[20:24],
+        self.ministry_code = self.extract_value(1, 3)
+        self.program_code = self.extract_value(3, 7)
+        self.deposit_datetime = self.parse_datetime(self.extract_value(7, 15) + self.extract_value(20, 24),
                                                     EFTError.INVALID_DEPOSIT_DATETIME)
-        self.location_id = self.content[15:20].strip()
-        self.transaction_sequence = self.content[24:27].strip()
+        self.location_id = self.extract_value(15, 20)
+        self.transaction_sequence = self.extract_value(24, 27)
 
         # We are expecting a BCROS account number here, it is required
-        self.transaction_description = self.content[27:67].strip()
+        self.transaction_description = self.extract_value(27, 67)
         if len(self.transaction_description) == 0:
             self.add_error(EFTParseError(EFTError.BCROS_ACCOUNT_NUMBER_REQUIRED))
 
-        self.deposit_amount = self.parse_decimal(self.content[67:80], EFTError.INVALID_DEPOSIT_AMOUNT)
-        self.currency = self.get_currency(self.content[80:82]).strip()
-        self.exchange_adj_amount = self.parse_decimal(self.content[82:95], EFTError.INVALID_EXCHANGE_ADJ_AMOUNT)
-        self.deposit_amount_cad = self.parse_decimal(self.content[95:108], EFTError.INVALID_DEPOSIT_AMOUNT_CAD)
-        self.dest_bank_number = self.content[108:112].strip()
-        self.batch_number = self.content[112:121].strip()
-        self.jv_type = self.content[121:122]
-        self.jv_number = self.content[122:131].strip()
+        self.deposit_amount = self.parse_decimal(self.extract_value(67, 80), EFTError.INVALID_DEPOSIT_AMOUNT)
+        self.currency = self.get_currency(self.extract_value(80, 82))
+        self.exchange_adj_amount = self.parse_decimal(self.extract_value(82, 95), EFTError.INVALID_EXCHANGE_ADJ_AMOUNT)
+        self.deposit_amount_cad = self.parse_decimal(self.extract_value(95, 108), EFTError.INVALID_DEPOSIT_AMOUNT_CAD)
+        self.dest_bank_number = self.extract_value(108, 112)
+        self.batch_number = self.extract_value(112, 121)
+        self.jv_type = self.extract_value(121, 122)
+        self.jv_number = self.extract_value(122, 131)
 
         # transaction date is optional - parse if there is a value
-        transaction_date = self.content[131:139].strip()
+        transaction_date = self.extract_value(131, 139)
         self.transaction_date = None if len(transaction_date) == 0 \
             else self.parse_date(transaction_date, EFTError.INVALID_TRANSACTION_DATE)

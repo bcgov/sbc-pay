@@ -40,11 +40,11 @@ class EFTTrailer(EFTBase):
             return
 
         # Confirm record type is as expected
-        self.record_type = self.content[0:1]
+        self.record_type = self.extract_value(0, 1)
         self.validate_record_type(EFTConstants.TRAILER_RECORD_TYPE.value)
 
         # Confirm valid number of details value
-        self.number_of_details = self.parse_int(self.content[1:7], EFTError.INVALID_NUMBER_OF_DETAILS)
+        self.number_of_details = self.parse_int(self.extract_value(1, 7), EFTError.INVALID_NUMBER_OF_DETAILS)
 
         # Confirm valid total deposit amount value
-        self.total_deposit_amount = self.parse_decimal(self.content[7:21], EFTError.INVALID_TOTAL_DEPOSIT_AMOUNT)
+        self.total_deposit_amount = self.parse_decimal(self.extract_value(7, 21), EFTError.INVALID_TOTAL_DEPOSIT_AMOUNT)
