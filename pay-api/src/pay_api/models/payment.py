@@ -226,7 +226,9 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                           Invoice.business_identifier,
                           Invoice.created_by,
                           Invoice.filing_id,
-                          Invoice.bcol_account
+                          Invoice.bcol_account,
+                          Invoice.disbursement_date,
+                          Invoice.overdue_date
                           ),
                 contains_eager(Invoice.payment_line_items)
                 .load_only(PaymentLineItem.description, PaymentLineItem.gst, PaymentLineItem.pst)
