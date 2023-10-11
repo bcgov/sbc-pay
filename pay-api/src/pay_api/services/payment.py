@@ -378,7 +378,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                                 **kwargs):  # pylint: disable=too-many-locals
         """Prepare data and generate payment report by calling report api."""
         labels = ['Transaction', 'Transaction Details', 'Folio Number', 'Initiated By', 'Date', 'Purchase Amount',
-                  'GST', 'Statutory Fee', 'BCOL Fee', 'Status', 'Corp Number']
+                  'GST', 'Statutory Fee', 'BCOL Fee', 'Status', 'Corp Number', 'Invoice Reference Number']
 
         # Use the status_code_description instead of status_code.
         invoice_status_codes = CodeService.find_code_values_by_type(Code.INVOICE_STATUS.value)
@@ -478,7 +478,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 total_fees - service_fee,  # TODO
                 service_fee,
                 invoice.get('status_code'),
-                invoice.get('business_identifier')
+                invoice.get('business_identifier'),
+                invoice.get('invoice_number')
             ]
             cells.append(row_value)
         return cells
