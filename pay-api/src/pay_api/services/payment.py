@@ -251,7 +251,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
     @staticmethod
     def create(payment_method: str, payment_system: str,  # pylint:disable=too-many-arguments
                payment_status=PaymentStatus.CREATED.value,
-               invoice_number: str = None, invoice_amount: float = None, payment_account_id: int = None) -> Payment:
+               invoice_number: str = None, invoice_amount: float = None, payment_account_id: int = None,) -> Payment:
         """Create payment record."""
         current_app.logger.debug('<create_payment')
         p = Payment()
@@ -378,7 +378,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                                 **kwargs):  # pylint: disable=too-many-locals
         """Prepare data and generate payment report by calling report api."""
         labels = ['Transaction', 'Transaction Details', 'Folio Number', 'Initiated By', 'Date', 'Purchase Amount',
-                  'GST', 'Statutory Fee', 'BCOL Fee', 'Status', 'Corp Number', 'Invoice Reference Number']
+                  'GST', 'Statutory Fee', 'BCOL Fee', 'Status', 'Corp Number', 'Transaction ID',
+                  'Invoice Reference Number']
 
         # Use the status_code_description instead of status_code.
         invoice_status_codes = CodeService.find_code_values_by_type(Code.INVOICE_STATUS.value)
@@ -479,6 +480,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 service_fee,
                 invoice.get('status_code'),
                 invoice.get('business_identifier'),
+                invoice.get('id'),
                 invoice.get('invoice_number')
             ]
             cells.append(row_value)
