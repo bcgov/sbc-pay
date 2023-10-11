@@ -251,7 +251,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
     @staticmethod
     def create(payment_method: str, payment_system: str,  # pylint:disable=too-many-arguments
                payment_status=PaymentStatus.CREATED.value,
-               invoice_number: str = None, invoice_amount: float = None, payment_account_id: int = None,) -> Payment:
+               invoice_number: str = None, invoice_amount: float = None, payment_account_id: int = None) -> Payment:
         """Create payment record."""
         current_app.logger.debug('<create_payment')
         p = Payment()
