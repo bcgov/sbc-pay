@@ -21,10 +21,12 @@ from pay_api.models.payment import PaymentAccount as PaymentAccountModel
 from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_recipients import StatementRecipients as StatementRecipientsModel
 from pay_api.services.oauth_service import OAuthService
-from pay_api.utils.enums import AuthHeaderType, ContentType, NotificationStatus
+from pay_api.services import Statement as StatementService
+from pay_api.services.flags import flags
+from pay_api.utils.enums import AuthHeaderType, ContentType, NotificationStatus, PaymentMethod
 
 from utils.auth import get_token
-
+from utils.mailer import publish_statement_notification
 
 ENV = Environment(loader=FileSystemLoader('.'), autoescape=True)
 
@@ -62,7 +64,7 @@ class StatementNotificationTask:  # pylint:disable=too-few-public-methods
             statement.notification_status_code = NotificationStatus.PROCESSING.value
             statement.notification_date = datetime.now()
             statement.commit()
-            payment_account = PaymentAccountModel.find_by_id(statement.payment_account_id)
+            payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(statement.payment_account_id)
             recipients = StatementRecipientsModel.find_all_recipients_for_payment_id(statement.payment_account_id)
             if len(recipients) < 1:
                 current_app.logger.info(f'No recipients found for statement: '
@@ -78,14 +80,27 @@ class StatementNotificationTask:  # pylint:disable=too-few-public-methods
             params['frequency'] = statement.frequency.lower()
             # logic changed https://github.com/bcgov/entity/issues/4809
             # params.update({'url': params['url'].replace('orgId', payment_account.auth_account_id)})
+
+            notification_success = True
+            eft_enabled = flags.is_on('enable-eft-payment-method')
             try:
-                notify_response = cls.send_email(token, to_emails, template.render(params))
+                if not payment_account.payment_method == PaymentMethod.EFT.value:
+                    notification_success = cls.send_email(token, to_emails, template.render(params))
+                elif eft_enabled:  # This statement template currently only used for EFT
+                    result = StatementService.get_summary(payment_account.auth_account_id)
+                    notification_success = publish_statement_notification(payment_account,
+                                                                          statement, result['total_due'])
+                else:  # EFT not enabled - mark skip - shouldn't happen, but safeguard for manual data injection
+                    statement.notification_status_code = NotificationStatus.SKIP.value
+                    statement.notification_date = datetime.now()
+                    statement.commit()
+                    continue
             except Exception as e: # NOQA # pylint:disable=broad-except
                 current_app.logger.error('<notification failed')
                 current_app.logger.error(e)
-                notify_response = False
+                notification_success = False
 
-            if not notify_response:
+            if not notification_success:
                 current_app.logger.error('<notification failed')
                 statement.notification_status_code = NotificationStatus.FAILED.value
                 statement.notification_date = datetime.now()
