@@ -82,7 +82,7 @@ class StatementNotificationTask:  # pylint:disable=too-few-public-methods
             # params.update({'url': params['url'].replace('orgId', payment_account.auth_account_id)})
 
             notification_success = True
-            eft_enabled = flags.is_on('enable-eft-payment-method')
+            eft_enabled = flags.is_on('enable-eft-payment-method', default=False)
             try:
                 if not payment_account.payment_method == PaymentMethod.EFT.value:
                     notification_success = cls.send_email(token, to_emails, template.render(params))
