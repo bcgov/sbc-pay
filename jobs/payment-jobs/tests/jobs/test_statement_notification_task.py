@@ -221,7 +221,7 @@ def test_send_eft_notifications(setup, session):  # pylint: disable=unused-argum
                 mock_get_token.return_value = 'mock_token'
                 StatementNotificationTask.send_notifications()
                 mock_get_token.assert_called_once()
-                mock_mailer.assert_called_once_with(account, statements[0][0], 351.5)
+                mock_mailer.assert_called_once_with(account, statements[0][0], 351.5, statement_recipient.email)
 
         # Assert statement notification code indicates success
         statement: Statement = Statement.find_by_id(statements[0][0].id)
@@ -265,7 +265,7 @@ def test_send_eft_notifications_failure(setup, session):  # pylint: disable=unus
                 mock_get_token.return_value = 'mock_token'
                 StatementNotificationTask.send_notifications()
                 mock_get_token.assert_called_once()
-                mock_mailer.assert_called_once_with(account, statements[0][0], 351.5)
+                mock_mailer.assert_called_once_with(account, statements[0][0], 351.5, statement_recipient.email)
 
         # Assert statement notification code indicates success
         statement: Statement = Statement.find_by_id(statements[0][0].id)

@@ -59,7 +59,7 @@ def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel,
 
 
 def publish_statement_notification(pay_account: PaymentAccountModel, statement: StatementModel,
-                                   total_amount_owing: float) -> bool:
+                                   total_amount_owing: float, emails: str) -> bool:
     """Publish payment statement notification message to the mailer queue."""
     payload = {
         'specversion': '1.x-wip',
@@ -69,6 +69,7 @@ def publish_statement_notification(pay_account: PaymentAccountModel, statement: 
         'time': f'{datetime.now()}',
         'datacontenttype': 'application/json',
         'data': {
+            'emailAddresses': emails,
             'accountId': pay_account.auth_account_id,
             'fromDate': f'{statement.from_date}',
             'toDate:': f'{statement.to_date}',
