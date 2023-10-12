@@ -180,7 +180,7 @@ def test_send_monthly_notifications_failed(setup, session, payment_method_code):
                 # Assert token and email recipient - mock any for HTML generated
                 mock_mailer.assert_called_with(mock_get_token.return_value, statement_recipient.email, ANY)
 
-        # Assert statement notification code indicates success
+        # Assert statement notification code indicates failed
         statement: Statement = Statement.find_by_id(statements[0][0].id)
         assert statement is not None
         assert statement.notification_status_code == NotificationStatus.FAILED.value
@@ -267,7 +267,7 @@ def test_send_eft_notifications_failure(setup, session):  # pylint: disable=unus
                 mock_get_token.assert_called_once()
                 mock_mailer.assert_called_once_with(account, statements[0][0], 351.5, statement_recipient.email)
 
-        # Assert statement notification code indicates success
+        # Assert statement notification code indicates failed
         statement: Statement = Statement.find_by_id(statements[0][0].id)
         assert statement is not None
         assert statement.notification_status_code == NotificationStatus.FAILED.value
@@ -311,7 +311,7 @@ def test_send_eft_notifications_ff_disabled(setup, session):  # pylint: disable=
                     mock_get_token.assert_called_once()
                     mock_mailer.assert_not_called()
 
-        # Assert statement notification code indicates success
+        # Assert statement notification code indicates skipped
         statement: Statement = Statement.find_by_id(statements[0][0].id)
         assert statement is not None
         assert statement.notification_status_code == NotificationStatus.SKIP.value
