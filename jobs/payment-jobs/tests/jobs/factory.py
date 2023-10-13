@@ -21,7 +21,7 @@ from datetime import datetime, timedelta
 
 from pay_api.models import (
     CfsAccount, DistributionCode, DistributionCodeLink, Invoice, InvoiceReference, Payment, PaymentAccount,
-    PaymentLineItem, Receipt, Refund, RoutingSlip, StatementSettings)
+    PaymentLineItem, Receipt, Refund, RoutingSlip, StatementRecipients, StatementSettings)
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
     PaymentSystem, RoutingSlipStatus)
@@ -34,6 +34,18 @@ def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='123
                              bcol_account=bcol_account_id,
                              ).save()
     return account
+
+
+def factory_statement_recipient(auth_user_id: int, first_name: str, last_name: str, email: str,
+                                payment_account_id: int):
+    """Return statement recipient model."""
+    return StatementRecipients(
+        auth_user_id=auth_user_id,
+        firstname=first_name,
+        lastname=last_name,
+        email=email,
+        payment_account_id=payment_account_id
+    ).save()
 
 
 def factory_statement_settings(pay_account_id: str, frequency='DAILY', from_date=datetime.now(),
@@ -66,7 +78,7 @@ def factory_payment(
 def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceStatus.CREATED.value,
                     corp_type_code='CP',
                     business_identifier: str = 'CP0001234',
-                    service_fees: float = 0.0, total=0,
+                    service_fees: float = 0.0, total=0, paid=0,
                     payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
                     created_on: datetime = datetime.now(),
                     cfs_account_id: int = 0,
@@ -79,6 +91,7 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
         invoice_status_code=status_code,
         payment_account_id=payment_account.id,
         total=total,
+        paid=paid,
         created_by='test',
         created_on=created_on,
         business_identifier=business_identifier,
@@ -202,6 +215,17 @@ def factory_create_eft_account(auth_account_id='1234', status=CfsAccountStatus.P
     account = PaymentAccount(auth_account_id=auth_account_id,
                              payment_method=PaymentMethod.EFT.value,
                              name=f'Test {auth_account_id}').save()
+    CfsAccount(status=status, account_id=account.id).save()
+    return account
+
+
+def factory_create_account(auth_account_id: str = '1234', payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
+                           status: str = CfsAccountStatus.PENDING.value, statement_notification_enabled: bool = True):
+    """Return payment account model."""
+    account = PaymentAccount(auth_account_id=auth_account_id,
+                             payment_method=payment_method_code,
+                             name=f'Test {auth_account_id}',
+                             statement_notification_enabled=statement_notification_enabled).save()
     CfsAccount(status=status, account_id=account.id).save()
     return account
 

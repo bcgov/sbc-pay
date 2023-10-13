@@ -7,6 +7,7 @@ pytest-mock
 requests
 pyhamcrest
 pytest-cov
+Faker
 
 # Lint and code style
 flake8==5.0.4

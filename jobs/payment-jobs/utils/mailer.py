@@ -19,6 +19,7 @@ from typing import Dict
 from flask import current_app
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import Statement as StatementModel
 from pay_api.services.queue_publisher import publish_response
 from sentry_sdk import capture_message
 
@@ -55,3 +56,40 @@ def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel,
                                    payload)
         capture_message('Notification to Queue failed for the Account Mailer {auth_account_id}, {msg}.'.format(
             auth_account_id=pay_account.auth_account_id, msg=payload), level='error')
+
+
+def publish_statement_notification(pay_account: PaymentAccountModel, statement: StatementModel,
+                                   total_amount_owing: float, emails: str) -> bool:
+    """Publish payment statement notification message to the mailer queue."""
+    payload = {
+        'specversion': '1.x-wip',
+        'type': f'bc.registry.payment.statementNotification',
+        'source': f'https://api.pay.bcregistry.gov.bc.ca/v1/accounts/{pay_account.auth_account_id}',
+        'id': f'{pay_account.auth_account_id}',
+        'time': f'{datetime.now()}',
+        'datacontenttype': 'application/json',
+        'data': {
+            'emailAddresses': emails,
+            'accountId': pay_account.auth_account_id,
+            'fromDate': f'{statement.from_date}',
+            'toDate:': f'{statement.to_date}',
+            'statementFrequency': statement.frequency,
+            'totalAmountOwing': total_amount_owing
+        }
+    }
+    try:
+        publish_response(payload=payload,
+                         client_name=current_app.config.get('NATS_MAILER_CLIENT_NAME'),
+                         subject=current_app.config.get('NATS_MAILER_SUBJECT'))
+    except Exception as e:  # pylint: disable=broad-except
+        current_app.logger.error(e)
+        current_app.logger.warning('Notification to Queue failed for the Account Mailer %s - %s',
+                                   pay_account.auth_account_id,
+                                   payload)
+        capture_message('Notification to Queue failed for the Account Mailer {auth_account_id}, {msg}.'.format(
+            auth_account_id=pay_account.auth_account_id, msg=payload), level='error')
+
+        return False
+
+    return True
+
