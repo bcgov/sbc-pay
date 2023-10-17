@@ -30,3 +30,9 @@ class PaymentDetailsGlStatus(Enum):
     INPRG = 'INPRG'
     RJCT = 'RJCT'  # Should have refundglerrormessage
     CMPLT = 'CMPLT'
+
+
+class OrgStatus(Enum):
+    """Organization (account) status."""
+
+    ACTIVE = 'ACTIVE'
