@@ -16,6 +16,7 @@ import logging
 from flask import current_app
 from ldclient import get as ldclient_get, set_config as ldclient_set_config  # noqa: I001
 from ldclient.config import Config  # noqa: I005
+from ldclient import Context
 from ldclient.integrations import Files
 
 from pay_api.utils import user_context
@@ -76,18 +77,13 @@ class Flags():
 
     @staticmethod
     def _get_anonymous_user():
-        return {
-            'key': 'anonymous'
-        }
+        return Context.create('anonymous')
 
     @staticmethod
     def _user_as_key(user: user_context):
-        user_json = {
-            'key': user.sub,
-            'userName': user.user_name,
-            'firstName': user.first_name
-        }
-        return user_json
+        return Context.builder(user.sub)\
+            .set('userName', user.user_name)\
+            .set('firstName', user.first_name).build()
 
     def is_on(self, flag: str, default: bool = False, user: user_context = None) -> bool:
         """Assert that the flag is set for this user."""
