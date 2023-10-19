@@ -16,6 +16,10 @@
 from pay_api.utils.enums import PaymentMethod
 
 from .deposit_service import DepositService
+from .invoice import Invoice
+from .invoice_reference import InvoiceReference
+from .payment_account import PaymentAccount
+from .payment_line_item import PaymentLineItem
 
 
 class EftService(DepositService):
@@ -24,3 +28,8 @@ class EftService(DepositService):
     def get_payment_method_code(self):
         """Return EFT as the system code."""
         return PaymentMethod.EFT.value
+
+    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
+                       **kwargs) -> InvoiceReference:
+        """Return a static invoice number for direct pay."""
+        # Do nothing here as the invoice references will be created later for eft payment reconciliations (TDI17).

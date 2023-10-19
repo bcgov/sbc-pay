@@ -27,6 +27,7 @@ from pay_api.utils.util import get_str_by_path
 
 from .base_payment_system import PaymentSystemService
 from .fee_schedule import FeeSchedule
+from .flags import flags
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
 from .payment import Payment
@@ -64,6 +65,10 @@ class PaymentService:  # pylint: disable=too-few-public-methods
 
         payment_account = cls._find_payment_account(authorization)
         payment_method = _get_payment_method(payment_request, payment_account)
+
+        if payment_method == PaymentMethod.EFT.value and not flags.is_on('enable-eft-payment-method', default=False):
+            raise BusinessException(Error.INVALID_PAYMENT_METHOD)
+
         current_app.logger.info(f'Creating Payment Request : '
                                 f'{payment_method}, {corp_type}, {business_identifier}, '
                                 f'{payment_account.auth_account_id}')

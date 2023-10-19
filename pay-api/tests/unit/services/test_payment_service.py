@@ -27,6 +27,8 @@ from pay_api.services.internal_pay_service import InternalPayService
 from pay_api.services.payment_service import PaymentService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus, RoutingSlipStatus
 from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
+
+from pay_api.utils.errors import Error
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
     factory_payment_transaction, factory_routing_slip, get_auth_basic_user, get_auth_premium_user, get_auth_staff,
@@ -328,6 +330,21 @@ def test_create_eft_payment(session, public_user_mock):
     assert payment_response is not None
     assert payment_response.get('payment_method') == PaymentMethod.EFT.value
     assert payment_response.get('status_code') == 'CREATED'
+
+
+def test_create_eft_payment_ff_disabled(session, public_user_mock):
+    """Assert that the payment method EFT feature flag properly disables record creation."""
+    factory_payment_account(payment_method_code=PaymentMethod.EFT.value).save()
+
+    with patch('pay_api.services.payment_service.flags.is_on', return_value=False):
+        with pytest.raises(BusinessException) as exception:
+            PaymentService.create_invoice(
+                get_payment_request_with_service_fees(
+                    business_identifier='CP0002000'),
+                get_auth_premium_user())
+
+        assert exception is not None
+        assert exception.value.code == Error.INVALID_PAYMENT_METHOD.name
 
 
 def test_create_wire_payment(session, public_user_mock):
