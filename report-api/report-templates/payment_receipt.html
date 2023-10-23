@@ -526,7 +526,7 @@
         </td>
         <td class="r-heading">
           {% if paymentMethod in ('PAD','EJV') and not receiptNumber %}
-          <div class="r-title">Payment<br /> Authorization</div>
+          <div class="r-title">Payment<br /> Pending</div>
           {% else %}
           <div class="r-title">Receipt</div>
           {% endif %}
@@ -612,14 +612,8 @@
             This payment is pending
           </div>
           <div class="receipt-pending-message">
-            <p>The payment status of invoice {{ invoiceNumber if invoiceNumber else '' }} is pending. It will take
-              approximately<strong> 1-2 business days </strong> for the
-              payment to be received after the filling date. The receipt will be generated when the payment is
+            <p>The payment status of invoice {{ invoiceNumber if invoiceNumber else '' }} is pending. The receipt will be generated when the payment is
               processed.</p>
-            <p>* Any payment dishonoured by the payor’s financial institution may result in a dishonoured banking
-              instrument
-              service fee.If paid by pre-authorized debit, please monitor your pre-authorized debit account balance
-              availability. </p>
           </div>
           <div class="bottom-row-line" />
         </td>
