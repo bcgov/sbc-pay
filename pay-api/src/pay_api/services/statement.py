@@ -171,8 +171,9 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return report_response, report_name
 
     @staticmethod
-    def get_summary(auth_account_id: str):
+    def get_summary(auth_account_id: str, statement_id: str = None):
         """Get summary for statements by account id."""
+        # Used by payment jobs to get the total due amount for statements, keep in mind when modifying.
         # This is written outside of the model, because we have multiple model references that need to be included.
         # If we include these references inside of a model, it runs the risk of having circular dependencies.
         # It's easier to build out features if our models don't rely on other models.
@@ -181,9 +182,16 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             .join(PaymentAccountModel) \
             .join(StatementInvoicesModel) \
             .filter(PaymentAccountModel.auth_account_id == auth_account_id) \
-            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.OVERDUE.value) \
-            .filter(StatementInvoicesModel.invoice_id == InvoiceModel.id) \
-            .group_by(InvoiceModel.payment_account_id) \
+            .filter(InvoiceModel.invoice_status_code.in_((InvoiceStatus.SETTLEMENT_SCHEDULED.value,
+                                                          InvoiceStatus.PARTIAL.value,
+                                                          InvoiceStatus.CREATED.value,
+                                                          InvoiceStatus.OVERDUE.value))) \
+            .filter(StatementInvoicesModel.invoice_id == InvoiceModel.id)
+
+        if statement_id:
+            result = result.filter(StatementInvoicesModel.statement_id == statement_id)
+
+        result = result.group_by(InvoiceModel.payment_account_id) \
             .one_or_none()
 
         total_due = float(result.total_due) if result else 0
