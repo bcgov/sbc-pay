@@ -373,11 +373,7 @@
                         <div class="r-title">ACCOUNT STATEMENT</div>
                         {% if statement.from_date or statement.to_date %}
                         <div class="r-subtitle">
-                            {% if 'DAILY' == statement.frequency %}
-                            {{statement.from_date}}
-                            {% else %}
                             {{statement.from_date}} - {{statement.to_date}}
-                            {% endif %}
                         </div>
                         {% endif %}
                     </div>
