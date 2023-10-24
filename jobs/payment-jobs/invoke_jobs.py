@@ -25,6 +25,7 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 import config
 from services import oracle_db
 from tasks.routing_slip_task import RoutingSlipTask
+from tasks.statement_due_task import StatementDueTask
 from utils.logger import setup_logging
 
 from pay_api.services import Flags
@@ -118,6 +119,9 @@ def run(job_name, argument=None):
     elif job_name == 'NOTIFY_UNPAID_INVOICE_OB':
         UnpaidInvoiceNotifyTask.notify_unpaid_invoices()
         application.logger.info(f'<<<< Completed Sending notification for OB invoices >>>>')
+    elif job_name == 'STATEMENTS_DUE':
+        StatementDueTask.process_unpaid_statements()
+        application.logger.info(f'<<<< Completed Sending notification for unpaid statements >>>>')
     elif job_name == 'ROUTING_SLIP':
         RoutingSlipTask.link_routing_slips()
         RoutingSlipTask.process_void()
