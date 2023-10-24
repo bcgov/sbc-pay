@@ -19,19 +19,19 @@ from pay_api.models import db
 from pay_api.models.invoice import Invoice as InvoiceModel
 from pay_api.models.payment_account import PaymentAccount as PaymentAccountModel
 from pay_api.models.statement import Statement as StatementModel
-from pay_api.models.statement_invoices import StatementInvoices as StatementInvoicesModel
 from pay_api.models.statement_recipients import StatementRecipients as StatementRecipientsModel
 from pay_api.models.statement_settings import StatementSettings as StatementSettingsModel
 from pay_api.services.flags import flags
+from pay_api.services.statement import Statement
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
 from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month
 from sentry_sdk import capture_message
-from sqlalchemy import func
+from sqlalchemy import Date
 
 from utils.mailer import publish_payment_notification
 
 
-class UnpaidStatementNotifyTask:
+class StatementDueTask:
     """Task to notify admin for unpaid statements.
 
     This is currently for EFT payment method invoices only. This may be expanded to
@@ -39,15 +39,33 @@ class UnpaidStatementNotifyTask:
     """
 
     @classmethod
-    def notify_unpaid_statements(cls):
+    def process_unpaid_statements(cls):
         """Notify for unpaid statements with an amount owing."""
         eft_enabled = flags.is_on('enable-eft-payment-method', default=False)
 
         if eft_enabled:
             cls._notify_for_monthly()
 
+            # Set overdue status for invoices
+            if current_local_time().date().day == 1:
+                cls._update_invoice_overdue_status()
+
     @classmethod
-    def _notify_for_monthly(cls):  # pylint: disable=too-many-locals
+    def _update_invoice_overdue_status(cls):
+        """Update the status of any invoices that are overdue."""
+        unpaid_status = (
+            InvoiceStatus.SETTLEMENT_SCHEDULED.value, InvoiceStatus.PARTIAL.value, InvoiceStatus.CREATED.value)
+        db.session.query(InvoiceModel)\
+            .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value,
+                    InvoiceModel.overdue_date.isnot(None),
+                    InvoiceModel.overdue_date.cast(Date) <= current_local_time().date(),
+                    InvoiceModel.invoice_status_code.in_(unpaid_status))\
+            .update({InvoiceModel.invoice_status_code: InvoiceStatus.OVERDUE.value}, synchronize_session='fetch')
+
+        db.session.commit()
+
+    @classmethod
+    def _notify_for_monthly(cls):
         """Notify for unpaid monthly statements with an amount owing."""
         # Check if we need to send a notification
         send_notification, is_due, last_day, previous_month = cls.determine_to_notify_and_is_due()
@@ -61,7 +79,7 @@ class UnpaidStatementNotifyTask:
                 try:
                     # Get the most recent monthly statement
                     statement = cls.find_most_recent_statement(account_id, StatementFrequency.MONTHLY.value)
-                    summary = cls.get_statement_owing(account_id, statement.id)
+                    summary = Statement.get_summary(account_id, statement.id)
                     payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(statement.payment_account_id)
 
                     # Send payment notification if payment account is using EFT and there is an amount owing
@@ -97,28 +115,6 @@ class UnpaidStatementNotifyTask:
             .order_by(StatementModel.to_date.desc())
 
         return query.first()
-
-    @classmethod
-    def get_statement_owing(cls, auth_account_id: str, statement_id: str):
-        """Get statement owing amount by account id."""
-        result = db.session.query(func.sum(InvoiceModel.total - InvoiceModel.paid).label('total_due')) \
-            .join(PaymentAccountModel) \
-            .join(StatementInvoicesModel) \
-            .filter(PaymentAccountModel.auth_account_id == auth_account_id) \
-            .filter(PaymentAccountModel.payment_method == PaymentMethod.EFT.value) \
-            .filter(InvoiceModel.invoice_status_code.in_((InvoiceStatus.SETTLEMENT_SCHEDULED.value,
-                                                         InvoiceStatus.PARTIAL.value,
-                                                         InvoiceStatus.CREATED.value,
-                                                         InvoiceStatus.OVERDUE.value))) \
-            .filter(StatementInvoicesModel.invoice_id == InvoiceModel.id) \
-            .filter(StatementInvoicesModel.statement_id == statement_id) \
-            .group_by(InvoiceModel.payment_account_id) \
-            .one_or_none()
-
-        total_due = float(result.total_due) if result else 0
-        return {
-            'total_due': total_due
-        }
 
     @classmethod
     def determine_to_notify_and_is_due(cls):
