@@ -93,3 +93,40 @@ def publish_statement_notification(pay_account: PaymentAccountModel, statement: 
 
     return True
 
+
+def publish_payment_notification(pay_account: PaymentAccountModel, statement: StatementModel,
+                                 is_due: bool, due_date: datetime, emails: str) -> bool:
+    """Publish payment notification message to the mailer queue."""
+    notification_type = 'bc.registry.payment.statementDueNotification' if is_due \
+        else 'bc.registry.payment.statementReminderNotification'
+
+    payload = {
+        'specversion': '1.x-wip',
+        'type': notification_type,
+        'source': f'https://api.pay.bcregistry.gov.bc.ca/v1/accounts/{pay_account.auth_account_id}',
+        'id': f'{pay_account.auth_account_id}',
+        'time': f'{datetime.now()}',
+        'datacontenttype': 'application/json',
+        'data': {
+            'emailAddresses': emails,
+            'accountId': pay_account.auth_account_id,
+            'dueDate': f'{due_date}',
+            'statementFrequency': statement.frequency
+        }
+    }
+    try:
+        publish_response(payload=payload,
+                         client_name=current_app.config.get('NATS_MAILER_CLIENT_NAME'),
+                         subject=current_app.config.get('NATS_MAILER_SUBJECT'))
+    except Exception as e:  # pylint: disable=broad-except
+        current_app.logger.error(e)
+        current_app.logger.warning('Notification to Queue failed for the Account Mailer %s - %s',
+                                   pay_account.auth_account_id,
+                                   payload)
+        capture_message('Notification to Queue failed for the Account Mailer {auth_account_id}, {msg}.'.format(
+            auth_account_id=pay_account.auth_account_id, msg=payload), level='error')
+
+        return False
+
+    return True
+
