@@ -32,7 +32,7 @@ from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
 from .db import db, ma
 from .invoice_reference import InvoiceReferenceSchema
-from .payment_account import PaymentAccountSchema, PaymentAccountSearchModel
+from .payment_account import PaymentAccount, PaymentAccountSchema, PaymentAccountSearchModel
 from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from .receipt import ReceiptSchema
 from ..utils.util import current_local_time
@@ -173,6 +173,15 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
             )
         )
 
+        return query.all()
+
+    @classmethod
+    def find_eft_invoices(cls, pay_account_id: str):
+        """Return invoices paid with eft payment method."""
+        query = db.session.query(Invoice) \
+            .join(PaymentAccount, PaymentAccount.id == Invoice.payment_account_id) \
+            .filter(Invoice.payment_method_code == PaymentMethod.EFT.value) \
+            .filter(PaymentAccount.auth_account_id == pay_account_id)
         return query.all()
 
 

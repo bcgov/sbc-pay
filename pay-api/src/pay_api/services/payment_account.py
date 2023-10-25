@@ -29,6 +29,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentAccountSchema
 from pay_api.models import StatementSettings as StatementSettingsModel
+from pay_api.models.invoice import Invoice
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.queue_publisher import publish_response
@@ -589,6 +590,10 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
         if account_fees := AccountFeeModel.find_by_account_id(self.id):
             d['accountFees'] = AccountFeeSchema().dump(account_fees, many=True)
+
+        paid_by_eft = Invoice.find_eft_invoices(self.auth_account_id)
+        if len(paid_by_eft) > 0:
+            d['eft_eligible'] = True
 
         return d
 
