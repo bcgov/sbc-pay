@@ -24,6 +24,7 @@ import random
 
 from dotenv import find_dotenv, load_dotenv
 
+LEGISLATIVE_TIMEZONE = os.getenv('LEGISLATIVE_TIMEZONE', 'America/Vancouver')
 
 # this will load all the envars from a .env file located in the project root (api)
 load_dotenv(find_dotenv())
