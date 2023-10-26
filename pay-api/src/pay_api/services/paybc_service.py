@@ -119,14 +119,18 @@ class PaybcService(PaymentSystemService, CFSService):
         parsed_url = parse_url_params(pay_response_url)
         receipt_number: str = parsed_url.get('receipt_number') if 'receipt_number' in parsed_url else None
         if not receipt_number:  # Find all receipts for the site and then match with invoice number
-            receipts_response = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
-                                         retry_on_failure=True).json()
-            for receipt in receipts_response.get('items'):
-                expanded_receipt = self._get_receipt_by_number(access_token, receipt_url, receipt.get('receipt_number'))
-                for invoice in expanded_receipt.get('invoices'):
-                    if invoice.get('invoice_number') == invoice_reference.invoice_number:
-                        return receipt.get('receipt_number'), parser.parse(
-                            expanded_receipt.get('receipt_date')), float(invoice.get('amount_applied'))
+            invoice_url = current_app.config.get(
+                'CFS_BASE_URL') + f'/cfs/parties/{payment_account.cfs_party}/accs/' \
+                                  f'{payment_account.cfs_account}/sites/{payment_account.cfs_site}/invs/' \
+                                  f'{invoice_reference.invoice_number}'
+            invoice_response = self.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                        retry_on_failure=True).json()
+            
+            if invoice_response.get('receipts') and invoice_response['receipts'][0].get('links'):
+                if receipt_url := invoice_response['receipts'][0]['links'][0].get('href'):
+                    receipt = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
+                                                retry_on_failure=True).json()
+                    return receipt.get('receipt_number'), parser.parse(receipt.get('receipt_date')), float(invoice_response.get('amount_applied'))
 
         if receipt_number:
             receipt_response = self._get_receipt_by_number(access_token, receipt_url, receipt_number)
