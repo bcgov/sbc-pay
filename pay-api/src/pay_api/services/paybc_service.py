@@ -125,7 +125,7 @@ class PaybcService(PaymentSystemService, CFSService):
                                   f'{invoice_reference.invoice_number}'
             invoice_response = self.get(invoice_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
                                         retry_on_failure=True).json()
-            
+
             if invoice_response.get('receipts') and invoice_response['receipts'][0].get('links'):
                 if receipt_url := invoice_response['receipts'][0]['links'][0].get('href'):
                     receipt = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
