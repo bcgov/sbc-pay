@@ -130,7 +130,10 @@ class PaybcService(PaymentSystemService, CFSService):
                 if receipt_url := invoice_response['receipts'][0]['links'][0].get('href'):
                     receipt = self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON,
                                                 retry_on_failure=True).json()
-                    return receipt.get('receipt_number'), parser.parse(receipt.get('receipt_date')), float(invoice_response.get('amount_applied'))
+                    for invoice in receipt.get('invoices'):
+                        if invoice.get('invoice_number') == invoice_reference.invoice_number:
+                            return receipt.get('receipt_number'), parser.parse(
+                                receipt.get('receipt_date')), float(invoice.get('amount_applied'))
 
         if receipt_number:
             receipt_response = self._get_receipt_by_number(access_token, receipt_url, receipt_number)
