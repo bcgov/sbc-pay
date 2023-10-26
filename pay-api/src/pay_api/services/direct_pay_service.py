@@ -238,6 +238,11 @@ class DirectPayService(PaymentSystemService, OAuthService):
         receipt = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=invoice.id)
         invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice.id, InvoiceReferenceStatus.COMPLETED.value)
+        # Future: Partial refund support - This is backwards compatible
+        # refundRevenue: [{
+        #        'lineNumber': 1,
+        #        'refundAmount': 50.00,
+        #    }]
         return {
             'orderNumber': int(receipt.receipt_number),
             'pbcRefNumber': current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER'),
