@@ -47,6 +47,7 @@ class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attri
             'created_name',
             'created_on',
             'credit',
+            'eft_enable',
             'name',
             'pad_activation_date',
             'pad_tos_accepted_by',
@@ -77,6 +78,7 @@ class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attri
 
     credit = db.Column(db.Numeric(19, 2), nullable=True)
     billable = db.Column(Boolean(), default=True)
+    eft_enable = db.Column(Boolean(), default=False)
 
     # before this date , the account shouldn't get used
     pad_activation_date = db.Column(db.DateTime, nullable=True)

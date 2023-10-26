@@ -175,15 +175,6 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
 
         return query.all()
 
-    @classmethod
-    def find_eft_invoices(cls, pay_account_id: str):
-        """Return invoices paid with eft payment method."""
-        query = db.session.query(Invoice) \
-            .join(PaymentAccount, PaymentAccount.id == Invoice.payment_account_id) \
-            .filter(Invoice.payment_method_code == PaymentMethod.EFT.value) \
-            .filter(PaymentAccount.auth_account_id == pay_account_id)
-        return query.all()
-
 
 class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the invoice."""

@@ -69,6 +69,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self._cfs_account_id: Optional[int] = None
         self._cfs_account_status: Optional[str] = None
         self._billable: Optional[bool] = None
+        self._eft_enable: Optional[bool] = None
 
     @property
     def _dao(self):
@@ -90,6 +91,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         self.pad_tos_accepted_date: datetime = self._dao.pad_tos_accepted_date
         self.credit: Decimal = self._dao.credit
         self.billable: bool = self._dao.billable
+        self.eft_enable: bool = self._dao.eft_enable
 
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(self.id)
         if cfs_account:
@@ -305,6 +307,17 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         """Set the billable."""
         self._billable = value
         self._dao.billable = value
+
+    @property
+    def eft_enable(self):
+        """Return the eft_enable."""
+        return self._eft_enable
+
+    @eft_enable.setter
+    def eft_enable(self, value: bool):
+        """Set the eft_enable."""
+        self._eft_enable = value
+        self._dao.eft_enable = value
 
     def save(self):
         """Save the information to the DB."""
@@ -590,10 +603,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
         if account_fees := AccountFeeModel.find_by_account_id(self.id):
             d['accountFees'] = AccountFeeSchema().dump(account_fees, many=True)
-
-        paid_by_eft = Invoice.find_eft_invoices(self.auth_account_id)
-        if len(paid_by_eft) > 0:
-            d['eft_eligible'] = True
 
         return d
 
