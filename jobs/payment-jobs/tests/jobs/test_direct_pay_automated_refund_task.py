@@ -43,7 +43,8 @@ def test_successful_paid_refund(session, monkeypatch):
         return {
             'revenue': [
                 {
-                    'refundglstatus': 'PAID'
+                    'refundglstatus': 'PAID',
+                    'refundglerrormessage': ''
                 }
             ]
         }
@@ -68,7 +69,8 @@ def test_successful_completed_refund(session, monkeypatch):
         return {
             'revenue': [
                 {
-                    'refundglstatus': 'CMPLT'
+                    'refundglstatus': 'CMPLT',
+                    'refundglerrormessage': ''
                 }
             ]
         }
