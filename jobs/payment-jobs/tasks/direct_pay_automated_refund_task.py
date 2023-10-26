@@ -27,7 +27,7 @@ from pay_api.utils.enums import (
 from sentry_sdk import capture_message
 
 from tasks.common.dataclasses import OrderStatus
-from tasks.common.enums import PaymentDetailsGlStatus, PaymentDetailsStatus
+from tasks.common.enums import PaymentDetailsGlStatus
 
 
 class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
@@ -54,12 +54,12 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
            excluding invoices with refunds that have gl_posted or gl_error.
            Initial state for refunds is REFUND INPRG.
         2. Get order status for CFS (refundstatus, revenue.refundglstatus)
-            2.1. Check for refundStatus = PAID and invoice = REFUND_REQUESTED:
+            2.1. Check for all revenue.refundGLstatus = PAID and invoice = REFUND_REQUESTED:
                 Set invoice and payment = REFUNDED
-            2.2. Check for refundStatus = CMPLT or None (None is for refunds done manually)
+            2.2. Check for all revenue.refundGLstatus = CMPLT
                 Set invoice and payment = REFUNDED (incase we skipped the condition above).
                 Set refund.gl_posted = now()
-            2.3. Check for refundGLstatus = RJCT
+            2.3. Check for any revenue.refundGLstatus = RJCT
                 Log the error down, contact PAYBC if this happens.
                 Set refund.gl_error = <error message>
         """
@@ -82,9 +82,6 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
                 elif cls._is_status_paid_and_invoice_refund_requested(status, invoice):
                     cls._refund_paid(invoice)
                 elif cls._is_status_complete(status):
-                    if status.refundstatus is None:
-                        current_app.logger.info(
-                            'Refund status was blank, setting to complete - this was an existing manual refund.')
                     cls._refund_complete(invoice)
                 else:
                     current_app.logger.info('No action taken for invoice.')
@@ -144,13 +141,15 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
     @staticmethod
     def _is_status_paid_and_invoice_refund_requested(status: OrderStatus, invoice: Invoice) -> bool:
         """Check for successful refund and invoice status = REFUND_REQUESTED."""
-        return status.refundstatus == PaymentDetailsStatus.PAID \
+        return all(line.refundglstatus == PaymentDetailsGlStatus.PAID
+                   for line in status.revenue) \
             and invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
 
     @staticmethod
     def _is_status_complete(status: OrderStatus) -> bool:
-        """Check for successful refund, or if the refund was done manually."""
-        return status.refundstatus == PaymentDetailsStatus.CMPLT or status.refundstatus is None
+        """Check for successful refund."""
+        return all(line.refundglstatus == PaymentDetailsGlStatus.CMPLT
+                   for line in status.revenue)
 
     @staticmethod
     def _set_invoice_and_payment_to_refunded(invoice: Invoice):
