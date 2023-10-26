@@ -18,7 +18,7 @@ from dataclass_wizard import JSONWizard
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentLineItem as LineItemModel
 from pay_api.utils.enums import InvoiceStatus
-from tasks.common.enums import PaymentDetailsGlStatus, PaymentDetailsStatus
+from tasks.common.enums import PaymentDetailsGlStatus
 
 
 @dataclass
@@ -33,7 +33,6 @@ class RevenueLine(JSONWizard):
 class OrderStatus(JSONWizard):  # pylint:disable=too-many-instance-attributes
     """Return from order status query."""
 
-    refundstatus: Optional[PaymentDetailsStatus]
     revenue: List[RevenueLine]
 
 

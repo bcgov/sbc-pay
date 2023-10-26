@@ -75,7 +75,7 @@ class DistributionTask:
                 continue
 
             target_status, target_gl_status = cls.get_status_fields(gl_update_invoice.invoice_status_code)
-            if payment_details.get(target_status) == STATUS_PAID:
+            if target_status is None or payment_details.get(target_status) == STATUS_PAID:
                 has_gl_completed: bool = True
                 for revenue in payment_details.get('revenue'):
                     if revenue.get(target_gl_status) in STATUS_NOT_PROCESSED:
@@ -88,7 +88,8 @@ class DistributionTask:
     def get_status_fields(cls, invoice_status_code: str) -> tuple:
         """Get status fields for invoice status code."""
         if invoice_status_code == InvoiceStatus.UPDATE_REVENUE_ACCOUNT_REFUND.value:
-            return 'refundstatus', 'refundglstatus'
+            # Refund doesn't use a top level status, as partial refunds may occur.
+            return None, 'refundglstatus'
         return 'paymentstatus', 'glstatus'
 
     @classmethod

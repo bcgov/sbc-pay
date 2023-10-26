@@ -119,11 +119,13 @@
                           revenueamount: '20'
                           glstatus: PAID
                           glerrormessage: null
+                          refundglstatus: PAID
                         - linenumber: '2'
                           revenueaccount: 112.32562.20245.4378.3212319.000000.0000
                           revenueamount: '30'
                           glstatus: PAID
                           glerrormessage: null
+                          refundglstatus: PAID
           '400':
             description: BadRequest
             content:
