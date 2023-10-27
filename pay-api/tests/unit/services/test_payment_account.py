@@ -244,3 +244,13 @@ def test_delete_account_failures(session):
         PaymentAccountService.delete_account(payload.get('accountId'))
 
     assert excinfo.value.code == Error.TRANSACTIONS_IN_PROGRESS.code
+
+
+def test_patch_account(session, payload):
+    """Assert that patch payment account works."""
+    pay_account: PaymentAccountService = PaymentAccountService.create(payload)
+    PaymentAccountService.enable_eft(payload.get('accountId'))
+
+    # Try to find the account by id.
+    pay_account = PaymentAccountService.find_by_id(pay_account.id)
+    assert pay_account.eft_enable is True

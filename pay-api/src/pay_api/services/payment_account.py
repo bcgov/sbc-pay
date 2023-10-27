@@ -577,7 +577,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         # to handle PAD 3 day period..UI needs bank details even if PAD is not activated
         is_future_pad = (self.payment_method == PaymentMethod.DRAWDOWN.value) and (self._is_pad_in_pending_activation())
         show_cfs_details = is_ob_or_pad or is_future_pad
-        d['eft_enable'] = self._dao.eft_enable
 
         if show_cfs_details:
             cfs_account = {
@@ -713,3 +712,12 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         if pay_account.statement_notification_enabled:
             pay_account.statement_notification_enabled = False
             pay_account.save()
+
+    @classmethod
+    def enable_eft(cls, auth_account_id: str) -> PaymentAccount:
+        """Enable EFT on the payment account."""
+        current_app.logger.debug('<patch_account')
+        pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        pay_account.eft_enable = True
+        pay_account.save()
+        return pay_account

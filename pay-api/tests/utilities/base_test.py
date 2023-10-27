@@ -383,7 +383,8 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
         bcol_account='TEST',
         name=name,
         payment_method=payment_method_code,
-        pad_activation_date=datetime.now()
+        pad_activation_date=datetime.now(),
+        eft_enable=False
     ).save()
 
     CfsAccount(cfs_party='11111',
@@ -405,6 +406,7 @@ def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='123
     account = PaymentAccount(auth_account_id=auth_account_id,
                              bcol_user_id=bcol_user_id,
                              bcol_account=bcol_account_id,
+                             eft_enable=False
                              )
     return account
 

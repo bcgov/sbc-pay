@@ -78,7 +78,7 @@ class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attri
 
     credit = db.Column(db.Numeric(19, 2), nullable=True)
     billable = db.Column(Boolean(), default=True)
-    eft_enable = db.Column(Boolean(), default=False, nullable=False)
+    eft_enable = db.Column(Boolean(), default=False)
 
     # before this date , the account shouldn't get used
     pad_activation_date = db.Column(db.DateTime, nullable=True)
@@ -108,7 +108,6 @@ class PaymentAccountSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     payment_method = fields.String(data_key='payment_method')
     auth_account_id = fields.String(data_key='account_id')
     name = fields.String(data_key='account_name')
-    eft_enable = fields.Boolean(data_key='eft_enable')
 
 
 @define
