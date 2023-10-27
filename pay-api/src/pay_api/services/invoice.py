@@ -472,7 +472,8 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         invoice_pdf_dict = {
             'templateName': 'invoice',
             'reportName': invoice_number,
-            'templateVars': template_vars
+            'templateVars': template_vars,
+            'populatePageNumber': True
         }
         current_app.logger.info('Invoice PDF Dict %s', invoice_pdf_dict)
         pdf_response = OAuthService.post(current_app.config.get('REPORT_API_BASE_URL'),
