@@ -18,7 +18,7 @@ depends_on = None
 
 def upgrade():
     op.execute("set statement_timeout=20000;")
-    op.add_column('payment_accounts', sa.Column('eft_enable', sa.Boolean, nullable=True))
+    op.add_column('payment_accounts', sa.Column('eft_enable', sa.Boolean(), server_default=sa.text('false'), nullable=False))
 
 
 def downgrade():

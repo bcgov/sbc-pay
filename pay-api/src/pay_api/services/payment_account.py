@@ -578,6 +578,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         # to handle PAD 3 day period..UI needs bank details even if PAD is not activated
         is_future_pad = (self.payment_method == PaymentMethod.DRAWDOWN.value) and (self._is_pad_in_pending_activation())
         show_cfs_details = is_ob_or_pad or is_future_pad
+        d['eft_enable'] = self._dao.eft_enable
 
         if show_cfs_details:
             cfs_account = {
