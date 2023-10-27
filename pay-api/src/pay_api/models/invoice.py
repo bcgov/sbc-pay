@@ -32,7 +32,7 @@ from .audit import Audit, AuditSchema
 from .base_schema import BaseSchema
 from .db import db, ma
 from .invoice_reference import InvoiceReferenceSchema
-from .payment_account import PaymentAccount, PaymentAccountSchema, PaymentAccountSearchModel
+from .payment_account import PaymentAccountSchema, PaymentAccountSearchModel
 from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from .receipt import ReceiptSchema
 from ..utils.util import current_local_time

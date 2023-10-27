@@ -29,7 +29,6 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentAccountSchema
 from pay_api.models import StatementSettings as StatementSettingsModel
-from pay_api.models.invoice import Invoice
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.queue_publisher import publish_response
