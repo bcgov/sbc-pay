@@ -760,6 +760,22 @@ def get_premium_account_payload(payment_method: str = PaymentMethod.DRAWDOWN.val
     }
 
 
+def get_eft_enable_account_payload(payment_method: str = PaymentMethod.DRAWDOWN.value,
+                                   account_id: int = randrange(999999)):
+    """Return a premium eft enable payment account object."""
+    return {
+        'accountId': account_id,
+        'accountName': 'Test Account',
+        'bcolAccountNumber': '2000000',
+        'bcolUserId': 'U100000',
+        'eft_enable': False,
+        'paymentInfo': {
+            'methodOfPayment': payment_method,
+            'billable': True
+        }
+    }
+
+
 def get_pad_account_payload(account_id: int = randrange(999999), bank_number: str = '001', transit_number='999',
                             bank_account='1234567890'):
     """Return a pad payment account object."""

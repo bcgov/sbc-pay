@@ -29,7 +29,7 @@ from pay_api.utils.errors import Error
 from pay_api.utils.util import get_outstanding_txns_from_date
 from tests.utilities.base_test import (
     factory_invoice, factory_payment_account, factory_premium_payment_account, get_auth_basic_user,
-    get_auth_premium_user, get_basic_account_payload, get_pad_account_payload, get_premium_account_payload,
+    get_auth_premium_user, get_basic_account_payload, get_eft_enable_account_payload, get_pad_account_payload, get_premium_account_payload,
     get_unlinked_pad_account_payload)
 
 
@@ -246,6 +246,9 @@ def test_delete_account_failures(session):
     assert excinfo.value.code == Error.TRANSACTIONS_IN_PROGRESS.code
 
 
+@pytest.mark.parametrize('payload', [
+    get_eft_enable_account_payload()
+])
 def test_patch_account(session, payload):
     """Assert that patch payment account works."""
     pay_account: PaymentAccountService = PaymentAccountService.create(payload)
