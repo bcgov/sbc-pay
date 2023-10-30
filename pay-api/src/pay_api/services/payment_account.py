@@ -716,7 +716,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @classmethod
     def enable_eft(cls, auth_account_id: str) -> PaymentAccount:
         """Enable EFT on the payment account."""
-        current_app.logger.debug('<patch_account')
         pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
         pay_account.eft_enable = True
         pay_account.save()
