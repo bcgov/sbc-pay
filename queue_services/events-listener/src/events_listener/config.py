@@ -58,6 +58,7 @@ class _Config():  # pylint: disable=too-few-public-methods
     Used as the base for all the other configurations.
     """
 
+    LEGISLATIVE_TIMEZONE = os.getenv('LEGISLATIVE_TIMEZONE', 'America/Vancouver')
     PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
     PAY_LD_SDK_KEY = os.getenv('PAY_LD_SDK_KEY', None)
 

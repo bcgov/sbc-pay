@@ -78,6 +78,23 @@ def get_account(account_number: str):
     return jsonify(response), status
 
 
+@bp.route('/<string:account_number>/eft', methods=['PATCH'])
+@cross_origin(origins='*')
+@_tracing.trace()
+@_jwt.has_one_of_roles([Role.SYSTEM.value])
+def patch_account(account_number: str):
+    """Enable eft for an account."""
+    current_app.logger.info('<patch_account_enable_eft')
+
+    try:
+        response, status = PaymentAccountService.enable_eft(account_number), HTTPStatus.OK
+    except ServiceUnavailableException as exception:
+        return exception.response()
+
+    current_app.logger.debug('>patch_account_enable_eft')
+    return jsonify(response.asdict()), status
+
+
 @bp.route('/<string:account_number>', methods=['PUT'])
 @cross_origin(origins='*')
 @_tracing.trace()

@@ -383,7 +383,8 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
         bcol_account='TEST',
         name=name,
         payment_method=payment_method_code,
-        pad_activation_date=datetime.now()
+        pad_activation_date=datetime.now(),
+        eft_enable=False
     ).save()
 
     CfsAccount(cfs_party='11111',
@@ -405,6 +406,7 @@ def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='123
     account = PaymentAccount(auth_account_id=auth_account_id,
                              bcol_user_id=bcol_user_id,
                              bcol_account=bcol_account_id,
+                             eft_enable=False
                              )
     return account
 
@@ -751,6 +753,22 @@ def get_premium_account_payload(payment_method: str = PaymentMethod.DRAWDOWN.val
         'accountName': 'Test Account',
         'bcolAccountNumber': '1000000',
         'bcolUserId': 'U100000',
+        'paymentInfo': {
+            'methodOfPayment': payment_method,
+            'billable': True
+        }
+    }
+
+
+def get_eft_enable_account_payload(payment_method: str = PaymentMethod.DRAWDOWN.value,
+                                   account_id: int = randrange(999999)):
+    """Return a premium eft enable payment account object."""
+    return {
+        'accountId': account_id,
+        'accountName': 'Test Account',
+        'bcolAccountNumber': '2000000',
+        'bcolUserId': 'U100000',
+        'eft_enable': False,
         'paymentInfo': {
             'methodOfPayment': payment_method,
             'billable': True
