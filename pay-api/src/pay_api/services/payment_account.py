@@ -646,9 +646,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             }
         }
 
-        if event_type == MessageType.EFT_AVAILABLE_NOTIFICATION.value:
-            payload['data']['contextUrl'] = \
-                f'auth-web-url/account/{self.auth_account_id}/settings/payment-option'
         if event_type == MessageType.PAD_ACCOUNT_CREATE.value:
             payload['data']['padTosAcceptedBy'] = self.pad_tos_accepted_by
         if include_pay_info:

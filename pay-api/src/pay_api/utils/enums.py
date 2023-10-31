@@ -315,7 +315,7 @@ class EFTFileLineType(Enum):
 class MessageType(Enum):
     """Account Mailer Event Types."""
 
-    # Ideally Should match account mailer project - FUTURE: moved into sbc-common-components.
+    # Ideally Should match account mailer project - FUTURE: move into sbc-common-components.
     EFT_AVAILABLE_NOTIFICATION = 'bc.registry.payment.eftAvailableNotification'
     PAD_ACCOUNT_CREATE = 'bc.registry.payment.padAccountCreate'
     NSF_LOCK_ACCOUNT = 'bc.registry.payment.lockAccount'
