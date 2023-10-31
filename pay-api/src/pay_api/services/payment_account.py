@@ -32,7 +32,7 @@ from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.queue_publisher import publish_response
-from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, PaymentSystem, StatementFrequency
+from pay_api.utils.enums import CfsAccountStatus, MessageType, PaymentMethod, PaymentSystem, StatementFrequency
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
@@ -343,7 +343,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         payment_account = PaymentAccount()
         payment_account._dao = account  # pylint: disable=protected-access
 
-        payment_account.publish_account_mailer_event()
+        payment_account.publish_account_mailer_event_on_creation()
 
         current_app.logger.debug('>create payment account')
         return payment_account
@@ -610,23 +610,26 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return self.pad_activation_date and self.pad_activation_date > datetime.now() and self.cfs_account_status in \
             (CfsAccountStatus.PENDING.value, CfsAccountStatus.PENDING_PAD_ACTIVATION.value)
 
-    def publish_account_mailer_event(self):
-        """Publish to account mailer message to send out confirmation email."""
+    def publish_account_mailer_event_on_creation(self):
+        """Publish to account mailer message to send out confirmation email on creation."""
         if self.payment_method == PaymentMethod.PAD.value:
-            payload = self._create_account_event_payload('bc.registry.payment.padAccountCreate', include_pay_info=True)
+            payload = self._create_account_event_payload(MessageType.PAD_ACCOUNT_CREATE.value, include_pay_info=True)
+            self._publish_queue_message(payload)
 
-            try:
-                publish_response(payload=payload,
-                                 client_name=current_app.config['NATS_MAILER_CLIENT_NAME'],
-                                 subject=current_app.config['NATS_MAILER_SUBJECT'])
-            except Exception as e:  # NOQA pylint: disable=broad-except
-                current_app.logger.error(e)
-                current_app.logger.error(
-                    'Notification to Queue failed for the Account Mailer %s - %s', self.auth_account_id,
-                    self.name)
-                capture_message(
-                    f'Notification to Queue failed for the Account Mailer on account creation : {payload}.',
-                    level='error')
+    def _publish_queue_message(self, payload):
+        """Publish to account mailer to send out confirmation email or notification email."""
+        try:
+            publish_response(payload=payload,
+                             client_name=current_app.config['NATS_MAILER_CLIENT_NAME'],
+                             subject=current_app.config['NATS_MAILER_SUBJECT'])
+        except Exception as e:  # NOQA pylint: disable=broad-except
+            current_app.logger.error(e)
+            current_app.logger.error(
+                'Notification to Queue failed for the Account Mailer %s - %s', self.auth_account_id,
+                self.name)
+            capture_message(
+                f'Notification to Queue failed for the Account Mailer : {payload}.',
+                level='error')
 
     def _create_account_event_payload(self, event_type: str, include_pay_info: bool = False):
         """Return event payload for account."""
@@ -639,11 +642,12 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             'datacontenttype': 'application/json',
             'data': {
                 'accountId': self.auth_account_id,
-                'accountName': self.name,
-                'padTosAcceptedBy': self.pad_tos_accepted_by
+                'accountName': self.name
             }
         }
 
+        if event_type == MessageType.PAD_ACCOUNT_CREATE.value:
+            payload['data']['padTosAcceptedBy'] = self.pad_tos_accepted_by
         if include_pay_info:
             payload['data']['paymentInfo'] = {
                 'bankInstitutionNumber': self.bank_number,
@@ -717,6 +721,11 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def enable_eft(cls, auth_account_id: str) -> PaymentAccount:
         """Enable EFT on the payment account."""
         pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        already_has_eft_enabled = pay_account.eft_enable is True
         pay_account.eft_enable = True
         pay_account.save()
-        return cls.find_by_id(pay_account.id)
+        pa_service = cls.find_by_id(pay_account.id)
+        if not already_has_eft_enabled:
+            payload = pa_service._create_account_event_payload(MessageType.EFT_AVAILABLE_NOTIFICATION.value)
+            pa_service._publish_queue_message(payload)
+        return pa_service
