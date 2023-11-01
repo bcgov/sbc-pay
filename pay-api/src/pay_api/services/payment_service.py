@@ -180,23 +180,16 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         invoice: Invoice = Invoice.find_by_id(invoice_id, skip_auth_check=False)
         # If the call is to apply credit, apply credit and release records.
         if is_apply_credit:
-            credit_balance = Decimal('0')
             payment_account: PaymentAccount = PaymentAccount.find_by_id(invoice.payment_account_id)
-            invoice_balance = invoice.total - (invoice.paid or 0)
-            if (payment_account.credit or 0) >= invoice_balance:
-                pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
-                    invoice.payment_method_code)
-                # Only release records, as the actual status change should happen during reconciliation.
-                pay_service.apply_credit(invoice)
-                credit_balance = payment_account.credit - invoice_balance
-                invoice.paid = invoice.total
-                invoice.save()
-            elif (payment_account.credit or 0) <= invoice_balance:
-                invoice.paid = (invoice.paid or 0) + (payment_account.credit or 0)
-                invoice.save()
 
-            payment_account.credit = credit_balance
-            payment_account.save()
+            if invoice.payment_method_code != PaymentMethod.EFT.value:
+                # Apply CFS tracked credits
+                _apply_cfs_credits(payment_account, invoice)
+            elif flags.is_on('enable-eft-payment-method', default=False):
+                # Apply EFT tracked credits via TDI17 file processing - these credits are separate from CFS credits
+                _apply_eft_credits(payment_account, invoice)
+            else:
+                raise BusinessException(Error.INVALID_REQUEST)
         else:
             payment_method = get_str_by_path(payment_request, 'paymentInfo/methodOfPayment')
 
@@ -288,6 +281,34 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         thread = Thread(target=run_delete)
         thread.start()
         current_app.logger.debug('>accept_delete')
+
+
+def _apply_cfs_credits(payment_account: PaymentAccount, invoice: Invoice):
+    """Apply CFS credits to invoice."""
+    credit_balance = Decimal('0')
+    invoice_balance = invoice.total - (invoice.paid or 0)
+    if (payment_account.credit or 0) >= invoice_balance:
+        pay_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
+            invoice.payment_method_code)
+        # Only release records, as the actual status change should happen during reconciliation.
+        pay_service.apply_credit(invoice)
+        credit_balance = payment_account.credit - invoice_balance
+        invoice.paid = invoice.total
+        invoice.save()
+    elif (payment_account.credit or 0) <= invoice_balance:
+        invoice.paid = (invoice.paid or 0) + (payment_account.credit or 0)
+        invoice.save()
+
+    payment_account.credit = credit_balance
+    payment_account.save()
+
+
+def _apply_eft_credits(payment_account: PaymentAccount, invoice: Invoice):
+    """Apply EFT credits to invoice."""
+    eft_credit_balance = PaymentAccount.get_eft_credit_balance(payment_account.id)
+
+    if eft_credit_balance > 0:
+        PaymentAccount.deduct_eft_credit(payment_account.id, invoice)
 
 
 def _calculate_fees(corp_type, filing_info):

@@ -60,12 +60,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         current_app.logger.info('<< Starting Online Banking Invoice Creation')
         cls._create_online_banking_invoices()
         current_app.logger.info('>> Done Online Banking Invoice Creation')
-        current_app.logger.info('<< Starting EFT Invoice Creation')
-        cls._create_eft_invoices()
-        current_app.logger.info('>> Done EFT Invoice Creation')
-        current_app.logger.info('<< Starting Wire Invoice Creation')
-        cls._create_wire_invoices()
-        current_app.logger.info('>> Done Wire Invoice Creation')
 
         if current_app.config.get('DISABLE_CFS_FAS_INTEGRATION'):
             return

@@ -33,3 +33,7 @@ class EftService(DepositService):
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number for direct pay."""
         # Do nothing here as the invoice references will be created later for eft payment reconciliations (TDI17).
+
+    def apply_credit(self, invoice: Invoice) -> None:
+        """Apply credit to the invoice."""
+        self._release_payment(invoice=invoice)
