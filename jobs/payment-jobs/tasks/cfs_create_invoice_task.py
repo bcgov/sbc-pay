@@ -341,16 +341,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         cls._create_single_invoice_per_purchase(PaymentMethod.ONLINE_BANKING)
 
     @classmethod
-    def _create_eft_invoices(cls):
-        """Create EFT invoices to CFS system."""
-        cls._create_single_invoice_per_purchase(PaymentMethod.EFT)
-
-    @classmethod
-    def _create_wire_invoices(cls):
-        """Create Wire invoices to CFS system."""
-        cls._create_single_invoice_per_purchase(PaymentMethod.WIRE)
-
-    @classmethod
     def _create_single_invoice_per_purchase(cls, payment_method: PaymentMethod):
         """Create one CFS invoice per purchase."""
         invoices: List[InvoiceModel] = InvoiceModel.query \
