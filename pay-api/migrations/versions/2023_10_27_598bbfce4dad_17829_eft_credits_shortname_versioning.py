@@ -40,7 +40,21 @@ def upgrade():
                     sa.PrimaryKeyConstraint('id', 'transaction_id')
                     )
 
+    op.add_column('eft_transactions', sa.Column('short_name_id', sa.Integer(), nullable=True))
+    op.add_column('eft_transactions', sa.Column('deposit_amount_cents', sa.BigInteger(), nullable=True)),
+    op.create_foreign_key('eft_transactions_short_name_fk', 'eft_transactions',
+                          'eft_short_names', ['short_name_id'], ['id'])
+
+    op.execute("INSERT INTO public.eft_process_status_codes "
+               "(code, description) "
+               "VALUES "
+               "('PENDING', 'Record is in pending state - used for unmapped short name transactions.')")
+
 
 def downgrade():
     op.drop_table('eft_credits')
     op.drop_table('eft_short_names_version')
+    op.drop_constraint('eft_transactions_short_name_fk', 'eft_transactions', type_='foreignkey')
+    op.drop_column('eft_transactions', 'short_name_id')
+    op.drop_column('eft_transactions', 'deposit_amount_cents')
+    op.execute("DELETE FROM eft_process_status_codes WHERE code in ('PENDING')")

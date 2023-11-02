@@ -302,6 +302,7 @@ class EFTProcessStatus(Enum):
     IN_PROGRESS = 'INPROGRESS'
     FAILED = 'FAILED'
     PARTIAL = 'PARTIAL'
+    PENDING = 'PENDING'
 
 
 class EFTFileLineType(Enum):
