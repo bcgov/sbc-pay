@@ -69,4 +69,4 @@ class EFTTransaction(BaseModel):  # pylint: disable=too-many-instance-attributes
     sequence_number = db.Column('sequence_number', db.String(3), nullable=True)
     short_name_id = db.Column(db.Integer, ForeignKey('eft_short_names.id'), nullable=True)
     status_code = db.Column(db.String, ForeignKey('eft_process_status_codes.code'), nullable=False)
-    deposit_amount_cents = db.Column('total_deposit_cents', db.BigInteger, nullable=True)
+    deposit_amount_cents = db.Column('deposit_amount_cents', db.BigInteger, nullable=True)
