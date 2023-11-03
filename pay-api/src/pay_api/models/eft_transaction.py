@@ -42,6 +42,7 @@ class EFTTransaction(BaseModel):  # pylint: disable=too-many-instance-attributes
             'batch_number',
             'completed_on',
             'created_on',
+            'deposit_amount_cents',
             'error_messages',
             'file_id',
             'last_updated_on',
