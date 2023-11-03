@@ -67,42 +67,43 @@ class ApTask(CgiAP):
     def _create_routing_slip_refund_file(cls):  # pylint:disable=too-many-locals, too-many-statements
         """Create AP file for routing slip refunds (unapplied routing slip amounts) and upload to CGI."""
         cls.ap_type = EjvFileType.REFUND
-        routing_slips: List[RoutingSlipModel] = db.session.query(RoutingSlipModel) \
+        routing_slips_dao: List[RoutingSlipModel] = db.session.query(RoutingSlipModel) \
             .filter(RoutingSlipModel.status == RoutingSlipStatus.REFUND_AUTHORIZED.value) \
             .filter(RoutingSlipModel.refund_amount > 0) \
             .all()
 
-        current_app.logger.info(f'Found {len(routing_slips)} to refund.')
-        if not routing_slips:
+        current_app.logger.info(f'Found {len(routing_slips_dao)} to refund.')
+        if not routing_slips_dao:
             return
 
-        ejv_file_model: EjvFileModel = EjvFileModel(
-            file_type=cls.ap_type.value,
-            file_ref=cls.get_file_name(),
-            disbursement_status_code=DisbursementStatus.UPLOADED.value
-        ).flush()
+        for routing_slips in batched(routing_slips_dao, 250):
+            ejv_file_model: EjvFileModel = EjvFileModel(
+                file_type=cls.ap_type.value,
+                file_ref=cls.get_file_name(),
+                disbursement_status_code=DisbursementStatus.UPLOADED.value
+            ).flush()
 
-        batch_number: str = cls.get_batch_number(ejv_file_model.id)
-        ap_content: str = cls.get_batch_header(batch_number)
-        batch_total = 0
-        total_line_count: int = 0
-        for rs in routing_slips:
-            current_app.logger.info(f'Creating refund for {rs.number}, Amount {rs.refund_amount}.')
-            refund: RefundModel = RefundModel.find_by_routing_slip_id(rs.id)
-            ap_content = f'{ap_content}{cls.get_ap_header(rs.refund_amount, rs.number, datetime.now())}'
-            ap_line = APLine(total=rs.refund_amount, invoice_number=rs.number, line_number=1)
-            ap_content = f'{ap_content}{cls.get_ap_invoice_line(ap_line)}'
-            ap_content = f'{ap_content}{cls.get_ap_address(refund.details, rs.number)}'
-            total_line_count += 3
-            if ap_comment := cls.get_ap_comment(refund.details, rs.number):
-                ap_content = f'{ap_content}{ap_comment:<40}'
-                total_line_count += 1
-            batch_total += rs.refund_amount
-            rs.status = RoutingSlipStatus.REFUND_UPLOADED.value
-        batch_trailer = cls.get_batch_trailer(batch_number, float(batch_total), control_total=total_line_count)
-        ap_content = f'{ap_content}{batch_trailer}'
+            batch_number: str = cls.get_batch_number(ejv_file_model.id)
+            ap_content: str = cls.get_batch_header(batch_number)
+            batch_total = 0
+            total_line_count: int = 0
+            for rs in routing_slips:
+                current_app.logger.info(f'Creating refund for {rs.number}, Amount {rs.refund_amount}.')
+                refund: RefundModel = RefundModel.find_by_routing_slip_id(rs.id)
+                ap_content = f'{ap_content}{cls.get_ap_header(rs.refund_amount, rs.number, datetime.now())}'
+                ap_line = APLine(total=rs.refund_amount, invoice_number=rs.number, line_number=1)
+                ap_content = f'{ap_content}{cls.get_ap_invoice_line(ap_line)}'
+                ap_content = f'{ap_content}{cls.get_ap_address(refund.details, rs.number)}'
+                total_line_count += 3
+                if ap_comment := cls.get_ap_comment(refund.details, rs.number):
+                    ap_content = f'{ap_content}{ap_comment:<40}'
+                    total_line_count += 1
+                batch_total += rs.refund_amount
+                rs.status = RoutingSlipStatus.REFUND_UPLOADED.value
+            batch_trailer = cls.get_batch_trailer(batch_number, float(batch_total), control_total=total_line_count)
+            ap_content = f'{ap_content}{batch_trailer}'
 
-        cls._create_file_and_upload(ap_content)
+            cls._create_file_and_upload(ap_content)
 
     @classmethod
     def _create_non_gov_disbursement_file(cls):  # pylint:disable=too-many-locals
