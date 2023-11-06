@@ -34,7 +34,6 @@ from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.distribution_code import DistributionCode
-from pay_api.services.invoice import Invoice
 from pay_api.services.queue_publisher import publish_response
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentSystem, StatementFrequency)
@@ -572,10 +571,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return Decimal(result.credit_balance) if result else 0
 
     @classmethod
-    def deduct_eft_credit(cls, account_id: int, invoice: Invoice) -> Decimal:
+    def deduct_eft_credit(cls, account_id: int, invoice: InvoiceModel) -> Decimal:
         """Deduct EFT credit and update remaining credit records."""
-        # Get all eft credits
-        result: List[EFTCreditModel] = db.session.query(EFTCreditModel) \
+        eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel) \
             .filter(EFTCreditModel.remaining_amount > 0) \
             .filter(EFTCreditModel.payment_account_id == account_id)\
             .order_by(EFTCreditModel.created_on.asc())\
@@ -585,7 +583,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         invoice_balance = invoice.total - (invoice.paid or 0)
 
         # Deduct credits and apply to the invoice
-        for eft_credit in result:
+        for eft_credit in eft_credits:
             if eft_credit.remaining_amount >= invoice_balance:
                 # Credit covers the full invoice balance
                 eft_credit.remaining_amount = eft_credit.remaining_amount - invoice_balance
@@ -598,8 +596,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 break
 
             # Credit covers partial invoice balance
-            invoice_balance = invoice_balance - eft_credit.remaining_amount
-            invoice.paid = invoice.paid + eft_credit.remaining_amount
+            invoice_balance -= eft_credit.remaining_amount
+            invoice.paid += eft_credit.remaining_amount
             invoice.invoice_status_code = InvoiceStatus.PARTIAL.value
 
             eft_credit.remaining_amount = 0

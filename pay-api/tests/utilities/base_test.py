@@ -511,6 +511,7 @@ def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.va
         invoice_status_code=status_code,
         payment_account_id=payment_account.id,
         total=total,
+        paid=0,
         created_by='test',
         created_name=created_name,
         created_on=created_on,
