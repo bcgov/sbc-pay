@@ -25,6 +25,7 @@ from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTFile as EFTFileModel
 from pay_api.models import EFTCredit as EFTCreditModel
+from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod
@@ -272,11 +273,17 @@ def test_payment_request_eft_with_credit(session, client, jwt, app):
     eft_file.file_ref = 'test.txt'
     eft_file.save()
 
+    # Set up short name
+    eft_short_name = EFTShortnameModel()
+    eft_short_name.short_name = 'TESTSHORTNAME'
+    eft_short_name.save()
+
     eft_credit_1 = EFTCreditModel()
     eft_credit_1.eft_file_id = eft_file.id
     eft_credit_1.payment_account_id = payment_account.id
     eft_credit_1.amount = 50
     eft_credit_1.remaining_amount = 50
+    eft_credit_1.short_name_id = eft_short_name.id
     eft_credit_1.save()
 
     eft_credit_2 = EFTCreditModel()
@@ -284,11 +291,12 @@ def test_payment_request_eft_with_credit(session, client, jwt, app):
     eft_credit_2.payment_account_id = payment_account.id
     eft_credit_2.amount = 45.50
     eft_credit_2.remaining_amount = 45.50
+    eft_credit_2.short_name_id = eft_short_name.id
     eft_credit_2.save()
 
     # Create invoice to use credit on
     invoice = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
-                              total=50).save()
+                              total=50, paid=0).save()
     payment_account.deduct_eft_credit(payment_account.id, invoice)
 
     invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
@@ -301,7 +309,7 @@ def test_payment_request_eft_with_credit(session, client, jwt, app):
 
     # Test partial paid with credit
     invoice = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
-                              total=50).save()
+                              total=50, paid=0).save()
     payment_account.deduct_eft_credit(payment_account.id, invoice)
 
     invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)

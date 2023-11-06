@@ -586,7 +586,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         for eft_credit in eft_credits:
             if eft_credit.remaining_amount >= invoice_balance:
                 # Credit covers the full invoice balance
-                eft_credit.remaining_amount = eft_credit.remaining_amount - invoice_balance
+                eft_credit.remaining_amount -= invoice_balance
                 eft_credit.save()
 
                 invoice.paid = invoice.total
