@@ -671,7 +671,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             cfs_account.save()
 
             payload = pay_account._create_account_event_payload(  # pylint:disable=protected-access
-                'bc.registry.payment.unlockAccount'
+                MessageType.NSF_UNLOCK_ACCOUNT.value
             )
 
             try:
