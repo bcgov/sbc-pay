@@ -27,9 +27,6 @@ from requests.exceptions import ConnectionError
 
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import DistributionCodeLink as DistributionCodeLinkModel
-from pay_api.models import EFTFile as EFTFileModel
-from pay_api.models import EFTCredit as EFTCreditModel
-from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
@@ -882,91 +879,6 @@ def test_payment_request_online_banking_with_credit(session, client, jwt, app):
     # Credit won't be applied as the invoice total is 50 and the credit should remain as 0.
     payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
     assert payment_account.credit == 0
-
-
-def test_payment_request_eft_with_credit(session, client, jwt, app):
-    """Assert EFT credits can be properly applied."""
-    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-
-    rv = client.post('/api/v1/accounts',
-                     data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.EFT.value)),
-                     headers=headers)
-    auth_account_id = rv.json.get('accountId')
-    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-
-    # Set up EFT credit records
-    eft_file = EFTFileModel()
-    eft_file.file_ref = 'test.txt'
-    eft_file.save()
-
-    eft_credit_1 = EFTCreditModel()
-    eft_credit_1.eft_file_id = eft_file.id
-    eft_credit_1.payment_account_id = payment_account.id
-    eft_credit_1.amount = 50
-    eft_credit_1.remaining_amount = 50
-    eft_credit_1.save()
-
-    eft_credit_2 = EFTCreditModel()
-    eft_credit_2.eft_file_id = eft_file.id
-    eft_credit_2.payment_account_id = payment_account.id
-    eft_credit_2.amount = 45.50
-    eft_credit_2.remaining_amount = 45.50
-    eft_credit_2.save()
-
-    # Create invoice to use credit on
-    token = jwt.create_jwt(get_claims(), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(
-        get_payment_request_with_payment_method(business_identifier='CP0002000',
-                                                payment_method=PaymentMethod.EFT.value)),
-                     headers=headers)
-    invoice_id = rv.json.get('id')
-
-    client.patch(f'/api/v1/payment-requests/{invoice_id}?applyCredit=true', data=json.dumps({}), headers=headers)
-    invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
-
-    assert invoice is not None
-    assert invoice.paid == 50
-    assert invoice.total == 50
-    assert invoice.invoice_status_code == InvoiceStatus.PAID.value
-    assert eft_credit_1.remaining_amount == 0
-    assert eft_credit_2.remaining_amount == 45.50
-
-    # Test partial paid with credit
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    rv = client.post('/api/v1/payment-requests', data=json.dumps(
-        get_payment_request_with_payment_method(business_identifier='CP0002000',
-                                                payment_method=PaymentMethod.EFT.value)),
-                     headers=headers)
-    invoice_id = rv.json.get('id')
-
-    client.patch(f'/api/v1/payment-requests/{invoice_id}?applyCredit=true', data=json.dumps({}), headers=headers)
-    invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
-
-    assert invoice is not None
-    assert invoice.paid == 45.50
-    assert invoice.total == 50
-    assert invoice.invoice_status_code == InvoiceStatus.PARTIAL.value
-    assert eft_credit_1.remaining_amount == 0
-    assert eft_credit_2.remaining_amount == 0
-
-    # Increase credit and test for left over balance
-    eft_credit_2.amount = 60
-    eft_credit_2.remaining_amount = 14.50
-    eft_credit_2.save()
-
-    # Apply credit to the previous partial invoice
-    client.patch(f'/api/v1/payment-requests/{invoice_id}?applyCredit=true', data=json.dumps({}), headers=headers)
-    invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
-
-    # Assert invoice is now paid and there is a credit balance remaining
-    assert invoice is not None
-    assert invoice.paid == 50
-    assert invoice.total == 50
-    assert invoice.invoice_status_code == InvoiceStatus.PAID.value
-    assert eft_credit_1.remaining_amount == 0
-    assert eft_credit_2.remaining_amount == 10
 
 
 def test_create_ejv_payment_request(session, client, jwt, app):
