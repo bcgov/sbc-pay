@@ -42,6 +42,7 @@ class EFTTransaction(BaseModel):  # pylint: disable=too-many-instance-attributes
             'batch_number',
             'completed_on',
             'created_on',
+            'deposit_amount_cents',
             'error_messages',
             'file_id',
             'last_updated_on',
@@ -50,6 +51,7 @@ class EFTTransaction(BaseModel):  # pylint: disable=too-many-instance-attributes
             'jv_type',
             'jv_number',
             'sequence_number',
+            'short_name_id',
             'status_code'
         ]
     }
@@ -66,4 +68,6 @@ class EFTTransaction(BaseModel):  # pylint: disable=too-many-instance-attributes
     jv_type = db.Column('jv_type', db.String(1), nullable=True)
     jv_number = db.Column('jv_number', db.String(10), nullable=True)
     sequence_number = db.Column('sequence_number', db.String(3), nullable=True)
+    short_name_id = db.Column(db.Integer, ForeignKey('eft_short_names.id'), nullable=True)
     status_code = db.Column(db.String, ForeignKey('eft_process_status_codes.code'), nullable=False)
+    deposit_amount_cents = db.Column('deposit_amount_cents', db.BigInteger, nullable=True)

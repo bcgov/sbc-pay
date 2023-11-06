@@ -290,6 +290,14 @@ class PaymentService:  # pylint: disable=too-few-public-methods
         current_app.logger.debug('>accept_delete')
 
 
+def _apply_eft_credits(payment_account: PaymentAccount, invoice: Invoice):
+    """Apply EFT credits to invoice."""
+    eft_credit_balance = PaymentAccount.get_eft_credit_balance(payment_account.id)
+
+    if eft_credit_balance > 0:
+        PaymentAccount.deduct_eft_credit(payment_account.id, invoice)
+
+
 def _calculate_fees(corp_type, filing_info):
     """Calculate and return the fees based on the filing type codes."""
     fees = []

@@ -11,18 +11,18 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Model to handle EFT TDI17 short name to BCROS account mapping."""
-
+"""Model to handle all operations related to EFT Credits data."""
 from datetime import datetime
+from sqlalchemy import ForeignKey
 
-from .base_model import VersionedModel
+from .base_model import BaseModel
 from .db import db
 
 
-class EFTShortnames(VersionedModel):  # pylint: disable=too-many-instance-attributes
-    """This class manages the EFT short name to auth account mapping."""
+class EFTCredit(BaseModel):  # pylint:disable=too-many-instance-attributes
+    """This class manages all of the base data for EFT credits."""
 
-    __tablename__ = 'eft_short_names'
+    __tablename__ = 'eft_credits'
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -36,13 +36,26 @@ class EFTShortnames(VersionedModel):  # pylint: disable=too-many-instance-attrib
     __mapper_args__ = {
         'include_properties': [
             'id',
-            'auth_account_id',
+            'amount',
             'created_on',
-            'short_name'
+            'eft_file_id',
+            'short_name_id',
+            'payment_account_id',
+            'remaining_amount'
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    auth_account_id = db.Column('auth_account_id', db.DateTime, nullable=True, index=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
-    short_name = db.Column('short_name', db.String, nullable=False, index=True)
+
+    amount = db.Column(db.Numeric(19, 2), nullable=False)
+    remaining_amount = db.Column(db.Numeric(19, 2), nullable=False)
+    created_on = db.Column('created_on', db.DateTime, nullable=True, default=datetime.now)
+
+    eft_file_id = db.Column(db.Integer, ForeignKey('eft_files.id'), nullable=False)
+    short_name_id = db.Column(db.Integer, ForeignKey('eft_short_names.id'), nullable=False)
+    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
+
+    @classmethod
+    def find_by_payment_account_id(cls, payment_account_id: int):
+        """Find EFT Credit by payment account id."""
+        return cls.query.filter_by(payment_account_id=payment_account_id).all()

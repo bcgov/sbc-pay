@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Tests to assure the EFT File model.
+"""Tests to assure the EFT Short names model.
 
-Test-Suite to ensure that the EFT File model is working as expected.
+Test-Suite to ensure that the EFT Short names model is working as expected.
 """
 from datetime import datetime
 
