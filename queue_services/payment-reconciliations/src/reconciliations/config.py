@@ -60,6 +60,7 @@ class _Config():  # pylint: disable=too-few-public-methods
 
     PROJECT_ROOT = os.path.abspath(os.path.dirname(__file__))
     PAY_LD_SDK_KEY = os.getenv('PAY_LD_SDK_KEY', None)
+    LEGISLATIVE_TIMEZONE = os.getenv('LEGISLATIVE_TIMEZONE', 'America/Vancouver')
 
     SENTRY_ENABLE = os.getenv('SENTRY_ENABLE', 'False')
     SENTRY_DSN = os.getenv('SENTRY_DSN', None)
@@ -112,6 +113,9 @@ class _Config():  # pylint: disable=too-few-public-methods
     CFS_CLIENT_ID = os.getenv('CFS_CLIENT_ID')
     CFS_CLIENT_SECRET = os.getenv('CFS_CLIENT_SECRET')
     CONNECT_TIMEOUT = int(os.getenv('CONNECT_TIMEOUT', '10'))
+
+    # EFT Config
+    EFT_INVOICE_PREFIX = os.getenv('EFT_INVOICE_PREFIX', 'REG')
 
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY')

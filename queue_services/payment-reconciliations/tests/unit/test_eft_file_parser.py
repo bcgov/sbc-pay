@@ -442,7 +442,7 @@ def test_eft_parse_record_invalid_dates():
     assert record.transaction_date is None
 
 
-def test_eft_parse_record_transaction_description_required():
+def test_eft_parse_record_invalid_numbers():
     """Test EFT record parser for invalid numbers."""
     content = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
                                  ministry_code='AT',
@@ -478,7 +478,7 @@ def test_eft_parse_record_transaction_description_required():
     assert record.errors[2].index == 0
 
 
-def test_eft_parse_record_invalid_numbers():
+def test_eft_parse_record_transaction_description_required():
     """Test EFT record parser transaction description required."""
     content = factory_eft_record(record_type=EFTConstants.TRANSACTION_RECORD_TYPE.value,
                                  ministry_code='AT',
@@ -503,8 +503,8 @@ def test_eft_parse_record_invalid_numbers():
     # We are expecting the transaction description as this is where we get the BCROS Account number
     assert record.errors
     assert len(record.errors) == 1
-    assert record.errors[0].code == EFTError.BCROS_ACCOUNT_NUMBER_REQUIRED.name
-    assert record.errors[0].message == EFTError.BCROS_ACCOUNT_NUMBER_REQUIRED.value
+    assert record.errors[0].code == EFTError.ACCOUNT_SHORTNAME_REQUIRED.name
+    assert record.errors[0].message == EFTError.ACCOUNT_SHORTNAME_REQUIRED.value
     assert record.errors[0].index == 0
 
 
