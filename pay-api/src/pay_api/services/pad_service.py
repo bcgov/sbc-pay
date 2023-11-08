@@ -116,7 +116,8 @@ class PadService(PaymentSystemService, CFSService):
         # Publish message to the queue with payment token, so that they can release records on their side.
         self._release_payment(invoice=invoice)
 
-    def process_cfs_refund(self, invoice: InvoiceModel):
+    def process_cfs_refund(self, invoice: InvoiceModel,
+                           payment_account: PaymentAccount):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         # Move invoice to CREDITED or CANCELLED. There are no refunds for PAD, just cancellation or credit.
         # Credit memos don't return to the bank account.

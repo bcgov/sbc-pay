@@ -145,7 +145,8 @@ class PaybcService(PaymentSystemService, CFSService):
         receipt_url = receipt_url + f'{receipt_number}/'
         return self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, True).json()
 
-    def process_cfs_refund(self, invoice: InvoiceModel):
+    def process_cfs_refund(self, invoice: InvoiceModel,
+                           payment_account: PaymentAccount):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         return super()._refund_and_create_credit_memo(invoice)
 

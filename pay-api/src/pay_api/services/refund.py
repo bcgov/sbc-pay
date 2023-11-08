@@ -26,6 +26,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.enums import InvoiceStatus, Role, RoutingSlipStatus
 from pay_api.utils.errors import Error
@@ -266,7 +267,8 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         pay_system_service: PaymentSystemService = PaymentSystemFactory.create_from_payment_method(
             payment_method=invoice.payment_method_code
         )
-        invoice_status = pay_system_service.process_cfs_refund(invoice)
+        payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+        invoice_status = pay_system_service.process_cfs_refund(invoice, payment_account=payment_account)
         refund.flush()
         message = REFUND_SUCCESS_MESSAGES.get(f'{invoice.payment_method_code}.{invoice.invoice_status_code}')
         # set invoice status
