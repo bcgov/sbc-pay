@@ -90,7 +90,8 @@ class InternalPayService(PaymentSystemService, OAuthService):
         """Return the default status for invoice when created."""
         return InvoiceStatus.APPROVED.value
 
-    def process_cfs_refund(self, invoice: InvoiceModel):
+    def process_cfs_refund(self, invoice: InvoiceModel,
+                           payment_account: PaymentAccount):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         if invoice.total == 0:
             raise BusinessException(Error.NO_FEE_REFUND)

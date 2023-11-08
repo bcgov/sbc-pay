@@ -102,7 +102,8 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Return the payment system portal URL for payment."""
         return None
 
-    def process_cfs_refund(self, invoice: InvoiceModel):  # pylint:disable=unused-argument
+    def process_cfs_refund(self, invoice: InvoiceModel,  # pylint:disable=unused-argument
+                           payment_account: PaymentAccount):  # pylint:disable=unused-argument
         """Process Refund if any."""
         return None
 

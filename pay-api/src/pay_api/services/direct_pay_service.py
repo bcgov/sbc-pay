@@ -140,7 +140,8 @@ class DirectPayService(PaymentSystemService, OAuthService):
                 return pay_system_reason_code
         return None
 
-    def process_cfs_refund(self, invoice: InvoiceModel):
+    def process_cfs_refund(self, invoice: InvoiceModel,
+                           payment_account: PaymentAccount):   # pylint:disable=unused-argument
         """Process refund in CFS."""
         current_app.logger.debug('<process_cfs_refund creating automated refund for invoice: '
                                  f'{invoice.id}, {invoice.invoice_status_code}')

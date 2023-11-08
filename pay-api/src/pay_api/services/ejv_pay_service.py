@@ -65,7 +65,8 @@ class EjvPayService(PaymentSystemService, OAuthService):
         # Publish message to the queue with payment token, so that they can release records on their side.
         self._release_payment(invoice=invoice)
 
-    def process_cfs_refund(self, invoice: InvoiceModel) -> str:  # pylint:disable=unused-argument
+    def process_cfs_refund(self, invoice: InvoiceModel,
+                           payment_account: PaymentAccount) -> str:  # pylint:disable=unused-argument
         """Do nothing to process refund; as the refund is handled by CRON job.
 
         Return the status after checking invoice status.
@@ -76,6 +77,8 @@ class EjvPayService(PaymentSystemService, OAuthService):
             2.1 Return REFUND_REQUESTED
         """
         current_app.logger.info(f'Received JV refund for invoice {invoice.id}, {invoice.invoice_status_code}')
+        if not payment_account.billable:
+            return InvoiceStatus.REFUNDED.value
         if invoice.invoice_status_code == InvoiceStatus.APPROVED.value:
             if InvoiceReference.find_active_reference_by_invoice_id(invoice.id):
                 return InvoiceStatus.REFUND_REQUESTED.value

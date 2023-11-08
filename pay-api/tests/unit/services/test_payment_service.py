@@ -24,6 +24,7 @@ from pay_api.models import FeeSchedule, Invoice, Payment, PaymentAccount
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.services import CFSService
 from pay_api.services.internal_pay_service import InternalPayService
+from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.services.payment_service import PaymentService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, PaymentStatus, RoutingSlipStatus
 from requests.exceptions import ConnectionError, ConnectTimeout, HTTPError
@@ -388,6 +389,8 @@ def test_internal_rs_back_active(session, public_user_mock):
     assert rs.status == RoutingSlipStatus.COMPLETE.name
 
     invoice = Invoice.find_by_id(invoice['id'])
-    InternalPayService().process_cfs_refund(invoice)
+    payment_account = PaymentAccountService()
+    payment_account._dao = account_model  # pylint: disable=protected-access
+    InternalPayService().process_cfs_refund(invoice, payment_account)
 
     assert rs.status == RoutingSlipStatus.ACTIVE.name
