@@ -270,7 +270,7 @@ async def test_eft_tdi17_basic_process(session, app, stan_server, event_loop, cl
     assert eft_file_model.number_of_details == 5
     assert eft_file_model.total_deposit_cents == 3733750
 
-    # Partial as shortname is not mapped to an account
+    # Complete - short name is not mapped but credited
     assert eft_file_model.status_code == EFTProcessStatus.COMPLETED.value
 
     # Stored as part of the EFT File record - expecting none when no errors
@@ -420,15 +420,16 @@ async def test_eft_tdi17_process(session, app, stan_server, event_loop, client_i
     assert payment.payment_status_code == PaymentStatus.COMPLETED.value
     assert payment.payment_method_code == PaymentMethod.EFT.value
     assert payment.invoice_amount == expected_amount
+    assert payment.paid_amount == expected_amount
 
     invoice_reference: InvoiceReferenceModel = InvoiceReferenceModel\
-        .find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+        .find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.COMPLETED.value)
 
     assert invoice_reference is not None
     assert invoice_reference.invoice_id == invoice.id
     assert invoice_reference.invoice_number == payment.invoice_number
     assert invoice_reference.invoice_number == expected_invoice_number
-    assert invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
+    assert invoice_reference.status_code == InvoiceReferenceStatus.COMPLETED.value
 
     eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).all()
     assert eft_credits is not None
@@ -575,13 +576,13 @@ async def test_eft_tdi17_rerun(session, app, stan_server, event_loop, client_id,
     assert payment.invoice_amount == expected_amount
 
     invoice_reference: InvoiceReferenceModel = InvoiceReferenceModel \
-        .find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+        .find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.COMPLETED.value)
 
     assert invoice_reference is not None
     assert invoice_reference.invoice_id == invoice.id
     assert invoice_reference.invoice_number == payment.invoice_number
     assert invoice_reference.invoice_number == expected_invoice_number
-    assert invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
+    assert invoice_reference.status_code == InvoiceReferenceStatus.COMPLETED.value
 
     eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).all()
     assert eft_credits is not None

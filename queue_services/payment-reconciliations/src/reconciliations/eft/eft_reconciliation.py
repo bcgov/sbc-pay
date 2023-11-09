@@ -31,7 +31,6 @@ from typing import Dict, List
 
 from _decimal import Decimal
 from entity_queue_common.service_utils import logger
-from flask import current_app
 from pay_api import db
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import EFTCredit as EFTCreditModel
@@ -39,12 +38,10 @@ from pay_api.models import EFTFile as EFTFileModel
 from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Invoice as InvoiceModel
-from pay_api.models import InvoiceReference as InvoiceReferenceModel
-from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import (
-    EFTFileLineType, EFTProcessStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus)
+from pay_api.services.eft_service import EftService as EFTService
+from pay_api.services.eft_short_names import EFTShortnames
+from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, InvoiceStatus, PaymentMethod
 from sentry_sdk import capture_message
 
 from reconciliations.eft import EFTHeader, EFTRecord, EFTTrailer
@@ -64,7 +61,7 @@ async def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-ma
     6: Calculate total transaction balance per short name - dictionary
     7: Apply balance to outstanding EFT invoices - Update invoice paid amount and status, create payment,
         invoice reference, and receipt
-    8: Create EFT Credit records
+    8: Create EFT Credit records for left over balances
     9: Finalize and complete
     """
     # Fetch EFT File
@@ -260,14 +257,13 @@ def _process_eft_payments(shortname_balance: Dict, eft_file: EFTFileModel) -> bo
             try:
                 auth_account_id = eft_shortname_model.auth_account_id
                 # Find invoices to be paid
-                invoices: List[InvoiceModel] = _get_invoices_owing(auth_account_id)
+                invoices: List[InvoiceModel] = EFTShortnames.get_invoices_owing(auth_account_id)
                 payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
                 if invoices is not None:
                     for invoice in invoices:
                         _pay_invoice(payment_account=payment_account,
                                      invoice=invoice,
-                                     shortname_balance=shortname_balance[shortname],
-                                     receipt_number=invoice.id)
+                                     shortname_balance=shortname_balance[shortname])
 
             except Exception as e:  # NOQA pylint: disable=broad-exception-caught
                 has_eft_transaction_errors = True
@@ -431,8 +427,7 @@ def _shortname_balance_as_dict(eft_transactions: List[EFTRecord]) -> Dict:
     return shortname_balance
 
 
-def _pay_invoice(payment_account: PaymentAccountModel, invoice: InvoiceModel, shortname_balance: Dict,
-                 receipt_number=None):
+def _pay_invoice(payment_account: PaymentAccountModel, invoice: InvoiceModel, shortname_balance: Dict):
     """Pay for an invoice and update invoice state."""
     payment_date = shortname_balance.get('transaction_date') or datetime.now()
     balance = shortname_balance.get('balance')
@@ -455,48 +450,21 @@ def _pay_invoice(payment_account: PaymentAccountModel, invoice: InvoiceModel, sh
     db.session.add(invoice)
 
     # Create the payment record
-    payment = _save_payment(payment_account=payment_account,
-                            invoice=invoice,
-                            payment_date=payment_date,
-                            paid_amount=payable_amount)
+    eft_payment_service: EFTService = PaymentSystemFactory.create_from_payment_method(PaymentMethod.EFT.value)
+    payment = eft_payment_service.create_payment(payment_account=payment_account,
+                                                 invoice=invoice,
+                                                 payment_date=payment_date,
+                                                 paid_amount=payable_amount)
 
-    invoice_reference = InvoiceReferenceModel()
-    invoice_reference.invoice_id = invoice.id
-    invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
-    invoice_reference.invoice_number = payment.invoice_number
+    invoice_reference = EFTService.create_invoice_reference(invoice=invoice, payment=payment)
+    receipt = EFTService.create_receipt(invoice=invoice, payment=payment)
 
+    db.session.add(payment)
     db.session.add(invoice_reference)
-
-    # Create Receipt records
-    receipt: ReceiptModel = ReceiptModel()
-    receipt.receipt_date = payment_date
-    receipt.receipt_amount = payable_amount
-    receipt.invoice_id = invoice.id
-    receipt.receipt_number = receipt_number
     db.session.add(receipt)
 
     # Paid - update the shortname balance
     shortname_balance['balance'] -= payable_amount
-
-
-def _save_payment(payment_account: PaymentAccountModel, invoice: InvoiceModel, payment_date: datetime,
-                  paid_amount, receipt_number=None) -> PaymentModel:
-    """Create a payment record for an invoice."""
-    pay_service = PaymentSystemFactory.create_from_payment_method(PaymentMethod.EFT.value)
-
-    payment = PaymentModel()
-    payment.payment_method_code = pay_service.get_payment_method_code()
-    payment.payment_status_code = PaymentStatus.COMPLETED.value
-    payment.payment_system_code = pay_service.get_payment_system_code()
-    payment.invoice_number = f'{current_app.config["EFT_INVOICE_PREFIX"]}{invoice.id}'
-    payment.invoice_amount = invoice.total
-    payment.payment_account_id = payment_account.id
-    payment.payment_date = payment_date
-    payment.paid_amount = paid_amount
-    payment.receipt_number = receipt_number
-    db.session.add(payment)
-
-    return payment
 
 
 def _get_invoice_unpaid_total(invoice: InvoiceModel) -> Decimal:
