@@ -28,7 +28,7 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, Role
 from tests.utilities.base_test import (
-    factory_invoice, factory_payment_account, get_claims, token_header, factory_eft_shortname)
+    factory_eft_shortname, factory_invoice, factory_payment_account, get_claims, token_header)
 
 
 def test_patch_eft_short_name(session, client, jwt, app):
@@ -39,7 +39,7 @@ def test_patch_eft_short_name(session, client, jwt, app):
                             auth_account_id='1234').save()
 
     short_name = factory_eft_shortname(short_name='TESTSHORTNAME').save()
-    rv = client.patch(f"/api/v1/eft-shortnames/{short_name.id}",
+    rv = client.patch(f'/api/v1/eft-shortnames/{short_name.id}',
                       data=json.dumps({'accountId': '1234'}),
                       headers=headers)
     shortname_dict = rv.json
@@ -91,7 +91,7 @@ def test_search_eft_short_names(session, client, jwt, app):
 
     # create test data
     factory_eft_shortname(short_name='TESTSHORTNAME1').save()
-    factory_eft_shortname(short_name='TESTSHORTNAME2', auth_account_id="1234").save()
+    factory_eft_shortname(short_name='TESTSHORTNAME2', auth_account_id='1234').save()
 
     # Assert search returns default unmapped short names
     rv = client.get('/api/v1/eft-shortnames', headers=headers)
@@ -167,7 +167,7 @@ def test_apply_eft_short_name_credits(session, client, jwt, app):
     eft_credit_2.short_name_id = short_name.id
     eft_credit_2.save()
 
-    rv = client.patch(f"/api/v1/eft-shortnames/{short_name.id}",
+    rv = client.patch(f'/api/v1/eft-shortnames/{short_name.id}',
                       data=json.dumps({'accountId': '1234'}),
                       headers=headers)
     shortname_dict = rv.json

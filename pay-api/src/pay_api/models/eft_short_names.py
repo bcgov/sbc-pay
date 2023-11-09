@@ -18,7 +18,6 @@ from attrs import define
 
 
 from .base_model import VersionedModel
-from .base_schema import BaseSchema
 from .db import db
 
 

@@ -77,7 +77,7 @@ class EftService(DepositService):
     @staticmethod
     def create_invoice_reference(invoice: InvoiceModel, payment: PaymentModel) -> InvoiceReferenceModel:
         """Create an invoice reference record."""
-        if not(invoice_reference := InvoiceReferenceModel
+        if not (invoice_reference := InvoiceReferenceModel
                 .find_any_active_reference_by_invoice_number(payment.invoice_number)):
             invoice_reference = InvoiceReferenceModel()
 

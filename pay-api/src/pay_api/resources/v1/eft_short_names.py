@@ -17,13 +17,11 @@ from http import HTTPStatus
 from flask import Blueprint, current_app, jsonify, request
 from flask_cors import cross_origin
 
-from pay_api.exceptions import BusinessException, error_to_response
-from pay_api.schemas import utils as schema_utils
+from pay_api.exceptions import BusinessException
 from pay_api.services.eft_short_names import EFTShortnames as EFTShortnameService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
-from pay_api.utils.errors import Error
 from pay_api.utils.trace import tracing as _tracing
 
 bp = Blueprint('EFT_SHORT_NAMES', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/eft-shortnames')
@@ -74,7 +72,7 @@ def patch_eft_shortname(short_name_id: int):
     request_json = request.get_json()
 
     try:
-        if not (EFTShortnameService.find_by_short_name_id(short_name_id)):
+        if not EFTShortnameService.find_by_short_name_id(short_name_id):
             response, status = {'message': 'The requested EFT short name could not be found.'}, \
                 HTTPStatus.NOT_FOUND
         else:
