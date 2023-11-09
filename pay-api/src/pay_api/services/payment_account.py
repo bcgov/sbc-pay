@@ -658,7 +658,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return payload
 
     @staticmethod
-    def unlock_frozen_accounts(account_id: int):
+    def unlock_frozen_accounts(account_id: int, invoice_number: str, receipt_number: str, payment_method: str, filing_identifier: str):
         """Unlock frozen accounts."""
         pay_account: PaymentAccount = PaymentAccount.find_by_id(account_id)
         if pay_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
@@ -674,15 +674,22 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 MessageType.NSF_UNLOCK_ACCOUNT.value
             )
 
+            payload['data']['invoiceNumber'] = invoice_number
+            payload['data']['receiptNumber'] = receipt_number
+            payload['data']['paymentMethodDescription'] = payment_method
+            payload['data']['filingIdentifier'] = filing_identifier
+            
             try:
                 publish_response(payload=payload,
-                                 client_name=current_app.config['NATS_ACCOUNT_CLIENT_NAME'],
-                                 subject=current_app.config['NATS_ACCOUNT_SUBJECT'])
+                                client_name=current_app.config['NATS_ACCOUNT_CLIENT_NAME'],
+                                subject=current_app.config['NATS_ACCOUNT_SUBJECT'])
             except Exception as e:  # NOQA pylint: disable=broad-except
                 current_app.logger.error(e)
                 current_app.logger.error(
-                    'Notification to Queue failed for the Unlock Account %s - %s', pay_account.auth_account_id,
-                    pay_account.name)
+                    'Notification to Queue failed for the Unlock Account {auth_account_id} - {account_name}'.format(
+                        auth_account_id=pay_account.auth_account_id,
+                        account_name=pay_account.name)
+                )
                 capture_message(
                     f'Notification to Queue failed for the Unlock Account : {payload}.', level='error')
 
