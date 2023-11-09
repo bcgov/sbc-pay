@@ -217,6 +217,19 @@ def test_preflight_refund(app, client, jwt, session):
     assert_access_control_headers(rv, '*', 'POST')
 
 
+def test_preflight_eft_shortnames(app, client, jwt, session):
+    """Assert preflight responses for eft shortnames are correct."""
+    rv = client.options('/api/v1/eft-shortnames',
+                        headers={'Access-Control-Request-Method': 'GET'})
+    assert rv.status_code == 200
+    assert_access_control_headers(rv, '*', 'GET')
+
+    rv = client.options('/api/v1/eft-shortnames/1',
+                        headers={'Access-Control-Request-Method': 'GET'})
+    assert rv.status_code == 200
+    assert_access_control_headers(rv, '*', 'GET, PATCH')
+
+
 def assert_access_control_headers(rv, origins: str, methods: str):
     """Assert access control headers are correct."""
     assert rv.headers['Access-Control-Allow-Origin'] == origins

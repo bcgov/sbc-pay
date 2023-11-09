@@ -25,12 +25,13 @@ from typing import Dict, List, Tuple
 from faker import Faker
 
 from pay_api.models import (
-    CfsAccount, Comment, DistributionCode, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem,
-    PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices, StatementSettings)
+    CfsAccount, Comment, DistributionCode, EFTShortnames, Invoice, InvoiceReference, Payment, PaymentAccount,
+    PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices, StatementSettings)
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
     PaymentSystem, Role, RoutingSlipStatus)
+
 
 token_header = {
     'alg': 'RS256',
@@ -877,3 +878,8 @@ def factory_comments(routing_slip_number: str, username: str = 'comment_user', c
                       comment=comment
                       )
     return comment
+
+
+def factory_eft_shortname(short_name: str, auth_account_id: str = None):
+    """Return an EFT short name model."""
+    return EFTShortnames(short_name=short_name, auth_account_id=auth_account_id)

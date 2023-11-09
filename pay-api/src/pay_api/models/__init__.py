@@ -29,7 +29,7 @@ from .distribution_code import DistributionCode, DistributionCodeLink
 from .eft_credit import EFTCredit
 from .eft_file import EFTFile
 from .eft_process_status_code import EFTProcessStatusCode
-from .eft_short_names import EFTShortnames
+from .eft_short_names import EFTShortnames, EFTShortnameSchema
 from .eft_transaction import EFTTransaction
 from .ejv_file import EjvFile
 from .ejv_header import EjvHeader

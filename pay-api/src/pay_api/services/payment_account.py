@@ -571,11 +571,11 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return Decimal(result.credit_balance) if result else 0
 
     @classmethod
-    def deduct_eft_credit(cls, account_id: int, invoice: InvoiceModel) -> Decimal:
+    def deduct_eft_credit(cls, invoice: InvoiceModel):
         """Deduct EFT credit and update remaining credit records."""
         eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel) \
             .filter(EFTCreditModel.remaining_amount > 0) \
-            .filter(EFTCreditModel.payment_account_id == account_id)\
+            .filter(EFTCreditModel.payment_account_id == invoice.payment_account_id)\
             .order_by(EFTCreditModel.created_on.asc())\
             .all()
 
@@ -583,20 +583,22 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         invoice_balance = invoice.total - (invoice.paid or 0)
 
         # Deduct credits and apply to the invoice
+        now = datetime.now()
         for eft_credit in eft_credits:
             if eft_credit.remaining_amount >= invoice_balance:
                 # Credit covers the full invoice balance
                 eft_credit.remaining_amount -= invoice_balance
                 eft_credit.save()
 
+                invoice.payment_date = now
                 invoice.paid = invoice.total
                 invoice.invoice_status_code = InvoiceStatus.PAID.value
                 invoice.save()
-
                 break
 
             # Credit covers partial invoice balance
             invoice_balance -= eft_credit.remaining_amount
+            invoice.payment_date = now
             invoice.paid += eft_credit.remaining_amount
             invoice.invoice_status_code = InvoiceStatus.PARTIAL.value
 
