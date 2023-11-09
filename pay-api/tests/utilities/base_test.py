@@ -877,3 +877,11 @@ def factory_comments(routing_slip_number: str, username: str = 'comment_user', c
                       comment=comment
                       )
     return comment
+
+
+def get_eft_shortname_request(short_name: str, auth_account_id: str = None):
+    """Return an EFT short name request payload."""
+    return {
+        'shortName': short_name,
+        'accountId': auth_account_id
+    }

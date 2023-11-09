@@ -297,7 +297,7 @@ def test_payment_request_eft_with_credit(session, client, jwt, app):
     # Create invoice to use credit on
     invoice = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
                               total=50, paid=0).save()
-    payment_account.deduct_eft_credit(payment_account.id, invoice)
+    payment_account.deduct_eft_credit(invoice)
 
     invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     assert invoice is not None
@@ -310,7 +310,7 @@ def test_payment_request_eft_with_credit(session, client, jwt, app):
     # Test partial paid with credit
     invoice = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
                               total=50, paid=0).save()
-    payment_account.deduct_eft_credit(payment_account.id, invoice)
+    payment_account.deduct_eft_credit(invoice)
 
     invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     assert invoice is not None
@@ -326,7 +326,7 @@ def test_payment_request_eft_with_credit(session, client, jwt, app):
     eft_credit_2.save()
 
     # Apply credit to the previous partial invoice
-    payment_account.deduct_eft_credit(payment_account.id, invoice)
+    payment_account.deduct_eft_credit(invoice)
     invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
 
     # Assert invoice is now paid and there is a credit balance remaining

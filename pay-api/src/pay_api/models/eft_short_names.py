@@ -15,7 +15,10 @@
 
 from datetime import datetime
 
+from marshmallow import fields
+
 from .base_model import VersionedModel
+from .base_schema import BaseSchema
 from .db import db
 
 
@@ -46,3 +49,31 @@ class EFTShortnames(VersionedModel):  # pylint: disable=too-many-instance-attrib
     auth_account_id = db.Column('auth_account_id', db.DateTime, nullable=True, index=True)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
     short_name = db.Column('short_name', db.String, nullable=False, index=True)
+
+    @classmethod
+    def find_by_short_name(cls, short_name: str):
+        """Find by eft short name."""
+        return cls.query.filter_by(short_name=short_name).one_or_none()
+
+    @classmethod
+    def find_all_short_names(cls, include_all: bool, page: int, limit: int):
+        """Return eft short names."""
+        query = db.session.query(EFTShortnames)
+
+        if not include_all:
+            query = query.filter(EFTShortnames.auth_account_id.is_(None))
+
+        query = query.order_by(EFTShortnames.short_name.asc())
+        pagination = query.paginate(per_page=limit, page=page)
+        return pagination.items, pagination.total
+
+
+class EFTShortnameSchema(BaseSchema):  # pylint: disable=too-many-ancestors
+    """Main schema used to serialize the EFT Short name."""
+
+    class Meta(BaseSchema.Meta):  # pylint: disable=too-few-public-methods
+        """Returns all the fields from the SQLAlchemy class."""
+
+        model = EFTShortnames
+
+    auth_account_id = fields.String(data_key='account_id')

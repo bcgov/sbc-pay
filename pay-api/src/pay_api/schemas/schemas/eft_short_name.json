@@ -1,0 +1,27 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/eft_short_name",
+  "type": "object",
+  "title": "EFT Short name response",
+  "required": [
+    "shortName"
+  ],
+  "properties": {
+    "shortName": {
+      "$id": "#/properties/shortName",
+      "type": "string",
+      "title": "EFT short name",
+      "examples": [
+        "ABC123"
+      ]
+    },
+    "accountId": {
+      "$id": "#/properties/accountId",
+      "type": ["string", "null"],
+      "title": "BC Registries Account Number",
+      "examples": [
+        "1234"
+      ]
+    }
+  }
+}
