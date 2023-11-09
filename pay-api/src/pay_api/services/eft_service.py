@@ -58,43 +58,42 @@ class EftService(DepositService):
 
         self.create_invoice_reference(invoice=invoice_model, payment=payment).save()
         self.create_receipt(invoice=invoice_model, payment=payment).save()
-
-        if invoice.invoice_status_code == InvoiceStatus.PAID.value:
-            self._release_payment(invoice=invoice)
+        self._release_payment(invoice=invoice)
 
     def create_payment(self, payment_account: PaymentAccountModel, invoice: InvoiceModel, payment_date: datetime,
                        paid_amount) -> PaymentModel:
         """Create a payment record for an invoice."""
-        payment = PaymentModel()
-        payment.payment_method_code = self.get_payment_method_code()
-        payment.payment_status_code = PaymentStatus.COMPLETED.value
-        payment.payment_system_code = self.get_payment_system_code()
-        payment.invoice_number = f'{current_app.config["EFT_INVOICE_PREFIX"]}{invoice.id}'
-        payment.invoice_amount = invoice.total
-        payment.payment_account_id = payment_account.id
-        payment.payment_date = payment_date
-        payment.paid_amount = paid_amount
-        payment.receipt_number = invoice.id
-
+        payment = PaymentModel(payment_method_code=self.get_payment_method_code(),
+                               payment_status_code=PaymentStatus.COMPLETED.value,
+                               payment_system_code=self.get_payment_system_code(),
+                               invoice_number=f'{current_app.config["EFT_INVOICE_PREFIX"]}{invoice.id}',
+                               invoice_amount=invoice.total,
+                               payment_account_id=payment_account.id,
+                               payment_date=payment_date,
+                               paid_amount=paid_amount,
+                               receipt_number=invoice.id)
         return payment
 
     @staticmethod
     def create_invoice_reference(invoice: InvoiceModel, payment: PaymentModel) -> InvoiceReferenceModel:
         """Create an invoice reference record."""
-        invoice_reference = InvoiceReferenceModel()
+        if not(invoice_reference := InvoiceReferenceModel
+                .find_any_active_reference_by_invoice_number(payment.invoice_number)):
+            invoice_reference = InvoiceReferenceModel()
+
         invoice_reference.invoice_id = invoice.id
-        invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
         invoice_reference.invoice_number = payment.invoice_number
+        invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value \
+            if invoice.invoice_status_code == InvoiceStatus.PAID.value \
+            else InvoiceReferenceStatus.ACTIVE.value
 
         return invoice_reference
 
     @staticmethod
     def create_receipt(invoice: InvoiceModel, payment: PaymentModel) -> ReceiptModel:
         """Create a receipt record for an invoice payment."""
-        receipt: ReceiptModel = ReceiptModel()
-        receipt.receipt_date = payment.payment_date
-        receipt.receipt_amount = payment.paid_amount
-        receipt.invoice_id = invoice.id
-        receipt.receipt_number = payment.receipt_number
-
+        receipt: ReceiptModel = ReceiptModel(receipt_date=payment.payment_date,
+                                             receipt_amount=payment.paid_amount,
+                                             invoice_id=invoice.id,
+                                             receipt_number=payment.receipt_number)
         return receipt

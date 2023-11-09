@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Resource for Payment account."""
+"""Resource for EFT Short name."""
 from http import HTTPStatus
 
 from flask import Blueprint, current_app, jsonify, request
@@ -30,43 +30,20 @@ bp = Blueprint('EFT_SHORT_NAMES', __name__, url_prefix=f'{EndpointEnum.API_V1.va
 
 
 @bp.route('', methods=['GET', 'OPTIONS'])
-@cross_origin(origins='*', methods=['GET', 'POST'])
+@cross_origin(origins='*', methods=['GET'])
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.STAFF.value])
 def get_eft_shortnames():
     """Get all eft short name records."""
     current_app.logger.info('<get_eft_shortnames')
 
-    include_all: bool = bool(request.args.get('includeAll', 'false').lower() == 'true')
+    include_all = bool(request.args.get('includeAll', 'false').lower() == 'true')
     page: int = int(request.args.get('page', '1'))
     limit: int = int(request.args.get('limit', '10'))
 
     response, status = EFTShortnameService.search(include_all, page, limit), HTTPStatus.OK
     current_app.logger.debug('>get_eft_shortnames')
     return jsonify(response), status
-
-
-@bp.route('', methods=['POST', 'OPTIONS'])
-@cross_origin(origins='*')
-@_jwt.requires_auth
-@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.STAFF.value])
-def post_eft_shortname():
-    """Create an eft short name record."""
-    current_app.logger.info('<post_eft_shortname')
-    request_json = request.get_json()
-    current_app.logger.debug(request_json)
-
-    # Validate the input request
-    valid_format, errors = schema_utils.validate(request_json, 'eft_short_name')
-
-    if not valid_format:
-        return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
-    try:
-        response, status = EFTShortnameService.create(request_json), HTTPStatus.CREATED
-    except BusinessException as exception:
-        return exception.response()
-    current_app.logger.debug('>post_eft_shortname')
-    return jsonify(response.asdict()), status
 
 
 @bp.route('/<int:short_name_id>', methods=['GET', 'OPTIONS'])
@@ -77,9 +54,8 @@ def post_eft_shortname():
 def get_eft_shortname(short_name_id: int):
     """Get EFT short name details."""
     current_app.logger.info('<get_eft_shortname')
-    eft_short_name = EFTShortnameService.find_by_short_name_id(short_name_id)
 
-    if eft_short_name is None:
+    if not (eft_short_name := EFTShortnameService.find_by_short_name_id(short_name_id)):
         response, status = {'message': 'The requested EFT short name could not be found.'}, \
             HTTPStatus.NOT_FOUND
     else:
@@ -98,8 +74,7 @@ def patch_eft_shortname(short_name_id: int):
     request_json = request.get_json()
 
     try:
-        eft_short_name = EFTShortnameService.find_by_short_name_id(short_name_id)
-        if eft_short_name is None:
+        if not (EFTShortnameService.find_by_short_name_id(short_name_id)):
             response, status = {'message': 'The requested EFT short name could not be found.'}, \
                 HTTPStatus.NOT_FOUND
         else:

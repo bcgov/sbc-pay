@@ -14,8 +14,8 @@
 """Model to handle EFT TDI17 short name to BCROS account mapping."""
 
 from datetime import datetime
+from attrs import define
 
-from marshmallow import fields
 
 from .base_model import VersionedModel
 from .base_schema import BaseSchema
@@ -68,12 +68,19 @@ class EFTShortnames(VersionedModel):  # pylint: disable=too-many-instance-attrib
         return pagination.items, pagination.total
 
 
-class EFTShortnameSchema(BaseSchema):  # pylint: disable=too-many-ancestors
+@define
+class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
     """Main schema used to serialize the EFT Short name."""
 
-    class Meta(BaseSchema.Meta):  # pylint: disable=too-few-public-methods
-        """Returns all the fields from the SQLAlchemy class."""
+    id: int
+    short_name: str
+    account_id: str
+    created_on: datetime
 
-        model = EFTShortnames
+    @classmethod
+    def from_row(cls, row: EFTShortnames):
+        """From row is used so we don't tightly couple to our database class.
 
-    auth_account_id = fields.String(data_key='account_id')
+        https://www.attrs.org/en/stable/init.html
+        """
+        return cls(id=row.id, short_name=row.short_name, account_id=row.auth_account_id, created_on=row.created_on)

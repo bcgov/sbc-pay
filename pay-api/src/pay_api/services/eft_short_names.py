@@ -28,6 +28,7 @@ from pay_api.models import EFTShortnameSchema
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import db
+from pay_api.utils.converter import Converter
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod
 from pay_api.utils.errors import Error
 
@@ -109,24 +110,6 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         return self._dao.flush()
 
     @classmethod
-    def create(cls, short_name_request: Dict[str, Any] = None) -> EFTShortnames:
-        """Create new eft short name record."""
-        current_app.logger.debug('<create eft short name')
-        short_name = short_name_request.get('shortName')
-        # If a short name already exists, throw error.
-        if EFTShortnameModel.find_by_short_name(short_name):
-            raise BusinessException(Error.EFT_SHORT_NAME_EXISTS)
-
-        short_name_model = EFTShortnameModel()
-        EFTShortnames._save(short_name_request, short_name_model)
-
-        eft_short_name = EFTShortnames()
-        eft_short_name._dao = short_name_model  # pylint: disable=protected-access
-
-        current_app.logger.debug('>create eft short name')
-        return eft_short_name
-
-    @classmethod
     def _save(cls, short_name_request: Dict[str, any], short_name: EFTShortnameModel):
         """Update and save eft short name model."""
         short_name.short_name = short_name_request.get('shortName')
@@ -139,8 +122,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         """Create or update payment account record."""
         current_app.logger.debug('<update eft short name mapping')
 
-        short_name = EFTShortnameModel.find_by_id(short_name_id)
-        if short_name is None:
+        if not (short_name := EFTShortnameModel.find_by_id(short_name_id)):
             short_name = EFTShortnameModel()
 
         EFTShortnames._save(short_name_request, short_name)
@@ -153,9 +135,10 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         """Patch eft short name auth account mapping."""
         current_app.logger.debug('<patch eft short name mapping')
 
-        short_name: EFTShortnameModel = EFTShortnameModel.find_by_id(short_name_id)
         if auth_account_id is None:
             raise BusinessException(Error.EFT_SHORT_NAME_ACCOUNT_ID_REQUIRED)
+
+        short_name: EFTShortnameModel = EFTShortnameModel.find_by_id(short_name_id)
 
         # If a short name has already been mapped, there could be payments already made.
         if short_name.auth_account_id is not None:
@@ -177,7 +160,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def process_owing_invoices(short_name_id: int) -> EFTShortnames:
         """Process outstanding invoices when an EFT short name is mapped to an auth account id using credits."""
-        current_app.logger.debug('<process_outstanding_invoices')
+        current_app.logger.debug('<process_owing_invoices')
         short_name_model: EFTShortnameModel = EFTShortnameModel.find_by_id(short_name_id)
         auth_account_id = short_name_model.auth_account_id
 
@@ -185,11 +168,10 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         invoices: List[InvoiceModel] = EFTShortnames.get_invoices_owing(auth_account_id)
         pay_service = PaymentSystemFactory.create_from_payment_method(PaymentMethod.EFT.value)
 
-        if invoices is not None:
-            for invoice in invoices:
-                pay_service.apply_credit(invoice)
+        for invoice in invoices:
+            pay_service.apply_credit(invoice)
 
-        current_app.logger.debug('>process_outstanding_invoices')
+        current_app.logger.debug('>process_owing_invoices')
 
     @staticmethod
     def get_invoices_owing(auth_account_id: str) -> [InvoiceModel]:
@@ -222,18 +204,18 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         """Find all eft short name records."""
         current_app.logger.debug('<search')
         short_names, total = EFTShortnameModel.find_all_short_names(include_all, page, limit)
-        short_names_schema = EFTShortnameSchema()
+        short_name_list = [EFTShortnameSchema.from_row(short_name) for short_name in short_names]
+        converter = Converter()
+        short_name_list = converter.unstructure(short_name_list)
         data = {
             'total': total,
             'page': page,
             'limit': limit,
-            'items': short_names_schema.dump(short_names, many=True)
+            'items': short_name_list
         }
         current_app.logger.debug('>search')
         return data
 
     def asdict(self):
         """Return the EFT Short name as a python dict."""
-        short_name_schema = EFTShortnameSchema()
-        d = short_name_schema.dump(self._dao)
-        return d
+        return Converter().unstructure(EFTShortnameSchema.from_row(self._dao))

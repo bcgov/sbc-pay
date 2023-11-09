@@ -26,7 +26,7 @@ from faker import Faker
 
 from pay_api.models import (
     CfsAccount, Comment, DistributionCode, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem,
-    PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices, StatementSettings)
+    PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices, StatementSettings, EFTShortnames)
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
@@ -879,9 +879,6 @@ def factory_comments(routing_slip_number: str, username: str = 'comment_user', c
     return comment
 
 
-def get_eft_shortname_request(short_name: str, auth_account_id: str = None):
-    """Return an EFT short name request payload."""
-    return {
-        'shortName': short_name,
-        'accountId': auth_account_id
-    }
+def factory_eft_shortname(short_name: str, auth_account_id: str = None):
+    """Return an EFT short name model."""
+    return EFTShortnames(short_name=short_name, auth_account_id=auth_account_id)

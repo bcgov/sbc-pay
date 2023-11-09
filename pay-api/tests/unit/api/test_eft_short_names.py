@@ -28,41 +28,7 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, Role
 from tests.utilities.base_test import (
-    factory_invoice, factory_payment_account, get_claims, get_eft_shortname_request, token_header)
-
-
-def test_create_unmapped_eft_short_name(session, client, jwt, app):
-    """Assert that an unmapped EFT short name can be created."""
-    token = jwt.create_jwt(get_claims(roles=[Role.STAFF.value]), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    rv = client.post('/api/v1/eft-shortnames', data=json.dumps(get_eft_shortname_request(short_name='TESTSHORTNAME')),
-                     headers=headers)
-
-    assert rv.status_code == 201
-
-    shortname_dict = rv.json
-    assert shortname_dict is not None
-    assert shortname_dict['id'] is not None
-    assert shortname_dict['shortName'] == 'TESTSHORTNAME'
-    assert shortname_dict.get('accountId') is None
-
-
-def test_create_eft_short_name(session, client, jwt, app):
-    """Assert that a mapped EFT short name can be created."""
-    token = jwt.create_jwt(get_claims(roles=[Role.STAFF.value]), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    rv = client.post('/api/v1/eft-shortnames', data=json.dumps(
-        get_eft_shortname_request(short_name='TESTSHORTNAME',
-                                  auth_account_id='1234')),
-                     headers=headers)
-
-    assert rv.status_code == 201
-
-    shortname_dict = rv.json
-    assert shortname_dict is not None
-    assert shortname_dict['id'] is not None
-    assert shortname_dict['shortName'] == 'TESTSHORTNAME'
-    assert shortname_dict['accountId'] == '1234'
+    factory_invoice, factory_payment_account, get_claims, token_header, factory_eft_shortname)
 
 
 def test_patch_eft_short_name(session, client, jwt, app):
@@ -71,18 +37,9 @@ def test_patch_eft_short_name(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     factory_payment_account(payment_method_code=PaymentMethod.EFT.value,
                             auth_account_id='1234').save()
-    rv = client.post('/api/v1/eft-shortnames', data=json.dumps(get_eft_shortname_request(short_name='TESTSHORTNAME')),
-                     headers=headers)
 
-    assert rv.status_code == 201
-
-    shortname_dict = rv.json
-    assert shortname_dict is not None
-    assert shortname_dict['id'] is not None
-    assert shortname_dict['shortName'] == 'TESTSHORTNAME'
-    assert shortname_dict.get('accountId') is None
-
-    rv = client.patch(f"/api/v1/eft-shortnames/{shortname_dict['id']}",
+    short_name = factory_eft_shortname(short_name='TESTSHORTNAME').save()
+    rv = client.patch(f"/api/v1/eft-shortnames/{short_name.id}",
                       data=json.dumps({'accountId': '1234'}),
                       headers=headers)
     shortname_dict = rv.json
@@ -93,42 +50,14 @@ def test_patch_eft_short_name(session, client, jwt, app):
     assert shortname_dict['accountId'] == '1234'
 
 
-def test_create_eft_short_name_exists(session, client, jwt, app):
-    """Assert that invalid request is returned for existing short name."""
-    token = jwt.create_jwt(get_claims(roles=[Role.STAFF.value]), token_header)
-    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-
-    rv = client.post('/api/v1/eft-shortnames', data=json.dumps(get_eft_shortname_request(short_name='TESTSHORTNAME')),
-                     headers=headers)
-
-    assert rv.status_code == 201
-
-    rv = client.post('/api/v1/eft-shortnames', data=json.dumps(get_eft_shortname_request(short_name='TESTSHORTNAME')),
-                     headers=headers)
-
-    assert rv.status_code == 400
-
-    shortname_dict = rv.json
-    assert shortname_dict is not None
-    assert shortname_dict['type'] == 'EFT_SHORT_NAME_EXISTS'
-
-
 def test_patch_eft_short_name_validation(session, client, jwt, app):
     """Assert that invalid request is returned for existing short name."""
     token = jwt.create_jwt(get_claims(roles=[Role.STAFF.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-
-    rv = client.post('/api/v1/eft-shortnames', data=json.dumps(get_eft_shortname_request(short_name='TESTSHORTNAME',
-                                                                                         auth_account_id='1234')),
-                     headers=headers)
-
-    assert rv.status_code == 201
-
-    shortname_dict = rv.json
-    short_name_id = shortname_dict['id']
+    short_name = factory_eft_shortname(short_name='TESTSHORTNAME', auth_account_id='1234').save()
 
     # Assert requires an auth account id for mapping
-    rv = client.patch(f'/api/v1/eft-shortnames/{short_name_id}',
+    rv = client.patch(f'/api/v1/eft-shortnames/{short_name.id}',
                       data=json.dumps({}),
                       headers=headers)
 
@@ -137,7 +66,7 @@ def test_patch_eft_short_name_validation(session, client, jwt, app):
     assert shortname_dict['type'] == 'EFT_SHORT_NAME_ACCOUNT_ID_REQUIRED'
 
     # Assert cannot update short name with an existing mapped account id
-    rv = client.patch(f'/api/v1/eft-shortnames/{short_name_id}',
+    rv = client.patch(f'/api/v1/eft-shortnames/{short_name.id}',
                       data=json.dumps({'accountId': '2222'}),
                       headers=headers)
 
@@ -161,14 +90,8 @@ def test_search_eft_short_names(session, client, jwt, app):
     assert len(result_dict['items']) == 0
 
     # create test data
-    rv = client.post('/api/v1/eft-shortnames', data=json.dumps(get_eft_shortname_request(short_name='TESTSHORTNAME1')),
-                     headers=headers)
-    assert rv.status_code == 201
-
-    rv = client.post('/api/v1/eft-shortnames', data=json.dumps(get_eft_shortname_request(short_name='TESTSHORTNAME2',
-                                                                                         auth_account_id='1234')),
-                     headers=headers)
-    assert rv.status_code == 201
+    factory_eft_shortname(short_name='TESTSHORTNAME1').save()
+    factory_eft_shortname(short_name='TESTSHORTNAME2', auth_account_id="1234").save()
 
     # Assert search returns default unmapped short names
     rv = client.get('/api/v1/eft-shortnames', headers=headers)
@@ -216,11 +139,7 @@ def test_apply_eft_short_name_credits(session, client, jwt, app):
     """Assert that credits are applied to invoices when short name is mapped to an account."""
     token = jwt.create_jwt(get_claims(roles=[Role.STAFF.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    rv = client.post('/api/v1/eft-shortnames', data=json.dumps(get_eft_shortname_request(short_name='TESTSHORTNAME')),
-                     headers=headers)
-
-    assert rv.status_code == 201
-    short_name_id = rv.json['id']
+    short_name = factory_eft_shortname(short_name='TESTSHORTNAME').save()
 
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value,
                                               auth_account_id='1234').save()
@@ -237,7 +156,7 @@ def test_apply_eft_short_name_credits(session, client, jwt, app):
     eft_credit_1.payment_account_id = payment_account.id
     eft_credit_1.amount = 50
     eft_credit_1.remaining_amount = 50
-    eft_credit_1.short_name_id = short_name_id
+    eft_credit_1.short_name_id = short_name.id
     eft_credit_1.save()
 
     eft_credit_2 = EFTCreditModel()
@@ -245,16 +164,10 @@ def test_apply_eft_short_name_credits(session, client, jwt, app):
     eft_credit_2.payment_account_id = payment_account.id
     eft_credit_2.amount = 150
     eft_credit_2.remaining_amount = 150
-    eft_credit_2.short_name_id = short_name_id
+    eft_credit_2.short_name_id = short_name.id
     eft_credit_2.save()
 
-    shortname_dict = rv.json
-    assert shortname_dict is not None
-    assert shortname_dict['id'] is not None
-    assert shortname_dict['shortName'] == 'TESTSHORTNAME'
-    assert shortname_dict.get('accountId') is None
-
-    rv = client.patch(f"/api/v1/eft-shortnames/{shortname_dict['id']}",
+    rv = client.patch(f"/api/v1/eft-shortnames/{short_name.id}",
                       data=json.dumps({'accountId': '1234'}),
                       headers=headers)
     shortname_dict = rv.json
@@ -301,7 +214,7 @@ def test_apply_eft_short_name_credits(session, client, jwt, app):
     assert invoice_reference_1.invoice_id == invoice_1.id
     assert invoice_reference_1.invoice_number == payment.invoice_number
     assert invoice_reference_1.invoice_number == payment.invoice_number
-    assert invoice_reference_1.status_code == InvoiceReferenceStatus.ACTIVE.value
+    assert invoice_reference_1.status_code == InvoiceReferenceStatus.COMPLETED.value
 
     # Assert details of partially paid invoice
     invoice_2_paid = 150
