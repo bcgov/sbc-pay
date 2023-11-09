@@ -71,10 +71,10 @@ class EFTRecord(EFTBase):
         self.location_id = self.extract_value(15, 20)
         self.transaction_sequence = self.extract_value(24, 27)
 
-        # We are expecting a BCROS account number here, it is required
+        # We are expecting a SHORTNAME for matching here, it is required
         self.transaction_description = self.extract_value(27, 67)
         if len(self.transaction_description) == 0:
-            self.add_error(EFTParseError(EFTError.BCROS_ACCOUNT_NUMBER_REQUIRED))
+            self.add_error(EFTParseError(EFTError.ACCOUNT_SHORTNAME_REQUIRED))
 
         self.deposit_amount = self.parse_decimal(self.extract_value(67, 80), EFTError.INVALID_DEPOSIT_AMOUNT)
         self.currency = self.get_currency(self.extract_value(80, 82))

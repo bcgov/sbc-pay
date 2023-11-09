@@ -22,6 +22,8 @@ import stan
 from flask import current_app
 from minio import Minio
 
+from reconciliations.enums import MessageType
+
 
 async def helper_add_event_to_queue(stan_client: stan.aio.client.Client,
                                     file_name: str):
@@ -33,6 +35,26 @@ async def helper_add_event_to_queue(stan_client: stan.aio.client.Client,
         'id': 'C234-1234-1234',
         'time': '2020-08-28T17:37:34.651294+00:00',
         'datacontenttype': 'application/json',
+        'data': {
+            'fileName': file_name,
+            'location': current_app.config['MINIO_BUCKET_NAME']
+        }
+    }
+
+    await stan_client.publish(subject=current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
+                              payload=json.dumps(payload).encode('utf-8'))
+
+
+async def helper_add_eft_event_to_queue(stan_client: stan.aio.client.Client, file_name: str,
+                                        message_type: str = MessageType.EFT_FILE_UPLOADED.value):
+    """Add eft event to the Queue."""
+    payload = {
+        'specversion': '1.x-wip',
+        'type': message_type,
+        'source': 'https://api.business.bcregistry.gov.bc.ca/v1/accounts/1/',
+        'id': 'C234-1234-1234',
+        'time': '2020-08-28T17:37:34.651294+00:00',
+        'datacontenttype': 'text/plain',
         'data': {
             'fileName': file_name,
             'location': current_app.config['MINIO_BUCKET_NAME']
@@ -76,6 +98,16 @@ def create_and_upload_settlement_file(file_name: str, rows: List[List]):
         cas_writer.writerow(headers)
         for row in rows:
             cas_writer.writerow(row)
+
+    with open(file_name, 'rb') as f:
+        upload_to_minio(f.read(), file_name)
+
+
+def create_and_upload_eft_file(file_name: str, rows: List[List]):
+    """Create eft file, upload to minio and send event."""
+    with open(file_name, mode='w') as eft_file:
+        for row in rows:
+            print(row, file=eft_file)
 
     with open(file_name, 'rb') as f:
         upload_to_minio(f.read(), file_name)

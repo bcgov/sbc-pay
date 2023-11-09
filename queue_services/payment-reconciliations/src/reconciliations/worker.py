@@ -37,6 +37,8 @@ from pay_api.services import Flags
 
 from reconciliations import config
 from reconciliations.cgi_reconciliations import reconcile_distributions
+from reconciliations.eft.eft_reconciliation import reconcile_eft_payments
+from reconciliations.enums import MessageType
 from reconciliations.payment_reconciliations import reconcile_payments
 
 
@@ -54,12 +56,14 @@ async def process_event(event_message, flask_app):
         raise QueueException('Flask App not available.')
 
     with flask_app.app_context():
-        if (message_type := event_message.get('type', None)) == 'bc.registry.payment.casSettlementUploaded':
+        if (message_type := event_message.get('type', None)) == MessageType.CAS_UPLOADED.value:
             await reconcile_payments(event_message)
-        elif message_type == 'bc.registry.payment.cgi.ACKReceived':
+        elif message_type == MessageType.CGI_ACK_RECEIVED.value:
             await reconcile_distributions(event_message)
-        elif message_type == 'bc.registry.payment.cgi.FEEDBACKReceived':
+        elif message_type == MessageType.CGI_FEEDBACK_RECEIVED.value:
             await reconcile_distributions(event_message, is_feedback=True)
+        elif message_type == MessageType.EFT_FILE_UPLOADED.value:
+            await reconcile_eft_payments(event_message)
         else:
             raise Exception('Invalid type')  # pylint: disable=broad-exception-raised
 

@@ -61,6 +61,7 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
         invoice_status_code=status_code,
         payment_account_id=payment_account.id,
         total=total,
+        paid=0,
         created_by='test',
         created_on=created_on,
         business_identifier=business_identifier,
@@ -123,6 +124,16 @@ def factory_payment_transaction(payment_id: int):
         payment_id=payment_id,
         status_code=TransactionStatus.CREATED.value,
         transaction_start_time=datetime.now()).save()
+
+
+def factory_create_eft_account(auth_account_id='1234', status=CfsAccountStatus.ACTIVE.value,
+                               cfs_account='1234'):
+    """Return Factory."""
+    account = PaymentAccount(auth_account_id=auth_account_id,
+                             payment_method=PaymentMethod.EFT.value,
+                             name=f'Test EFT {auth_account_id}').save()
+    CfsAccount(status=status, account_id=account.id, cfs_account=cfs_account).save()
+    return account
 
 
 def factory_create_online_banking_account(auth_account_id='1234', status=CfsAccountStatus.PENDING.value,
