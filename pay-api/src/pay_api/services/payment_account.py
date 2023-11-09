@@ -686,10 +686,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             except Exception as e:  # NOQA pylint: disable=broad-except
                 current_app.logger.error(e)
                 current_app.logger.error(
-                    'Notification to Queue failed for the Unlock Account {auth_account_id} - {account_name}'.format(
-                        auth_account_id=pay_account.auth_account_id,
-                        account_name=pay_account.name)
-                )
+                    'Notification to Queue failed for the Unlock Account %s - %s', pay_account.auth_account_id,
+                    pay_account.name)
                 capture_message(
                     f'Notification to Queue failed for the Unlock Account : {payload}.', level='error')
 
