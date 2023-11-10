@@ -52,7 +52,7 @@ class BaseModel(db.Model):
         db.session.flush()
         self.create_activity(self, is_delete=True)
         db.session.commit()
-        
+
     @staticmethod
     def rollback():
         """RollBack."""
