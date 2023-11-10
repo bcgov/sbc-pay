@@ -46,6 +46,13 @@ class BaseModel(db.Model):
         db.session.commit()
         return self
 
+    def delete(self):
+        """Delete and commit."""
+        db.session.delete(self)
+        db.session.flush()
+        self.create_activity(self, is_delete=True)
+        db.session.commit()
+
     @staticmethod
     def rollback():
         """RollBack."""
@@ -57,10 +64,15 @@ class BaseModel(db.Model):
         return cls.query.get(identifier)
 
     @classmethod
-    def create_activity(cls, obj):
+    def create_activity(cls, obj, is_delete=False):
         """Create activity records if the model is versioned."""
         if isinstance(obj, VersionedModel) and not current_app.config.get('DISABLE_ACTIVITY_LOGS'):
-            activity = activity_plugin.activity_cls(verb='update', object=obj, data={
+            if is_delete:
+                verb = 'delete'
+            else:
+                verb = 'update'
+
+            activity = activity_plugin.activity_cls(verb=verb, object=obj, data={
                 'user_name': cls._get_user_name(),
                 'remote_addr': fetch_remote_addr()
             })

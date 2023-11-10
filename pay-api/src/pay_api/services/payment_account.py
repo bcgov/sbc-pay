@@ -477,6 +477,12 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return AccountFeeSchema().dump(AccountFeeModel.find_by_account_id_and_product(payment_account.id, product))
 
     @classmethod
+    def delete_account_fees(cls, auth_account_id: str):
+        """Remove all account fees for the account."""
+        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        _ = [account_fee.delete() for account_fee in AccountFeeModel.find_by_account_id(payment_account.id)]
+
+    @classmethod
     def _create_or_update_account_fee(cls, fee: dict, payment_account: PaymentAccountModel, product: str):
         # Save or update the fee, first lookup and see if the fees exist.
         account_fee = AccountFeeModel.find_by_account_id_and_product(

@@ -569,7 +569,7 @@ def test_create_gov_accounts(session, client, jwt, app):
     assert rv.status_code == 201
 
 
-def test_create_gov_accounts_with_account_fee(session, client, jwt, app):
+def test_create_and_delete_gov_accounts_with_account_fee(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -600,6 +600,12 @@ def test_create_gov_accounts_with_account_fee(session, client, jwt, app):
     assert rv.json.get('accountFees')[0]['product'] == 'BUSINESS'
     assert not rv.json.get('accountFees')[0]['applyFilingFees']
     assert rv.json.get('accountFees')[0]['serviceFeeCode'] == 'TRF01'
+
+    rv = client.delete(f'/api/v1/accounts/{account_id}/fees', headers=headers)
+    assert rv.status_code == 204
+
+    rv = client.get(f'/api/v1/accounts/{account_id}/fees', headers=headers)
+    assert len(rv.json.get('accountFees')) == 0
 
 
 def test_update_gov_accounts_with_account_fee(session, client, jwt, app):
