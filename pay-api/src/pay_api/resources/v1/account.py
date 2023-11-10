@@ -174,6 +174,18 @@ def post_account_fees(account_number: str):
     return jsonify(response), status
 
 
+@bp.route('/<string:account_number>/fees', methods=['DELETE'])
+@cross_origin(origins='*', methods=['DELETE'])
+@_jwt.requires_auth
+@_jwt.has_one_of_roles([Role.MANAGE_ACCOUNTS.value])
+def delete_account_fees(account_number: str):
+    """Remove the account fee settings."""
+    current_app.logger.info('<delete_account_fees')
+    PaymentAccountService.delete_account_fees(account_number)
+    current_app.logger.debug('>delete_account_fees')
+    return jsonify({}), HTTPStatus.NO_CONTENT
+
+
 @bp.route('/<string:account_number>/fees/<string:product>', methods=['PUT', 'OPTIONS'])
 @cross_origin(origins='*', methods=['PUT'])
 @_jwt.requires_auth
@@ -194,6 +206,7 @@ def put_account_fee_product(account_number: str, product: str):
         return exception.response()
     current_app.logger.debug('>put_account_fee_product')
     return jsonify(response), status
+
 
 #########################################################################################################
 # Note this route is used by CSO for reconciliation, so be careful if making any changes to the response.
