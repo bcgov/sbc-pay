@@ -175,7 +175,7 @@ def post_account_fees(account_number: str):
 
 
 @bp.route('/<string:account_number>/fees', methods=['DELETE'])
-@cross_origin(origins='*', methods=['DELETE'])
+@cross_origin(origins='*')
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.MANAGE_ACCOUNTS.value])
 def delete_account_fees(account_number: str):
