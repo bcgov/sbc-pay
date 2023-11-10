@@ -605,7 +605,7 @@ def test_create_and_delete_gov_accounts_with_account_fee(session, client, jwt, a
     assert rv.status_code == 204
 
     rv = client.get(f'/api/v1/accounts/{account_id}/fees', headers=headers)
-    assert rv.json.get('accountFees').length == 0
+    assert len(rv.json.get('accountFees')) == 0
 
 
 def test_update_gov_accounts_with_account_fee(session, client, jwt, app):
