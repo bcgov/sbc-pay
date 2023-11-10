@@ -142,7 +142,7 @@ def delete_account(account_number: str):
 
 
 @bp.route('/<string:account_number>/fees', methods=['GET', 'OPTIONS'])
-@cross_origin(origins='*', methods=['GET', 'POST'])
+@cross_origin(origins='*', methods=['GET', 'POST', 'DELETE'])
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.MANAGE_ACCOUNTS.value])
 def get_account_fees(account_number: str):
