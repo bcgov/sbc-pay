@@ -22,11 +22,18 @@ from tasks.common.enums import PaymentDetailsGlStatus
 
 
 @dataclass
-class RevenueLine(JSONWizard):
-    """Revenue line from order status query."""
+class RefundData(JSONWizard):
+    """Refund data from order status query."""
 
     refundglstatus: Optional[PaymentDetailsGlStatus]
     refundglerrormessage: str
+
+
+@dataclass
+class RevenueLine(JSONWizard):
+    """Revenue line from order status query."""
+
+    refund_data: List[RefundData]
 
 
 @dataclass
