@@ -135,21 +135,30 @@ class DirectPayAutomatedRefundTask:  # pylint:disable=too-few-public-methods
     @staticmethod
     def _is_glstatus_rejected(status: OrderStatus) -> bool:
         """Check for bad refundglstatus."""
-        return any(line.refundglstatus == PaymentDetailsGlStatus.RJCT
-                   for line in status.revenue)
+        return any(refund_data.refundglstatus == PaymentDetailsGlStatus.RJCT
+                   for line in status.revenue for refund_data in line.refund_data)
 
     @staticmethod
     def _is_status_paid_and_invoice_refund_requested(status: OrderStatus, invoice: Invoice) -> bool:
         """Check for successful refund and invoice status = REFUND_REQUESTED."""
-        return all(line.refundglstatus == PaymentDetailsGlStatus.PAID
-                   for line in status.revenue) \
-            and invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
+        for line in status.revenue:
+            if len(line.refund_data) == 0:
+                return False
+            for refund_data in line.refund_data:
+                if refund_data.refundglstatus != PaymentDetailsGlStatus.PAID:
+                    return False
+        return invoice.invoice_status_code == InvoiceStatus.REFUND_REQUESTED.value
 
     @staticmethod
     def _is_status_complete(status: OrderStatus) -> bool:
         """Check for successful refund."""
-        return all(line.refundglstatus == PaymentDetailsGlStatus.CMPLT
-                   for line in status.revenue)
+        for line in status.revenue:
+            if len(line.refund_data) == 0:
+                return False
+            for refund_data in line.refund_data:
+                if refund_data.refundglstatus != PaymentDetailsGlStatus.CMPLT:
+                    return False
+        return True
 
     @staticmethod
     def _set_invoice_and_payment_to_refunded(invoice: Invoice):
