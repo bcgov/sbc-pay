@@ -43,8 +43,12 @@ def test_successful_paid_refund(session, monkeypatch):
         return {
             'revenue': [
                 {
-                    'refundglstatus': 'PAID',
-                    'refundglerrormessage': ''
+                    'refund_data': [
+                        {
+                            'refundglstatus': 'PAID',
+                            'refundglerrormessage': ''
+                        }
+                    ]
                 }
             ]
         }
@@ -69,8 +73,12 @@ def test_successful_completed_refund(session, monkeypatch):
         return {
             'revenue': [
                 {
-                    'refundglstatus': 'CMPLT',
-                    'refundglerrormessage': ''
+                    'refund_data': [
+                        {
+                            'refundglstatus': 'CMPLT',
+                            'refundglerrormessage': ''
+                        }
+                    ]
                 }
             ]
         }
@@ -101,8 +109,12 @@ def test_bad_cfs_refund(session, monkeypatch):
                     'revenueamount': '130',
                     'glstatus': 'PAID',
                     'glerrormessage': None,
-                    'refundglstatus': 'RJCT',
-                    'refundglerrormessage': 'BAD'
+                    'refund_data': [
+                        {
+                            'refundglstatus': 'RJCT',
+                            'refundglerrormessage': 'BAD'
+                        }
+                    ]
                 },
                 {
                     'linenumber': '2',
@@ -110,8 +122,12 @@ def test_bad_cfs_refund(session, monkeypatch):
                     'revenueamount': '1.5',
                     'glstatus': 'PAID',
                     'glerrormessage': None,
-                    'refundglstatus': 'RJCT',
-                    'refundglerrormessage': 'BAD'
+                    'refund_data': [
+                        {
+                            'refundglstatus': 'RJCT',
+                            'refundglerrormessage': 'BAD'
+                        }
+                    ]
                 }
             ]
         }
