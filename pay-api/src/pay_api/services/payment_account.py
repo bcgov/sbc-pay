@@ -38,6 +38,8 @@ from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
     current_local_time, get_local_formatted_date, get_outstanding_txns_from_date, get_str_by_path, mask)
 
+from .payment import Payment
+
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-many-public-methods
     """Service to manage Payment Account model related operations."""
@@ -631,7 +633,13 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 f'Notification to Queue failed for the Account Mailer : {payload}.',
                 level='error')
 
-    def _create_account_event_payload(self, event_type: str, include_pay_info: bool = False):
+    def _create_account_event_payload(
+            self,
+            event_type: str,
+            payment: Payment = None,
+            filing_identifier: str = None,
+            receipt_number: str = None,
+            include_pay_info: bool = False):
         """Return event payload for account."""
         payload: Dict[str, any] = {
             'specversion': '1.x-wip',
@@ -646,6 +654,13 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             }
         }
 
+        if event_type == MessageType.NSF_UNLOCK_ACCOUNT.value:
+            payload['data']['invoiceNumber'] = payment.invoice_number
+            payload['data']['paymentMethodDescription'] = payment.payment_method_code
+            payload['data']['filingIdentifier'] = filing_identifier
+            payload['data']['receiptNumber'] = receipt_number
+
+            
         if event_type == MessageType.PAD_ACCOUNT_CREATE.value:
             payload['data']['padTosAcceptedBy'] = self.pad_tos_accepted_by
         if include_pay_info:
@@ -658,9 +673,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return payload
 
     @staticmethod
-    def unlock_frozen_accounts(account_id: int, invoice_number: str, receipt_number: str, payment_method: str, filing_identifier: str):
+    def unlock_frozen_accounts(payment: Payment, filing_identifier: str, receipt_number: str):
         """Unlock frozen accounts."""
-        pay_account: PaymentAccount = PaymentAccount.find_by_id(account_id)
+        pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.payment_account_id)
         if pay_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
             current_app.logger.info(f'Unlocking Frozen Account {pay_account.auth_account_id}')
             # update CSF
@@ -670,14 +685,12 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             cfs_account.status = CfsAccountStatus.ACTIVE.value
             cfs_account.save()
 
-            payload = pay_account._create_account_event_payload(  # pylint:disable=protected-access
-                MessageType.NSF_UNLOCK_ACCOUNT.value
+            payload = pay_account._create_account_event_payload(
+                MessageType.NSF_UNLOCK_ACCOUNT.value,
+                payment,
+                filing_identifier,
+                receipt_number
             )
-
-            payload['data']['invoiceNumber'] = invoice_number
-            payload['data']['receiptNumber'] = receipt_number
-            payload['data']['paymentMethodDescription'] = payment_method
-            payload['data']['filingIdentifier'] = filing_identifier
             
             try:
                 publish_response(payload=payload,
