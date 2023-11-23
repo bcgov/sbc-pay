@@ -174,7 +174,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                     is_reversal = InvoiceModel.find_by_id(line.invoice_id).invoice_status_code in \
                         (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
 
-                    description = f'{disbursement_desc}#{line.invoice_id}'[:100]
+                    description = f'{disbursement_desc} #{line.invoice_id}'[:100]
                     description = f'{description:<100}'
                     ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
                                                 cls.get_jv_line(batch_type, credit_distribution, description,
