@@ -174,8 +174,11 @@ class EjvPartnerDistributionTask(CgiEjv):
                     is_reversal = InvoiceModel.find_by_id(line.invoice_id).invoice_status_code in \
                         (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
 
+                    invoice_number = f'#{line.invoice_id}'
+                    description = disbursement_desc[:-len(invoice_number)] + invoice_number
+                    description = f'{description[:100]:<100}'
                     ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
-                                                cls.get_jv_line(batch_type, credit_distribution, disbursement_desc,
+                                                cls.get_jv_line(batch_type, credit_distribution, description,
                                                                 effective_date, flow_through, journal_name, line.total,
                                                                 line_number, 'C' if not is_reversal else 'D'))
                     line_number += 1
@@ -183,7 +186,7 @@ class EjvPartnerDistributionTask(CgiEjv):
 
                     # Add a line here for debit too
                     ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
-                                                cls.get_jv_line(batch_type, debit_distribution, disbursement_desc,
+                                                cls.get_jv_line(batch_type, debit_distribution, description,
                                                                 effective_date, flow_through, journal_name, line.total,
                                                                 line_number, 'D' if not is_reversal else 'C'))
 
