@@ -636,9 +636,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def _create_account_event_payload(
             self,
             event_type: str,
-            payment: Payment = None,
-            filing_identifier: str = None,
-            receipt_number: str = None,
+            nsf_object: dict = None,
             include_pay_info: bool = False):
         """Return event payload for account."""
         payload: Dict[str, any] = {
@@ -655,10 +653,10 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         }
 
         if event_type == MessageType.NSF_UNLOCK_ACCOUNT.value:
-            payload['data']['invoiceNumber'] = payment.invoice_number
-            payload['data']['paymentMethodDescription'] = payment.payment_method_code
-            payload['data']['filingIdentifier'] = filing_identifier
-            payload['data']['receiptNumber'] = receipt_number
+            payload['data']['invoiceNumber'] = nsf_object.payment.invoice_number
+            payload['data']['paymentMethodDescription'] = nsf_object.payment.payment_method_code
+            payload['data']['filingIdentifier'] = nsf_object.filing_identifier
+            payload['data']['receiptNumber'] = nsf_object.receipt_number
 
             
         if event_type == MessageType.PAD_ACCOUNT_CREATE.value:
@@ -685,11 +683,15 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             cfs_account.status = CfsAccountStatus.ACTIVE.value
             cfs_account.save()
 
+            nsf_object = {
+                'payment': payment,
+                'filing_identifier': filing_identifier,
+                'receipt_number': receipt_number
+            }
+
             payload = pay_account._create_account_event_payload(
                 MessageType.NSF_UNLOCK_ACCOUNT.value,
-                payment=payment,
-                filing_identifier=filing_identifier,
-                receipt_number=receipt_number
+                nsf_object=nsf_object
             )
             
             try:
