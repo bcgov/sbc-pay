@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to activate accounts with pending activation.Mostly for PAD with 3 day activation period."""
-
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Dict
 
@@ -22,6 +22,18 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
 from pay_api.services.queue_publisher import publish_response
 from sentry_sdk import capture_message
+
+
+@dataclass
+class StatementNotificationInfo:
+    """Used for Statement Notifications."""
+
+    auth_account_id: str
+    statement: StatementModel
+    is_due: bool
+    due_date: datetime
+    emails: str
+    total_amount_owing: float
 
 
 def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel,
@@ -72,7 +84,7 @@ def publish_statement_notification(pay_account: PaymentAccountModel, statement: 
             'emailAddresses': emails,
             'accountId': pay_account.auth_account_id,
             'fromDate': f'{statement.from_date}',
-            'toDate:': f'{statement.to_date}',
+            'toDate': f'{statement.to_date}',
             'statementFrequency': statement.frequency,
             'totalAmountOwing': total_amount_owing
         }
@@ -94,24 +106,24 @@ def publish_statement_notification(pay_account: PaymentAccountModel, statement: 
     return True
 
 
-def publish_payment_notification(pay_account: PaymentAccountModel, statement: StatementModel,
-                                 is_due: bool, due_date: datetime, emails: str) -> bool:
+def publish_payment_notification(info: StatementNotificationInfo) -> bool:
     """Publish payment notification message to the mailer queue."""
-    notification_type = 'bc.registry.payment.statementDueNotification' if is_due \
+    notification_type = 'bc.registry.payment.statementDueNotification' if info.is_due \
         else 'bc.registry.payment.statementReminderNotification'
 
     payload = {
         'specversion': '1.x-wip',
         'type': notification_type,
-        'source': f'https://api.pay.bcregistry.gov.bc.ca/v1/accounts/{pay_account.auth_account_id}',
-        'id': f'{pay_account.auth_account_id}',
+        'source': f'https://api.pay.bcregistry.gov.bc.ca/v1/accounts/{info.auth_account_id}',
+        'id': info.auth_account_id,
         'time': f'{datetime.now()}',
         'datacontenttype': 'application/json',
         'data': {
-            'emailAddresses': emails,
-            'accountId': pay_account.auth_account_id,
-            'dueDate': f'{due_date}',
-            'statementFrequency': statement.frequency
+            'emailAddresses': info.emails,
+            'accountId': info.auth_account_id,
+            'dueDate': f'{info.due_date}',
+            'statementFrequency': info.statement.frequency,
+            'totalAmountOwing': info.total_amount_owing
         }
     }
     try:
@@ -121,10 +133,10 @@ def publish_payment_notification(pay_account: PaymentAccountModel, statement: St
     except Exception as e:  # pylint: disable=broad-except
         current_app.logger.error(e)
         current_app.logger.warning('Notification to Queue failed for the Account Mailer %s - %s',
-                                   pay_account.auth_account_id,
+                                   info.auth_account_id,
                                    payload)
         capture_message('Notification to Queue failed for the Account Mailer {auth_account_id}, {msg}.'.format(
-            auth_account_id=pay_account.auth_account_id, msg=payload), level='error')
+            auth_account_id=info.auth_account_id, msg=payload), level='error')
 
         return False
 
