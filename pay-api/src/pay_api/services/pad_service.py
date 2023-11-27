@@ -16,6 +16,7 @@ from typing import Any, Dict
 
 from flask import current_app
 
+from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.services.base_payment_system import PaymentSystemService
@@ -23,6 +24,7 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
+from pay_api.utils.errors import Error
 from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, PaymentSystem
 from pay_api.utils.user_context import user_context
 
@@ -100,6 +102,11 @@ class PadService(PaymentSystemService, CFSService):
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:  # pylint: disable=unused-argument
         """Return a static invoice number for direct pay."""
+        if payment_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
+            # Note NSF (Account Unlocking) is paid using DIRECT_PAY - CC flow, not PAD.
+            current_app.logger.info(f'Account {payment_account.id} is frozen, rejecting invoice creation')
+            raise BusinessException(Error.PAD_CURRENTLY_NSF)
+
         # Do nothing here as the invoice references are created later.
         # If the account have credit, deduct the credit amount which will be synced when reconciliation runs.
         account_credit = payment_account.credit or 0
