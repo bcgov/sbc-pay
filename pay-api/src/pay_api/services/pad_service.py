@@ -104,7 +104,7 @@ class PadService(PaymentSystemService, CFSService):
         """Return a static invoice number for direct pay."""
         if payment_account.cfs_account.status == CfsAccountStatus.FREEZE.value:
             # Note NSF (Account Unlocking) is paid using DIRECT_PAY - CC flow, not PAD.
-            current_app.logger.info('Account {payment_account.id} is frozen, rejecting invoice creation')
+            current_app.logger.info(f'Account {payment_account.id} is frozen, rejecting invoice creation')
             raise BusinessException(Error.PAD_CURRENTLY_NSF)
 
         # Do nothing here as the invoice references are created later.
