@@ -49,4 +49,4 @@ class EjvInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
     ejv_header_id = db.Column(db.Integer, ForeignKey('ejv_headers.id'), nullable=False)
     disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
     message = db.Column('message', db.String, nullable=True, index=False)
-    sequence = db.Column(db.Integer, nullable=True, index=True)
+    sequence = db.Column(db.Integer, nullable=True)

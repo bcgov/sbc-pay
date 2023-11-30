@@ -17,9 +17,7 @@ depends_on = None
 
 def upgrade():
     op.add_column('ejv_invoice_links', sa.Column('sequence', sa.Integer(), nullable=True))
-    op.create_index(op.f('ix_ejv_invoice_links_sequence'), 'ejv_invoice_links', ['sequence'], unique=False)
 
 
 def downgrade():
-    op.drop_index(op.f('ix_ejv_invoice_links_sequence'), table_name='ejv_invoice_links')
     op.drop_column('ejv_invoice_links', 'sequence')
