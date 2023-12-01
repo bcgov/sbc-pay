@@ -76,6 +76,26 @@ def test_next_business_day(session):
     business_date = get_nearest_business_day(d)
     assert business_date.date() == datetime(2025, 10, 1).date()
 
+    # Truth and reconciliation day: Saturday Sept 30, 2023, Holiday observed on 2nd
+    d = datetime(2023, 9, 30)
+    business_date = get_nearest_business_day(d)
+    assert business_date.date() == datetime(2023, 10, 3).date()
+
+    # Weekday check - Friday December 1st, 2023
+    d = datetime(2023, 12, 1)
+    business_date = get_nearest_business_day(d)
+    assert business_date.date() == datetime(2023, 12, 1).date()
+
+    # Weekend check - Saturday December 2nd, 2023
+    d = datetime(2023, 12, 2)
+    business_date = get_nearest_business_day(d)
+    assert business_date.date() == datetime(2023, 12, 4).date()
+
+    # Weekend check - Sunday December 3rd, 2023
+    d = datetime(2023, 12, 3)
+    business_date = get_nearest_business_day(d)
+    assert business_date.date() == datetime(2023, 12, 4).date()
+
 
 def test_print_holidays():
     """Print holidays, can be used to take a quick peak at the holidays."""
