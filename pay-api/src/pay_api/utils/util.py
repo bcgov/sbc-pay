@@ -213,7 +213,7 @@ def is_holiday(val: datetime) -> bool:
     """
     # Even though not officially a BC STAT - Union recognizes Easter Monday and Boxing Day.
     # https://www2.gov.bc.ca/gov/content/careers-myhr/all-employees/leave-time-off/vacations-holidays/statutory-holidays
-    holiday = Canada(subdiv='BC', observed=True, categories=(GOVERNMENT, OPTIONAL, PUBLIC), years=val.year())
+    holiday = Canada(subdiv='BC', observed=True, categories=(GOVERNMENT, OPTIONAL, PUBLIC), years=val.year)
     holiday._add_easter_monday('Easter Monday')  # pylint: disable=protected-access
     if holiday.get(val.strftime('%Y-%m-%d')):
         return True
