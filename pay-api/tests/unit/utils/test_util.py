@@ -16,7 +16,6 @@
 
 Test-Suite to ensure that the util functions are working as expected.
 """
-from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC
 from holidays.countries import Canada
 from datetime import datetime
 
@@ -100,7 +99,7 @@ def test_next_business_day(session):
 
 def test_print_holidays():
     """Print holidays, can be used to take a quick peak at the holidays."""
-    holidays = Canada(subdiv='BC', observed=True, categories=(GOVERNMENT, OPTIONAL, PUBLIC), years=2023)
+    holidays = Canada(subdiv='BC', observed=True, categories=('government', 'optional', 'public'), years=2023)
     holidays._add_easter_monday('Easter Monday')  # pylint: disable=protected-access
     for date, name in sorted(holidays.items()):
         print(date, name)
