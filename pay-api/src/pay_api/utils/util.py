@@ -198,22 +198,29 @@ def get_nearest_business_day(date_val: datetime, include_today: bool = True) -> 
     """
     if not include_today:
         date_val = get_next_day(date_val)
-    if not is_holiday(date_val):
-        return date_val
-    # just a recursive call to get the next business day.
-    return get_nearest_business_day(get_next_day(date_val))
+    if is_holiday(date_val):
+        days_to_add = 1
+        # If it's saturday holiday add 3 days to Tuesday
+        if date_val.weekday() == 5:
+            days_to_add = 3
+        # If it's sunday holiday add 2 days to Tuesday
+        if date_val.weekday() == 6:
+            days_to_add = 2
+        return get_nearest_business_day(date_val + timedelta(days=days_to_add))
+    # If it's the weekend, get the next day.
+    if date_val.weekday() >= 5:
+        return get_nearest_business_day(get_next_day(date_val))
+    return date_val
 
 
 def is_holiday(val: datetime) -> bool:
     """Return receipt number for payments.
 
-    saturday or sunday check
     check the BC holidays
     """
     # Even though not officially a BC STAT - Union recognizes Easter Monday and Boxing Day.
+    # holidays version 0.23 works with Boxing day, but the newer versions don't.
     if holidays.CA(subdiv='BC', observed=True).get(val.strftime('%Y-%m-%d')):
-        return True
-    if val.weekday() >= 5:
         return True
     return False
 
@@ -232,7 +239,7 @@ def get_outstanding_txns_from_date() -> datetime:
     counter: int = 0
     while counter < days_interval:
         from_date = from_date - timedelta(days=1)
-        if not is_holiday(from_date):
+        if not (is_holiday(from_date) and from_date.weekday() >= 5):
             counter += 1
     return from_date
 
