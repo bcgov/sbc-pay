@@ -60,6 +60,11 @@ class EftService(DepositService):
         self.create_receipt(invoice=invoice_model, payment=payment).save()
         self._release_payment(invoice=invoice)
 
+    def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
+        """Complete any post invoice activities if needed."""
+        # Publish message to the queue with payment token, so that they can release records on their side.
+        self._release_payment(invoice=invoice)
+
     def create_payment(self, payment_account: PaymentAccountModel, invoice: InvoiceModel, payment_date: datetime,
                        paid_amount) -> PaymentModel:
         """Create a payment record for an invoice."""

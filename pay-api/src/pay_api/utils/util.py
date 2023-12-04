@@ -22,7 +22,8 @@ from typing import Dict
 from decimal import Decimal
 from urllib.parse import parse_qsl
 
-import holidays
+from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC
+from holidays.countries import Canada
 import pytz
 from dpath import util as dpath_util
 from flask import current_app
@@ -211,7 +212,10 @@ def is_holiday(val: datetime) -> bool:
     check the BC holidays
     """
     # Even though not officially a BC STAT - Union recognizes Easter Monday and Boxing Day.
-    if holidays.CA(subdiv='BC', observed=True).get(val.strftime('%Y-%m-%d')):
+    # https://www2.gov.bc.ca/gov/content/careers-myhr/all-employees/leave-time-off/vacations-holidays/statutory-holidays
+    holiday = Canada(subdiv='BC', observed=True, categories=(GOVERNMENT, OPTIONAL, PUBLIC), years=val.year)
+    holiday._add_easter_monday('Easter Monday')  # pylint: disable=protected-access
+    if holiday.get(val.strftime('%Y-%m-%d')):
         return True
     if val.weekday() >= 5:
         return True
