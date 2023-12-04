@@ -16,8 +16,8 @@
 
 Test-Suite to ensure that the /nsf endpoint is working as expected.
 """
-from pay_api.models import FeeSchedule
-from pay_api.models import PaymentAccount
+from pay_api.models import FeeSchedule as FeeScheduleModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.utils.enums import InvoiceStatus
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_non_sufficient_funds, factory_payment, factory_payment_account,
@@ -37,13 +37,13 @@ def test_get_non_sufficient_funds(session, client, jwt, app):
     invoice = factory_invoice(
         payment_account=payment_account, status_code=InvoiceStatus.SETTLEMENT_SCHEDULED.value, paid=1, total=200)
     invoice.save()
-    fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
     factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, description='NSF',
                               total=100)
     factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number).save()
     factory_non_sufficient_funds(invoice_id=invoice.id, description='NSF').save()
 
-    auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id
+    auth_account_id = PaymentAccountModel.find_by_id(payment_account.id).auth_account_id
 
     nsf = client.get(f'/api/v1/accounts/{auth_account_id}/nsf', headers=headers)
     assert nsf.status_code == 200

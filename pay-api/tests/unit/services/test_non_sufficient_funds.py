@@ -56,7 +56,7 @@ def test_find_all_non_sufficient_funds_invoices(session):
 
     non_sufficient_funds = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(
         account_id=payment_account.auth_account_id)
-    
+
     assert non_sufficient_funds
     assert non_sufficient_funds.get('invoices') is not None
     assert non_sufficient_funds.get('total_amount') is not None
