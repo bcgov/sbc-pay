@@ -18,17 +18,12 @@ from typing import Optional
 
 from flask import current_app
 
-from pay_api.models import (
-    Invoice as InvoiceModel,
-    InvoiceReference as InvoiceReferenceModel,
-    InvoiceSchema,
-    NonSufficientFundsModel,
-    NonSufficientFundsSchema,
-    Payment as PaymentModel,
-    PaymentAccount as PaymentAccountModel,
-    PaymentSchema,
-    db
-)
+from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import InvoiceReference as InvoiceReferenceModel
+from pay_api.models import InvoiceSchema, NonSufficientFundsModel, NonSufficientFundsSchema
+from pay_api.models import Payment as PaymentModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import PaymentSchema, db
 
 
 class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
