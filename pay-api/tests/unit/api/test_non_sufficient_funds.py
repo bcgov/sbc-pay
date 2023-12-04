@@ -41,7 +41,7 @@ def test_get_non_sufficient_funds(session, client, jwt, app):
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, description='NSF',
                               total=100)
-    factory_invoice_reference(invoice.id, invoice_id=invoice.id, invoice_number=invoice_number).save()
+    factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number).save()
     factory_non_sufficient_funds(invoice_id=invoice.id, description='NSF').save()
 
     auth_account_id = PaymentAccount.find_by_id(payment_account.id).auth_account_id

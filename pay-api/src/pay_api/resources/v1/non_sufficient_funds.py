@@ -41,7 +41,7 @@ def get_non_sufficient_funds(account_id: str):
     page: int = int(request.args.get('page', '1'))
     limit: int = int(request.args.get('limit', '10'))
     response, status = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(account_id=account_id,
-                                                                                        page=page, 
+                                                                                        page=page,
                                                                                         limit=limit), HTTPStatus.OK
     current_app.logger.debug('>get_non_sufficient_funds')
     return jsonify(response), status

@@ -51,7 +51,7 @@ def test_find_all_non_sufficient_funds_invoices(session):
     fee_schedule = FeeSchedule.find_by_filing_type_and_corp_type('CP', 'OTANN')
     factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id, description='NSF',
                               total=100)
-    factory_invoice_reference(invoice.id, invoice_id=invoice.id, invoice_number=invoice_number).save()
+    factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number).save()
     factory_non_sufficient_funds(invoice_id=invoice.id, description='NSF').save()
 
     non_sufficient_funds = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(
