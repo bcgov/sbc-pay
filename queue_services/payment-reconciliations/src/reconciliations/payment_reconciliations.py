@@ -44,7 +44,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
-from pay_api.services import NonSufficientFundsService
+from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.services.queue_publisher import publish
