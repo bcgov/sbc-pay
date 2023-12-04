@@ -25,8 +25,9 @@ from typing import Dict, List, Tuple
 from faker import Faker
 
 from pay_api.models import (
-    CfsAccount, Comment, DistributionCode, EFTShortnames, Invoice, InvoiceReference, Payment, PaymentAccount,
-    PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices, StatementSettings)
+    CfsAccount, Comment, DistributionCode, EFTShortnames,  Invoice, InvoiceReference, NonSufficientFunds, Payment,
+    PaymentAccount, PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices,
+    StatementSettings)
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
@@ -417,7 +418,8 @@ def factory_payment(
         payment_status_code: str = PaymentStatus.CREATED.value,
         invoice_number: str = None,
         payment_account_id: str = None,
-        invoice_amount=0
+        invoice_amount=0,
+        paid_amount=0
 ):
     """Return Factory."""
     payment: Payment = Payment(
@@ -426,7 +428,8 @@ def factory_payment(
         payment_status_code=payment_status_code,
         invoice_number=invoice_number,
         payment_account_id=payment_account_id,
-        invoice_amount=invoice_amount
+        invoice_amount=invoice_amount,
+        paid_amount=paid_amount
     )
     return payment
 
@@ -883,3 +886,7 @@ def factory_comments(routing_slip_number: str, username: str = 'comment_user', c
 def factory_eft_shortname(short_name: str, auth_account_id: str = None):
     """Return an EFT short name model."""
     return EFTShortnames(short_name=short_name, auth_account_id=auth_account_id)
+
+def factory_non_sufficient_funds(invoice_id: int, description: str = None):
+    """Return a Non-Sufficient Funds Model."""
+    return NonSufficientFunds(invoice_id=invoice_id, description=description)
