@@ -113,7 +113,7 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
         non_sufficient_funds_service: NonSufficientFundsService = NonSufficientFundsService()
         non_sufficient_funds_service._dao = value  # pylint: disable=protected-access
         return non_sufficient_funds_service
-    
+
     @staticmethod
     def query_all_non_sufficient_funds_invoices(account_id: str, page: int, limit: int):
         """Return all Non-Sufficient Funds invoices."""
@@ -124,15 +124,16 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
             .join(NonSufficientFundsModel, InvoiceModel.id == NonSufficientFundsModel.invoice_id) \
             .filter(PaymentAccountModel.auth_account_id == account_id) \
             .filter(PaymentModel.paid_amount > 0)
-        
+
         query = query.order_by(PaymentModel.id.asc())
         pagination = query.paginate(per_page=limit, page=page)
         results, total = pagination.items, pagination.total
 
         return results, total
-    
+
     @staticmethod
     def find_all_non_sufficient_funds_invoices(account_id: str, page: int, limit: int):
+        # pylint: disable=too-many-locals
         """Return all Non-Sufficient Funds."""
         results, total = NonSufficientFundsService.query_all_non_sufficient_funds_invoices(account_id=account_id,
                                                                                      page=page, limit=limit)

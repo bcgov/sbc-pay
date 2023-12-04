@@ -25,7 +25,7 @@ from typing import Dict, List, Tuple
 from faker import Faker
 
 from pay_api.models import (
-    CfsAccount, Comment, DistributionCode, EFTShortnames,  Invoice, InvoiceReference, NonSufficientFunds, Payment,
+    CfsAccount, Comment, DistributionCode, EFTShortnames,  Invoice, InvoiceReference, NonSufficientFundsModel, Payment,
     PaymentAccount, PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices,
     StatementSettings)
 from pay_api.utils.constants import DT_SHORT_FORMAT
@@ -889,4 +889,4 @@ def factory_eft_shortname(short_name: str, auth_account_id: str = None):
 
 def factory_non_sufficient_funds(invoice_id: int, description: str = None):
     """Return a Non-Sufficient Funds Model."""
-    return NonSufficientFunds(invoice_id=invoice_id, description=description)
+    return NonSufficientFundsModel(invoice_id=invoice_id, description=description)
