@@ -18,14 +18,14 @@ from typing import Optional
 
 from flask import current_app
 
+from pay_api.models import InvoiceSchema
+from pay_api.models import InvoiceReference as InvoiceReferenceModel
+from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import NonSufficientFundsModel
 from pay_api.models import NonSufficientFundsSchema
-from pay_api.models import InvoiceSchema
-from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentSchema
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import db
 
 
@@ -136,7 +136,7 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
         # pylint: disable=too-many-locals
         """Return all Non-Sufficient Funds."""
         results, total = NonSufficientFundsService.query_all_non_sufficient_funds_invoices(account_id=account_id,
-                                                                                     page=page, limit=limit)
+                                                                                           page=page, limit=limit)
 
         data = {
             'total': total,

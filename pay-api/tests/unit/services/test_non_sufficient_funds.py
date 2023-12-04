@@ -19,11 +19,10 @@ Test-Suite to ensure that the Non-Sufficient Funds layer is working as expected.
 
 from pay_api.models import FeeSchedule
 from pay_api.services import NonSufficientFundsService
+from pay_api.utils.enums import InvoiceStatus
 from tests.utilities.base_test import (
     factory_invoice_reference, factory_invoice, factory_non_sufficient_funds, factory_payment,
     factory_payment_account, factory_payment_line_item)
-from pay_api.utils.enums import (
-    InvoiceStatus)
 
 
 def test_save_non_sufficient_funds(session):
@@ -33,10 +32,11 @@ def test_save_non_sufficient_funds(session):
         'description': 'NSF',
     }
     non_sufficient_funds = NonSufficientFundsService.save_non_sufficient_funds(invoice_id=1,
-                                                                                    description='NSF')
+                                                                               description='NSF')
     assert non_sufficient_funds
     assert non_sufficient_funds.invoice_id == non_sufficient_funds_object.get('invoice_id')
     assert non_sufficient_funds.description == non_sufficient_funds_object.get('description')
+
 
 def test_find_all_non_sufficient_funds_invoices(session):
     """Test find_all_non_sufficient_funds_invoices."""

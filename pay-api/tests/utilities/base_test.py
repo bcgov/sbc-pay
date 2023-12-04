@@ -25,7 +25,7 @@ from typing import Dict, List, Tuple
 from faker import Faker
 
 from pay_api.models import (
-    CfsAccount, Comment, DistributionCode, EFTShortnames,  Invoice, InvoiceReference, NonSufficientFundsModel, Payment,
+    CfsAccount, Comment, DistributionCode, EFTShortnames, Invoice, InvoiceReference, NonSufficientFundsModel, Payment,
     PaymentAccount, PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices,
     StatementSettings)
 from pay_api.utils.constants import DT_SHORT_FORMAT

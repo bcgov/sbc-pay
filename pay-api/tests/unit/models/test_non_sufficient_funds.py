@@ -30,3 +30,4 @@ def test_non_sufficient_funds(session):
     assert non_sufficient_funds.id is not None
     assert non_sufficient_funds.invoice_id is not None
     assert non_sufficient_funds.description is not None
+    

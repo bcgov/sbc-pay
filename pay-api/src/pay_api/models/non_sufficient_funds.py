@@ -54,6 +54,7 @@ class NonSufficientFundsSchema(BaseSchema):  # pylint: disable=too-many-ancestor
 
     class Meta(BaseSchema.Meta):  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
+
         model = NonSufficientFundsModel
 
     description = fields.String(data_key='description')
