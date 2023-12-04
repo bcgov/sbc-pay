@@ -887,6 +887,7 @@ def factory_eft_shortname(short_name: str, auth_account_id: str = None):
     """Return an EFT short name model."""
     return EFTShortnames(short_name=short_name, auth_account_id=auth_account_id)
 
+
 def factory_non_sufficient_funds(invoice_id: int, description: str = None):
     """Return a Non-Sufficient Funds Model."""
     return NonSufficientFundsModel(invoice_id=invoice_id, description=description)

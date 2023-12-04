@@ -21,8 +21,8 @@ from pay_api.models import FeeSchedule
 from pay_api.services import NonSufficientFundsService
 from pay_api.utils.enums import InvoiceStatus
 from tests.utilities.base_test import (
-    factory_invoice_reference, factory_invoice, factory_non_sufficient_funds, factory_payment,
-    factory_payment_account, factory_payment_line_item)
+    factory_invoice, factory_invoice_reference, factory_non_sufficient_funds, factory_payment, factory_payment_account,
+    factory_payment_line_item)
 
 
 def test_save_non_sufficient_funds(session):
