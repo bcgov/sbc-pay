@@ -130,7 +130,7 @@ def process_notebooks(notebookdirectory: str, data_dir: str):
 
 def execute_notebook(notebookdirectory: str, data_dir: str, partner_code: str = None):
     """Execute notebook and send emails."""
-    parameters = dict(partner_code=partner_code) if partner_code else None
+    parameters = {'partner_code': partner_code} if partner_code else None
 
     for file in findfiles(notebookdirectory, '*.ipynb'):
         try:
