@@ -35,6 +35,7 @@ from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.queue_publisher import publish_response
+from pay_api.services.statement_settings import StatementSettings
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentSystem, StatementFrequency)
 from pay_api.utils.errors import Error
@@ -353,6 +354,20 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return payment_account
 
     @classmethod
+    def _check_and_update_statement_settings(cls, payment_account: PaymentAccountModel):
+        """Check and update statement settings based on payment method."""
+        # On create of a payment account _persist_default_statement_frequency() is used, so we
+        # will only check if an update is needed if statement settings already exists - i.e an update
+        if payment_account and payment_account.payment_method == PaymentMethod.EFT.value:
+            # EFT payment method should automatically set statement frequency to MONTHLY
+            auth_account_id = str(payment_account.auth_account_id)
+            statements_settings: StatementSettingsModel = StatementSettingsModel\
+                .find_active_settings(auth_account_id, datetime.today())
+
+            if statements_settings is not None and statements_settings.frequency != StatementFrequency.MONTHLY.value:
+                StatementSettings.update_statement_settings(auth_account_id, StatementFrequency.MONTHLY.value)
+
+    @classmethod
     def _save_account(cls, account_request: Dict[str, any], payment_account: PaymentAccountModel,
                       is_sandbox: bool = False):
         """Update and save payment account and CFS account model."""
@@ -390,6 +405,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         if payment_method:
             pay_system = PaymentSystemFactory.create_from_payment_method(payment_method=payment_method)
             cls._handle_payment_details(account_request, is_sandbox, pay_system, payment_account, payment_info)
+            cls._check_and_update_statement_settings(payment_account)
         payment_account.save()
 
     @classmethod
@@ -534,8 +550,15 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
     @staticmethod
     def _persist_default_statement_frequency(payment_account_id):
+        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(payment_account_id)
+        frequency = StatementFrequency.default_frequency().value
+
+        # EFT Payment method default to MONTHLY frequency
+        if payment_account.payment_method == PaymentMethod.EFT.value:
+            frequency = StatementFrequency.MONTHLY.value
+
         statement_settings_model = StatementSettingsModel(
-            frequency=StatementFrequency.default_frequency().value,
+            frequency=frequency,
             payment_account_id=payment_account_id
         )
         statement_settings_model.save()
