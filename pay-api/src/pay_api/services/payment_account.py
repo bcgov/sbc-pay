@@ -356,8 +356,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @classmethod
     def _check_and_update_statement_settings(cls, payment_account: PaymentAccountModel):
         """Check and update statement settings based on payment method."""
-        # On create of a payment account keep in mind _persist_default_statement_frequency() is used, so we
-        # will only check if an update is needed only if statement settings already exists - i.e an update
+        # On create of a payment account _persist_default_statement_frequency() is used, so we
+        # will only check if an update is needed if statement settings already exists - i.e an update
         if payment_account and payment_account.payment_method == PaymentMethod.EFT.value:
             # EFT payment method should automatically set statement frequency to MONTHLY
             auth_account_id = str(payment_account.auth_account_id)
