@@ -140,7 +140,7 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
             .filter(PaymentAccountModel.auth_account_id == account_id) \
             .filter(PaymentModel.paid_amount > 0) \
             .order_by(PaymentModel.id.asc())
-        
+
         non_sufficient_funds_invoices = query.all()
         results, total = non_sufficient_funds_invoices, len(non_sufficient_funds_invoices)
 
@@ -148,6 +148,7 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def accumulate_totals(results, payment_schema, invoice_schema):
+        """Accumulate payment and invoice totals"""
         accumulated = {
             'last_payment_id': None,
             'total_amount_to_pay': 0,
@@ -170,11 +171,12 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
             else:
                 accumulated['invoices'][-1]['invoices'].append(invoice_schema.dump(invoice))
             accumulated['last_payment_id'] = payment.id
-        
+
         return accumulated
 
     @staticmethod
     def find_all_non_sufficient_funds_invoices(account_id: str):
+        """Return all Non-Sufficient Funds invoices."""
         results, total = NonSufficientFundsService.query_all_non_sufficient_funds_invoices(account_id=account_id)
         payment_schema = PaymentSchema()
         invoice_schema = InvoiceSchema(exclude=('receipts', 'references', '_links'))
@@ -194,6 +196,7 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     @user_context
     def create_non_sufficient_funds_statement_pdf(account_id: str, **kwargs):
+        """Create Non-Sufficient Funds statement pdf."""
         current_app.logger.debug('<generate_non_sufficient_funds_statement_pdf')
         invoice = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(account_id=account_id)
 
@@ -225,7 +228,6 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
         pdf_response = OAuthService.post(current_app.config.get('REPORT_API_BASE_URL'),
                                          kwargs['user'].bearer_token, AuthHeaderType.BEARER,
                                          ContentType.JSON, invoice_pdf_dict)
-        print('🟢🟢🟢🟢🟢', pdf_response)
         current_app.logger.debug('<OAuthService responded to generate_non_sufficient_funds_statement_pdf')
 
         return pdf_response, invoice_pdf_dict.get('reportName')
