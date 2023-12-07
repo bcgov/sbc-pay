@@ -45,7 +45,7 @@ def findfiles(directory, pattern):
             yield os.path.join(directory, filename)
 
 
-def send_email(file_processing, emailtype, errormessage, partner_code=None):
+def send_email(file_processing, emailtype, errormessage, partner_code=None):  # pylint: disable = too-many-locals
     """Send email for results."""
     message = MIMEMultipart()
     date_str = datetime.strftime(datetime.now() - timedelta(1), '%Y-%m-%d')
@@ -132,11 +132,11 @@ def execute_notebook(notebookdirectory: str, data_dir: str, partner_code: str = 
     """Execute notebook and send emails."""
     parameters = {'partner_code': partner_code} if partner_code else None
 
-    for file in findfiles(notebookdirectory, '*.ipynb'):
+    for file in findfiles(notebookdirectory, f'{partner_code.lower()}_*.ipynb'):
         try:
             pm.execute_notebook(file, data_dir + 'temp.ipynb', parameters=parameters)
             # send email to receivers and remove files/directories which we don't want to keep
-            send_email(file, '', '')
+            send_email(file, '', '', partner_code)
             os.remove(data_dir + 'temp.ipynb')
         except Exception:  # noqa: B902
             logging.exception('Error: %s.', file)

@@ -126,3 +126,4 @@ jobs/payment-jobs/tests/docker/ftp
 ACK.INBOX.F12022020202
 queue_services/payment-reconciliations/ACK.*
 queue_services/payment-reconciliations/FEEDBACK.*
+jobs/notebook-report/data/
