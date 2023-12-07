@@ -52,7 +52,7 @@ build-req: clean ## Upgrade requirements
 install: clean ## Install python virtrual environment
 	test -f venv/bin/activate || python3.8 -m venv  $(CURRENT_ABS_DIR)/venv ;\
 	. venv/bin/activate ;\
-	pip install pip==21.1.2 ;\
+	pip install --upgrade pip ;\
 	pip install -Ur requirements.txt
 
 install-dev: ## Install local application
