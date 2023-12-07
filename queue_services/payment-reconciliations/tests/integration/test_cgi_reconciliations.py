@@ -431,7 +431,7 @@ async def test_successful_partner_reversal_ejv_reconciliations(session, app, sta
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
     invoice = InvoiceModel.find_by_id(invoice_id)
     assert invoice.disbursement_status_code == DisbursementStatus.REVERSED.value
-    assert invoice.disbursement_date == datetime(2023,5,29)
+    assert invoice.disbursement_date == datetime(2023, 5, 29)
 
 
 @pytest.mark.asyncio
@@ -589,7 +589,7 @@ async def test_succesful_payment_ejv_reconciliations(session, app, stan_server, 
         invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
         assert invoice.disbursement_status_code is None
         assert invoice.invoice_status_code == InvoiceStatus.PAID.value
-        assert invoice.payment_date == datetime(2023,5,29)
+        assert invoice.payment_date == datetime(2023, 5, 29)
         invoice_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
             inv_id, InvoiceReferenceStatus.COMPLETED.value
         )
@@ -759,7 +759,7 @@ async def test_succesful_payment_reversal_ejv_reconciliations(session, app, stan
         invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
         assert invoice.disbursement_status_code is None
         assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
-        assert invoice.refund_date == datetime(2023,5,29) 
+        assert invoice.refund_date == datetime(2023, 5, 29) 
         invoice_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
             inv_id, InvoiceReferenceStatus.COMPLETED.value
         )
