@@ -252,7 +252,7 @@ def _set_invoice_jv_reversal(invoice: InvoiceModel, effective_date: datetime, is
     else:
         invoice.invoice_status_code = InvoiceStatus.PAID.value
         invoice.payment_date = effective_date
-        invoice.paid = invoice.total 
+        invoice.paid = invoice.total
 
 
 def _fix_invoice_line(line):
