@@ -44,8 +44,8 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
-from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.services.cfs_service import CFSService
+from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.services.queue_publisher import publish
 from pay_api.utils.enums import (
@@ -481,8 +481,6 @@ def _process_failed_payments(row):
         invoice: InvoiceModel = InvoiceModel.find_by_id(identifier=inv_reference.invoice_id)
         invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
         invoice.paid = 0
-        # Add invoice to non sufficient funds table
-        NonSufficientFundsService.save_non_sufficient_funds(invoice_id=invoice.id, description='NSF')
 
     # Create an invoice for NSF for this account
     invoice = _create_nsf_invoice(cfs_account, inv_number, payment_account)
@@ -757,6 +755,9 @@ def _create_nsf_invoice(cfs_account: CfsAccountModel, inv_number: str,
         status_code=InvoiceReferenceStatus.ACTIVE.value
     )
     inv_ref.save()
+
+    # Add invoice to non sufficient funds table
+    NonSufficientFundsService.save_non_sufficient_funds(invoice_id=invoice.id, description='NSF')
 
     return invoice
 

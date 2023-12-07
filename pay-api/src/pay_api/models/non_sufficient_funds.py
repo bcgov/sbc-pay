@@ -14,6 +14,7 @@
 """Model to handle all operations related to Non-Sufficient Funds."""
 from __future__ import annotations
 
+from attrs import define
 from marshmallow import fields
 from sqlalchemy import ForeignKey
 
@@ -46,7 +47,7 @@ class NonSufficientFundsModel(BaseModel):  # pylint: disable=too-many-instance-a
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     description = db.Column(db.String(50), nullable=True)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoice.id'), nullable=False)
+    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
 
 
 class NonSufficientFundsSchema(BaseSchema):  # pylint: disable=too-many-ancestors
@@ -59,3 +60,20 @@ class NonSufficientFundsSchema(BaseSchema):  # pylint: disable=too-many-ancestor
 
     description = fields.String(data_key='description')
     invoice_id = fields.Integer(data_key='invoice_id')
+
+
+@define
+class NonSufficientFundsSearchModel:
+    """Used to search for NSF records."""
+
+    id: int
+    invoice_id: int
+    description: str
+
+    @classmethod
+    def from_row(cls, row: NonSufficientFundsModel):
+        """From row is used so we don't tightly couple to our database class.
+
+        https://www.attrs.org/en/stable/init.html
+        """
+        return cls(invoice_id=row.invoice_id, description=row.description)

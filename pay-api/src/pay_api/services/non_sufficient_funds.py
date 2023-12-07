@@ -24,6 +24,10 @@ from pay_api.models import InvoiceSchema, NonSufficientFundsModel, NonSufficient
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentSchema, db
+from pay_api.utils.user_context import user_context
+from pay_api.utils.enums import (
+    AuthHeaderType, ContentType)
+from .oauth_service import OAuthService
 
 
 class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
@@ -112,72 +116,6 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
         return non_sufficient_funds_service
 
     @staticmethod
-    def query_all_non_sufficient_funds_invoices(account_id: str, page: int, limit: int):
-        """Return all Non-Sufficient Funds invoices."""
-        query = db.session.query(PaymentModel, InvoiceModel) \
-            .join(PaymentAccountModel, PaymentAccountModel.id == PaymentModel.payment_account_id) \
-            .outerjoin(InvoiceReferenceModel, InvoiceReferenceModel.invoice_number == PaymentModel.invoice_number) \
-            .outerjoin(InvoiceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id) \
-            .join(NonSufficientFundsModel, InvoiceModel.id == NonSufficientFundsModel.invoice_id) \
-            .filter(PaymentAccountModel.auth_account_id == account_id) \
-            .filter(PaymentModel.paid_amount > 0)
-
-        query = query.order_by(PaymentModel.id.asc())
-        pagination = query.paginate(per_page=limit, page=page)
-        results, total = pagination.items, pagination.total
-
-        return results, total
-
-    @staticmethod
-    def find_all_non_sufficient_funds_invoices(account_id: str, page: int, limit: int):
-        # pylint: disable=too-many-locals
-        """Return all Non-Sufficient Funds."""
-        results, total = NonSufficientFundsService.query_all_non_sufficient_funds_invoices(account_id=account_id,
-                                                                                           page=page, limit=limit)
-
-        data = {
-            'total': total,
-            'page': page,
-            'limit': limit,
-            'invoices': [],
-            'total_amount': 0,
-            'total_amount_remaining': 0,
-            'total_nsf_amount': 0,
-            'total_nsf_count': 0
-        }
-
-        payment_schema = PaymentSchema()
-        inv_schema = InvoiceSchema(exclude=('receipts', 'references', '_links'))
-        last_payment_id = None
-        total_amount_to_pay = 0
-        total_amount_paid = 0
-        total_nsf_amount = 0
-        total_nsf_count = 0
-
-        for payment, invoice in results:
-            if payment.id != last_payment_id:
-                total_amount_paid += payment.paid_amount
-                total_amount_to_pay += invoice.total
-
-                nsf_line_items = [item for item in invoice.line_items if item.description == 'NSF']
-                total_nsf_count += len(nsf_line_items)
-                total_nsf_amount += sum(item.total for item in nsf_line_items)
-
-                payment_dict = payment_schema.dump(payment)
-                payment_dict['invoices'] = [inv_schema.dump(invoice)]
-                data['invoices'].append(payment_dict)
-            else:
-                payment_dict['invoices'].append(inv_schema.dump(invoice))
-            last_payment_id = payment.id
-
-        data['total_amount'] = total_amount_to_pay - total_nsf_amount
-        data['total_amount_remaining'] = total_amount_to_pay - total_amount_paid
-        data['total_nsf_amount'] = total_nsf_amount
-        data['total_nsf_count'] = total_nsf_count
-
-        return data
-
-    @staticmethod
     def save_non_sufficient_funds(invoice_id: int, description: str) -> NonSufficientFundsService:
         """Create Non-Sufficient Funds record."""
         current_app.logger.debug('<save_non_sufficient_funds')
@@ -190,3 +128,104 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
         non_sufficient_funds_service = NonSufficientFundsService.populate(non_sufficient_funds_dao)
         current_app.logger.debug('>save_non_sufficient_funds')
         return non_sufficient_funds_service
+
+    @staticmethod
+    def query_all_non_sufficient_funds_invoices(account_id: str):
+        """Return all Non-Sufficient Funds invoices."""
+        query = db.session.query(PaymentModel, InvoiceModel) \
+            .join(PaymentAccountModel, PaymentAccountModel.id == PaymentModel.payment_account_id) \
+            .outerjoin(InvoiceReferenceModel, InvoiceReferenceModel.invoice_number == PaymentModel.invoice_number) \
+            .outerjoin(InvoiceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id) \
+            .join(NonSufficientFundsModel, InvoiceModel.id == NonSufficientFundsModel.invoice_id) \
+            .filter(PaymentAccountModel.auth_account_id == account_id) \
+            .filter(PaymentModel.paid_amount > 0) \
+            .order_by(PaymentModel.id.asc())
+        
+        non_sufficient_funds_invoices = query.all()
+        results, total = non_sufficient_funds_invoices, len(non_sufficient_funds_invoices)
+
+        return results, total
+
+    @staticmethod
+    def accumulate_totals(results, payment_schema, invoice_schema):
+        accumulated = {
+            'last_payment_id': None,
+            'total_amount_to_pay': 0,
+            'total_amount_paid': 0,
+            'total_nsf_amount': 0,
+            'total_nsf_count': 0,
+            'invoices': []
+        }
+
+        for payment, invoice in results:
+            if payment.id != accumulated['last_payment_id']:
+                accumulated['total_amount_paid'] += payment.paid_amount
+                accumulated['total_amount_to_pay'] += invoice.total
+                nsf_line_items = [item for item in invoice.line_items if item.description == 'NSF']
+                accumulated['total_nsf_count'] += len(nsf_line_items)
+                accumulated['total_nsf_amount'] += sum(item.total for item in nsf_line_items)
+                payment_dict = payment_schema.dump(payment)
+                payment_dict['invoices'] = [invoice_schema.dump(invoice)]
+                accumulated['invoices'].append(payment_dict)
+            else:
+                accumulated['invoices'][-1]['invoices'].append(invoice_schema.dump(invoice))
+            accumulated['last_payment_id'] = payment.id
+        
+        return accumulated
+
+    @staticmethod
+    def find_all_non_sufficient_funds_invoices(account_id: str):
+        results, total = NonSufficientFundsService.query_all_non_sufficient_funds_invoices(account_id=account_id)
+        payment_schema = PaymentSchema()
+        invoice_schema = InvoiceSchema(exclude=('receipts', 'references', '_links'))
+        accumulated = NonSufficientFundsService.accumulate_totals(results, payment_schema, invoice_schema)
+
+        data = {
+            'total': total,
+            'invoices': accumulated['invoices'],
+            'total_amount': accumulated['total_amount_to_pay'] - accumulated['total_nsf_amount'],
+            'total_amount_remaining': accumulated['total_amount_to_pay'] - accumulated['total_amount_paid'],
+            'total_nsf_amount': accumulated['total_nsf_amount'],
+            'total_nsf_count': accumulated['total_nsf_count']
+        }
+
+        return data
+
+    @staticmethod
+    @user_context
+    def create_non_sufficient_funds_statement_pdf(account_id: str, **kwargs):
+        current_app.logger.debug('<generate_non_sufficient_funds_statement_pdf')
+        invoice = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(account_id=account_id)
+
+        template_vars = {
+            'suspendedOn': '',
+            'totalAmountRemaining': invoice['total_amount_remaining'],
+            'totalAmount': invoice['total_amount'],
+            'totalNfsAmount': invoice['total_nsf_amount'],
+            'invoices': invoice['invoices'],
+            'invoiceNumber': '',
+            'businessName': '',
+            'account': {
+                'paymentPreference': {
+                    'bcOnlineAccountId': '123456'
+                }
+            },
+            'statement': {
+                'id': '123456'
+            }
+        }
+        invoice_pdf_dict = {
+            'templateName': 'non_sufficient_funds',
+            'reportName': 'non_sufficient_funds',
+            'templateVars': template_vars,
+            'populatePageNumber': True
+        }
+        current_app.logger.info('Invoice PDF Dict %s', invoice_pdf_dict)
+
+        pdf_response = OAuthService.post(current_app.config.get('REPORT_API_BASE_URL'),
+                                         kwargs['user'].bearer_token, AuthHeaderType.BEARER,
+                                         ContentType.JSON, invoice_pdf_dict)
+        print('🟢🟢🟢🟢🟢', pdf_response)
+        current_app.logger.debug('<OAuthService responded to generate_non_sufficient_funds_statement_pdf')
+
+        return pdf_response, invoice_pdf_dict.get('reportName')
