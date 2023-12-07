@@ -759,7 +759,7 @@ async def test_succesful_payment_reversal_ejv_reconciliations(session, app, stan
         invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
         assert invoice.disbursement_status_code is None
         assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
-        assert invoice.refund_date == datetime(2023, 5, 29) 
+        assert invoice.refund_date == datetime(2023, 5, 29)
         invoice_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
             inv_id, InvoiceReferenceStatus.COMPLETED.value
         )
