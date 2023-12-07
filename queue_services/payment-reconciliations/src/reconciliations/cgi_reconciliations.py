@@ -201,7 +201,8 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
                     .find_by_id(debit_distribution.disbursement_distribution_code_id)
                 credit_distribution.stop_ejv = True
         else:
-            await _update_invoice_disbursement_status(invoice)
+            effective_date = datetime.strptime(line[22:30], '%Y%m%d')
+            await _update_invoice_disbursement_status(invoice, effective_date)
 
     elif line[104:105] == 'D' and ejv_file.file_type == EjvFileType.PAYMENT.value:
         # This is for gov account payment JV.
@@ -223,9 +224,10 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
             dist_code.stop_ejv = True
         elif invoice_link.disbursement_status_code == DisbursementStatus.COMPLETED.value:
             # Set the invoice status as REFUNDED if it's a JV reversal, else mark as PAID
+            effective_date = datetime.strptime(line[22:30], '%Y%m%d')
             is_reversal = invoice.invoice_status_code in (
                 InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
-            _set_invoice_jv_reversal(invoice, is_reversal)
+            _set_invoice_jv_reversal(invoice, effective_date, is_reversal)
 
             # Mark the invoice reference as COMPLETED, create a receipt
             if inv_ref:
@@ -242,15 +244,15 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
     return has_errors
 
 
-def _set_invoice_jv_reversal(invoice: InvoiceModel, is_reversal: bool):
+def _set_invoice_jv_reversal(invoice: InvoiceModel, effective_date: datetime, is_reversal: bool):
     # Set the invoice status as REFUNDED if it's a JV reversal, else mark as PAID
     if is_reversal:
         invoice.invoice_status_code = InvoiceStatus.REFUNDED.value
-        invoice.refund_date = datetime.now()
+        invoice.refund_date = effective_date
     else:
         invoice.invoice_status_code = InvoiceStatus.PAID.value
-        invoice.payment_date = datetime.now()
-        invoice.paid = invoice.total
+        invoice.payment_date = effective_date
+        invoice.paid = invoice.total 
 
 
 def _fix_invoice_line(line):
@@ -262,9 +264,9 @@ def _fix_invoice_line(line):
     return line
 
 
-async def _update_invoice_disbursement_status(invoice):
+async def _update_invoice_disbursement_status(invoice, effective_date: datetime):
     """Update status to reversed if its a refund, else to completed."""
-    invoice.disbursement_date = datetime.now()
+    invoice.disbursement_date = effective_date
     if invoice.invoice_status_code in (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value):
         invoice.disbursement_status_code = DisbursementStatus.REVERSED.value
     else:
@@ -413,7 +415,8 @@ async def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) 
         capture_message(f'AP - NON-GOV - Disbursement failed for {invoice_id}, reason : {ap_header_error_message}',
                         level='error')
     else:
-        await _update_invoice_disbursement_status(invoice)
+        # TODO - Fix this on BC Assessment launch, so the effective date reads from the feedback.
+        await _update_invoice_disbursement_status(invoice, effective_date=datetime.now())
         if invoice.invoice_status_code != InvoiceStatus.PAID.value:
             refund = RefundModel.find_by_invoice_id(invoice.id)
             refund.gl_posted = datetime.now()
