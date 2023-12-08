@@ -143,7 +143,7 @@ def execute_notebook(notebookdirectory: str, data_dir: str, partner_code: str = 
             send_email(file, 'ERROR', traceback.format_exc())
 
 
-def get_partner_recipients(file_processing:str, partner_code: str) -> str:
+def get_partner_recipients(file_processing: str, partner_code: str) -> str:
     """Get email recipients for a partner."""
     if 'reconciliation_details' in file_processing:
         return getattr(Config, f'{partner_code.upper()}_DAILY_RECONCILIATION_RECIPIENTS', '')
