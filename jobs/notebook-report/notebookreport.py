@@ -45,7 +45,7 @@ def findfiles(directory, pattern):
             yield os.path.join(directory, filename)
 
 
-def send_email(file_processing, emailtype, errormessage, partner_code=None):  # pylint: disable = too-many-locals
+def send_email(file_processing, emailtype, errormessage, partner_code=None):
     """Send email for results."""
     message = MIMEMultipart()
     date_str = datetime.strftime(datetime.now() - timedelta(1), '%Y-%m-%d')
@@ -75,7 +75,19 @@ def send_email(file_processing, emailtype, errormessage, partner_code=None):  # 
 
     # Add body to email
     message.attach(MIMEText('Please see the attachment(s).', 'plain'))
+    process_email_attachments(filenames, message)
 
+    message['Subject'] = subject
+    server = smtplib.SMTP(Config.EMAIL_SMTP)
+    email_list = recipients.strip('][').split(', ')
+    logging.info('Email recipients list is: %s', email_list)
+    server.sendmail(Config.SENDER_EMAIL, email_list, message.as_string())
+    logging.info("Email with subject \'%s\' has been sent successfully!", subject)
+    server.quit()
+
+
+def process_email_attachments(filenames, message):
+    """Process email attachments."""
     for file in filenames:
         part = MIMEBase('application', 'octet-stream')
         part.add_header(
@@ -87,14 +99,6 @@ def send_email(file_processing, emailtype, errormessage, partner_code=None):  # 
             part.set_payload(attachment.read())
         encoders.encode_base64(part)
         message.attach(part)
-
-    message['Subject'] = subject
-    server = smtplib.SMTP(Config.EMAIL_SMTP)
-    email_list = recipients.strip('][').split(', ')
-    logging.info('Email recipients list is: %s', email_list)
-    server.sendmail(Config.SENDER_EMAIL, email_list, message.as_string())
-    logging.info("Email with subject \'%s\' has been sent successfully!", subject)
-    server.quit()
 
 
 def process_partner_notebooks(notebookdirectory: str, data_dir: str, partner_code: str):
