@@ -23,6 +23,7 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import InvoiceSchema, NonSufficientFundsModel, NonSufficientFundsSchema
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import PaymentSchema, db
 from pay_api.utils.user_context import user_context
 from pay_api.utils.enums import (
@@ -132,13 +133,13 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def query_all_non_sufficient_funds_invoices(account_id: str):
         """Return all Non-Sufficient Funds invoices."""
-        query = db.session.query(PaymentModel, InvoiceModel) \
+        query = db.session.query(PaymentModel, InvoiceModel, PaymentLineItemModel) \
             .join(PaymentAccountModel, PaymentAccountModel.id == PaymentModel.payment_account_id) \
             .outerjoin(InvoiceReferenceModel, InvoiceReferenceModel.invoice_number == PaymentModel.invoice_number) \
             .outerjoin(InvoiceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id) \
-            .join(NonSufficientFundsModel, InvoiceModel.id == NonSufficientFundsModel.invoice_id) \
+            .join(PaymentLineItemModel, PaymentLineItemModel.invoice_id == InvoiceModel.id) \
+            .join(NonSufficientFundsModel, NonSufficientFundsModel.invoice_id == InvoiceModel.id ) \
             .filter(PaymentAccountModel.auth_account_id == account_id) \
-            .filter(PaymentModel.paid_amount > 0) \
             .order_by(PaymentModel.id.asc())
 
         non_sufficient_funds_invoices = query.all()
@@ -157,21 +158,19 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
             'total_nsf_count': 0,
             'invoices': []
         }
-
-        for payment, invoice in results:
+        
+        accumulated['total_nsf_count'] = len(results)
+        for payment, invoice, paymentLineItem in results:
+            accumulated['total_nsf_amount'] += float(paymentLineItem.total)
             if payment.id != accumulated['last_payment_id']:
-                accumulated['total_amount_paid'] += payment.paid_amount
-                accumulated['total_amount_to_pay'] += invoice.total
-                nsf_line_items = [item for item in invoice.line_items if item.description == 'NSF']
-                accumulated['total_nsf_count'] += len(nsf_line_items)
-                accumulated['total_nsf_amount'] += sum(item.total for item in nsf_line_items)
+                accumulated['total_amount_paid'] += float(payment.paid_amount)
+                accumulated['total_amount_to_pay'] += float(invoice.total)
                 payment_dict = payment_schema.dump(payment)
                 payment_dict['invoices'] = [invoice_schema.dump(invoice)]
                 accumulated['invoices'].append(payment_dict)
             else:
                 accumulated['invoices'][-1]['invoices'].append(invoice_schema.dump(invoice))
             accumulated['last_payment_id'] = payment.id
-
         return accumulated
 
     @staticmethod
@@ -202,20 +201,16 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
 
         template_vars = {
             'suspendedOn': '',
-            'totalAmountRemaining': invoice['total_amount_remaining'],
-            'totalAmount': invoice['total_amount'],
-            'totalNfsAmount': invoice['total_nsf_amount'],
-            'invoices': invoice['invoices'],
-            'invoiceNumber': '',
             'businessName': '',
             'account': {
                 'paymentPreference': {
                     'bcOnlineAccountId': '123456'
                 }
             },
-            'statement': {
-                'id': '123456'
-            }
+            'totalAmountRemaining': invoice['total_amount_remaining'],
+            'totalAmount': invoice['total_amount'],
+            'totalNfsAmount': invoice['total_nsf_amount'],
+            'invoices': invoice['invoices']
         }
         invoice_pdf_dict = {
             'templateName': 'non_sufficient_funds',
