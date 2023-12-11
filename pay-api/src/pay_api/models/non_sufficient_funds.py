@@ -63,7 +63,7 @@ class NonSufficientFundsSchema(BaseSchema):  # pylint: disable=too-many-ancestor
 
 
 @define
-class NonSufficientFundsSearchModel: # pylint: disable=too-few-public-methods
+class NonSufficientFundsSearchModel:
     """Used to search for NSF records."""
 
     id: int

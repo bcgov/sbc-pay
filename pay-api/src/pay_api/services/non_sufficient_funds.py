@@ -27,9 +27,9 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import PaymentSchema, db
+from pay_api.utils.enums import AuthHeaderType, ContentType
 from pay_api.utils.user_context import user_context
-from pay_api.utils.enums import (
-    AuthHeaderType, ContentType)
+
 from .oauth_service import OAuthService
 
 
@@ -135,7 +135,8 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def query_all_non_sufficient_funds_invoices(account_id: str):
         """Return all Non-Sufficient Funds invoices."""
-        query = db.session.query(PaymentModel, InvoiceModel, PaymentLineItemModel, NonSufficientFundsModel, InvoiceReferenceModel) \
+        query = db.session.query(
+            PaymentModel, InvoiceModel, PaymentLineItemModel, NonSufficientFundsModel, InvoiceReferenceModel) \
             .join(InvoiceReferenceModel, PaymentModel.invoice_number == InvoiceReferenceModel.invoice_number) \
             .join(InvoiceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id) \
             .join(PaymentAccountModel, PaymentAccountModel.id == PaymentModel.payment_account_id) \
@@ -152,7 +153,7 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def accumulate_totals(results, payment_schema, invoice_schema):
-        """Accumulate payment and invoice totals"""
+        """Accumulate payment and invoice totals."""
         accumulated = {
             'last_payment_id': None,
             'last_invoice_id': None,
@@ -190,7 +191,7 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
                     payment_dict['invoices'] = []
 
                 invoice_dump = invoice_schema.dump(invoice)
-                invoice_dump['created_on'] = invoice.created_on.strftime("%B %d, %Y")
+                invoice_dump['created_on'] = invoice.created_on.strftime('%B %d, %Y')
 
                 if not any(inv['id'] == invoice_dump['id'] for inv in payment_dict['invoices']):
                     payment_dict['invoices'].append(invoice_dump)
@@ -234,13 +235,12 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
         cfs_account: CfsAccountModel = CfsAccountModel.find_by_account_id(account_id)
 
         account_url = current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{account_id}'
-        account = OAuthService.get(endpoint=account_url,
-                                    token=kwargs['user'].bearer_token,
-                                    auth_header_type=AuthHeaderType.BEARER,
-                                    content_type=ContentType.JSON).json()
+        account = OAuthService.get(
+            endpoint=account_url, token=kwargs['user'].bearer_token,
+            auth_header_type=AuthHeaderType.BEARER, content_type=ContentType.JSON).json()
 
         template_vars = {
-            'suspendedOn': datetime.strptime(account['suspendedOn'], "%Y-%m-%dT%H:%M:%S%z").strftime("%B %d, %Y"),
+            'suspendedOn': datetime.strptime(account['suspendedOn'], '%Y-%m-%dT%H:%M:%S%z').strftime('%B %d, %Y'),
             'accountNumber': cfs_account[0].cfs_account,
             'businessName': account['businessName'],
             'totalAmountRemaining': invoice['total_amount_remaining'],
