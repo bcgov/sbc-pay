@@ -16,23 +16,28 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from flask import current_app
 from sentry_sdk import capture_message
+from sqlalchemy import func
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.models import AccountFee as AccountFeeModel
 from pay_api.models import AccountFeeSchema
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentAccountSchema
 from pay_api.models import StatementSettings as StatementSettingsModel
+from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.queue_publisher import publish_response
-from pay_api.utils.enums import CfsAccountStatus, MessageType, PaymentMethod, PaymentSystem, StatementFrequency
+from pay_api.services.statement_settings import StatementSettings
+from pay_api.utils.enums import (
+    CfsAccountStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentSystem, StatementFrequency)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
@@ -351,6 +356,20 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return payment_account
 
     @classmethod
+    def _check_and_update_statement_settings(cls, payment_account: PaymentAccountModel):
+        """Check and update statement settings based on payment method."""
+        # On create of a payment account _persist_default_statement_frequency() is used, so we
+        # will only check if an update is needed if statement settings already exists - i.e an update
+        if payment_account and payment_account.payment_method == PaymentMethod.EFT.value:
+            # EFT payment method should automatically set statement frequency to MONTHLY
+            auth_account_id = str(payment_account.auth_account_id)
+            statements_settings: StatementSettingsModel = StatementSettingsModel\
+                .find_active_settings(auth_account_id, datetime.today())
+
+            if statements_settings is not None and statements_settings.frequency != StatementFrequency.MONTHLY.value:
+                StatementSettings.update_statement_settings(auth_account_id, StatementFrequency.MONTHLY.value)
+
+    @classmethod
     def _save_account(cls, account_request: Dict[str, any], payment_account: PaymentAccountModel,
                       is_sandbox: bool = False):
         """Update and save payment account and CFS account model."""
@@ -388,6 +407,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         if payment_method:
             pay_system = PaymentSystemFactory.create_from_payment_method(payment_method=payment_method)
             cls._handle_payment_details(account_request, is_sandbox, pay_system, payment_account, payment_info)
+            cls._check_and_update_statement_settings(payment_account)
         payment_account.save()
 
     @classmethod
@@ -475,6 +495,12 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return AccountFeeSchema().dump(AccountFeeModel.find_by_account_id_and_product(payment_account.id, product))
 
     @classmethod
+    def delete_account_fees(cls, auth_account_id: str):
+        """Remove all account fees for the account."""
+        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        _ = [account_fee.delete() for account_fee in AccountFeeModel.find_by_account_id(payment_account.id)]
+
+    @classmethod
     def _create_or_update_account_fee(cls, fee: dict, payment_account: PaymentAccountModel, product: str):
         # Save or update the fee, first lookup and see if the fees exist.
         account_fee = AccountFeeModel.find_by_account_id_and_product(
@@ -526,8 +552,15 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
     @staticmethod
     def _persist_default_statement_frequency(payment_account_id):
+        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(payment_account_id)
+        frequency = StatementFrequency.default_frequency().value
+
+        # EFT Payment method default to MONTHLY frequency
+        if payment_account.payment_method == PaymentMethod.EFT.value:
+            frequency = StatementFrequency.MONTHLY.value
+
         statement_settings_model = StatementSettingsModel(
-            frequency=StatementFrequency.default_frequency().value,
+            frequency=frequency,
             payment_account_id=payment_account_id
         )
         statement_settings_model.save()
@@ -557,6 +590,53 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         account = PaymentAccount()
         account._dao = PaymentAccountModel.find_by_id(account_id)  # pylint: disable=protected-access
         return account
+
+    @classmethod
+    def get_eft_credit_balance(cls, account_id: int) -> Decimal:
+        """Calculate pay account eft balance by account id."""
+        result = db.session.query(func.sum(EFTCreditModel.remaining_amount).label('credit_balance')) \
+            .filter(EFTCreditModel.payment_account_id == account_id) \
+            .group_by(EFTCreditModel.payment_account_id) \
+            .one_or_none()
+
+        return Decimal(result.credit_balance) if result else 0
+
+    @classmethod
+    def deduct_eft_credit(cls, invoice: InvoiceModel):
+        """Deduct EFT credit and update remaining credit records."""
+        eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel) \
+            .filter(EFTCreditModel.remaining_amount > 0) \
+            .filter(EFTCreditModel.payment_account_id == invoice.payment_account_id)\
+            .order_by(EFTCreditModel.created_on.asc())\
+            .all()
+
+        # Calculate invoice balance
+        invoice_balance = invoice.total - (invoice.paid or 0)
+
+        # Deduct credits and apply to the invoice
+        now = datetime.now()
+        for eft_credit in eft_credits:
+            if eft_credit.remaining_amount >= invoice_balance:
+                # Credit covers the full invoice balance
+                eft_credit.remaining_amount -= invoice_balance
+                eft_credit.save()
+
+                invoice.payment_date = now
+                invoice.paid = invoice.total
+                invoice.invoice_status_code = InvoiceStatus.PAID.value
+                invoice.save()
+                break
+
+            # Credit covers partial invoice balance
+            invoice_balance -= eft_credit.remaining_amount
+            invoice.payment_date = now
+            invoice.paid += eft_credit.remaining_amount
+            invoice.invoice_status_code = InvoiceStatus.PARTIAL.value
+
+            eft_credit.remaining_amount = 0
+            eft_credit.save()
+
+        invoice.save()
 
     @staticmethod
     def _calculate_activation_date():

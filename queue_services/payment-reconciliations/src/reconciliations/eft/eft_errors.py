@@ -31,4 +31,4 @@ class EFTError(Enum):
     INVALID_DEPOSIT_AMOUNT_CAD = 'Invalid transaction deposit amount CAD.'
     INVALID_TRANSACTION_DATE = 'Invalid transaction date.'
     INVALID_DEPOSIT_DATETIME = 'Invalid transaction deposit date time'
-    BCROS_ACCOUNT_NUMBER_REQUIRED = 'BCROS Account number is missing from the transaction description.'
+    ACCOUNT_SHORTNAME_REQUIRED = 'Account shortname is missing from the transaction description.'

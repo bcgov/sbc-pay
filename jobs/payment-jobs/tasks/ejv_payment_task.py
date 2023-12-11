@@ -112,6 +112,9 @@ class EjvPaymentTask(CgiEjv):
                     inv_ref.status_code = InvoiceReferenceStatus.CANCELLED.value
 
                 line_items = inv.payment_line_items
+                invoice_number = f'#{inv.id}'
+                description = disbursement_desc[:-len(invoice_number)] + invoice_number
+                description = f'{description[:100]:<100}'
 
                 for line in line_items:
                     # Line can have 2 distribution, 1 for the total and another one for service fees.
@@ -126,7 +129,7 @@ class EjvPaymentTask(CgiEjv):
                         control_total += 1
                         # If it's normal payment then the Line distribution goes as Credit,
                         # else it goes as Debit as we need to debit the fund from BC registry GL.
-                        account_jv = account_jv + cls.get_jv_line(batch_type, line_distribution, disbursement_desc,
+                        account_jv = account_jv + cls.get_jv_line(batch_type, line_distribution, description,
                                                                   effective_date, flow_through, journal_name,
                                                                   line.total,
                                                                   line_number, 'C' if not is_jv_reversal else 'D')
@@ -136,7 +139,7 @@ class EjvPaymentTask(CgiEjv):
                         control_total += 1
                         # If it's normal payment then the Gov account GL goes as Debit,
                         # else it goes as Credit as we need to credit the fund back to ministry.
-                        account_jv = account_jv + cls.get_jv_line(batch_type, debit_distribution, disbursement_desc,
+                        account_jv = account_jv + cls.get_jv_line(batch_type, debit_distribution, description,
                                                                   effective_date, flow_through, journal_name,
                                                                   line.total,
                                                                   line_number, 'D' if not is_jv_reversal else 'C')
@@ -150,7 +153,7 @@ class EjvPaymentTask(CgiEjv):
                         line_number += 1
                         control_total += 1
                         account_jv = account_jv + cls.get_jv_line(batch_type, service_fee_distribution,
-                                                                  disbursement_desc,
+                                                                  description,
                                                                   effective_date, flow_through, journal_name,
                                                                   line.service_fees,
                                                                   line_number, 'C' if not is_jv_reversal else 'D')
@@ -158,7 +161,7 @@ class EjvPaymentTask(CgiEjv):
                         # Debit from GOV ACCOUNT GL
                         line_number += 1
                         control_total += 1
-                        account_jv = account_jv + cls.get_jv_line(batch_type, debit_distribution, disbursement_desc,
+                        account_jv = account_jv + cls.get_jv_line(batch_type, debit_distribution, description,
                                                                   effective_date, flow_through, journal_name,
                                                                   line.service_fees,
                                                                   line_number, 'D' if not is_jv_reversal else 'C')
@@ -174,12 +177,15 @@ class EjvPaymentTask(CgiEjv):
 
             # Create ejv invoice link records and set invoice status
             current_app.logger.info('Creating ejv invoice link records and setting invoice status.')
+            sequence = 1
             for inv in invoices:
                 current_app.logger.debug(f'Creating EJV Invoice Link for invoice id: {inv.id}')
                 # Create Ejv file link and flush
                 ejv_invoice_link = EjvInvoiceLinkModel(invoice_id=inv.id, ejv_header_id=ejv_header_model.id,
-                                                       disbursement_status_code=DisbursementStatus.UPLOADED.value)
+                                                       disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                                       sequence=sequence)
                 db.session.add(ejv_invoice_link)
+                sequence += 1
                 # Set distribution status to invoice
                 # Create invoice reference record
                 current_app.logger.debug(f'Creating Invoice Reference for invoice id: {inv.id}')

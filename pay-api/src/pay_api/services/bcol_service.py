@@ -147,7 +147,8 @@ class BcolService(PaymentSystemService, OAuthService):
         """Return CC as the method code."""
         return PaymentMethod.DRAWDOWN.value
 
-    def process_cfs_refund(self, invoice: InvoiceModel):
+    def process_cfs_refund(self, invoice: InvoiceModel,
+                           payment_account: PaymentAccount):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         self._publish_refund_to_mailer(invoice)
         payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)

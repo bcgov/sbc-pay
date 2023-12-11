@@ -23,8 +23,13 @@ import pytest
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import EFTFile as EFTFileModel
+from pay_api.models import EFTCredit as EFTCreditModel
+from pay_api.models import EFTShortnames as EFTShortnameModel
+from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
-from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, StatementFrequency
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_outstanding_txns_from_date
 from tests.utilities.base_test import (
@@ -257,3 +262,116 @@ def test_patch_account(session, payload):
     # Try to find the account by id.
     pay_account = PaymentAccountService.find_by_id(pay_account.id)
     assert pay_account.eft_enable is True
+
+
+def test_payment_request_eft_with_credit(session, client, jwt, app):
+    """Assert EFT credits can be properly applied."""
+    payment_account: PaymentAccountService = PaymentAccountService.create(
+        get_premium_account_payload(payment_method=PaymentMethod.EFT.value))
+
+    # Set up EFT credit records
+    eft_file = EFTFileModel()
+    eft_file.file_ref = 'test.txt'
+    eft_file.save()
+
+    # Set up short name
+    eft_short_name = EFTShortnameModel()
+    eft_short_name.short_name = 'TESTSHORTNAME'
+    eft_short_name.save()
+
+    eft_credit_1 = EFTCreditModel()
+    eft_credit_1.eft_file_id = eft_file.id
+    eft_credit_1.payment_account_id = payment_account.id
+    eft_credit_1.amount = 50
+    eft_credit_1.remaining_amount = 50
+    eft_credit_1.short_name_id = eft_short_name.id
+    eft_credit_1.save()
+
+    eft_credit_2 = EFTCreditModel()
+    eft_credit_2.eft_file_id = eft_file.id
+    eft_credit_2.payment_account_id = payment_account.id
+    eft_credit_2.amount = 45.50
+    eft_credit_2.remaining_amount = 45.50
+    eft_credit_2.short_name_id = eft_short_name.id
+    eft_credit_2.save()
+
+    # Create invoice to use credit on
+    invoice = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
+                              total=50, paid=0).save()
+    payment_account.deduct_eft_credit(invoice)
+
+    invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
+    assert invoice is not None
+    assert invoice.paid == 50
+    assert invoice.total == 50
+    assert invoice.invoice_status_code == InvoiceStatus.PAID.value
+    assert eft_credit_1.remaining_amount == 0
+    assert eft_credit_2.remaining_amount == 45.50
+
+    # Test partial paid with credit
+    invoice = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
+                              total=50, paid=0).save()
+    payment_account.deduct_eft_credit(invoice)
+
+    invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
+    assert invoice is not None
+    assert invoice.paid == 45.50
+    assert invoice.total == 50
+    assert invoice.invoice_status_code == InvoiceStatus.PARTIAL.value
+    assert eft_credit_1.remaining_amount == 0
+    assert eft_credit_2.remaining_amount == 0
+
+    # Increase credit and test for left over balance
+    eft_credit_2.amount = 60
+    eft_credit_2.remaining_amount = 14.50
+    eft_credit_2.save()
+
+    # Apply credit to the previous partial invoice
+    payment_account.deduct_eft_credit(invoice)
+    invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
+
+    # Assert invoice is now paid and there is a credit balance remaining
+    assert invoice is not None
+    assert invoice.paid == 50
+    assert invoice.total == 50
+    assert invoice.invoice_status_code == InvoiceStatus.PAID.value
+    assert eft_credit_1.remaining_amount == 0
+    assert eft_credit_2.remaining_amount == 10
+
+
+def test_eft_payment_method_settings(session, client, jwt, app):
+    """Assert EFT payment method statement settings are applied."""
+    # Validate on account create with EFT payment method that statement settings are automatically set to MONTHLY
+    payment_account: PaymentAccountService = PaymentAccountService.create(
+        get_premium_account_payload(payment_method=PaymentMethod.EFT.value))
+
+    assert payment_account is not None
+    assert payment_account.payment_method == PaymentMethod.EFT.value
+
+    statement_settings: StatementSettingsModel = StatementSettingsModel\
+        .find_active_settings(str(payment_account.auth_account_id), datetime.today())
+
+    assert statement_settings is not None
+    assert statement_settings.frequency == StatementFrequency.MONTHLY.value
+
+    # Validate on account update to EFT payment method that statement settings are automatically set to MONTHLY
+    payment_account_2: PaymentAccountService = PaymentAccountService.create(
+        get_premium_account_payload(account_id=payment_account.id + 1,
+                                    payment_method=PaymentMethod.ONLINE_BANKING.value))
+
+    assert payment_account_2 is not None
+    assert payment_account_2.payment_method == PaymentMethod.ONLINE_BANKING.value
+
+    payment_account_2 = PaymentAccountService\
+        .update(payment_account_2.auth_account_id,
+                get_eft_enable_account_payload(payment_method=PaymentMethod.EFT.value,
+                                               account_id=payment_account_2.auth_account_id))
+
+    assert payment_account_2 is not None
+    assert payment_account_2.payment_method == PaymentMethod.EFT.value
+
+    statement_settings: StatementSettingsModel = StatementSettingsModel \
+        .find_latest_settings(str(payment_account_2.auth_account_id))
+
+    assert statement_settings is not None
+    assert statement_settings.frequency == StatementFrequency.MONTHLY.value

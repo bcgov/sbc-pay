@@ -79,7 +79,7 @@ def test_preflight_account(app, client, jwt, session):
     rv = client.options('/api/v1/accounts/1/fees',
                         headers={'Access-Control-Request-Method': 'GET'})
     assert rv.status_code == 200
-    assert_access_control_headers(rv, '*', 'GET, POST')
+    assert_access_control_headers(rv, '*', 'DELETE, GET, POST')
 
     rv = client.options('/api/v1/accounts/1/fees/PRODUCT_CODE',
                         headers={'Access-Control-Request-Method': 'PUT'})
@@ -215,6 +215,19 @@ def test_preflight_refund(app, client, jwt, session):
     rv = client.options('/api/v1/payment-requests/1/refunds', headers={'Access-Control-Request-Method': 'POST'})
     assert rv.status_code == 200
     assert_access_control_headers(rv, '*', 'POST')
+
+
+def test_preflight_eft_shortnames(app, client, jwt, session):
+    """Assert preflight responses for eft shortnames are correct."""
+    rv = client.options('/api/v1/eft-shortnames',
+                        headers={'Access-Control-Request-Method': 'GET'})
+    assert rv.status_code == 200
+    assert_access_control_headers(rv, '*', 'GET')
+
+    rv = client.options('/api/v1/eft-shortnames/1',
+                        headers={'Access-Control-Request-Method': 'GET'})
+    assert rv.status_code == 200
+    assert_access_control_headers(rv, '*', 'GET, PATCH')
 
 
 def assert_access_control_headers(rv, origins: str, methods: str):

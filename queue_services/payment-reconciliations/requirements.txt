@@ -1,6 +1,6 @@
 -e git+https://github.com/bcgov/lear.git@30dba30463c99aaedfdcfd463213e71ba0d35b51#egg=entity_queue_common&subdirectory=queue_services/common
 -e git+https://github.com/bcgov/sbc-common-components.git@b93585ea3ac273b9e51c4dd5ddbc8190fd95da6a#egg=sbc_common_components&subdirectory=python
--e git+https://github.com/bcgov/sbc-pay.git@2e4373b8a9280d64737f7b6ed172831ba4e541d2#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-pay.git@951df024496956194ecdfb68325f3631d5db0808#egg=pay_api&subdirectory=pay-api
 Flask-Caching==2.0.2
 Flask-Migrate==2.7.0
 Flask-Moment==1.0.5
@@ -16,7 +16,7 @@ SQLAlchemy-Continuum==1.3.15
 SQLAlchemy-Utils==0.41.1
 SQLAlchemy==1.3.24
 Werkzeug==1.0.1
-aiohttp==3.8.5
+aiohttp==3.9.0
 aiosignal==1.3.1
 alembic==1.11.1
 aniso8601==9.0.1
@@ -34,7 +34,7 @@ charset-normalizer==3.1.0
 click==8.1.3
 convertdate==2.4.0
 croniter==1.4.1
-cryptography==41.0.4
+cryptography==41.0.6
 dpath==2.1.6
 ecdsa==0.18.0
 exceptiongroup==1.1.1

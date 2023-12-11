@@ -174,8 +174,11 @@ class EjvPartnerDistributionTask(CgiEjv):
                     is_reversal = InvoiceModel.find_by_id(line.invoice_id).invoice_status_code in \
                         (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
 
+                    invoice_number = f'#{line.invoice_id}'
+                    description = disbursement_desc[:-len(invoice_number)] + invoice_number
+                    description = f'{description[:100]:<100}'
                     ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
-                                                cls.get_jv_line(batch_type, credit_distribution, disbursement_desc,
+                                                cls.get_jv_line(batch_type, credit_distribution, description,
                                                                 effective_date, flow_through, journal_name, line.total,
                                                                 line_number, 'C' if not is_reversal else 'D'))
                     line_number += 1
@@ -183,20 +186,23 @@ class EjvPartnerDistributionTask(CgiEjv):
 
                     # Add a line here for debit too
                     ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
-                                                cls.get_jv_line(batch_type, debit_distribution, disbursement_desc,
+                                                cls.get_jv_line(batch_type, debit_distribution, description,
                                                                 effective_date, flow_through, journal_name, line.total,
                                                                 line_number, 'D' if not is_reversal else 'C'))
 
                     control_total += 1
 
+            sequence = 1
             # Create ejv invoice link records and set invoice status
             for inv in invoices:
                 # Create Ejv file link and flush
                 link_model = EjvInvoiceLinkModel(invoice_id=inv.id,
                                                  ejv_header_id=ejv_header_model.id,
-                                                 disbursement_status_code=DisbursementStatus.UPLOADED.value)
+                                                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                                 sequence=sequence)
                 # Set distribution status to invoice
                 db.session.add(link_model)
+                sequence += 1
                 inv.disbursement_status_code = DisbursementStatus.UPLOADED.value
 
             db.session.flush()

@@ -192,7 +192,7 @@ def test_process_cfs_refund_success(monkeypatch):
 
     direct_pay_service = DirectPayService()
 
-    direct_pay_service.process_cfs_refund(invoice)
+    direct_pay_service.process_cfs_refund(invoice, payment_account)
     assert True
 
 
@@ -208,7 +208,7 @@ def test_process_cfs_refund_bad_request():
     invoice.save()
     direct_pay_service = DirectPayService()
     with pytest.raises(BusinessException) as excinfo:
-        direct_pay_service.process_cfs_refund(invoice)
+        direct_pay_service.process_cfs_refund(invoice, payment_account)
         assert excinfo.value.code == Error.INVALID_REQUEST.name
 
 
@@ -241,7 +241,7 @@ def test_process_cfs_refund_duplicate_refund(monkeypatch):
             ]
         }
         with pytest.raises(HTTPError) as excinfo:
-            direct_pay_service.process_cfs_refund(invoice)
+            direct_pay_service.process_cfs_refund(invoice, payment_account)
             assert invoice.invoice_status_code == InvoiceStatus.PAID.value
 
     with patch('pay_api.services.oauth_service.requests.post') as mock_post:
@@ -257,5 +257,5 @@ def test_process_cfs_refund_duplicate_refund(monkeypatch):
             'txnNumber': 'REGT00005433'
         }
         with pytest.raises(BusinessException) as excinfo:
-            direct_pay_service.process_cfs_refund(invoice)
+            direct_pay_service.process_cfs_refund(invoice, payment_account)
             assert excinfo.value.code == Error.DIRECT_PAY_INVALID_RESPONSE.name

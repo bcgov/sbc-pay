@@ -66,6 +66,7 @@ class OnlineBankingService(PaymentSystemService, CFSService):
         current_app.logger.debug('<cancel_invoice %s, %s', payment_account, inv_number)
         self.reverse_invoice(inv_number)
 
-    def process_cfs_refund(self, invoice: InvoiceModel):
+    def process_cfs_refund(self, invoice: InvoiceModel,
+                           payment_account: PaymentAccount):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         return super()._refund_and_create_credit_memo(invoice)

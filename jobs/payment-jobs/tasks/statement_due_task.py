@@ -24,11 +24,11 @@ from pay_api.models.statement_settings import StatementSettings as StatementSett
 from pay_api.services.flags import flags
 from pay_api.services.statement import Statement
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
-from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month
+from pay_api.utils.util import current_local_time, get_local_time
 from sentry_sdk import capture_message
-from sqlalchemy import Date
+from sqlalchemy import func
 
-from utils.mailer import publish_payment_notification
+from utils.mailer import StatementNotificationInfo, publish_payment_notification
 
 
 class StatementDueTask:
@@ -47,18 +47,20 @@ class StatementDueTask:
             cls._notify_for_monthly()
 
             # Set overdue status for invoices
-            if current_local_time().date().day == 1:
-                cls._update_invoice_overdue_status()
+            cls._update_invoice_overdue_status()
 
     @classmethod
     def _update_invoice_overdue_status(cls):
         """Update the status of any invoices that are overdue."""
+        legislative_timezone = current_app.config.get('LEGISLATIVE_TIMEZONE')
+        overdue_datetime = func.timezone(legislative_timezone, func.timezone('UTC', InvoiceModel.overdue_date))
+
         unpaid_status = (
             InvoiceStatus.SETTLEMENT_SCHEDULED.value, InvoiceStatus.PARTIAL.value, InvoiceStatus.CREATED.value)
-        db.session.query(InvoiceModel)\
+        db.session.query(InvoiceModel) \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value,
                     InvoiceModel.overdue_date.isnot(None),
-                    InvoiceModel.overdue_date.cast(Date) <= current_local_time().date(),
+                    func.date(overdue_datetime) <= current_local_time().date(),
                     InvoiceModel.invoice_status_code.in_(unpaid_status))\
             .update({InvoiceModel.invoice_status_code: InvoiceStatus.OVERDUE.value}, synchronize_session='fetch')
 
@@ -67,23 +69,28 @@ class StatementDueTask:
     @classmethod
     def _notify_for_monthly(cls):
         """Notify for unpaid monthly statements with an amount owing."""
-        # Check if we need to send a notification
-        send_notification, is_due, last_day, previous_month = cls.determine_to_notify_and_is_due()
+        previous_month = current_local_time().replace(day=1) - timedelta(days=1)
+        statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_month,
+                                                                                        StatementFrequency.MONTHLY)
 
-        if send_notification:
-            statement_settings = StatementSettingsModel.find_accounts_settings_by_frequency(previous_month,
-                                                                                            StatementFrequency.MONTHLY)
-            auth_account_ids = [pay_account.auth_account_id for _, pay_account in statement_settings]
+        # Get EFT auth account ids for statements
+        auth_account_ids = [pay_account.auth_account_id for _, pay_account in statement_settings
+                            if pay_account.payment_method == PaymentMethod.EFT.value]
 
-            for account_id in auth_account_ids:
-                try:
-                    # Get the most recent monthly statement
-                    statement = cls.find_most_recent_statement(account_id, StatementFrequency.MONTHLY.value)
+        current_app.logger.info(f'Processing {len(auth_account_ids)} EFT accounts for monthly reminders.')
+
+        for account_id in auth_account_ids:
+            try:
+                # Get the most recent monthly statement
+                statement = cls.find_most_recent_statement(account_id, StatementFrequency.MONTHLY.value)
+                invoices: [InvoiceModel] = StatementModel.find_all_payments_and_invoices_for_statement(statement.id)
+                # check if there is an unpaid statement invoice that requires a reminder
+                send_notification, is_due, due_date = cls.determine_to_notify_and_is_due(invoices)
+
+                if send_notification:
                     summary = Statement.get_summary(account_id, statement.id)
-                    payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(statement.payment_account_id)
-
-                    # Send payment notification if payment account is using EFT and there is an amount owing
-                    if payment_account.payment_method == PaymentMethod.EFT.value and summary['total_due'] > 0:
+                    # Send payment notification if there is an amount owing
+                    if summary['total_due'] > 0:
                         recipients = StatementRecipientsModel. \
                             find_all_recipients_for_payment_id(statement.payment_account_id)
 
@@ -94,45 +101,64 @@ class StatementDueTask:
 
                         to_emails = ','.join([str(recipient.email) for recipient in recipients])
 
-                        publish_payment_notification(pay_account=payment_account,
-                                                     statement=statement,
-                                                     is_due=is_due,
-                                                     due_date=last_day.date(),
-                                                     emails=to_emails)
-                except Exception as e:  # NOQA # pylint: disable=broad-except
-                    capture_message(
-                        f'Error on unpaid statement notification auth_account_id={account_id}, '
-                        f'ERROR : {str(e)}', level='error')
-                    current_app.logger.error(e)
-                    continue
+                        publish_payment_notification(
+                            StatementNotificationInfo(auth_account_id=account_id,
+                                                      statement=statement,
+                                                      is_due=is_due,
+                                                      due_date=due_date,
+                                                      emails=to_emails,
+                                                      total_amount_owing=summary['total_due']))
+            except Exception as e:  # NOQA # pylint: disable=broad-except
+                capture_message(
+                    f'Error on unpaid statement notification auth_account_id={account_id}, '
+                    f'ERROR : {str(e)}', level='error')
+                current_app.logger.error(e)
+                continue
 
     @classmethod
     def find_most_recent_statement(cls, auth_account_id: str, statement_frequency: str) -> StatementModel:
         """Find all payment and invoices specific to a statement."""
         query = db.session.query(StatementModel) \
-            .join(PaymentAccountModel, PaymentAccountModel.auth_account_id == auth_account_id) \
+            .join(PaymentAccountModel) \
+            .filter(PaymentAccountModel.auth_account_id == auth_account_id) \
             .filter(StatementModel.frequency == statement_frequency) \
             .order_by(StatementModel.to_date.desc())
 
         return query.first()
 
     @classmethod
-    def determine_to_notify_and_is_due(cls):
+    def determine_to_notify_and_is_due(cls, invoices: [InvoiceModel]):
         """Determine whether a statement notification is required and due."""
-        now = current_local_time()
-        previous_month = now.replace(day=1) - timedelta(days=1)
+        unpaid_status = [InvoiceStatus.SETTLEMENT_SCHEDULED.value, InvoiceStatus.PARTIAL.value,
+                         InvoiceStatus.CREATED.value]
+        now = current_local_time().date()
         send_notification = False
         is_due = False
+        due_date = None
 
-        # Send payment notification if it is 7 days before the due date or on the due date
-        _, last_day = get_first_and_last_dates_of_month(now.month, now.year)
-        if last_day.date() == now.date():
-            # Last day of the month, send payment due
-            send_notification = True
-            is_due = True
-        elif now.date() == (last_day - timedelta(days=7)).date():
-            # 7 days from payment due date, send payment reminder
-            send_notification = True
-            is_due = False
+        invoice: InvoiceModel
+        for invoice in invoices:
+            if invoice.invoice_status_code not in unpaid_status or invoice.overdue_date is None:
+                continue
 
-        return send_notification, is_due, last_day, previous_month
+            invoice_due_date = get_local_time(invoice.overdue_date) \
+                .date() - timedelta(days=1)  # Day before invoice overdue date
+            invoice_reminder_date = invoice_due_date - timedelta(days=7)  # 7 days before invoice due date
+
+            # Send payment notification if it is 7 days before the overdue date or on the overdue date
+            if invoice_due_date == now:
+                # due today, send payment due
+                send_notification = True
+                is_due = True
+                due_date = invoice_due_date
+                current_app.logger.info(f'Found invoice due: {invoice.id}.')
+                break
+            if invoice_reminder_date == now:
+                # 7 days till due date, send payment reminder
+                send_notification = True
+                is_due = False
+                due_date = invoice_due_date
+                current_app.logger.info(f'Found invoice for 7 day reminder: {invoice.id}.')
+                break
+
+        return send_notification, is_due, due_date

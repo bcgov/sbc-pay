@@ -25,13 +25,16 @@ import pytest
 from faker import Faker
 from flask import Flask
 from freezegun import freeze_time
-from pay_api.models import Statement, StatementInvoices
+from pay_api.models import Statement as StatementModel
+from pay_api.models import StatementInvoices as StatementInvoicesModel
+from pay_api.services import Statement
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
 from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month, get_previous_month_and_year
 
 import config
 from tasks.statement_task import StatementTask
 from tasks.statement_due_task import StatementDueTask
+from utils.mailer import StatementNotificationInfo
 
 from .factory import (
     factory_create_account, factory_invoice, factory_invoice_reference, factory_statement_recipient,
@@ -97,14 +100,18 @@ def test_send_unpaid_statement_notification(setup, session):
         StatementTask.generate_statements()
 
     # Assert statements and invoice was created
-    statements = Statement.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
-                                                           limit=100)
+    statements = StatementModel.find_all_statements_for_account(auth_account_id=account.auth_account_id,
+                                                                page=1,
+                                                                limit=100)
     assert statements is not None
     assert len(statements) == 2  # items results and page total
     assert len(statements[0]) == 1  # items
-    invoices = StatementInvoices.find_all_invoices_for_statement(statements[0][0].id)
+    invoices = StatementInvoicesModel.find_all_invoices_for_statement(statements[0][0].id)
     assert invoices is not None
     assert invoices[0].invoice_id == invoice.id
+
+    summary = Statement.get_summary(account.auth_account_id, statements[0][0].id)
+    total_amount_owing = summary['total_due']
 
     with app.app_context():
         # Assert notification was published to the mailer queue
@@ -112,20 +119,22 @@ def test_send_unpaid_statement_notification(setup, session):
             # Freeze time to due date - trigger due notification
             with freeze_time(last_day):
                 StatementDueTask.process_unpaid_statements()
-                mock_mailer.assert_called_with(pay_account=account,
-                                               statement=statements[0][0],
-                                               is_due=True,
-                                               due_date=last_day.date(),
-                                               emails=statement_recipient.email)
+                mock_mailer.assert_called_with(StatementNotificationInfo(auth_account_id=account.auth_account_id,
+                                                                         statement=statements[0][0],
+                                                                         is_due=True,
+                                                                         due_date=last_day.date(),
+                                                                         emails=statement_recipient.email,
+                                                                         total_amount_owing=total_amount_owing))
 
             # Freeze time to due date - trigger reminder notification
             with freeze_time(last_day - timedelta(days=7)):
                 StatementDueTask.process_unpaid_statements()
-                mock_mailer.assert_called_with(pay_account=account,
-                                               statement=statements[0][0],
-                                               is_due=False,
-                                               due_date=last_day.date(),
-                                               emails=statement_recipient.email)
+                mock_mailer.assert_called_with(StatementNotificationInfo(auth_account_id=account.auth_account_id,
+                                                                         statement=statements[0][0],
+                                                                         is_due=False,
+                                                                         due_date=last_day.date(),
+                                                                         emails=statement_recipient.email,
+                                                                         total_amount_owing=total_amount_owing))
 
 
 def test_unpaid_statement_notification_not_sent(setup, session):

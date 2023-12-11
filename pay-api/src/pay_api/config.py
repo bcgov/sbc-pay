@@ -109,6 +109,9 @@ class _Config():  # pylint: disable=too-few-public-methods
     CFS_RECEIPT_PREFIX = os.getenv('CFS_RECEIPT_PREFIX', 'RCPT')
     CFS_PARTY_PREFIX = os.getenv('CFS_PARTY_PREFIX', 'BCR-')
 
+    # EFT Config
+    EFT_INVOICE_PREFIX = os.getenv('EFT_INVOICE_PREFIX', 'REG')
+
     # PAYBC Direct Pay Settings
     PAYBC_DIRECT_PAY_REF_NUMBER = _get_config('PAYBC_DIRECT_PAY_REF_NUMBER')
     PAYBC_DIRECT_PAY_API_KEY = _get_config('PAYBC_DIRECT_PAY_API_KEY')
