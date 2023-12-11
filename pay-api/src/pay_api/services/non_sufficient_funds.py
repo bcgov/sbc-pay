@@ -15,14 +15,13 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
 
 from flask import current_app
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
-from pay_api.models import InvoiceSchema, NonSufficientFundsModel, NonSufficientFundsSchema
+from pay_api.models import InvoiceSchema, NonSufficientFundsModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
@@ -33,89 +32,18 @@ from pay_api.utils.user_context import user_context
 from .oauth_service import OAuthService
 
 
-class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes,too-many-public-methods
+class NonSufficientFundsService:
     """Service to manage Non-Sufficient Funds related operations."""
 
     def __init__(self):
         """Initialize the service."""
-        self.__dao = None
-        self._id: int = None
-        self._invoice_id: int = None
-        self._description: Optional[str] = None
-
-    @property
-    def _dao(self):
-        if not self.__dao:
-            self.__dao = NonSufficientFundsModel()
-        return self.__dao
-
-    @_dao.setter
-    def _dao(self, value):
-        self.__dao = value
-        self.id: int = self._dao.id
-        self.invoice_id: int = self._dao.invoice_id
-        self.description: str = self._dao.description
-
-    @property
-    def id(self):
-        """Return the _id."""
-        return self._id
-
-    @id.setter
-    def id(self, value: int):
-        """Set the _id."""
-        self._id = value
-        self._dao.id = value
-
-    @property
-    def invoice_id(self):
-        """Return the _invoice_id."""
-        return self._invoice_id
-
-    @invoice_id.setter
-    def invoice_id(self, value: int):
-        """Set the _invoice_id."""
-        self._invoice_id = value
-        self._dao.invoice_id = value
-
-    @property
-    def description(self):
-        """Return the Non-Sufficient Funds description."""
-        return self._description
-
-    @description.setter
-    def description(self, value: str):
-        """Set the Non-Sufficient Funds description."""
-        self._description = value
-        self._dao.description = value
-
-    def commit(self):
-        """Save the information to the DB."""
-        return self._dao.commit()
-
-    def rollback(self):
-        """Rollback."""
-        return self._dao.rollback()
-
-    def flush(self):
-        """Save the information to the DB."""
-        return self._dao.flush()
-
-    def save(self):
-        """Save the information to the DB."""
-        return self._dao.save()
-
-    def asdict(self):
-        """Return the Non-Sufficient Funds as a python dict."""
-        non_sufficient_funds_schema = NonSufficientFundsSchema()
-        d = non_sufficient_funds_schema.dump(self._dao)
-        return d
+        self.dao = NonSufficientFundsModel()
 
     @staticmethod
     def populate(value: NonSufficientFundsModel):
         """Populate Non-Sufficient Funds Service."""
-        non_sufficient_funds_service: NonSufficientFundsService = NonSufficientFundsService()
-        non_sufficient_funds_service._dao = value  # pylint: disable=protected-access
+        non_sufficient_funds_service = NonSufficientFundsService()
+        non_sufficient_funds_service.dao = value
         return non_sufficient_funds_service
 
     @staticmethod
@@ -124,9 +52,9 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('<save_non_sufficient_funds')
         non_sufficient_funds_service = NonSufficientFundsService()
 
-        non_sufficient_funds_service.invoice_id = invoice_id
-        non_sufficient_funds_service.description = description
-        non_sufficient_funds_dao = non_sufficient_funds_service.save()
+        non_sufficient_funds_service.dao.invoice_id = invoice_id
+        non_sufficient_funds_service.dao.description = description
+        non_sufficient_funds_dao = non_sufficient_funds_service.dao.save()
 
         non_sufficient_funds_service = NonSufficientFundsService.populate(non_sufficient_funds_dao)
         current_app.logger.debug('>save_non_sufficient_funds')
