@@ -393,21 +393,22 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             recipients: [StatementRecipientModel] = StatementRecipientModel. \
                 find_all_recipients_for_payment_id(payment_account.id)
 
-            # Auto-populate recipients with current account admins if there are currently none
-            if not recipients:
-                org_admins_response = cls._get_account_admin_users(payment_account)
+            if recipients:
+                return
 
-                members = org_admins_response.get('members') if org_admins_response.get('members', None) else []
-                for member in members:
-                    if user := member.get('user'):
-                        if contacts := user.get('contacts'):
-                            StatementRecipientModel(
-                                auth_user_id=user.get('id'),
-                                firstname=user.get('firstname'),
-                                lastname=user.get('lastname'),
-                                email=contacts[0].get('email'),
-                                payment_account_id=payment_account.id
-                            ).save()
+            # Auto-populate recipients with current account admins if there are currently none
+            org_admins_response = cls._get_account_admin_users(payment_account)
+
+            members = org_admins_response.get('members') if org_admins_response.get('members', None) else []
+            for member in members:
+                if (user := member.get('user')) and (contacts := user.get('contacts')):
+                    StatementRecipientModel(
+                        auth_user_id=user.get('id'),
+                        firstname=user.get('firstname'),
+                        lastname=user.get('lastname'),
+                        email=contacts[0].get('email'),
+                        payment_account_id=payment_account.id
+                    ).save()
 
     @classmethod
     def _save_account(cls, account_request: Dict[str, any], payment_account: PaymentAccountModel,
