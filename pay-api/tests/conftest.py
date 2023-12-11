@@ -376,3 +376,33 @@ def premium_user_mock(monkeypatch):
 def rest_call_mock(monkeypatch):
     """Mock rest_call_mock."""
     monkeypatch.setattr('pay_api.services.oauth_service.OAuthService.post', lambda *args, **kwargs: None)
+
+
+@pytest.fixture()
+def admin_users_mock(monkeypatch):
+    """Mock auth rest call to get org admins."""
+    def _get_account_admin_users(payment_account):
+        return {
+            'members': [
+                {
+                    'id': 4048,
+                    'membershipStatus': 'ACTIVE',
+                    'membershipTypeCode': 'ADMIN',
+                    'user': {
+                        'contacts': [
+                            {
+                                'email': 'test@test.com',
+                                'phone': '(250) 111-2222',
+                                'phoneExtension': ''
+                            }
+                        ],
+                        'firstname': 'FIRST',
+                        'id': 18,
+                        'lastname': 'LAST',
+                        'loginSource': 'BCSC'
+                    }
+                }
+            ]
+        }
+    monkeypatch.setattr('pay_api.services.payment_account.PaymentAccount._get_account_admin_users',
+                        _get_account_admin_users)
