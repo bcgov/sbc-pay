@@ -45,7 +45,7 @@ def findfiles(directory, pattern):
             yield os.path.join(directory, filename)
 
 
-def send_email(file_processing, emailtype, errormessage):
+def send_email(file_processing, emailtype, errormessage, partner_code=None):
     """Send email for results."""
     message = MIMEMultipart()
     date_str = datetime.strftime(datetime.now() - timedelta(1), '%Y-%m-%d')
@@ -60,8 +60,8 @@ def send_email(file_processing, emailtype, errormessage):
     else:
         if 'reconciliation_details' in file_processing:
             subject = 'Daily Reconciliation Stats ' + date_str + ext
-            filenames = ['daily_reconciliation_' + date_str + '.csv']
-            recipients = Config.DAILY_RECONCILIATION_RECIPIENTS
+            filenames = [f'{partner_code}_daily_reconciliation_' + date_str + '.csv']
+            recipients = get_partner_recipients(file_processing, partner_code)
         elif 'pay' in file_processing:
             subject = 'Weekly PAY Stats till ' + date_str + ext
             filenames = ['weekly_pay_stats_till_' + date_str + '.csv']
@@ -69,13 +69,25 @@ def send_email(file_processing, emailtype, errormessage):
         elif 'reconciliation_summary' in file_processing:
             year_month = datetime.strftime(datetime.now() - timedelta(1), '%Y-%m')
             subject = 'Monthly Reconciliation Stats ' + year_month + ext
-            filenames = ['monthly_reconciliation_summary_' + year_month + '.csv',
-                         'monthly_reconciliation_disbursed_' + year_month + '.csv']
-            recipients = Config.MONTHLY_RECONCILIATION_RECIPIENTS
+            filenames = [f'{partner_code}_monthly_reconciliation_summary_' + year_month + '.csv',
+                         f'{partner_code}_monthly_reconciliation_disbursed_' + year_month + '.csv']
+            recipients = get_partner_recipients(file_processing, partner_code)
 
     # Add body to email
     message.attach(MIMEText('Please see the attachment(s).', 'plain'))
+    process_email_attachments(filenames, message)
 
+    message['Subject'] = subject
+    server = smtplib.SMTP(Config.EMAIL_SMTP)
+    email_list = recipients.strip('][').split(', ')
+    logging.info('Email recipients list is: %s', email_list)
+    server.sendmail(Config.SENDER_EMAIL, email_list, message.as_string())
+    logging.info("Email with subject \'%s\' has been sent successfully!", subject)
+    server.quit()
+
+
+def process_email_attachments(filenames, message):
+    """Process email attachments."""
     for file in filenames:
         part = MIMEBase('application', 'octet-stream')
         part.add_header(
@@ -88,40 +100,62 @@ def send_email(file_processing, emailtype, errormessage):
         encoders.encode_base64(part)
         message.attach(part)
 
-    message['Subject'] = subject
-    server = smtplib.SMTP(Config.EMAIL_SMTP)
-    email_list = recipients.strip('][').split(', ')
-    logging.info('Email recipients list is: %s', email_list)
-    server.sendmail(Config.SENDER_EMAIL, email_list, message.as_string())
-    logging.info("Email with subject \'%s\' has been sent successfully!", subject)
-    server.quit()
 
-
-def processnotebooks(notebookdirectory, data_dir):
-    """Process Notebook."""
-    logging.info('Start processing directory: %s', notebookdirectory)
+def process_partner_notebooks(notebookdirectory: str, data_dir: str, partner_code: str):
+    """Process Partner Notebook."""
+    logging.info('Start processing partner notebooks directory: %s', notebookdirectory)
 
     try:
-        weekly_report_dates = ast.literal_eval(Config.WEEKLY_REPORT_DATES)
         monthly_report_dates = ast.literal_eval(Config.MONTHLY_REPORT_DATES)
     except Exception:  # noqa: B902
         logging.exception('Error: %s.', notebookdirectory)
         send_email(notebookdirectory, 'ERROR', traceback.format_exc())
 
-    # Monday is 1 and Sunday is 7
     # First day of the month is 1
     if notebookdirectory == 'daily' \
-            or (notebookdirectory == 'weekly' and date.today().isoweekday() in weekly_report_dates) \
             or (notebookdirectory == 'monthly' and date.today().day in monthly_report_dates):
-        for file in findfiles(notebookdirectory, '*.ipynb'):
-            try:
-                pm.execute_notebook(file, data_dir + 'temp.ipynb', parameters=None)
-                # send email to receivers and remove files/directories which we don't want to keep
-                send_email(file, '', '')
-                os.remove(data_dir + 'temp.ipynb')
-            except Exception:  # noqa: B902
-                logging.exception('Error: %s.', file)
-                send_email(file, 'ERROR', traceback.format_exc())
+        execute_notebook(notebookdirectory, data_dir, partner_code)
+
+
+def process_notebooks(notebookdirectory: str, data_dir: str):
+    """Process Notebook."""
+    logging.info('Start processing directory: %s', notebookdirectory)
+
+    try:
+        weekly_report_dates = ast.literal_eval(Config.WEEKLY_REPORT_DATES)
+    except Exception:  # noqa: B902
+        logging.exception('Error: %s.', notebookdirectory)
+        send_email(notebookdirectory, 'ERROR', traceback.format_exc())
+
+    # Monday is 1 and Sunday is 7
+    if notebookdirectory == 'weekly' and date.today().isoweekday() in weekly_report_dates:
+        execute_notebook(notebookdirectory, data_dir)
+
+
+def execute_notebook(notebookdirectory: str, data_dir: str, partner_code: str = None):
+    """Execute notebook and send emails."""
+    parameters = {'partner_code': partner_code} if partner_code else None
+
+    for file in findfiles(notebookdirectory, f'{partner_code.lower()}_*.ipynb'):
+        try:
+            pm.execute_notebook(file, data_dir + 'temp.ipynb', parameters=parameters)
+            # send email to receivers and remove files/directories which we don't want to keep
+            send_email(file, '', '', partner_code)
+            os.remove(data_dir + 'temp.ipynb')
+        except Exception:  # noqa: B902
+            logging.exception('Error: %s.', file)
+            send_email(file, 'ERROR', traceback.format_exc())
+
+
+def get_partner_recipients(file_processing: str, partner_code: str) -> str:
+    """Get email recipients for a partner."""
+    if 'reconciliation_details' in file_processing:
+        return getattr(Config, f'{partner_code.upper()}_DAILY_RECONCILIATION_RECIPIENTS', '')
+
+    if 'reconciliation_summary' in file_processing:
+        return getattr(Config, f'{partner_code.upper()}_MONTHLY_RECONCILIATION_RECIPIENTS', '')
+
+    return None
 
 
 if __name__ == '__main__':
@@ -132,8 +166,18 @@ if __name__ == '__main__':
     if not os.path.exists(temp_dir):
         os.makedirs(temp_dir)
 
-    for subdir in ['daily', 'weekly', 'monthly']:
-        processnotebooks(subdir, temp_dir)
+    # Current partner codes to execute notebooks on
+    partner_codes = Config.PARTNER_CODES.split(',')
+
+    # Process notebooks for each partner
+    # For each daily and monthly email, it is expected there is configuration per partner
+    # e.g Config.VS_DAILY_RECONCILIATION_RECIPIENTS, Config.CSO_DAILY_RECONCILIATION_RECIPIENTS
+    for code in partner_codes:
+        for subdir in ['daily', 'monthly']:
+            process_partner_notebooks(subdir, temp_dir, code)
+
+    # process weekly pay notebook separate from partner notebooks
+    process_notebooks('weekly', temp_dir)
 
     end_time = datetime.utcnow()
     logging.info('job - jupyter notebook report completed in: %s', end_time - start_time)
