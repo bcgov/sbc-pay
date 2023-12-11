@@ -1,5 +1,8 @@
 # Notebook Report
 
+### Important: 1Pass vault does not exist, and secrets are to be updated in OCP, cronjob.yaml will need to be updated
+### to include the new key/value pairs. 
+
 Generate notebook report
 
 ## Development Environment

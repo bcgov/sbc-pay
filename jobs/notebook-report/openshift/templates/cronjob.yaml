@@ -6,7 +6,7 @@ metadata:
   name: ${NAME}-cronjob
 objects:
 - kind: "CronJob"
-  apiVersion: "batch/v1beta1"
+  apiVersion: "batch/v1"
   metadata:
     name: "${NAME}-${TAG}"
     labels:
@@ -92,6 +92,16 @@ objects:
                       secretKeyRef:
                         name: ${NAME}-${TAG}-secret
                         key: DAILY_RECONCILIATION_RECIPIENTS
+                  - name: CSO_DAILY_RECONCILIATION_RECIPIENTS
+                    valueFrom:
+                      secretKeyRef:
+                        name: ${NAME}-${TAG}-secret
+                        key: CSO_DAILY_RECONCILIATION_RECIPIENTS
+                  - name: VS_DAILY_RECONCILIATION_RECIPIENTS
+                    valueFrom:
+                      secretKeyRef:
+                        name: ${NAME}-${TAG}-secret
+                        key: VS_DAILY_RECONCILIATION_RECIPIENTS
                   - name: WEEKLY_PAY_RECIPIENTS
                     valueFrom:
                       secretKeyRef:
@@ -102,6 +112,16 @@ objects:
                       secretKeyRef:
                         name: ${NAME}-${TAG}-secret
                         key: MONTHLY_RECONCILIATION_RECIPIENTS
+                  - name: CSO_MONTHLY_RECONCILIATION_RECIPIENTS
+                    valueFrom:
+                      secretKeyRef:
+                        name: ${NAME}-${TAG}-secret
+                        key: CSO_MONTHLY_RECONCILIATION_RECIPIENTS
+                  - name: VS_MONTHLY_RECONCILIATION_RECIPIENTS
+                    valueFrom:
+                      secretKeyRef:
+                        name: ${NAME}-${TAG}-secret
+                        key: VS_MONTHLY_RECONCILIATION_RECIPIENTS
                   - name: ENVIRONMENT
                     valueFrom:
                       secretKeyRef:

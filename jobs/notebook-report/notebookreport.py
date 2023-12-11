@@ -135,8 +135,9 @@ def process_notebooks(notebookdirectory: str, data_dir: str):
 def execute_notebook(notebookdirectory: str, data_dir: str, partner_code: str = None):
     """Execute notebook and send emails."""
     parameters = {'partner_code': partner_code} if partner_code else None
+    pattern = f'{partner_code.lower()}_*.ipynb' if partner_code else '*.ipynb'
 
-    for file in findfiles(notebookdirectory, f'{partner_code.lower()}_*.ipynb'):
+    for file in findfiles(notebookdirectory, pattern):
         try:
             pm.execute_notebook(file, data_dir + 'temp.ipynb', parameters=parameters)
             # send email to receivers and remove files/directories which we don't want to keep
