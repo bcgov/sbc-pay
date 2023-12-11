@@ -47,6 +47,7 @@ class NonSufficientFundsModel(BaseModel):  # pylint: disable=too-many-instance-a
     description = db.Column(db.String(50), nullable=True)
     invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
 
+
 @define
 class NonSufficientFundsSchema:  # pylint: disable=too-few-public-methods
     """Used to search for NSF records."""
