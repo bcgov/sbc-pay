@@ -22,7 +22,6 @@ from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import InvoiceSchema, NonSufficientFundsModel, NonSufficientFundsSchema
-from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import PaymentSchema, db
@@ -69,16 +68,13 @@ class NonSufficientFundsService:
     def query_all_non_sufficient_funds_invoices(account_id: str):
         """Return all Non-Sufficient Funds invoices."""
         query = db.session.query(
-            PaymentModel, InvoiceModel, PaymentLineItemModel, NonSufficientFundsModel, InvoiceReferenceModel) \
-            .join(InvoiceReferenceModel, PaymentModel.invoice_number == InvoiceReferenceModel.invoice_number) \
-            .join(InvoiceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id) \
-            .join(PaymentAccountModel, PaymentAccountModel.id == PaymentModel.payment_account_id) \
+            NonSufficientFundsModel, InvoiceModel, PaymentLineItemModel, InvoiceReferenceModel) \
+            .join(InvoiceModel, NonSufficientFundsModel.invoice_id == InvoiceModel.id) \
+            .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id) \
             .join(PaymentLineItemModel, PaymentLineItemModel.invoice_id == InvoiceModel.id) \
-            .outerjoin(NonSufficientFundsModel, NonSufficientFundsModel.invoice_id == InvoiceModel.id) \
+            .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id) \
             .filter(PaymentAccountModel.auth_account_id == account_id) \
-            .filter(PaymentModel.payment_status_code == 'FAILED') \
-            .filter(PaymentModel.payment_method_code == 'PAD') \
-            .order_by(PaymentModel.id.asc())
+            .order_by(InvoiceModel.id.asc())
 
         non_sufficient_funds_invoices = query.all()
         results, total = non_sufficient_funds_invoices, len(non_sufficient_funds_invoices)
@@ -89,10 +85,6 @@ class NonSufficientFundsService:
     def accumulate_totals(results, payment_schema, invoice_schema):
         """Accumulate payment and invoice totals."""
         accumulated = {
-            'last_payment_id': None,
-            'last_invoice_id': None,
-            'last_invoice_reference_id': None,
-            'last_payment_line_item_id': None,
             'total_amount_to_pay': 0,
             'total_amount_paid': 0,
             'total_nsf_amount': 0,
@@ -100,44 +92,33 @@ class NonSufficientFundsService:
             'invoices': []
         }
 
-        for payment, invoice, payment_line_item, non_sufficient_funds, invoice_reference in results:
+        reference = {
+            'last_invoice_id': None,
+            'last_invoice_number': None,
+        }
 
-            if payment_line_item.id != accumulated['last_payment_line_item_id']:
-                accumulated['last_payment_line_item_id'] = payment_line_item.id
+        consolidated_invoice = {
+            'invoice_number': None,
+            'invoices': []
+        }
 
-            if non_sufficient_funds is not None:
+        for non_sufficient_funds, invoice, payment_line_item, invoice_reference in results:
+            if non_sufficient_funds is not None and payment_line_item.description == 'NSF':
                 accumulated['total_nsf_count'] += 1
                 accumulated['total_nsf_amount'] += float(payment_line_item.total)
 
-            if payment.id != accumulated['last_payment_id']:
-                accumulated['total_amount_paid'] += float(payment.paid_amount)
-                payment_dict = payment_schema.dump(payment)
-                accumulated['invoices'].append(payment_dict)
-                accumulated['last_payment_id'] = payment.id
-
-            if invoice_reference.id != accumulated['last_invoice_reference_id']:
-                accumulated['last_invoice_reference_id'] = invoice_reference.id
-
-            if invoice.id != accumulated['last_invoice_id']:
+            if invoice.id != reference['last_invoice_id']:
+                accumulated['total_amount_paid'] += float(invoice.paid)
                 accumulated['total_amount_to_pay'] += float(invoice.total)
-
-                if 'invoices' not in payment_dict:
-                    payment_dict['invoices'] = []
-
                 invoice_dump = invoice_schema.dump(invoice)
                 invoice_dump['created_on'] = invoice.created_on.strftime('%B %d, %Y')
+                consolidated_invoice['invoices'].append(invoice_dump)
+                consolidated_invoice['invoice_number'] = invoice_reference.invoice_number
+                reference['last_invoice_id'] = invoice.id
 
-                if not any(inv['id'] == invoice_dump['id'] for inv in payment_dict['invoices']):
-                    payment_dict['invoices'].append(invoice_dump)
-
-                accumulated['last_invoice_id'] = invoice.id
-
-            else:
-                invoice_dump = invoice_schema.dump(invoice)
-                for inv in accumulated['invoices']:
-                    if inv['id'] == invoice_dump['id']:
-                        inv['invoices'].append(invoice_dump)
-                        break
+            if invoice_reference.invoice_number != reference['last_invoice_number']:
+                accumulated['invoices'].append(consolidated_invoice)
+                reference['last_invoice_number'] = invoice_reference.invoice_number
 
         return accumulated
 

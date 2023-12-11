@@ -86,7 +86,7 @@
                 }
 
                 .dishonored-bank-instrument-fee-section {
-                    margin-top: 48px;
+                    page-break-before: always;
                 }
 
                 .statement-letterhead {
@@ -395,14 +395,14 @@
                 <tr>
                     <td>
                         <h2>
-                            Transactions
+                            Invoices
                         </h2>
                     </td>
                 </tr>
                 <tr>
                     <td>
                         <div class="section-subtitle">
-                            Number of Transactions: {{invoices|length}}
+                            Number of Invoices: {{invoices|length}}
                         </div>
                     </td>
                 </tr>
@@ -417,12 +417,22 @@
                     <th style="width: 70px; white-space: nowrap;">Service Fee</th>
                     <th style="width: 100px; white-space: nowrap;">Total</th>
                 </thead>
-                {% for item in invoices %}
-                    {% for invoice in item.invoices %}
-                        <tr>
-                            <td class="transaction">
-                                <div class="font-bold">Invoice {{invoice.id}}</div>
-                                {% for lineItemProduct in invoice.line_items %}
+                {% for consolidated_invoice in invoices %}
+                    <tr>
+                        <td class="transaction">
+                            <div class="font-bold">Invoice #{{consolidated_invoice.invoice_number}}</div>
+                        </td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+
+                    {% for invoice in consolidated_invoice.invoices %}
+                        {% for lineItemProduct in invoice.line_items %}
+                            <tr>
+                                <td class="transaction">
                                     <div>
                                         {% if lineItemProduct.description == 'NSF' %}
                                             Dishonored Bank Instrument Fee
@@ -430,24 +440,14 @@
                                             {{ lineItemProduct.description }}
                                         {% endif %}
                                     </div>
-                                {% endfor %}
-                            </td>
-                            <td>
-                                <div>{{invoice.created_on}}</div>
-                            </td>
-                            <td>
-                                <div>${{"{:,.2f}".format(invoice.total - invoice.service_fees - invoice.gst) if (invoice.service_fees and invoice.total) else '0.00'}}</div>
-                            </td>
-                            <td>${{"{:,.2f}".format(invoice.gst) if invoice.gst else '0.00'}}</td>
-                            <td>${{"{:,.2f}".format(invoice.service_fees) if invoice.service_fees else '0.00'}}</td>
-                            <td>
-                                <div></div>
-                                {% for lineItemProduct in invoice.line_items %}
-                                    <div>${{"{:,.2f}".format(lineItemProduct.total) if lineItemProduct.total else '0.00'}}</div>
-                                {% endfor %}
-                            </td>
-                        </tr>
-                    
+                                </td>
+                                <td>{{invoice.created_on}}</td>
+                                <td>${{"{:,.2f}".format(lineItemProduct.total - lineItemProduct.service_fees - lineItemProduct.gst)}}</td>
+                                <td>${{"{:,.2f}".format(lineItemProduct.gst)}}</td>
+                                <td>${{"{:,.2f}".format(lineItemProduct.service_fees)}}</td>
+                                <td>${{"{:,.2f}".format(lineItemProduct.total)}}</td>
+                            </tr>
+                        {% endfor %}
                     {% endfor %}
                 {% endfor %}
             </table>
