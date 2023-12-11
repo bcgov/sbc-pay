@@ -1,4 +1,4 @@
-"""empty message
+"""Add Non-Sufficient Funds table to store Non-Sufficient Funds invoices
 
 Revision ID: b65365f7852b
 Revises: 49eaec3210e0

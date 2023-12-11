@@ -45,7 +45,6 @@ from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
-from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.services.queue_publisher import publish
 from pay_api.utils.enums import (
@@ -755,9 +754,6 @@ def _create_nsf_invoice(cfs_account: CfsAccountModel, inv_number: str,
         status_code=InvoiceReferenceStatus.ACTIVE.value
     )
     inv_ref.save()
-
-    # Add invoice to non sufficient funds table
-    NonSufficientFundsService.save_non_sufficient_funds(invoice_id=invoice.id, description='NSF')
 
     return invoice
 
