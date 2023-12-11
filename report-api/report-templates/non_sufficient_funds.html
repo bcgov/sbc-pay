@@ -365,7 +365,7 @@
                     <td>
                         <div class="r-heading">
                             <div class="r-title">NON-SUFFICIENT FUNDS INVOICE</div>
-                            <div class="r-subtitle">{{invoiceNumber}}</div>
+                            <div class="r-subtitle">BC Registries and Online Services</div>
                         </div>
                     </td>
                 </tr>
@@ -381,10 +381,9 @@
                 <tr>
                     <td colspan="2">
                         <div>
-                            <div><span class="font-bold">Account Number:</span> {{account.paymentPreference.bcOnlineAccountId}}</div>
+                            <div><span class="font-bold">Account Number:</span> {{accountNumber}}</div>
                             <div><span class="font-bold">Total Amount Owing:</span> <span class="font-bold">${{ "{:,.2f}".format(totalAmountRemaining) if totalAmountRemaining else '0.00' }}</span></div>
                             <div><span class="font-bold">Suspended On:</span> {{suspendedOn}}</div>
-                            <!-- <div><span class="font-bold">Statement Number:</span> {{invoiceNumber}}</div> -->
                         </div>
                     </td>
                 </tr>
@@ -419,28 +418,37 @@
                     <th style="width: 100px; white-space: nowrap;">Total</th>
                 </thead>
                 {% for item in invoices %}
-                <tr>
-                    <td class="transaction">
-                        <div class="font-bold">Invoice {{item.id}}</div>
-                        {% for lineItemProduct in item.line_items %}
-                            <div>Dishonored Bank Instrument Fee</div>
-                        {% endfor %}
-                    </td>
-                    <td>
-                        <div>{{item.created_on}}</div>
-                    </td>
-                    <td>
-                        <div>${{"{:,.2f}".format(item.total - item.service_fees - item.gst) if (item.service_fees and item.total) else '0.00'}}</div>
-                    </td>
-                    <td>${{"{:,.2f}".format(item.gst) if item.gst else '0.00'}}</td>
-                    <td>${{"{:,.2f}".format(item.service_fees) if item.service_fees else '0.00'}}</td>
-                    <td>
-                        <div>${{"{:,.2f}".format(item.total) if item.total else '0.00'}}</div>
-                        {% for lineItemProduct in item.line_items %}
-                            <div>${{"{:,.2f}".format(lineItemProduct.total) if lineItemProduct.total else '0.00'}}</div>
-                        {% endfor %}
-                    </td>
-                </tr>
+                    {% for invoice in item.invoices %}
+                        <tr>
+                            <td class="transaction">
+                                <div class="font-bold">Invoice {{invoice.id}}</div>
+                                {% for lineItemProduct in invoice.line_items %}
+                                    <div>
+                                        {% if lineItemProduct.description == 'NSF' %}
+                                            Dishonored Bank Instrument Fee
+                                        {% else %}
+                                            {{ lineItemProduct.description }}
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                <div>{{invoice.created_on}}</div>
+                            </td>
+                            <td>
+                                <div>${{"{:,.2f}".format(invoice.total - invoice.service_fees - invoice.gst) if (invoice.service_fees and invoice.total) else '0.00'}}</div>
+                            </td>
+                            <td>${{"{:,.2f}".format(invoice.gst) if invoice.gst else '0.00'}}</td>
+                            <td>${{"{:,.2f}".format(invoice.service_fees) if invoice.service_fees else '0.00'}}</td>
+                            <td>
+                                <div></div>
+                                {% for lineItemProduct in invoice.line_items %}
+                                    <div>${{"{:,.2f}".format(lineItemProduct.total) if lineItemProduct.total else '0.00'}}</div>
+                                {% endfor %}
+                            </td>
+                        </tr>
+                    
+                    {% endfor %}
                 {% endfor %}
             </table>
             {% endif %}

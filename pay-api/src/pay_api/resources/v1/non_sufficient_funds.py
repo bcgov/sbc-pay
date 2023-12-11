@@ -45,8 +45,8 @@ def get_non_sufficient_funds(account_id: str):
     return jsonify(response), status
 
 
-@bp.route('/statement', methods=['GET', 'OPTIONS'])
-@cross_origin(origins='*', methods=['GET'])
+@bp.route('/statement', methods=['POST', 'OPTIONS'])
+@cross_origin(origins='*', methods=['POST'])
 @_tracing.trace()
 @_jwt.requires_auth
 def get_non_sufficient_funds_statement_pdf(account_id: str):

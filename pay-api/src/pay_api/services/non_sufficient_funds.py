@@ -14,10 +14,12 @@
 """Service to manage Non-Sufficient Funds."""
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Optional
 
 from flask import current_app
 
+from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import InvoiceSchema, NonSufficientFundsModel, NonSufficientFundsSchema
@@ -133,13 +135,14 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def query_all_non_sufficient_funds_invoices(account_id: str):
         """Return all Non-Sufficient Funds invoices."""
-        query = db.session.query(PaymentModel, InvoiceModel, PaymentLineItemModel) \
+        query = db.session.query(PaymentModel, InvoiceModel, PaymentLineItemModel, NonSufficientFundsModel, InvoiceReferenceModel) \
+            .join(InvoiceReferenceModel, PaymentModel.invoice_number == InvoiceReferenceModel.invoice_number) \
+            .join(InvoiceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id) \
             .join(PaymentAccountModel, PaymentAccountModel.id == PaymentModel.payment_account_id) \
-            .outerjoin(InvoiceReferenceModel, InvoiceReferenceModel.invoice_number == PaymentModel.invoice_number) \
-            .outerjoin(InvoiceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id) \
             .join(PaymentLineItemModel, PaymentLineItemModel.invoice_id == InvoiceModel.id) \
-            .join(NonSufficientFundsModel, NonSufficientFundsModel.invoice_id == InvoiceModel.id ) \
+            .outerjoin(NonSufficientFundsModel, NonSufficientFundsModel.invoice_id == InvoiceModel.id) \
             .filter(PaymentAccountModel.auth_account_id == account_id) \
+            .filter(PaymentModel.payment_status_code == 'FAILED') \
             .order_by(PaymentModel.id.asc())
 
         non_sufficient_funds_invoices = query.all()
@@ -152,25 +155,55 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
         """Accumulate payment and invoice totals"""
         accumulated = {
             'last_payment_id': None,
+            'last_invoice_id': None,
+            'last_invoice_reference_id': None,
+            'last_payment_line_item_id': None,
             'total_amount_to_pay': 0,
             'total_amount_paid': 0,
             'total_nsf_amount': 0,
             'total_nsf_count': 0,
             'invoices': []
         }
-        
-        accumulated['total_nsf_count'] = len(results)
-        for payment, invoice, paymentLineItem in results:
-            accumulated['total_nsf_amount'] += float(paymentLineItem.total)
+
+        for payment, invoice, payment_line_item, non_sufficient_funds, invoice_reference in results:
+
+            if payment_line_item.id != accumulated['last_payment_line_item_id']:
+                accumulated['last_payment_line_item_id'] = payment_line_item.id
+
+            if non_sufficient_funds is not None:
+                accumulated['total_nsf_count'] += 1
+                accumulated['total_nsf_amount'] += float(payment_line_item.total)
+
             if payment.id != accumulated['last_payment_id']:
                 accumulated['total_amount_paid'] += float(payment.paid_amount)
-                accumulated['total_amount_to_pay'] += float(invoice.total)
                 payment_dict = payment_schema.dump(payment)
-                payment_dict['invoices'] = [invoice_schema.dump(invoice)]
                 accumulated['invoices'].append(payment_dict)
+                accumulated['last_payment_id'] = payment.id
+
+            if invoice_reference.id != accumulated['last_invoice_reference_id']:
+                accumulated['last_invoice_reference_id'] = invoice_reference.id
+
+            if invoice.id != accumulated['last_invoice_id']:
+                accumulated['total_amount_to_pay'] += float(invoice.total)
+
+                if 'invoices' not in payment_dict:
+                    payment_dict['invoices'] = []
+
+                invoice_dump = invoice_schema.dump(invoice)
+                invoice_dump['created_on'] = invoice.created_on.strftime("%B %d, %Y")
+
+                if not any(inv['id'] == invoice_dump['id'] for inv in payment_dict['invoices']):
+                    payment_dict['invoices'].append(invoice_dump)
+
+                accumulated['last_invoice_id'] = invoice.id
+
             else:
-                accumulated['invoices'][-1]['invoices'].append(invoice_schema.dump(invoice))
-            accumulated['last_payment_id'] = payment.id
+                invoice_dump = invoice_schema.dump(invoice)
+                for inv in accumulated['invoices']:
+                    if inv['id'] == invoice_dump['id']:
+                        inv['invoices'].append(invoice_dump)
+                        break
+
         return accumulated
 
     @staticmethod
@@ -198,15 +231,18 @@ class NonSufficientFundsService:  # pylint: disable=too-many-instance-attributes
         """Create Non-Sufficient Funds statement pdf."""
         current_app.logger.debug('<generate_non_sufficient_funds_statement_pdf')
         invoice = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(account_id=account_id)
+        cfs_account: CfsAccountModel = CfsAccountModel.find_by_account_id(account_id)
+
+        account_url = current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{account_id}'
+        account = OAuthService.get(endpoint=account_url,
+                                    token=kwargs['user'].bearer_token,
+                                    auth_header_type=AuthHeaderType.BEARER,
+                                    content_type=ContentType.JSON).json()
 
         template_vars = {
-            'suspendedOn': '',
-            'businessName': '',
-            'account': {
-                'paymentPreference': {
-                    'bcOnlineAccountId': '123456'
-                }
-            },
+            'suspendedOn': datetime.strptime(account['suspendedOn'], "%Y-%m-%dT%H:%M:%S%z").strftime("%B %d, %Y"),
+            'accountNumber': cfs_account[0].cfs_account,
+            'businessName': account['businessName'],
             'totalAmountRemaining': invoice['total_amount_remaining'],
             'totalAmount': invoice['total_amount'],
             'totalNfsAmount': invoice['total_nsf_amount'],
