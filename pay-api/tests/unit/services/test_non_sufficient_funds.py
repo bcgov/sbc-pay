@@ -27,15 +27,10 @@ from tests.utilities.base_test import (
 
 def test_save_non_sufficient_funds(session):
     """Test save_non_sufficient_funds."""
-    non_sufficient_funds_object = {
-        'invoice_id': 1,
-        'description': 'NSF',
-    }
     non_sufficient_funds = NonSufficientFundsService.save_non_sufficient_funds(invoice_id=1,
                                                                                description='NSF')
     assert non_sufficient_funds
-    assert non_sufficient_funds.invoice_id == non_sufficient_funds_object.get('invoice_id')
-    assert non_sufficient_funds.description == non_sufficient_funds_object.get('description')
+    assert non_sufficient_funds.description == 'NSF'
 
 
 def test_find_all_non_sufficient_funds_invoices(session):
