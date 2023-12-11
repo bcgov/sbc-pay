@@ -15,11 +15,9 @@
 from __future__ import annotations
 
 from attrs import define
-from marshmallow import fields
 from sqlalchemy import ForeignKey
 
 from .base_model import BaseModel
-from .base_schema import BaseSchema
 from .db import db
 
 
@@ -49,21 +47,8 @@ class NonSufficientFundsModel(BaseModel):  # pylint: disable=too-many-instance-a
     description = db.Column(db.String(50), nullable=True)
     invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
 
-
-class NonSufficientFundsSchema(BaseSchema):  # pylint: disable=too-many-ancestors
-    """Main schema used to serialize the Non-Sufficient Funds."""
-
-    class Meta(BaseSchema.Meta):  # pylint: disable=too-few-public-methods
-        """Returns all the fields from the SQLAlchemy class."""
-
-        model = NonSufficientFundsModel
-
-    description = fields.String(data_key='description')
-    invoice_id = fields.Integer(data_key='invoice_id')
-
-
 @define
-class NonSufficientFundsSearchModel:  # pylint: disable=too-few-public-methods
+class NonSufficientFundsSchema:  # pylint: disable=too-few-public-methods
     """Used to search for NSF records."""
 
     id: int

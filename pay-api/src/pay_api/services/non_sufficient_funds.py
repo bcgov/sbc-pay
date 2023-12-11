@@ -77,6 +77,7 @@ class NonSufficientFundsService:
             .outerjoin(NonSufficientFundsModel, NonSufficientFundsModel.invoice_id == InvoiceModel.id) \
             .filter(PaymentAccountModel.auth_account_id == account_id) \
             .filter(PaymentModel.payment_status_code == 'FAILED') \
+            .filter(PaymentModel.payment_method_code == 'PAD') \
             .order_by(PaymentModel.id.asc())
 
         non_sufficient_funds_invoices = query.all()
