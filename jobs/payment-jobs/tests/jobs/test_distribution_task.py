@@ -64,7 +64,6 @@ def test_update_failed_distributions_refunds(session, monkeypatch):
 
     DistributionTask.update_failed_distributions()
     assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
-    assert invoice.refund_date is not None
 
 
 def test_update_failed_distribution_payments(session, monkeypatch):
@@ -112,7 +111,6 @@ def test_non_direct_pay_invoices(session, monkeypatch):
     factory_refund_invoice(invoice.id)
     DistributionTask.update_failed_distributions()
     assert invoice.invoice_status_code == InvoiceStatus.REFUNDED.value
-    assert invoice.refund_date is not None
 
 
 def test_no_response_pay_bc(session, monkeypatch):

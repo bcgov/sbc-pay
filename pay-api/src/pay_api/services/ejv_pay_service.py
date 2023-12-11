@@ -72,7 +72,7 @@ class EjvPayService(PaymentSystemService, OAuthService):
         Return the status after checking invoice status.
             1. If invoice status is APPROVED:
             1.1 return REFUND_REQUESTED if there is an ACTIVE invoice_reference
-            1.2 else return REFUNDED (as no refund process is needed for this as JV hasn't started yet)
+            1.2 else return CANCELLED (as no refund process is needed for this as JV hasn't started yet)
             2. If invoice status is PAID
             2.1 Return REFUND_REQUESTED
         """
@@ -82,5 +82,5 @@ class EjvPayService(PaymentSystemService, OAuthService):
         if invoice.invoice_status_code == InvoiceStatus.APPROVED.value:
             if InvoiceReference.find_active_reference_by_invoice_id(invoice.id):
                 return InvoiceStatus.REFUND_REQUESTED.value
-            return InvoiceStatus.REFUNDED.value
+            return InvoiceStatus.CANCELLED.value
         return InvoiceStatus.REFUND_REQUESTED.value
