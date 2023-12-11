@@ -21,11 +21,12 @@ from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
-from pay_api.models import InvoiceSchema, NonSufficientFundsModel
+from pay_api.models import InvoiceSchema, NonSufficientFundsModel, NonSufficientFundsSchema
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import PaymentSchema, db
+from pay_api.utils.converter import Converter
 from pay_api.utils.enums import AuthHeaderType, ContentType
 from pay_api.utils.user_context import user_context
 
@@ -38,6 +39,10 @@ class NonSufficientFundsService:
     def __init__(self):
         """Initialize the service."""
         self.dao = NonSufficientFundsModel()
+
+    def asdict(self):
+        """Return the EFT Short name as a python dict."""
+        return Converter().unstructure(NonSufficientFundsSchema.from_row(self.dao))
 
     @staticmethod
     def populate(value: NonSufficientFundsModel):
