@@ -760,6 +760,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             cfs_account.status = CfsAccountStatus.ACTIVE.value
             cfs_account.save()
 
+            # get nsf payment object associated with this payment
+
             nsf_object = {
                 'payment': payment,
                 'filing_identifier': filing_identifier,
