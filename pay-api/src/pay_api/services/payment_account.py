@@ -713,10 +713,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 f'Notification to Queue failed for the Account Mailer : {payload}.',
                 level='error')
 
-    def _create_account_event_payload(
-            self,
-            event_type: str,
-            nsf_object: dict = None,
+    def _create_account_event_payload(self, event_type: str, nsf_object: dict = None,
             include_pay_info: bool = False):
         """Return event payload for account."""
         payload: Dict[str, any] = {
