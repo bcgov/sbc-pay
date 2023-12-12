@@ -71,8 +71,9 @@ class EjvPartnerDistributionTask(CgiEjv):
     @classmethod
     def get_invoices_for_refund_reversal(cls, partner):
         """Return invoices for refund reversal."""
-        # Refund_requested for credit card payments and REFUNDED for other payments.
-        refund_inv_statuses = (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
+        # REFUND_REQUESTED for credit card payments, CREDITED for AR and REFUNDED for other payments.
+        refund_inv_statuses = (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value,
+                               InvoiceStatus.CREDITED.value)
 
         invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
             .filter(InvoiceModel.invoice_status_code.in_(refund_inv_statuses)) \
