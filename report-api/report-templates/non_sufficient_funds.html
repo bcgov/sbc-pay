@@ -395,14 +395,14 @@
                 <tr>
                     <td>
                         <h2>
-                            Invoices
+                            Transactions
                         </h2>
                     </td>
                 </tr>
                 <tr>
                     <td>
                         <div class="section-subtitle">
-                            Number of Invoices: {{invoices|length}}
+                            Number of Transactions: {{invoices|length}}
                         </div>
                     </td>
                 </tr>
@@ -417,37 +417,56 @@
                     <th style="width: 70px; white-space: nowrap;">Service Fee</th>
                     <th style="width: 100px; white-space: nowrap;">Total</th>
                 </thead>
-                {% for consolidated_invoice in invoices %}
-                    <tr>
-                        <td class="transaction">
-                            <div class="font-bold">Invoice #{{consolidated_invoice.invoice_number}}</div>
-                        </td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                        <td></td>
-                    </tr>
+                <tr>
+                    <td class="transaction">
+                        <div class="font-bold">Invoice #REGT00715532</div>
+                    </td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                {% for invoice in invoices %}
+                    {% for lineItemProduct in invoice.line_items %}
+                        <tr>
+                            <td class="transaction">
+                                <div>
+                                    {% if lineItemProduct.description == 'NSF' %}
+                                        Dishonored Bank Instrument Fee
+                                    {% else %}
+                                        {{ lineItemProduct.description }}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% set date_parts = invoice.created_on.split('T')[0].split('-') %}
+                                {% set year = date_parts[0] %}
+                                {% set month = date_parts[1] %}
+                                {% set day = date_parts[2] %}
 
-                    {% for invoice in consolidated_invoice.invoices %}
-                        {% for lineItemProduct in invoice.line_items %}
-                            <tr>
-                                <td class="transaction">
-                                    <div>
-                                        {% if lineItemProduct.description == 'NSF' %}
-                                            Dishonored Bank Instrument Fee
-                                        {% else %}
-                                            {{ lineItemProduct.description }}
-                                        {% endif %}
-                                    </div>
-                                </td>
-                                <td>{{invoice.created_on}}</td>
-                                <td>${{"{:,.2f}".format(lineItemProduct.total - lineItemProduct.service_fees - lineItemProduct.gst)}}</td>
-                                <td>${{"{:,.2f}".format(lineItemProduct.gst)}}</td>
-                                <td>${{"{:,.2f}".format(lineItemProduct.service_fees)}}</td>
-                                <td>${{"{:,.2f}".format(lineItemProduct.total)}}</td>
-                            </tr>
-                        {% endfor %}
+                                {% set month_names = {
+                                '01': 'January',
+                                '02': 'February',
+                                '03': 'March',
+                                '04': 'April',
+                                '05': 'May',
+                                '06': 'June',
+                                '07': 'July',
+                                '08': 'August',
+                                '09': 'September',
+                                '10': 'October',
+                                '11': 'November',
+                                '12': 'December'
+                                } %}
+
+                                {{ month_names[month] }} {{ day|int }}, {{ year }}
+                            </td>
+                            <td>${{"{:,.2f}".format(lineItemProduct.total - lineItemProduct.service_fees - lineItemProduct.gst)}}</td>
+                            <td>${{"{:,.2f}".format(lineItemProduct.gst)}}</td>
+                            <td>${{"{:,.2f}".format(lineItemProduct.service_fees)}}</td>
+                            <td>${{"{:,.2f}".format(lineItemProduct.total)}}</td>
+                        </tr>
                     {% endfor %}
                 {% endfor %}
             </table>
