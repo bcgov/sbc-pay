@@ -24,10 +24,12 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import InvoiceSchema, NonSufficientFundsModel, NonSufficientFundsSchema
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
-from pay_api.models import PaymentSchema, db
+from pay_api.models import db
 from pay_api.utils.converter import Converter
 from pay_api.utils.enums import AuthHeaderType, ContentType
 from pay_api.utils.user_context import user_context
+
+from sqlalchemy import case, func
 
 from .oauth_service import OAuthService
 
@@ -66,35 +68,57 @@ class NonSufficientFundsService:
 
     @staticmethod
     def query_all_non_sufficient_funds_invoices(account_id: str):
-        """Return all Non-Sufficient Funds invoices."""
-        query = db.session.query(
-            NonSufficientFundsModel, InvoiceModel, PaymentLineItemModel, InvoiceReferenceModel) \
-            .join(InvoiceModel, NonSufficientFundsModel.invoice_id == InvoiceModel.id) \
-            .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id) \
-            .join(PaymentLineItemModel, PaymentLineItemModel.invoice_id == InvoiceModel.id) \
-            .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id) \
-            .filter(PaymentAccountModel.auth_account_id == account_id) \
-            .order_by(InvoiceModel.id.asc())
+        """Return all Non-Sufficient Funds invoices and their aggregate amounts in a single query."""
+        total_amount_remaining_query = (db.session.query(
+            func.sum(InvoiceModel.total - InvoiceModel.paid))
+            .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
+            .filter(PaymentAccountModel.auth_account_id == account_id)
+            .correlate(None)
+            .as_scalar()
+        ).label('total_amount_remaining')
 
-        non_sufficient_funds_invoices = query.all()
-        results, total = non_sufficient_funds_invoices, len(non_sufficient_funds_invoices)
+        total_amount_query = (db.session.query(
+            func.sum(InvoiceModel.total - case([(PaymentLineItemModel.description == 'NSF',
+                                                 PaymentLineItemModel.total)], else_=0)))
+            .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
+            .filter(PaymentAccountModel.auth_account_id == account_id)
+            .filter(PaymentLineItemModel.invoice_id == InvoiceModel.id)
+            .correlate(None)
+            .as_scalar()
+        ).label('total_amount')
 
+        nsf_amount_query = (db.session.query(
+            func.max(case([(PaymentLineItemModel.description == 'NSF', PaymentLineItemModel.total)], else_=0)))
+            .join(InvoiceModel, InvoiceModel.id == PaymentLineItemModel.invoice_id)
+            .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
+            .filter(PaymentAccountModel.auth_account_id == account_id)
+            .filter(PaymentLineItemModel.invoice_id == InvoiceModel.id)
+            .correlate(None)
+            .as_scalar()
+        ).label('nsf_amount')
+
+        query = (db.session.query(
+            InvoiceModel, InvoiceReferenceModel, total_amount_remaining_query, total_amount_query, nsf_amount_query)
+            .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
+            .join(PaymentLineItemModel, PaymentLineItemModel.invoice_id == InvoiceModel.id)
+            .join(NonSufficientFundsModel, NonSufficientFundsModel.invoice_id == InvoiceModel.id)
+            .filter(InvoiceReferenceModel.invoice_id == InvoiceModel.id)
+            .filter(PaymentAccountModel.auth_account_id == account_id)
+            .group_by(InvoiceModel.id, NonSufficientFundsModel.id, InvoiceReferenceModel.id)
+        )
+
+        results = query.all()
+        total = len(results)
         return results, total
 
     @staticmethod
-    def accumulate_totals(results, payment_schema, invoice_schema):
+    def accumulate_totals(results, invoice_schema):
         """Accumulate payment and invoice totals."""
         accumulated = {
-            'total_amount_to_pay': 0,
-            'total_amount_paid': 0,
-            'total_nsf_amount': 0,
-            'total_nsf_count': 0,
-            'invoices': []
-        }
-
-        reference = {
-            'last_invoice_id': None,
-            'last_invoice_number': None,
+            'invoices': [],
+            'total_amount_remaining': 0,
+            'total_amount': 0,
+            'nsf_amount': 0
         }
 
         consolidated_invoice = {
@@ -102,23 +126,22 @@ class NonSufficientFundsService:
             'invoices': []
         }
 
-        for non_sufficient_funds, invoice, payment_line_item, invoice_reference in results:
-            if non_sufficient_funds is not None and payment_line_item.description == 'NSF':
-                accumulated['total_nsf_count'] += 1
-                accumulated['total_nsf_amount'] += float(payment_line_item.total)
+        previous_invoice_id = None
 
-            if invoice.id != reference['last_invoice_id']:
-                accumulated['total_amount_paid'] += float(invoice.paid)
-                accumulated['total_amount_to_pay'] += float(invoice.total)
+        for index, (invoice, invoice_reference, total_amount_remaining, total_amount,
+                    nsf_amount) in enumerate(results):
+            if invoice.id != previous_invoice_id:
                 invoice_dump = invoice_schema.dump(invoice)
                 invoice_dump['created_on'] = invoice.created_on.strftime('%B %d, %Y')
                 consolidated_invoice['invoices'].append(invoice_dump)
                 consolidated_invoice['invoice_number'] = invoice_reference.invoice_number
-                reference['last_invoice_id'] = invoice.id
+                previous_invoice_id = invoice.id
 
-            if invoice_reference.invoice_number != reference['last_invoice_number']:
+            if index == len(results) - 1:
+                accumulated['total_amount_remaining'] = float(total_amount_remaining)
+                accumulated['total_amount'] = float(total_amount)
+                accumulated['nsf_amount'] = float(nsf_amount)
                 accumulated['invoices'].append(consolidated_invoice)
-                reference['last_invoice_number'] = invoice_reference.invoice_number
 
         return accumulated
 
@@ -126,17 +149,14 @@ class NonSufficientFundsService:
     def find_all_non_sufficient_funds_invoices(account_id: str):
         """Return all Non-Sufficient Funds invoices."""
         results, total = NonSufficientFundsService.query_all_non_sufficient_funds_invoices(account_id=account_id)
-        payment_schema = PaymentSchema()
         invoice_schema = InvoiceSchema(exclude=('receipts', 'references', '_links'))
-        accumulated = NonSufficientFundsService.accumulate_totals(results, payment_schema, invoice_schema)
-
+        accumulated = NonSufficientFundsService.accumulate_totals(results, invoice_schema)
         data = {
             'total': total,
             'invoices': accumulated['invoices'],
-            'total_amount': accumulated['total_amount_to_pay'] - accumulated['total_nsf_amount'],
-            'total_amount_remaining': accumulated['total_amount_to_pay'] - accumulated['total_amount_paid'],
-            'total_nsf_amount': accumulated['total_nsf_amount'],
-            'total_nsf_count': accumulated['total_nsf_count']
+            'total_amount': accumulated['total_amount'],
+            'total_amount_remaining': accumulated['total_amount_remaining'],
+            'nsf_amount': accumulated['nsf_amount']
         }
 
         return data
@@ -160,7 +180,7 @@ class NonSufficientFundsService:
             'businessName': account['businessName'],
             'totalAmountRemaining': invoice['total_amount_remaining'],
             'totalAmount': invoice['total_amount'],
-            'totalNfsAmount': invoice['total_nsf_amount'],
+            'nsfAmount': invoice['nsf_amount'],
             'invoices': invoice['invoices']
         }
         invoice_pdf_dict = {
