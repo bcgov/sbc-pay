@@ -18,6 +18,8 @@ from datetime import datetime
 
 from flask import current_app
 
+from sqlalchemy import case, func
+
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
@@ -28,8 +30,6 @@ from pay_api.models import db
 from pay_api.utils.converter import Converter
 from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, ReverseOperation
 from pay_api.utils.user_context import user_context
-
-from sqlalchemy import case, func
 
 from .oauth_service import OAuthService
 
