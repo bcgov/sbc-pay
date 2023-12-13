@@ -62,4 +62,4 @@ class NonSufficientFundsSchema:  # pylint: disable=too-few-public-methods
 
         https://www.attrs.org/en/stable/init.html
         """
-        return cls(invoice_id=row.invoice_id, description=row.description)
+        return cls(id=row.id, invoice_id=row.invoice_id, description=row.description)

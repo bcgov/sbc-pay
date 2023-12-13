@@ -17,14 +17,19 @@
 Test-Suite to ensure that the Non-Sufficient Funds Class is working as expected.
 """
 
-from pay_api.models import NonSufficientFundsModel
+from tests.utilities.base_test import (
+    factory_invoice, factory_non_sufficient_funds, factory_payment, factory_payment_account)
 
 
 def test_non_sufficient_funds(session):
     """Assert Non-Sufficient Funds defaults are stored."""
-    non_sufficient_funds = NonSufficientFundsModel()
-    non_sufficient_funds.invoice_id = 1
-    non_sufficient_funds.description = 'NSF'
+    payment_account = factory_payment_account()
+    payment = factory_payment()
+    payment_account.save()
+    payment.save()
+    invoice = factory_invoice(payment_account=payment_account)
+    invoice.save()
+    non_sufficient_funds = factory_non_sufficient_funds(invoice_id=invoice.id, description='NSF')
     non_sufficient_funds.save()
 
     assert non_sufficient_funds.id is not None

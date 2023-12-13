@@ -64,7 +64,7 @@ class NonSufficientFundsService:
 
         non_sufficient_funds_service = NonSufficientFundsService.populate(non_sufficient_funds_dao)
         current_app.logger.debug('>save_non_sufficient_funds')
-        return non_sufficient_funds_service
+        return NonSufficientFundsService.asdict(non_sufficient_funds_service)
 
     @staticmethod
     def query_all_non_sufficient_funds_invoices(account_id: str):
@@ -149,7 +149,6 @@ class NonSufficientFundsService:
             'templateVars': template_vars,
             'populatePageNumber': True
         }
-        print('invoice_pdf_dict', invoice_pdf_dict)
         current_app.logger.info('Invoice PDF Dict %s', invoice_pdf_dict)
 
         pdf_response = OAuthService.post(current_app.config.get('REPORT_API_BASE_URL'),
