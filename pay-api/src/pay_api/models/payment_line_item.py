@@ -110,8 +110,10 @@ class PaymentLineItemSchema(ma.ModelSchema):  # pylint: disable=too-many-ancesto
 class PaymentLineItemSearchModel:  # pylint: disable=too-few-public-methods
     """Payment Line Item Search Model."""
 
+    total: Decimal
     gst: Decimal
     pst: Decimal
+    service_fees: Decimal
     description: str
     filing_type_code: str
 
@@ -121,5 +123,5 @@ class PaymentLineItemSearchModel:  # pylint: disable=too-few-public-methods
 
         https://www.attrs.org/en/stable/init.html
         """
-        return cls(gst=row.gst, pst=row.pst, description=row.description,
-                   filing_type_code=row.fee_schedule.filing_type_code)
+        return cls(total=row.total, gst=row.gst, pst=row.pst, service_fees=row.service_fees,
+                   description=row.description, filing_type_code=row.fee_schedule.filing_type_code)

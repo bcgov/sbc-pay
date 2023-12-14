@@ -23,7 +23,7 @@ from sqlalchemy import case, func
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
-from pay_api.models import InvoiceSchema, NonSufficientFundsModel, NonSufficientFundsSchema
+from pay_api.models import InvoiceSearchModel, NonSufficientFundsModel, NonSufficientFundsSchema
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import db
@@ -104,13 +104,14 @@ class NonSufficientFundsService:
         """Return all Non-Sufficient Funds invoices."""
         results, total, aggregate_totals = NonSufficientFundsService.query_all_non_sufficient_funds_invoices(
             account_id=account_id)
-        invoice_schema = InvoiceSchema(exclude=('receipts', 'references', '_links'))
-        invoices = [result[0] for result in results]
-        invoices_dump = invoice_schema.dump(invoices, many=True)
+        invoice_search_model = [InvoiceSearchModel.from_row(invoice_dao) for invoice_dao, _ in results]
+        converter = Converter()
+        invoice_list = converter.unstructure(invoice_search_model)
+        new_invoices = [converter.remove_nones(invoice_dict) for invoice_dict in invoice_list]
 
         data = {
             'total': total,
-            'invoices': invoices_dump,
+            'invoices': new_invoices,
             'total_amount': float(aggregate_totals.total_amount),
             'total_amount_remaining': float(aggregate_totals.total_amount_remaining),
             'nsf_amount': float(aggregate_totals.nsf_amount)
@@ -124,18 +125,16 @@ class NonSufficientFundsService:
         """Create Non-Sufficient Funds statement pdf."""
         current_app.logger.debug('<generate_non_sufficient_funds_statement_pdf')
         invoice = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(account_id=account_id)
-        cfs_account: CfsAccountModel = CfsAccountModel.find_by_account_id(account_id)
+        cfs_account: CfsAccountModel = CfsAccountModel.find_frozen_account_by_account_id(account_id)
         invoice_reference: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice['invoices'][0]['id'], InvoiceReferenceStatus.ACTIVE.value)
-
         account_url = current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{account_id}'
         account = OAuthService.get(
             endpoint=account_url, token=kwargs['user'].bearer_token,
             auth_header_type=AuthHeaderType.BEARER, content_type=ContentType.JSON).json()
-
         template_vars = {
             'suspendedOn': datetime.strptime(account['suspendedOn'], '%Y-%m-%dT%H:%M:%S%z').strftime('%B %-d, %Y'),
-            'accountNumber': cfs_account[0].cfs_account,
+            'accountNumber': cfs_account.cfs_account,
             'businessName': account['businessName'],
             'totalAmountRemaining': invoice['total_amount_remaining'],
             'totalAmount': invoice['total_amount'],
@@ -143,13 +142,14 @@ class NonSufficientFundsService:
             'invoices': invoice['invoices'],
             'invoiceNumber': invoice_reference.invoice_number,
         }
+
         invoice_pdf_dict = {
             'templateName': 'non_sufficient_funds',
             'reportName': 'non_sufficient_funds',
             'templateVars': template_vars,
             'populatePageNumber': True
         }
-        current_app.logger.info('Invoice PDF Dict %s', invoice_pdf_dict)
+        current_app.logger.debug('Invoice PDF Dict %s', invoice_pdf_dict)
 
         pdf_response = OAuthService.post(current_app.config.get('REPORT_API_BASE_URL'),
                                          kwargs['user'].bearer_token, AuthHeaderType.BEARER,
