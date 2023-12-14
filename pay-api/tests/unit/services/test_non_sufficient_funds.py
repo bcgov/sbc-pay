@@ -21,8 +21,8 @@ from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.services import NonSufficientFundsService
 from pay_api.utils.enums import InvoiceStatus
 from tests.utilities.base_test import (
-    factory_invoice, factory_invoice_reference, factory_non_sufficient_funds, factory_payment, factory_payment_account,
-    factory_payment_line_item)
+    factory_distribution_code, factory_distribution_link, factory_invoice, factory_invoice_reference,
+    factory_non_sufficient_funds, factory_payment, factory_payment_account, factory_payment_line_item)
 
 
 def test_save_non_sufficient_funds(session):
@@ -41,19 +41,33 @@ def test_save_non_sufficient_funds(session):
 
 def test_find_all_non_sufficient_funds_invoices(session):
     """Test find_all_non_sufficient_funds_invoices."""
-    invoice_number = '10001'
     payment_account = factory_payment_account()
     payment_account.save()
-    payment = factory_payment(payment_account_id=payment_account.id, paid_amount=0, invoice_number=invoice_number)
+    payment = factory_payment(payment_account_id=payment_account.id, paid_amount=0, invoice_number='10001',
+                              payment_method_code='PAD')
     payment.save()
     invoice = factory_invoice(
         payment_account=payment_account, status_code=InvoiceStatus.SETTLEMENT_SCHEDULED.value, paid=0, total=30)
     invoice.save()
-    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
-    line_item = factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id,
-                                          description='NSF', total=30)
-    line_item.save()
-    invoice_reference = factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number)
+
+    annual_report_fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    annual_report_payment_line_item = factory_payment_line_item(
+        invoice_id=invoice.id, fee_schedule_id=annual_report_fee_schedule.fee_schedule_id, description='Annual Report',
+        total=30, filing_fees=0)
+    annual_report_payment_line_item.save()
+
+    non_sufficient_funds_fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('BCR', 'NSF')
+    distribution_code = factory_distribution_code('NSF')
+    distribution_code.save()
+    distribution_link = factory_distribution_link(distribution_code.distribution_code_id,
+                                                  non_sufficient_funds_fee_schedule.fee_schedule_id)
+    distribution_link.save()
+    non_sufficient_funds_payment_line_item = factory_payment_line_item(
+        invoice_id=invoice.id, fee_schedule_id=non_sufficient_funds_fee_schedule.fee_schedule_id, description='NSF',
+        total=30, filing_fees=0)
+    non_sufficient_funds_payment_line_item.save()
+
+    invoice_reference = factory_invoice_reference(invoice_id=invoice.id, invoice_number=payment.invoice_number)
     invoice_reference.save()
     non_sufficient_funds = factory_non_sufficient_funds(invoice_id=invoice.id, description='NSF')
     non_sufficient_funds.save()
@@ -67,3 +81,7 @@ def test_find_all_non_sufficient_funds_invoices(session):
     assert 'total_amount_remaining' in find_non_sufficient_funds
     assert 'nsf_amount' in find_non_sufficient_funds
     assert 'total' in find_non_sufficient_funds
+    assert find_non_sufficient_funds['total_amount'] == 30.0
+    assert find_non_sufficient_funds['total_amount_remaining'] == 60.0
+    assert find_non_sufficient_funds['nsf_amount'] == 30.0
+    assert find_non_sufficient_funds['total'] == 1

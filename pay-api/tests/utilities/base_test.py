@@ -25,9 +25,9 @@ from typing import Dict, List, Tuple
 from faker import Faker
 
 from pay_api.models import (
-    CfsAccount, Comment, DistributionCode, EFTShortnames, Invoice, InvoiceReference, NonSufficientFundsModel, Payment,
-    PaymentAccount, PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices,
-    StatementSettings)
+    CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTShortnames, Invoice, InvoiceReference,
+    NonSufficientFundsModel, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip,
+    Statement, StatementInvoices, StatementSettings)
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
@@ -891,3 +891,25 @@ def factory_eft_shortname(short_name: str, auth_account_id: str = None):
 def factory_non_sufficient_funds(invoice_id: int, description: str = None):
     """Return a Non-Sufficient Funds Model."""
     return NonSufficientFundsModel(invoice_id=invoice_id, description=description)
+
+
+def factory_distribution_code(name: str, client: str = '111', reps_centre: str = '22222', service_line: str = '33333',
+                              stob: str = '4444', project_code: str = '5555555', service_fee_dist_id: int = None,
+                              disbursement_dist_id: int = None):
+    """Return Factory."""
+    return DistributionCode(name=name,
+                            client=client,
+                            responsibility_centre=reps_centre,
+                            service_line=service_line,
+                            stob=stob,
+                            project_code=project_code,
+                            service_fee_distribution_code_id=service_fee_dist_id,
+                            disbursement_distribution_code_id=disbursement_dist_id,
+                            start_date=datetime.today().date(),
+                            created_by='test')
+
+
+def factory_distribution_link(distribution_code_id: int, fee_schedule_id: int):
+    """Return Factory."""
+    return DistributionCodeLink(fee_schedule_id=fee_schedule_id,
+                                distribution_code_id=distribution_code_id)
