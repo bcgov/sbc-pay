@@ -49,7 +49,7 @@ def test_get_non_sufficient_funds(session, client, jwt, app):
 
     nsf = client.get(f'/api/v1/accounts/{payment_account.auth_account_id}/nsf', headers=headers)
     assert nsf.status_code == 200
-    assert len(nsf.json.get('items')) == 1
+    assert len(nsf.json.get('invoices')) == 1
     assert nsf.json.get('total') == 1
     assert nsf.json.get('totalAmount') == 0
     assert nsf.json.get('totalAmountRemaining') == 30
