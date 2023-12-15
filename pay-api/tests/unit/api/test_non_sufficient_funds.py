@@ -35,7 +35,7 @@ def test_get_non_sufficient_funds(session, client, jwt, app):
     payment = factory_payment(payment_account_id=payment_account.id, paid_amount=0, invoice_number=invoice_number)
     payment.save()
     invoice = factory_invoice(
-        payment_account=payment_account, status_code=InvoiceStatus.SETTLEMENT_SCHEDULED.value, paid=0, total=0)
+        payment_account=payment_account, status_code=InvoiceStatus.SETTLEMENT_SCHEDULED.value, paid=0, total=30)
     invoice.save()
 
     annual_report_fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
