@@ -82,7 +82,7 @@ def test_find_all_non_sufficient_funds_invoices(session):
     assert 'nsf_amount' in find_non_sufficient_funds
     assert 'total' in find_non_sufficient_funds
     assert len(find_non_sufficient_funds['invoices']) == 1
+    assert find_non_sufficient_funds['total'] == 1
     assert find_non_sufficient_funds['total_amount'] == 30.0
     assert find_non_sufficient_funds['total_amount_remaining'] == 60.0
     assert find_non_sufficient_funds['nsf_amount'] == 30.0
-    assert find_non_sufficient_funds['total'] == 1
