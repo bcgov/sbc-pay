@@ -125,7 +125,7 @@ class NonSufficientFundsService:
         """Create Non-Sufficient Funds statement pdf."""
         current_app.logger.debug('<generate_non_sufficient_funds_statement_pdf')
         invoice = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(account_id=account_id)
-        cfs_account: CfsAccountModel = CfsAccountModel.find_frozen_account_by_account_id(account_id)
+        cfs_account: CfsAccountModel = CfsAccountModel.find_latest_account_by_account_id(account_id)
         invoice_reference: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice['invoices'][0]['id'], InvoiceReferenceStatus.ACTIVE.value)
         account_url = current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{account_id}'

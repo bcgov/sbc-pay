@@ -52,6 +52,8 @@ def get_non_sufficient_funds(account_id: str):
 def get_non_sufficient_funds_statement_pdf(account_id: str):
     """Get non sufficient funds statement pdf."""
     current_app.logger.info('<get_non_sufficient_funds_statement_pdf')
+    # Check if user is authorized to perform this action
+    check_auth(business_identifier=None, account_id=account_id, one_of_roles=[MAKE_PAYMENT, EDIT_ROLE, VIEW_ROLE])
     try:
         pdf, pdf_filename = NonSufficientFundsService.create_non_sufficient_funds_statement_pdf(account_id=account_id)
         response = Response(pdf, 201)
