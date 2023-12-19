@@ -14,7 +14,7 @@
 """Service to manage Payment Account model related operations."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -37,6 +37,7 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.oauth_service import OAuthService
 from pay_api.services.queue_publisher import publish_response
+from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings
 from pay_api.utils.enums import (
     AuthHeaderType, CfsAccountStatus, ContentType, InvoiceStatus, MessageType, PaymentMethod, PaymentSystem,
@@ -45,6 +46,8 @@ from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
     current_local_time, get_local_formatted_date, get_outstanding_txns_from_date, get_str_by_path, mask)
+
+from .flags import flags
 
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -358,6 +361,15 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return payment_account
 
     @classmethod
+    def _check_and_handle_payment_method(cls, account: PaymentAccountModel, target_payment_method: str):
+        """Check if the payment method has changed and invoke handling logic."""
+        if account.payment_method == target_payment_method or target_payment_method != PaymentMethod.EFT.value:
+            return
+
+        # Payment method has changed and is EFT
+        Statement.generate_interim_statement(account.auth_account_id, StatementFrequency.MONTHLY.value)
+
+    @classmethod
     def _check_and_update_statement_settings(cls, payment_account: PaymentAccountModel):
         """Check and update statement settings based on payment method."""
         # On create of a payment account _persist_default_statement_frequency() is used, so we
@@ -423,6 +435,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
         # If the payment method is CC, set the payment_method as DIRECT_PAY
         if payment_method := get_str_by_path(account_request, 'paymentInfo/methodOfPayment'):
+            if flags.is_on('enable-eft-payment-method', default=False):
+                cls._check_and_handle_payment_method(payment_account, payment_method)
+
             payment_account.payment_method = payment_method
             payment_account.bcol_account = account_request.get('bcolAccountNumber', None)
             payment_account.bcol_user_id = account_request.get('bcolUserId', None)
@@ -604,7 +619,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
         statement_settings_model = StatementSettingsModel(
             frequency=frequency,
-            payment_account_id=payment_account_id
+            payment_account_id=payment_account_id,
+            from_date=date.today()  # To help with mocking tests - freeze_time doesn't seem to work on the model default
         )
         statement_settings_model.save()
 
