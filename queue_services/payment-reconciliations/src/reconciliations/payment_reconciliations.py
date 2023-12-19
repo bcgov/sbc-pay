@@ -384,6 +384,12 @@ async def _process_paid_invoices(inv_references, row):
     Update invoice_reference as COMPLETED
     Update payment_transaction as COMPLETED.
     """
+    for inv_ref in inv_references:
+        invoice: InvoiceModel = InvoiceModel.find_by_id(inv_ref.invoice_id)
+        if invoice.payment_method_code == PaymentMethod.CC.value:
+            logger.info('Cannot mark CC invoices as PAID.')
+            return
+
     receipt_date: datetime = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%d-%b-%y')
     receipt_number: str = _get_row_value(row, Column.SOURCE_TXN_NO)
     for inv_ref in inv_references:
