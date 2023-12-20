@@ -92,11 +92,11 @@ def test_send_unpaid_statement_notification(setup, session):
     assert invoice.payment_method_code == PaymentMethod.EFT.value
     assert account.payment_method == PaymentMethod.EFT.value
 
-    now = current_local_time()
+    now = current_local_time().replace(hour=1)
     _, last_day = get_first_and_last_dates_of_month(now.month, now.year)
 
     # Generate statement for previous month - freeze time to the 1st of the current month
-    with freeze_time(current_local_time().replace(day=1)):
+    with freeze_time(current_local_time().replace(day=1, hour=1)):
         StatementTask.generate_statements()
 
     # Assert statements and invoice was created

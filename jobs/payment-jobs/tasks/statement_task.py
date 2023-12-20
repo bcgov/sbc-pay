@@ -22,7 +22,7 @@ from pay_api.models.payment import Payment as PaymentModel
 from pay_api.models.statement import Statement as StatementModel
 from pay_api.models.statement_invoices import StatementInvoices as StatementInvoicesModel
 from pay_api.models.statement_settings import StatementSettings as StatementSettingsModel
-from pay_api.utils.enums import NotificationStatus, StatementFrequency
+from pay_api.utils.enums import NotificationStatus, PaymentMethod, StatementFrequency
 from pay_api.utils.util import (
     get_first_and_last_dates_of_month, get_local_time, get_previous_day, get_previous_month_and_year,
     get_week_start_and_end_date)
@@ -127,8 +127,12 @@ class StatementTask:  # pylint:disable=too-few-public-methods
             current_app.logger.debug(f'Statements for month: {statement_from.date()} to {statement_to.date()}')
         auth_account_ids = [pay_account.auth_account_id for _, pay_account in statement_settings]
         search_filter['authAccountIds'] = auth_account_ids
+        # Force match on these methods where if the payment method is in matchPaymentMethods, the invoice payment method
+        # must match the account payment method. Used for EFT so the statements only show EFT invoices and interim
+        # statement logic when transitioning payment methods
+        search_filter['matchPaymentMethods'] = [PaymentMethod.EFT.value]
         invoices_and_auth_ids = PaymentModel.get_invoices_for_statements(search_filter)
-        if cls.has_date_override:
+        if cls.has_date_override and statement_settings:
             cls._clean_up_old_statements(statement_settings, statement_from, statement_to)
         current_app.logger.debug('Inserting statements.')
         statements = [StatementModel(
@@ -163,7 +167,7 @@ class StatementTask:  # pylint:disable=too-few-public-methods
         remove_statements = db.session.query(StatementModel)\
             .filter_by(
                 frequency=statement_settings[0].StatementSettings.frequency,
-                from_date=statement_from, to_date=statement_to)\
+                from_date=statement_from.date(), to_date=statement_to.date())\
             .filter(StatementModel.payment_account_id.in_(payment_account_ids))\
             .all()
         current_app.logger.debug(f'Removing {len(remove_statements)} existing duplicate/stale statements.')
