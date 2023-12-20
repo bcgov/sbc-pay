@@ -32,6 +32,7 @@ def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='123
     account = PaymentAccount(auth_account_id=auth_account_id,
                              bcol_user_id=bcol_user_id,
                              bcol_account=bcol_account_id,
+                             payment_method=PaymentMethod.DRAWDOWN.value
                              ).save()
     return account
 

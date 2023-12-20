@@ -41,7 +41,8 @@ def test_statements(session):
     2) Mark the account settings as DAILY settlement starting yesterday
     3) Generate statement and assert that the statement contains payment records
     """
-    previous_day = get_previous_day(datetime.utcnow())
+    previous_day = localize_date(get_previous_day(datetime.utcnow()))
+
     bcol_account = factory_premium_payment_account()
     invoice = factory_invoice(payment_account=bcol_account, created_on=previous_day)
     inv_ref = factory_invoice_reference(invoice_id=invoice.id)
