@@ -15,7 +15,10 @@
 
 import pytz
 from marshmallow import fields
-from sqlalchemy import ForeignKey, and_, case, literal_column
+from sqlalchemy import ForeignKey, and_, case, func, literal_column, or_
+from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import aliased
+from sqlalchemy_continuum import transaction_class, version_class
 
 from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
 from pay_api.utils.enums import StatementFrequency
@@ -65,6 +68,26 @@ class Statement(BaseModel):
     created_on = db.Column(db.Date, default=None, nullable=False)
     notification_status_code = db.Column(db.String(20), ForeignKey('notification_status_codes.code'), nullable=True)
     notification_date = db.Column(db.Date, default=None, nullable=True)
+
+    @hybrid_property
+    def payment_methods(self):
+        """Return all payment methods that were active during the statement period based on payment account versions."""
+        payment_account_version = version_class(PaymentAccount)
+        transaction_start = aliased(transaction_class(PaymentAccount))
+        transaction_end = aliased(transaction_class(PaymentAccount))
+
+        subquery = db.session.query(func.array_agg(func.DISTINCT(payment_account_version.payment_method))
+                                    .label('payment_methods'))\
+            .join(Statement, Statement.payment_account_id == payment_account_version.id)\
+            .join(transaction_start, payment_account_version.transaction_id == transaction_start.id)\
+            .outerjoin(transaction_end, payment_account_version.end_transaction_id == transaction_end.id)\
+            .filter(payment_account_version.id == self.payment_account_id) \
+            .filter(and_(Statement.id == self.id, transaction_start.issued_at <= Statement.to_date,
+                         or_(transaction_end.issued_at >= Statement.from_date,
+                             transaction_end.id.is_(None))))\
+            .group_by(Statement.id).first()
+
+        return subquery[0] if subquery else []
 
     @classmethod
     def find_all_statements_for_account(cls, auth_account_id: str, page, limit):
@@ -126,3 +149,4 @@ class StatementSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
     from_date = fields.Date(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))
     to_date = fields.Date(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))
     is_overdue = fields.Boolean()
+    payment_methods = fields.List(fields.String())

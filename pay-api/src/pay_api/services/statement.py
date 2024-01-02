@@ -12,21 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service class to control all the operations related to statements."""
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from typing import List
 
 from flask import current_app
 from sqlalchemy import func
 
-from pay_api.models import db
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.models import StatementSchema as StatementModelSchema
-from pay_api.utils.enums import ContentType, InvoiceStatus, StatementFrequency
+from pay_api.models import StatementSettings as StatementSettingsModel
+from pay_api.models import db
 from pay_api.utils.constants import DT_SHORT_FORMAT
-from pay_api.utils.util import get_local_formatted_date
+from pay_api.utils.enums import ContentType, InvoiceStatus, NotificationStatus, StatementFrequency
+from pay_api.utils.util import get_first_and_last_of_frequency, get_local_formatted_date, get_local_time
+
 from .payment import Payment as PaymentService
 
 
@@ -219,3 +222,61 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         for statement in statements:
             statement.is_overdue = overdue_statements.get(statement.id, 0) > 0
         return statements
+
+    @staticmethod
+    def generate_interim_statement(auth_account_id: str, new_frequency: str):
+        """Generate interim statement."""
+        today = get_local_time(datetime.today())
+
+        # This can happen during account creation when the default active settings do not exist yet
+        # No interim statement is needed in this case
+        if not (active_settings := StatementSettingsModel.find_active_settings(str(auth_account_id), today)):
+            return None
+
+        account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+
+        # End the current statement settings
+        active_settings.to_date = today
+        active_settings.save()
+        statement_from, statement_to = get_first_and_last_of_frequency(today, active_settings.frequency)
+        statement_filter = {
+            'dateFilter': {
+                'startDate': statement_from.strftime('%Y-%m-%d'),
+                'endDate': statement_to.strftime('%Y-%m-%d')
+            },
+            'authAccountIds': [account.auth_account_id]
+        }
+
+        # Generate interim statement
+        statement = StatementModel(
+            frequency=active_settings.frequency,
+            statement_settings_id=active_settings.id,
+            payment_account_id=account.id,
+            created_on=today,
+            from_date=statement_from,
+            to_date=today,
+            notification_status_code=NotificationStatus.PENDING.value
+            if account.statement_notification_enabled else NotificationStatus.SKIP.value
+        ).save()
+
+        invoices_and_auth_ids = PaymentModel.get_invoices_for_statements(statement_filter)
+        invoices = list(invoices_and_auth_ids)
+
+        statement_invoices = [StatementInvoicesModel(
+            statement_id=statement.id,
+            invoice_id=invoice.id
+        ) for invoice in invoices]
+
+        db.session.bulk_save_objects(statement_invoices)
+
+        # Create new statement settings for the transition
+        latest_settings = StatementSettingsModel.find_latest_settings(str(auth_account_id))
+        if latest_settings is None or latest_settings.id == active_settings.id:
+            latest_settings = StatementSettingsModel()
+
+        latest_settings.frequency = new_frequency
+        latest_settings.payment_account_id = account.id
+        latest_settings.from_date = today + timedelta(days=1)
+        latest_settings.save()
+
+        return statement

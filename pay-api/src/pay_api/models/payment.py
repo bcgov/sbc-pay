@@ -19,7 +19,7 @@ from typing import Dict
 import pytz
 from flask import current_app
 from marshmallow import fields
-from sqlalchemy import Boolean, ForeignKey, String, cast, func, or_, text
+from sqlalchemy import Boolean, ForeignKey, String, and_, cast, func, not_, or_, text
 from sqlalchemy.orm import contains_eager, lazyload, load_only, relationship
 from sqlalchemy.sql.expression import literal
 
@@ -267,6 +267,18 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         query = db.session.query(Invoice) \
             .join(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)\
             .filter(PaymentAccount.auth_account_id.in_(search_filter.get('authAccountIds', [])))
+
+        # If an account is within these payment methods - limit invoices to these payment methods.
+        # Used for transitioning payment method and an interim statement is created (There could be different payment
+        # methods for the transition day and we don't want it on both statements)
+        if payment_methods := search_filter.get('matchPaymentMethods', None):
+            query = query.filter(
+                or_(
+                    not_(PaymentAccount.payment_method.in_(payment_methods)),
+                    and_(PaymentAccount.payment_method.in_(payment_methods),
+                         Invoice.payment_method_code == PaymentAccount.payment_method)
+                ))
+
         query = cls.filter_date(query, search_filter).with_entities(Invoice.id, PaymentAccount.auth_account_id)
         return query.all()
 

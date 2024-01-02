@@ -16,17 +16,20 @@
 
 Test-Suite to ensure that the UpdateStalePayment is working as expected.
 """
-from datetime import datetime, timedelta
-from freezegun import freeze_time
+from datetime import datetime, timedelta, timezone
 
+import pytz
+from freezegun import freeze_time
 from pay_api.models import Statement, StatementInvoices
+from pay_api.services import Statement as StatementService
+from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
 from pay_api.utils.util import get_previous_day
 
 from tasks.statement_task import StatementTask
 
 from .factory import (
-    factory_invoice, factory_invoice_reference, factory_payment, factory_premium_payment_account,
-    factory_statement_settings)
+    factory_create_account, factory_invoice, factory_invoice_reference, factory_payment,
+    factory_premium_payment_account, factory_statement_settings)
 
 
 @freeze_time('2023-01-02 12:00:00T08:00:00')
@@ -38,7 +41,8 @@ def test_statements(session):
     2) Mark the account settings as DAILY settlement starting yesterday
     3) Generate statement and assert that the statement contains payment records
     """
-    previous_day = get_previous_day(datetime.utcnow())
+    previous_day = localize_date(get_previous_day(datetime.utcnow()))
+
     bcol_account = factory_premium_payment_account()
     invoice = factory_invoice(payment_account=bcol_account, created_on=previous_day)
     inv_ref = factory_invoice_reference(invoice_id=invoice.id)
@@ -111,3 +115,174 @@ def test_statements_for_empty_results(session):
     assert statements is not None
     invoices = StatementInvoices.find_all_invoices_for_statement(statements[0][0].id)
     assert len(invoices) == 0
+
+
+def test_bcol_weekly_to_eft_statement(session):
+    """Test transition to EFT statement with an existing weekly interim statement."""
+    # Account set up
+    account_create_date = datetime(2023, 10, 1, 12, 0)
+    with freeze_time(account_create_date):
+        account = factory_create_account(auth_account_id='1', payment_method_code=PaymentMethod.EFT.value)
+        assert account is not None
+
+    # Setup previous payment method interim statement data
+    invoice_create_date = localize_date(datetime(2023, 10, 9, 12, 0))
+    weekly_invoice = factory_invoice(payment_account=account, created_on=invoice_create_date,
+                                     payment_method_code=PaymentMethod.DRAWDOWN.value,
+                                     status_code=InvoiceStatus.CREATED.value,
+                                     total=50)
+
+    assert weekly_invoice is not None
+    assert weekly_invoice.created_on == invoice_create_date.astimezone(timezone.utc).replace(tzinfo=None)
+
+    statement_from_date = localize_date(datetime(2023, 10, 8, 12, 0))
+    statement_to_date = localize_date(datetime(2023, 10, 12, 12, 0))
+
+    # Set up initial statement settings
+    factory_statement_settings(
+        pay_account_id=account.id,
+        from_date=statement_from_date,
+        to_date=statement_to_date,
+        frequency=StatementFrequency.WEEKLY.value
+    ).save()
+
+    generate_date = localize_date(datetime(2023, 10, 12, 12, 0))
+    with freeze_time(generate_date):
+        weekly_statement = StatementService.generate_interim_statement(auth_account_id=account.auth_account_id,
+                                                                       new_frequency=StatementFrequency.MONTHLY.value)
+
+    # Validate weekly interim invoice is correct
+    weekly_invoices = StatementInvoices.find_all_invoices_for_statement(weekly_statement.id)
+    assert weekly_invoices is not None
+    assert len(weekly_invoices) == 1
+    assert weekly_invoices[0].invoice_id == weekly_invoice.id
+
+    # Generate monthly statement using the 1st of next month
+    generate_date = localize_date(datetime(2023, 11, 1, 12, 0))
+    with freeze_time(generate_date):
+        StatementTask.generate_statements()
+
+    # Validate there are no invoices associated with this statement
+    statements = Statement.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
+                                                           limit=100)
+    assert statements is not None
+    assert len(statements[0]) == 2
+    first_statement_id = statements[0][0].id
+    monthly_invoices = StatementInvoices.find_all_invoices_for_statement(first_statement_id)
+    assert len(monthly_invoices) == 0
+
+    # Set up and EFT invoice
+    # Using the same invoice create date as the weekly to test invoices on the same day with different payment methods
+    monthly_invoice = factory_invoice(payment_account=account, created_on=invoice_create_date,
+                                      payment_method_code=PaymentMethod.EFT.value,
+                                      status_code=InvoiceStatus.CREATED.value,
+                                      total=50)
+
+    assert monthly_invoice is not None
+    assert monthly_invoice.created_on == invoice_create_date.astimezone(timezone.utc).replace(tzinfo=None)
+
+    # Regenerate monthly statement using date override - it will clean up the previous empty monthly statement first
+    StatementTask.generate_statements((generate_date - timedelta(days=1)).strftime('%Y-%m-%d'))
+
+    statements = Statement.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
+                                                           limit=100)
+
+    assert statements is not None
+    assert len(statements[0]) == 2  # Should still be 2 statements as the previous empty one should be removed
+    first_statement_id = statements[0][0].id
+    monthly_invoices = StatementInvoices.find_all_invoices_for_statement(first_statement_id)
+    assert monthly_invoices is not None
+    assert len(monthly_invoices) == 1
+    assert monthly_invoices[0].invoice_id == monthly_invoice.id
+
+
+def test_bcol_monthly_to_eft_statement(session):
+    """Test transition to EFT statement with an existing monthly interim statement."""
+    # Account set up
+    account_create_date = datetime(2023, 10, 1, 12, 0)
+    with freeze_time(account_create_date):
+        account = factory_create_account(auth_account_id='1', payment_method_code=PaymentMethod.EFT.value)
+        assert account is not None
+
+    # Setup previous payment method interim statement data
+    invoice_create_date = localize_date(datetime(2023, 10, 9, 12, 0))
+    bcol_invoice = factory_invoice(payment_account=account, created_on=invoice_create_date,
+                                   payment_method_code=PaymentMethod.DRAWDOWN.value,
+                                   status_code=InvoiceStatus.CREATED.value,
+                                   total=50)
+
+    assert bcol_invoice is not None
+    assert bcol_invoice.created_on == invoice_create_date.astimezone(timezone.utc).replace(tzinfo=None)
+
+    statement_from_date = localize_date(datetime(2023, 10, 1, 12, 0))
+    statement_to_date = localize_date(datetime(2023, 10, 30, 12, 0))
+
+    # Set up initial statement settings
+    factory_statement_settings(
+        pay_account_id=account.id,
+        from_date=statement_from_date,
+        to_date=statement_to_date,
+        frequency=StatementFrequency.MONTHLY.value
+    ).save()
+
+    generate_date = localize_date(datetime(2023, 10, 12, 12, 0))
+    with freeze_time(generate_date):
+        bcol_monthly_statement = StatementService\
+            .generate_interim_statement(auth_account_id=account.auth_account_id,
+                                        new_frequency=StatementFrequency.MONTHLY.value)
+
+    # Validate bcol monthly interim invoice is correct
+    bcol_invoices = StatementInvoices.find_all_invoices_for_statement(bcol_monthly_statement.id)
+    assert bcol_invoices is not None
+    assert len(bcol_invoices) == 1
+    assert bcol_invoices[0].invoice_id == bcol_invoice.id
+
+    # Generate monthly statement using the 1st of next month
+    generate_date = localize_date(datetime(2023, 11, 1, 12, 0))
+    with freeze_time(generate_date):
+        StatementTask.generate_statements()
+
+    # Validate there are no invoices associated with this statement
+    statements = Statement.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
+                                                           limit=100)
+    assert statements is not None
+    assert len(statements[0]) == 2
+    first_statement_id = statements[0][0].id
+    monthly_invoices = StatementInvoices.find_all_invoices_for_statement(first_statement_id)
+    assert len(monthly_invoices) == 0
+
+    # Set up and EFT invoice
+    # Using the same invoice create date as the weekly to test invoices on the same day with different payment methods
+    monthly_invoice = factory_invoice(payment_account=account, created_on=invoice_create_date,
+                                      payment_method_code=PaymentMethod.EFT.value,
+                                      status_code=InvoiceStatus.CREATED.value,
+                                      total=50)
+
+    assert monthly_invoice is not None
+    assert monthly_invoice.created_on == invoice_create_date.astimezone(timezone.utc).replace(tzinfo=None)
+
+    # Regenerate monthly statement using date override - it will clean up the previous empty monthly statement first
+    StatementTask.generate_statements((generate_date - timedelta(days=1)).strftime('%Y-%m-%d'))
+
+    statements = Statement.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
+                                                           limit=100)
+
+    assert statements is not None
+    assert len(statements[0]) == 2  # Should still be 2 statements as the previous empty one should be removed
+    first_statement_id = statements[0][0].id
+    monthly_invoices = StatementInvoices.find_all_invoices_for_statement(first_statement_id)
+    assert monthly_invoices is not None
+    assert len(monthly_invoices) == 1
+    assert monthly_invoices[0].invoice_id == monthly_invoice.id
+
+    # Validate bcol monthly interim invoice is correct
+    bcol_invoices = StatementInvoices.find_all_invoices_for_statement(bcol_monthly_statement.id)
+    assert bcol_invoices is not None
+    assert len(bcol_invoices) == 1
+    assert bcol_invoices[0].invoice_id == bcol_invoice.id
+
+
+def localize_date(date: datetime):
+    """Localize date object by adding timezone information."""
+    pst = pytz.timezone('America/Vancouver')
+    return pst.localize(date)

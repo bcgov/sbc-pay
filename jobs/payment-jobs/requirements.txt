@@ -1,5 +1,5 @@
 -e git+https://github.com/bcgov/sbc-common-components.git@1aa7dc8ed3897ad4bf679c789ac6c66c88550bfe#egg=sbc_common_components&subdirectory=python
--e git+https://github.com/bcgov/sbc-pay.git@ae7cc881403fb5aecfa1f05534a1441cc3953cd1#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-pay.git@d8986803ca92cd2f3f78fd35a67765da28c754ef#egg=pay_api&subdirectory=pay-api
 Flask-Caching==2.0.2
 Flask-Migrate==2.7.0
 Flask-Moment==1.0.5
@@ -51,7 +51,7 @@ grpcio-status==1.48.2
 grpcio==1.56.0
 gunicorn==20.1.0
 hijri-converter==2.3.1
-holidays==0.23
+holidays==0.37
 idna==3.4
 importlib-metadata==6.7.0
 importlib-resources==5.12.0
@@ -66,7 +66,7 @@ minio==7.1.15
 more-itertools==9.1.0
 opentracing==2.4.0
 packaging==23.1
-paramiko==3.2.0
+paramiko==3.4.0
 pkgutil_resolve_name==1.3.10
 proto-plus==1.22.3
 protobuf==3.19.6
