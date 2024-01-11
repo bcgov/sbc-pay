@@ -10,7 +10,7 @@ pysftp
 minio
 jaeger-client
 itsdangerous==2.0.1
-Jinja2==3.0.3
+Jinja2==3.1.3
 protobuf~=3.19.5
 launchdarkly-server-sdk
 
