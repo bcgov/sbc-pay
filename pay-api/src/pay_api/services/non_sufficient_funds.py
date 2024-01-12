@@ -71,10 +71,9 @@ class NonSufficientFundsService:
         """Return all Non-Sufficient Funds invoices and their aggregate amounts."""
         query = (db.session.query(
             InvoiceModel, InvoiceReferenceModel)
-            .join(NonSufficientFundsModel, NonSufficientFundsModel.invoice_id == InvoiceModel.id)
-            .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
-            .join(PaymentLineItemModel, PaymentLineItemModel.invoice_id == InvoiceModel.id)
             .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id)
+            .outerjoin(NonSufficientFundsModel, NonSufficientFundsModel.invoice_id == InvoiceModel.id)
+            .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
             .filter(PaymentAccountModel.auth_account_id == account_id)
             .group_by(InvoiceModel.id, InvoiceReferenceModel.id)
         )
