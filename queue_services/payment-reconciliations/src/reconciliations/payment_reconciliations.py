@@ -454,7 +454,7 @@ def _process_failed_payments(row):
     # If there is an NSF invoice with a remaining balance, it means it's a duplicate event. Ignore it.
     non_sufficient_funds = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(
         account_id=payment_account.auth_account_id)
-    if non_sufficient_funds.total_amount_remaining > 0:
+    if non_sufficient_funds['total_amount_remaining'] > 0:
         logger.info('Ignoring duplicate NSF message for invoice : %s ', inv_number)
         return False
 
