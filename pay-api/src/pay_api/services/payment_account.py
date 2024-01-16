@@ -773,7 +773,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 f'Notification to Queue failed for the Account Mailer : {payload}.',
                 level='error')
 
-    def _create_account_event_payload(self, event_type: str, nsf_object: dict = None,
+    def create_account_event_payload(self, event_type: str, nsf_object: dict = None,
             include_pay_info: bool = False):
         """Return event payload for account."""
         payload: Dict[str, any] = {
@@ -794,8 +794,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             payload['data']['paymentMethodDescription'] = nsf_object.payment.payment_method_code
             payload['data']['filingIdentifier'] = nsf_object.filing_identifier
             payload['data']['receiptNumber'] = nsf_object.receipt_number
-
-            
         if event_type == MessageType.PAD_ACCOUNT_CREATE.value:
             payload['data']['padTosAcceptedBy'] = self.pad_tos_accepted_by
         if include_pay_info:
@@ -832,7 +830,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 MessageType.NSF_UNLOCK_ACCOUNT.value,
                 nsf_object=nsf_object
             )
-            
+
             try:
                 publish_response(payload=payload,
                                 client_name=current_app.config['NATS_ACCOUNT_CLIENT_NAME'],
