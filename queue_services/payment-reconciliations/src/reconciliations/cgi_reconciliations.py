@@ -267,7 +267,8 @@ def _fix_invoice_line(line):
 async def _update_invoice_disbursement_status(invoice, effective_date: datetime):
     """Update status to reversed if its a refund, else to completed."""
     invoice.disbursement_date = effective_date
-    if invoice.invoice_status_code in (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value):
+    if invoice.invoice_status_code in (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value,
+                                       InvoiceStatus.CREDITED.value):
         invoice.disbursement_status_code = DisbursementStatus.REVERSED.value
     else:
         invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value

@@ -14,7 +14,7 @@
 """Service to manage Payment Account model related operations."""
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -30,20 +30,25 @@ from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentAccountSchema
+from pay_api.models import StatementRecipients as StatementRecipientModel
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.distribution_code import DistributionCode
+from pay_api.services.oauth_service import OAuthService
 from pay_api.services.queue_publisher import publish_response
+from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentSystem, StatementFrequency)
+    AuthHeaderType, CfsAccountStatus, ContentType, InvoiceStatus, MessageType, PaymentMethod, PaymentSystem,
+    StatementFrequency)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
     current_local_time, get_local_formatted_date, get_outstanding_txns_from_date, get_str_by_path, mask)
 
 from .payment import Payment
+from .flags import flags
 
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -346,6 +351,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
         PaymentAccount._save_account(account_request, account, is_sandbox)
         PaymentAccount._persist_default_statement_frequency(account.id)
+        PaymentAccount._check_and_update_statement_notifications(account)
 
         payment_account = PaymentAccount()
         payment_account._dao = account  # pylint: disable=protected-access
@@ -354,6 +360,15 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
         current_app.logger.debug('>create payment account')
         return payment_account
+
+    @classmethod
+    def _check_and_handle_payment_method(cls, account: PaymentAccountModel, target_payment_method: str):
+        """Check if the payment method has changed and invoke handling logic."""
+        if account.payment_method == target_payment_method or target_payment_method != PaymentMethod.EFT.value:
+            return
+
+        # Payment method has changed and is EFT
+        Statement.generate_interim_statement(account.auth_account_id, StatementFrequency.MONTHLY.value)
 
     @classmethod
     def _check_and_update_statement_settings(cls, payment_account: PaymentAccountModel):
@@ -368,6 +383,47 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
             if statements_settings is not None and statements_settings.frequency != StatementFrequency.MONTHLY.value:
                 StatementSettings.update_statement_settings(auth_account_id, StatementFrequency.MONTHLY.value)
+                PaymentAccount._check_and_update_statement_notifications(payment_account)
+
+    @classmethod
+    @user_context
+    def _get_account_admin_users(cls, payment_account: PaymentAccountModel, **kwargs):
+        """Retrieve account admin users."""
+        return OAuthService.get(
+            current_app.config.get('AUTH_API_ENDPOINT') +
+            f'orgs/{payment_account.auth_account_id}/members?status=ACTIVE&roles=ADMIN',
+            kwargs['user'].bearer_token, AuthHeaderType.BEARER,
+            ContentType.JSON).json()
+
+    @classmethod
+    def _check_and_update_statement_notifications(cls, payment_account: PaymentAccountModel):
+        """Check and update statement notification and recipients."""
+        if payment_account.payment_method != PaymentMethod.EFT.value:
+            return
+
+        # Automatically enable notifications for EFT
+        payment_account.statement_notification_enabled = True
+        payment_account.save()
+
+        recipients: [StatementRecipientModel] = StatementRecipientModel. \
+            find_all_recipients_for_payment_id(payment_account.id)
+
+        if recipients:
+            return
+
+        # Auto-populate recipients with current account admins if there are currently none
+        org_admins_response = cls._get_account_admin_users(payment_account)
+
+        members = org_admins_response.get('members') if org_admins_response.get('members', None) else []
+        for member in members:
+            if (user := member.get('user')) and (contacts := user.get('contacts')):
+                StatementRecipientModel(
+                    auth_user_id=user.get('id'),
+                    firstname=user.get('firstname'),
+                    lastname=user.get('lastname'),
+                    email=contacts[0].get('email'),
+                    payment_account_id=payment_account.id
+                ).save()
 
     @classmethod
     def _save_account(cls, account_request: Dict[str, any], payment_account: PaymentAccountModel,
@@ -380,6 +436,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
         # If the payment method is CC, set the payment_method as DIRECT_PAY
         if payment_method := get_str_by_path(account_request, 'paymentInfo/methodOfPayment'):
+            if flags.is_on('enable-eft-payment-method', default=False):
+                cls._check_and_handle_payment_method(payment_account, payment_method)
+
             payment_account.payment_method = payment_method
             payment_account.bcol_account = account_request.get('bcolAccountNumber', None)
             payment_account.bcol_user_id = account_request.get('bcolUserId', None)
@@ -561,7 +620,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
         statement_settings_model = StatementSettingsModel(
             frequency=frequency,
-            payment_account_id=payment_account_id
+            payment_account_id=payment_account_id,
+            from_date=date.today()  # To help with mocking tests - freeze_time doesn't seem to work on the model default
         )
         statement_settings_model.save()
 

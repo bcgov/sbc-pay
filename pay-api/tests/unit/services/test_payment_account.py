@@ -27,6 +27,7 @@ from pay_api.models import EFTFile as EFTFileModel
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import StatementRecipients as StatementRecipientModel
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, StatementFrequency
@@ -264,7 +265,7 @@ def test_patch_account(session, payload):
     assert pay_account.eft_enable is True
 
 
-def test_payment_request_eft_with_credit(session, client, jwt, app):
+def test_payment_request_eft_with_credit(session, client, jwt, app, admin_users_mock):
     """Assert EFT credits can be properly applied."""
     payment_account: PaymentAccountService = PaymentAccountService.create(
         get_premium_account_payload(payment_method=PaymentMethod.EFT.value))
@@ -339,7 +340,7 @@ def test_payment_request_eft_with_credit(session, client, jwt, app):
     assert eft_credit_2.remaining_amount == 10
 
 
-def test_eft_payment_method_settings(session, client, jwt, app):
+def test_eft_payment_method_settings(session, client, jwt, app, admin_users_mock):
     """Assert EFT payment method statement settings are applied."""
     # Validate on account create with EFT payment method that statement settings are automatically set to MONTHLY
     payment_account: PaymentAccountService = PaymentAccountService.create(
@@ -353,6 +354,13 @@ def test_eft_payment_method_settings(session, client, jwt, app):
 
     assert statement_settings is not None
     assert statement_settings.frequency == StatementFrequency.MONTHLY.value
+
+    # Validate statement notifications enabled and recipients set up
+    statement_recipients: [StatementRecipientModel] = StatementRecipientModel \
+        .find_all_recipients(payment_account.auth_account_id)
+
+    assert statement_recipients
+    assert len(statement_recipients) == 1
 
     # Validate on account update to EFT payment method that statement settings are automatically set to MONTHLY
     payment_account_2: PaymentAccountService = PaymentAccountService.create(
