@@ -755,7 +755,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def publish_account_mailer_event_on_creation(self):
         """Publish to account mailer message to send out confirmation email on creation."""
         if self.payment_method == PaymentMethod.PAD.value:
-            payload = self._create_account_event_payload(MessageType.PAD_ACCOUNT_CREATE.value, include_pay_info=True)
+            payload = self.create_account_event_payload(MessageType.PAD_ACCOUNT_CREATE.value, include_pay_info=True)
             self._publish_queue_message(payload)
 
     def _publish_queue_message(self, payload):
@@ -774,7 +774,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 level='error')
 
     def create_account_event_payload(self, event_type: str, nsf_object: dict = None,
-            include_pay_info: bool = False):
+                                     include_pay_info: bool = False):
         """Return event payload for account."""
         payload: Dict[str, any] = {
             'specversion': '1.x-wip',
@@ -826,15 +826,15 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 'receipt_number': receipt_number
             }
 
-            payload = pay_account._create_account_event_payload(
+            payload = pay_account.create_account_event_payload(
                 MessageType.NSF_UNLOCK_ACCOUNT.value,
                 nsf_object=nsf_object
             )
 
             try:
                 publish_response(payload=payload,
-                                client_name=current_app.config['NATS_ACCOUNT_CLIENT_NAME'],
-                                subject=current_app.config['NATS_ACCOUNT_SUBJECT'])
+                                 client_name=current_app.config['NATS_ACCOUNT_CLIENT_NAME'],
+                                 subject=current_app.config['NATS_ACCOUNT_SUBJECT'])
             except Exception as e:  # NOQA pylint: disable=broad-except
                 current_app.logger.error(e)
                 current_app.logger.error(
@@ -883,6 +883,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         pay_account.save()
         pa_service = cls.find_by_id(pay_account.id)
         if not already_has_eft_enabled:
-            payload = pa_service._create_account_event_payload(MessageType.EFT_AVAILABLE_NOTIFICATION.value)
+            payload = pa_service.create_account_event_payload(MessageType.EFT_AVAILABLE_NOTIFICATION.value)
             pa_service._publish_queue_message(payload)
         return pa_service
