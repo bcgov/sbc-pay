@@ -792,8 +792,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         if event_type == MessageType.NSF_UNLOCK_ACCOUNT.value:
             payload['data']['invoiceNumber'] = nsf_object.payment.invoice_number
             payload['data']['paymentMethodDescription'] = nsf_object.payment.payment_method_code
-            payload['data']['filingIdentifier'] = nsf_object.filing_identifier
-            payload['data']['receiptNumber'] = nsf_object.receipt_number
+            payload['data']['receiptNumber'] = nsf_object.payment.receipt_number
         if event_type == MessageType.PAD_ACCOUNT_CREATE.value:
             payload['data']['padTosAcceptedBy'] = self.pad_tos_accepted_by
         if include_pay_info:
@@ -806,7 +805,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return payload
 
     @staticmethod
-    def unlock_frozen_accounts(payment: Payment, filing_identifier: str, receipt_number: str):
+    def unlock_frozen_accounts(payment: Payment):
         """Unlock frozen accounts."""
         pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.payment_account_id)
         if pay_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
@@ -821,9 +820,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             # get nsf payment object associated with this payment
 
             nsf_object = {
-                'payment': payment,
-                'filing_identifier': filing_identifier,
-                'receipt_number': receipt_number
+                'payment': payment
             }
 
             payload = pay_account.create_account_event_payload(
