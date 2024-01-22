@@ -680,7 +680,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 eft_credit_id=eft_credit.id,
                 invoice_id=invoice.id
             )
-            _ =  credit_invoice_link.save() if auto_save else db.session.add(credit_invoice_link)
+            _ = credit_invoice_link.save() if auto_save else db.session.add(credit_invoice_link)
 
             if eft_credit.remaining_amount >= invoice_balance:
                 # Credit covers the full invoice balance
