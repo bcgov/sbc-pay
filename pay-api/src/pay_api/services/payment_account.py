@@ -48,6 +48,7 @@ from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
     current_local_time, get_local_formatted_date, get_outstanding_txns_from_date, get_str_by_path, mask)
 
+from .payment import Payment
 from .flags import flags
 
 
@@ -759,7 +760,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def publish_account_mailer_event_on_creation(self):
         """Publish to account mailer message to send out confirmation email on creation."""
         if self.payment_method == PaymentMethod.PAD.value:
-            payload = self._create_account_event_payload(MessageType.PAD_ACCOUNT_CREATE.value, include_pay_info=True)
+            payload = self.create_account_event_payload(MessageType.PAD_ACCOUNT_CREATE.value, include_pay_info=True)
             self._publish_queue_message(payload)
 
     def _publish_queue_message(self, payload):
@@ -777,7 +778,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 f'Notification to Queue failed for the Account Mailer : {payload}.',
                 level='error')
 
-    def _create_account_event_payload(self, event_type: str, include_pay_info: bool = False):
+    def create_account_event_payload(self, event_type: str, nsf_object: dict = None,
+                                     include_pay_info: bool = False):
         """Return event payload for account."""
         payload: Dict[str, any] = {
             'specversion': '1.x-wip',
@@ -792,6 +794,10 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             }
         }
 
+        if event_type == MessageType.NSF_UNLOCK_ACCOUNT.value:
+            payload['data']['invoiceNumber'] = nsf_object['invoice_number']
+            payload['data']['paymentMethodDescription'] = nsf_object['payment_method_code']
+            payload['data']['receiptNumber'] = nsf_object['receipt_number']
         if event_type == MessageType.PAD_ACCOUNT_CREATE.value:
             payload['data']['padTosAcceptedBy'] = self.pad_tos_accepted_by
         if include_pay_info:
@@ -804,9 +810,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return payload
 
     @staticmethod
-    def unlock_frozen_accounts(account_id: int):
+    def unlock_frozen_accounts(payment: Payment):
         """Unlock frozen accounts."""
-        pay_account: PaymentAccount = PaymentAccount.find_by_id(account_id)
+        pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.payment_account_id)
         if pay_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
             current_app.logger.info(f'Unlocking Frozen Account {pay_account.auth_account_id}')
             # update CSF
@@ -816,8 +822,17 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             cfs_account.status = CfsAccountStatus.ACTIVE.value
             cfs_account.save()
 
-            payload = pay_account._create_account_event_payload(  # pylint:disable=protected-access
-                'bc.registry.payment.unlockAccount'
+            # get nsf payment object associated with this payment
+
+            nsf_object = {
+                'invoice_number': payment.invoice_number,
+                'payment_method_code': payment.payment_method_code,
+                'receipt_number': payment.receipt_number
+            }
+
+            payload = pay_account.create_account_event_payload(
+                MessageType.NSF_UNLOCK_ACCOUNT.value,
+                nsf_object=nsf_object
             )
 
             try:
@@ -872,6 +887,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         pay_account.save()
         pa_service = cls.find_by_id(pay_account.id)
         if not already_has_eft_enabled:
-            payload = pa_service._create_account_event_payload(MessageType.EFT_AVAILABLE_NOTIFICATION.value)
+            payload = pa_service.create_account_event_payload(MessageType.EFT_AVAILABLE_NOTIFICATION.value)
             pa_service._publish_queue_message(payload)
         return pa_service

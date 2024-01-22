@@ -368,8 +368,15 @@
         font-family: 'BCSans-Bold', sans-serif;
         font-size: 18px;
         color: #234075;
-        border-bottom: 1px solid #b3bac3;
         font-weight: bold;
+      }
+
+      .transaction-amount {
+        margin-left: 24px;
+        padding-bottom: 12px;
+        font-size: 16px;
+        font-weight: 800;
+        font-family: 'BCSans-Bold', sans-serif;
       }
 
       .section-payment-title {
@@ -621,8 +628,15 @@
       {% else %}
       <tr>
         <td colspan="2">
-          <div class="section-title blue-border-bottom">
+          <div class="section-title">
             Transactions
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <div class="transaction-amount blue-border-bottom">
+            Number of Transactions: {{invoice.lineItems|length}}
           </div>
         </td>
       </tr>

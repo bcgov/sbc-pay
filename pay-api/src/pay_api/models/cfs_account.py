@@ -92,6 +92,12 @@ class CfsAccount(VersionedModel):  # pylint:disable=too-many-instance-attributes
                                        CfsAccount.status != CfsAccountStatus.INACTIVE.value).one_or_none()
 
     @classmethod
+    def find_latest_account_by_account_id(cls, account_id: str):
+        """Return a frozen account by account_id, and return the record with the highest id."""
+        return CfsAccount.query.filter(
+            CfsAccount.account_id == account_id).order_by(CfsAccount.id.desc()).one_or_none()
+
+    @classmethod
     def find_by_account_id(cls, account_id: str) -> List[CfsAccount]:
         """Return a Account by id."""
         return CfsAccount.query.filter(CfsAccount.account_id == account_id).all()
