@@ -676,21 +676,19 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         # Deduct credits and apply to the invoice
         now = datetime.now()
         for eft_credit in eft_credits:
-            credit_invoice_link = EFTCreditInvoiceLinkModel(
+            EFTCreditInvoiceLinkModel(
                 eft_credit_id=eft_credit.id,
-                invoice_id=invoice.id
-            )
-            _ = credit_invoice_link.save() if auto_save else db.session.add(credit_invoice_link)
+                invoice_id=invoice.id).save_or_add(auto_save)
 
             if eft_credit.remaining_amount >= invoice_balance:
                 # Credit covers the full invoice balance
                 eft_credit.remaining_amount -= invoice_balance
-                _ = eft_credit.save() if auto_save else db.session.add(eft_credit)
+                eft_credit.save_or_add(auto_save)
 
                 invoice.payment_date = now
                 invoice.paid = invoice.total
                 invoice.invoice_status_code = InvoiceStatus.PAID.value
-                _ = invoice.save() if auto_save else db.session.add(invoice)
+                invoice.save_or_add(auto_save)
                 break
 
             # Credit covers partial invoice balance
@@ -700,9 +698,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             invoice.invoice_status_code = InvoiceStatus.PARTIAL.value
 
             eft_credit.remaining_amount = 0
-            _ = eft_credit if auto_save else db.session.add(eft_credit)
+            eft_credit.save_or_add(auto_save)
 
-        _ = invoice if auto_save else db.session.add(invoice)
+        invoice.save_or_add(auto_save)
 
     @staticmethod
     def _calculate_activation_date():

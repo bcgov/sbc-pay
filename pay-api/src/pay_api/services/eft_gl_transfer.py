@@ -76,33 +76,27 @@ class EFTGlTransfer:
         """Return EFT Transfers by search criteria."""
         query = db.session.query(EFTGLTransferModel)
 
-        if search_criteria.created_on:
-            query = query.filter(func.DATE(EFTGLTransferModel.created_on) == search_criteria.created_on.date())
-
-        if search_criteria.invoice_id:
-            query = query.filter(EFTGLTransferModel.invoice_id == search_criteria.invoice_id)
-
-        if search_criteria.is_processed is not None:
-            query = query.filter(EFTGLTransferModel.is_processed == search_criteria.is_processed)
-
-        if search_criteria.processed_on:
-            query = query.filter(func.DATE(EFTGLTransferModel.processed_on) == search_criteria.processed_on.date())
-
-        if search_criteria.short_name_id:
-            query = query.filter(EFTGLTransferModel.short_name_id == search_criteria.short_name_id)
-
-        if search_criteria.source_gl:
-            query = query.filter(EFTGLTransferModel.source_gl == search_criteria.source_gl)
-
-        if search_criteria.target_gl:
-            query = query.filter(EFTGLTransferModel.target_gl == search_criteria.target_gl)
-
-        if search_criteria.transfer_type:
-            query = query.filter(EFTGLTransferModel.transfer_type == search_criteria.transfer_type)
-
-        if search_criteria.transfer_date:
-            query = query.filter(func.DATE(EFTGLTransferModel.transfer_date) == search_criteria.transfer_date.date())
+        query = EFTGlTransfer.filterIfPresent(query, search_criteria.created_on, EFTGLTransferModel.created_on)
+        query = EFTGlTransfer.filterIfPresent(query, search_criteria.invoice_id, EFTGLTransferModel.invoice_id)
+        query = EFTGlTransfer.filterIfPresent(query, search_criteria.is_processed, EFTGLTransferModel.is_processed)
+        query = EFTGlTransfer.filterIfPresent(query, search_criteria.processed_on, EFTGLTransferModel.processed_on)
+        query = EFTGlTransfer.filterIfPresent(query, search_criteria.short_name_id, EFTGLTransferModel.short_name_id)
+        query = EFTGlTransfer.filterIfPresent(query, search_criteria.source_gl, EFTGLTransferModel.source_gl)
+        query = EFTGlTransfer.filterIfPresent(query, search_criteria.target_gl, EFTGLTransferModel.target_gl)
+        query = EFTGlTransfer.filterIfPresent(query, search_criteria.transfer_type, EFTGLTransferModel.transfer_type)
+        query = EFTGlTransfer.filterIfPresent(query, search_criteria.transfer_date, EFTGLTransferModel.transfer_date)
 
         query = query.order_by(EFTGLTransferModel.created_on.asc())
 
         return query.all()
+
+    @staticmethod
+    def filterIfPresent(query, search_criteria, model_attribute):
+        """Add query filter if present."""
+        if search_criteria is None:
+            return query
+
+        if isinstance(search_criteria, datetime):
+            return query.filter(func.DATE(model_attribute) == search_criteria.date())
+
+        return query.filter(model_attribute == search_criteria)
