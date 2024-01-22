@@ -16,8 +16,6 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import func
-
 from pay_api.models import EFTGLTransfer as EFTGLTransferModel
 from pay_api.models import db
 
@@ -76,27 +74,16 @@ class EFTGlTransfer:
         """Return EFT Transfers by search criteria."""
         query = db.session.query(EFTGLTransferModel)
 
-        query = EFTGlTransfer.filterIfPresent(query, search_criteria.created_on, EFTGLTransferModel.created_on)
-        query = EFTGlTransfer.filterIfPresent(query, search_criteria.invoice_id, EFTGLTransferModel.invoice_id)
-        query = EFTGlTransfer.filterIfPresent(query, search_criteria.is_processed, EFTGLTransferModel.is_processed)
-        query = EFTGlTransfer.filterIfPresent(query, search_criteria.processed_on, EFTGLTransferModel.processed_on)
-        query = EFTGlTransfer.filterIfPresent(query, search_criteria.short_name_id, EFTGLTransferModel.short_name_id)
-        query = EFTGlTransfer.filterIfPresent(query, search_criteria.source_gl, EFTGLTransferModel.source_gl)
-        query = EFTGlTransfer.filterIfPresent(query, search_criteria.target_gl, EFTGLTransferModel.target_gl)
-        query = EFTGlTransfer.filterIfPresent(query, search_criteria.transfer_type, EFTGLTransferModel.transfer_type)
-        query = EFTGlTransfer.filterIfPresent(query, search_criteria.transfer_date, EFTGLTransferModel.transfer_date)
+        query = query.filter_conditionally(search_criteria.created_on, EFTGLTransferModel.created_on)
+        query = query.filter_conditionally(search_criteria.invoice_id, EFTGLTransferModel.invoice_id)
+        query = query.filter_conditionally(search_criteria.is_processed, EFTGLTransferModel.is_processed)
+        query = query.filter_conditionally(search_criteria.processed_on, EFTGLTransferModel.processed_on)
+        query = query.filter_conditionally(search_criteria.short_name_id, EFTGLTransferModel.short_name_id)
+        query = query.filter_conditionally(search_criteria.source_gl, EFTGLTransferModel.source_gl)
+        query = query.filter_conditionally(search_criteria.target_gl, EFTGLTransferModel.target_gl)
+        query = query.filter_conditionally(search_criteria.transfer_type, EFTGLTransferModel.transfer_type)
+        query = query.filter_conditionally(search_criteria.transfer_date, EFTGLTransferModel.transfer_date)
 
         query = query.order_by(EFTGLTransferModel.created_on.asc())
 
         return query.all()
-
-    @staticmethod
-    def filterIfPresent(query, search_criteria, model_attribute):
-        """Add query filter if present."""
-        if search_criteria is None:
-            return query
-
-        if isinstance(search_criteria, datetime):
-            return query.filter(func.DATE(model_attribute) == search_criteria.date())
-
-        return query.filter(model_attribute == search_criteria)
