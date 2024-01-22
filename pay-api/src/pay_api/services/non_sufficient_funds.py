@@ -88,6 +88,7 @@ class NonSufficientFundsService:
                 [(PaymentLineItemModel.description == ReverseOperation.NSF.value, PaymentLineItemModel.total)],
                 else_=0)).label('total_amount'))
             .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
+            .outerjoin(NonSufficientFundsModel, NonSufficientFundsModel.invoice_id == InvoiceModel.id)
             .join(PaymentLineItemModel, PaymentLineItemModel.invoice_id == InvoiceModel.id)
             .filter(PaymentAccountModel.auth_account_id == account_id)
         )
@@ -111,8 +112,8 @@ class NonSufficientFundsService:
         data = {
             'total': total,
             'invoices': new_invoices,
-            'total_amount': float(aggregate_totals.total_amount),
-            'total_amount_remaining': float(aggregate_totals.total_amount_remaining),
+            'total_amount': float(aggregate_totals.total_amount) if total > 0 else 0,
+            'total_amount_remaining': float(aggregate_totals.total_amount_remaining) if total > 0 else 0,
             'nsf_amount': float(aggregate_totals.nsf_amount)
         }
 
@@ -139,7 +140,7 @@ class NonSufficientFundsService:
             'totalAmount': invoice['total_amount'],
             'nsfAmount': invoice['nsf_amount'],
             'invoices': invoice['invoices'],
-            'invoiceNumber': invoice_reference.invoice_number,
+            'invoiceNumber': invoice_reference.invoice_number if hasattr(invoice_reference, 'invoice_number') else None
         }
 
         invoice_pdf_dict = {

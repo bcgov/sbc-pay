@@ -28,6 +28,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
+from pay_api.services import NonSufficientFundsService
 from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus
 
 from reconciliations.enums import RecordType, SourceTransaction, Status, TargetTransaction
@@ -569,6 +570,9 @@ async def test_pad_nsf_reconciliations(session, app, stan_server, event_loop, cl
 
     cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account_id)
     assert cfs_account.status == CfsAccountStatus.FREEZE.value
+    
+    non_sufficient_funds: NonSufficientFundsService.find_all_non_sufficient_funds_invoices(pay_account.auth_account_id)
+    assert non_sufficient_funds['nsf_amount'] > 0
 
 
 @pytest.mark.asyncio
