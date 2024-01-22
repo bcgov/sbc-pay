@@ -42,7 +42,10 @@ class EftService(DepositService):
         """Return a static invoice number for direct pay."""
         # Do nothing here as the invoice references will be created later for eft payment reconciliations (TDI17).
 
-    def apply_credit(self, invoice: Invoice) -> None:
+    def apply_credit(self,
+                     invoice: Invoice,
+                     payment_date: datetime = datetime.now(),
+                     auto_save: bool = True) -> tuple:
         """Apply eft credit to the invoice."""
         invoice_balance = invoice.total - (invoice.paid or 0)  # balance before applying credits
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
@@ -53,12 +56,18 @@ class EftService(DepositService):
 
         payment = self.create_payment(payment_account=payment_account,
                                       invoice=invoice_model,
-                                      payment_date=datetime.now(),
-                                      paid_amount=invoice_balance - new_invoice_balance).save()
+                                      payment_date=payment_date,
+                                      paid_amount=invoice_balance - new_invoice_balance)
 
-        self.create_invoice_reference(invoice=invoice_model, payment=payment).save()
-        self.create_receipt(invoice=invoice_model, payment=payment).save()
-        self._release_payment(invoice=invoice)
+        invoice_ref = self.create_invoice_reference(invoice=invoice_model, payment=payment)
+        receipt = self.create_receipt(invoice=invoice_model, payment=payment)
+
+        if auto_save:
+            payment.save()
+            invoice_ref.save()
+            receipt.save()
+
+        return payment, invoice_ref, receipt
 
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""

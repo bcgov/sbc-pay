@@ -38,6 +38,14 @@ class BaseModel(db.Model):
         self.create_activity(self)
         return self
 
+    def save_or_add(self, auto_save: bool):
+        """Run save if auto save is True."""
+        if auto_save:
+            self.save()
+        else:
+            db.session.add(self)
+        return self
+
     def save(self):
         """Save and commit."""
         db.session.add(self)

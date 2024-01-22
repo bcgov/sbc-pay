@@ -11,18 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Model to handle all operations related to EFT Credits data."""
+"""Model to link invoices with EFT Credits."""
 from datetime import datetime
+
 from sqlalchemy import ForeignKey
 
 from .base_model import BaseModel
 from .db import db
 
 
-class EFTCredit(BaseModel):  # pylint:disable=too-many-instance-attributes
-    """This class manages all of the base data for EFT credits."""
+class EFTCreditInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
+    """This class manages linkages between EFT Credits and invoices."""
 
-    __tablename__ = 'eft_credits'
+    __tablename__ = 'eft_credit_invoice_links'
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -36,36 +37,13 @@ class EFTCredit(BaseModel):  # pylint:disable=too-many-instance-attributes
     __mapper_args__ = {
         'include_properties': [
             'id',
-            'amount',
             'created_on',
-            'eft_file_id',
-            'eft_transaction_id',
-            'short_name_id',
-            'payment_account_id',
-            'remaining_amount'
+            'eft_credit_id',
+            'invoice_id'
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-
-    amount = db.Column(db.Numeric(19, 2), nullable=False)
-    remaining_amount = db.Column(db.Numeric(19, 2), nullable=False)
+    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False, index=True)
+    eft_credit_id = db.Column(db.Integer, ForeignKey('eft_credits.id'), nullable=False, index=True)
     created_on = db.Column('created_on', db.DateTime, nullable=True, default=datetime.now)
-
-    eft_file_id = db.Column(db.Integer, ForeignKey('eft_files.id'), nullable=False)
-    short_name_id = db.Column(db.Integer, ForeignKey('eft_short_names.id'), nullable=False)
-    payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
-    eft_transaction_id = db.Column(db.Integer, ForeignKey('eft_transactions.id'), nullable=True)
-
-    @classmethod
-    def find_by_payment_account_id(cls, payment_account_id: int):
-        """Find EFT Credit by payment account id."""
-        return cls.query.filter_by(payment_account_id=payment_account_id).all()
-
-    @classmethod
-    def update_account_by_short_name_id(cls, short_name_id: int, payment_account_id: int):
-        """Update all payment account ids for short name."""
-        db.session.query(EFTCredit) \
-            .filter(EFTCredit.short_name_id == short_name_id) \
-            .update({EFTCredit.payment_account_id: payment_account_id}, synchronize_session='fetch')
-        db.session.commit()
