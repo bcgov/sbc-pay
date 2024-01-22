@@ -27,6 +27,7 @@ from pay_api.models import AccountFee as AccountFeeModel
 from pay_api.models import AccountFeeSchema
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTCredit as EFTCreditModel
+from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentAccountSchema
@@ -661,7 +662,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return Decimal(result.credit_balance) if result else 0
 
     @classmethod
-    def deduct_eft_credit(cls, invoice: InvoiceModel):
+    def deduct_eft_credit(cls, invoice: InvoiceModel, auto_save: bool = True):
         """Deduct EFT credit and update remaining credit records."""
         eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel) \
             .filter(EFTCreditModel.remaining_amount > 0) \
@@ -675,15 +676,21 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         # Deduct credits and apply to the invoice
         now = datetime.now()
         for eft_credit in eft_credits:
+            credit_invoice_link = EFTCreditInvoiceLinkModel(
+                eft_credit_id=eft_credit.id,
+                invoice_id=invoice.id
+            )
+            _ =  credit_invoice_link.save() if auto_save else db.session.add(credit_invoice_link)
+
             if eft_credit.remaining_amount >= invoice_balance:
                 # Credit covers the full invoice balance
                 eft_credit.remaining_amount -= invoice_balance
-                eft_credit.save()
+                _ = eft_credit.save() if auto_save else db.session.add(eft_credit)
 
                 invoice.payment_date = now
                 invoice.paid = invoice.total
                 invoice.invoice_status_code = InvoiceStatus.PAID.value
-                invoice.save()
+                _ = invoice.save() if auto_save else db.session.add(invoice)
                 break
 
             # Credit covers partial invoice balance
@@ -693,9 +700,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             invoice.invoice_status_code = InvoiceStatus.PARTIAL.value
 
             eft_credit.remaining_amount = 0
-            eft_credit.save()
+            _ = eft_credit if auto_save else db.session.add(eft_credit)
 
-        invoice.save()
+        _ = invoice if auto_save else db.session.add(invoice)
 
     @staticmethod
     def _calculate_activation_date():

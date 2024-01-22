@@ -27,7 +27,9 @@ from .db import db, ma  # noqa: I001
 from .disbursement_status_code import DisbursementStatusCode
 from .distribution_code import DistributionCode, DistributionCodeLink
 from .eft_credit import EFTCredit
+from .eft_credit_invoice_link import EFTCreditInvoiceLink
 from .eft_file import EFTFile
+from .eft_gl_transfers import EFTGLTransfer
 from .eft_process_status_code import EFTProcessStatusCode
 from .eft_short_names import EFTShortnames, EFTShortnameSchema
 from .eft_transaction import EFTTransaction
