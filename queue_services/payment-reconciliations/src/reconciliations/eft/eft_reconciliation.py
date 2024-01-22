@@ -423,14 +423,11 @@ def _shortname_balance_as_dict(eft_transactions: List[EFTRecord]) -> Dict:
         deposit_amount = eft_transaction.deposit_amount_cad / 100
         transaction = {'id': eft_transaction.id, 'deposit_amount': deposit_amount}
 
-        if shortname in shortname_balance:
-            shortname_balance[shortname]['transaction_date'] = transaction_date
-            shortname_balance[shortname]['balance'] += deposit_amount
-            shortname_balance[shortname]['transactions'].append(transaction)
-        else:
-            shortname_balance[shortname] = {'transaction_date': transaction_date,
-                                            'balance': deposit_amount,
-                                            'transactions': [transaction]}
+        shortname_balance.setdefault(shortname, {'balance': 0})
+        shortname_balance[shortname]['transaction_date'] = transaction_date
+        shortname_balance[shortname]['balance'] += deposit_amount
+        shortname_balance[shortname].setdefault('transactions', []).append(transaction)
+
     return shortname_balance
 
 
