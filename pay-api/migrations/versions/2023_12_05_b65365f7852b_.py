@@ -1,7 +1,7 @@
 """Add Non-Sufficient Funds table to store Non-Sufficient Funds invoices
 
 Revision ID: b65365f7852b
-Revises: eec11500a81e
+Revises: ff245db0cf76
 Create Date: 2023-12-05 12:28:27.025012
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'b65365f7852b'
-down_revision = 'eec11500a81e'
+down_revision = 'ff245db0cf76'
 branch_labels = None
 depends_on = None
 
