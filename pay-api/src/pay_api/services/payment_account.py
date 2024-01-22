@@ -790,9 +790,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         }
 
         if event_type == MessageType.NSF_UNLOCK_ACCOUNT.value:
-            payload['data']['invoiceNumber'] = nsf_object.payment.invoice_number
-            payload['data']['paymentMethodDescription'] = nsf_object.payment.payment_method_code
-            payload['data']['receiptNumber'] = nsf_object.payment.receipt_number
+            payload['data']['invoiceNumber'] = nsf_object['payment']['invoice_number']
+            payload['data']['paymentMethodDescription'] = nsf_object['payment']['payment_method_code']
+            payload['data']['receiptNumber'] = nsf_object['payment']['receipt_number']
         if event_type == MessageType.PAD_ACCOUNT_CREATE.value:
             payload['data']['padTosAcceptedBy'] = self.pad_tos_accepted_by
         if include_pay_info:
