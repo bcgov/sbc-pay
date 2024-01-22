@@ -67,6 +67,7 @@ from reconciliations.eft.eft_parse_error import EFTParseError
 class EFTBase:
     """Defines the structure of the base class of an EFT record."""
 
+    id: int  # Associated database primary key
     record_type: str  # Always 1 for header, 2 for transaction, 7 for trailer
     content: str
     index: int
