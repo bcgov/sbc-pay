@@ -790,9 +790,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         }
 
         if event_type == MessageType.NSF_UNLOCK_ACCOUNT.value:
-            payload['data']['invoiceNumber'] = nsf_object['payment']['invoice_number']
-            payload['data']['paymentMethodDescription'] = nsf_object['payment']['payment_method_code']
-            payload['data']['receiptNumber'] = nsf_object['payment']['receipt_number']
+            payload['data']['invoiceNumber'] = nsf_object['invoice_number']
+            payload['data']['paymentMethodDescription'] = nsf_object['payment_method_code']
+            payload['data']['receiptNumber'] = nsf_object['receipt_number']
         if event_type == MessageType.PAD_ACCOUNT_CREATE.value:
             payload['data']['padTosAcceptedBy'] = self.pad_tos_accepted_by
         if include_pay_info:
@@ -820,7 +820,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             # get nsf payment object associated with this payment
 
             nsf_object = {
-                'payment': payment
+                'invoice_number': payment.invoice_number,
+                'payment_method_code': payment.payment_method_code,
+                'receipt_number': payment.receipt_number
             }
 
             payload = pay_account.create_account_event_payload(
