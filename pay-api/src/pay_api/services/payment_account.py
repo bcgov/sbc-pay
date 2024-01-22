@@ -27,6 +27,7 @@ from pay_api.models import AccountFee as AccountFeeModel
 from pay_api.models import AccountFeeSchema
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTCredit as EFTCreditModel
+from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentAccountSchema
@@ -47,6 +48,7 @@ from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
     current_local_time, get_local_formatted_date, get_outstanding_txns_from_date, get_str_by_path, mask)
 
+from .payment import Payment
 from .flags import flags
 
 
@@ -661,7 +663,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return Decimal(result.credit_balance) if result else 0
 
     @classmethod
-    def deduct_eft_credit(cls, invoice: InvoiceModel):
+    def deduct_eft_credit(cls, invoice: InvoiceModel, auto_save: bool = True):
         """Deduct EFT credit and update remaining credit records."""
         eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel) \
             .filter(EFTCreditModel.remaining_amount > 0) \
@@ -675,15 +677,19 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         # Deduct credits and apply to the invoice
         now = datetime.now()
         for eft_credit in eft_credits:
+            EFTCreditInvoiceLinkModel(
+                eft_credit_id=eft_credit.id,
+                invoice_id=invoice.id).save_or_add(auto_save)
+
             if eft_credit.remaining_amount >= invoice_balance:
                 # Credit covers the full invoice balance
                 eft_credit.remaining_amount -= invoice_balance
-                eft_credit.save()
+                eft_credit.save_or_add(auto_save)
 
                 invoice.payment_date = now
                 invoice.paid = invoice.total
                 invoice.invoice_status_code = InvoiceStatus.PAID.value
-                invoice.save()
+                invoice.save_or_add(auto_save)
                 break
 
             # Credit covers partial invoice balance
@@ -693,9 +699,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             invoice.invoice_status_code = InvoiceStatus.PARTIAL.value
 
             eft_credit.remaining_amount = 0
-            eft_credit.save()
+            eft_credit.save_or_add(auto_save)
 
-        invoice.save()
+        invoice.save_or_add(auto_save)
 
     @staticmethod
     def _calculate_activation_date():
@@ -754,7 +760,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def publish_account_mailer_event_on_creation(self):
         """Publish to account mailer message to send out confirmation email on creation."""
         if self.payment_method == PaymentMethod.PAD.value:
-            payload = self._create_account_event_payload(MessageType.PAD_ACCOUNT_CREATE.value, include_pay_info=True)
+            payload = self.create_account_event_payload(MessageType.PAD_ACCOUNT_CREATE.value, include_pay_info=True)
             self._publish_queue_message(payload)
 
     def _publish_queue_message(self, payload):
@@ -772,7 +778,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 f'Notification to Queue failed for the Account Mailer : {payload}.',
                 level='error')
 
-    def _create_account_event_payload(self, event_type: str, include_pay_info: bool = False):
+    def create_account_event_payload(self, event_type: str, nsf_object: dict = None,
+                                     include_pay_info: bool = False):
         """Return event payload for account."""
         payload: Dict[str, any] = {
             'specversion': '1.x-wip',
@@ -787,6 +794,10 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             }
         }
 
+        if event_type == MessageType.NSF_UNLOCK_ACCOUNT.value:
+            payload['data']['invoiceNumber'] = nsf_object['invoice_number']
+            payload['data']['paymentMethodDescription'] = nsf_object['payment_method_code']
+            payload['data']['receiptNumber'] = nsf_object['receipt_number']
         if event_type == MessageType.PAD_ACCOUNT_CREATE.value:
             payload['data']['padTosAcceptedBy'] = self.pad_tos_accepted_by
         if include_pay_info:
@@ -799,9 +810,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return payload
 
     @staticmethod
-    def unlock_frozen_accounts(account_id: int):
+    def unlock_frozen_accounts(payment: Payment):
         """Unlock frozen accounts."""
-        pay_account: PaymentAccount = PaymentAccount.find_by_id(account_id)
+        pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.payment_account_id)
         if pay_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
             current_app.logger.info(f'Unlocking Frozen Account {pay_account.auth_account_id}')
             # update CSF
@@ -811,8 +822,17 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             cfs_account.status = CfsAccountStatus.ACTIVE.value
             cfs_account.save()
 
-            payload = pay_account._create_account_event_payload(  # pylint:disable=protected-access
-                'bc.registry.payment.unlockAccount'
+            # get nsf payment object associated with this payment
+
+            nsf_object = {
+                'invoice_number': payment.invoice_number,
+                'payment_method_code': payment.payment_method_code,
+                'receipt_number': payment.receipt_number
+            }
+
+            payload = pay_account.create_account_event_payload(
+                MessageType.NSF_UNLOCK_ACCOUNT.value,
+                nsf_object=nsf_object
             )
 
             try:
@@ -867,6 +887,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         pay_account.save()
         pa_service = cls.find_by_id(pay_account.id)
         if not already_has_eft_enabled:
-            payload = pa_service._create_account_event_payload(MessageType.EFT_AVAILABLE_NOTIFICATION.value)
+            payload = pa_service.create_account_event_payload(MessageType.EFT_AVAILABLE_NOTIFICATION.value)
             pa_service._publish_queue_message(payload)
         return pa_service

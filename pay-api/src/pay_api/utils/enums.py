@@ -267,6 +267,7 @@ class EjvFileType(Enum):
     DISBURSEMENT = 'DISBURSEMENT'
     REFUND = 'REFUND'
     NON_GOV_DISBURSEMENT = 'NON_GOV_DISBURSEMENT'
+    TRANSFER = 'TRANSFER'
 
 
 class PatchActions(Enum):
@@ -310,6 +311,14 @@ class EFTFileLineType(Enum):
     HEADER = 'HEADER'
     TRANSACTION = 'TRANSACTION'
     TRAILER = 'TRAILER'
+
+
+class EFTGlTransferType(Enum):
+    """EFT GL Transfer types for job processing."""
+
+    PAYMENT = 'PAYMENT'
+    REVERSAL = 'REVERSAL'
+    TRANSFER = 'TRANSFER'
 
 
 class MessageType(Enum):
