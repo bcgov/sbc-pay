@@ -135,11 +135,11 @@ async def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-ma
     # Generate dictionary with shortnames and total deposits
     shortname_balance = _shortname_balance_as_dict(eft_transactions)
 
+    # Credit short name and map to eft transaction for tracking
+    has_eft_credits_error = _process_eft_credits(shortname_balance, eft_file_model.id)
+
     # Process payments, update invoice and create receipt
     has_eft_transaction_errors = _process_eft_payments(shortname_balance, eft_file_model)
-
-    # Check and add credits
-    has_eft_credits_error = _process_eft_credits(shortname_balance, eft_file_model.id)
 
     # Mark EFT File partially processed due to transaction errors
     # Rollback EFT transactions and update to FAIL status
@@ -197,14 +197,10 @@ def _process_eft_trailer(eft_trailer: EFTTrailer, eft_file_model: EFTFileModel) 
 
 
 def _process_eft_credits(shortname_balance, eft_file_id):
-    """Generate credits if there are any remaining balances."""
+    """Credit shortname for each transaction."""
     has_credit_errors = False
     for shortname in shortname_balance.keys():
         try:
-            # Skip if there is no balance
-            if not shortname_balance[shortname]['balance'] > 0:
-                continue
-
             eft_shortname = _get_shortname(shortname)
             payment_account_id = None
 
@@ -214,23 +210,31 @@ def _process_eft_credits(shortname_balance, eft_file_id):
                     find_by_auth_account_id(eft_shortname.auth_account_id)
                 payment_account_id = payment_account.id
 
-            # Check if there is an existing eft credit for this file
-            eft_credit_model = db.session.query(EFTCreditModel) \
-                .filter(EFTCreditModel.eft_file_id == eft_file_id) \
-                .filter(EFTCreditModel.short_name_id == eft_shortname.id) \
-                .one_or_none()
+            eft_transactions = shortname_balance[shortname]['transactions']
 
-            if eft_credit_model is None:
-                eft_credit_model = EFTCreditModel()
+            for eft_transaction in eft_transactions:
+                # Check if there is an existing eft credit for this file and transaction
+                eft_credit_model = db.session.query(EFTCreditModel) \
+                    .filter(EFTCreditModel.eft_file_id == eft_file_id) \
+                    .filter(EFTCreditModel.short_name_id == eft_shortname.id) \
+                    .filter(EFTCreditModel.eft_transaction_id == eft_transaction['id']) \
+                    .one_or_none()
 
-            balance = shortname_balance[shortname]['balance']
+                if eft_credit_model is None:
+                    eft_credit_model = EFTCreditModel()
 
-            eft_credit_model.eft_file_id = eft_file_id
-            eft_credit_model.payment_account_id = payment_account_id
-            eft_credit_model.short_name_id = eft_shortname.id
-            eft_credit_model.amount = balance
-            eft_credit_model.remaining_amount = balance
-            db.session.add(eft_credit_model)
+                # Skip if there is no deposit amount
+                deposit_amount = eft_transaction['deposit_amount']
+                if not deposit_amount > 0:
+                    continue
+
+                eft_credit_model.eft_file_id = eft_file_id
+                eft_credit_model.payment_account_id = payment_account_id
+                eft_credit_model.short_name_id = eft_shortname.id
+                eft_credit_model.amount = deposit_amount
+                eft_credit_model.remaining_amount = deposit_amount
+                eft_credit_model.eft_transaction_id = eft_transaction['id']
+                db.session.add(eft_credit_model)
         except Exception as e:  # NOQA pylint: disable=broad-exception-caught
             has_credit_errors = True
             logger.error(e)
@@ -258,11 +262,9 @@ def _process_eft_payments(shortname_balance: Dict, eft_file: EFTFileModel) -> bo
                 auth_account_id = eft_shortname_model.auth_account_id
                 # Find invoices to be paid
                 invoices: List[InvoiceModel] = EFTShortnames.get_invoices_owing(auth_account_id)
-                payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
                 if invoices is not None:
                     for invoice in invoices:
-                        _pay_invoice(payment_account=payment_account,
-                                     invoice=invoice,
+                        _pay_invoice(invoice=invoice,
                                      shortname_balance=shortname_balance[shortname])
 
             except Exception as e:  # NOQA pylint: disable=broad-exception-caught
@@ -353,6 +355,8 @@ def _save_eft_transaction(eft_record: EFTRecord, eft_file_model: EFTFileModel, i
     eft_transaction_model.deposit_amount_cents = deposit_amount_cad
     eft_transaction_model.save()
 
+    eft_record.id = eft_transaction_model.id
+
 
 def _update_transactions_to_fail(eft_file_model: EFTFileModel) -> int:
     """Set EFT transactions to fail status."""
@@ -416,48 +420,34 @@ def _shortname_balance_as_dict(eft_transactions: List[EFTRecord]) -> Dict:
 
         shortname = eft_transaction.transaction_description
         transaction_date = eft_transaction.transaction_date
+        deposit_amount = eft_transaction.deposit_amount_cad / 100
+        transaction = {'id': eft_transaction.id, 'deposit_amount': deposit_amount}
 
-        if shortname in shortname_balance:
-            shortname_balance[shortname]['transaction_date'] = transaction_date
-            shortname_balance[shortname]['balance'] += eft_transaction.deposit_amount_cad / 100
-        else:
-            shortname_balance[shortname] = {'transaction_date': transaction_date,
-                                            'balance': eft_transaction.deposit_amount_cad / 100}
+        shortname_balance.setdefault(shortname, {'balance': 0})
+        shortname_balance[shortname]['transaction_date'] = transaction_date
+        shortname_balance[shortname]['balance'] += deposit_amount
+        shortname_balance[shortname].setdefault('transactions', []).append(transaction)
 
     return shortname_balance
 
 
-def _pay_invoice(payment_account: PaymentAccountModel, invoice: InvoiceModel, shortname_balance: Dict):
+def _pay_invoice(invoice: InvoiceModel, shortname_balance: Dict):
     """Pay for an invoice and update invoice state."""
     payment_date = shortname_balance.get('transaction_date') or datetime.now()
     balance = shortname_balance.get('balance')
 
-    # Get the unpaid total - could be partial
+    # # Get the unpaid total - could be partial
     unpaid_total = _get_invoice_unpaid_total(invoice)
 
     # Determine the payable amount based on what is available in the shortname balance
     payable_amount = unpaid_total if balance >= unpaid_total else balance
 
-    invoice.paid += payable_amount
-    invoice.payment_date = payment_date
-
-    # Update the invoice state
-    if _get_invoice_unpaid_total(invoice) == 0:
-        invoice.invoice_status_code = InvoiceStatus.PAID.value
-    else:
-        invoice.invoice_status_code = InvoiceStatus.PARTIAL.value
-
-    db.session.add(invoice)
-
     # Create the payment record
     eft_payment_service: EFTService = PaymentSystemFactory.create_from_payment_method(PaymentMethod.EFT.value)
-    payment = eft_payment_service.create_payment(payment_account=payment_account,
-                                                 invoice=invoice,
-                                                 payment_date=payment_date,
-                                                 paid_amount=payable_amount)
 
-    invoice_reference = EFTService.create_invoice_reference(invoice=invoice, payment=payment)
-    receipt = EFTService.create_receipt(invoice=invoice, payment=payment)
+    payment, invoice_reference, receipt = eft_payment_service.apply_credit(invoice=invoice,
+                                                                           payment_date=payment_date,
+                                                                           auto_save=False)
 
     db.session.add(payment)
     db.session.add(invoice_reference)

@@ -1,6 +1,6 @@
 -e git+https://github.com/bcgov/lear.git@30dba30463c99aaedfdcfd463213e71ba0d35b51#egg=entity_queue_common&subdirectory=queue_services/common
 -e git+https://github.com/bcgov/sbc-common-components.git@b93585ea3ac273b9e51c4dd5ddbc8190fd95da6a#egg=sbc_common_components&subdirectory=python
--e git+https://github.com/bcgov/sbc-pay.git@951df024496956194ecdfb68325f3631d5db0808#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-pay.git@a598989a6de74206ab26024d037d0128919e540e#egg=pay_api&subdirectory=pay-api
 Flask-Caching==2.0.2
 Flask-Migrate==2.7.0
 Flask-Moment==1.0.5
@@ -52,7 +52,7 @@ grpcio-status==1.48.2
 grpcio==1.54.2
 gunicorn==20.1.0
 hijri-converter==2.3.1
-holidays==0.23
+holidays==0.37
 idna==3.4
 itsdangerous==2.0.1
 jaeger-client==4.8.0
