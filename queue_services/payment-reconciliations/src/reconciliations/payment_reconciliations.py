@@ -452,10 +452,8 @@ def _process_failed_payments(row):
     inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
     payment_account: PaymentAccountModel = _get_payment_account(row)
 
-    # If there is an NSF invoice with a remaining nsf_amount balance, it means it's a duplicate NSF event. Ignore it.
-    non_sufficient_funds = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(
-        account_id=payment_account.auth_account_id)
-    if non_sufficient_funds['nsf_amount'] > 0:
+    # If there is an NSF row, it means it's a duplicate NSF event. Ignore it.
+    if NonSufficientFundsService.exists_for_invoice_number(inv_number):
         logger.info('Ignoring duplicate NSF event for account: %s ', payment_account.auth_account_id)
         return False
 
