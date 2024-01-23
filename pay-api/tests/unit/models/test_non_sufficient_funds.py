@@ -24,14 +24,16 @@ from tests.utilities.base_test import (
 def test_non_sufficient_funds(session):
     """Assert Non-Sufficient Funds defaults are stored."""
     payment_account = factory_payment_account()
-    payment = factory_payment()
+    payment = factory_payment(invoice_number='REG00000001')
     payment_account.save()
     payment.save()
     invoice = factory_invoice(payment_account=payment_account)
     invoice.save()
-    non_sufficient_funds = factory_non_sufficient_funds(invoice_id=invoice.id, description='NSF')
+    non_sufficient_funds = factory_non_sufficient_funds(
+        invoice_id=invoice.id, invoice_number=payment.invoice_number, description='NSF')
     non_sufficient_funds.save()
 
     assert non_sufficient_funds.id is not None
-    assert non_sufficient_funds.invoice_id is not None
     assert non_sufficient_funds.description == 'NSF'
+    assert non_sufficient_funds.invoice_id is not None
+    assert non_sufficient_funds.invoice_number == 'REG00000001'

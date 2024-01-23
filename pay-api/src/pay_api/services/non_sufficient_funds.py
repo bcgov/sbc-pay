@@ -53,13 +53,14 @@ class NonSufficientFundsService:
         return non_sufficient_funds_service
 
     @staticmethod
-    def save_non_sufficient_funds(invoice_id: int, description: str) -> NonSufficientFundsService:
+    def save_non_sufficient_funds(invoice_id: int, invoice_number: str, description: str) -> NonSufficientFundsService:
         """Create Non-Sufficient Funds record."""
         current_app.logger.debug('<save_non_sufficient_funds')
         non_sufficient_funds_service = NonSufficientFundsService()
 
-        non_sufficient_funds_service.dao.invoice_id = invoice_id
         non_sufficient_funds_service.dao.description = description
+        non_sufficient_funds_service.dao.invoice_id = invoice_id
+        non_sufficient_funds_service.dao.invoice_number = invoice_number
         non_sufficient_funds_dao = non_sufficient_funds_service.dao.save()
 
         non_sufficient_funds_service = NonSufficientFundsService.populate(non_sufficient_funds_dao)
@@ -88,6 +89,7 @@ class NonSufficientFundsService:
                 [(PaymentLineItemModel.description == ReverseOperation.NSF.value, PaymentLineItemModel.total)],
                 else_=0)).label('total_amount'))
             .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
+            .outerjoin(NonSufficientFundsModel, NonSufficientFundsModel.invoice_id == InvoiceModel.id)
             .join(PaymentLineItemModel, PaymentLineItemModel.invoice_id == InvoiceModel.id)
             .filter(PaymentAccountModel.auth_account_id == account_id)
         )
@@ -111,8 +113,8 @@ class NonSufficientFundsService:
         data = {
             'total': total,
             'invoices': new_invoices,
-            'total_amount': float(aggregate_totals.total_amount),
-            'total_amount_remaining': float(aggregate_totals.total_amount_remaining),
+            'total_amount': float(aggregate_totals.total_amount or 0),
+            'total_amount_remaining': float(aggregate_totals.total_amount_remaining or 0),
             'nsf_amount': float(aggregate_totals.nsf_amount)
         }
 
@@ -139,7 +141,7 @@ class NonSufficientFundsService:
             'totalAmount': invoice['total_amount'],
             'nsfAmount': invoice['nsf_amount'],
             'invoices': invoice['invoices'],
-            'invoiceNumber': invoice_reference.invoice_number,
+            'invoiceNumber': getattr(invoice_reference, 'invoice_number', None)
         }
 
         invoice_pdf_dict = {

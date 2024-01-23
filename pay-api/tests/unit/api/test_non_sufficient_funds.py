@@ -29,7 +29,7 @@ def test_get_non_sufficient_funds(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    invoice_number = '10001'
+    invoice_number = 'REG00000001'
     payment_account = factory_payment_account()
     payment_account.save()
     payment = factory_payment(payment_account_id=payment_account.id, paid_amount=0, invoice_number=invoice_number)
@@ -57,7 +57,8 @@ def test_get_non_sufficient_funds(session, client, jwt, app):
 
     invoice_reference = factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number)
     invoice_reference.save()
-    non_sufficient_funds = factory_non_sufficient_funds(invoice_id=invoice.id, description='NSF')
+    non_sufficient_funds = factory_non_sufficient_funds(invoice_id=invoice.id, invoice_number=payment.invoice_number,
+                                                        description='NSF')
     non_sufficient_funds.save()
 
     nsf = client.get(f'/api/v1/accounts/{payment_account.auth_account_id}/nsf', headers=headers)
