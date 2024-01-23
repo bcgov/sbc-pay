@@ -47,7 +47,7 @@ class NonSufficientFundsModel(BaseModel):  # pylint: disable=too-many-instance-a
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     description = db.Column(db.String(50), nullable=True)
     invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
-    invoice_number = db.Column(db.String(50), nullable=True, index=True, comment='CFS Invoice number')
+    invoice_number = db.Column(db.String(50), nullable=False, index=True, comment='CFS Invoice number')
 
 
 @define

@@ -18,7 +18,7 @@ depends_on = None
 
 def upgrade():
     op.add_column('non_sufficient_funds', sa.Column(
-        'invoice_number', sa.String(length=50), nullable=True, comment='CFS Invoice number'))
+        'invoice_number', sa.String(length=50), comment='CFS Invoice number'))
     op.create_index(op.f('ix_non_sufficient_funds_invoice_number'), 'non_sufficient_funds', ['invoice_number'], unique=False)
 
 

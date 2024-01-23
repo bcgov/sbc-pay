@@ -737,7 +737,8 @@ def _create_nsf_invoice(cfs_account: CfsAccountModel, inv_number: str,
     )
     invoice = invoice.save()
 
-    NonSufficientFundsService.save_non_sufficient_funds(invoice_id=invoice.id, description='NSF')
+    NonSufficientFundsService.save_non_sufficient_funds(invoice_id=invoice.id, invoice_number=inv_number,
+                                                        description='NSF')
 
     distribution: DistributionCodeModel = DistributionCodeModel.find_by_active_for_fee_schedule(
         fee_schedule.fee_schedule_id)
