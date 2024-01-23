@@ -113,8 +113,8 @@ class NonSufficientFundsService:
         data = {
             'total': total,
             'invoices': new_invoices,
-            'total_amount': float(aggregate_totals.total_amount) if total > 0 else 0,
-            'total_amount_remaining': float(aggregate_totals.total_amount_remaining) if total > 0 else 0,
+            'total_amount': float(aggregate_totals.total_amount or 0),
+            'total_amount_remaining': float(aggregate_totals.total_amount_remaining or 0),
             'nsf_amount': float(aggregate_totals.nsf_amount)
         }
 
@@ -141,7 +141,7 @@ class NonSufficientFundsService:
             'totalAmount': invoice['total_amount'],
             'nsfAmount': invoice['nsf_amount'],
             'invoices': invoice['invoices'],
-            'invoiceNumber': invoice_reference.invoice_number if hasattr(invoice_reference, 'invoice_number') else None
+            'invoiceNumber': getattr(invoice_reference, 'invoice_number', None)
         }
 
         invoice_pdf_dict = {
