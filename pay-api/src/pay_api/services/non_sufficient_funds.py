@@ -68,14 +68,24 @@ class NonSufficientFundsService:
         return NonSufficientFundsService.asdict(non_sufficient_funds_service)
 
     @staticmethod
+    def exists_for_invoice_number(invoice_number: str) -> bool:
+        """Return boolean if a row exists for the invoice number."""
+        return (db.session.query(NonSufficientFundsModel)
+                .filter(NonSufficientFundsModel.invoice_number == invoice_number)
+                .count()
+                ) > 0
+
+
+    @staticmethod
     def query_all_non_sufficient_funds_invoices(account_id: str):
         """Return all Non-Sufficient Funds invoices and their aggregate amounts."""
         query = (db.session.query(
             InvoiceModel, InvoiceReferenceModel)
             .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id)
-            .outerjoin(NonSufficientFundsModel, NonSufficientFundsModel.invoice_id == InvoiceModel.id)
+            .join(NonSufficientFundsModel, NonSufficientFundsModel.invoice_number == InvoiceReferenceModel.invoice_number)
             .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
             .filter(PaymentAccountModel.auth_account_id == account_id)
+            .distinct(InvoiceModel.id)
             .group_by(InvoiceModel.id, InvoiceReferenceModel.id)
         )
 
