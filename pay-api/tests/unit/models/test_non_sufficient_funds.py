@@ -36,4 +36,4 @@ def test_non_sufficient_funds(session):
     assert non_sufficient_funds.id is not None
     assert non_sufficient_funds.description == 'NSF'
     assert non_sufficient_funds.invoice_id is not None
-    assert non_sufficient_funds.invoice_number == '1234'
+    assert non_sufficient_funds.invoice_number == 'REG00000001'
