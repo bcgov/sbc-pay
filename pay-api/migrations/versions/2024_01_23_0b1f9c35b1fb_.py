@@ -17,7 +17,8 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column('non_sufficient_funds', sa.Column('cfs_account_id', sa.String(length=50), nullable=False, comment='CFS Account number'))
+    op.add_column('non_sufficient_funds', sa.Column('cfs_account_id', sa.String(length=50), nullable=True,
+                                                    comment='CFS Account number'))
     op.alter_column('non_sufficient_funds', 'invoice_number',
                existing_type=sa.VARCHAR(length=50),
                nullable=False,
