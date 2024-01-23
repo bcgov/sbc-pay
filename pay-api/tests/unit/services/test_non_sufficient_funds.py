@@ -28,12 +28,13 @@ from tests.utilities.base_test import (
 def test_save_non_sufficient_funds(session):
     """Test save_non_sufficient_funds."""
     payment_account = factory_payment_account()
-    payment = factory_payment()
+    payment = factory_payment(invoice_number='REG00000001')
     payment_account.save()
     payment.save()
     invoice = factory_invoice(payment_account=payment_account)
     invoice.save()
     non_sufficient_funds = NonSufficientFundsService.save_non_sufficient_funds(invoice_id=invoice.id,
+                                                                               invoice_number=payment.invoice_number,
                                                                                description='NSF')
     assert non_sufficient_funds
     assert non_sufficient_funds['description'] == 'NSF'
@@ -43,7 +44,7 @@ def test_find_all_non_sufficient_funds_invoices(session):
     """Test find_all_non_sufficient_funds_invoices."""
     payment_account = factory_payment_account()
     payment_account.save()
-    payment = factory_payment(payment_account_id=payment_account.id, paid_amount=0, invoice_number='10001',
+    payment = factory_payment(payment_account_id=payment_account.id, paid_amount=0, invoice_number='REG00000001',
                               payment_method_code='PAD')
     payment.save()
     invoice = factory_invoice(
@@ -69,7 +70,8 @@ def test_find_all_non_sufficient_funds_invoices(session):
 
     invoice_reference = factory_invoice_reference(invoice_id=invoice.id, invoice_number=payment.invoice_number)
     invoice_reference.save()
-    non_sufficient_funds = factory_non_sufficient_funds(invoice_id=invoice.id, description='NSF')
+    non_sufficient_funds = factory_non_sufficient_funds(invoice_id=invoice.id, invoice_number=payment.invoice_number,
+                                                        description='NSF')
     non_sufficient_funds.save()
 
     find_non_sufficient_funds = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(

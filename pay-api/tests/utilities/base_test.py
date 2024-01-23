@@ -888,9 +888,9 @@ def factory_eft_shortname(short_name: str, auth_account_id: str = None):
     return EFTShortnames(short_name=short_name, auth_account_id=auth_account_id)
 
 
-def factory_non_sufficient_funds(invoice_id: int, description: str = None):
+def factory_non_sufficient_funds(invoice_id: int, invoice_number: str, description: str = None):
     """Return a Non-Sufficient Funds Model."""
-    return NonSufficientFundsModel(invoice_id=invoice_id, description=description)
+    return NonSufficientFundsModel(invoice_id=invoice_id, invoice_number=invoice_number, description=description)
 
 
 def factory_distribution_code(name: str, client: str = '111', reps_centre: str = '22222', service_line: str = '33333',
