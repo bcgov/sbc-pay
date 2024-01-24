@@ -91,19 +91,29 @@ class NonSufficientFundsService:
             .group_by(InvoiceModel.id, InvoiceReferenceModel.id)
         )
 
-        totals_query = (db.session.query(
-            func.sum(InvoiceModel.total - InvoiceModel.paid).label('total_amount_remaining'),
-            func.max(case(
-                [(PaymentLineItemModel.description == ReverseOperation.NSF.value, PaymentLineItemModel.total)],
-                else_=0))
-            .label('nsf_amount'),
-            func.sum(InvoiceModel.total - case(
-                [(PaymentLineItemModel.description == ReverseOperation.NSF.value, PaymentLineItemModel.total)],
-                else_=0)).label('total_amount'))
+        invoice_totals_subquery = (
+            db.session.query(
+                InvoiceModel.id.label('invoice_id'),
+                (InvoiceModel.total - InvoiceModel.paid).label('amount_remaining'),
+                func.max(case(
+                    [(PaymentLineItemModel.description == ReverseOperation.NSF.value, PaymentLineItemModel.total)],
+                    else_=0)).label('nsf_amount')
+            )
             .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
             .outerjoin(NonSufficientFundsModel, NonSufficientFundsModel.invoice_id == InvoiceModel.id)
             .join(PaymentLineItemModel, PaymentLineItemModel.invoice_id == InvoiceModel.id)
             .filter(PaymentAccountModel.auth_account_id == account_id)
+            .group_by(InvoiceModel.id)
+            .subquery()
+        )
+
+        totals_query = (
+            db.session.query(
+                func.sum(invoice_totals_subquery.c.amount_remaining).label('total_amount_remaining'),
+                func.sum(invoice_totals_subquery.c.nsf_amount).label('nsf_amount'),
+                func.sum(invoice_totals_subquery.c.amount_remaining - invoice_totals_subquery.c.nsf_amount)
+                .label('total_amount')
+            )
         )
 
         aggregate_totals = totals_query.one()
@@ -146,7 +156,8 @@ class NonSufficientFundsService:
             endpoint=account_url, token=kwargs['user'].bearer_token,
             auth_header_type=AuthHeaderType.BEARER, content_type=ContentType.JSON).json()
         template_vars = {
-            'suspendedOn': datetime.strptime(account['suspendedOn'], '%Y-%m-%dT%H:%M:%S%z').strftime('%B %-d, %Y'),
+            'suspendedOn': datetime.strptime(account['suspendedOn'], '%Y-%m-%dT%H:%M:%S%z')
+            .strftime('%B %-d, %Y') if 'suspendedOn' in account else None,
             'accountNumber': cfs_account.cfs_account,
             'businessName': account['businessName'],
             'totalAmountRemaining': invoice['total_amount_remaining'],
