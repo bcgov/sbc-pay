@@ -452,10 +452,8 @@ def _process_failed_payments(row):
     inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
     payment_account: PaymentAccountModel = _get_payment_account(row)
 
-    # If there is an NSF invoice with a remaining nsf_amount balance, it means it's a duplicate NSF event. Ignore it.
-    non_sufficient_funds = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(
-        account_id=payment_account.auth_account_id)
-    if non_sufficient_funds['nsf_amount'] > 0:
+    # If there is an NSF row, it means it's a duplicate NSF event. Ignore it.
+    if NonSufficientFundsService.exists_for_invoice_number(inv_number):
         logger.info('Ignoring duplicate NSF event for account: %s ', payment_account.auth_account_id)
         return False
 
@@ -490,7 +488,8 @@ def _process_failed_payments(row):
         invoice.paid = 0
 
     # Create an invoice for NSF for this account
-    invoice = _create_nsf_invoice(cfs_account, inv_number, payment_account)
+    reason_description = _get_row_value(row, Column.REVERSAL_REASON_DESC)
+    invoice = _create_nsf_invoice(cfs_account, inv_number, payment_account, reason_description)
     # Adjust CFS invoice
     CFSService.add_nsf_adjustment(cfs_account=cfs_account, inv_number=inv_number, amount=invoice.total)
     return True
@@ -718,7 +717,7 @@ def _get_row_value(row: Dict[str, str], key: Column) -> str:
 
 
 def _create_nsf_invoice(cfs_account: CfsAccountModel, inv_number: str,
-                        payment_account: PaymentAccountModel) -> InvoiceModel:
+                        payment_account: PaymentAccountModel, reason_description: str) -> InvoiceModel:
     """Create Invoice, line item and invoice referwnce records."""
     fee_schedule: FeeScheduleModel = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type_code='BCR',
                                                                                         filing_type_code='NSF')
@@ -737,8 +736,10 @@ def _create_nsf_invoice(cfs_account: CfsAccountModel, inv_number: str,
     )
     invoice = invoice.save()
 
-    NonSufficientFundsService.save_non_sufficient_funds(invoice_id=invoice.id, invoice_number=inv_number,
-                                                        description='NSF')
+    NonSufficientFundsService.save_non_sufficient_funds(invoice_id=invoice.id,
+                                                        invoice_number=inv_number,
+                                                        cfs_account=cfs_account.cfs_account,
+                                                        description=reason_description)
 
     distribution: DistributionCodeModel = DistributionCodeModel.find_by_active_for_fee_schedule(
         fee_schedule.fee_schedule_id)
