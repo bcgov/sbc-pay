@@ -38,6 +38,7 @@ class NonSufficientFundsModel(BaseModel):  # pylint: disable=too-many-instance-a
     __mapper_args__ = {
         'include_properties': [
             'id',
+            'cfs_account',
             'description',
             'invoice_id',
             'invoice_number'
@@ -45,6 +46,7 @@ class NonSufficientFundsModel(BaseModel):  # pylint: disable=too-many-instance-a
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    cfs_account = db.Column(db.String(50), nullable=True, comment='CFS Account number')
     description = db.Column(db.String(50), nullable=True)
     invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
     invoice_number = db.Column(db.String(50), nullable=False, index=True, comment='CFS Invoice number')
@@ -55,9 +57,10 @@ class NonSufficientFundsSchema:  # pylint: disable=too-few-public-methods
     """Used to search for NSF records."""
 
     id: int
-    description: str
+    cfs_account: int
     invoice_id: int
     invoice_number: str
+    description: str
 
     @classmethod
     def from_row(cls, row: NonSufficientFundsModel):
@@ -65,5 +68,5 @@ class NonSufficientFundsSchema:  # pylint: disable=too-few-public-methods
 
         https://www.attrs.org/en/stable/init.html
         """
-        return cls(id=row.id, invoice_id=row.invoice_id, invoice_number=row.invoice_number,
-                   description=row.description)
+        return cls(id=row.id, cfs_account=row.cfs_account, description=row.description,
+                   invoice_id=row.invoice_id, invoice_number=row.invoice_number)

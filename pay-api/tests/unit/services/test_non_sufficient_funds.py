@@ -35,6 +35,7 @@ def test_save_non_sufficient_funds(session):
     invoice.save()
     non_sufficient_funds = NonSufficientFundsService.save_non_sufficient_funds(invoice_id=invoice.id,
                                                                                invoice_number=payment.invoice_number,
+                                                                               cfs_account='1234567890',
                                                                                description='NSF')
     assert non_sufficient_funds
     assert non_sufficient_funds['description'] == 'NSF'
@@ -85,6 +86,6 @@ def test_find_all_non_sufficient_funds_invoices(session):
     assert 'total' in find_non_sufficient_funds
     assert len(find_non_sufficient_funds['invoices']) == 1
     assert find_non_sufficient_funds['total'] == 1
-    assert find_non_sufficient_funds['total_amount'] == 30.0
-    assert find_non_sufficient_funds['total_amount_remaining'] == 60.0
+    assert find_non_sufficient_funds['total_amount'] == 0
+    assert find_non_sufficient_funds['total_amount_remaining'] == 30.0
     assert find_non_sufficient_funds['nsf_amount'] == 30.0
