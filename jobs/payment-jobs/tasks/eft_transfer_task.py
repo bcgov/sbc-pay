@@ -116,8 +116,7 @@ class EftTransferTask(CgiEjv):
                                        eft_gl_transfers: dict = None) -> [EFTGLTransferModel]:
         """Create EFT GL Transfer for invoice line items."""
         eft_holding_gl = current_app.config.get('EFT_HOLDING_GL')
-        if eft_gl_transfers is None:
-            eft_gl_transfers = {}
+        eft_gl_transfers = eft_gl_transfers or {}
 
         for invoice in invoices:
             payment_account = PaymentAccountModel.find_by_id(invoice.payment_account_id)
@@ -129,17 +128,35 @@ class EftTransferTask(CgiEjv):
                     distribution_code.distribution_code_id
                 )
 
+                service_fee_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
+                    distribution_code.service_fee_distribution_code_id
+                )
+
                 line_distribution = cls.get_distribution_string(line_distribution_code)
-                gl_transfer = cls.create_eft_gl_transfer(
+                service_fee_distribution = cls.get_distribution_string(service_fee_distribution_code)
+
+                line_gl_transfer = cls.create_eft_gl_transfer(
                     eft_holding_gl=eft_holding_gl,
                     line_distribution_gl=line_distribution,
                     transfer_type=transfer_type,
                     line_item=line_item,
                     payment_account=payment_account
                 )
+
+                service_fee_gl_transfer = cls.create_eft_gl_transfer(
+                    eft_holding_gl=eft_holding_gl,
+                    line_distribution_gl=service_fee_distribution,
+                    transfer_type=transfer_type,
+                    line_item=line_item,
+                    payment_account=payment_account
+                )
+                service_fee_gl_transfer.transfer_amount = line_item.service_fees
+
                 eft_gl_transfers.setdefault(invoice.payment_account_id, [])
-                eft_gl_transfers[invoice.payment_account_id].append(gl_transfer)
-                db.session.add(gl_transfer)
+                eft_gl_transfers[invoice.payment_account_id].append(line_gl_transfer)
+                eft_gl_transfers[invoice.payment_account_id].append(service_fee_gl_transfer)
+                db.session.add(line_gl_transfer)
+                db.session.add(service_fee_gl_transfer)
         return eft_gl_transfers
 
     @staticmethod

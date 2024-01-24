@@ -21,7 +21,7 @@ from typing import List
 
 import pytest
 from flask import Flask
-from pay_api.models import DistributionCode, EFTGLTransfer, EjvFile, EjvHeader, EjvInvoiceLink, FeeSchedule, db
+from pay_api.models import DistributionCode, EFTGLTransfer, EjvFile, EjvHeader, EjvInvoiceLink, FeeSchedule, Invoice, db
 from pay_api.utils.enums import DisbursementStatus, EFTGlTransferType, EjvFileType, InvoiceStatus, PaymentMethod
 
 import config
@@ -79,6 +79,7 @@ def test_eft_transfer(setup, session, monkeypatch):
 
     eft_holding_gl = app.config['EFT_HOLDING_GL']
     distribution_gl = EftTransferTask.get_distribution_string(dist_code).strip()
+    service_fee_gl = EftTransferTask.get_distribution_string(service_fee_dist_code).strip()
 
     # GA
     eft_account_1 = factory_create_eft_account(auth_account_id='1')
@@ -87,7 +88,7 @@ def test_eft_transfer(setup, session, monkeypatch):
     eft_shortname_2 = factory_create_eft_shortname(auth_account_id='2', short_name='SHORTNAME2')
 
     eft_accounts = [eft_account_1, eft_account_2]
-    inv_ids = []
+    invoices: List[Invoice] = []
     for account in eft_accounts:
         inv = factory_invoice(payment_account=account, corp_type_code=corp_type, total=101.5,
                               status_code=InvoiceStatus.PAID.value, payment_method_code=PaymentMethod.EFT.value)
@@ -97,15 +98,15 @@ def test_eft_transfer(setup, session, monkeypatch):
                                   total=100,
                                   service_fees=1.5,
                                   fee_dist_id=dist_code.distribution_code_id)
-        inv_ids.append(inv.id)
+        invoices.append(inv)
 
     with app.app_context():
         EftTransferTask.create_ejv_file()
 
     # Lookup invoice and assert disbursement status
-    for inv_id in inv_ids:
+    for invoice in invoices:
         ejv_inv_link: EjvInvoiceLink = db.session.query(EjvInvoiceLink) \
-            .filter(EjvInvoiceLink.invoice_id == inv_id).first()
+            .filter(EjvInvoiceLink.invoice_id == invoice.id).first()
         assert ejv_inv_link
 
         ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_inv_link.ejv_header_id).first()
@@ -122,10 +123,13 @@ def test_eft_transfer(setup, session, monkeypatch):
     now = datetime.now().date()
 
     assert eft_transfers
-    assert len(eft_transfers) == 2
+    assert len(eft_transfers) == 4
+
+    # Assert first short name line item distribution
     assert eft_transfers[0].id is not None
     assert eft_transfers[0].short_name_id == eft_shortname_1.id
-    assert eft_transfers[0].invoice_id == inv_ids[0]
+    assert eft_transfers[0].invoice_id == invoices[0].id
+    assert eft_transfers[0].transfer_amount == invoices[0].payment_line_items[0].total
     assert eft_transfers[0].transfer_type == EFTGlTransferType.TRANSFER.value
     assert eft_transfers[0].transfer_date.date() == now
     assert eft_transfers[0].is_processed
@@ -134,13 +138,41 @@ def test_eft_transfer(setup, session, monkeypatch):
     assert eft_transfers[0].source_gl == eft_holding_gl
     assert eft_transfers[0].target_gl == distribution_gl
 
+    # Assert first short name service fee distribution
     assert eft_transfers[1].id is not None
-    assert eft_transfers[1].short_name_id == eft_shortname_2.id
-    assert eft_transfers[1].invoice_id == inv_ids[1]
+    assert eft_transfers[1].short_name_id == eft_shortname_1.id
+    assert eft_transfers[1].invoice_id == invoices[0].id
     assert eft_transfers[1].transfer_type == EFTGlTransferType.TRANSFER.value
+    assert eft_transfers[1].transfer_amount == invoices[0].payment_line_items[0].service_fees
     assert eft_transfers[1].transfer_date.date() == now
     assert eft_transfers[1].is_processed
     assert eft_transfers[1].processed_on.date() == now
     assert eft_transfers[1].created_on.date() == now
     assert eft_transfers[1].source_gl == eft_holding_gl
-    assert eft_transfers[1].target_gl == distribution_gl
+    assert eft_transfers[1].target_gl == service_fee_gl
+
+    # Assert second short name line item distribution
+    assert eft_transfers[2].id is not None
+    assert eft_transfers[2].short_name_id == eft_shortname_2.id
+    assert eft_transfers[2].invoice_id == invoices[1].id
+    assert eft_transfers[2].transfer_type == EFTGlTransferType.TRANSFER.value
+    assert eft_transfers[2].transfer_amount == invoices[1].payment_line_items[0].total
+    assert eft_transfers[2].transfer_date.date() == now
+    assert eft_transfers[2].is_processed
+    assert eft_transfers[2].processed_on.date() == now
+    assert eft_transfers[2].created_on.date() == now
+    assert eft_transfers[2].source_gl == eft_holding_gl
+    assert eft_transfers[2].target_gl == distribution_gl
+
+    # Assert second short name service fee distribution
+    assert eft_transfers[3].id is not None
+    assert eft_transfers[3].short_name_id == eft_shortname_2.id
+    assert eft_transfers[3].invoice_id == invoices[1].id
+    assert eft_transfers[3].transfer_type == EFTGlTransferType.TRANSFER.value
+    assert eft_transfers[3].transfer_amount == invoices[1].payment_line_items[0].service_fees
+    assert eft_transfers[3].transfer_date.date() == now
+    assert eft_transfers[3].is_processed
+    assert eft_transfers[3].processed_on.date() == now
+    assert eft_transfers[3].created_on.date() == now
+    assert eft_transfers[3].source_gl == eft_holding_gl
+    assert eft_transfers[3].target_gl == service_fee_gl
