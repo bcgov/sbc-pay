@@ -1,4 +1,4 @@
-"""Add cfs_account_id and modify invoice_number to be non-nullable in non_sufficient_funds table
+"""Add cfs_account and modify invoice_number to be non-nullable in non_sufficient_funds table
 
 Revision ID: 0b1f9c35b1fb
 Revises: fccdab259e05
@@ -17,7 +17,7 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column('non_sufficient_funds', sa.Column('cfs_account_id', sa.String(length=50), nullable=True,
+    op.add_column('non_sufficient_funds', sa.Column('cfs_account', sa.String(length=50), nullable=True,
                                                     comment='CFS Account number'))
     op.alter_column('non_sufficient_funds', 'invoice_number',
                existing_type=sa.VARCHAR(length=50),
@@ -30,4 +30,4 @@ def downgrade():
                existing_type=sa.VARCHAR(length=50),
                nullable=True,
                existing_comment='CFS Invoice number')
-    op.drop_column('non_sufficient_funds', 'cfs_account_id')
+    op.drop_column('non_sufficient_funds', 'cfs_account')

@@ -53,7 +53,8 @@ class NonSufficientFundsService:
         return non_sufficient_funds_service
 
     @staticmethod
-    def save_non_sufficient_funds(invoice_id: int, invoice_number: str, description: str) -> NonSufficientFundsService:
+    def save_non_sufficient_funds(invoice_id: int, invoice_number: str, cfs_account: int,
+                                  description: str) -> NonSufficientFundsService:
         """Create Non-Sufficient Funds record."""
         current_app.logger.debug('<save_non_sufficient_funds')
         non_sufficient_funds_service = NonSufficientFundsService()
@@ -61,6 +62,7 @@ class NonSufficientFundsService:
         non_sufficient_funds_service.dao.description = description
         non_sufficient_funds_service.dao.invoice_id = invoice_id
         non_sufficient_funds_service.dao.invoice_number = invoice_number
+        non_sufficient_funds_service.dao.cfs_account = cfs_account
         non_sufficient_funds_dao = non_sufficient_funds_service.dao.save()
 
         non_sufficient_funds_service = NonSufficientFundsService.populate(non_sufficient_funds_dao)
