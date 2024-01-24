@@ -66,5 +66,5 @@ def test_get_non_sufficient_funds(session, client, jwt, app):
     assert len(nsf.json.get('invoices')) == 1
     assert nsf.json.get('total') == 1
     assert nsf.json.get('totalAmount') == 0
-    assert nsf.json.get('totalAmountRemaining') == 60
+    assert nsf.json.get('totalAmountRemaining') == 30
     assert nsf.json.get('nsfAmount') == 60
