@@ -202,6 +202,10 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CFS_FAS_CLIENT_ID = os.getenv('CFS_FAS_CLIENT_ID', '')
     CFS_FAS_CLIENT_SECRET = os.getenv('CFS_FAS_CLIENT_SECRET', '')
 
+    # EFT variables
+    EFT_HOLDING_GL = os.getenv('EFT_HOLDING_GL', '')
+    EFT_TRANSFER_DESC = os.getenv('EFT_TRANSFER_DESC', 'BCREGISTRIES {} {} EFT TRANSFER')
+
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     TESTING = False
