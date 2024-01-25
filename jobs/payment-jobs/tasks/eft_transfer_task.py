@@ -124,16 +124,12 @@ class EftTransferTask(CgiEjv):
                 distribution_code: DistributionCodeModel = \
                     DistributionCodeModel.find_by_id(line_item.fee_distribution_id)
 
+                # Create line distribution transfer
                 line_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
                     distribution_code.distribution_code_id
                 )
 
-                service_fee_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
-                    distribution_code.service_fee_distribution_code_id
-                )
-
                 line_distribution = cls.get_distribution_string(line_distribution_code)
-                service_fee_distribution = cls.get_distribution_string(service_fee_distribution_code)
 
                 line_gl_transfer = cls.create_eft_gl_transfer(
                     eft_holding_gl=eft_holding_gl,
@@ -143,20 +139,29 @@ class EftTransferTask(CgiEjv):
                     payment_account=payment_account
                 )
 
-                service_fee_gl_transfer = cls.create_eft_gl_transfer(
-                    eft_holding_gl=eft_holding_gl,
-                    line_distribution_gl=service_fee_distribution,
-                    transfer_type=transfer_type,
-                    line_item=line_item,
-                    payment_account=payment_account
-                )
-                service_fee_gl_transfer.transfer_amount = line_item.service_fees
-
                 eft_gl_transfers.setdefault(invoice.payment_account_id, [])
                 eft_gl_transfers[invoice.payment_account_id].append(line_gl_transfer)
-                eft_gl_transfers[invoice.payment_account_id].append(service_fee_gl_transfer)
                 db.session.add(line_gl_transfer)
-                db.session.add(service_fee_gl_transfer)
+
+                # Check for service fee, if there is one create a transfer record
+                if distribution_code.service_fee_distribution_code_id:
+                    service_fee_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
+                        distribution_code.service_fee_distribution_code_id
+                    )
+
+                    service_fee_distribution = cls.get_distribution_string(service_fee_distribution_code)
+
+                    service_fee_gl_transfer = cls.create_eft_gl_transfer(
+                        eft_holding_gl=eft_holding_gl,
+                        line_distribution_gl=service_fee_distribution,
+                        transfer_type=transfer_type,
+                        line_item=line_item,
+                        payment_account=payment_account
+                    )
+                    service_fee_gl_transfer.transfer_amount = line_item.service_fees
+                    eft_gl_transfers[invoice.payment_account_id].append(service_fee_gl_transfer)
+                    db.session.add(service_fee_gl_transfer)
+
         return eft_gl_transfers
 
     @staticmethod
