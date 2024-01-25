@@ -46,4 +46,4 @@ class EFTCreditInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False, index=True)
     eft_credit_id = db.Column(db.Integer, ForeignKey('eft_credits.id'), nullable=False, index=True)
-    created_on = db.Column('created_on', db.DateTime, nullable=True, default=datetime.now)
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)

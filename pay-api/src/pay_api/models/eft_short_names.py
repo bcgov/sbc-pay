@@ -45,7 +45,7 @@ class EFTShortnames(VersionedModel):  # pylint: disable=too-many-instance-attrib
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    auth_account_id = db.Column('auth_account_id', db.DateTime, nullable=True, index=True)
+    auth_account_id = db.Column('auth_account_id', db.String(50), nullable=True, index=True)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
     short_name = db.Column('short_name', db.String, nullable=False, index=True)
 
