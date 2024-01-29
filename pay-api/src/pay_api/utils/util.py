@@ -260,7 +260,7 @@ def get_quantized(amount: float) -> Decimal:
     return Decimal(amount).quantize(Decimal('1.00'))
 
 
-def cents_to_decimal(amount: int) -> Decimal:
+def cents_to_decimal(amount: int):
     """Return dollar amount from cents."""
     if amount is None:
         return None
