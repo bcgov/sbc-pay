@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Resource for EFT Short name."""
+from decimal import Decimal
 from http import HTTPStatus
 
 from flask import Blueprint, current_app, jsonify, request
@@ -19,10 +20,15 @@ from flask_cors import cross_origin
 
 from pay_api.exceptions import BusinessException
 from pay_api.services.eft_short_names import EFTShortnames as EFTShortnameService
+from pay_api.services.eft_short_names import EFTShortnamesSearch
+from pay_api.services.eft_transactions import EFTTransactions as EFTTransactionService
+from pay_api.services.eft_transactions import EFTTransactionSearch
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
 from pay_api.utils.trace import tracing as _tracing
+from pay_api.utils.util import string_to_date
+
 
 bp = Blueprint('EFT_SHORT_NAMES', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/eft-shortnames')
 
@@ -35,11 +41,22 @@ def get_eft_shortnames():
     """Get all eft short name records."""
     current_app.logger.info('<get_eft_shortnames')
 
-    include_all = bool(request.args.get('includeAll', 'false').lower() == 'true')
+    state = request.args.get('state', None)
     page: int = int(request.args.get('page', '1'))
     limit: int = int(request.args.get('limit', '10'))
+    transaction_date = request.args.get('transactionDate', None)
+    deposit_amount = request.args.get('depositAmount', None)
+    deposit_date = request.args.get('depositDate', None)
+    short_name = request.args.get('shortName', None)
 
-    response, status = EFTShortnameService.search(include_all, page, limit), HTTPStatus.OK
+    response, status = EFTShortnameService.search(EFTShortnamesSearch(
+        deposit_date=string_to_date(deposit_date) if deposit_date else None,
+        deposit_amount=Decimal(deposit_amount) * Decimal(100) if deposit_amount else None,
+        short_name=short_name,
+        transaction_date=string_to_date(transaction_date) if transaction_date else None,
+        state=state,
+        page=page,
+        limit=limit)), HTTPStatus.OK
     current_app.logger.debug('>get_eft_shortnames')
     return jsonify(response), status
 
@@ -82,4 +99,23 @@ def patch_eft_shortname(short_name_id: int):
         return exception.response()
 
     current_app.logger.debug('>patch_eft_shortname')
+    return jsonify(response), status
+
+
+@bp.route('/<int:short_name_id>/transactions', methods=['GET', 'OPTIONS'])
+@cross_origin(origins='*', methods=['GET'])
+@_tracing.trace()
+@_jwt.requires_auth
+@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.STAFF.value])
+def get_eft_shortname_transactions(short_name_id: int):
+    """Get EFT short name transactions."""
+    current_app.logger.info('<get_eft_shortname_transactions')
+
+    page: int = int(request.args.get('page', '1'))
+    limit: int = int(request.args.get('limit', '10'))
+
+    response, status = EFTTransactionService.search(short_name_id,
+                                                    EFTTransactionSearch(page=page, limit=limit)), HTTPStatus.OK
+
+    current_app.logger.debug('>get_eft_shortname_transactions')
     return jsonify(response), status

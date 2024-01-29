@@ -50,6 +50,8 @@ def test_eft_transaction_defaults(session):
     assert eft_transaction.file_id == eft_file.id
     assert eft_transaction.line_number == 1
     assert eft_transaction.line_type == EFTFileLineType.HEADER.value
+    assert eft_transaction.deposit_date is None
+    assert eft_transaction.transaction_date is None
 
 
 def test_eft_file_all_attributes(session):
@@ -61,6 +63,8 @@ def test_eft_file_all_attributes(session):
     assert eft_file.id is not None
 
     completed_on = datetime(2023, 9, 30, 10, 0)
+    deposit_date = datetime(2023, 9, 28, 10, 0)
+    transaction_date = datetime(2023, 9, 29, 10, 0)
     error_messages = ['message 1', 'message 2']
     batch_number = '123456789'
     jv_type = 'I'
@@ -77,6 +81,8 @@ def test_eft_file_all_attributes(session):
     eft_transaction.line_type = EFTFileLineType.TRANSACTION.value
     eft_transaction.status_code = EFTProcessStatus.COMPLETED.value
     eft_transaction.completed_on = completed_on
+    eft_transaction.transaction_date = transaction_date
+    eft_transaction.deposit_date = deposit_date
     eft_transaction.error_messages = error_messages
     eft_transaction.save()
 
@@ -97,6 +103,8 @@ def test_eft_file_all_attributes(session):
     assert eft_transaction.line_number == 2
     assert eft_transaction.line_type == EFTFileLineType.TRANSACTION.value
     assert eft_transaction.completed_on == completed_on
+    assert eft_transaction.transaction_date == transaction_date
+    assert eft_transaction.deposit_date == deposit_date
     assert eft_transaction.error_messages == error_messages
     assert eft_transaction.error_messages[0] == 'message 1'
     assert eft_transaction.error_messages[1] == 'message 2'

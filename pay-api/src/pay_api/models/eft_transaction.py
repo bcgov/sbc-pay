@@ -12,14 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle EFT file processing."""
-
 from datetime import datetime
+from _decimal import Decimal
+from attrs import define
 
 from sqlalchemy import ForeignKey, String
 from sqlalchemy.dialects.postgresql import ARRAY
 
 from .base_model import BaseModel
 from .db import db
+from ..utils.util import cents_to_decimal
 
 
 class EFTTransaction(BaseModel):  # pylint: disable=too-many-instance-attributes
@@ -43,6 +45,7 @@ class EFTTransaction(BaseModel):  # pylint: disable=too-many-instance-attributes
             'completed_on',
             'created_on',
             'deposit_amount_cents',
+            'deposit_date',
             'error_messages',
             'file_id',
             'last_updated_on',
@@ -52,7 +55,8 @@ class EFTTransaction(BaseModel):  # pylint: disable=too-many-instance-attributes
             'jv_number',
             'sequence_number',
             'short_name_id',
-            'status_code'
+            'status_code',
+            'transaction_date'
         ]
     }
 
@@ -71,3 +75,28 @@ class EFTTransaction(BaseModel):  # pylint: disable=too-many-instance-attributes
     short_name_id = db.Column(db.Integer, ForeignKey('eft_short_names.id'), nullable=True)
     status_code = db.Column(db.String, ForeignKey('eft_process_status_codes.code'), nullable=False)
     deposit_amount_cents = db.Column('deposit_amount_cents', db.BigInteger, nullable=True)
+    deposit_date = db.Column('deposit_date', db.DateTime, nullable=True)
+    transaction_date = db.Column('transaction_date', db.DateTime, nullable=True)
+
+
+@define
+class EFTTransactionSchema:  # pylint: disable=too-few-public-methods
+    """Main schema used to serialize a EFT Transaction."""
+
+    id: int
+    short_name_id: int
+    transaction_date: datetime
+    deposit_date: datetime
+    deposit_amount: Decimal
+
+    @classmethod
+    def from_row(cls, row: EFTTransaction):
+        """From row is used so we don't tightly couple to our database class.
+
+        https://www.attrs.org/en/stable/init.html
+        """
+        return cls(id=row.id,
+                   short_name_id=row.short_name_id,
+                   transaction_date=getattr(row, 'transaction_date', None),
+                   deposit_date=getattr(row, 'deposit_date', None),
+                   deposit_amount=cents_to_decimal(getattr(row, 'deposit_amount_cents', None)))

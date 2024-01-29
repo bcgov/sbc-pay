@@ -258,3 +258,11 @@ def string_to_date(date_val: str, dt_format: str = DT_SHORT_FORMAT):
 def get_quantized(amount: float) -> Decimal:
     """Return rounded decimal. (Default = ROUND_HALF_EVEN)."""
     return Decimal(amount).quantize(Decimal('1.00'))
+
+
+def cents_to_decimal(amount: int) -> Decimal:
+    """Return dollar amount from cents."""
+    if amount is None:
+        return None
+
+    return amount / 100

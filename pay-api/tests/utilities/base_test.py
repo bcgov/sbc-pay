@@ -25,7 +25,7 @@ from typing import Dict, List, Tuple
 from faker import Faker
 
 from pay_api.models import (
-    CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTShortnames, Invoice, InvoiceReference,
+    CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTFile, EFTShortnames, Invoice, InvoiceReference,
     NonSufficientFundsModel, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip,
     Statement, StatementInvoices, StatementSettings)
 from pay_api.utils.constants import DT_SHORT_FORMAT
@@ -881,6 +881,11 @@ def factory_comments(routing_slip_number: str, username: str = 'comment_user', c
                       comment=comment
                       )
     return comment
+
+
+def factory_eft_file(file_ref: str = 'test_ref.txt'):
+    """Return an EFT file model."""
+    return EFTFile(file_ref=file_ref).save()
 
 
 def factory_eft_shortname(short_name: str, auth_account_id: str = None):
