@@ -21,7 +21,7 @@ from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import EFTTransactionSchema, db
 from pay_api.utils.converter import Converter
-from pay_api.utils.enums import EFTProcessStatus
+from pay_api.utils.enums import EFTProcessStatus, EFTFileLineType
 
 
 @dataclass
@@ -48,7 +48,8 @@ class EFTTransactions:
         """Return EFT Transfers by search criteria."""
         query = db.session.query(EFTTransactionModel) \
             .filter(EFTTransactionModel.short_name_id == short_name_id) \
-            .filter(EFTTransactionModel.status_code == EFTProcessStatus.COMPLETED.value)\
+            .filter(EFTTransactionModel.status_code == EFTProcessStatus.COMPLETED.value) \
+            .filter(EFTTransactionModel.line_type == EFTFileLineType.TRANSACTION.value) \
             .order_by(EFTTransactionModel.transaction_date.desc())
 
         pagination = query.paginate(per_page=search_criteria.limit,

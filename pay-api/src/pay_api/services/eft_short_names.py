@@ -33,7 +33,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import db
 from pay_api.utils.converter import Converter
-from pay_api.utils.enums import EFTProcessStatus, EFTShortnameState, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import EFTProcessStatus, EFTShortnameState, InvoiceStatus, PaymentMethod, EFTFileLineType
 from pay_api.utils.errors import Error
 
 
@@ -260,7 +260,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             func.row_number().over(partition_by=EFTTransactionModel.short_name_id,
                                    order_by=[EFTTransactionModel.transaction_date, EFTTransactionModel.id]).label('rn')
         ).filter(and_(EFTTransactionModel.short_name_id.isnot(None),
-                      EFTTransactionModel.status_code == EFTProcessStatus.COMPLETED.value))
+                      EFTTransactionModel.status_code == EFTProcessStatus.COMPLETED.value))\
+            .filter(EFTTransactionModel.line_type == EFTFileLineType.TRANSACTION.value)
 
     @classmethod
     def get_search_query(cls, search_criteria: EFTShortnamesSearch, is_count: bool = False):
