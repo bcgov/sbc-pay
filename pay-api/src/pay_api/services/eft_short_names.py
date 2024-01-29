@@ -33,7 +33,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import db
 from pay_api.utils.converter import Converter
-from pay_api.utils.enums import EFTProcessStatus, EFTShortnameState, InvoiceStatus, PaymentMethod, EFTFileLineType
+from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameState, InvoiceStatus, PaymentMethod
 from pay_api.utils.errors import Error
 
 
