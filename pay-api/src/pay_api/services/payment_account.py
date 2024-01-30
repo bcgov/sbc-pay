@@ -28,9 +28,10 @@ from pay_api.models import AccountFeeSchema
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
+from pay_api.models import EFTShortnames as EFTShortnamesModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.models import PaymentAccountSchema
+from pay_api.models import PaymentAccountSchema, PaymentAccountSearchModel
 from pay_api.models import StatementRecipients as StatementRecipientModel
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import db
@@ -40,6 +41,7 @@ from pay_api.services.oauth_service import OAuthService
 from pay_api.services.queue_publisher import publish_response
 from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings
+from pay_api.utils.converter import Converter
 from pay_api.utils.enums import (
     AuthHeaderType, CfsAccountStatus, ContentType, InvoiceStatus, MessageType, PaymentMethod, PaymentSystem,
     StatementFrequency)
@@ -651,6 +653,34 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         account = PaymentAccount()
         account._dao = PaymentAccountModel.find_by_id(account_id)  # pylint: disable=protected-access
         return account
+    
+    @classmethod
+    def find_eft_accounts(cls, page: int, limit: int):
+        """Find EFT accounts."""
+        query = db.session.query(PaymentAccountModel) \
+            .outerjoin(EFTShortnamesModel, PaymentAccountModel.auth_account_id == EFTShortnamesModel.auth_account_id) \
+            .filter(PaymentAccountModel.payment_method == PaymentMethod.EFT.value,
+                    PaymentAccountModel.eft_enable == True,
+                    EFTShortnamesModel.auth_account_id.is_(None))
+            
+        query = query.order_by(PaymentAccountModel.id)
+        pagination = query.paginate(per_page=limit, page=page)
+        
+        total = pagination.total
+        eft_accounts = pagination.items
+        
+        eft_accounts_list = [PaymentAccountSearchModel.from_row(eft_account) for eft_account in eft_accounts]
+        converter = Converter()
+        eft_accounts_list = converter.unstructure(eft_accounts_list)
+            
+        data = {
+            'total': total,
+            'page': page,
+            'limit': limit,
+            'items': eft_accounts_list
+        }
+            
+        return data
 
     @classmethod
     def get_eft_credit_balance(cls, account_id: int) -> Decimal:
