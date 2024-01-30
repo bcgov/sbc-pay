@@ -352,6 +352,8 @@ def _save_eft_transaction(eft_record: EFTRecord, eft_file_model: EFTFileModel, i
     eft_transaction_model.jv_type = getattr(eft_record, 'jv_type', None)
     eft_transaction_model.jv_number = getattr(eft_record, 'jv_number', None)
     deposit_amount_cad = getattr(eft_record, 'deposit_amount_cad', None)
+    eft_transaction_model.deposit_date = getattr(eft_record, 'deposit_datetime')
+    eft_transaction_model.transaction_date = getattr(eft_record, 'transaction_date')
     eft_transaction_model.deposit_amount_cents = deposit_amount_cad
     eft_transaction_model.save()
 
