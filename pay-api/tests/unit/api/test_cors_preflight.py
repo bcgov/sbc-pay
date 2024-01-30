@@ -229,6 +229,11 @@ def test_preflight_eft_shortnames(app, client, jwt, session):
     assert rv.status_code == 200
     assert_access_control_headers(rv, '*', 'GET, PATCH')
 
+    rv = client.options('/api/v1/eft-shortnames/1/transactions',
+                        headers={'Access-Control-Request-Method': 'GET'})
+    assert rv.status_code == 200
+    assert_access_control_headers(rv, '*', 'GET')
+
 
 def assert_access_control_headers(rv, origins: str, methods: str):
     """Assert access control headers are correct."""

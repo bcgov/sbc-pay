@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle EFT TDI17 short name to BCROS account mapping."""
-
 from datetime import datetime
+from _decimal import Decimal
 from attrs import define
 
 
 from .base_model import VersionedModel
 from .db import db
+from ..utils.util import cents_to_decimal
 
 
 class EFTShortnames(VersionedModel):  # pylint: disable=too-many-instance-attributes
@@ -54,18 +55,6 @@ class EFTShortnames(VersionedModel):  # pylint: disable=too-many-instance-attrib
         """Find by eft short name."""
         return cls.query.filter_by(short_name=short_name).one_or_none()
 
-    @classmethod
-    def find_all_short_names(cls, include_all: bool, page: int, limit: int):
-        """Return eft short names."""
-        query = db.session.query(EFTShortnames)
-
-        if not include_all:
-            query = query.filter(EFTShortnames.auth_account_id.is_(None))
-
-        query = query.order_by(EFTShortnames.short_name.asc())
-        pagination = query.paginate(per_page=limit, page=page)
-        return pagination.items, pagination.total
-
 
 @define
 class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
@@ -75,6 +64,10 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
     short_name: str
     account_id: str
     created_on: datetime
+    transaction_id: int
+    transaction_date: datetime
+    deposit_date: datetime
+    deposit_amount: Decimal
 
     @classmethod
     def from_row(cls, row: EFTShortnames):
@@ -82,4 +75,11 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
 
         https://www.attrs.org/en/stable/init.html
         """
-        return cls(id=row.id, short_name=row.short_name, account_id=row.auth_account_id, created_on=row.created_on)
+        return cls(id=row.id,
+                   short_name=row.short_name,
+                   account_id=row.auth_account_id,
+                   created_on=row.created_on,
+                   transaction_id=getattr(row, 'transaction_id', None),
+                   transaction_date=getattr(row, 'transaction_date', None),
+                   deposit_date=getattr(row, 'deposit_date', None),
+                   deposit_amount=cents_to_decimal(getattr(row, 'deposit_amount', None)))

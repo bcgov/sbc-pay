@@ -14,23 +14,40 @@
 """Service to manage EFT short name model operations."""
 from __future__ import annotations
 
-from datetime import datetime
+from dataclasses import dataclass
+from datetime import date, datetime
 from operator import and_
 from typing import Any, Dict, List, Optional
 
+from _decimal import Decimal
 from flask import current_app
+from sqlalchemy import func
 
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import EFTShortnameSchema
+from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import db
 from pay_api.utils.converter import Converter
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameState, InvoiceStatus, PaymentMethod
 from pay_api.utils.errors import Error
+
+
+@dataclass
+class EFTShortnamesSearch:
+    """Used for searching EFT short name records."""
+
+    transaction_date: Optional[date] = None
+    deposit_date: Optional[date] = None
+    deposit_amount: Optional[Decimal] = None
+    short_name: Optional[str] = None
+    state: Optional[str] = None
+    page: Optional[int] = 1
+    limit: Optional[int] = 10
 
 
 class EFTShortnames:  # pylint: disable=too-many-instance-attributes
@@ -42,7 +59,6 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         self._id: Optional[int] = None
         self._auth_account_id: Optional[str] = None
         self._short_name: Optional[str] = None
-        self._created_on: Optional[datetime] = None
 
     @property
     def _dao(self):
@@ -199,22 +215,88 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             current_app.logger.debug('>find_by_short_name_id')
         return short_name_service
 
-    @staticmethod
-    def search(include_all: bool, page: int, limit: int):
-        """Find all eft short name records."""
+    @classmethod
+    def search(cls, search_criteria: EFTShortnamesSearch):
+        """Search eft short name records."""
         current_app.logger.debug('<search')
-        short_names, total = EFTShortnameModel.find_all_short_names(include_all, page, limit)
-        short_name_list = [EFTShortnameSchema.from_row(short_name) for short_name in short_names]
+        state_count = cls.get_search_count(search_criteria)
+        search_query = cls.get_search_query(search_criteria)
+        pagination = search_query.paginate(per_page=search_criteria.limit,
+                                           page=search_criteria.page)
+
+        short_name_list = [EFTShortnameSchema.from_row(short_name) for short_name in pagination.items]
         converter = Converter()
         short_name_list = converter.unstructure(short_name_list)
-        data = {
-            'total': total,
-            'page': page,
-            'limit': limit,
-            'items': short_name_list
-        }
+
         current_app.logger.debug('>search')
-        return data
+        return {
+            'state_total': state_count,
+            'page': search_criteria.page,
+            'limit': search_criteria.limit,
+            'items': short_name_list,
+            'total': pagination.total
+        }
+
+    @classmethod
+    def get_search_count(cls, search_criteria: EFTShortnamesSearch):
+        """Get total count of results based on short name state search criteria."""
+        current_app.logger.debug('<get_search_count')
+
+        query = cls.get_search_query(search_criteria=EFTShortnamesSearch(state=search_criteria.state), is_count=True)
+        count_query = query.group_by(EFTShortnameModel.id).with_entities(EFTShortnameModel.id)
+
+        current_app.logger.debug('>get_search_count')
+        return count_query.count()
+
+    @staticmethod
+    def get_ordered_transaction_query():
+        """Query for EFT transactions."""
+        return db.session.query(
+            EFTTransactionModel.id,
+            EFTTransactionModel.transaction_date,
+            EFTTransactionModel.deposit_date,
+            EFTTransactionModel.deposit_amount_cents,
+            EFTTransactionModel.short_name_id,
+            func.row_number().over(partition_by=EFTTransactionModel.short_name_id,
+                                   order_by=[EFTTransactionModel.transaction_date, EFTTransactionModel.id]).label('rn')
+        ).filter(and_(EFTTransactionModel.short_name_id.isnot(None),
+                      EFTTransactionModel.status_code == EFTProcessStatus.COMPLETED.value))\
+            .filter(EFTTransactionModel.line_type == EFTFileLineType.TRANSACTION.value)
+
+    @classmethod
+    def get_search_query(cls, search_criteria: EFTShortnamesSearch, is_count: bool = False):
+        """Query for short names based on search criteria."""
+        sub_query = None
+        query = db.session.query(EFTShortnameModel.id,
+                                 EFTShortnameModel.short_name,
+                                 EFTShortnameModel.auth_account_id,
+                                 EFTShortnameModel.created_on)
+
+        # Join payment information if this is NOT the count query
+        if not is_count:
+            sub_query = cls.get_ordered_transaction_query().subquery()
+            query = query.add_columns(sub_query.c.id.label('transaction_id'),
+                                      sub_query.c.deposit_date.label('deposit_date'),
+                                      sub_query.c.transaction_date.label('transaction_date'),
+                                      sub_query.c.deposit_amount_cents.label('deposit_amount')) \
+                .outerjoin(sub_query, and_(sub_query.c.short_name_id == EFTShortnameModel.id, sub_query.c.rn == 1))
+
+            # Sub query filters for EFT transaction dates
+            query = query.filter_conditionally(search_criteria.transaction_date, sub_query.c.transaction_date)
+            query = query.filter_conditionally(search_criteria.deposit_date, sub_query.c.deposit_date)
+            query = query.filter_conditionally(search_criteria.deposit_amount, sub_query.c.deposit_amount_cents)
+
+        # Filter by short name state
+        if search_criteria.state == EFTShortnameState.UNLINKED.value:
+            query = query.filter(EFTShortnameModel.auth_account_id.is_(None))
+        elif search_criteria.state == EFTShortnameState.LINKED.value:
+            query = query.filter(EFTShortnameModel.auth_account_id.isnot(None))
+
+        # Short name free text search
+        query = query.filter_conditionally(search_criteria.short_name, EFTShortnameModel.short_name, is_like=True)
+        query = query.order_by(sub_query.c.transaction_date) if sub_query is not None else query
+
+        return query
 
     def asdict(self):
         """Return the EFT Short name as a python dict."""

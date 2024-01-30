@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Custom Query class to extend BaseQuery class functionality."""
-from datetime import datetime
+from datetime import date, datetime
 from flask_sqlalchemy import BaseQuery
 from sqlalchemy import func
 
@@ -20,12 +20,18 @@ from sqlalchemy import func
 class CustomQuery(BaseQuery):
     """Custom Query class to extend the base query class for helper functionality."""
 
-    def filter_conditionally(self, search_criteria, model_attribute):
+    def filter_conditionally(self, search_criteria, model_attribute, is_like: bool = False):
         """Add query filter if present."""
         if search_criteria is None:
             return self
 
         if isinstance(search_criteria, datetime):
             return self.filter(func.DATE(model_attribute) == search_criteria.date())
+        if isinstance(search_criteria, date):
+            return self.filter(func.DATE(model_attribute) == search_criteria)
+        if is_like:
+            # Ensure any updates for this kind of LIKE searches are using SQL Alchemy functions as it uses
+            # bind variables to mitigate SQL Injection
+            return self.filter(func.lower(model_attribute).ilike(f'%{search_criteria}%'))
 
         return self.filter(model_attribute == search_criteria)

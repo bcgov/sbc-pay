@@ -321,6 +321,13 @@ class EFTGlTransferType(Enum):
     TRANSFER = 'TRANSFER'
 
 
+class EFTShortnameState(Enum):
+    """EFT Short name search states."""
+
+    LINKED = 'LINKED'
+    UNLINKED = 'UNLINKED'
+
+
 class MessageType(Enum):
     """Account Mailer Event Types."""
 

@@ -252,9 +252,20 @@ def get_outstanding_txns_from_date() -> datetime:
 
 def string_to_date(date_val: str, dt_format: str = DT_SHORT_FORMAT):
     """Return formatted local time."""
+    if date_val is None:
+        return None
+
     return datetime.strptime(date_val, dt_format).date()
 
 
 def get_quantized(amount: float) -> Decimal:
     """Return rounded decimal. (Default = ROUND_HALF_EVEN)."""
     return Decimal(amount).quantize(Decimal('1.00'))
+
+
+def cents_to_decimal(amount: int):
+    """Return dollar amount from cents."""
+    if amount is None:
+        return None
+
+    return amount / 100
