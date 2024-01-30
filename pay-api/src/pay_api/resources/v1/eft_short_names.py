@@ -50,10 +50,10 @@ def get_eft_shortnames():
     short_name = request.args.get('shortName', None)
 
     response, status = EFTShortnameService.search(EFTShortnamesSearch(
-        deposit_date=string_to_date(deposit_date) if deposit_date else None,
+        deposit_date=string_to_date(deposit_date),
         deposit_amount=Decimal(deposit_amount) * Decimal(100) if deposit_amount else None,
         short_name=short_name,
-        transaction_date=string_to_date(transaction_date) if transaction_date else None,
+        transaction_date=string_to_date(transaction_date),
         state=state,
         page=page,
         limit=limit)), HTTPStatus.OK
