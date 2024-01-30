@@ -653,33 +653,33 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         account = PaymentAccount()
         account._dao = PaymentAccountModel.find_by_id(account_id)  # pylint: disable=protected-access
         return account
-    
+
     @classmethod
     def find_eft_accounts(cls, page: int, limit: int):
         """Find EFT accounts."""
         query = db.session.query(PaymentAccountModel) \
             .outerjoin(EFTShortnamesModel, PaymentAccountModel.auth_account_id == EFTShortnamesModel.auth_account_id) \
             .filter(PaymentAccountModel.payment_method == PaymentMethod.EFT.value,
-                    PaymentAccountModel.eft_enable == True,
+                    PaymentAccountModel.eft_enable.is_(True),
                     EFTShortnamesModel.auth_account_id.is_(None))
-            
+
         query = query.order_by(PaymentAccountModel.id)
         pagination = query.paginate(per_page=limit, page=page)
-        
+
         total = pagination.total
         eft_accounts = pagination.items
-        
+
         eft_accounts_list = [PaymentAccountSearchModel.from_row(eft_account) for eft_account in eft_accounts]
         converter = Converter()
         eft_accounts_list = converter.unstructure(eft_accounts_list)
-            
+
         data = {
             'total': total,
             'page': page,
             'limit': limit,
             'items': eft_accounts_list
         }
-            
+
         return data
 
     @classmethod
