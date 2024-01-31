@@ -270,7 +270,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         query = db.session.query(EFTShortnameModel.id,
                                  EFTShortnameModel.short_name,
                                  EFTShortnameModel.auth_account_id,
-                                 EFTShortnameModel.created_on)
+                                 EFTShortnameModel.created_on,
+                                 PaymentAccountModel.name.label('account_name'))
 
         # Join payment information if this is NOT the count query
         if not is_count:
@@ -279,7 +280,9 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                                       sub_query.c.deposit_date.label('deposit_date'),
                                       sub_query.c.transaction_date.label('transaction_date'),
                                       sub_query.c.deposit_amount_cents.label('deposit_amount')) \
-                .outerjoin(sub_query, and_(sub_query.c.short_name_id == EFTShortnameModel.id, sub_query.c.rn == 1))
+                .outerjoin(sub_query, and_(sub_query.c.short_name_id == EFTShortnameModel.id, sub_query.c.rn == 1)) \
+                .outerjoin(PaymentAccountModel,
+                           PaymentAccountModel.auth_account_id == EFTShortnameModel.auth_account_id)
 
             # Sub query filters for EFT transaction dates
             query = query.filter_conditionally(search_criteria.transaction_date, sub_query.c.transaction_date)
