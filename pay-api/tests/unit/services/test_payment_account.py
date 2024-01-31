@@ -34,9 +34,9 @@ from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, 
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_outstanding_txns_from_date
 from tests.utilities.base_test import (
-    factory_invoice, factory_payment_account, factory_premium_payment_account, get_auth_basic_user,
-    get_auth_premium_user, get_basic_account_payload, get_eft_enable_account_payload, get_pad_account_payload,
-    get_premium_account_payload, get_unlinked_pad_account_payload)
+    factory_eft_shortname, factory_invoice, factory_payment_account, factory_premium_payment_account,
+    get_auth_basic_user, get_auth_premium_user, get_basic_account_payload, get_eft_enable_account_payload,
+    get_pad_account_payload, get_premium_account_payload, get_unlinked_pad_account_payload)
 
 
 def test_account_saved_from_new(session):
@@ -383,3 +383,73 @@ def test_eft_payment_method_settings(session, client, jwt, app, admin_users_mock
 
     assert statement_settings is not None
     assert statement_settings.frequency == StatementFrequency.MONTHLY.value
+
+
+def test_find_eft_accounts(session, client, jwt, app, admin_users_mock):
+    """Assert that the find EFT accounts is working as expected."""
+    page = 1
+    limit = 5
+    auth_account_id='12345678'
+    payment_account = PaymentAccountService.create(get_premium_account_payload(payment_method=PaymentMethod.EFT.value, account_id=auth_account_id))
+    PaymentAccountService.enable_eft(payment_account.auth_account_id)
+    eft_shortname = factory_eft_shortname(short_name='TESTSHORTNAME', auth_account_id=auth_account_id).save()
+
+    payment_account = PaymentAccountService.find_by_id(payment_account.id)
+    assert payment_account.payment_method == PaymentMethod.EFT.value
+    assert payment_account.eft_enable is True
+    assert payment_account.auth_account_id == auth_account_id
+    
+    assert eft_shortname.auth_account_id == auth_account_id
+    
+    eft_accounts = PaymentAccountService.find_eft_accounts(page=page, limit=limit)
+    assert eft_accounts['limit'] == limit
+    assert eft_accounts['page'] == page
+    assert eft_accounts['total'] == 0
+    
+    # Create 10 eft enabled accounts
+    for i in range(10):
+        payment_account = PaymentAccountService.create(get_premium_account_payload(account_id=f'{123}{i}',
+                                                                                    payment_method=PaymentMethod.EFT.value))
+        PaymentAccountService.enable_eft(payment_account.auth_account_id)
+
+        payment_account = PaymentAccountService.find_by_id(payment_account.id)
+        assert payment_account.payment_method == PaymentMethod.EFT.value
+        assert payment_account.eft_enable is True
+        
+    # Create 5 eft shortnames
+    for i in range(5):
+        eft_shortname = factory_eft_shortname(short_name=f'TESTSHORTNAME{i}', auth_account_id=f'{123}{i}').save()
+        
+    eft_accounts = PaymentAccountService.find_eft_accounts(page=page, limit=limit)
+    assert eft_accounts['limit'] == limit
+    assert eft_accounts['page'] == page
+    assert eft_accounts['total'] == 5
+    
+    # Create 5 eft enabled accounts
+    for i in range(5):
+        payment_account = PaymentAccountService.create(get_premium_account_payload(account_id=f'{1234}{i}',
+                                                                                    payment_method=PaymentMethod.EFT.value))
+        PaymentAccountService.enable_eft(payment_account.auth_account_id)
+
+        payment_account = PaymentAccountService.find_by_id(payment_account.id)
+        assert payment_account.payment_method == PaymentMethod.EFT.value
+        assert payment_account.eft_enable is True
+        
+    # Create 5 eft disabled accounts
+    for i in range(5):
+        payment_account = PaymentAccountService.create(get_premium_account_payload(account_id=f'{12345}{i}',
+                                                                                    payment_method=PaymentMethod.EFT.value))
+        payment_account = PaymentAccountService.find_by_id(payment_account.id)
+        assert payment_account.payment_method == PaymentMethod.EFT.value
+        assert payment_account.eft_enable is False
+    
+    # Create 5 eft shortnames
+    for i in range(5):
+        eft_shortname = factory_eft_shortname(short_name=f'TESTSHORTNAME{i}', auth_account_id=f'{123}{i}').save()
+            
+    eft_accounts = PaymentAccountService.find_eft_accounts(page=page, limit=limit)
+    assert eft_accounts['limit'] == limit
+    assert eft_accounts['page'] == page
+    assert eft_accounts['total'] == 5
+
+    
