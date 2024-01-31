@@ -19,7 +19,7 @@ from attrs import define
 
 from .base_model import VersionedModel
 from .db import db
-from ..utils.util import cents_to_decimal
+from ..utils.util import cents_to_decimal, parse_account_name_and_branch
 
 
 class EFTShortnames(VersionedModel):  # pylint: disable=too-many-instance-attributes
@@ -63,6 +63,8 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
     id: int
     short_name: str
     account_id: str
+    account_name: str
+    account_branch: str
     created_on: datetime
     transaction_id: int
     transaction_date: datetime
@@ -75,9 +77,12 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
 
         https://www.attrs.org/en/stable/init.html
         """
+        account_name, account_branch = parse_account_name_and_branch(getattr(row, 'account_name', None))
         return cls(id=row.id,
                    short_name=row.short_name,
                    account_id=row.auth_account_id,
+                   account_name=account_name,
+                   account_branch=account_branch,
                    created_on=row.created_on,
                    transaction_id=getattr(row, 'transaction_id', None),
                    transaction_date=getattr(row, 'transaction_date', None),

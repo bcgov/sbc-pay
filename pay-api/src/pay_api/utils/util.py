@@ -269,3 +269,18 @@ def cents_to_decimal(amount: int):
         return None
 
     return amount / 100
+
+
+def parse_account_name_and_branch(name: str):
+    """Return account name and branch."""
+    if name is None:
+        return None, None
+
+    # Split on the last dash in the event the main name has a dash
+    split_name = name.rsplit('-', 1)
+
+    # There is no branch name
+    if len(split_name) == 1:
+        return split_name[0], None
+
+    return split_name[0], split_name[1]
