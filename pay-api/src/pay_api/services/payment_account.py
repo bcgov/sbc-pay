@@ -434,7 +434,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         from pay_api.factory.payment_system_factory import PaymentSystemFactory
 
         payment_account.auth_account_id = account_request.get('accountId')
-        payment_account.branch_name = account_request.get('branchName')
 
         # If the payment method is CC, set the payment_method as DIRECT_PAY
         if payment_method := get_str_by_path(account_request, 'paymentInfo/methodOfPayment'):
@@ -447,6 +446,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
         if name := account_request.get('accountName', None):
             payment_account.name = name
+
+        if branch_name := account_request.get('branchName', None):
+            payment_account.branch_name = branch_name
 
         if pad_tos_accepted_by := account_request.get('padTosAcceptedBy', None):
             payment_account.pad_tos_accepted_by = pad_tos_accepted_by
