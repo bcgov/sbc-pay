@@ -43,6 +43,7 @@ class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attri
             'bcol_account',
             'bcol_user_id',
             'billable',
+            'branch_name',
             'created_by',
             'created_name',
             'created_on',
@@ -118,6 +119,8 @@ class PaymentAccountSearchModel:  # pylint: disable=too-few-public-methods
     account_name: str
     billable: bool
     account_id: str
+    branch_name: str
+    # Can't add branch_name without letting CSO know.
 
     @classmethod
     def from_row(cls, row: PaymentAccount):
@@ -125,4 +128,5 @@ class PaymentAccountSearchModel:  # pylint: disable=too-few-public-methods
 
         https://www.attrs.org/en/stable/init.html
         """
-        return cls(account_name=row.name, billable=row.billable, account_id=row.auth_account_id)
+        return cls(account_name=row.name, billable=row.billable, account_id=row.auth_account_id,
+                   branch_name=row.branch_name)

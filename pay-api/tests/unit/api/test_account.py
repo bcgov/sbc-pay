@@ -334,7 +334,8 @@ def test_premium_account_update_bcol_pad(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
-    rv = client.post('/api/v1/accounts', data=json.dumps(get_premium_account_payload()),
+    payload = get_premium_account_payload()
+    rv = client.post('/api/v1/accounts', data=json.dumps(payload),
                      headers=headers)
 
     auth_account_id = rv.json.get('accountId')
@@ -354,11 +355,12 @@ def test_premium_account_update_bcol_pad(session, client, jwt, app):
     assert rv.json.get('bankTransitNumber') == pad_account_details.get('bankTransitNumber')
 
     # Assert switching to bcol returns no bank details
-    rv = client.put(f'/api/v1/accounts/{auth_account_id}', data=json.dumps(get_premium_account_payload()),
+    rv = client.put(f'/api/v1/accounts/{auth_account_id}', data=json.dumps(payload),
                     headers=headers)
 
     assert rv.json.get('futurePaymentMethod') is None
     assert rv.json.get('bankTransitNumber') is None
+    assert rv.json.get('branchName') == payload['branchName']
 
 
 def test_premium_duplicate_account_creation(session, client, jwt, app):
@@ -515,7 +517,7 @@ def test_update_name(session, client, jwt, app):
                      headers=headers)
     auth_account_id = rv.json.get('accountId')
     rv = client.put(f'/api/v1/accounts/{auth_account_id}',
-                    data=json.dumps({'accountName': fake.name()}),
+                    data=json.dumps({'accountName': fake.name(), 'branchName': fake.name()}),
                     headers=headers)
 
     assert rv.status_code == 202
