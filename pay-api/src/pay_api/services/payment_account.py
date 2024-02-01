@@ -14,6 +14,7 @@
 """Service to manage Payment Account model related operations."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
@@ -43,8 +44,8 @@ from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings
 from pay_api.utils.converter import Converter
 from pay_api.utils.enums import (
-    AuthHeaderType, CfsAccountStatus, ContentType, InvoiceStatus, MessageType, PaymentMethod, PaymentSystem,
-    StatementFrequency)
+    AuthHeaderType, CfsAccountStatus, ContentType, EFTShortnameState, InvoiceStatus, MessageType, PaymentMethod,
+    PaymentSystem, StatementFrequency)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
@@ -52,6 +53,15 @@ from pay_api.utils.util import (
 
 from .payment import Payment
 from .flags import flags
+
+
+@dataclass
+class EFTAccountsSearch:
+    """Used for searching EFT accounts."""
+
+    state: Optional[str] = None
+    page: Optional[int] = 1
+    limit: Optional[int] = 10
 
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -655,16 +665,20 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return account
 
     @classmethod
-    def find_eft_accounts(cls, page: int, limit: int):
+    def find_eft_accounts(cls, eft_accounts_search: EFTAccountsSearch):
         """Find EFT accounts."""
         query = db.session.query(PaymentAccountModel) \
             .outerjoin(EFTShortnamesModel, PaymentAccountModel.auth_account_id == EFTShortnamesModel.auth_account_id) \
             .filter(PaymentAccountModel.payment_method == PaymentMethod.EFT.value,
-                    PaymentAccountModel.eft_enable.is_(True),
-                    EFTShortnamesModel.auth_account_id.is_(None))
+                    PaymentAccountModel.eft_enable.is_(True))
+
+        if eft_accounts_search.state == EFTShortnameState.UNLINKED.value:
+            query = query.filter(EFTShortnamesModel.auth_account_id.is_(None))
+        elif eft_accounts_search.state == EFTShortnameState.LINKED.value:
+            query = query.filter(EFTShortnamesModel.auth_account_id.isnot(None))
 
         query = query.order_by(PaymentAccountModel.id)
-        pagination = query.paginate(per_page=limit, page=page)
+        pagination = query.paginate(per_page=eft_accounts_search.limit, page=eft_accounts_search.page)
 
         total = pagination.total
         eft_accounts = pagination.items
@@ -675,8 +689,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
         data = {
             'total': total,
-            'page': page,
-            'limit': limit,
+            'page': eft_accounts_search.page,
+            'limit': eft_accounts_search.limit,
             'items': eft_accounts_list
         }
 

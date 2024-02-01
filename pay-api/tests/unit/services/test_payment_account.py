@@ -23,14 +23,15 @@ import pytest
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import EFTFile as EFTFileModel
 from pay_api.models import EFTCredit as EFTCreditModel
+from pay_api.models import EFTFile as EFTFileModel
 from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import StatementRecipients as StatementRecipientModel
 from pay_api.models import StatementSettings as StatementSettingsModel
+from pay_api.services.payment_account import EFTAccountsSearch
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
-from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, StatementFrequency
+from pay_api.utils.enums import CfsAccountStatus, EFTShortnameState, InvoiceStatus, PaymentMethod, StatementFrequency
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_outstanding_txns_from_date
 from tests.utilities.base_test import (
@@ -402,7 +403,8 @@ def test_find_eft_accounts(session, client, jwt, app, admin_users_mock):
 
     assert eft_shortname.auth_account_id == auth_account_id
 
-    eft_accounts = PaymentAccountService.find_eft_accounts(page=page, limit=limit)
+    eft_accounts = PaymentAccountService.find_eft_accounts(EFTAccountsSearch(
+        EFTShortnameState.UNLINKED.value, page, limit))
     assert eft_accounts['limit'] == limit
     assert eft_accounts['page'] == page
     assert eft_accounts['total'] == 0
@@ -421,7 +423,8 @@ def test_find_eft_accounts(session, client, jwt, app, admin_users_mock):
     for i in range(5):
         eft_shortname = factory_eft_shortname(short_name=f'TESTSHORTNAME{i}', auth_account_id=f'{123}{i}').save()
 
-    eft_accounts = PaymentAccountService.find_eft_accounts(page=page, limit=limit)
+    eft_accounts = PaymentAccountService.find_eft_accounts(EFTAccountsSearch(
+        EFTShortnameState.UNLINKED.value, page, limit))
     assert eft_accounts['limit'] == limit
     assert eft_accounts['page'] == page
     assert eft_accounts['total'] == 5
@@ -448,7 +451,8 @@ def test_find_eft_accounts(session, client, jwt, app, admin_users_mock):
     for i in range(5):
         eft_shortname = factory_eft_shortname(short_name=f'TESTSHORTNAME{i}', auth_account_id=f'{123}{i}').save()
 
-    eft_accounts = PaymentAccountService.find_eft_accounts(page=page, limit=limit)
+    eft_accounts = PaymentAccountService.find_eft_accounts(EFTAccountsSearch(
+        EFTShortnameState.UNLINKED.value, page, limit))
     assert eft_accounts['limit'] == limit
     assert eft_accounts['page'] == page
     assert eft_accounts['total'] == 10

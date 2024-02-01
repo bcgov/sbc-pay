@@ -17,11 +17,13 @@ from http import HTTPStatus
 from flask import Blueprint, current_app, request
 from flask_cors import cross_origin
 
+from pay_api.services.payment_account import EFTAccountsSearch
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
 from pay_api.utils.trace import tracing as _tracing
+
 
 bp = Blueprint('EFT_ACCOUNTS', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/eft-accounts')
 
@@ -32,12 +34,14 @@ bp = Blueprint('EFT_ACCOUNTS', __name__, url_prefix=f'{EndpointEnum.API_V1.value
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.STAFF.value])
 def get_eft_accounts():
     """Get EFT Payment Accounts."""
-    page: int = int(request.args.get('page', '1'))
-    limit: int = int(request.args.get('limit', '10'))
+    eft_accounts_search = EFTAccountsSearch(
+        request.args.get('state', None),
+        int(request.args.get('page', '1')),
+        int(request.args.get('limit', '10')))
 
     current_app.logger.info('<get_eft_accounts')
 
-    response, status = PaymentAccountService.find_eft_accounts(page, limit), HTTPStatus.OK
+    response, status = PaymentAccountService.find_eft_accounts(eft_accounts_search), HTTPStatus.OK
 
     current_app.logger.debug('>get_eft_accounts')
     return response, status
