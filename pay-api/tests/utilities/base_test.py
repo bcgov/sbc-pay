@@ -757,6 +757,7 @@ def get_premium_account_payload(payment_method: str = PaymentMethod.DRAWDOWN.val
     return {
         'accountId': account_id,
         'accountName': 'Test Account',
+        'branchName': 'Test Branch',
         'bcolAccountNumber': '1000000',
         'bcolUserId': 'U100000',
         'paymentInfo': {

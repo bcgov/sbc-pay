@@ -447,6 +447,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         if name := account_request.get('accountName', None):
             payment_account.name = name
 
+        if branch_name := account_request.get('branchName', None):
+            payment_account.branch_name = branch_name
+
         if pad_tos_accepted_by := account_request.get('padTosAcceptedBy', None):
             payment_account.pad_tos_accepted_by = pad_tos_accepted_by
             payment_account.pad_tos_accepted_date = datetime.now()
