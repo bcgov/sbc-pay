@@ -110,6 +110,7 @@ class PaymentAccountSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     payment_method = fields.String(data_key='payment_method')
     auth_account_id = fields.String(data_key='account_id')
     name = fields.String(data_key='account_name')
+    branch_name = fields.String(data_key='branch_name')
 
 
 @define
@@ -120,7 +121,6 @@ class PaymentAccountSearchModel:  # pylint: disable=too-few-public-methods
     billable: bool
     account_id: str
     branch_name: str
-    # Can't add branch_name without letting CSO know.
 
     @classmethod
     def from_row(cls, row: PaymentAccount):
