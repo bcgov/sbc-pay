@@ -28,7 +28,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import db
 from pay_api.utils.converter import Converter
-from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, ReverseOperation
+from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus, ReverseOperation
 from pay_api.utils.user_context import user_context
 
 from .oauth_service import OAuthService
@@ -86,7 +86,8 @@ class NonSufficientFundsService:
             .join(NonSufficientFundsModel,
                   NonSufficientFundsModel.invoice_number == InvoiceReferenceModel.invoice_number)
             .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
-            .filter(PaymentAccountModel.auth_account_id == account_id)
+            .filter(PaymentAccountModel.auth_account_id == account_id,
+                    InvoiceModel.invoice_status_code != InvoiceStatus.PAID.value)
             .distinct(InvoiceModel.id)
             .group_by(InvoiceModel.id, InvoiceReferenceModel.id)
         )
@@ -99,10 +100,13 @@ class NonSufficientFundsService:
                     [(PaymentLineItemModel.description == ReverseOperation.NSF.value, PaymentLineItemModel.total)],
                     else_=0)).label('nsf_amount')
             )
+            .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id)
+            .join(NonSufficientFundsModel,
+                  NonSufficientFundsModel.invoice_number == InvoiceReferenceModel.invoice_number)
             .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
-            .outerjoin(NonSufficientFundsModel, NonSufficientFundsModel.invoice_id == InvoiceModel.id)
             .join(PaymentLineItemModel, PaymentLineItemModel.invoice_id == InvoiceModel.id)
-            .filter(PaymentAccountModel.auth_account_id == account_id)
+            .filter(PaymentAccountModel.auth_account_id == account_id,
+                    InvoiceModel.invoice_status_code != InvoiceStatus.PAID.value)
             .group_by(InvoiceModel.id)
             .subquery()
         )
@@ -148,7 +152,8 @@ class NonSufficientFundsService:
         """Create Non-Sufficient Funds statement pdf."""
         current_app.logger.debug('<generate_non_sufficient_funds_statement_pdf')
         invoice = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(account_id=account_id)
-        cfs_account: CfsAccountModel = CfsAccountModel.find_latest_account_by_account_id(account_id)
+        payment_account = PaymentAccountModel.find_by_auth_account_id(account_id)
+        cfs_account: CfsAccountModel = CfsAccountModel.find_latest_account_by_account_id(payment_account.id)
         invoice_reference: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice['invoices'][0]['id'], InvoiceReferenceStatus.ACTIVE.value)
         account_url = current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{account_id}'
@@ -159,7 +164,7 @@ class NonSufficientFundsService:
             'suspendedOn': datetime.strptime(account['suspendedOn'], '%Y-%m-%dT%H:%M:%S%z')
             .strftime('%B %-d, %Y') if 'suspendedOn' in account else None,
             'accountNumber': cfs_account.cfs_account,
-            'businessName': account['businessName'],
+            'businessName': account.get('businessName', account.get('createdBy')),
             'totalAmountRemaining': invoice['total_amount_remaining'],
             'totalAmount': invoice['total_amount'],
             'nsfAmount': invoice['nsf_amount'],
