@@ -106,7 +106,8 @@ def test_search_eft_short_names(session, client, jwt, app):
     # create test data
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value,
                                               auth_account_id='1234',
-                                              name='ABC-123').save()
+                                              name='ABC-123',
+                                              branch_name='123').save()
 
     eft_file: EFTFileModel = factory_eft_file()
     short_name_1 = factory_eft_shortname(short_name='TESTSHORTNAME1').save()
@@ -227,6 +228,7 @@ def test_search_eft_short_names(session, client, jwt, app):
 
     # Update payment account to not have a branch name
     payment_account.name = 'ABC'
+    payment_account.branch_name = None
     payment_account.save()
 
     # Assert search returns linked short names with payment account name that has no branch
