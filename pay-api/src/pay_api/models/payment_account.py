@@ -67,6 +67,7 @@ class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attri
 
     # used for sending out notifications.The statement emails needs account name
     name = db.Column(db.String(250), nullable=True, index=False)
+    branch_name = db.Column(db.String(250), nullable=True, index=False)
 
     payment_method = db.Column(db.String(15), ForeignKey('payment_methods.code'), nullable=True)
 

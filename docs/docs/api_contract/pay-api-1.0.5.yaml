@@ -1683,6 +1683,9 @@ components:
             accountName:
               type: string
               description: Account Name
+            branchName:
+              type: string
+              description: Account Branch NAme
             billable:
               type: boolean
         createdName:

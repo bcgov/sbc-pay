@@ -23,6 +23,15 @@
       ],
       "pattern": "^(.*)$"
     },
+    "branchName": {
+      "$id": "#/properties/branchName",
+      "type": "string",
+      "title": "BC Registries Branch Name",
+      "examples": [
+        "Big Branch"
+      ],
+      "pattern": "^(.*)$"
+    },
     "bcolAccountNumber": {
       "$id": "#/properties/bcolAccountNumber",
       "type": "string",
