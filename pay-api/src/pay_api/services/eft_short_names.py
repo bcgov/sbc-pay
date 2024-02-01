@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional
 
 from _decimal import Decimal
 from flask import current_app
-from sqlalchemy import func
+from sqlalchemy import case, func
 
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
@@ -38,9 +38,13 @@ from pay_api.utils.errors import Error
 
 
 @dataclass
-class EFTShortnamesSearch:
+class EFTShortnamesSearch:  # pylint: disable=too-many-instance-attributes
     """Used for searching EFT short name records."""
 
+    account_id_list: Optional[List[str]] = None
+    account_id: Optional[str] = None
+    account_name: Optional[str] = None
+    account_branch: Optional[str] = None
     transaction_date: Optional[date] = None
     deposit_date: Optional[date] = None
     deposit_amount: Optional[Decimal] = None
@@ -267,11 +271,21 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     def get_search_query(cls, search_criteria: EFTShortnamesSearch, is_count: bool = False):
         """Query for short names based on search criteria."""
         sub_query = None
+
+        # Case statement is to check for and remove the branch name from the name, so they can be filtered on separately
+        # The branch name was added to facilitate a better short name search experience and the existing
+        # name is preserved as it was with '-' concatenated with the branch name for reporting purposes
         query = db.session.query(EFTShortnameModel.id,
                                  EFTShortnameModel.short_name,
                                  EFTShortnameModel.auth_account_id,
                                  EFTShortnameModel.created_on,
-                                 PaymentAccountModel.name.label('account_name'))
+                                 case(
+                                     [(PaymentAccountModel.name.like('%-' + PaymentAccountModel.branch_name),
+                                       func.replace(PaymentAccountModel.name, '-' + PaymentAccountModel.branch_name, '')
+                                       )],
+                                     else_=PaymentAccountModel.name
+                                 ).label('account_name'),
+                                 PaymentAccountModel.branch_name.label('account_branch'))
 
         # Join payment information if this is NOT the count query
         if not is_count:
@@ -288,12 +302,21 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             query = query.filter_conditionally(search_criteria.transaction_date, sub_query.c.transaction_date)
             query = query.filter_conditionally(search_criteria.deposit_date, sub_query.c.deposit_date)
             query = query.filter_conditionally(search_criteria.deposit_amount, sub_query.c.deposit_amount_cents)
+            query = query.filter_conditionally(search_criteria.account_id,
+                                               PaymentAccountModel.auth_account_id, is_like=True)
+            query = query.filter_conditionally(search_criteria.account_name, PaymentAccountModel.name, is_like=True)
+            query = query.filter_conditionally(search_criteria.account_branch, PaymentAccountModel.branch_name,
+                                               is_like=True)
 
         # Filter by short name state
         if search_criteria.state == EFTShortnameState.UNLINKED.value:
             query = query.filter(EFTShortnameModel.auth_account_id.is_(None))
         elif search_criteria.state == EFTShortnameState.LINKED.value:
             query = query.filter(EFTShortnameModel.auth_account_id.isnot(None))
+
+        # Filter by a list of auth account ids - full match
+        if search_criteria.account_id_list:
+            query = query.filter(EFTShortnameModel.auth_account_id.in_(search_criteria.account_id_list))
 
         # Short name free text search
         query = query.filter_conditionally(search_criteria.short_name, EFTShortnameModel.short_name, is_like=True)

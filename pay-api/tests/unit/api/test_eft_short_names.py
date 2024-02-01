@@ -106,7 +106,8 @@ def test_search_eft_short_names(session, client, jwt, app):
     # create test data
     payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value,
                                               auth_account_id='1234',
-                                              name='ABC-123').save()
+                                              name='ABC-123',
+                                              branch_name='123').save()
 
     eft_file: EFTFileModel = factory_eft_file()
     short_name_1 = factory_eft_shortname(short_name='TESTSHORTNAME1').save()
@@ -194,8 +195,40 @@ def test_search_eft_short_names(session, client, jwt, app):
     assert result_dict['items'][0]['accountBranch'] == '123'
     assert_short_name(result_dict['items'][0], short_name_2, s2_transaction1)
 
+    # Assert search account name
+    rv = client.get('/api/v1/eft-shortnames?state=LINKED&accountName=BC', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 1
+    assert result_dict['stateTotal'] == 1
+    assert result_dict['total'] == 1
+    assert result_dict['limit'] == 10
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 1
+    assert result_dict['items'][0]['accountName'] == 'ABC'
+    assert_short_name(result_dict['items'][0], short_name_2, s2_transaction1)
+
+    # Assert search account branch
+    rv = client.get('/api/v1/eft-shortnames?state=LINKED&accountBranch=2', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 1
+    assert result_dict['stateTotal'] == 1
+    assert result_dict['total'] == 1
+    assert result_dict['limit'] == 10
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 1
+    assert result_dict['items'][0]['accountName'] == 'ABC'
+    assert result_dict['items'][0]['accountBranch'] == '123'
+    assert_short_name(result_dict['items'][0], short_name_2, s2_transaction1)
+
     # Update payment account to not have a branch name
     payment_account.name = 'ABC'
+    payment_account.branch_name = None
     payment_account.save()
 
     # Assert search returns linked short names with payment account name that has no branch
@@ -213,6 +246,21 @@ def test_search_eft_short_names(session, client, jwt, app):
     assert result_dict['items'][0]['shortName'] == 'TESTSHORTNAME2'
     assert result_dict['items'][0]['accountName'] == 'ABC'
     assert result_dict['items'][0]['accountBranch'] is None
+    assert_short_name(result_dict['items'][0], short_name_2, s2_transaction1)
+
+    # Assert search account name
+    rv = client.get('/api/v1/eft-shortnames?state=LINKED&accountName=BC', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 1
+    assert result_dict['stateTotal'] == 1
+    assert result_dict['total'] == 1
+    assert result_dict['limit'] == 10
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 1
+    assert result_dict['items'][0]['accountName'] == 'ABC'
     assert_short_name(result_dict['items'][0], short_name_2, s2_transaction1)
 
     # Assert search query by no state will return all records
@@ -328,6 +376,37 @@ def test_search_eft_short_names(session, client, jwt, app):
     assert result_dict['items'] is not None
     assert len(result_dict['items']) == 1
     assert_short_name(result_dict['items'][0], short_name_1, s1_transaction1)
+
+    # Assert search account id
+    rv = client.get('/api/v1/eft-shortnames?state=LINKED&accountId=1234', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 1
+    assert result_dict['stateTotal'] == 1
+    assert result_dict['total'] == 1
+    assert result_dict['limit'] == 10
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 1
+    assert_short_name(result_dict['items'][0], short_name_2, s2_transaction1)
+
+    # Assert search account id list
+    rv = client.get('/api/v1/eft-shortnames?accountIdList=1,1234', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 1
+    assert result_dict['stateTotal'] == 2
+    assert result_dict['total'] == 1
+    assert result_dict['limit'] == 10
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 1
+    assert result_dict['items'][0]['shortName'] == 'TESTSHORTNAME2'
+    assert result_dict['items'][0]['accountName'] == 'ABC'
+    assert result_dict['items'][0]['accountBranch'] is None
+    assert_short_name(result_dict['items'][0], short_name_2, s2_transaction1)
 
 
 def test_apply_eft_short_name_credits(session, client, jwt, app):

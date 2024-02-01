@@ -376,7 +376,8 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
                             bcol_user_id='test',
                             auth_account_id: str = '1234',
                             cfs_account_status: str = CfsAccountStatus.ACTIVE.value,
-                            name=None):
+                            name=None,
+                            branch_name=None):
     """Return Factory."""
     # Create a payment account
     account = PaymentAccount(
@@ -384,6 +385,7 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
         bcol_user_id=bcol_user_id,
         bcol_account='TEST',
         name=name,
+        branch_name=branch_name,
         payment_method=payment_method_code,
         pad_activation_date=datetime.now(),
         eft_enable=False
