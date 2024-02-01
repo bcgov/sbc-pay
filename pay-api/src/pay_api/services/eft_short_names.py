@@ -291,7 +291,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             query = query.filter_conditionally(search_criteria.transaction_date, sub_query.c.transaction_date)
             query = query.filter_conditionally(search_criteria.deposit_date, sub_query.c.deposit_date)
             query = query.filter_conditionally(search_criteria.deposit_amount, sub_query.c.deposit_amount_cents)
-            query = query.filter_conditionally(search_criteria.account_id, PaymentAccountModel.auth_account_id, is_like=True)
+            query = query.filter_conditionally(search_criteria.account_id,
+                                               PaymentAccountModel.auth_account_id, is_like=True)
             query = query.filter_conditionally(search_criteria.account_name, PaymentAccountModel.name, is_like=True)
 
         # Filter by short name state
