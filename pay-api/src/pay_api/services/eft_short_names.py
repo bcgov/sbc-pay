@@ -38,7 +38,7 @@ from pay_api.utils.errors import Error
 
 
 @dataclass
-class EFTShortnamesSearch:
+class EFTShortnamesSearch:  # pylint: disable=too-many-instance-attributes
     """Used for searching EFT short name records."""
 
     account_id: Optional[str] = None
