@@ -41,6 +41,7 @@ from pay_api.utils.errors import Error
 class EFTShortnamesSearch:  # pylint: disable=too-many-instance-attributes
     """Used for searching EFT short name records."""
 
+    account_id_list: Optional[List[str]] = None
     account_id: Optional[str] = None
     account_name: Optional[str] = None
     account_branch: Optional[str] = None
@@ -312,6 +313,10 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             query = query.filter(EFTShortnameModel.auth_account_id.is_(None))
         elif search_criteria.state == EFTShortnameState.LINKED.value:
             query = query.filter(EFTShortnameModel.auth_account_id.isnot(None))
+
+        # Filter by a list of auth account ids - full match
+        if search_criteria.account_id_list:
+            query = query.filter(EFTShortnameModel.auth_account_id.in_(search_criteria.account_id_list))
 
         # Short name free text search
         query = query.filter_conditionally(search_criteria.short_name, EFTShortnameModel.short_name, is_like=True)

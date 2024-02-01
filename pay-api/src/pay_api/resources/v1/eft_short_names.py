@@ -49,11 +49,14 @@ def get_eft_shortnames():
     deposit_date = request.args.get('depositDate', None)
     short_name = request.args.get('shortName', None)
     account_id = request.args.get('accountId', None)
+    account_id_list = request.args.get('accountIdList', None)
+    account_id_list = account_id_list.split(',') if account_id_list else None
     account_name = request.args.get('accountName', None)
     account_branch = request.args.get('accountBranch', None)
 
     response, status = EFTShortnameService.search(EFTShortnamesSearch(
         account_id=account_id,
+        account_id_list=account_id_list,
         account_name=account_name,
         account_branch=account_branch,
         deposit_date=string_to_date(deposit_date),
