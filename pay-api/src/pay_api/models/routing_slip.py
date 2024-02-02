@@ -109,6 +109,10 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
                            primaryjoin=f'and_(RoutingSlip.id == Refund.routing_slip_id,'
                                        f'RoutingSlip.status.in_('
                                        f'[f"{RoutingSlipStatus.REFUND_REQUESTED.value}",'
+                                       f'f"{RoutingSlipStatus.ACTIVE.value}",'
+                                       f'f"{RoutingSlipStatus.REFUND_AUTHORIZED.value}",'
+                                       f'f"{RoutingSlipStatus.REFUND_COMPLETED.value}",'
+                                       f'f"{RoutingSlipStatus.REFUND_REJECTED.value}",'
                                        f'f"{RoutingSlipStatus.REFUND_AUTHORIZED.value}"]))',
                            lazy='joined')
 
