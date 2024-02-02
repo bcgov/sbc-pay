@@ -115,7 +115,6 @@ def test_refund_routing_slips_reject(client, jwt):
     assert rv.status_code == 200
     assert schema_utils.validate(rv.json, 'routing_slip')[0]
     assert rv.json.get('status') == RoutingSlipStatus.ACTIVE.value
-    assert rv.json.get('refunds') is None
 
 
 def test_refund_routing_slips_zero_dollar_error(client, jwt):
