@@ -35,6 +35,7 @@ from pay_api.models import db
 from pay_api.utils.converter import Converter
 from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameState, InvoiceStatus, PaymentMethod
 from pay_api.utils.errors import Error
+from pay_api.utils.user_context import user_context
 
 
 @dataclass
@@ -151,7 +152,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         return cls.find_by_short_name_id(short_name.id)
 
     @classmethod
-    def patch(cls, short_name_id: int, auth_account_id: str) -> EFTShortnames:
+    @user_context
+    def patch(cls, short_name_id: int, auth_account_id: str, **kwargs) -> EFTShortnames:
         """Patch eft short name auth account mapping."""
         current_app.logger.debug('<patch eft short name mapping')
 
@@ -165,6 +167,9 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             raise BusinessException(Error.EFT_SHORT_NAME_ALREADY_MAPPED)
 
         short_name.auth_account_id = auth_account_id
+        short_name.linked_by = kwargs['user'].user_name
+        short_name.linked_by_name = kwargs['user'].name
+        short_name.linked_on = datetime.now()
         short_name.save()
 
         # Update any existing credit mappings with the payment account
@@ -279,6 +284,9 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                                  EFTShortnameModel.short_name,
                                  EFTShortnameModel.auth_account_id,
                                  EFTShortnameModel.created_on,
+                                 EFTShortnameModel.linked_by,
+                                 EFTShortnameModel.linked_by_name,
+                                 EFTShortnameModel.linked_on,
                                  case(
                                      [(PaymentAccountModel.name.like('%-' + PaymentAccountModel.branch_name),
                                        func.replace(PaymentAccountModel.name, '-' + PaymentAccountModel.branch_name, '')
@@ -303,7 +311,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             query = query.filter_conditionally(search_criteria.deposit_date, sub_query.c.deposit_date)
             query = query.filter_conditionally(search_criteria.deposit_amount, sub_query.c.deposit_amount_cents)
             query = query.filter_conditionally(search_criteria.account_id,
-                                               PaymentAccountModel.auth_account_id, is_like=True)
+                                               EFTShortnameModel.auth_account_id, is_like=True)
             query = query.filter_conditionally(search_criteria.account_name, PaymentAccountModel.name, is_like=True)
             query = query.filter_conditionally(search_criteria.account_branch, PaymentAccountModel.branch_name,
                                                is_like=True)
@@ -320,7 +328,18 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
 
         # Short name free text search
         query = query.filter_conditionally(search_criteria.short_name, EFTShortnameModel.short_name, is_like=True)
-        query = query.order_by(sub_query.c.transaction_date) if sub_query is not None else query
+        query = cls.get_order_by(search_criteria, query, sub_query)
+
+        return query
+
+    @classmethod
+    def get_order_by(cls, search_criteria, query, sub_query):
+        """Get the order by for search query."""
+        if search_criteria.state == EFTShortnameState.LINKED.value:
+            return query.order_by(EFTShortnameModel.linked_on.desc())
+
+        if search_criteria.state == EFTShortnameState.UNLINKED.value and sub_query is not None:
+            return query.order_by(sub_query.c.transaction_date.desc())
 
         return query
 
