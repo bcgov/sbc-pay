@@ -36,7 +36,8 @@ from tests.utilities.base_test import (
 
 def test_patch_eft_short_name(session, client, jwt, app):
     """Assert that an EFT short name account id can be patched."""
-    token = jwt.create_jwt(get_claims(roles=[Role.STAFF.value]), token_header)
+    token = jwt.create_jwt(get_claims(roles=[Role.STAFF.value],
+                                      username='IDIR/JSMITH'), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     factory_payment_account(payment_method_code=PaymentMethod.EFT.value,
                             auth_account_id='1234').save()
@@ -51,6 +52,10 @@ def test_patch_eft_short_name(session, client, jwt, app):
     assert shortname_dict['id'] is not None
     assert shortname_dict['shortName'] == 'TESTSHORTNAME'
     assert shortname_dict['accountId'] == '1234'
+    assert shortname_dict['linkedBy'] == 'IDIR/JSMITH'
+
+    date_format = '%Y-%m-%dT%H:%M:%S.%f'
+    assert datetime.strptime(shortname_dict['linkedOn'], date_format).date() == datetime.now().date()
 
 
 def test_patch_eft_short_name_validation(session, client, jwt, app):

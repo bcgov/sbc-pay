@@ -49,6 +49,9 @@ class EFTShortnames(VersionedModel):  # pylint: disable=too-many-instance-attrib
     auth_account_id = db.Column('auth_account_id', db.String(50), nullable=True, index=True)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
     short_name = db.Column('short_name', db.String, nullable=False, index=True)
+    linked_by = db.Column('linked_by', db.String(100), nullable=True)
+    linked_by_name = db.Column('linked_by_name', db.String(100), nullable=True)
+    linked_on = db.Column('linked_on', db.DateTime, nullable=True)
 
     @classmethod
     def find_by_short_name(cls, short_name: str):
@@ -70,6 +73,9 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
     transaction_date: datetime
     deposit_date: datetime
     deposit_amount: Decimal
+    linked_by: str
+    linked_by_name: str
+    linked_on: datetime
 
     @classmethod
     def from_row(cls, row: EFTShortnames):
@@ -86,4 +92,8 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
                    transaction_id=getattr(row, 'transaction_id', None),
                    transaction_date=getattr(row, 'transaction_date', None),
                    deposit_date=getattr(row, 'deposit_date', None),
-                   deposit_amount=cents_to_decimal(getattr(row, 'deposit_amount', None)))
+                   deposit_amount=cents_to_decimal(getattr(row, 'deposit_amount', None)),
+                   linked_by=row.linked_by,
+                   linked_by_name=row.linked_by_name,
+                   linked_on=row.linked_on
+                   )
