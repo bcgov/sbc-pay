@@ -38,6 +38,8 @@ class CustomQuery(BaseQuery):
 
     def filter_conditional_date_range(self, start_date: date, end_date: date, model_attribute):
         """Add query filter for a date range if present."""
+        # Dates in DB are stored as UTC, you may need to take into account timezones and adjust the input dates
+        # depending on the needs
         query = self
 
         if start_date and end_date:
