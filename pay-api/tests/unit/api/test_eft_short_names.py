@@ -341,7 +341,8 @@ def test_search_eft_short_names(session, client, jwt, app):
     assert_short_name(result_dict['items'][0], short_name_1, s1_transaction1)
 
     # Assert search transaction date
-    rv = client.get('/api/v1/eft-shortnames?transactionDate=2024-01-05', headers=headers)
+    rv = client.get('/api/v1/eft-shortnames?transactionStartDate=2024-01-04&transactionEndDate=2024-01-14',
+                    headers=headers)
     assert rv.status_code == 200
 
     result_dict = rv.json
@@ -355,7 +356,23 @@ def test_search_eft_short_names(session, client, jwt, app):
     assert_short_name(result_dict['items'][0], short_name_1, s1_transaction1)
 
     # Assert search transaction date
-    rv = client.get('/api/v1/eft-shortnames?depositDate=2024-01-16', headers=headers)
+    rv = client.get('/api/v1/eft-shortnames?transactionStartDate=2024-01-04&transactionEndDate=2024-01-15',
+                    headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 1
+    assert result_dict['stateTotal'] == 2
+    assert result_dict['total'] == 2
+    assert result_dict['limit'] == 10
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 2
+    assert_short_name(result_dict['items'][0], short_name_1, s1_transaction1)
+    assert_short_name(result_dict['items'][1], short_name_2, s2_transaction1)
+
+    # Assert search transaction date
+    rv = client.get('/api/v1/eft-shortnames?depositStartDate=2024-01-16&depositEndDate=2024-01-16', headers=headers)
     assert rv.status_code == 200
 
     result_dict = rv.json
