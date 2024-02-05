@@ -14,7 +14,7 @@
 """Custom Query class to extend BaseQuery class functionality."""
 from datetime import date, datetime
 from flask_sqlalchemy import BaseQuery
-from sqlalchemy import func
+from sqlalchemy import and_, func
 
 
 class CustomQuery(BaseQuery):
@@ -39,6 +39,10 @@ class CustomQuery(BaseQuery):
     def filter_conditional_date_range(self, start_date: date, end_date: date, model_attribute):
         """Add query filter for a date range if present."""
         query = self
+
+        if start_date and end_date:
+            return query.filter(and_(func.DATE(model_attribute) >= start_date, func.DATE(model_attribute) <= end_date))
+
         if start_date:
             query = query.filter(func.DATE(model_attribute) >= start_date)
 
