@@ -35,3 +35,14 @@ class CustomQuery(BaseQuery):
             return self.filter(func.lower(model_attribute).ilike(f'%{search_criteria}%'))
 
         return self.filter(model_attribute == search_criteria)
+
+    def filter_conditional_date_range(self, start_date: date, end_date: date, model_attribute):
+        """Add query filter for a date range if present."""
+        query = self
+        if start_date:
+            query = query.filter(func.DATE(model_attribute) >= start_date)
+
+        if end_date:
+            query = query.filter(func.DATE(model_attribute) <= end_date)
+
+        return query

@@ -42,12 +42,15 @@ from pay_api.utils.user_context import user_context
 class EFTShortnamesSearch:  # pylint: disable=too-many-instance-attributes
     """Used for searching EFT short name records."""
 
+    id: Optional[int] = None
     account_id_list: Optional[List[str]] = None
     account_id: Optional[str] = None
     account_name: Optional[str] = None
     account_branch: Optional[str] = None
-    transaction_date: Optional[date] = None
-    deposit_date: Optional[date] = None
+    transaction_start_date: Optional[date] = None
+    transaction_end_date: Optional[date] = None
+    deposit_start_date: Optional[date] = None
+    deposit_end_date: Optional[date] = None
     deposit_amount: Optional[Decimal] = None
     short_name: Optional[str] = None
     state: Optional[str] = None
@@ -64,6 +67,9 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         self._id: Optional[int] = None
         self._auth_account_id: Optional[str] = None
         self._short_name: Optional[str] = None
+        self._linked_by: Optional[str] = None
+        self._linked_by_name: Optional[str] = None
+        self._linked_on: Optional[datetime] = None
 
     @property
     def _dao(self):
@@ -77,6 +83,9 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         self.id: int = self._dao.id
         self.auth_account_id: str = self._dao.auth_account_id
         self.short_name: str = self._dao.short_name
+        self.linked_by: str = self._dao.linked_by
+        self.linked_by_name: str = self._dao.linked_by_name
+        self.linked_on: datetime = self._dao.linked_on
 
     @property
     def id(self):
@@ -121,6 +130,39 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         """Set the created on date."""
         self._created_on = value
         self._dao.created_on = value
+
+    @property
+    def linked_by(self):
+        """Return the linked by user name."""
+        return self._linked_by
+
+    @linked_by.setter
+    def linked_by(self, value: str):
+        """Set the linked by user name."""
+        self._linked_by = value
+        self._dao.linked_by = value
+
+    @property
+    def linked_by_name(self):
+        """Return the linked by name."""
+        return self._linked_by
+
+    @linked_by_name.setter
+    def linked_by_name(self, value: str):
+        """Set the linked by name."""
+        self._linked_by_name = value
+        self._dao.linked_by_name = value
+
+    @property
+    def linked_on(self):
+        """Return the linked on date."""
+        return self._linked_on
+
+    @linked_on.setter
+    def linked_on(self, value: str):
+        """Set the linked on date."""
+        self._linked_on = value
+        self._dao.linked_on = value
 
     def save(self):
         """Save the information to the DB."""
@@ -216,13 +258,12 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     def find_by_short_name_id(cls, short_name_id: int) -> EFTShortnames:
         """Find payment account by corp number, corp type and payment system code."""
         current_app.logger.debug('<find_by_short_name_id')
-        short_name_model: EFTShortnameModel = EFTShortnameModel.find_by_id(short_name_id)
-        short_name_service = None
-        if short_name_model:
-            short_name_service = EFTShortnames()
-            short_name_service._dao = short_name_model  # pylint: disable=protected-access
-            current_app.logger.debug('>find_by_short_name_id')
-        return short_name_service
+        short_name_model: EFTShortnameModel = cls.get_search_query(EFTShortnamesSearch(id=short_name_id)).one_or_none()
+        converter = Converter()
+        result = converter.unstructure(EFTShortnameSchema.from_row(short_name_model))
+
+        current_app.logger.debug('>find_by_short_name_id')
+        return result
 
     @classmethod
     def search(cls, search_criteria: EFTShortnamesSearch):
@@ -306,12 +347,20 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                 .outerjoin(PaymentAccountModel,
                            PaymentAccountModel.auth_account_id == EFTShortnameModel.auth_account_id)
 
-            # Sub query filters for EFT transaction dates
-            query = query.filter_conditionally(search_criteria.transaction_date, sub_query.c.transaction_date)
-            query = query.filter_conditionally(search_criteria.deposit_date, sub_query.c.deposit_date)
+            # Sub query filters for EFT dates
+            query = query.filter_conditional_date_range(start_date=search_criteria.transaction_start_date,
+                                                        end_date=search_criteria.transaction_end_date,
+                                                        model_attribute=sub_query.c.transaction_date)
+
+            query = query.filter_conditional_date_range(start_date=search_criteria.deposit_start_date,
+                                                        end_date=search_criteria.deposit_end_date,
+                                                        model_attribute=sub_query.c.deposit_date)
+
+            # Sub query filters
             query = query.filter_conditionally(search_criteria.deposit_amount, sub_query.c.deposit_amount_cents)
             query = query.filter_conditionally(search_criteria.account_id,
                                                EFTShortnameModel.auth_account_id, is_like=True)
+            # Payment account filters
             query = query.filter_conditionally(search_criteria.account_name, PaymentAccountModel.name, is_like=True)
             query = query.filter_conditionally(search_criteria.account_branch, PaymentAccountModel.branch_name,
                                                is_like=True)
@@ -326,7 +375,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         if search_criteria.account_id_list:
             query = query.filter(EFTShortnameModel.auth_account_id.in_(search_criteria.account_id_list))
 
-        # Short name free text search
+        # Short name filters
+        query = query.filter_conditionally(search_criteria.id, EFTShortnameModel.id)
         query = query.filter_conditionally(search_criteria.short_name, EFTShortnameModel.short_name, is_like=True)
         query = cls.get_order_by(search_criteria, query, sub_query)
 

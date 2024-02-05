@@ -41,7 +41,10 @@ class EFTShortnames(VersionedModel):  # pylint: disable=too-many-instance-attrib
             'id',
             'auth_account_id',
             'created_on',
-            'short_name'
+            'short_name',
+            'linked_by',
+            'linked_by_name',
+            'linked_on'
         ]
     }
 

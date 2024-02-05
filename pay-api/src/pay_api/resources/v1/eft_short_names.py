@@ -44,9 +44,11 @@ def get_eft_shortnames():
     state = request.args.get('state', None)
     page: int = int(request.args.get('page', '1'))
     limit: int = int(request.args.get('limit', '10'))
-    transaction_date = request.args.get('transactionDate', None)
+    transaction_start_date = request.args.get('transactionStartDate', None)
+    transaction_end_date = request.args.get('transactionEndDate', None)
     deposit_amount = request.args.get('depositAmount', None)
-    deposit_date = request.args.get('depositDate', None)
+    deposit_start_date = request.args.get('depositStartDate', None)
+    deposit_end_date = request.args.get('depositEndDate', None)
     short_name = request.args.get('shortName', None)
     account_id = request.args.get('accountId', None)
     account_id_list = request.args.get('accountIdList', None)
@@ -59,10 +61,12 @@ def get_eft_shortnames():
         account_id_list=account_id_list,
         account_name=account_name,
         account_branch=account_branch,
-        deposit_date=string_to_date(deposit_date),
+        deposit_start_date=string_to_date(deposit_start_date),
+        deposit_end_date=string_to_date(deposit_end_date),
         deposit_amount=Decimal(deposit_amount) * Decimal(100) if deposit_amount else None,
         short_name=short_name,
-        transaction_date=string_to_date(transaction_date),
+        transaction_start_date=string_to_date(transaction_start_date),
+        transaction_end_date=string_to_date(transaction_end_date),
         state=state,
         page=page,
         limit=limit)), HTTPStatus.OK
@@ -83,7 +87,7 @@ def get_eft_shortname(short_name_id: int):
         response, status = {'message': 'The requested EFT short name could not be found.'}, \
             HTTPStatus.NOT_FOUND
     else:
-        response, status = eft_short_name.asdict(), HTTPStatus.OK
+        response, status = eft_short_name, HTTPStatus.OK
     current_app.logger.debug('>get_eft_shortname')
     return jsonify(response), status
 
@@ -103,7 +107,7 @@ def patch_eft_shortname(short_name_id: int):
                 HTTPStatus.NOT_FOUND
         else:
             account_id = request_json.get('accountId', None)
-            response, status = EFTShortnameService.patch(short_name_id, account_id).asdict(), HTTPStatus.OK
+            response, status = EFTShortnameService.patch(short_name_id, account_id), HTTPStatus.OK
     except BusinessException as exception:
         return exception.response()
 
