@@ -36,7 +36,7 @@ bp = Blueprint('EFT_SHORT_NAMES', __name__, url_prefix=f'{EndpointEnum.API_V1.va
 @bp.route('', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET'])
 @_jwt.requires_auth
-@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.STAFF.value])
+@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def get_eft_shortnames():
     """Get all eft short name records."""
     current_app.logger.info('<get_eft_shortnames')
@@ -78,7 +78,7 @@ def get_eft_shortnames():
 @cross_origin(origins='*', methods=['GET', 'PATCH'])
 @_tracing.trace()
 @_jwt.requires_auth
-@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.STAFF.value])
+@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def get_eft_shortname(short_name_id: int):
     """Get EFT short name details."""
     current_app.logger.info('<get_eft_shortname')
@@ -119,7 +119,7 @@ def patch_eft_shortname(short_name_id: int):
 @cross_origin(origins='*', methods=['GET'])
 @_tracing.trace()
 @_jwt.requires_auth
-@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.STAFF.value])
+@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def get_eft_shortname_transactions(short_name_id: int):
     """Get EFT short name transactions."""
     current_app.logger.info('<get_eft_shortname_transactions')
