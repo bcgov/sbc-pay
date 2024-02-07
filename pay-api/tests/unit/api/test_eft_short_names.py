@@ -433,7 +433,7 @@ def test_search_eft_short_names(session, client, jwt, app):
 
 def test_apply_eft_short_name_credits(session, client, jwt, app):
     """Assert that credits are applied to invoices when short name is mapped to an account."""
-    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
+    token = jwt.create_jwt(get_claims(roles=[Role.STAFF.value, Role.MANAGE_EFT.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     short_name = factory_eft_shortname(short_name='TESTSHORTNAME').save()
 

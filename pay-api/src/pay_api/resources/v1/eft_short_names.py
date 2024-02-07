@@ -95,7 +95,7 @@ def get_eft_shortname(short_name_id: int):
 @bp.route('/<int:short_name_id>', methods=['PATCH'])
 @cross_origin(origins='*')
 @_tracing.trace()
-@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.STAFF.value])
+@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def patch_eft_shortname(short_name_id: int):
     """Update EFT short name mapping."""
     current_app.logger.info('<patch_eft_shortname')
