@@ -40,7 +40,7 @@ def assert_transaction(result_dict: dict, short_name: EFTShortnamesModel, transa
 
 def test_search_short_name_transactions(session, client, jwt, app):
     """Assert that EFT short names transactions can be searched."""
-    token = jwt.create_jwt(get_claims(roles=[Role.STAFF.value]), token_header)
+    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     # create test data

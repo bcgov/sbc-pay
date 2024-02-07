@@ -36,7 +36,7 @@ from tests.utilities.base_test import (
 
 def test_patch_eft_short_name(session, client, jwt, app):
     """Assert that an EFT short name account id can be patched."""
-    token = jwt.create_jwt(get_claims(roles=[Role.STAFF.value],
+    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value],
                                       username='IDIR/JSMITH'), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     factory_payment_account(payment_method_code=PaymentMethod.EFT.value,
@@ -60,7 +60,7 @@ def test_patch_eft_short_name(session, client, jwt, app):
 
 def test_patch_eft_short_name_validation(session, client, jwt, app):
     """Assert that invalid request is returned for existing short name."""
-    token = jwt.create_jwt(get_claims(roles=[Role.STAFF.value]), token_header)
+    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     short_name = factory_eft_shortname(short_name='TESTSHORTNAME', auth_account_id='1234').save()
 
@@ -96,7 +96,7 @@ def assert_short_name(result_dict: dict, short_name: EFTShortnamesModel, transac
 
 def test_search_eft_short_names(session, client, jwt, app):
     """Assert that EFT short names can be searched."""
-    token = jwt.create_jwt(get_claims(roles=[Role.STAFF.value]), token_header)
+    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     # Assert initial search returns empty items
@@ -433,7 +433,7 @@ def test_search_eft_short_names(session, client, jwt, app):
 
 def test_apply_eft_short_name_credits(session, client, jwt, app):
     """Assert that credits are applied to invoices when short name is mapped to an account."""
-    token = jwt.create_jwt(get_claims(roles=[Role.STAFF.value]), token_header)
+    token = jwt.create_jwt(get_claims(roles=[Role.STAFF.value, Role.MANAGE_EFT.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
     short_name = factory_eft_shortname(short_name='TESTSHORTNAME').save()
 

@@ -137,6 +137,7 @@ class Role(Enum):
     FAS_CORRECTION = 'fas_correction'
     SANDBOX = 'sandbox'
     VIEW_ALL_TRANSACTIONS = 'view_all_transactions'
+    MANAGE_EFT = 'manage_eft'
 
 
 class Code(Enum):
