@@ -291,10 +291,11 @@ class RoutingSlipSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-an
         """Returns all the fields from the SQLAlchemy class."""
 
         model = RoutingSlip
-        exclude = ['parent', 'refund_amount']
+        exclude = ['parent']
 
     total = fields.Float(data_key='total')
     remaining_amount = fields.Float(data_key='remaining_amount')
+    refund_amount = fields.Float(data_key='refund_amount')
     # pylint: disable=no-member
     payments = ma.Nested(PaymentSchema, many=True, data_key='payments')
     payment_account = ma.Nested(PaymentAccountSchema, many=False, data_key='payment_account')
