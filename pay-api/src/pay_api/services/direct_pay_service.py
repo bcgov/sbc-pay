@@ -14,6 +14,7 @@
 """Service to manage Direct Pay PAYBC Payments."""
 import base64
 from urllib.parse import unquote_plus, urlencode
+from typing import Dict, List
 
 from dateutil import parser
 from flask import current_app
@@ -141,7 +142,8 @@ class DirectPayService(PaymentSystemService, OAuthService):
         return None
 
     def process_cfs_refund(self, invoice: InvoiceModel,
-                           payment_account: PaymentAccount):   # pylint:disable=unused-argument
+                           payment_account: PaymentAccount,
+                           refund_revenue: List[Dict] = None):   # pylint:disable=unused-argument
         """Process refund in CFS."""
         current_app.logger.debug('<process_cfs_refund creating automated refund for invoice: '
                                  f'{invoice.id}, {invoice.invoice_status_code}')
@@ -152,7 +154,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
         refund_url = current_app.config.get('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL') + '/paybc-service/api/refund'
         access_token: str = self._get_refund_token().json().get('access_token')
-        data = self._build_automated_refund_payload(invoice)
+        data = self._build_automated_refund_payload(invoice, refund_revenue)
         refund_response = self.post(refund_url, access_token, AuthHeaderType.BEARER,
                                     ContentType.JSON, data, auth_header_name='Bearer-Token').json()
         # Check if approved is 1=Success
@@ -234,19 +236,28 @@ class DirectPayService(PaymentSystemService, OAuthService):
         return token_response
 
     @staticmethod
-    def _build_automated_refund_payload(invoice: InvoiceModel):
+    def _build_automated_refund_payload(invoice: InvoiceModel, refund_revenue: List[Dict]):
         """Build payload to create a refund in PAYBC."""
         receipt = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=invoice.id)
         invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice.id, InvoiceReferenceStatus.COMPLETED.value)
-        # Future: Partial refund support - This is backwards compatible
-        # refundRevenue: [{
-        #        'lineNumber': 1,
-        #        'refundAmount': 50.00,
-        #    }]
+
+        refund_details = []
+        for line in refund_revenue:
+            refund_detail = {
+                'lineItemId': line['lineItemId'],
+                'amount': line['amount'],
+                'amount_service_fee': line['amount_service_fee'],
+                'amount_priority_fee': line['amount_priority_fee'],
+                'amount_future_effective_fee': line['amount_future_effective_fee']
+            }
+            # Add more fields if necessary, based on your API's requirements
+            refund_details.append(refund_detail)
+
         return {
             'orderNumber': int(receipt.receipt_number),
             'pbcRefNumber': current_app.config.get('PAYBC_DIRECT_PAY_REF_NUMBER'),
             'txnAmount': invoice.total,
-            'txnNumber': invoice_reference.invoice_number
+            'txnNumber': invoice_reference.invoice_number,
+            'refundRevenue': refund_details,
         }
