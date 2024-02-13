@@ -21,6 +21,7 @@ from flask_cors import cross_origin
 from pay_api.exceptions import BusinessException, ServiceUnavailableException, error_to_response
 from pay_api.schemas import utils as schema_utils
 from pay_api.services import Payment
+from pay_api.services.payment_account import EFTAccountsSearch
 from pay_api.services.auth import check_auth
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.auth import jwt as _jwt
@@ -63,6 +64,25 @@ def post_account():
     current_app.logger.debug('>post_account')
     return jsonify(response.asdict()), status
 
+@bp.route('', methods=['GET', 'OPTIONS'])
+@cross_origin(origins='*', methods=['GET'])
+@_jwt.requires_auth
+@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
+def get_eft_accounts():
+    """Get all eft-enabled account records."""
+    current_app.logger.info('<get_eft_accounts')
+
+    page: int = int(request.args.get('page', '1'))
+    limit: int = int(request.args.get('limit', '10'))
+    account_id_list = request.args.get('accountIdList', None)
+    account_id_list = account_id_list.split(',') if account_id_list else None
+
+    response, status = PaymentAccountService.search_eft_accounts(EFTAccountsSearch(
+        account_id_list=account_id_list,
+        page=page,
+        limit=limit)), HTTPStatus.OK
+    current_app.logger.debug('>get_eft_accounts')
+    return jsonify(response), status
 
 @bp.route('/<string:account_number>', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET', 'PUT', 'DELETE'])

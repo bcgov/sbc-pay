@@ -14,6 +14,7 @@
 """Service to manage Payment Account model related operations."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
@@ -30,9 +31,10 @@ from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.models import PaymentAccountSchema
+from pay_api.models import PaymentAccountSchema, PaymentAccountSearchModel
 from pay_api.models import StatementRecipients as StatementRecipientModel
 from pay_api.models import StatementSettings as StatementSettingsModel
+from pay_api.utils.converter import Converter
 from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.distribution_code import DistributionCode
@@ -50,6 +52,15 @@ from pay_api.utils.util import (
 
 from .payment import Payment
 from .flags import flags
+
+
+@dataclass
+class EFTAccountsSearch:  # pylint: disable=too-many-instance-attributes
+    """Used for searching EFT account records."""
+
+    account_id_list: Optional[List[str]] = None
+    page: Optional[int] = 1
+    limit: Optional[int] = 10
 
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -654,6 +665,44 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         account = PaymentAccount()
         account._dao = PaymentAccountModel.find_by_id(account_id)  # pylint: disable=protected-access
         return account
+    
+    @classmethod
+    def search_eft_accounts(cls, search_criteria: EFTAccountsSearch):
+        """Find EFT accounts."""
+        if not search_criteria.account_id_list:
+            return {
+                'total': 0,
+                'page': search_criteria.page,
+                'limit': search_criteria.limit,
+                'items': []
+            }
+
+        
+        query = db.session.query(PaymentAccountModel) \
+            .filter(PaymentAccountModel.payment_method == PaymentMethod.EFT.value,
+                    PaymentAccountModel.eft_enable.is_(True))
+            
+        # Filter by a list of auth account ids - full match
+        if search_criteria.account_id_list:
+            query = query.filter(PaymentAccountModel.auth_account_id.in_(search_criteria.account_id_list))
+
+        query = query.order_by(PaymentAccountModel.id)
+        pagination = query.paginate(per_page=search_criteria.limit, page=search_criteria.page)
+
+        eft_accounts = pagination.items
+
+        eft_accounts_list = [PaymentAccountSearchModel.from_row(eft_account) for eft_account in eft_accounts]
+        converter = Converter()
+        eft_accounts_list = converter.unstructure(eft_accounts_list)
+
+        data = {
+            'total': pagination.total,
+            'page': search_criteria.page,
+            'limit': search_criteria.limit,
+            'items': eft_accounts_list
+        }
+
+        return data
 
     @classmethod
     def get_eft_credit_balance(cls, account_id: int) -> Decimal:
