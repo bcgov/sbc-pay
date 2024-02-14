@@ -691,7 +691,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         eft_accounts = query.limit(20).all()
 
         payment_accounts = [PaymentAccountSearchModel.from_row(eft_account) for eft_account in eft_accounts]
-        return Converter().unstructure(payment_accounts)
+        return Converter().unstructure({'items': payment_accounts})
 
     @classmethod
     def get_eft_credit_balance(cls, account_id: int) -> Decimal:

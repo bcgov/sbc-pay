@@ -74,7 +74,7 @@ def get_eft_accounts():
     search_text = request.args.get('searchText', None)
     response, status = PaymentAccountService.search_eft_accounts(search_text), HTTPStatus.OK
     current_app.logger.debug('>get_eft_accounts')
-    return jsonify({'items': response}), status
+    return jsonify(response), status
 
 
 @bp.route('/<string:account_number>', methods=['GET', 'OPTIONS'])

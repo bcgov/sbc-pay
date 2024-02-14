@@ -727,16 +727,16 @@ def test_search_eft_accounts(session, client, jwt, app, admin_users_mock, non_ac
     # Name
     rv = client.get('/api/v1/accounts/search/eft?searchText=Test', headers=headers)
     assert rv.status_code == 200
-    assert len(rv.json) == 1
-    assert rv.json[0].get('accountId') == auth_account_id
+    assert len(rv.json.get('items')) == 1
+    assert rv.json.get('items')[0].get('accountId') == auth_account_id
 
     # Branch Name
     rv = client.get('/api/v1/accounts/search/eft?searchText=Branch', headers=headers)
     assert rv.status_code == 200
-    assert len(rv.json) == 1
-    assert rv.json[0].get('accountId') == auth_account_id
+    assert len(rv.json.get('items')) == 1
+    assert rv.json.get('items')[0].get('accountId') == auth_account_id
 
     rv = client.get(f'/api/v1/accounts/search/eft?searchText={auth_account_id}', headers=headers)
     assert rv.status_code == 200
-    assert len(rv.json) == 1
-    assert rv.json[0].get('accountId') == auth_account_id
+    assert len(rv.json.get('items')) == 1
+    assert rv.json.get('items')[0].get('accountId') == auth_account_id
