@@ -1,0 +1,48 @@
+# Copyright © 2024 Province of British Columbia
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+"""Model to handle all operations related to Payment Line Item."""
+
+from sqlalchemy import ForeignKey
+from .audit import Audit
+from .base_model import VersionedModel
+from .db import db
+
+
+class RefundsPartial(Audit, VersionedModel):  # pylint: disable=too-many-instance-attributes
+    """This class manages the data for payment line item partial refunds."""
+
+    __tablename__ = 'refunds_partial'
+    # this mapper is used so that new and old versions of the service can be run simultaneously,
+    # making rolling upgrades easier
+    # This is used by SQLAlchemy to explicitly define which fields we're interested
+    # so it doesn't freak out and say it can't map the structure if other fields are present.
+    # This could occur from a failed deploy or during an upgrade.
+    # The other option is to tell SQLAlchemy to ignore differences, but that is ambiguous
+    # and can interfere with Alembic upgrades.
+    #
+    # NOTE: please keep mapper names in alpha-order, easier to track that way
+    #       Exception, id is always first, _fields first
+    __mapper_args__ = {
+        'include_properties': [
+            'id',
+            'payment_line_item_id',
+            'refund_amount',
+            'refund_type'
+        ]
+    }
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    payment_line_item_id = db.Column(db.Integer, ForeignKey('payment_line_items.id'), nullable=False, index=True)
+    refund_amount = db.Column(db.Numeric(19, 2), nullable=False)
+    refund_type = db.Column(db.String(50), nullable=True)
