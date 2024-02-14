@@ -18,7 +18,7 @@ depends_on = None
 
 
 def upgrade():
-    status_code_table = table('invoice_status_code',
+    status_code_table = table('invoice_status_codes',
                             column('code', String),
                             column('description', String)
                             )
@@ -30,5 +30,5 @@ def upgrade():
     )
 
 def downgrade():
-    op.execute("delete from invoice_status_code where code in ('PARTIAL_REFUNDED')")
+    op.execute("delete from invoice_status_codes where code in ('PARTIAL_REFUNDED')")
  
