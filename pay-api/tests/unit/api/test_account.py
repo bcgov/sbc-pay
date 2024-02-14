@@ -701,3 +701,42 @@ def test_create_sandbox_accounts(session, client, jwt, app, pay_load, is_cfs_acc
     assert rv.status_code == expected_response_status
     if is_cfs_account_expected:
         assert rv.json['cfsAccount']['status'] == CfsAccountStatus.ACTIVE.value
+
+
+def test_search_eft_accounts(session, client, jwt, app, admin_users_mock, non_active_accounts_auth_api_mock):
+    """Assert that the endpoint returns 200."""
+    data = get_premium_account_payload(payment_method=PaymentMethod.EFT.value)
+    token = jwt.create_jwt(get_claims(roles=[Role.SYSTEM.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post('/api/v1/accounts', data=json.dumps(data),
+                     headers=headers)
+    assert rv.status_code == 202
+    auth_account_id = rv.json.get('accountId')
+    client.patch(f'/api/v1/accounts/{auth_account_id}/eft', data=json.dumps({'eftEnabled': True}), headers=headers)
+
+    # This should be excluded from results, because the mock from auth-api indicates this is inactive.
+    data = get_premium_account_payload(payment_method=PaymentMethod.EFT.value, account_id=911)
+    rv = client.post('/api/v1/accounts', data=json.dumps(data),
+                     headers=headers)
+    assert rv.status_code == 202
+    assert rv.json.get('accountId') == '911'
+    client.patch('/api/v1/accounts/911/eft', data=json.dumps({'eftEnabled': True}), headers=headers)
+
+    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    # Name
+    rv = client.get('/api/v1/accounts/search/eft?searchText=Test', headers=headers)
+    assert rv.status_code == 200
+    assert len(rv.json) == 1
+    assert rv.json[0].get('accountId') == auth_account_id
+
+    # Branch Name
+    rv = client.get('/api/v1/accounts/search/eft?searchText=Branch', headers=headers)
+    assert rv.status_code == 200
+    assert len(rv.json) == 1
+    assert rv.json[0].get('accountId') == auth_account_id
+
+    rv = client.get(f'/api/v1/accounts/search/eft?searchText={auth_account_id}', headers=headers)
+    assert rv.status_code == 200
+    assert len(rv.json) == 1
+    assert rv.json[0].get('accountId') == auth_account_id

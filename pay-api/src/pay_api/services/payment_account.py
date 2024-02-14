@@ -17,12 +17,11 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
-from urllib.parse import urlencode
 from cattr import Converter
 
 from flask import current_app
 from sentry_sdk import capture_message
-from sqlalchemy import String, and_, desc, func, or_
+from sqlalchemy import and_, desc, func, or_
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.models import AccountFee as AccountFeeModel
@@ -662,14 +661,13 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @user_context
     def _get_non_active_org_ids(cls, **kwargs):
         """Retrieve inactive org ids to filter out."""
-        org_simple_url = current_app.config.get('AUTH_API_ENDPOINT') + 'orgs/simple'
-        statuses = ['INACTIVE', 'NSF_SUSPENDED', 'PENDING_STAFF_REVIEW', 'PENDING_INVITE_ACCEPT', 'REJECTED']
-        org_simple_url += urlencode([('statuses', x) for x in statuses]) + '&limit=1000000'
-        result = OAuthService.get(endpoint=org_simple_url,
+        url = f'{current_app.config.get("AUTH_API_ENDPOINT")}orgs/simple'
+        url += '?statuses=ACTIVE&excludeStatuses=true&limit=1000000'
+        result = OAuthService.get(endpoint=url,
                                   token=kwargs['user'].bearer_token,
                                   auth_header_type=AuthHeaderType.BEARER,
                                   content_type=ContentType.JSON).json()
-        return [org.get('id') for org in result.get('orgs')]
+        return [str(org.get('id')) for org in result.get('items')]
 
     @classmethod
     def search_eft_accounts(cls, search_text: str):
@@ -680,9 +678,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         query = db.session.query(PaymentAccountModel) \
             .filter(PaymentAccountModel.payment_method == PaymentMethod.EFT.value,
                     PaymentAccountModel.eft_enable.is_(True)) \
-            .filter(PaymentAccountModel.auth_account_id.not_in_(non_active_org_ids)) \
+            .filter(PaymentAccountModel.auth_account_id.notin_(non_active_org_ids)) \
             .filter(and_(
-                or_(func.cast(PaymentAccountModel.auth_account_id, String).ilike(search_text),
+                or_(PaymentAccountModel.auth_account_id.ilike(search_text),
                     PaymentAccountModel.name.ilike(search_text),
                     and_(PaymentAccountModel.branch_name.ilike(search_text),
                          PaymentAccountModel.branch_name != ''))
