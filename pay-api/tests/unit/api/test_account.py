@@ -714,7 +714,7 @@ def test_search_eft_accounts(session, client, jwt, app, admin_users_mock, non_ac
     auth_account_id = rv.json.get('accountId')
     client.patch(f'/api/v1/accounts/{auth_account_id}/eft', data=json.dumps({'eftEnabled': True}), headers=headers)
 
-    # This should be excluded from results, because the mock from auth-api indicates this is inactive.
+    # This should be excluded from results, because the mock from auth-api indicates this is non-active.
     data = get_premium_account_payload(payment_method=PaymentMethod.EFT.value, account_id=911)
     rv = client.post('/api/v1/accounts', data=json.dumps(data),
                      headers=headers)
