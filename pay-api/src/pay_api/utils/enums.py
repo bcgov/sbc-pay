@@ -282,6 +282,15 @@ class PatchActions(Enum):
         return PatchActions(value) if value in cls._value2member_map_ else None  # pylint: disable=no-member
 
 
+class RefundsPartialType(Enum):
+    """Refund partial types."""
+
+    PRIORITY_FEE = 'PRIORITY_FEE'
+    SERVICE_FEE = 'SERVICE_FEE'
+    FILING_FEE = 'FILING_FEE'
+    FUTURE_EFFECTIVE_FEE = 'FUTURE_EFFECTIVE_FEE'
+
+
 class ReverseOperation(Enum):
     """Reverse Routing Slip Operation, determines comment."""
 
