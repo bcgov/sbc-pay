@@ -64,6 +64,19 @@ def post_account():
     return jsonify(response.asdict()), status
 
 
+@bp.route('/search/eft', methods=['GET', 'OPTIONS'])
+@cross_origin(origins='*', methods=['GET'])
+@_jwt.requires_auth
+@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
+def get_eft_accounts():
+    """Get all eft-enabled account records."""
+    current_app.logger.info('<get_eft_accounts')
+    search_text = request.args.get('searchText', None)
+    response, status = PaymentAccountService.search_eft_accounts(search_text), HTTPStatus.OK
+    current_app.logger.debug('>get_eft_accounts')
+    return jsonify(response), status
+
+
 @bp.route('/<string:account_number>', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET', 'PUT', 'DELETE'])
 @_tracing.trace()

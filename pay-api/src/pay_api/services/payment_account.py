@@ -17,10 +17,11 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
+from cattr import Converter
 
 from flask import current_app
 from sentry_sdk import capture_message
-from sqlalchemy import func
+from sqlalchemy import and_, desc, func, or_
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.models import AccountFee as AccountFeeModel
@@ -34,6 +35,7 @@ from pay_api.models import PaymentAccountSchema
 from pay_api.models import StatementRecipients as StatementRecipientModel
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import db
+from pay_api.models.payment_account import PaymentAccountSearchModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.oauth_service import OAuthService
@@ -48,8 +50,8 @@ from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
     current_local_time, get_local_formatted_date, get_outstanding_txns_from_date, get_str_by_path, mask)
 
-from .payment import Payment
 from .flags import flags
+from .payment import Payment
 
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -654,6 +656,42 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         account = PaymentAccount()
         account._dao = PaymentAccountModel.find_by_id(account_id)  # pylint: disable=protected-access
         return account
+
+    @classmethod
+    @user_context
+    def _get_non_active_org_ids(cls, **kwargs):
+        """Retrieve inactive org ids to filter out."""
+        url = f'{current_app.config.get("AUTH_API_ENDPOINT")}orgs/simple'
+        url += '?statuses=ACTIVE&excludeStatuses=true&limit=1000000'
+        result = OAuthService.get(endpoint=url,
+                                  token=kwargs['user'].bearer_token,
+                                  auth_header_type=AuthHeaderType.BEARER,
+                                  content_type=ContentType.JSON).json()
+        return [str(org.get('id')) for org in result.get('items')]
+
+    @classmethod
+    def search_eft_accounts(cls, search_text: str):
+        """Find EFT accounts that are in ACTIVE status (call into AUTH-API to determine)."""
+        non_active_org_ids = cls._get_non_active_org_ids()
+
+        search_text = f'%{search_text}%'
+        query = db.session.query(PaymentAccountModel) \
+            .filter(PaymentAccountModel.payment_method == PaymentMethod.EFT.value,
+                    PaymentAccountModel.eft_enable.is_(True)) \
+            .filter(PaymentAccountModel.auth_account_id.notin_(non_active_org_ids)) \
+            .filter(and_(
+                or_(PaymentAccountModel.auth_account_id.ilike(search_text),
+                    PaymentAccountModel.name.ilike(search_text),
+                    and_(PaymentAccountModel.branch_name.ilike(search_text),
+                         PaymentAccountModel.branch_name != ''))
+            ))
+        query = query.order_by(desc(PaymentAccountModel.auth_account_id == search_text),
+                               PaymentAccountModel.id.desc()
+                               )
+        eft_accounts = query.limit(20).all()
+
+        payment_accounts = [PaymentAccountSearchModel.from_row(eft_account) for eft_account in eft_accounts]
+        return Converter().unstructure({'items': payment_accounts})
 
     @classmethod
     def get_eft_credit_balance(cls, account_id: int) -> Decimal:

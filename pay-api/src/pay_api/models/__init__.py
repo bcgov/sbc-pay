@@ -51,7 +51,7 @@ from .line_item_status_code import LineItemStatusCode, LineItemStatusCodeSchema
 from .non_sufficient_funds import NonSufficientFundsModel, NonSufficientFundsSchema
 from .notification_status_code import NotificationStatusCode, NotificationStatusCodeSchema
 from .payment import Payment, PaymentSchema
-from .payment_account import PaymentAccount, PaymentAccountSchema  # noqa: I001
+from .payment_account import PaymentAccount, PaymentAccountSchema, PaymentAccountSearchModel  # noqa: I001
 from .payment_line_item import PaymentLineItem, PaymentLineItemSchema
 from .payment_method import PaymentMethod, PaymentMethodSchema
 from .payment_status_code import PaymentStatusCode, PaymentStatusCodeSchema
