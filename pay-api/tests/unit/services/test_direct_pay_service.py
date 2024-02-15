@@ -406,10 +406,7 @@ def test_build_automated_refund_payload_paybc_validation(test_name, has_exceptio
     with patch('pay_api.services.direct_pay_service.DirectPayService.get') as mock_get:
         mock_get.return_value.ok = True
         mock_get.return_value.status_code = 200
-        if test_name == 'success':
-            base_paybc_response['refundedamount'] = None
-            base_paybc_response['postedrefundamount'] = None
-        elif test_name == 'paybc_non_match':
+        if test_name == 'paybc_non_match':
             base_paybc_response['revenue'][0]['revenueaccount'] = '911'
             base_paybc_response['revenue'][1]['revenueaccount'] = '911'
         elif test_name == 'paybc_amount_too_high':
