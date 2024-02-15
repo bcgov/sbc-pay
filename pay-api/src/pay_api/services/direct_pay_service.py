@@ -175,7 +175,8 @@ class DirectPayService(PaymentSystemService, OAuthService):
         return None
 
     def process_cfs_refund(self, invoice: InvoiceModel,
-                           payment_account: PaymentAccount):   # pylint:disable=unused-argument
+                           payment_account: PaymentAccount,
+                           refund_partial: List[RefundPartialLine]):   # pylint:disable=unused-argument
         """Process refund in CFS."""
         current_app.logger.debug('<process_cfs_refund creating automated refund for invoice: '
                                  f'{invoice.id}, {invoice.invoice_status_code}')
@@ -186,7 +187,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
         refund_url = current_app.config.get('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL') + '/paybc-service/api/refund'
         access_token: str = self._get_refund_token().json().get('access_token')
-        data = self._build_automated_refund_payload(invoice, None) # TODO add to params.
+        data = self._build_automated_refund_payload(invoice, refund_partial)
         refund_response = self.post(refund_url, access_token, AuthHeaderType.BEARER,
                                     ContentType.JSON, data, auth_header_name='Bearer-Token').json()
         # Check if approved is 1=Success

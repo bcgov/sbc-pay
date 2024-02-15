@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Model to handle all operations related to Payment Line Item."""
+"""Model to handle all operations related to Payment Line Item partial refunds."""
 
 from decimal import Decimal
 from attrs import define
