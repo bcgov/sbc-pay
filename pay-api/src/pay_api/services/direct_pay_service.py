@@ -14,7 +14,7 @@
 """Service to manage Direct Pay PAYBC Payments."""
 import base64
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, Tuple
 from urllib.parse import unquote_plus, urlencode
 
 from attrs import define
@@ -308,8 +308,8 @@ class DirectPayService(PaymentSystemService, OAuthService):
         return lines
 
     @staticmethod
-    def _build_refund_revenue_lines(refund_partial: List[RefundPartialLine]) -> List[RefundLineRequest]:
-        """Provide distribution lines for the refund."""
+    def _build_refund_revenue_lines(refund_partial: List[RefundPartialLine]) -> Tuple[List[RefundLineRequest], Decimal]:
+        """Provide distribution lines and total for the refund."""
         total = Decimal('0')
         refund_lines = []
         for refund_line in refund_partial:
