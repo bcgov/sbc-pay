@@ -288,7 +288,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
             raise BusinessException(Error.INVALID_REQUEST)
 
     @staticmethod
-    def _build_refund_revenue(paybc_invoice: OrderStatus, refund_lines: List[RefundLineRequest]) -> dict:
+    def _build_refund_revenue(paybc_invoice: OrderStatus, refund_lines: List[RefundLineRequest]):
         """Build PAYBC refund revenue lines for the refund."""
         if (paybc_invoice.postedrefundamount or 0) > 0 or (paybc_invoice.refundedamount or 0) > 0:
             current_app.logger.error('Refund already detected.')
