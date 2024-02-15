@@ -58,7 +58,7 @@ from .payment_status_code import PaymentStatusCode, PaymentStatusCodeSchema
 from .payment_transaction import PaymentTransaction, PaymentTransactionSchema
 from .receipt import Receipt, ReceiptSchema
 from .refund import Refund
-from .refunds_partial import RefundsPartial
+from .refunds_partial import RefundsPartial, RefundPartialLine
 from .routing_slip import RoutingSlip, RoutingSlipSchema
 from .routing_slip_status_code import RoutingSlipStatusCode, RoutingSlipStatusCodeSchema
 from .statement import Statement, StatementSchema

@@ -26,9 +26,10 @@ from requests.exceptions import HTTPError
 from pay_api.exceptions import BusinessException
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeSchedule
-from pay_api.services.direct_pay_service import DECIMAL_PRECISION, PAYBC_DATE_FORMAT, DirectPayService
+from pay_api.services.direct_pay_service import DECIMAL_PRECISION, PAYBC_DATE_FORMAT, DirectPayService, OrderStatus
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.hashing import HashingService
+from pay_api.utils.converter import Converter
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.util import current_local_time, generate_transaction_number
@@ -259,3 +260,30 @@ def test_process_cfs_refund_duplicate_refund(monkeypatch):
         with pytest.raises(BusinessException) as excinfo:
             direct_pay_service.process_cfs_refund(invoice, payment_account)
             assert excinfo.value.code == Error.DIRECT_PAY_INVALID_RESPONSE.name
+
+
+def test_invoice_status_deserialization():
+    """Assert our converter is working for OrderStatus."""
+    paybc_response = {
+        'revenue': [
+            {
+                'linenumber': '1',
+                'revenueaccount': '112.32363.34725.4375.3200062.000000.0000',
+                'revenueamount': '130',
+                'glstatus': 'CMPLT',
+                'glerrormessage': None,
+                'refund_data': []
+            },
+            {
+                'linenumber': '2',
+                'revenueaccount': '112.32363.34725.4375.3200054.000000.0000',
+                'revenueamount': '1.5',
+                'glstatus': 'CMPLT',
+                'glerrormessage': None,
+                'refund_data': [],
+                'not_part_of_spec': 'heyey'
+            }
+        ]
+    }
+    paybc_order_status = Converter().structure(paybc_response, OrderStatus)
+    assert paybc_order_status
