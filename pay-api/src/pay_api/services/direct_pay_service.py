@@ -318,7 +318,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
             if not pli or refund_line.refund_amount < 0:
                 raise BusinessException(Error.INVALID_REQUEST)
             fee_distribution = DistributionCodeModel.find_by_id(pli.fee_distribution_id)
-            if refund_line.refund_type != RefundsPartialType.SERVICE_FEE.value:
+            if refund_line.refund_type == RefundsPartialType.OTHER_FEES.value:
                 DirectPayService._validate_refund_amount(refund_line.refund_amount, pli.total)
                 revenue_account = DirectPayService._get_gl_coding(fee_distribution,
                                                                   refund_line.refund_amount,
