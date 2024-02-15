@@ -308,8 +308,8 @@ class DirectPayService(PaymentSystemService, OAuthService):
         return lines
 
     @staticmethod
-    def _build_refund_revenue_lines(refund_partial: List[RefundPartialLine]) -> Tuple[List[RefundLineRequest], Decimal]:
-        """Provide distribution lines and total for the refund."""
+    def _build_refund_revenue_lines(refund_partial: List[RefundPartialLine]):
+        """Provide refund lines and total for the refund."""
         total = Decimal('0')
         refund_lines = []
         for refund_line in refund_partial:
