@@ -285,7 +285,9 @@ def test_invoice_status_deserialization():
                 'refund_data': [],
                 'not_part_of_spec': 'heyey'
             }
-        ]
+        ],
+        'postedrefundamount': None,
+        'refundedamount': None
     }
     paybc_order_status = Converter().structure(paybc_response, OrderStatus)
     assert paybc_order_status

@@ -14,7 +14,7 @@
 """Service to manage Direct Pay PAYBC Payments."""
 import base64
 from decimal import Decimal
-from typing import List, Optional, Tuple
+from typing import List, Optional
 from urllib.parse import unquote_plus, urlencode
 
 from attrs import define
