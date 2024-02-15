@@ -187,7 +187,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
 
         refund_url = current_app.config.get('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL') + '/paybc-service/api/refund'
         access_token: str = self._get_refund_token().json().get('access_token')
-        data = self._build_automated_refund_payload(invoice, refund_partial)
+        data = self.build_automated_refund_payload(invoice, refund_partial)
         refund_response = self.post(refund_url, access_token, AuthHeaderType.BEARER,
                                     ContentType.JSON, data, auth_header_name='Bearer-Token').json()
         # Check if approved is 1=Success
@@ -271,20 +271,25 @@ class DirectPayService(PaymentSystemService, OAuthService):
     @staticmethod
     def _validate_refund_amount(refund_amount, max_amount):
         if refund_amount > max_amount:
-            raise BusinessException(f'Refund amount {refund_amount} exceeds maximum allowed amount {max_amount}.')
+            current_app.logger.error(f'Refund amount {refund_amount} exceeds maximum allowed amount {max_amount}.')
+            raise BusinessException(Error.INVALID_REQUEST)
 
     @staticmethod
-    def _build_refund_revenue(paybc_invoice: OrderStatus, refund_lines: List[RevenueLine]):
+    def _build_refund_revenue(paybc_invoice: OrderStatus, refund_lines):
         """Build PAYBC refund revenue lines for the refund."""
         if paybc_invoice.postedrefundamount > 0 or paybc_invoice.refundedamount > 0:
-            raise BusinessException('Already refunded.')
+            current_app.logger.error('Refund already detected.')
+            raise BusinessException(Error.INVALID_REQUEST)
 
         lines = []
         for distribution_line in refund_lines:
+            if distribution_line.refund_amount == 0:
+                continue
             revenue_match = next((r for r in paybc_invoice.revenue
                                   if r.revenueaccount == distribution_line.revenueaccount), None)
             if revenue_match is None:
-                raise BusinessException('Matching distribution code to revenue account not found.')
+                current_app.logger.error('Matching distribution code to revenue account not found.')
+                raise BusinessException(Error.INVALID_REQUEST)
             DirectPayService._validate_refund_amount(distribution_line.refund_amount, revenue_match.revenueamount)
             lines.append({'lineNumber': revenue_match.linenumber, 'refundAmount': distribution_line.refund_amount})
         return lines
@@ -296,10 +301,9 @@ class DirectPayService(PaymentSystemService, OAuthService):
         refund_lines = []
         for refund_line in refund_partial:
             revenue_account = None
-            if not (pli := PaymentLineItemModel.find_by_id(refund_line.payment_line_item_id)):
-                raise BusinessException('PLI id not found.')
-            if refund_line.refund_amount < 0:
-                raise BusinessException('Refund amount cannot be negative.')
+            pli = PaymentLineItemModel.find_by_id(refund_line.payment_line_item_id)
+            if not pli or refund_line.refund_amount < 0:
+                raise BusinessException(Error.INVALID_REQUEST)
             fee_distribution = DistributionCodeModel.find_by_id(pli.fee_distribution_id)
             if refund_line.refund_type != RefundsPartialType.SERVICE_FEE.value:
                 DirectPayService._validate_refund_amount(refund_line.refund_amount, pli.total)
@@ -328,7 +332,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
         return Converter().structure(payment_response, OrderStatus)
 
     @staticmethod
-    def _build_automated_refund_payload(invoice: InvoiceModel, refund_partial: List[RefundPartialLine]):
+    def build_automated_refund_payload(invoice: InvoiceModel, refund_partial: List[RefundPartialLine]):
         """Build payload to create a refund in PAYBC."""
         receipt = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=invoice.id)
         invoice_reference = InvoiceReferenceModel.find_by_invoice_id_and_status(

@@ -285,10 +285,8 @@ class PatchActions(Enum):
 class RefundsPartialType(Enum):
     """Refund partial types."""
 
-    PRIORITY_FEE = 'PRIORITY_FEE'
     SERVICE_FEE = 'SERVICE_FEE'
-    FILING_FEE = 'FILING_FEE'
-    FUTURE_EFFECTIVE_FEE = 'FUTURE_EFFECTIVE_FEE'
+    OTHER_FEES = 'OTHER_FEES'
 
 
 class ReverseOperation(Enum):
