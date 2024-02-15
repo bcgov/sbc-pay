@@ -51,7 +51,6 @@ DECIMAL_PRECISION = '.2f'
 STATUS_PAID = ('PAID', 'CMPLT')
 
 
-
 @define
 class RefundData():
     """Refund data from order status query."""
@@ -296,7 +295,6 @@ class DirectPayService(PaymentSystemService, OAuthService):
                 raise BusinessException('PLI not found.')
             if refund.refund_amount < 0:
                 raise BusinessException('Refund amount cannot be negative.')
-            revenue_account = pli.fee_distribution_id
             fee_distribution = DistributionCodeModel.find_by_id(pli.fee_distribution_id)
             if refund.refund_type != RefundsPartialType.SERVICE_FEE.value:
                 if refund.refund_amount > pli.total:
