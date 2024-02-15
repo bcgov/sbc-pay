@@ -269,7 +269,12 @@ class DirectPayService(PaymentSystemService, OAuthService):
         return token_response
 
     @staticmethod
-    def _build_refund_revenue(paybc_invoice, refund_lines):
+    def _validate_refund_amount(refund_amount, max_amount):
+        if refund_amount > max_amount:
+            raise BusinessException(f'Refund amount {refund_amount} exceeds maximum allowed amount {max_amount}.')
+
+    @staticmethod
+    def _build_refund_revenue(paybc_invoice: OrderStatus, refund_lines: List[RevenueLine]):
         """Build PAYBC refund revenue lines for the refund."""
         if paybc_invoice.postedrefundamount > 0 or paybc_invoice.refundedamount > 0:
             raise BusinessException('Already refunded.')
@@ -280,8 +285,7 @@ class DirectPayService(PaymentSystemService, OAuthService):
                                   if r.revenueaccount == distribution_line.revenueaccount), None)
             if revenue_match is None:
                 raise BusinessException('Matching distribution code to revenue account not found.')
-            if revenue_match.revenueamount < distribution_line.refund_amount:
-                raise BusinessException(f'Refund amount {1} requested exceeds revenueamount {2} in PAYBC.')
+            DirectPayService._validate_refund_amount(distribution_line.refund_amount, revenue_match.revenueamount)
             lines.append({'lineNumber': revenue_match.linenumber, 'refundAmount': distribution_line.refund_amount})
         return lines
 
@@ -290,28 +294,23 @@ class DirectPayService(PaymentSystemService, OAuthService):
         """Provide distribution lines for the refund."""
         total = Decimal('0')
         refund_lines = []
-        for refund in refund_partial:
+        for refund_line in refund_partial:
             revenue_account = None
-            if not (pli := PaymentLineItemModel.find_by_id(refund.payment_line_item_id)):
-                raise BusinessException('PLI not found.')
-            if refund.refund_amount < 0:
+            if not (pli := PaymentLineItemModel.find_by_id(refund_line.payment_line_item_id)):
+                raise BusinessException('PLI id not found.')
+            if refund_line.refund_amount < 0:
                 raise BusinessException('Refund amount cannot be negative.')
             fee_distribution = DistributionCodeModel.find_by_id(pli.fee_distribution_id)
-            if refund.refund_type != RefundsPartialType.SERVICE_FEE.value:
-                if refund.refund_amount > pli.total:
-                    raise BusinessException('Refund amount { } exceeds pli total in SBC-PAY {}.')
-                revenue_account = DirectPayService._get_gl_coding(fee_distribution, refund.refund_amount)
-            elif refund.refund_type == RefundsPartialType.SERVICE_FEE.value:
-                if refund.refund_amount > pli.service_fees:
-                    raise BusinessException('Refund amount { } exceeds service_fees amount in SBC-PAY {}.')
+            if refund_line.refund_type != RefundsPartialType.SERVICE_FEE.value:
+                DirectPayService._validate_refund_amount(refund_line.refund_amount, pli.total)
+                revenue_account = DirectPayService._get_gl_coding(fee_distribution, refund_line.refund_amount)
+            elif refund_line.refund_type == RefundsPartialType.SERVICE_FEE.value:
+                DirectPayService._validate_refund_amount(refund_line.refund_amount, pli.service_fees)
                 service_fee_dist_id = fee_distribution.service_fee_distribution_code_id
                 service_fee_distribution = DistributionCodeModel.find_by_id(service_fee_dist_id)
-                revenue_account = DirectPayService._get_gl_coding(service_fee_distribution, refund.refund_amount)
-            refund_lines.append({
-                'revenueaccount': revenue_account,
-                'refundAmount': refund.amount
-            })
-            total += refund.amount
+                revenue_account = DirectPayService._get_gl_coding(service_fee_distribution, refund_line.refund_amount)
+            refund_lines.append(RevenueLine(revenueaccount=revenue_account, revenueamount=refund_line.amount))
+            total += refund_line.refund_amount
         return refund_lines, total
 
     @staticmethod
