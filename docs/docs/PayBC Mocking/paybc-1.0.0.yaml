@@ -136,6 +136,8 @@
                               refund_date: '2023-04-15T20:13:36Z'
                               refundglstatus: 'CMPLT'
                               refundglerrormessage: null
+                      postedrefundamount: 31.50
+                      refundedamount: null
           '400':
             description: BadRequest
             content:
