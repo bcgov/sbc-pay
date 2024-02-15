@@ -39,6 +39,7 @@ class EFTCredit(BaseModel):  # pylint:disable=too-many-instance-attributes
             'amount',
             'created_on',
             'eft_file_id',
+            'eft_transaction_id',
             'short_name_id',
             'payment_account_id',
             'remaining_amount'
@@ -49,11 +50,12 @@ class EFTCredit(BaseModel):  # pylint:disable=too-many-instance-attributes
 
     amount = db.Column(db.Numeric(19, 2), nullable=False)
     remaining_amount = db.Column(db.Numeric(19, 2), nullable=False)
-    created_on = db.Column('created_on', db.DateTime, nullable=True, default=datetime.now)
+    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
 
     eft_file_id = db.Column(db.Integer, ForeignKey('eft_files.id'), nullable=False)
     short_name_id = db.Column(db.Integer, ForeignKey('eft_short_names.id'), nullable=False)
     payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
+    eft_transaction_id = db.Column(db.Integer, ForeignKey('eft_transactions.id'), nullable=True)
 
     @classmethod
     def find_by_payment_account_id(cls, payment_account_id: int):

@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle EFT TDI17 short name to BCROS account mapping."""
-
 from datetime import datetime
+from _decimal import Decimal
 from attrs import define
 
 
 from .base_model import VersionedModel
 from .db import db
+from ..utils.util import cents_to_decimal
 
 
 class EFTShortnames(VersionedModel):  # pylint: disable=too-many-instance-attributes
@@ -40,31 +41,25 @@ class EFTShortnames(VersionedModel):  # pylint: disable=too-many-instance-attrib
             'id',
             'auth_account_id',
             'created_on',
-            'short_name'
+            'short_name',
+            'linked_by',
+            'linked_by_name',
+            'linked_on'
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    auth_account_id = db.Column('auth_account_id', db.DateTime, nullable=True, index=True)
+    auth_account_id = db.Column('auth_account_id', db.String(50), nullable=True, index=True)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
     short_name = db.Column('short_name', db.String, nullable=False, index=True)
+    linked_by = db.Column('linked_by', db.String(100), nullable=True)
+    linked_by_name = db.Column('linked_by_name', db.String(100), nullable=True)
+    linked_on = db.Column('linked_on', db.DateTime, nullable=True)
 
     @classmethod
     def find_by_short_name(cls, short_name: str):
         """Find by eft short name."""
         return cls.query.filter_by(short_name=short_name).one_or_none()
-
-    @classmethod
-    def find_all_short_names(cls, include_all: bool, page: int, limit: int):
-        """Return eft short names."""
-        query = db.session.query(EFTShortnames)
-
-        if not include_all:
-            query = query.filter(EFTShortnames.auth_account_id.is_(None))
-
-        query = query.order_by(EFTShortnames.short_name.asc())
-        pagination = query.paginate(per_page=limit, page=page)
-        return pagination.items, pagination.total
 
 
 @define
@@ -74,7 +69,16 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
     id: int
     short_name: str
     account_id: str
+    account_name: str
+    account_branch: str
     created_on: datetime
+    transaction_id: int
+    transaction_date: datetime
+    deposit_date: datetime
+    deposit_amount: Decimal
+    linked_by: str
+    linked_by_name: str
+    linked_on: datetime
 
     @classmethod
     def from_row(cls, row: EFTShortnames):
@@ -82,4 +86,17 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
 
         https://www.attrs.org/en/stable/init.html
         """
-        return cls(id=row.id, short_name=row.short_name, account_id=row.auth_account_id, created_on=row.created_on)
+        return cls(id=row.id,
+                   short_name=row.short_name,
+                   account_id=row.auth_account_id,
+                   account_name=getattr(row, 'account_name', None),
+                   account_branch=getattr(row, 'account_branch', None),
+                   created_on=row.created_on,
+                   transaction_id=getattr(row, 'transaction_id', None),
+                   transaction_date=getattr(row, 'transaction_date', None),
+                   deposit_date=getattr(row, 'deposit_date', None),
+                   deposit_amount=cents_to_decimal(getattr(row, 'deposit_amount', None)),
+                   linked_by=row.linked_by,
+                   linked_by_name=row.linked_by_name,
+                   linked_on=row.linked_on
+                   )

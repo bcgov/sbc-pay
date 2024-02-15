@@ -25,8 +25,9 @@ from typing import Dict, List, Tuple
 from faker import Faker
 
 from pay_api.models import (
-    CfsAccount, Comment, DistributionCode, EFTShortnames, Invoice, InvoiceReference, Payment, PaymentAccount,
-    PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip, Statement, StatementInvoices, StatementSettings)
+    CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTFile, EFTShortnames, Invoice, InvoiceReference,
+    NonSufficientFundsModel, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip,
+    Statement, StatementInvoices, StatementSettings)
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
@@ -375,7 +376,8 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
                             bcol_user_id='test',
                             auth_account_id: str = '1234',
                             cfs_account_status: str = CfsAccountStatus.ACTIVE.value,
-                            name=None):
+                            name=None,
+                            branch_name=None):
     """Return Factory."""
     # Create a payment account
     account = PaymentAccount(
@@ -383,6 +385,7 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
         bcol_user_id=bcol_user_id,
         bcol_account='TEST',
         name=name,
+        branch_name=branch_name,
         payment_method=payment_method_code,
         pad_activation_date=datetime.now(),
         eft_enable=False
@@ -417,7 +420,8 @@ def factory_payment(
         payment_status_code: str = PaymentStatus.CREATED.value,
         invoice_number: str = None,
         payment_account_id: str = None,
-        invoice_amount=0
+        invoice_amount=0,
+        paid_amount=0
 ):
     """Return Factory."""
     payment: Payment = Payment(
@@ -426,7 +430,8 @@ def factory_payment(
         payment_status_code=payment_status_code,
         invoice_number=invoice_number,
         payment_account_id=payment_account_id,
-        invoice_amount=invoice_amount
+        invoice_amount=invoice_amount,
+        paid_amount=paid_amount
     )
     return payment
 
@@ -754,6 +759,7 @@ def get_premium_account_payload(payment_method: str = PaymentMethod.DRAWDOWN.val
     return {
         'accountId': account_id,
         'accountName': 'Test Account',
+        'branchName': 'Test Branch',
         'bcolAccountNumber': '1000000',
         'bcolUserId': 'U100000',
         'paymentInfo': {
@@ -880,6 +886,38 @@ def factory_comments(routing_slip_number: str, username: str = 'comment_user', c
     return comment
 
 
+def factory_eft_file(file_ref: str = 'test_ref.txt'):
+    """Return an EFT file model."""
+    return EFTFile(file_ref=file_ref).save()
+
+
 def factory_eft_shortname(short_name: str, auth_account_id: str = None):
     """Return an EFT short name model."""
     return EFTShortnames(short_name=short_name, auth_account_id=auth_account_id)
+
+
+def factory_non_sufficient_funds(invoice_id: int, invoice_number: str, description: str = None):
+    """Return a Non-Sufficient Funds Model."""
+    return NonSufficientFundsModel(invoice_id=invoice_id, invoice_number=invoice_number, description=description)
+
+
+def factory_distribution_code(name: str, client: str = '111', reps_centre: str = '22222', service_line: str = '33333',
+                              stob: str = '4444', project_code: str = '5555555', service_fee_dist_id: int = None,
+                              disbursement_dist_id: int = None):
+    """Return Factory."""
+    return DistributionCode(name=name,
+                            client=client,
+                            responsibility_centre=reps_centre,
+                            service_line=service_line,
+                            stob=stob,
+                            project_code=project_code,
+                            service_fee_distribution_code_id=service_fee_dist_id,
+                            disbursement_distribution_code_id=disbursement_dist_id,
+                            start_date=datetime.today().date(),
+                            created_by='test')
+
+
+def factory_distribution_link(distribution_code_id: int, fee_schedule_id: int):
+    """Return Factory."""
+    return DistributionCodeLink(fee_schedule_id=fee_schedule_id,
+                                distribution_code_id=distribution_code_id)

@@ -17,22 +17,25 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
+from cattr import Converter
 
 from flask import current_app
 from sentry_sdk import capture_message
-from sqlalchemy import func
+from sqlalchemy import and_, desc, func, or_
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.models import AccountFee as AccountFeeModel
 from pay_api.models import AccountFeeSchema
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTCredit as EFTCreditModel
+from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentAccountSchema
 from pay_api.models import StatementRecipients as StatementRecipientModel
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import db
+from pay_api.models.payment_account import PaymentAccountSearchModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.oauth_service import OAuthService
@@ -48,6 +51,7 @@ from pay_api.utils.util import (
     current_local_time, get_local_formatted_date, get_outstanding_txns_from_date, get_str_by_path, mask)
 
 from .flags import flags
+from .payment import Payment
 
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -445,6 +449,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         if name := account_request.get('accountName', None):
             payment_account.name = name
 
+        if branch_name := account_request.get('branchName', None):
+            payment_account.branch_name = branch_name
+
         if pad_tos_accepted_by := account_request.get('padTosAcceptedBy', None):
             payment_account.pad_tos_accepted_by = pad_tos_accepted_by
             payment_account.pad_tos_accepted_date = datetime.now()
@@ -651,6 +658,42 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return account
 
     @classmethod
+    @user_context
+    def _get_non_active_org_ids(cls, **kwargs):
+        """Retrieve inactive org ids to filter out."""
+        url = f'{current_app.config.get("AUTH_API_ENDPOINT")}orgs/simple'
+        url += '?statuses=ACTIVE&excludeStatuses=true&limit=1000000'
+        result = OAuthService.get(endpoint=url,
+                                  token=kwargs['user'].bearer_token,
+                                  auth_header_type=AuthHeaderType.BEARER,
+                                  content_type=ContentType.JSON).json()
+        return [str(org.get('id')) for org in result.get('items')]
+
+    @classmethod
+    def search_eft_accounts(cls, search_text: str):
+        """Find EFT accounts that are in ACTIVE status (call into AUTH-API to determine)."""
+        non_active_org_ids = cls._get_non_active_org_ids()
+
+        search_text = f'%{search_text}%'
+        query = db.session.query(PaymentAccountModel) \
+            .filter(PaymentAccountModel.payment_method == PaymentMethod.EFT.value,
+                    PaymentAccountModel.eft_enable.is_(True)) \
+            .filter(PaymentAccountModel.auth_account_id.notin_(non_active_org_ids)) \
+            .filter(and_(
+                or_(PaymentAccountModel.auth_account_id.ilike(search_text),
+                    PaymentAccountModel.name.ilike(search_text),
+                    and_(PaymentAccountModel.branch_name.ilike(search_text),
+                         PaymentAccountModel.branch_name != ''))
+            ))
+        query = query.order_by(desc(PaymentAccountModel.auth_account_id == search_text),
+                               PaymentAccountModel.id.desc()
+                               )
+        eft_accounts = query.limit(20).all()
+
+        payment_accounts = [PaymentAccountSearchModel.from_row(eft_account) for eft_account in eft_accounts]
+        return Converter().unstructure({'items': payment_accounts})
+
+    @classmethod
     def get_eft_credit_balance(cls, account_id: int) -> Decimal:
         """Calculate pay account eft balance by account id."""
         result = db.session.query(func.sum(EFTCreditModel.remaining_amount).label('credit_balance')) \
@@ -661,7 +704,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return Decimal(result.credit_balance) if result else 0
 
     @classmethod
-    def deduct_eft_credit(cls, invoice: InvoiceModel):
+    def deduct_eft_credit(cls, invoice: InvoiceModel, auto_save: bool = True):
         """Deduct EFT credit and update remaining credit records."""
         eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel) \
             .filter(EFTCreditModel.remaining_amount > 0) \
@@ -675,15 +718,19 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         # Deduct credits and apply to the invoice
         now = datetime.now()
         for eft_credit in eft_credits:
+            EFTCreditInvoiceLinkModel(
+                eft_credit_id=eft_credit.id,
+                invoice_id=invoice.id).save_or_add(auto_save)
+
             if eft_credit.remaining_amount >= invoice_balance:
                 # Credit covers the full invoice balance
                 eft_credit.remaining_amount -= invoice_balance
-                eft_credit.save()
+                eft_credit.save_or_add(auto_save)
 
                 invoice.payment_date = now
                 invoice.paid = invoice.total
                 invoice.invoice_status_code = InvoiceStatus.PAID.value
-                invoice.save()
+                invoice.save_or_add(auto_save)
                 break
 
             # Credit covers partial invoice balance
@@ -693,9 +740,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             invoice.invoice_status_code = InvoiceStatus.PARTIAL.value
 
             eft_credit.remaining_amount = 0
-            eft_credit.save()
+            eft_credit.save_or_add(auto_save)
 
-        invoice.save()
+        invoice.save_or_add(auto_save)
 
     @staticmethod
     def _calculate_activation_date():
@@ -754,7 +801,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def publish_account_mailer_event_on_creation(self):
         """Publish to account mailer message to send out confirmation email on creation."""
         if self.payment_method == PaymentMethod.PAD.value:
-            payload = self._create_account_event_payload(MessageType.PAD_ACCOUNT_CREATE.value, include_pay_info=True)
+            payload = self.create_account_event_payload(MessageType.PAD_ACCOUNT_CREATE.value, include_pay_info=True)
             self._publish_queue_message(payload)
 
     def _publish_queue_message(self, payload):
@@ -772,7 +819,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 f'Notification to Queue failed for the Account Mailer : {payload}.',
                 level='error')
 
-    def _create_account_event_payload(self, event_type: str, include_pay_info: bool = False):
+    def create_account_event_payload(self, event_type: str, nsf_object: dict = None,
+                                     include_pay_info: bool = False):
         """Return event payload for account."""
         payload: Dict[str, any] = {
             'specversion': '1.x-wip',
@@ -787,6 +835,10 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             }
         }
 
+        if event_type == MessageType.NSF_UNLOCK_ACCOUNT.value:
+            payload['data']['invoiceNumber'] = nsf_object['invoice_number']
+            payload['data']['paymentMethodDescription'] = nsf_object['payment_method_code']
+            payload['data']['receiptNumber'] = nsf_object['receipt_number']
         if event_type == MessageType.PAD_ACCOUNT_CREATE.value:
             payload['data']['padTosAcceptedBy'] = self.pad_tos_accepted_by
         if include_pay_info:
@@ -799,9 +851,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return payload
 
     @staticmethod
-    def unlock_frozen_accounts(account_id: int):
+    def unlock_frozen_accounts(payment: Payment):
         """Unlock frozen accounts."""
-        pay_account: PaymentAccount = PaymentAccount.find_by_id(account_id)
+        pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.payment_account_id)
         if pay_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
             current_app.logger.info(f'Unlocking Frozen Account {pay_account.auth_account_id}')
             # update CSF
@@ -811,8 +863,17 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             cfs_account.status = CfsAccountStatus.ACTIVE.value
             cfs_account.save()
 
-            payload = pay_account._create_account_event_payload(  # pylint:disable=protected-access
-                'bc.registry.payment.unlockAccount'
+            # get nsf payment object associated with this payment
+
+            nsf_object = {
+                'invoice_number': payment.invoice_number,
+                'payment_method_code': payment.payment_method_code,
+                'receipt_number': payment.receipt_number
+            }
+
+            payload = pay_account.create_account_event_payload(
+                MessageType.NSF_UNLOCK_ACCOUNT.value,
+                nsf_object=nsf_object
             )
 
             try:
@@ -867,6 +928,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         pay_account.save()
         pa_service = cls.find_by_id(pay_account.id)
         if not already_has_eft_enabled:
-            payload = pa_service._create_account_event_payload(MessageType.EFT_AVAILABLE_NOTIFICATION.value)
+            payload = pa_service.create_account_event_payload(MessageType.EFT_AVAILABLE_NOTIFICATION.value)
             pa_service._publish_queue_message(payload)
         return pa_service

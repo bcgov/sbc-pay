@@ -137,6 +137,7 @@ class Role(Enum):
     FAS_CORRECTION = 'fas_correction'
     SANDBOX = 'sandbox'
     VIEW_ALL_TRANSACTIONS = 'view_all_transactions'
+    MANAGE_EFT = 'manage_eft'
 
 
 class Code(Enum):
@@ -267,6 +268,7 @@ class EjvFileType(Enum):
     DISBURSEMENT = 'DISBURSEMENT'
     REFUND = 'REFUND'
     NON_GOV_DISBURSEMENT = 'NON_GOV_DISBURSEMENT'
+    TRANSFER = 'TRANSFER'
 
 
 class PatchActions(Enum):
@@ -278,6 +280,15 @@ class PatchActions(Enum):
     def from_value(cls, value):
         """Return instance from value of the enum."""
         return PatchActions(value) if value in cls._value2member_map_ else None  # pylint: disable=no-member
+
+
+class RefundsPartialType(Enum):
+    """Refund partial types."""
+
+    PRIORITY_FEE = 'PRIORITY_FEE'
+    SERVICE_FEE = 'SERVICE_FEE'
+    FILING_FEE = 'FILING_FEE'
+    FUTURE_EFFECTIVE_FEE = 'FUTURE_EFFECTIVE_FEE'
 
 
 class ReverseOperation(Enum):
@@ -310,6 +321,21 @@ class EFTFileLineType(Enum):
     HEADER = 'HEADER'
     TRANSACTION = 'TRANSACTION'
     TRAILER = 'TRAILER'
+
+
+class EFTGlTransferType(Enum):
+    """EFT GL Transfer types for job processing."""
+
+    PAYMENT = 'PAYMENT'
+    REVERSAL = 'REVERSAL'
+    TRANSFER = 'TRANSFER'
+
+
+class EFTShortnameState(Enum):
+    """EFT Short name search states."""
+
+    LINKED = 'LINKED'
+    UNLINKED = 'UNLINKED'
 
 
 class MessageType(Enum):

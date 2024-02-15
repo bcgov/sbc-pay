@@ -193,7 +193,8 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
     payment_line_items = ma.Nested(PaymentLineItemSchema, many=True, data_key='line_items')
     receipts = ma.Nested(ReceiptSchema, many=True, data_key='receipts')
     references = ma.Nested(InvoiceReferenceSchema, many=True, data_key='references')
-    payment_account = ma.Nested(PaymentAccountSchema(only=('auth_account_id', 'name', 'billable')), many=False)
+    payment_account = ma.Nested(PaymentAccountSchema(only=('auth_account_id', 'name', 'billable', 'branch_name')),
+                                many=False)
 
     _links = ma.Hyperlinks({
         'self': ma.URLFor('INVOICE.get_invoice', invoice_id='<id>'),

@@ -19,7 +19,8 @@ Test-Suite to ensure that the EFT Credits model is working as expected.
 from datetime import datetime
 from typing import List
 
-from pay_api.models import EFTCredit, EFTFile, EFTShortnames
+from pay_api.models import EFTCredit, EFTFile, EFTShortnames, EFTTransaction
+from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus
 from tests.utilities.base_test import factory_payment_account
 
 
@@ -39,11 +40,19 @@ def test_eft_credits(session):
     eft_file.file_ref = 'test.txt'
     eft_file.save()
 
+    eft_transaction = EFTTransaction()
+    eft_transaction.file_id = eft_file.id
+    eft_transaction.line_number = 1
+    eft_transaction.line_type = EFTFileLineType.HEADER.value
+    eft_transaction.status_code = EFTProcessStatus.COMPLETED.value
+    eft_transaction.save()
+
     eft_credit = EFTCredit()
     eft_credit.eft_file_id = eft_file.id
     eft_credit.short_name_id = eft_short_name.id
     eft_credit.amount = 100.00
     eft_credit.remaining_amount = 50.00
+    eft_credit.eft_transaction_id = eft_transaction.id
     eft_credit.save()
 
     assert eft_credit.id is not None
@@ -52,6 +61,7 @@ def test_eft_credits(session):
     assert eft_credit.created_on.date() == datetime.now().date()
     assert eft_credit.amount == 100.00
     assert eft_credit.remaining_amount == 50.00
+    assert eft_credit.eft_transaction_id == eft_transaction.id
 
     eft_credit.payment_account_id = payment_account.id
     eft_credit.save()

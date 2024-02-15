@@ -24,6 +24,7 @@ from entity_queue_common.service_utils import subscribe_to_queue
 from flask import current_app
 from pay_api import db
 from pay_api.models import EFTCredit as EFTCreditModel
+from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTFile as EFTFileModel
 from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
@@ -305,7 +306,7 @@ async def test_eft_tdi17_basic_process(session, app, stan_server, event_loop, cl
     assert eft_shortnames[1].auth_account_id is None
     assert eft_shortnames[1].short_name == 'DEF456'
 
-    eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).all()
+    eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).order_by(EFTCreditModel.created_on.asc()).all()
     assert eft_credits is not None
     assert len(eft_credits) == 2
     assert eft_credits[0].payment_account_id is None
@@ -313,11 +314,17 @@ async def test_eft_tdi17_basic_process(session, app, stan_server, event_loop, cl
     assert eft_credits[0].eft_file_id == eft_file_model.id
     assert eft_credits[0].amount == 135
     assert eft_credits[0].remaining_amount == 135
+    assert eft_credits[0].eft_transaction_id == eft_transactions[0].id
     assert eft_credits[1].payment_account_id is None
     assert eft_credits[1].short_name_id == eft_shortnames[1].id
     assert eft_credits[1].eft_file_id == eft_file_model.id
     assert eft_credits[1].amount == 5250
     assert eft_credits[1].remaining_amount == 5250
+    assert eft_credits[1].eft_transaction_id == eft_transactions[1].id
+
+    # Expecting no credit links as they have not been applied to invoices
+    eft_credit_invoice_links: List[EFTCreditInvoiceLinkModel] = db.session.query(EFTCreditInvoiceLinkModel).all()
+    assert not eft_credit_invoice_links
 
 
 @pytest.mark.asyncio
@@ -431,19 +438,33 @@ async def test_eft_tdi17_process(session, app, stan_server, event_loop, client_i
     assert invoice_reference.invoice_number == expected_invoice_number
     assert invoice_reference.status_code == InvoiceReferenceStatus.COMPLETED.value
 
-    eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).all()
+    eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).order_by(EFTCreditModel.created_on.asc()).all()
     assert eft_credits is not None
-    assert len(eft_credits) == 2
+    assert len(eft_credits) == 3
     assert eft_credits[0].payment_account_id == payment_account.id
     assert eft_credits[0].short_name_id == eft_shortnames[0].id
     assert eft_credits[0].eft_file_id == eft_file_model.id
-    assert eft_credits[0].amount == 50.5
-    assert eft_credits[0].remaining_amount == 50.5
-    assert eft_credits[1].payment_account_id is None
-    assert eft_credits[1].short_name_id == eft_shortnames[1].id
+    assert eft_credits[0].amount == 100.00
+    assert eft_credits[0].remaining_amount == 0
+    assert eft_credits[0].eft_transaction_id == eft_transactions[0].id
+    assert eft_credits[1].payment_account_id == payment_account.id
+    assert eft_credits[1].short_name_id == eft_shortnames[0].id
     assert eft_credits[1].eft_file_id == eft_file_model.id
-    assert eft_credits[1].amount == 351.5
-    assert eft_credits[1].remaining_amount == 351.5
+    assert eft_credits[1].amount == 50.5
+    assert eft_credits[1].remaining_amount == 50.5
+    assert eft_credits[1].eft_transaction_id == eft_transactions[1].id
+    assert eft_credits[2].payment_account_id is None
+    assert eft_credits[2].short_name_id == eft_shortnames[1].id
+    assert eft_credits[2].eft_file_id == eft_file_model.id
+    assert eft_credits[2].amount == 351.5
+    assert eft_credits[2].remaining_amount == 351.5
+    assert eft_credits[2].eft_transaction_id == eft_transactions[2].id
+
+    eft_credit_invoice_links: List[EFTCreditInvoiceLinkModel] = db.session.query(EFTCreditInvoiceLinkModel).all()
+    assert eft_credit_invoice_links is not None
+    assert len(eft_credit_invoice_links) == 1
+    assert eft_credit_invoice_links[0].eft_credit_id == eft_credits[0].id
+    assert eft_credit_invoice_links[0].invoice_id == invoice.id
 
 
 @pytest.mark.asyncio
@@ -584,14 +605,15 @@ async def test_eft_tdi17_rerun(session, app, stan_server, event_loop, client_id,
     assert invoice_reference.invoice_number == expected_invoice_number
     assert invoice_reference.status_code == InvoiceReferenceStatus.COMPLETED.value
 
-    eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).all()
+    eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).order_by(EFTCreditModel.created_on.asc()).all()
     assert eft_credits is not None
     assert len(eft_credits) == 1
     assert eft_credits[0].payment_account_id == payment_account.id
     assert eft_credits[0].short_name_id == eft_shortname.id
     assert eft_credits[0].eft_file_id == eft_file_model.id
-    assert eft_credits[0].amount == 35
+    assert eft_credits[0].amount == 135
     assert eft_credits[0].remaining_amount == 35
+    assert eft_credits[0].eft_transaction_id == eft_transactions[0].id
 
 
 def create_test_data():

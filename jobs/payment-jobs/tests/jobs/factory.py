@@ -20,8 +20,8 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 from datetime import datetime, timedelta
 
 from pay_api.models import (
-    CfsAccount, DistributionCode, DistributionCodeLink, Invoice, InvoiceReference, Payment, PaymentAccount,
-    PaymentLineItem, Receipt, Refund, RoutingSlip, StatementRecipients, StatementSettings)
+    CfsAccount, DistributionCode, DistributionCodeLink, EFTShortnames, Invoice, InvoiceReference, Payment,
+    PaymentAccount, PaymentLineItem, Receipt, Refund, RoutingSlip, StatementRecipients, StatementSettings)
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
     PaymentSystem, RoutingSlipStatus)
@@ -218,6 +218,15 @@ def factory_create_eft_account(auth_account_id='1234', status=CfsAccountStatus.P
                              name=f'Test {auth_account_id}').save()
     CfsAccount(status=status, account_id=account.id).save()
     return account
+
+
+def factory_create_eft_shortname(auth_account_id: str, short_name: str):
+    """Return Factory."""
+    short_name = EFTShortnames(
+        auth_account_id=auth_account_id,
+        short_name=short_name
+    ).save()
+    return short_name
 
 
 def factory_create_account(auth_account_id: str = '1234', payment_method_code: str = PaymentMethod.DIRECT_PAY.value,

@@ -45,8 +45,8 @@ class EjvInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False)
-    ejv_header_id = db.Column(db.Integer, ForeignKey('ejv_headers.id'), nullable=False)
+    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False, index=True)
+    ejv_header_id = db.Column(db.Integer, ForeignKey('ejv_headers.id'), nullable=False, index=True)
     disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
     message = db.Column('message', db.String, nullable=True, index=False)
     sequence = db.Column(db.Integer, nullable=True)

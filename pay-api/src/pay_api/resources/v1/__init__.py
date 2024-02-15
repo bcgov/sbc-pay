@@ -31,6 +31,7 @@ from .invoice import bp as invoice_bp
 from .invoice_receipt import bp as invoice_receipt_bp
 from .invoices import bp as invoices_bp
 from .meta import bp as meta_bp
+from .non_sufficient_funds import bp as non_sufficient_funds_bp
 from ..ops import bp as ops_bp
 from .payment import bp as payment_bp
 from .refund import bp as refund_bp
@@ -66,6 +67,7 @@ class V1Endpoint:  # pylint: disable=too-few-public-methods,
         self.app.register_blueprint(invoices_bp)
         self.app.register_blueprint(invoice_receipt_bp)
         self.app.register_blueprint(meta_bp)
+        self.app.register_blueprint(non_sufficient_funds_bp)
         self.app.register_blueprint(ops_bp)
         self.app.register_blueprint(payment_bp)
         self.app.register_blueprint(refund_bp)

@@ -43,6 +43,7 @@ class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attri
             'bcol_account',
             'bcol_user_id',
             'billable',
+            'branch_name',
             'created_by',
             'created_name',
             'created_on',
@@ -67,6 +68,7 @@ class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attri
 
     # used for sending out notifications.The statement emails needs account name
     name = db.Column(db.String(250), nullable=True, index=False)
+    branch_name = db.Column(db.String(250), nullable=True, index=False)
 
     payment_method = db.Column(db.String(15), ForeignKey('payment_methods.code'), nullable=True)
 
@@ -78,7 +80,7 @@ class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attri
 
     credit = db.Column(db.Numeric(19, 2), nullable=True)
     billable = db.Column(Boolean(), default=True)
-    eft_enable = db.Column(Boolean(), default=False)
+    eft_enable = db.Column(Boolean(), nullable=False, default=False)
 
     # before this date , the account shouldn't get used
     pad_activation_date = db.Column(db.DateTime, nullable=True)
@@ -108,6 +110,7 @@ class PaymentAccountSchema(BaseSchema):  # pylint: disable=too-many-ancestors
     payment_method = fields.String(data_key='payment_method')
     auth_account_id = fields.String(data_key='account_id')
     name = fields.String(data_key='account_name')
+    branch_name = fields.String(data_key='branch_name')
 
 
 @define
@@ -117,6 +120,7 @@ class PaymentAccountSearchModel:  # pylint: disable=too-few-public-methods
     account_name: str
     billable: bool
     account_id: str
+    branch_name: str
 
     @classmethod
     def from_row(cls, row: PaymentAccount):
@@ -124,4 +128,5 @@ class PaymentAccountSearchModel:  # pylint: disable=too-few-public-methods
 
         https://www.attrs.org/en/stable/init.html
         """
-        return cls(account_name=row.name, billable=row.billable, account_id=row.auth_account_id)
+        return cls(account_name=row.name, billable=row.billable, account_id=row.auth_account_id,
+                   branch_name=row.branch_name)

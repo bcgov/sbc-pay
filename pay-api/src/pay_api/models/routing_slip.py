@@ -109,6 +109,10 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
                            primaryjoin=f'and_(RoutingSlip.id == Refund.routing_slip_id,'
                                        f'RoutingSlip.status.in_('
                                        f'[f"{RoutingSlipStatus.REFUND_REQUESTED.value}",'
+                                       f'f"{RoutingSlipStatus.ACTIVE.value}",'
+                                       f'f"{RoutingSlipStatus.REFUND_AUTHORIZED.value}",'
+                                       f'f"{RoutingSlipStatus.REFUND_COMPLETED.value}",'
+                                       f'f"{RoutingSlipStatus.REFUND_REJECTED.value}",'
                                        f'f"{RoutingSlipStatus.REFUND_AUTHORIZED.value}"]))',
                            lazy='joined')
 
@@ -287,10 +291,11 @@ class RoutingSlipSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-an
         """Returns all the fields from the SQLAlchemy class."""
 
         model = RoutingSlip
-        exclude = ['parent', 'refund_amount']
+        exclude = ['parent']
 
     total = fields.Float(data_key='total')
     remaining_amount = fields.Float(data_key='remaining_amount')
+    refund_amount = fields.Float(data_key='refund_amount')
     # pylint: disable=no-member
     payments = ma.Nested(PaymentSchema, many=True, data_key='payments')
     payment_account = ma.Nested(PaymentAccountSchema, many=False, data_key='payment_account')

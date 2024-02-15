@@ -45,6 +45,7 @@ from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
 from pay_api.services.cfs_service import CFSService
+from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.services.queue_publisher import publish
 from pay_api.utils.enums import (
@@ -441,23 +442,22 @@ def _process_partial_paid_invoices(inv_ref: InvoiceReferenceModel, row):
 
 def _process_failed_payments(row):
     """Handle failed payments."""
-    # 1. Set the cfs_account status as FREEZE.
-    # 2. Call cfs api to Stop further PAD on this account.
-    # 3. Reverse the invoice_reference status to ACTIVE, invoice status to SETTLEMENT_SCHED, and delete receipt.
-    # 4. Create an NSF invoice for this account.
-    # 5. Create invoice reference for the newly created NSF invoice.
-    # 6. Adjust invoice in CFS to include NSF fees.
+    # 1. Check if there is an NSF record for this account, if there isn't, proceed.
+    # 2. SET cfs_account status to FREEZE.
+    # 3. Call CFS API to stop further PAD on this account.
+    # 4. Reverse the invoice_reference status to ACTIVE, invoice status to SETTLEMENT_SCHED, and delete receipt.
+    # 5. Create an NSF invoice for this account.
+    # 6. Create invoice reference for the newly created NSF invoice.
+    # 7. Adjust invoice in CFS to include NSF fees.
     inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
-    # If there is a FAILED payment record for this; it means it's a duplicate event. Ignore it.
-    payment: PaymentModel = PaymentModel.find_payment_by_invoice_number_and_status(
-        inv_number, PaymentStatus.FAILED.value
-    )
-    if payment:
-        logger.info('Ignoring duplicate NSF message for invoice : %s ', inv_number)
+    payment_account: PaymentAccountModel = _get_payment_account(row)
+
+    # If there is an NSF row, it means it's a duplicate NSF event. Ignore it.
+    if NonSufficientFundsService.exists_for_invoice_number(inv_number):
+        logger.info('Ignoring duplicate NSF event for account: %s ', payment_account.auth_account_id)
         return False
 
     # Set CFS Account Status.
-    payment_account: PaymentAccountModel = _get_payment_account(row)
     cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
     is_already_frozen = cfs_account.status == CfsAccountStatus.FREEZE.value
     logger.info('setting payment account id : %s status as FREEZE', payment_account.id)
@@ -488,7 +488,8 @@ def _process_failed_payments(row):
         invoice.paid = 0
 
     # Create an invoice for NSF for this account
-    invoice = _create_nsf_invoice(cfs_account, inv_number, payment_account)
+    reason_description = _get_row_value(row, Column.REVERSAL_REASON_DESC)
+    invoice = _create_nsf_invoice(cfs_account, inv_number, payment_account, reason_description)
     # Adjust CFS invoice
     CFSService.add_nsf_adjustment(cfs_account=cfs_account, inv_number=inv_number, amount=invoice.total)
     return True
@@ -716,7 +717,7 @@ def _get_row_value(row: Dict[str, str], key: Column) -> str:
 
 
 def _create_nsf_invoice(cfs_account: CfsAccountModel, inv_number: str,
-                        payment_account: PaymentAccountModel) -> InvoiceModel:
+                        payment_account: PaymentAccountModel, reason_description: str) -> InvoiceModel:
     """Create Invoice, line item and invoice referwnce records."""
     fee_schedule: FeeScheduleModel = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type_code='BCR',
                                                                                         filing_type_code='NSF')
@@ -734,6 +735,12 @@ def _create_nsf_invoice(cfs_account: CfsAccountModel, inv_number: str,
         created_by='SYSTEM'
     )
     invoice = invoice.save()
+
+    NonSufficientFundsService.save_non_sufficient_funds(invoice_id=invoice.id,
+                                                        invoice_number=inv_number,
+                                                        cfs_account=cfs_account.cfs_account,
+                                                        description=reason_description)
+
     distribution: DistributionCodeModel = DistributionCodeModel.find_by_active_for_fee_schedule(
         fee_schedule.fee_schedule_id)
 
