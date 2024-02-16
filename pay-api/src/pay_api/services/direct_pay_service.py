@@ -57,6 +57,7 @@ class RefundLineRequest():
 
     revenue_account: str
     refund_amount: Decimal
+    is_service_fee: bool
 
 
 @define
@@ -295,16 +296,20 @@ class DirectPayService(PaymentSystemService, OAuthService):
             raise BusinessException(Error.INVALID_REQUEST)
 
         lines = []
-        for distribution_line in refund_lines:
-            if distribution_line.refund_amount == 0:
+        for line in refund_lines:
+            if line.refund_amount == 0:
                 continue
+            # It's possible to have two payment lines with the same distribution code unfortunately.
+            # If Service fee, match amount that has $1.50 or less
             revenue_match = next((r for r in paybc_invoice.revenue
-                                  if r.revenueaccount == distribution_line.revenue_account), None)
+                                  if r.revenueaccount == line.revenue_account and
+                                  (line.is_service_fee and r.revenueamount <= 1.5 or line.is_service_fee is False)
+                                  ), None)
             if revenue_match is None:
                 current_app.logger.error('Matching distribution code to revenue account not found.')
                 raise BusinessException(Error.INVALID_REQUEST)
-            DirectPayService._validate_refund_amount(distribution_line.refund_amount, revenue_match.revenueamount)
-            lines.append({'lineNumber': revenue_match.linenumber, 'refundAmount': distribution_line.refund_amount})
+            DirectPayService._validate_refund_amount(line.refund_amount, revenue_match.revenueamount)
+            lines.append({'lineNumber': revenue_match.linenumber, 'refundAmount': line.refund_amount})
         return lines
 
     @staticmethod
@@ -313,24 +318,22 @@ class DirectPayService(PaymentSystemService, OAuthService):
         total = Decimal('0')
         refund_lines = []
         for refund_line in refund_partial:
-            revenue_account = None
             pli = PaymentLineItemModel.find_by_id(refund_line.payment_line_item_id)
             if not pli or refund_line.refund_amount < 0:
                 raise BusinessException(Error.INVALID_REQUEST)
+            is_service_fee = refund_line.refund_type == RefundsPartialType.SERVICE_FEE.value
             fee_distribution = DistributionCodeModel.find_by_id(pli.fee_distribution_id)
-            if refund_line.refund_type == RefundsPartialType.OTHER_FEES.value:
-                DirectPayService._validate_refund_amount(refund_line.refund_amount, pli.total)
-                revenue_account = DirectPayService._get_gl_coding(fee_distribution,
-                                                                  refund_line.refund_amount,
-                                                                  exclude_total=True)
-            elif refund_line.refund_type == RefundsPartialType.SERVICE_FEE.value:
+            if is_service_fee:
                 DirectPayService._validate_refund_amount(refund_line.refund_amount, pli.service_fees)
                 service_fee_dist_id = fee_distribution.service_fee_distribution_code_id
-                service_fee_distribution = DistributionCodeModel.find_by_id(service_fee_dist_id)
-                revenue_account = DirectPayService._get_gl_coding(service_fee_distribution,
-                                                                  refund_line.refund_amount,
-                                                                  exclude_total=True)
-            refund_lines.append(RefundLineRequest(revenue_account, refund_line.refund_amount))
+                fee_distribution = DistributionCodeModel.find_by_id(service_fee_dist_id)
+            else:
+                DirectPayService._validate_refund_amount(refund_line.refund_amount, pli.total)
+            revenue_account = DirectPayService._get_gl_coding(fee_distribution,
+                                                              refund_line.refund_amount,
+                                                              exclude_total=True)
+            refund_lines.append(RefundLineRequest(revenue_account, refund_line.refund_amount,
+                                                  is_service_fee))
             total += refund_line.refund_amount
         return refund_lines, total
 
