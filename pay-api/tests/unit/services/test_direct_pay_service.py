@@ -15,6 +15,7 @@
 """Tests to assure the Direct Payment Service."""
 
 from datetime import datetime
+from decimal import Decimal
 from unittest.mock import patch
 import urllib.parse
 import pytest
@@ -26,10 +27,12 @@ from requests.exceptions import HTTPError
 from pay_api.exceptions import BusinessException
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import FeeSchedule
-from pay_api.services.direct_pay_service import DECIMAL_PRECISION, PAYBC_DATE_FORMAT, DirectPayService
+from pay_api.models.refunds_partial import RefundPartialLine
+from pay_api.services.direct_pay_service import DECIMAL_PRECISION, PAYBC_DATE_FORMAT, DirectPayService, OrderStatus
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.hashing import HashingService
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus
+from pay_api.utils.converter import Converter
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, RefundsPartialType
 from pay_api.utils.errors import Error
 from pay_api.utils.util import current_local_time, generate_transaction_number
 from tests.utilities.base_test import (
@@ -192,7 +195,7 @@ def test_process_cfs_refund_success(monkeypatch):
 
     direct_pay_service = DirectPayService()
 
-    direct_pay_service.process_cfs_refund(invoice, payment_account)
+    direct_pay_service.process_cfs_refund(invoice, payment_account, None)
     assert True
 
 
@@ -208,7 +211,7 @@ def test_process_cfs_refund_bad_request():
     invoice.save()
     direct_pay_service = DirectPayService()
     with pytest.raises(BusinessException) as excinfo:
-        direct_pay_service.process_cfs_refund(invoice, payment_account)
+        direct_pay_service.process_cfs_refund(invoice, payment_account, None)
         assert excinfo.value.code == Error.INVALID_REQUEST.name
 
 
@@ -241,7 +244,7 @@ def test_process_cfs_refund_duplicate_refund(monkeypatch):
             ]
         }
         with pytest.raises(HTTPError) as excinfo:
-            direct_pay_service.process_cfs_refund(invoice, payment_account)
+            direct_pay_service.process_cfs_refund(invoice, payment_account, None)
             assert invoice.invoice_status_code == InvoiceStatus.PAID.value
 
     with patch('pay_api.services.oauth_service.requests.post') as mock_post:
@@ -257,5 +260,169 @@ def test_process_cfs_refund_duplicate_refund(monkeypatch):
             'txnNumber': 'REGT00005433'
         }
         with pytest.raises(BusinessException) as excinfo:
-            direct_pay_service.process_cfs_refund(invoice, payment_account)
+            direct_pay_service.process_cfs_refund(invoice, payment_account, None)
             assert excinfo.value.code == Error.DIRECT_PAY_INVALID_RESPONSE.name
+
+
+def test_invoice_status_deserialization():
+    """Assert our converter is working for OrderStatus."""
+    paybc_response = {
+        'revenue': [
+            {
+                'linenumber': '1',
+                'revenueaccount': '112.32363.34725.4375.3200062.000000.0000',
+                'revenueamount': '130',
+                'glstatus': 'CMPLT',
+                'glerrormessage': None,
+                'refund_data': []
+            },
+            {
+                'linenumber': '2',
+                'revenueaccount': '112.32363.34725.4375.3200054.000000.0000',
+                'revenueamount': '1.5',
+                'glstatus': 'CMPLT',
+                'glerrormessage': None,
+                'refund_data': [],
+                'not_part_of_spec': 'heyey'
+            }
+        ],
+        'postedrefundamount': None,
+        'refundedamount': None
+    }
+    paybc_order_status = Converter().structure(paybc_response, OrderStatus)
+    assert paybc_order_status
+
+
+def _automated_refund_preparation():
+    """Help automated_refund tests below."""
+    payment_account = factory_payment_account()
+    invoice = factory_invoice(payment_account, total=30, service_fees=1.5)
+    invoice.invoice_status_code = InvoiceStatus.PAID.value
+    invoice.payment_date = datetime.now()
+    invoice.save()
+    payment_line_item = factory_payment_line_item(invoice.id, fee_schedule_id=1, service_fees=1.5, total=30)
+    payment_line_item.save()
+    receipt = factory_receipt(invoice.id, invoice.id, receipt_amount=invoice.total).save()
+    receipt.save()
+    invoice_reference = factory_invoice_reference(invoice.id, invoice.id)
+    invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value
+    invoice_reference.save()
+    return invoice, payment_line_item
+
+
+@pytest.mark.parametrize('test_name, refund_partial', [
+    ('pay_pli_not_exist', [
+        RefundPartialLine(payment_line_item_id=1,
+                          refund_amount=1,
+                          refund_type=RefundsPartialType.OTHER_FEES.value)
+    ]),
+    ('pay_negative_refund_amount', [
+        RefundPartialLine(payment_line_item_id=1,
+                          refund_amount=-1,
+                          refund_type=RefundsPartialType.OTHER_FEES.value)]),
+    ('pay_service_fee_too_high', [
+        RefundPartialLine(payment_line_item_id=1,
+                          refund_amount=3,
+                          refund_type=RefundsPartialType.SERVICE_FEE.value)]),
+])
+def test_build_automated_refund_payload_validation(test_name, refund_partial):
+    """Assert validations are working correctly for building refund payload."""
+    invoice, payment_line_item = _automated_refund_preparation()
+    if test_name == 'pay_pli_not_exist':
+        refund_partial[0].payment_line_item_id = 999999999
+    else:
+        refund_partial[0].payment_line_item_id = payment_line_item.id
+    direct_pay_service = DirectPayService()
+    with pytest.raises(BusinessException) as excinfo:
+        direct_pay_service.build_automated_refund_payload(invoice, refund_partial)
+        assert excinfo.value.code == Error.INVALID_REQUEST.name
+
+
+@pytest.mark.parametrize('test_name, has_exception', [
+    ('success', False),
+    ('paybc_non_match', True),
+    ('paybc_amount_too_high', True),
+    ('paybc_already_refunded', True),
+])
+def test_build_automated_refund_payload_paybc_validation(test_name, has_exception):
+    """Assert refund payload building works correctly with various PAYBC responses."""
+    invoice, payment_line_item = _automated_refund_preparation()
+    refund_partial = [
+        RefundPartialLine(payment_line_item_id=payment_line_item.id,
+                          refund_amount=Decimal('3.1'),
+                          refund_type=RefundsPartialType.OTHER_FEES.value)
+    ]
+    direct_pay_service = DirectPayService()
+    base_paybc_response = {
+        'pbcrefnumber': '10007',
+        'trnnumber': '1',
+        'trndate': '2023-03-06',
+        'description': 'Direct_Sale',
+        'trnamount': '31.5',
+        'paymentmethod': 'CC',
+        'currency': 'CAD',
+        'gldate': '2023-03-06',
+        'paymentstatus': 'CMPLT',
+        'trnorderid': '23525252',
+        'paymentauthcode': 'TEST',
+        'cardtype': 'VI',
+        'revenue': [
+            {
+                'linenumber': '1',
+                'revenueaccount': 'None.None.None.None.None.000000.0000',
+                'revenueamount': '30',
+                'glstatus': 'CMPLT',
+                'glerrormessage': None,
+                'refund_data': [
+                    {
+                        'txn_refund_distribution_id': 103570,
+                        'revenue_amount': 30,
+                        'refund_date': '2023-04-15T20:13:36Z',
+                        'refundglstatus': 'CMPLT',
+                        'refundglerrormessage': None
+                    }
+                ]
+            },
+            {
+                'linenumber': '2',
+                'revenueaccount': 'None.None.None.None.None.000000.0001',
+                'revenueamount': '1.5',
+                'glstatus': 'CMPLT',
+                'glerrormessage': None,
+                'refund_data': [
+                    {
+                        'txn_refund_distribution_id': 103182,
+                        'revenue_amount': 1.5,
+                        'refund_date': '2023-04-15T20:13:36Z',
+                        'refundglstatus': 'CMPLT',
+                        'refundglerrormessage': None
+                    }
+                ]
+            }
+        ],
+        'postedrefundamount': None,
+        'refundedamount': None
+    }
+    with patch('pay_api.services.direct_pay_service.DirectPayService.get') as mock_get:
+        mock_get.return_value.ok = True
+        mock_get.return_value.status_code = 200
+        if test_name == 'paybc_non_match':
+            base_paybc_response['revenue'][0]['revenueaccount'] = '911'
+            base_paybc_response['revenue'][1]['revenueaccount'] = '911'
+        elif test_name == 'paybc_amount_too_high':
+            base_paybc_response['revenue'][0]['revenueamount'] = '0.5'
+            base_paybc_response['revenue'][1]['revenueamount'] = '0.5'
+        elif test_name == 'paybc_already_refunded':
+            base_paybc_response['refundedamount'] = 31.50
+            base_paybc_response['postedrefundamount'] = 31.50
+        mock_get.return_value.json.return_value = base_paybc_response
+        if has_exception:
+            with pytest.raises(BusinessException) as excinfo:
+                direct_pay_service.build_automated_refund_payload(invoice, refund_partial)
+                assert excinfo.value.code == Error.INVALID_REQUEST.name
+        else:
+            payload = direct_pay_service.build_automated_refund_payload(invoice, refund_partial)
+            assert payload
+            assert payload['txnAmount'] == refund_partial[0].refund_amount
+            assert payload['refundRevenue'][0]['lineNumber'] == '1'
+            assert payload['refundRevenue'][0]['refundAmount'] == refund_partial[0].refund_amount

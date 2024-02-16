@@ -273,8 +273,9 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         )
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
         refund_partial_lines = cls._get_partial_refund_lines(request.get('refundRevenue', None))
-        invoice_status = pay_system_service.process_cfs_refund(invoice=invoice,
-                                                               payment_account=payment_account)
+        invoice_status = pay_system_service.process_cfs_refund(invoice,
+                                                               payment_account=payment_account,
+                                                               refund_partial=refund_partial_lines)
         refund.flush()
         cls._save_partial_refund_lines(refund_partial_lines)
         message = REFUND_SUCCESS_MESSAGES.get(f'{invoice.payment_method_code}.{invoice.invoice_status_code}')

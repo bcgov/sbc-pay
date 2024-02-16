@@ -3,7 +3,6 @@ import re
 from datetime import datetime
 from decimal import Decimal
 from typing import Any, Dict, Type
-
 import cattrs
 from attrs import fields, has
 from cattrs.gen import make_dict_structure_fn, make_dict_unstructure_fn, override
@@ -56,6 +55,10 @@ class Converter(cattrs.Converter):
                 for a in fields(cls)
             }
         )
+
+    @staticmethod
+    def _structure_decimal(obj: Any, cls: Type) -> Decimal:
+        return cls(str(obj))
 
     @staticmethod
     def _unstructure_decimal(obj: Decimal) -> float:

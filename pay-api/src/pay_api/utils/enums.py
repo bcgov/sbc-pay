@@ -344,3 +344,12 @@ class MessageType(Enum):
     PAD_ACCOUNT_CREATE = 'bc.registry.payment.padAccountCreate'
     NSF_LOCK_ACCOUNT = 'bc.registry.payment.lockAccount'
     NSF_UNLOCK_ACCOUNT = 'bc.registry.payment.unlockAccount'
+
+
+class PaymentDetailsGlStatus(Enum):
+    """Payment details GL status."""
+
+    PAID = 'PAID'
+    INPRG = 'INPRG'
+    RJCT = 'RJCT'  # Should have refundglerrormessage
+    CMPLT = 'CMPLT'

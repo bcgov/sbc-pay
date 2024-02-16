@@ -120,12 +120,24 @@
                           glstatus: PAID
                           glerrormessage: null
                           refundglstatus: PAID
+                          refund_data: 
+                            - revenue_amount: 30
+                              refund_date: '2023-04-15T20:13:36Z'
+                              refundglstatus: 'CMPLT'
+                              refundglerrormessage: null
                         - linenumber: '2'
                           revenueaccount: 112.32562.20245.4378.3212319.000000.0000
                           revenueamount: '30'
                           glstatus: PAID
                           glerrormessage: null
                           refundglstatus: PAID
+                          refund_data:
+                            - revenue_amount: 1.5
+                              refund_date: '2023-04-15T20:13:36Z'
+                              refundglstatus: 'CMPLT'
+                              refundglerrormessage: null
+                      postedrefundamount: 31.50
+                      refundedamount: null
           '400':
             description: BadRequest
             content:
