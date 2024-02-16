@@ -391,6 +391,6 @@ def test_internal_rs_back_active(session, public_user_mock):
     invoice = Invoice.find_by_id(invoice['id'])
     payment_account = PaymentAccountService()
     payment_account._dao = account_model  # pylint: disable=protected-access
-    InternalPayService().process_cfs_refund(invoice, payment_account)
+    InternalPayService().process_cfs_refund(invoice, payment_account, None)
 
     assert rs.status == RoutingSlipStatus.ACTIVE.name

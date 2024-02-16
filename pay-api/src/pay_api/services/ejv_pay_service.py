@@ -16,9 +16,11 @@
 There are conditions where the payment will be handled for government accounts.
 """
 
+from typing import List
 from flask import current_app
 
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
@@ -44,7 +46,7 @@ class EjvPayService(PaymentSystemService, OAuthService):
         """Return CREATED as the default invoice status."""
         return InvoiceStatus.APPROVED.value
 
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
+    def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number."""
         invoice_reference: InvoiceReference = None
@@ -66,7 +68,8 @@ class EjvPayService(PaymentSystemService, OAuthService):
         self._release_payment(invoice=invoice)
 
     def process_cfs_refund(self, invoice: InvoiceModel,
-                           payment_account: PaymentAccount) -> str:  # pylint:disable=unused-argument
+                           payment_account: PaymentAccount,
+                           refund_partial: List[RefundPartialLine]) -> str:  # pylint:disable=unused-argument
         """Do nothing to process refund; as the refund is handled by CRON job.
 
         Return the status after checking invoice status.

@@ -11,12 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Model to handle all operations related to Payment Line Item."""
+"""Model to handle all operations related to Payment Line Item partial refunds."""
 
+from decimal import Decimal
+from attrs import define
 from sqlalchemy import ForeignKey
 from .audit import Audit
 from .base_model import VersionedModel
 from .db import db
+from ..utils.enums import RefundsPartialType
 
 
 class RefundsPartial(Audit, VersionedModel):  # pylint: disable=too-many-instance-attributes
@@ -46,3 +49,22 @@ class RefundsPartial(Audit, VersionedModel):  # pylint: disable=too-many-instanc
     payment_line_item_id = db.Column(db.Integer, ForeignKey('payment_line_items.id'), nullable=False, index=True)
     refund_amount = db.Column(db.Numeric(19, 2), nullable=False)
     refund_type = db.Column(db.String(50), nullable=True)
+
+
+@define
+class RefundPartialLine:
+    """Used to feed for partial refunds."""
+
+    payment_line_item_id: int
+    refund_amount: Decimal
+    refund_type: RefundsPartialType
+
+    @classmethod
+    def from_row(cls, row: RefundsPartial):
+        """From row is used so we don't tightly couple to our database class.
+
+        https://www.attrs.org/en/stable/init.html
+        """
+        return cls(payment_line_item_id=row.payment_line_item_id,
+                   refund_amount=row.refund_amount,
+                   refund_type=row.refund_type)

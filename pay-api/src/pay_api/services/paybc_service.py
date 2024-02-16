@@ -23,6 +23,7 @@ from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import RefundPartialLine
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
@@ -69,7 +70,7 @@ class PaybcService(PaymentSystemService, CFSService):
         return cfs_account
 
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
-                       line_items: [PaymentLineItem], invoice: Invoice, **kwargs) -> InvoiceReference:
+                       line_items: List[PaymentLineItem], invoice: Invoice, **kwargs) -> InvoiceReference:
         """Create Invoice in PayBC."""
         # Build line item model array, as that's needed for CFS Service
         line_item_models: List[PaymentLineItemModel] = []
@@ -86,7 +87,7 @@ class PaybcService(PaymentSystemService, CFSService):
 
     def update_invoice(self,  # pylint: disable=too-many-arguments
                        payment_account: PaymentAccount,
-                       line_items: [PaymentLineItem],
+                       line_items: List[PaymentLineItem],
                        invoice_id: int,
                        paybc_inv_number: str,
                        reference_count: int = 0,
@@ -146,7 +147,8 @@ class PaybcService(PaymentSystemService, CFSService):
         return self.get(receipt_url, access_token, AuthHeaderType.BEARER, ContentType.JSON, True).json()
 
     def process_cfs_refund(self, invoice: InvoiceModel,
-                           payment_account: PaymentAccount):  # pylint:disable=unused-argument
+                           payment_account: PaymentAccount,
+                           refund_partial: List[RefundPartialLine]):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         return super()._refund_and_create_credit_memo(invoice)
 

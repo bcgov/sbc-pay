@@ -12,13 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage CFS Pre Authorized Debit Payments."""
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
@@ -99,7 +100,7 @@ class PadService(PaymentSystemService, CFSService):
 
     @user_context
     @skip_invoice_for_sandbox
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
+    def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:  # pylint: disable=unused-argument
         """Return a static invoice number for direct pay."""
         if payment_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
@@ -124,7 +125,8 @@ class PadService(PaymentSystemService, CFSService):
         self._release_payment(invoice=invoice)
 
     def process_cfs_refund(self, invoice: InvoiceModel,
-                           payment_account: PaymentAccount):  # pylint:disable=unused-argument
+                           payment_account: PaymentAccount,
+                           refund_partial: List[RefundPartialLine]):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         # Move invoice to CREDITED or CANCELLED. There are no refunds for PAD, just cancellation or credit.
         # Credit memos don't return to the bank account.
