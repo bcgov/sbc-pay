@@ -65,10 +65,6 @@ class Converter(cattrs.Converter):
         return float(obj or 0)
 
     @staticmethod
-    def _structure_decimal(obj: Any, cls: Type) -> Decimal:
-        return cls(str(obj))
-
-    @staticmethod
     def _unstructure_datetime(obj: datetime) -> str:
         return obj.isoformat() if obj else None
 
