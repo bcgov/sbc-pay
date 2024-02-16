@@ -28,6 +28,7 @@ from pay_api.models import Refund as RefundModel
 from pay_api.models import RefundPartialLine
 from pay_api.models import RefundsPartial as RefundPartialModel
 from pay_api.services.direct_pay_service import DirectPayService
+from pay_api.services.refund import RefundService
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.enums import InvoiceStatus, RefundsPartialType, Role
 from pay_api.utils.errors import Error
@@ -93,7 +94,7 @@ def test_create_refund(session, client, jwt, app, stan_server, monkeypatch):
     assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['DIRECT_PAY.PAID']
     assert RefundModel.find_by_invoice_id(inv_id) is not None
 
-    refunds_partial: List[RefundPartialModel] = RefundPartialModel.find_by_invoice_id(inv_id)
+    refunds_partial: List[RefundPartialModel] = RefundService.get_refund_partials_by_invoice_id(inv_id)
     assert refunds_partial
     assert len(refunds_partial) == 1
 
@@ -145,7 +146,7 @@ def test_create_refund_fails(session, client, jwt, app, stan_server, monkeypatch
     assert rv.json.get('type') == Error.INVALID_REQUEST.name
     assert RefundModel.find_by_invoice_id(inv_id) is None
 
-    refunds_partial: List[RefundPartialModel] = RefundPartialModel.find_by_invoice_id(inv_id)
+    refunds_partial: List[RefundPartialModel] = RefundService.get_refund_partials_by_invoice_id(inv_id)
     assert not refunds_partial
     assert len(refunds_partial) == 0
 

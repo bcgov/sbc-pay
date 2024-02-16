@@ -17,7 +17,6 @@ from decimal import Decimal
 from attrs import define
 from sqlalchemy import ForeignKey
 
-from .payment_line_item import PaymentLineItem
 from .audit import Audit
 from .base_model import VersionedModel
 from .db import db
@@ -51,19 +50,6 @@ class RefundsPartial(Audit, VersionedModel):  # pylint: disable=too-many-instanc
     payment_line_item_id = db.Column(db.Integer, ForeignKey('payment_line_items.id'), nullable=False, index=True)
     refund_amount = db.Column(db.Numeric(19, 2), nullable=False)
     refund_type = db.Column(db.String(50), nullable=True)
-
-    @classmethod
-    def find_by_invoice_id(cls, invoice_id: int):
-        """Return refund partials by invoice id."""
-        return db.session.query(RefundsPartial)\
-            .join(PaymentLineItem, PaymentLineItem.id == RefundsPartial.payment_line_item_id)\
-            .filter(PaymentLineItem.invoice_id == invoice_id).all()
-
-    @classmethod
-    def find_by_payment_line_item_id(cls, payment_line_item_id: int):
-        """Return refund partials by payment line item id."""
-        return db.session.query(RefundsPartial) \
-            .filter(PaymentLineItem.id == payment_line_item_id).all()
 
 
 @define

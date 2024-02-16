@@ -23,6 +23,7 @@ from flask import current_app
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RefundsPartial as RefundPartialModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
@@ -305,3 +306,16 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
 
         return Converter(camel_to_snake_case=True,
                          enum_to_value=True).structure(refund_revenue, List[RefundPartialLine])
+
+    @staticmethod
+    def get_refund_partials_by_invoice_id(invoice_id: int):
+        """Return refund partials by invoice id."""
+        return db.session.query(RefundPartialModel) \
+            .join(PaymentLineItemModel, PaymentLineItemModel.id == RefundPartialModel.payment_line_item_id) \
+            .filter(PaymentLineItemModel.invoice_id == invoice_id).all()
+
+    @staticmethod
+    def get_refund_partials_by_payment_line_item_id(payment_line_item_id: int):
+        """Return refund partials by payment line item id."""
+        return db.session.query(RefundPartialModel) \
+            .filter(PaymentLineItemModel.id == payment_line_item_id).all()
