@@ -13,6 +13,24 @@
       "examples": [
         "Duplicate Invoice"
       ]
+    },
+    "refundRevenue": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "paymentLineItemId": {
+            "type": "integer"
+          },
+          "refundAmount": {
+            "type": "number"
+          },
+          "refundType": {
+            "type": "string"
+          }
+        },
+        "required": ["paymentLineItemId", "refundAmount", "refundType"]
+      }
     }
   }
 }

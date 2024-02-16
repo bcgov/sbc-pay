@@ -16,6 +16,7 @@
 from decimal import Decimal
 from attrs import define
 from sqlalchemy import ForeignKey
+
 from .audit import Audit
 from .base_model import VersionedModel
 from .db import db

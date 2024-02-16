@@ -16,18 +16,23 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from flask import current_app
 
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Refund as RefundModel
+from pay_api.models import RefundsPartial as RefundPartialModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
+from pay_api.models import db
+from pay_api.models import RefundPartialLine
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
+from pay_api.utils.converter import Converter
 from pay_api.utils.enums import InvoiceStatus, Role, RoutingSlipStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
@@ -268,10 +273,12 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             payment_method=invoice.payment_method_code
         )
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
+        refund_partial_lines = cls._get_partial_refund_lines(request.get('refundRevenue', None))
         invoice_status = pay_system_service.process_cfs_refund(invoice,
                                                                payment_account=payment_account,
-                                                               refund_partial=None)  # TODO 19760
+                                                               refund_partial=refund_partial_lines)
         refund.flush()
+        cls._save_partial_refund_lines(refund_partial_lines)
         message = REFUND_SUCCESS_MESSAGES.get(f'{invoice.payment_method_code}.{invoice.invoice_status_code}')
         # set invoice status
         invoice.invoice_status_code = invoice_status or InvoiceStatus.REFUND_REQUESTED.value
@@ -279,3 +286,36 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         invoice.save()
         current_app.logger.debug(f'Completed refund : {invoice_id}')
         return {'message': message}
+
+    @staticmethod
+    def _save_partial_refund_lines(partial_refund_lines: List[RefundPartialLine]):
+        """Persist a list of partial refund lines."""
+        for line in partial_refund_lines:
+            refund_line = RefundPartialModel(
+                payment_line_item_id=line.payment_line_item_id,
+                refund_amount=line.refund_amount,
+                refund_type=line.refund_type
+            )
+            db.session.add(refund_line)
+
+    @staticmethod
+    def _get_partial_refund_lines(refund_revenue: List[Dict]) -> List[RefundPartialLine]:
+        """Convert Refund revenue data to a list of Partial Refund lines."""
+        if not refund_revenue:
+            return []
+
+        return Converter(camel_to_snake_case=True,
+                         enum_to_value=True).structure(refund_revenue, List[RefundPartialLine])
+
+    @staticmethod
+    def get_refund_partials_by_invoice_id(invoice_id: int):
+        """Return refund partials by invoice id."""
+        return db.session.query(RefundPartialModel) \
+            .join(PaymentLineItemModel, PaymentLineItemModel.id == RefundPartialModel.payment_line_item_id) \
+            .filter(PaymentLineItemModel.invoice_id == invoice_id).all()
+
+    @staticmethod
+    def get_refund_partials_by_payment_line_item_id(payment_line_item_id: int):
+        """Return refund partials by payment line item id."""
+        return db.session.query(RefundPartialModel) \
+            .filter(PaymentLineItemModel.id == payment_line_item_id).all()
