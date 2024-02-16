@@ -18,11 +18,16 @@ Test-Suite to ensure that the refunds endpoint for partials is working as expect
 """
 import json
 from typing import List
+from unittest.mock import patch
+
+from _decimal import Decimal
 
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Refund as RefundModel
+from pay_api.models import RefundPartialLine
 from pay_api.models import RefundsPartial as RefundPartialModel
+from pay_api.services.direct_pay_service import DirectPayService
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.enums import InvoiceStatus, RefundsPartialType, Role
 from pay_api.utils.errors import Error
@@ -38,6 +43,8 @@ def test_create_refund(session, client, jwt, app, stan_server, monkeypatch):
                      headers=headers)
     inv_id = rv.json.get('id')
     invoice: InvoiceModel = InvoiceModel.find_by_id(inv_id)
+    invoice.invoice_status_code = InvoiceStatus.PAID.value
+    invoice.save()
 
     data = {
         'clientSystemUrl': 'http://localhost:8080/coops-web/transactions/transaction_id=abcd',
@@ -60,11 +67,28 @@ def test_create_refund(session, client, jwt, app, stan_server, monkeypatch):
                        'refundType': RefundsPartialType.OTHER_FEES.value}
                       ]
 
-    rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds',
-                     data=json.dumps({'reason': 'Test',
-                                      'refundRevenue': refund_revenue
-                                      }),
-                     headers=headers)
+    direct_pay_service = DirectPayService()
+    base_paybc_response = _get_base_paybc_response()
+    refund_partial = [
+        RefundPartialLine(payment_line_item_id=payment_line_items[0].id,
+                          refund_amount=Decimal(refund_amount),
+                          refund_type=RefundsPartialType.OTHER_FEES.value)
+    ]
+    with patch('pay_api.services.direct_pay_service.DirectPayService.get') as mock_get:
+        mock_get.return_value.ok = True
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.json.return_value = base_paybc_response
+        payload = direct_pay_service.build_automated_refund_payload(invoice, refund_partial)
+        assert payload
+        assert payload['txnAmount'] == refund_partial[0].refund_amount
+        assert payload['refundRevenue'][0]['lineNumber'] == '1'
+        assert payload['refundRevenue'][0]['refundAmount'] == refund_partial[0].refund_amount
+
+        rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds',
+                         data=json.dumps({'reason': 'Test',
+                                          'refundRevenue': refund_revenue
+                                          }),
+                         headers=headers)
     assert rv.status_code == 202
     assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['DIRECT_PAY.PAID']
     assert RefundModel.find_by_invoice_id(inv_id) is not None
@@ -124,3 +148,56 @@ def test_create_refund_fails(session, client, jwt, app, stan_server, monkeypatch
     refunds_partial: List[RefundPartialModel] = RefundPartialModel.find_by_invoice_id(inv_id)
     assert not refunds_partial
     assert len(refunds_partial) == 0
+
+
+def _get_base_paybc_response():
+    return {
+        'pbcrefnumber': '10007',
+        'trnnumber': '1',
+        'trndate': '2023-03-06',
+        'description': 'Direct_Sale',
+        'trnamount': '31.5',
+        'paymentmethod': 'CC',
+        'currency': 'CAD',
+        'gldate': '2023-03-06',
+        'paymentstatus': 'CMPLT',
+        'trnorderid': '23525252',
+        'paymentauthcode': 'TEST',
+        'cardtype': 'VI',
+        'revenue': [
+            {
+                'linenumber': '1',
+                'revenueaccount': 'None.None.None.None.None.000000.0000',
+                'revenueamount': '30',
+                'glstatus': 'CMPLT',
+                'glerrormessage': None,
+                'refund_data': [
+                    {
+                        'txn_refund_distribution_id': 103570,
+                        'revenue_amount': 30,
+                        'refund_date': '2023-04-15T20:13:36Z',
+                        'refundglstatus': 'CMPLT',
+                        'refundglerrormessage': None
+                    }
+                ]
+            },
+            {
+                'linenumber': '2',
+                'revenueaccount': 'None.None.None.None.None.000000.0001',
+                'revenueamount': '1.5',
+                'glstatus': 'CMPLT',
+                'glerrormessage': None,
+                'refund_data': [
+                    {
+                        'txn_refund_distribution_id': 103182,
+                        'revenue_amount': 1.5,
+                        'refund_date': '2023-04-15T20:13:36Z',
+                        'refundglstatus': 'CMPLT',
+                        'refundglerrormessage': None
+                    }
+                ]
+            }
+        ],
+        'postedrefundamount': None,
+        'refundedamount': None
+    }

@@ -293,7 +293,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             refund_line = RefundPartialModel(
                 payment_line_item_id=line.payment_line_item_id,
                 refund_amount=line.refund_amount,
-                refund_type=line.refund_type.value
+                refund_type=line.refund_type
             )
             db.session.add(refund_line)
 
@@ -303,4 +303,5 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         if not refund_revenue:
             return []
 
-        return Converter(camel_to_snake_case=True).structure(refund_revenue, List[RefundPartialLine])
+        return Converter(camel_to_snake_case=True,
+                         enum_to_value=True).structure(refund_revenue, List[RefundPartialLine])
