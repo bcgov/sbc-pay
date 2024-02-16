@@ -14,7 +14,7 @@
 """Service to manage PayBC interaction."""
 
 from datetime import datetime
-from typing import Dict
+from typing import Dict, List
 
 from flask import current_app
 from requests.exceptions import HTTPError
@@ -23,6 +23,7 @@ from pay_api.exceptions import BusinessException, Error
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models.corp_type import CorpType
+from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentStatus
 from pay_api.utils.enums import PaymentSystem as PaySystemCode
 from pay_api.utils.errors import get_bcol_error
@@ -47,7 +48,7 @@ class BcolService(PaymentSystemService, OAuthService):
     @user_context
     @skip_invoice_for_sandbox
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
-                       line_items: [PaymentLineItem], invoice: Invoice, **kwargs) -> InvoiceReference:
+                       line_items: List[PaymentLineItem], invoice: Invoice, **kwargs) -> InvoiceReference:
         """Create Invoice in PayBC."""
         current_app.logger.debug(f'<Creating BCOL records for Invoice: {invoice.id}, '
                                  f'Auth Account : {payment_account.auth_account_id}')
@@ -148,7 +149,8 @@ class BcolService(PaymentSystemService, OAuthService):
         return PaymentMethod.DRAWDOWN.value
 
     def process_cfs_refund(self, invoice: InvoiceModel,
-                           payment_account: PaymentAccount):  # pylint:disable=unused-argument
+                           payment_account: PaymentAccount,
+                           refund_partial: List[RefundPartialLine]):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         self._publish_refund_to_mailer(invoice)
         payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)

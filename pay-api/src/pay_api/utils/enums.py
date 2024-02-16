@@ -285,10 +285,8 @@ class PatchActions(Enum):
 class RefundsPartialType(Enum):
     """Refund partial types."""
 
-    PRIORITY_FEE = 'PRIORITY_FEE'
     SERVICE_FEE = 'SERVICE_FEE'
-    FILING_FEE = 'FILING_FEE'
-    FUTURE_EFFECTIVE_FEE = 'FUTURE_EFFECTIVE_FEE'
+    OTHER_FEES = 'OTHER_FEES'
 
 
 class ReverseOperation(Enum):
@@ -346,3 +344,12 @@ class MessageType(Enum):
     PAD_ACCOUNT_CREATE = 'bc.registry.payment.padAccountCreate'
     NSF_LOCK_ACCOUNT = 'bc.registry.payment.lockAccount'
     NSF_UNLOCK_ACCOUNT = 'bc.registry.payment.unlockAccount'
+
+
+class PaymentDetailsGlStatus(Enum):
+    """Payment details GL status."""
+
+    PAID = 'PAID'
+    INPRG = 'INPRG'
+    RJCT = 'RJCT'  # Should have refundglerrormessage
+    CMPLT = 'CMPLT'

@@ -29,6 +29,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import Receipt as ReceiptModel
+from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
@@ -68,13 +69,13 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         return None
 
     @abstractmethod
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
+    def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
         """Create invoice in payment system."""
 
     def update_invoice(self,  # pylint:disable=too-many-arguments,unused-argument
                        payment_account: PaymentAccount,  # pylint: disable=unused-argument
-                       line_items: [PaymentLineItem], invoice_id: int,  # pylint: disable=unused-argument
+                       line_items: List[PaymentLineItem], invoice_id: int,  # pylint: disable=unused-argument
                        paybc_inv_number: str, reference_count: int = 0,  # pylint: disable=unused-argument
                        **kwargs):
         """Update invoice in payment system."""
@@ -103,7 +104,8 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         return None
 
     def process_cfs_refund(self, invoice: InvoiceModel,  # pylint:disable=unused-argument
-                           payment_account: PaymentAccount):  # pylint:disable=unused-argument
+                           payment_account: PaymentAccount,  # pylint:disable=unused-argument
+                           refund_partial: List[RefundPartialLine]):  # pylint:disable=unused-argument
         """Process Refund if any."""
         return None
 

@@ -18,11 +18,13 @@ There are conditions where the payment will be handled internally. For e.g, zero
 from datetime import datetime
 from http import HTTPStatus
 
+from typing import List
 from flask import current_app
 
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
+from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
@@ -43,7 +45,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         """Return INTERNAL as the system code."""
         return PaymentSystem.INTERNAL.value
 
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
+    def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number."""
         routing_slip = None
@@ -91,7 +93,8 @@ class InternalPayService(PaymentSystemService, OAuthService):
         return InvoiceStatus.APPROVED.value
 
     def process_cfs_refund(self, invoice: InvoiceModel,
-                           payment_account: PaymentAccount):  # pylint:disable=unused-argument
+                           payment_account: PaymentAccount,
+                           refund_partial: List[RefundPartialLine]):  # pylint:disable=unused-argument
         """Process refund in CFS."""
         if invoice.total == 0:
             raise BusinessException(Error.NO_FEE_REFUND)
