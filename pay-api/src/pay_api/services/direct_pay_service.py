@@ -300,10 +300,11 @@ class DirectPayService(PaymentSystemService, OAuthService):
             if line.refund_amount == 0:
                 continue
             # It's possible to have two payment lines with the same distribution code unfortunately.
-            # If Service fee, match amount that has $1.50 or less
+            # For service fees, never use the first line number.
+
             revenue_match = next((r for r in paybc_invoice.revenue
                                   if r.revenueaccount == line.revenue_account and
-                                  (line.is_service_fee and r.revenueamount <= 1.5 or line.is_service_fee is False)
+                                  (line.is_service_fee and r.linenumber != '1' or line.is_service_fee is False)
                                   ), None)
             if revenue_match is None:
                 current_app.logger.error('Matching distribution code to revenue account not found.')
