@@ -452,7 +452,6 @@ def _process_failed_payments(row):
     inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
     payment_account: PaymentAccountModel = _get_payment_account(row)
 
-
     # If there is a FAILED payment record for this; it means it's a duplicate event. Ignore it.
     payment: PaymentModel = PaymentModel.find_payment_by_invoice_number_and_status(
         inv_number, PaymentStatus.FAILED.value
