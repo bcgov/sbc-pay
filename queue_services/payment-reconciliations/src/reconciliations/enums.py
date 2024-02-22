@@ -56,7 +56,7 @@ class Column(Enum):
     TARGET_TXN_OUTSTANDING = 'Target Transaction Outstanding Amount'
     TARGET_TXN_STATUS = 'Target transaction status'
     REVERSAL_REASON_CODE = 'Reversal Reason code'
-    REVERSAL_REASON_DESC = 'Reversal reason description'
+    REVERSAL_REASON_DESC = 'Reversal reason desc'
 
 
 class Status(Enum):
