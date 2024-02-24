@@ -21,10 +21,12 @@ from datetime import datetime, timedelta
 
 from pay_api.models import (
     CfsAccount, DistributionCode, DistributionCodeLink, EFTShortnames, Invoice, InvoiceReference, Payment,
-    PaymentAccount, PaymentLineItem, Receipt, Refund, RoutingSlip, StatementRecipients, StatementSettings)
+    PaymentAccount, PaymentLineItem, RefundPartialLine, Receipt, Refund, RoutingSlip, StatementRecipients, StatementSettings)
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
     PaymentSystem, RoutingSlipStatus)
+
+from tests.jobs.conftest import db
 
 
 def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='1234567890', auth_account_id='1234'):
@@ -128,6 +130,18 @@ def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees
         line_item_status_code=status,
         fee_distribution_id=fee_dist_id
     ).save()
+ 
+
+def factory_refund_partial_line(payment_line_item_id: int, refund_amount: float, refund_type: str):
+    """Return Factory."""
+    refund_partial = RefundPartialLine(
+        payment_line_item_id=payment_line_item_id,
+        refund_amount=refund_amount,
+        refund_type=refund_type
+    )
+    db.session.add(refund_partial)
+    db.session.commit()
+    return refund_partial
 
 
 def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021',

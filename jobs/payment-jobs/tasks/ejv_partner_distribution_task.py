@@ -27,6 +27,7 @@ from pay_api.models import EjvInvoiceLink as EjvInvoiceLinkModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
+from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
 from pay_api.utils.enums import DisbursementStatus, EjvFileType, InvoiceStatus, PaymentMethod
@@ -63,6 +64,19 @@ class EjvPartnerDistributionTask(CgiEjv):
             .filter((InvoiceModel.disbursement_status_code.is_(None)) |
                     (InvoiceModel.disbursement_status_code == DisbursementStatus.ERRORED.value)) \
             .filter(~InvoiceModel.receipts.any(cast(ReceiptModel.receipt_date, Date) >= disbursement_date.date())) \
+            .filter(InvoiceModel.corp_type_code == partner.code) \
+            .all()
+        current_app.logger.info(invoices)
+        return invoices
+
+    @staticmethod
+    def get_partial_refund_invoices_for_disbursement(partner):
+        """Return partial refund invoices for disbursement."""
+        invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
+            .join(PaymentLineItemModel, InvoiceModel.id == PaymentLineItemModel.invoice_id) \
+            .join(RefundsPartialModel, PaymentLineItemModel.id == RefundsPartialModel.payment_line_item_id) \
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
+            .filter(InvoiceModel.payment_method_code.in_([PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value])) \
             .filter(InvoiceModel.corp_type_code == partner.code) \
             .all()
         current_app.logger.info(invoices)
@@ -113,10 +127,16 @@ class EjvPartnerDistributionTask(CgiEjv):
 
         for partner in partners:
             # Find all invoices for the partner to disburse.
-            # This includes invoices which are not PAID and invoices which are refunded.
+            # This includes invoices which are not PAID and invoices which are refunded and partial refunded.
             payment_invoices = cls.get_invoices_for_disbursement(partner)
             refund_reversals = cls.get_invoices_for_refund_reversal(partner)
-            invoices = payment_invoices + refund_reversals
+            partial_refund_invoices = cls.get_partial_refund_invoices_for_disbursement(partner)
+            for invoice in partial_refund_invoices:
+                # TODO get refund amounts for each fee type
+                # Update EJV content to include partial refund adjustments
+                ejv_content += cls._generate_ejv_refund_entries(invoice)
+  
+            invoices = payment_invoices + refund_reversals + partial_refund_invoices
             # If no invoices continue.
             if not invoices:
                 continue
