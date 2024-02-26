@@ -40,6 +40,7 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.oauth_service import OAuthService
 from pay_api.services.queue_publisher import publish_response
+from pay_api.services.receipt import ReceiptService
 from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings
 from pay_api.utils.enums import (
@@ -408,7 +409,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         payment_account.statement_notification_enabled = True
         payment_account.save()
 
-        recipients: [StatementRecipientModel] = StatementRecipientModel. \
+        recipients: List[StatementRecipientModel] = StatementRecipientModel. \
             find_all_recipients_for_payment_id(payment_account.id)
 
         if recipients:
@@ -819,7 +820,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 f'Notification to Queue failed for the Account Mailer : {payload}.',
                 level='error')
 
-    def create_account_event_payload(self, event_type: str, nsf_object: dict = None,
+    def create_account_event_payload(self, event_type: str, receipt_info: dict = None,
                                      include_pay_info: bool = False):
         """Return event payload for account."""
         payload: Dict[str, any] = {
@@ -836,9 +837,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         }
 
         if event_type == MessageType.NSF_UNLOCK_ACCOUNT.value:
-            payload['data']['invoiceNumber'] = nsf_object['invoice_number']
-            payload['data']['paymentMethodDescription'] = nsf_object['payment_method_code']
-            payload['data']['receiptNumber'] = nsf_object['receipt_number']
+            payload['data'].update(receipt_info)
         if event_type == MessageType.PAD_ACCOUNT_CREATE.value:
             payload['data']['padTosAcceptedBy'] = self.pad_tos_accepted_by
         if include_pay_info:
@@ -863,17 +862,10 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             cfs_account.status = CfsAccountStatus.ACTIVE.value
             cfs_account.save()
 
-            # get nsf payment object associated with this payment
-
-            nsf_object = {
-                'invoice_number': payment.invoice_number,
-                'payment_method_code': payment.payment_method_code,
-                'receipt_number': payment.receipt_number
-            }
-
+            receipt_info = ReceiptService.get_receipt_details({}, payment.invoice_id, skip_auth_check=True)
             payload = pay_account.create_account_event_payload(
                 MessageType.NSF_UNLOCK_ACCOUNT.value,
-                nsf_object=nsf_object
+                receipt_info=receipt_info
             )
 
             try:
