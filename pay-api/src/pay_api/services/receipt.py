@@ -200,3 +200,21 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         # Format date to display in report.
         receipt_details['invoice']['createdOn'] = get_local_formatted_date(invoice_data.created_on)
         return receipt_details
+
+    @staticmethod
+    def get_nsf_receipt_details(payment_id):
+        """Return NSF receipt details, which can contain multiple invoices, combine these in PLI."""
+        receipt_details: dict = {}
+        invoices = Invoice.find_invoices_for_payment(payment_id)
+        nsf_invoice = next((invoice for invoice in invoices
+                            if invoice.payment_method_code == PaymentMethod.CC.value), None)
+        invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(nsf_invoice.id)
+        receipt_details['invoiceNumber'] = invoice_reference.invoice_number
+        receipt_details['receiptNumber'] = nsf_invoice.receipts[0].receipt_number
+        receipt_details['paymentMethod'] = PaymentMethod.CC.value
+        for invoice in invoices:
+            if invoice.id != nsf_invoice.id:
+                nsf_invoice.line_items.extend(invoice.line_items)
+        receipt_details['invoice'] = camelcase_dict(nsf_invoice.asdict(), {})
+        receipt_details['invoice']['createdOn'] = get_local_formatted_date(nsf_invoice.created_on)
+        return receipt_details

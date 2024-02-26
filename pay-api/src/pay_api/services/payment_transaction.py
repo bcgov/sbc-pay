@@ -18,7 +18,7 @@ from __future__ import annotations
 import uuid
 from contextlib import suppress
 from datetime import datetime
-from typing import Dict
+from typing import Dict, List
 
 from flask import current_app
 from sentry_sdk import capture_message
@@ -357,7 +357,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                                 f'Account {payment_account.auth_account_id}')
 
         # For transactions other than Credit Card, there could be more than one invoice per payment.
-        invoices: [Invoice] = Invoice.find_invoices_for_payment(transaction_dao.payment_id)
+        invoices: List[Invoice] = Invoice.find_invoices_for_payment(transaction_dao.payment_id)
 
         if payment.payment_status_code == PaymentStatus.COMPLETED.value:
             current_app.logger.info('Stale payment found.')

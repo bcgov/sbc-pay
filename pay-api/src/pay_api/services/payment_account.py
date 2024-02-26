@@ -862,7 +862,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             cfs_account.status = CfsAccountStatus.ACTIVE.value
             cfs_account.save()
 
-            receipt_info = ReceiptService.get_receipt_details({}, payment.invoice_id, skip_auth_check=True)
+            receipt_info = ReceiptService.get_nsf_receipt_details(payment.id)
             payload = pay_account.create_account_event_payload(
                 MessageType.NSF_UNLOCK_ACCOUNT.value,
                 receipt_info=receipt_info
