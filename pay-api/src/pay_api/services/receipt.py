@@ -218,6 +218,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
                 nsf_invoice.payment_line_items.extend(invoice.payment_line_items)
                 nsf_invoice.total += invoice.total
                 nsf_invoice.service_fees += invoice.service_fees
+                nsf_invoice.paid += invoice.paid
         receipt_details['invoice'] = camelcase_dict(nsf_invoice.asdict(), {})
         receipt_details['invoice']['createdOn'] = get_local_formatted_date(nsf_invoice.created_on)
         return receipt_details
