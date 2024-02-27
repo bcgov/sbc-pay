@@ -314,16 +314,16 @@ def _automated_refund_preparation():
     ('pay_pli_not_exist', [
         RefundPartialLine(payment_line_item_id=1,
                           refund_amount=1,
-                          refund_type=RefundsPartialType.OTHER_FEES.value)
+                          refund_type=RefundsPartialType.BASE_FEES.value)
     ]),
     ('pay_negative_refund_amount', [
         RefundPartialLine(payment_line_item_id=1,
                           refund_amount=-1,
-                          refund_type=RefundsPartialType.OTHER_FEES.value)]),
+                          refund_type=RefundsPartialType.BASE_FEES.value)]),
     ('pay_service_fee_too_high', [
         RefundPartialLine(payment_line_item_id=1,
                           refund_amount=3,
-                          refund_type=RefundsPartialType.SERVICE_FEE.value)]),
+                          refund_type=RefundsPartialType.SERVICE_FEES.value)]),
 ])
 def test_build_automated_refund_payload_validation(test_name, refund_partial):
     """Assert validations are working correctly for building refund payload."""
@@ -350,7 +350,7 @@ def test_build_automated_refund_payload_paybc_validation(test_name, has_exceptio
     refund_partial = [
         RefundPartialLine(payment_line_item_id=payment_line_item.id,
                           refund_amount=Decimal('3.1'),
-                          refund_type=RefundsPartialType.OTHER_FEES.value)
+                          refund_type=RefundsPartialType.BASE_FEES.value)
     ]
     direct_pay_service = DirectPayService()
     base_paybc_response = {
