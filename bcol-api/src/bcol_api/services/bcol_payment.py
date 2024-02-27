@@ -28,7 +28,7 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
 
     def create_payment(self, pay_request: Dict, is_apply_charge: bool):
         """Create payment record in BCOL."""
-        current_app.logger.debug('<create_payment')
+        current_app.logger.debug(f'<create_payment {pay_request.get("invoiceNumber")}')
         padded_amount = self._pad_zeros(pay_request.get('amount', '0'))
         # Call the query profile service to fetch profile
         data = {
@@ -91,7 +91,7 @@ class BcolPayment:  # pylint:disable=too-few-public-methods
             current_app.logger.error(e)
             raise BusinessException(Error.PAYMENT_ERROR) from e
 
-        current_app.logger.debug('>query_profile')
+        current_app.logger.debug('>create_payment')
         return pay_response
 
     def __get(self, value: object, key: object) -> str:  # pragma: no cover
