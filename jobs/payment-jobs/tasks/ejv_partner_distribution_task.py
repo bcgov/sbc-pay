@@ -70,17 +70,17 @@ class EjvPartnerDistributionTask(CgiEjv):
         return invoices
 
     @staticmethod
-    def get_partial_refund_invoices_for_disbursement(partner):
-        """Return partial refund invoices for disbursement."""
-        invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
-            .join(PaymentLineItemModel, InvoiceModel.id == PaymentLineItemModel.invoice_id) \
+    def get_partial_refund_payment_line_items_for_disbursement(partner):
+        """Return payment line items with partial refunds for disbursement."""
+        payment_line_items: List[PaymentLineItemModel] = db.session.query(PaymentLineItemModel) \
+            .join(InvoiceModel, PaymentLineItemModel.invoice_id == InvoiceModel.id) \
             .join(RefundsPartialModel, PaymentLineItemModel.id == RefundsPartialModel.payment_line_item_id) \
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
             .filter(InvoiceModel.payment_method_code.in_([PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value])) \
             .filter(InvoiceModel.corp_type_code == partner.code) \
             .all()
-        current_app.logger.info(invoices)
-        return invoices
+        current_app.logger.info(payment_line_items)
+        return payment_line_items
 
     @classmethod
     def get_invoices_for_refund_reversal(cls, partner):
@@ -130,12 +130,6 @@ class EjvPartnerDistributionTask(CgiEjv):
             # This includes invoices which are not PAID and invoices which are refunded and partial refunded.
             payment_invoices = cls.get_invoices_for_disbursement(partner)
             refund_reversals = cls.get_invoices_for_refund_reversal(partner)
-            partial_refund_invoices = cls.get_partial_refund_invoices_for_disbursement(partner)
-            for invoice in partial_refund_invoices:
-                # TODO get refund amounts for each fee type
-                # Update EJV content to include partial refund adjustments
-                ejv_content += cls._generate_ejv_refund_entries(invoice)
-  
             invoices = payment_invoices + refund_reversals + partial_refund_invoices
             # If no invoices continue.
             if not invoices:
@@ -159,6 +153,10 @@ class EjvPartnerDistributionTask(CgiEjv):
                 for line_item in inv.payment_line_items:
                     distribution_code_set.add(line_item.fee_distribution_id)
 
+            # Process partial refunds for each partner
+            partial_refund_items = cls.get_partial_refund_payment_line_items_for_disbursement(partner)
+            for line_item in partial_refund_items:
+                distribution_code_set.add(line_item.fee_distribution_id)
             for distribution_code_id in list(distribution_code_set):
                 distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(distribution_code_id)
                 credit_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
@@ -167,8 +165,11 @@ class EjvPartnerDistributionTask(CgiEjv):
                 if credit_distribution_code.stop_ejv:
                     continue
 
-                line_items = cls._find_line_items_by_invoice_and_distribution(distribution_code_id, invoice_id_list)
-
+                line_items = (
+                    partial_refund_items if partial_refund_items
+                    else cls._find_line_items_by_invoice_and_distribution(
+                        distribution_code_id, invoice_id_list)
+                )
                 total: float = 0
                 for line in line_items:
                     total += line.total
