@@ -65,7 +65,7 @@ def test_create_refund(session, client, jwt, app, stan_server, monkeypatch):
     refund_amount = float(payment_line_items[0].filing_fees / 2)
     refund_revenue = [{'paymentLineItemId': payment_line_items[0].id,
                       'refundAmount': refund_amount,
-                       'refundType': RefundsPartialType.OTHER_FEES.value}
+                       'refundType': RefundsPartialType.BASE_FEES.value}
                       ]
 
     direct_pay_service = DirectPayService()
@@ -73,7 +73,7 @@ def test_create_refund(session, client, jwt, app, stan_server, monkeypatch):
     refund_partial = [
         RefundPartialLine(payment_line_item_id=payment_line_items[0].id,
                           refund_amount=Decimal(refund_amount),
-                          refund_type=RefundsPartialType.OTHER_FEES.value)
+                          refund_type=RefundsPartialType.BASE_FEES.value)
     ]
     with patch('pay_api.services.direct_pay_service.DirectPayService.get') as mock_get:
         mock_get.return_value.ok = True
@@ -102,7 +102,7 @@ def test_create_refund(session, client, jwt, app, stan_server, monkeypatch):
     assert refund.id is not None
     assert refund.payment_line_item_id == payment_line_items[0].id
     assert refund.refund_amount == refund_amount
-    assert refund.refund_type == RefundsPartialType.OTHER_FEES.value
+    assert refund.refund_type == RefundsPartialType.BASE_FEES.value
 
 
 def test_create_refund_fails(session, client, jwt, app, stan_server, monkeypatch):
@@ -132,7 +132,7 @@ def test_create_refund_fails(session, client, jwt, app, stan_server, monkeypatch
     refund_amount = float(payment_line_items[0].filing_fees / 2)
     refund_revenue = [{'paymentLineItemId': payment_line_items[0].id,
                        'refundAmount': refund_amount,
-                       'refundType': RefundsPartialType.OTHER_FEES.value}
+                       'refundType': RefundsPartialType.BASE_FEES.value}
                       ]
 
     token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
