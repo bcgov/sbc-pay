@@ -860,7 +860,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.payment_account_id)
         if pay_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
             current_app.logger.info(f'Unlocking Frozen Account {pay_account.auth_account_id}')
-            # update CSF
             cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account.id)
             CFSService.unsuspend_cfs_account(cfs_account=cfs_account)
 
