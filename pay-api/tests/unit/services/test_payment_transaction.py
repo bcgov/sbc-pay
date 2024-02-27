@@ -590,6 +590,12 @@ def test_patch_transaction_for_nsf_payment(session, monkeypatch):
     invoice_1.save()
     factory_payment_line_item(invoice_id=invoice_1.id, fee_schedule_id=1).save()
     factory_invoice_reference(invoice_1.id, invoice_number=inv_number_1).save()
+
+    nsf_charge_invoice = factory_invoice(payment_account, total=30, paid=30, payment_method_code=PaymentMethod.CC.value)
+    nsf_charge_invoice.save()
+    factory_payment_line_item(invoice_id=nsf_charge_invoice.id, fee_schedule_id=1).save()
+    factory_invoice_reference(nsf_charge_invoice.id, invoice_number=inv_number_1).save()
+
     payment_1 = factory_payment(payment_status_code='FAILED',
                                 payment_account_id=payment_account.id,
                                 invoice_number=inv_number_1,

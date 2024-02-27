@@ -22,7 +22,8 @@ from sbc_common_components.utils.camel_case_response import camelcase_dict
 from pay_api.exceptions import BusinessException
 from pay_api.models import PaymentMethod as PaymentMethodModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceStatus, PaymentMethod, PaymentSystem
+from pay_api.utils.enums import (
+    AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentSystem)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import get_local_formatted_date
@@ -205,7 +206,7 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
     def get_nsf_receipt_details(payment_id):
         """Return NSF receipt details, which can contain multiple invoices, combine these in PLI."""
         receipt_details: dict = {}
-        invoices = Invoice.find_invoices_for_payment(payment_id)
+        invoices = Invoice.find_invoices_for_payment(payment_id, InvoiceReferenceStatus.COMPLETED.value)
         nsf_invoice = next((invoice for invoice in invoices
                             if invoice.payment_method_code == PaymentMethod.CC.value), None)
         invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(nsf_invoice.id)
@@ -214,7 +215,9 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         receipt_details['paymentMethod'] = PaymentMethod.CC.value
         for invoice in invoices:
             if invoice.id != nsf_invoice.id:
-                nsf_invoice.line_items.extend(invoice.line_items)
+                nsf_invoice.payment_line_items.extend(invoice.payment_line_items)
+                nsf_invoice.total += invoice.total
+                nsf_invoice.service_fees += invoice.service_fees
         receipt_details['invoice'] = camelcase_dict(nsf_invoice.asdict(), {})
         receipt_details['invoice']['createdOn'] = get_local_formatted_date(nsf_invoice.created_on)
         return receipt_details

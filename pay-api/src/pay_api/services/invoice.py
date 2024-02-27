@@ -27,7 +27,7 @@ from pay_api.models import InvoiceSchema
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.auth import check_auth
 from pay_api.utils.constants import ALL_ALLOWED_ROLES
-from pay_api.utils.enums import AuthHeaderType, Code, ContentType, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import AuthHeaderType, Code, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import generate_transaction_number, get_local_formatted_date
@@ -379,10 +379,10 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoice
 
     @staticmethod
-    def find_invoices_for_payment(payment_id: int) -> [Invoice]:
+    def find_invoices_for_payment(payment_id: int, status=InvoiceReferenceStatus.ACTIVE.value) -> List[Invoice]:
         """Find invoices by payment id."""
-        invoices: [Invoice] = []
-        invoice_daos: [InvoiceModel] = InvoiceModel.find_invoices_for_payment(payment_id)
+        invoices: List[Invoice] = []
+        invoice_daos: List[InvoiceModel] = InvoiceModel.find_invoices_for_payment(payment_id, status)
 
         for invoice_dao in invoice_daos:
             invoice = Invoice()
@@ -396,7 +396,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
     def find_invoices(business_identifier: str) -> Dict[str, any]:
         """Find invoices by business identifier."""
         invoices: Dict[str, any] = {'invoices': []}
-        invoice_daos: [InvoiceModel] = InvoiceModel.find_by_business_identifier(business_identifier)
+        invoice_daos: List[InvoiceModel] = InvoiceModel.find_by_business_identifier(business_identifier)
 
         for invoice_dao in invoice_daos:
             invoice = Invoice()

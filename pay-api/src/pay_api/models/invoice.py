@@ -141,7 +141,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         return cls.query.filter_by(business_identifier=business_identifier).all()
 
     @classmethod
-    def find_invoices_for_payment(cls, payment_id: int) -> List[Invoice]:
+    def find_invoices_for_payment(cls, payment_id: int, status=InvoiceReferenceStatus.ACTIVE.value) -> List[Invoice]:
         """Find all invoice records created for the payment."""
         # pylint: disable=import-outside-toplevel, cyclic-import
         from .invoice_reference import InvoiceReference
@@ -150,7 +150,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         query = db.session.query(Invoice) \
             .join(InvoiceReference, InvoiceReference.invoice_id == Invoice.id) \
             .join(Payment, InvoiceReference.invoice_number == Payment.invoice_number) \
-            .filter(InvoiceReference.status_code == InvoiceReferenceStatus.ACTIVE.value) \
+            .filter(InvoiceReference.status_code == status) \
             .filter(Payment.id == payment_id)
 
         return query.all()
