@@ -42,7 +42,9 @@ class RefundsPartial(Audit, VersionedModel):  # pylint: disable=too-many-instanc
             'id',
             'payment_line_item_id',
             'refund_amount',
-            'refund_type'
+            'refund_type',
+            'disbursement_status_code',
+            'disbursement_date'
         ]
     }
 
@@ -50,6 +52,8 @@ class RefundsPartial(Audit, VersionedModel):  # pylint: disable=too-many-instanc
     payment_line_item_id = db.Column(db.Integer, ForeignKey('payment_line_items.id'), nullable=False, index=True)
     refund_amount = db.Column(db.Numeric(19, 2), nullable=False)
     refund_type = db.Column(db.String(50), nullable=True)
+    disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
+    disbursement_date = db.Column(db.DateTime, nullable=True)
 
 
 @define
