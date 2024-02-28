@@ -85,24 +85,25 @@ def test_create_refund(session, client, jwt, app, stan_server, monkeypatch):
         assert payload['refundRevenue'][0]['lineNumber'] == '1'
         assert payload['refundRevenue'][0]['refundAmount'] == refund_partial[0].refund_amount
 
-        rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds',
-                         data=json.dumps({'reason': 'Test',
-                                          'refundRevenue': refund_revenue
-                                          }),
-                         headers=headers)
-    assert rv.status_code == 202
-    assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['DIRECT_PAY.PAID']
-    assert RefundModel.find_by_invoice_id(inv_id) is not None
+        with patch('pay_api.services.payment_service.flags.is_on', return_value=True):
+            rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds',
+                             data=json.dumps({'reason': 'Test',
+                                              'refundRevenue': refund_revenue
+                                              }),
+                             headers=headers)
+            assert rv.status_code == 202
+            assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['DIRECT_PAY.PAID']
+            assert RefundModel.find_by_invoice_id(inv_id) is not None
 
-    refunds_partial: List[RefundPartialModel] = RefundService.get_refund_partials_by_invoice_id(inv_id)
-    assert refunds_partial
-    assert len(refunds_partial) == 1
+            refunds_partial: List[RefundPartialModel] = RefundService.get_refund_partials_by_invoice_id(inv_id)
+            assert refunds_partial
+            assert len(refunds_partial) == 1
 
-    refund = refunds_partial[0]
-    assert refund.id is not None
-    assert refund.payment_line_item_id == payment_line_items[0].id
-    assert refund.refund_amount == refund_amount
-    assert refund.refund_type == RefundsPartialType.BASE_FEES.value
+            refund = refunds_partial[0]
+            assert refund.id is not None
+            assert refund.payment_line_item_id == payment_line_items[0].id
+            assert refund.refund_amount == refund_amount
+            assert refund.refund_type == RefundsPartialType.BASE_FEES.value
 
 
 def test_create_refund_fails(session, client, jwt, app, stan_server, monkeypatch):
@@ -137,18 +138,19 @@ def test_create_refund_fails(session, client, jwt, app, stan_server, monkeypatch
 
     token = jwt.create_jwt(get_claims(app_request=app, role=Role.SYSTEM.value), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
-    rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds',
-                     data=json.dumps({'reason': 'Test',
-                                      'refundRevenue': refund_revenue
-                                      }),
-                     headers=headers)
-    assert rv.status_code == 400
-    assert rv.json.get('type') == Error.INVALID_REQUEST.name
-    assert RefundModel.find_by_invoice_id(inv_id) is None
+    with patch('pay_api.services.payment_service.flags.is_on', return_value=True):
+        rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds',
+                         data=json.dumps({'reason': 'Test',
+                                          'refundRevenue': refund_revenue
+                                          }),
+                         headers=headers)
+        assert rv.status_code == 400
+        assert rv.json.get('type') == Error.INVALID_REQUEST.name
+        assert RefundModel.find_by_invoice_id(inv_id) is None
 
-    refunds_partial: List[RefundPartialModel] = RefundService.get_refund_partials_by_invoice_id(inv_id)
-    assert not refunds_partial
-    assert len(refunds_partial) == 0
+        refunds_partial: List[RefundPartialModel] = RefundService.get_refund_partials_by_invoice_id(inv_id)
+        assert not refunds_partial
+        assert len(refunds_partial) == 0
 
 
 def _get_base_paybc_response():

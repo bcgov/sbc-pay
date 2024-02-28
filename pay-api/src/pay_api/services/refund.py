@@ -30,6 +30,7 @@ from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.models import RefundPartialLine
 from pay_api.services.base_payment_system import PaymentSystemService
+from pay_api.services.flags import flags
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.constants import REFUND_SUCCESS_MESSAGES
 from pay_api.utils.converter import Converter
@@ -273,7 +274,10 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             payment_method=invoice.payment_method_code
         )
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
-        refund_partial_lines = cls._get_partial_refund_lines(request.get('refundRevenue', None))
+        refund_revenue = request.get('refundRevenue', None)
+        if refund_revenue and not flags.is_on('enable-partial-refunds', default=False):
+            raise BusinessException(Error.INVALID_REQUEST)
+        refund_partial_lines = cls._get_partial_refund_lines(refund_revenue)
         invoice_status = pay_system_service.process_cfs_refund(invoice,
                                                                payment_account=payment_account,
                                                                refund_partial=refund_partial_lines)
