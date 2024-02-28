@@ -70,7 +70,7 @@ class EjvPartnerDistributionTask(CgiEjv):
         return invoices
 
     @staticmethod
-    def get_partial_refund_payment_line_items_for_disbursement(partner):
+    def get_partial_refund_payment_line_items_for_disbursement(partner) -> List[PaymentLineItemModel]:
         """Return payment line items with partial refunds for disbursement."""
         payment_line_items: List[PaymentLineItemModel] = db.session.query(PaymentLineItemModel) \
             .join(InvoiceModel, PaymentLineItemModel.invoice_id == InvoiceModel.id) \
@@ -154,9 +154,10 @@ class EjvPartnerDistributionTask(CgiEjv):
                     distribution_code_set.add(line_item.fee_distribution_id)
 
             # Process partial refunds for each partner
-            partial_refund_items = cls.get_partial_refund_payment_line_items_for_disbursement(partner)
+            partial_refund_items = cls.get_partial_refund_payment_line_items_for_disbursement(partner) or []
             for line_item in partial_refund_items:
                 distribution_code_set.add(line_item.fee_distribution_id)
+
             for distribution_code_id in list(distribution_code_set):
                 distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(distribution_code_id)
                 credit_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
@@ -165,11 +166,9 @@ class EjvPartnerDistributionTask(CgiEjv):
                 if credit_distribution_code.stop_ejv:
                     continue
 
-                line_items = (
-                    partial_refund_items if partial_refund_items
-                    else cls._find_line_items_by_invoice_and_distribution(
+                line_items = partial_refund_items + cls._find_line_items_by_invoice_and_distribution(
                         distribution_code_id, invoice_id_list)
-                )
+
                 total: float = 0
                 for line in line_items:
                     total += line.total
@@ -256,7 +255,8 @@ class EjvPartnerDistributionTask(CgiEjv):
         line_items: List[PaymentLineItemModel] = db.session.query(PaymentLineItemModel) \
             .filter(PaymentLineItemModel.invoice_id.in_(invoice_id_list)) \
             .filter(PaymentLineItemModel.total > 0) \
-            .filter(PaymentLineItemModel.fee_distribution_id == distribution_code_id)
+            .filter(PaymentLineItemModel.fee_distribution_id == distribution_code_id) \
+            .all()
         return line_items
 
     @classmethod
