@@ -55,6 +55,7 @@ class RefundsPartial(Audit, VersionedModel):  # pylint: disable=too-many-instanc
     disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
     disbursement_date = db.Column(db.DateTime, nullable=True)
 
+
 @define
 class RefundPartialLine:
     """Used to feed for partial refunds."""
