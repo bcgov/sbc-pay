@@ -213,7 +213,8 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         receipt_details['invoiceNumber'] = invoice_reference.invoice_number
         receipt_details['receiptNumber'] = nsf_invoice.receipts[0].receipt_number
         receipt_details['paymentMethodDescription'] = 'Credit Card'
-        for invoice in [inv for inv in invoices if inv.id != nsf_invoice.id]:
+        non_nsf_invoices = [inv for inv in invoices if inv.id != nsf_invoice.id]
+        for invoice in non_nsf_invoices:
             nsf_invoice.payment_line_items.extend(invoice.payment_line_items)
             nsf_invoice.total += invoice.total
             nsf_invoice.service_fees += invoice.service_fees
