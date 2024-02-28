@@ -130,7 +130,7 @@ class EjvPartnerDistributionTask(CgiEjv):
             # This includes invoices which are not PAID and invoices which are refunded and partial refunded.
             payment_invoices = cls.get_invoices_for_disbursement(partner)
             refund_reversals = cls.get_invoices_for_refund_reversal(partner)
-            invoices = payment_invoices + refund_reversals + partial_refund_invoices
+            invoices = payment_invoices + refund_reversals
             # If no invoices continue.
             if not invoices:
                 continue

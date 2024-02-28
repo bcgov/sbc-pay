@@ -130,18 +130,6 @@ def factory_payment_line_item(invoice_id: str, fee_schedule_id: int, filing_fees
         line_item_status_code=status,
         fee_distribution_id=fee_dist_id
     ).save()
- 
-
-def factory_refund_partial_line(payment_line_item_id: int, refund_amount: float, refund_type: str):
-    """Return Factory."""
-    refund_partial = RefundPartialLine(
-        payment_line_item_id=payment_line_item_id,
-        refund_amount=refund_amount,
-        refund_type=refund_type
-    )
-    db.session.add(refund_partial)
-    db.session.commit()
-    return refund_partial
 
 
 def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021',
