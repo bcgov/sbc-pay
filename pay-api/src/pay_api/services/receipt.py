@@ -212,13 +212,15 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(nsf_invoice.id)
         receipt_details['invoiceNumber'] = invoice_reference.invoice_number
         receipt_details['receiptNumber'] = nsf_invoice.receipts[0].receipt_number
-        receipt_details['paymentMethod'] = PaymentMethod.CC.value
+        receipt_details['paymentMethodDescription'] = 'Credit Card'
         for invoice in invoices:
             if invoice.id != nsf_invoice.id:
                 nsf_invoice.payment_line_items.extend(invoice.payment_line_items)
                 nsf_invoice.total += invoice.total
                 nsf_invoice.service_fees += invoice.service_fees
                 nsf_invoice.paid += invoice.paid
+                for detail in invoice.details:
+                    nsf_invoice.details.append(detail)
         receipt_details['invoice'] = camelcase_dict(nsf_invoice.asdict(), {})
         receipt_details['invoice']['createdOn'] = get_local_formatted_date(nsf_invoice.created_on)
         return receipt_details
