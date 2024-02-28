@@ -22,7 +22,8 @@ from sbc_common_components.utils.camel_case_response import camelcase_dict
 from pay_api.exceptions import BusinessException
 from pay_api.models import PaymentMethod as PaymentMethodModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceStatus, PaymentMethod, PaymentSystem
+from pay_api.utils.enums import (
+    AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentSystem)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import get_local_formatted_date
@@ -199,4 +200,26 @@ class Receipt():  # pylint: disable=too-many-instance-attributes
         receipt_details['invoice'] = camelcase_dict(invoice_data.asdict(), {})
         # Format date to display in report.
         receipt_details['invoice']['createdOn'] = get_local_formatted_date(invoice_data.created_on)
+        return receipt_details
+
+    @staticmethod
+    def get_nsf_receipt_details(payment_id):
+        """Return NSF receipt details, which can contain multiple invoices, combine these in PLI."""
+        receipt_details: dict = {}
+        invoices = Invoice.find_invoices_for_payment(payment_id, InvoiceReferenceStatus.COMPLETED.value)
+        nsf_invoice = next((invoice for invoice in invoices
+                            if invoice.payment_method_code == PaymentMethod.CC.value), None)
+        invoice_reference = InvoiceReference.find_completed_reference_by_invoice_id(nsf_invoice.id)
+        receipt_details['invoiceNumber'] = invoice_reference.invoice_number
+        receipt_details['receiptNumber'] = nsf_invoice.receipts[0].receipt_number
+        receipt_details['paymentMethodDescription'] = 'Credit Card'
+        non_nsf_invoices = [inv for inv in invoices if inv.id != nsf_invoice.id]
+        for invoice in non_nsf_invoices:
+            nsf_invoice.payment_line_items.extend(invoice.payment_line_items)
+            nsf_invoice.total += invoice.total
+            nsf_invoice.service_fees += invoice.service_fees
+            nsf_invoice.paid += invoice.paid
+            nsf_invoice.details.extend(invoice.details or [])
+        receipt_details['invoice'] = camelcase_dict(nsf_invoice.asdict(), {})
+        receipt_details['invoice']['createdOn'] = get_local_formatted_date(nsf_invoice.created_on)
         return receipt_details
