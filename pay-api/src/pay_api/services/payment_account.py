@@ -840,7 +840,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             payload['data'].update({
                 'invoiceNumber': receipt_info['invoiceNumber'],
                 'receiptNumber': receipt_info['receiptNumber'],
-                'paymentMethod': receipt_info['paymentMethod'],
+                'paymentMethodDescription': receipt_info['paymentMethodDescription'],
                 'invoice': receipt_info['invoice']
             })
         if event_type == MessageType.PAD_ACCOUNT_CREATE.value:
