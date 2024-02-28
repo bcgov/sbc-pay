@@ -85,7 +85,7 @@ def test_create_refund(session, client, jwt, app, stan_server, monkeypatch):
         assert payload['refundRevenue'][0]['lineNumber'] == '1'
         assert payload['refundRevenue'][0]['refundAmount'] == refund_partial[0].refund_amount
 
-        with patch('pay_api.services.payment_service.flags.is_on', return_value=False):
+        with patch('pay_api.services.payment_service.flags.is_on', return_value=True):
             rv = client.post(f'/api/v1/payment-requests/{inv_id}/refunds',
                              data=json.dumps({'reason': 'Test',
                                               'refundRevenue': refund_revenue
