@@ -228,37 +228,17 @@ class EjvPartnerDistributionTask(CgiEjv):
                     control_total += 1
 
                 partial_refund_number: int = 0
-                for refund_partial in refund_partial_items:
-                    # JV Details
-                    partial_refund_number += 1
-                    # Flow Through add it as the invoice id.
-                    flow_through = (
-                                        f'Partial Refund#{refund_partial.id} '
-                                        f'for Payment Line Item#{refund_partial.payment_line_item_id:<110}'
-                                    )
-                    # Adjusting description to include "Partial Refund" and the specific IDs
-                    description = f'Partial Refund {refund_partial.id} for PLI {refund_partial.payment_line_item_id}'
-                    description = f'{description[:100]:<100}'  # Ensuring description does not exceed 100 characters
-
-                    ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
-                                                cls.get_jv_line(batch_type, credit_distribution, description,
-                                                                effective_date, flow_through, journal_name, line.total,
-                                                                partial_refund_number, 'C'))
-                    partial_refund_number += 1
-                    control_total += 1
-
-                    # Add a line here for debit too
-                    ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
-                                                cls.get_jv_line(batch_type, debit_distribution, description,
-                                                                effective_date, flow_through, journal_name,
-                                                                refund_partial.refund_amount,
-                                                                partial_refund_number, 'D'))
-
-                    control_total += 1
-
-                    # Set partial refund status
-                    refund_partial.disbursement_status_code = DisbursementStatus.UPLOADED.value
-
+                ejv_content, control_total, partial_refund_number = cls._process_partial_refunds(
+                    batch_type=batch_type,
+                    refund_partial_items=refund_partial_items,
+                    ejv_content=ejv_content,
+                    control_total=control_total,
+                    partial_refund_number=partial_refund_number,
+                    credit_distribution=credit_distribution,
+                    debit_distribution=debit_distribution,
+                    journal_name=journal_name,
+                    effective_date=effective_date
+                )
             sequence = 1
             # Create ejv invoice link records and set invoice status
             for inv in invoices:
@@ -350,3 +330,32 @@ class EjvPartnerDistributionTask(CgiEjv):
         corp_type_codes: List[str] = db.session.scalars(corp_type_query).all()
 
         return db.session.query(CorpTypeModel).filter(CorpTypeModel.code.in_(corp_type_codes)).all()
+
+    @classmethod
+    def _process_partial_refunds(cls, batch_type, refund_partial_items, ejv_content, control_total,  # pylint: disable=too-many-arguments
+                                 partial_refund_number, credit_distribution, debit_distribution,
+                                 journal_name, effective_date):
+        for refund_partial in refund_partial_items:
+            # JV Details for partial refunds
+            partial_refund_number += 1
+            flow_through = (
+                f'Partial Refund#{refund_partial.id} '
+                f'for Payment Line Item#{refund_partial.payment_line_item_id:<110}'
+            )
+            description = f'Partial Refund {refund_partial.id} for PLI {refund_partial.payment_line_item_id}'
+            description = f'{description[:100]:<100}'
+
+            ejv_content += cls.get_jv_line(batch_type, credit_distribution, description, effective_date, flow_through,
+                                           journal_name, refund_partial.refund_amount, partial_refund_number, 'C')
+            partial_refund_number += 1
+            control_total += 1
+
+            # Add a line here for debit too
+            ejv_content += cls.get_jv_line(batch_type, debit_distribution, description, effective_date, flow_through,
+                                           journal_name, refund_partial.refund_amount, partial_refund_number, 'D')
+            control_total += 1
+
+            # Update partial refund status
+            refund_partial.disbursement_status_code = DisbursementStatus.UPLOADED.value
+
+        return ejv_content, control_total, partial_refund_number
