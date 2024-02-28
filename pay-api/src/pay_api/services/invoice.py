@@ -379,10 +379,11 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoice
 
     @staticmethod
-    def find_invoices_for_payment(payment_id: int, status=InvoiceReferenceStatus.ACTIVE.value) -> List[Invoice]:
+    def find_invoices_for_payment(payment_id: int,
+                                  reference_status=InvoiceReferenceStatus.ACTIVE.value) -> List[Invoice]:
         """Find invoices by payment id."""
         invoices: List[Invoice] = []
-        invoice_daos: List[InvoiceModel] = InvoiceModel.find_invoices_for_payment(payment_id, status)
+        invoice_daos: List[InvoiceModel] = InvoiceModel.find_invoices_for_payment(payment_id, reference_status)
 
         for invoice_dao in invoice_daos:
             invoice = Invoice()
