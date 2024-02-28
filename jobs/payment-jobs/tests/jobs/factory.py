@@ -21,12 +21,10 @@ from datetime import datetime, timedelta
 
 from pay_api.models import (
     CfsAccount, DistributionCode, DistributionCodeLink, EFTShortnames, Invoice, InvoiceReference, Payment,
-    PaymentAccount, PaymentLineItem, RefundPartialLine, Receipt, Refund, RoutingSlip, StatementRecipients, StatementSettings)
+    PaymentAccount, PaymentLineItem, Receipt, Refund, RoutingSlip, StatementRecipients, StatementSettings)
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
     PaymentSystem, RoutingSlipStatus)
-
-from tests.jobs.conftest import db
 
 
 def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='1234567890', auth_account_id='1234'):
