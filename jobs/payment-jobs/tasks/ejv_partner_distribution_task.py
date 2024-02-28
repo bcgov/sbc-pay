@@ -70,13 +70,15 @@ class EjvPartnerDistributionTask(CgiEjv):
         return invoices
 
     @staticmethod
-    def get_partial_refund_payment_line_items_for_disbursement(partner) -> List[PaymentLineItemModel]:
+    def get_refund_partial_payment_line_items_for_disbursement(partner) -> List[PaymentLineItemModel]:
         """Return payment line items with partial refunds for disbursement."""
         payment_line_items: List[PaymentLineItemModel] = db.session.query(PaymentLineItemModel) \
             .join(InvoiceModel, PaymentLineItemModel.invoice_id == InvoiceModel.id) \
             .join(RefundsPartialModel, PaymentLineItemModel.id == RefundsPartialModel.payment_line_item_id) \
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
             .filter(InvoiceModel.payment_method_code.in_([PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value])) \
+            .filter((RefundsPartialModel.disbursement_status_code.is_(None)) |
+                    (RefundsPartialModel.disbursement_status_code == DisbursementStatus.ERRORED.value)) \
             .filter(InvoiceModel.corp_type_code == partner.code) \
             .all()
         current_app.logger.info(payment_line_items)
@@ -131,8 +133,12 @@ class EjvPartnerDistributionTask(CgiEjv):
             payment_invoices = cls.get_invoices_for_disbursement(partner)
             refund_reversals = cls.get_invoices_for_refund_reversal(partner)
             invoices = payment_invoices + refund_reversals
+
+            # Process partial refunds for each partner
+            refund_partial_items = cls.get_refund_partial_payment_line_items_for_disbursement(partner)
+
             # If no invoices continue.
-            if not invoices:
+            if not invoices or refund_partial_items:
                 continue
 
             effective_date: str = cls.get_effective_date()
@@ -148,14 +154,14 @@ class EjvPartnerDistributionTask(CgiEjv):
             # and create one JV Header and detail for each.
             distribution_code_set = set()
             invoice_id_list = []
+            partial_line_item_id_list = []
             for inv in invoices:
                 invoice_id_list.append(inv.id)
                 for line_item in inv.payment_line_items:
                     distribution_code_set.add(line_item.fee_distribution_id)
 
-            # Process partial refunds for each partner
-            partial_refund_items = cls.get_partial_refund_payment_line_items_for_disbursement(partner) or []
-            for line_item in partial_refund_items:
+            for line_item in refund_partial_items:
+                partial_line_item_id_list.append(line_item.id)
                 distribution_code_set.add(line_item.fee_distribution_id)
 
             for distribution_code_id in list(distribution_code_set):
@@ -166,14 +172,22 @@ class EjvPartnerDistributionTask(CgiEjv):
                 if credit_distribution_code.stop_ejv:
                     continue
 
-                line_items = partial_refund_items + cls._find_line_items_by_invoice_and_distribution(
+                line_items = cls._find_line_items_by_invoice_and_distribution(
                         distribution_code_id, invoice_id_list)
+
+                refund_partial_items = cls._find_refund_partial_items_by_distribution(
+                        distribution_code_id, partial_line_item_id_list)
 
                 total: float = 0
                 for line in line_items:
                     total += line.total
 
+                partial_refund_total: float = 0
+                for refund_partial in refund_partial_items:
+                    partial_refund_total += refund_partial.refund_amount
+
                 batch_total += total
+                batch_total += partial_refund_total
 
                 debit_distribution = cls.get_distribution_string(distribution_code)  # Debit from BCREG GL
                 credit_distribution = cls.get_distribution_string(credit_distribution_code)  # Credit to partner GL
@@ -212,6 +226,38 @@ class EjvPartnerDistributionTask(CgiEjv):
                                                                 line_number, 'D' if not is_reversal else 'C'))
 
                     control_total += 1
+
+                partial_refund_number: int = 0
+                for refund_partial in refund_partial_items:
+                    # JV Details
+                    partial_refund_number += 1
+                    # Flow Through add it as the invoice id.
+                    flow_through = (
+                                        f'Partial Refund#{refund_partial.id} '
+                                        f'for Payment Line Item#{refund_partial.payment_line_item_id:<110}'
+                                    )
+                    # Adjusting description to include "Partial Refund" and the specific IDs
+                    description = f'Partial Refund {refund_partial.id} for PLI {refund_partial.payment_line_item_id}'
+                    description = f'{description[:100]:<100}'  # Ensuring description does not exceed 100 characters
+
+                    ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
+                                                cls.get_jv_line(batch_type, credit_distribution, description,
+                                                                effective_date, flow_through, journal_name, line.total,
+                                                                partial_refund_number, 'C'))
+                    partial_refund_number += 1
+                    control_total += 1
+
+                    # Add a line here for debit too
+                    ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
+                                                cls.get_jv_line(batch_type, debit_distribution, description,
+                                                                effective_date, flow_through, journal_name,
+                                                                refund_partial.refund_amount,
+                                                                partial_refund_number, 'D'))
+
+                    control_total += 1
+
+                    # Set partial refund status
+                    refund_partial.disbursement_status_code = DisbursementStatus.UPLOADED.value
 
             sequence = 1
             # Create ejv invoice link records and set invoice status
@@ -255,6 +301,17 @@ class EjvPartnerDistributionTask(CgiEjv):
         line_items: List[PaymentLineItemModel] = db.session.query(PaymentLineItemModel) \
             .filter(PaymentLineItemModel.invoice_id.in_(invoice_id_list)) \
             .filter(PaymentLineItemModel.total > 0) \
+            .filter(PaymentLineItemModel.fee_distribution_id == distribution_code_id)
+        return line_items
+
+    @classmethod
+    def _find_refund_partial_items_by_distribution(cls, distribution_code_id, partial_line_item_id_list) \
+            -> List[RefundsPartialModel]:
+        """Find and return all payment line items for this distribution."""
+        line_items: List[RefundsPartialModel] = db.session.query(RefundsPartialModel) \
+            .join(PaymentLineItemModel, PaymentLineItemModel.id == RefundsPartialModel.payment_line_item_id) \
+            .filter(RefundsPartialModel.payment_line_item_id.in_(partial_line_item_id_list)) \
+            .filter(RefundsPartialModel.refund_amount > 0) \
             .filter(PaymentLineItemModel.fee_distribution_id == distribution_code_id) \
             .all()
         return line_items
