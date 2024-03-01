@@ -55,6 +55,10 @@ jobs:
 
     runs-on: ubuntu-20.04
 
+    strategy:
+      matrix:
+        python-version: [3.12]
+
     services:
       postgres:
         image: postgres:12
@@ -91,6 +95,10 @@ jobs:
   build-check:
     needs: setup-job
     runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        python-version: [3.12]
 
     steps:
       - uses: actions/checkout@v3
