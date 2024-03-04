@@ -20,7 +20,7 @@ import random
 
 import pytest
 from flask_migrate import Migrate, upgrade
-from sqlalchemy import event
+from sqlalchemy import event, text
 from sqlalchemy_utils import drop_database, create_database, database_exists
 
 from pay_api import create_app
@@ -76,6 +76,7 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
         if database_exists(_db.engine.url):
             drop_database(_db.engine.url)
         create_database(_db.engine.url)
+        _db.session().execute(text('SET TIME ZONE "UTC";'))
         Migrate(app, _db)
         upgrade()
         return _db
@@ -90,6 +91,9 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
             sess = db._make_scoped_session(dict(bind=conn, autoflush=False))  # pylint: disable=protected-access
             # Establish SAVEPOINT (http://docs.sqlalchemy.org/en/latest/orm/session_transaction.html#using-savepoint)
             nested = sess.begin_nested()
+            db.session = sess
+            db.session.commit = nested.commit
+            db.session.rollback = nested.rollback
 
             @event.listens_for(sess, 'after_transaction_end')
             def restart_savepoint(sess2, trans):  # pylint: disable=unused-variable
@@ -106,10 +110,6 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
                     db.session = sess
                     db.session.commit = nested.commit
                     db.session.rollback = nested.rollback
-
-            db.session = sess
-            db.session.commit = nested.commit
-            db.session.rollback = nested.rollback
 
             try:
                 yield db.session
