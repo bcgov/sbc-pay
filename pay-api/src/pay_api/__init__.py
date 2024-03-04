@@ -17,10 +17,11 @@ This module is the API for the Legal Entity system.
 """
 
 import os
+from pay_api.utils.exception_handler import ExceptionHandler
 
 import sentry_sdk  # noqa: I001; pylint: disable=ungrouped-imports,wrong-import-order; conflicts with Flake8
 from flask import Flask
-from sbc_common_components.exception_handling.exception_handler import ExceptionHandler  # noqa: I001
+# from sbc_common_components.exception_handling.exception_handler import ExceptionHandler  # noqa: I001
 from sbc_common_components.utils.camel_case_response import convert_to_camel
 from sentry_sdk.integrations.flask import FlaskIntegration  # noqa: I001
 
@@ -64,6 +65,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
 
         setup_jwt_manager(app, jwt)
 
+        # TODO FIX THIS
         ExceptionHandler(app)
 
         @app.after_request

@@ -121,18 +121,6 @@ class _Config():  # pylint: disable=too-few-public-methods
     PAYBC_DIRECT_PAY_CLIENT_SECRET = _get_config('PAYBC_DIRECT_PAY_CLIENT_SECRET')
     PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL = _get_config('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL')
 
-    # NATS Config
-    NATS_SERVERS = _get_config('NATS_SERVERS', default='nats://127.0.0.1:4222').split(',')
-    NATS_CLUSTER_ID = _get_config('NATS_CLUSTER_ID', default='test-cluster')
-    NATS_PAYMENT_CLIENT_NAME = _get_config('NATS_PAYMENT_CLIENT_NAME', default='entity.filing.worker')
-    NATS_PAYMENT_SUBJECT = _get_config('NATS_PAYMENT_SUBJECT', default='entity.{product}.payment')
-
-    NATS_MAILER_CLIENT_NAME = _get_config('NATS_MAILER_CLIENT_NAME', default='account.mailer.worker')
-    NATS_MAILER_SUBJECT = _get_config('NATS_MAILER_SUBJECT', default='account.mailer')
-
-    NATS_ACCOUNT_CLIENT_NAME = os.getenv('NATS_ACCOUNT_CLIENT_NAME', 'account.events.worker')
-    NATS_ACCOUNT_SUBJECT = os.getenv('NATS_ACCOUNT_SUBJECT', 'account.events')
-
     # GCP PubSub
     AUDIENCE = os.getenv('AUDIENCE', None)
     GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
@@ -293,8 +281,6 @@ NrQw+2OdQACBJiEHsdZzAkBcsTk7frTH4yGx0VfHxXDPjfTj4wmD6gZIlcIr9lZg
     REPORT_API_BASE_URL = 'http://localhost:8080/reports-api/api/v1/reports'
 
     AUTH_API_ENDPOINT = 'http://localhost:8080/auth-api/'
-
-    NATS_SUBJECT = 'entity.filing.test'
 
     BCOL_API_ENDPOINT = 'http://localhost:8080/bcol-api'
 

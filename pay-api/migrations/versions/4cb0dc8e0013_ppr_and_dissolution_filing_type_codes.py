@@ -8,7 +8,7 @@ Create Date: 2021-10-06 07:57:39.021398
 from datetime import date
 
 from alembic import op
-from sqlalchemy import Date, String
+from sqlalchemy import Date, String, text
 from sqlalchemy.sql import column, table
 
 # revision identifiers, used by Alembic.
@@ -410,11 +410,11 @@ def upgrade():
                                  "and dc.start_date <= CURRENT_DATE " \
                                  "and (dc.end_date is null or dc.end_date > CURRENT_DATE)"
     conn = op.get_bind()
-    res = conn.execute(distribution_code_id_query)
+    res = conn.execute(text(distribution_code_id_query))
     if (res_fetch := res.fetchall()) and res_fetch[0]:
         distribution_code_id = res_fetch[0][0]
         res = conn.execute(
-            f"select fee_schedule_id from fee_schedules where corp_type_code='PPR' and filing_type_code='SSRCH'")
+            text(f"select fee_schedule_id from fee_schedules where corp_type_code='PPR' and filing_type_code='SSRCH'"))
         fee_schedule_id = res.fetchall()[0][0]
         distr_code_link = [{
             'distribution_code_id': distribution_code_id,
@@ -428,11 +428,11 @@ def upgrade():
                                  "and dc.start_date <= CURRENT_DATE " \
                                  "and (dc.end_date is null or dc.end_date > CURRENT_DATE)"
     conn = op.get_bind()
-    res = conn.execute(distribution_code_id_query)
+    res = conn.execute(text(distribution_code_id_query))
     if (res_fetch := res.fetchall()) and res_fetch[0]:
         distribution_code_id = res_fetch[0][0]
         res = conn.execute(
-            f"select fee_schedule_id from fee_schedules where filing_type_code in ('DIS_VOL', 'DIS_INVOL', 'DIS_ADMIN', 'DIS_LQD', 'DIS_COLQD', 'DIS_RSTR', 'AFDVT', 'SPRLN')")
+            text(f"select fee_schedule_id from fee_schedules where filing_type_code in ('DIS_VOL', 'DIS_INVOL', 'DIS_ADMIN', 'DIS_LQD', 'DIS_COLQD', 'DIS_RSTR', 'AFDVT', 'SPRLN')"))
         distr_code_links = []
         for result in res.fetchall():
             fee_schedule_id = result[0]

@@ -24,7 +24,6 @@ from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import ContentType
-from pay_api.utils.trace import tracing as _tracing
 
 
 bp = Blueprint('ACCOUNT_STATEMENTS', __name__,
@@ -33,7 +32,6 @@ bp = Blueprint('ACCOUNT_STATEMENTS', __name__,
 
 @bp.route('', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET'])
-@_tracing.trace()
 @_jwt.requires_auth
 def get_account_statements(account_id):
     """Get all statements records for an account."""
@@ -52,7 +50,6 @@ def get_account_statements(account_id):
 
 @bp.route('/<string:statement_id>', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET'])
-@_tracing.trace()
 @_jwt.requires_auth
 def get_account_statement(account_id: str, statement_id: str):
     """Create the statement report."""
@@ -74,7 +71,6 @@ def get_account_statement(account_id: str, statement_id: str):
 
 @bp.route('/summary', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET'])
-@_tracing.trace()
 @_jwt.requires_auth
 def get_account_statement_summary(account_id: str):
     """Create the statement report."""

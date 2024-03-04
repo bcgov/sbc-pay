@@ -471,7 +471,7 @@ def factory_routing_slip(
         payment_account_id=payment_account_id,
         status=status,
         total=total,
-        remaining_amount=remaining_amount,
+        remaining_amount=Decimal(str(remaining_amount)),
         created_by='test',
         routing_slip_date=routing_slip_date
     )
@@ -493,7 +493,7 @@ def factory_routing_slip_usd(
         payment_account_id=payment_account_id,
         status=status,
         total=total,
-        remaining_amount=remaining_amount,
+        remaining_amount=Decimal(str(remaining_amount)),
         created_by='test',
         routing_slip_date=routing_slip_date,
         total_usd=total_usd

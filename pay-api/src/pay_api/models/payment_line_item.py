@@ -86,7 +86,7 @@ class PaymentLineItem(BaseModel):  # pylint: disable=too-many-instance-attribute
             PaymentLineItem.invoice_id.desc()).all()
 
 
-class PaymentLineItemSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class PaymentLineItemSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Payment line item."""
 
     class Meta:  # pylint: disable=too-few-public-methods
@@ -94,6 +94,7 @@ class PaymentLineItemSchema(ma.ModelSchema):  # pylint: disable=too-many-ancesto
 
         model = PaymentLineItem
         exclude = ['fee_schedule_id', 'fee_schedule']
+        load_instance = True
 
     line_item_status_code = fields.String(data_key='status_code')
     filing_fees = fields.Float(data_key='filing_fees')

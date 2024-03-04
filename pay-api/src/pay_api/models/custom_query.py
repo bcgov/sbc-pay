@@ -13,11 +13,11 @@
 # limitations under the License.
 """Custom Query class to extend BaseQuery class functionality."""
 from datetime import date, datetime
-from flask_sqlalchemy import BaseQuery
+from flask_sqlalchemy.query import Query
 from sqlalchemy import and_, func
 
 
-class CustomQuery(BaseQuery):
+class CustomQuery(Query):
     """Custom Query class to extend the base query class for helper functionality."""
 
     def filter_conditionally(self, search_criteria, model_attribute, is_like: bool = False):

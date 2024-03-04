@@ -14,15 +14,6 @@
         ]
     },
     {
-        "vault": "nats",
-        "application": [
-            "base",
-            "account-events-listener",
-            "account-mailer",
-            "payment"
-        ]
-    },
-    {
         "vault": "gcp-queue",
         "application": [
             "payment"

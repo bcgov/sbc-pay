@@ -29,7 +29,7 @@ from dpath import util as dpath_util
 from flask import current_app
 
 from .constants import DT_SHORT_FORMAT
-from .enums import CorpType, StatementFrequency
+from .enums import StatementFrequency
 
 
 def cors_preflight(methods: str = 'GET'):
@@ -182,22 +182,6 @@ def mask(val: str, preserve_length: int = 0) -> str:
     if preserve_length is None or preserve_length == 0:  # mask fully
         return replace_char * len(val)
     return val[-preserve_length:].rjust(len(val), replace_char)
-
-
-def get_pay_subject_name(corp_type: str, subject_format: str = None):
-    """Return payment subject name."""
-    # TODO Refactor later
-    subject_format = subject_format or current_app.config.get('NATS_PAYMENT_SUBJECT')
-
-    if corp_type == CorpType.NRO.value:
-        pay_subject = 'name-request'
-    elif corp_type == CorpType.PPR.value:
-        pay_subject = 'ppr'
-    elif corp_type == CorpType.VS.value:
-        pay_subject = 'vs'
-    else:
-        pay_subject = 'filing'
-    return subject_format.format(product=pay_subject)
 
 
 def get_nearest_business_day(date_val: datetime, include_today: bool = True) -> datetime:

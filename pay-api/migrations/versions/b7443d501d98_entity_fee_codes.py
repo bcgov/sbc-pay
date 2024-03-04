@@ -8,7 +8,7 @@ Create Date: 2020-11-18 16:23:31.943979
 from datetime import date
 
 from alembic import op
-from sqlalchemy import Date, Float, String
+from sqlalchemy import Date, Float, String, text
 from sqlalchemy.sql import column, table
 
 
@@ -37,7 +37,7 @@ def upgrade():
     )
     # Patch to adjust manual code entries in other dev/test/prod
     conn = op.get_bind()
-    res = conn.execute("select * from corp_type where code='BEN'")
+    res = conn.execute(text("select * from corp_type where code='BEN'"))
     ben_code = res.fetchall()
     if len(ben_code) == 0:
         # Insert BEN

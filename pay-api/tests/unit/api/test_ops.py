@@ -28,7 +28,7 @@ def test_ops_healthz_success(client):
 
 
 def test_ops_healthz_fail(app_request):
-    """Assert that the service is unhealthy if a connection toThe database cannot be made."""
+    """Assert that the service is unhealthy if a connection to the database cannot be made."""
     app_request.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://does:not@exist:5432/nada'
     with app_request.test_client() as client:
         rv = client.get('/ops/healthz')

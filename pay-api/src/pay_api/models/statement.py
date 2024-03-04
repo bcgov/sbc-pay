@@ -18,7 +18,7 @@ from marshmallow import fields
 from sqlalchemy import ForeignKey, and_, case, func, literal_column, or_
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import aliased
-from sqlalchemy_continuum import transaction_class, version_class
+# from sqlalchemy_continuum import transaction_class, version_class
 
 from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
 from pay_api.utils.enums import StatementFrequency
@@ -72,6 +72,9 @@ class Statement(BaseModel):
     @hybrid_property
     def payment_methods(self):
         """Return all payment methods that were active during the statement period based on payment account versions."""
+        # TODO FIX THIS.
+        return []
+        """
         payment_account_version = version_class(PaymentAccount)
         transaction_start = aliased(transaction_class(PaymentAccount))
         transaction_end = aliased(transaction_class(PaymentAccount))
@@ -88,6 +91,7 @@ class Statement(BaseModel):
             .group_by(Statement.id).first()
 
         return subquery[0] if subquery else []
+        """
 
     @classmethod
     def find_all_statements_for_account(cls, auth_account_id: str, page, limit):
@@ -98,20 +102,18 @@ class Statement(BaseModel):
                          PaymentAccount.auth_account_id == auth_account_id))
 
         frequency_case = case(
-            [
-                (
-                    Statement.frequency == StatementFrequency.MONTHLY.value,
-                    literal_column("'1'")
-                ),
-                (
-                    Statement.frequency == StatementFrequency.WEEKLY.value,
-                    literal_column("'2'")
-                ),
-                (
-                    Statement.frequency == StatementFrequency.DAILY.value,
-                    literal_column("'3'")
-                )
-            ],
+            (
+                Statement.frequency == StatementFrequency.MONTHLY.value,
+                literal_column("'1'")
+            ),
+            (
+                Statement.frequency == StatementFrequency.WEEKLY.value,
+                literal_column("'2'")
+            ),
+            (
+                Statement.frequency == StatementFrequency.DAILY.value,
+                literal_column("'3'")
+            ),
             else_=literal_column("'4'")
         )
 
@@ -138,13 +140,14 @@ class Statement(BaseModel):
         return query.all()
 
 
-class StatementSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class StatementSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Statements."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Statement
+        load_instance = True
 
     from_date = fields.Date(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))
     to_date = fields.Date(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))

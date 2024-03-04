@@ -21,7 +21,6 @@ from pay_api.exceptions import BusinessException
 from pay_api.services import InvoiceService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
-from pay_api.utils.trace import tracing as _tracing
 
 
 bp = Blueprint('INVOICES', __name__,
@@ -30,7 +29,6 @@ bp = Blueprint('INVOICES', __name__,
 
 @bp.route('', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET'])
-@_tracing.trace()
 @_jwt.requires_auth
 def get_invoice_by_id(invoice_id):
     """Subject to remove once the change has been notified to teams."""

@@ -80,10 +80,11 @@ class Refund(BaseModel):  # pylint:disable=too-many-instance-attributes
         return cls.query.filter_by(routing_slip_id=routing_slip_id).one_or_none()
 
 
-class RefundSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class RefundSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Refund."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Refund
+        load_instance = True

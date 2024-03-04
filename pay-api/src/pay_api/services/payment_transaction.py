@@ -16,7 +16,6 @@
 from __future__ import annotations
 
 import uuid
-from contextlib import suppress
 from datetime import datetime
 from typing import Dict, List
 
@@ -28,17 +27,16 @@ from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import PaymentTransactionSchema
 from pay_api.services.base_payment_system import PaymentSystemService
-from pay_api.services.gcp_queue_publisher import publish_to_queue
+from pay_api.services import gcp_queue_publisher
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus
 from pay_api.utils.errors import Error
-from pay_api.utils.util import get_pay_subject_name, is_valid_redirect_url
+from pay_api.utils.util import is_valid_redirect_url
 
 from .payment import Payment
-from .queue_publisher import publish_response
 
 
 class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -498,12 +496,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         payload = PaymentTransaction.create_event_payload(invoice, status_code)
 
         try:
-            publish_response(payload=payload, subject=get_pay_subject_name(invoice.corp_type_code))
-
-            # First stage in rolling in the new queue services
-            # It'll not block or disrupt any flows (in theory)
-            with suppress(Exception):
-                publish_to_queue(payload=payload, invoice=invoice)
+            gcp_queue_publisher.publish_to_queue(payload=payload)
 
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(e)

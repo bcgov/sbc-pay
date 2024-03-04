@@ -18,7 +18,7 @@ from marshmallow import post_dump
 from .db import ma
 
 
-class BaseSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class BaseSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
     """Base Schema."""
 
     def __init__(self, *args, **kwargs):
@@ -31,6 +31,7 @@ class BaseSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
         """Meta class to declare any class attributes."""
 
         datetimeformat = '%Y-%m-%dT%H:%M:%S+00:00'
+        load_instance = True
 
     @post_dump(pass_many=True)
     def _remove_empty(self, data, many):

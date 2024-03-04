@@ -20,14 +20,12 @@ from flask_cors import cross_origin
 from pay_api.exceptions import BusinessException
 from pay_api.services import FeeSchedule
 from pay_api.utils.endpoints_enums import EndpointEnum
-from pay_api.utils.trace import tracing as _tracing
 
 bp = Blueprint('FEE_SCHEDULE', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/fees/schedules')
 
 
 @bp.route('', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET'])
-@_tracing.trace()
 def get_fee_schedules():
     """Calculate the fee for the filing using the corp type/filing type and return fee."""
     try:

@@ -115,7 +115,7 @@ def upgrade():
 
     conn = op.get_bind()
     res = conn.execute(
-        'select fee_schedule_id, corp_type_code from fee_schedule;')
+        sa.text('select fee_schedule_id, corp_type_code from fee_schedule;'))
     results = res.fetchall()
     for result in results:
         distribution_code_id = None

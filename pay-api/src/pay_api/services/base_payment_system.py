@@ -31,6 +31,7 @@ from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services.cfs_service import CFSService
+from pay_api.services import gcp_queue_publisher
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
@@ -38,7 +39,7 @@ from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import (
     CorpType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus)
 from pay_api.utils.user_context import UserContext
-from pay_api.utils.util import get_local_formatted_date_time, get_pay_subject_name
+from pay_api.utils.util import get_local_formatted_date_time
 
 from .payment_line_item import PaymentLineItem
 from .receipt import Receipt
@@ -142,7 +143,6 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def _release_payment(invoice: Invoice):
         """Release record."""
         from .payment_transaction import PaymentTransaction  # pylint:disable=import-outside-toplevel,cyclic-import
-        from .payment_transaction import publish_response  # pylint:disable=import-outside-toplevel,cyclic-import
 
         if invoice.corp_type_code in [CorpType.CSO.value, CorpType.RPT.value, CorpType.PPR.value, CorpType.VS.value]:
             return
@@ -150,7 +150,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
         try:
             current_app.logger.info(f'Releasing record for invoice {invoice.id}')
-            publish_response(payload=payload, subject=get_pay_subject_name(invoice.corp_type_code))
+            gcp_queue_publisher.publish_to_queue(payload)
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(e)
             current_app.logger.error('Notification to Queue failed for the Payment Event %s', payload)
@@ -198,7 +198,6 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     @staticmethod
     def _publish_refund_to_mailer(invoice: InvoiceModel):
         """Construct message and send to mailer queue."""
-        from .payment_transaction import publish_response  # pylint:disable=import-outside-toplevel,cyclic-import
         receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice_id=invoice.id)
         invoice_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice_id=invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value)
@@ -238,8 +237,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
                 'filingDescription': filing_description
             })
         current_app.logger.debug(f'Publishing payment refund request to mailer for {invoice.id} : {q_payload}')
-        publish_response(payload=q_payload, client_name=current_app.config.get('NATS_MAILER_CLIENT_NAME'),
-                         subject=current_app.config.get('NATS_MAILER_SUBJECT'))
+        gcp_queue_publisher.publish_to_queue(q_payload)
 
     def complete_payment(self, invoice, invoice_reference):
         """Create payment and related records as if the payment is complete."""

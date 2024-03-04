@@ -26,7 +26,6 @@ from pay_api.services.eft_transactions import EFTTransactionSearch
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
-from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import string_to_date
 
 
@@ -76,7 +75,6 @@ def get_eft_shortnames():
 
 @bp.route('/<int:short_name_id>', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET', 'PATCH'])
-@_tracing.trace()
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def get_eft_shortname(short_name_id: int):
@@ -94,7 +92,6 @@ def get_eft_shortname(short_name_id: int):
 
 @bp.route('/<int:short_name_id>', methods=['PATCH'])
 @cross_origin(origins='*')
-@_tracing.trace()
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def patch_eft_shortname(short_name_id: int):
     """Update EFT short name mapping."""
@@ -117,7 +114,6 @@ def patch_eft_shortname(short_name_id: int):
 
 @bp.route('/<int:short_name_id>/transactions', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET'])
-@_tracing.trace()
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def get_eft_shortname_transactions(short_name_id: int):

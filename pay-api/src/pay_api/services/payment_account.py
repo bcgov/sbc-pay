@@ -38,8 +38,8 @@ from pay_api.models import db
 from pay_api.models.payment_account import PaymentAccountSearchModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.distribution_code import DistributionCode
+from pay_api.services import gcp_queue_publisher
 from pay_api.services.oauth_service import OAuthService
-from pay_api.services.queue_publisher import publish_response
 from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings
@@ -436,7 +436,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         # pylint:disable=cyclic-import, import-outside-toplevel
         from pay_api.factory.payment_system_factory import PaymentSystemFactory
 
-        payment_account.auth_account_id = account_request.get('accountId')
+        payment_account.auth_account_id = str(account_request.get('accountId'))
 
         # If the payment method is CC, set the payment_method as DIRECT_PAY
         if payment_method := get_str_by_path(account_request, 'paymentInfo/methodOfPayment'):
@@ -606,7 +606,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         else:
             # Handle repeated changing of pad to bcol ;then to pad again etc
             new_activation_date = account.pad_activation_date  # was already in pad ;no need to extend
-            is_previous_pad_activated = account.pad_activation_date < datetime.now()
+            is_previous_pad_activated = new_activation_date < datetime.now(new_activation_date.tzinfo)
             if is_previous_pad_activated:
                 # was in PAD ; so no need of activation period wait time and no need to be in bcol..so use PAD again
                 new_payment_method = PaymentMethod.PAD.value
@@ -796,7 +796,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
     def _is_pad_in_pending_activation(self):
         """Find if PAD is awaiting activation."""
-        return self.pad_activation_date and self.pad_activation_date > datetime.now() and self.cfs_account_status in \
+        return self.pad_activation_date and self.pad_activation_date > datetime.now(self.pad_activation_date.tzinfo) \
+            and self.cfs_account_status in \
             (CfsAccountStatus.PENDING.value, CfsAccountStatus.PENDING_PAD_ACTIVATION.value)
 
     def publish_account_mailer_event_on_creation(self):
@@ -808,9 +809,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def _publish_queue_message(self, payload):
         """Publish to account mailer to send out confirmation email or notification email."""
         try:
-            publish_response(payload=payload,
-                             client_name=current_app.config['NATS_MAILER_CLIENT_NAME'],
-                             subject=current_app.config['NATS_MAILER_SUBJECT'])
+            gcp_queue_publisher.publish_to_queue(payload)
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(e)
             current_app.logger.error(
@@ -873,9 +872,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             )
 
             try:
-                publish_response(payload=payload,
-                                 client_name=current_app.config['NATS_ACCOUNT_CLIENT_NAME'],
-                                 subject=current_app.config['NATS_ACCOUNT_SUBJECT'])
+                gcp_queue_publisher.publish_to_queue(payload=payload)
             except Exception as e:  # NOQA pylint: disable=broad-except
                 current_app.logger.error(e)
                 current_app.logger.error(
