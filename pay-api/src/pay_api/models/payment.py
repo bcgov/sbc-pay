@@ -153,7 +153,6 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             .outerjoin(Invoice, InvoiceReference.invoice_id == Invoice.id) \
             .filter(PaymentAccount.auth_account_id == auth_account_id)
 
-        # TODO handle other status and conditions gracefully.
         if payment_status:
             query = query.filter(Payment.payment_status_code == payment_status)
             if payment_status == PaymentStatus.FAILED.value:
