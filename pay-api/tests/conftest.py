@@ -88,7 +88,7 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
     with app.app_context():
         with db.engine.connect() as conn:
             transaction = conn.begin()
-            sess = db._make_scoped_session(dict(bind=conn, autoflush=False))  # pylint: disable=protected-access
+            sess = db._make_scoped_session(dict(bind=conn))  # pylint: disable=protected-access
             # Establish SAVEPOINT (http://docs.sqlalchemy.org/en/latest/orm/session_transaction.html#using-savepoint)
             nested = sess.begin_nested()
             db.session = sess
