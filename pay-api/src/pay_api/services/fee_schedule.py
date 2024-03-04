@@ -211,12 +211,12 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     @property
     def gst(self):
         """Return the fee amount."""
-        return 0  # TODO
+        return 0
 
     @property
     def pst(self):
         """Return the fee amount."""
-        return 0  # TODO
+        return 0
 
     @property
     def quantity(self):

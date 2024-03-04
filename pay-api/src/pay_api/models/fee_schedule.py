@@ -130,7 +130,6 @@ class FeeSchedule(db.Model):
             query = query.filter_by(corp_type_code=corp_type_code)
 
         if description:
-            # TODO arrive at a better search
             descriptions = description.replace(' ', '%')
             query = query.join(CorpType,
                                CorpType.code == FeeSchedule.corp_type_code). \
