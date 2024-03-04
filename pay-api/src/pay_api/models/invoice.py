@@ -224,7 +224,7 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
         if data.get('business_identifier', None) and data.get('business_identifier').startswith('T'):
             data.pop('business_identifier')
 
-        # TODO remove it later, adding this here to make non-breaking changes for other teams
+        # Adding this here to make non-breaking changes for other teams EG: CSO
         if data.get('status_code') == InvoiceStatus.PAID.value:
             data['status_code'] = PaymentStatus.COMPLETED.value
 
