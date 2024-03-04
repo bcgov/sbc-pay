@@ -26,7 +26,6 @@ cryptography==42.0.5
 dpath==2.1.6
 ecdsa==0.18.0
 expiringdict==1.2.2
-flask-jwt-oidc==0.3.0
 flask-marshmallow==1.2.0
 google-api-core==2.17.1
 google-auth==2.18.1
@@ -72,3 +71,4 @@ typing_extensions==4.10.0
 urllib3==1.26.18
 -e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
 git+https://github.com/daxiom/simple-cloudevent.py.git
+git+https://github.com/thorwolpert/flask-jwt-oidc.git
