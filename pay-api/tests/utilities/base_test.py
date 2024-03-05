@@ -508,7 +508,7 @@ def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.va
                     total=0,
                     paid=None,
                     payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
-                    created_on: datetime = datetime.now(),
+                    created_on: datetime = datetime.utcnow(),
                     routing_slip=None,
                     folio_number=1234567890,
                     created_name='test name',
@@ -554,8 +554,8 @@ def factory_payment_transaction(
         status_code: str = 'CREATED',
         client_system_url: str = 'http://google.com/',
         pay_system_url: str = 'http://google.com',
-        transaction_start_time: datetime = datetime.now(),
-        transaction_end_time: datetime = datetime.now(),
+        transaction_start_time: datetime = datetime.utcnow(),
+        transaction_end_time: datetime = datetime.utcnow(),
 ):
     """Return Factory."""
     return PaymentTransaction(
