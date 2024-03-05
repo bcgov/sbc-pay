@@ -13,7 +13,7 @@
 # limitations under the License.
 """Super class to handle all operations related to base model."""
 
-from flask import current_app
+# from flask import current_app
 # from sqlalchemy_continuum.plugins.flask import fetch_remote_addr
 
 from pay_api.utils.user_context import user_context

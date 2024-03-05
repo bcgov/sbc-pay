@@ -53,6 +53,7 @@ jobs:
     needs: setup-job
     env:
       FLASK_ENV: "testing"
+      # Needs different database than POSTGRES otherwise dropping database doesn't work
       DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/pay-test"
       TEST_NATS_DOCKER: "YES"
       USE_TEST_KEYCLOAK_DOCKER: "YES"
@@ -83,6 +84,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
+          # Needs different database than POSTGRES otherwise dropping database doesn't work
           POSTGRES_DB: pay-test
         ports:
           - 5432:5432

@@ -21,7 +21,7 @@ import random
 import pytest
 from flask_migrate import Migrate, upgrade
 from sqlalchemy import event, text
-from sqlalchemy_utils import drop_database, create_database, database_exists
+from sqlalchemy_utils import create_database, database_exists, drop_database
 
 from pay_api import create_app
 from pay_api import jwt as _jwt

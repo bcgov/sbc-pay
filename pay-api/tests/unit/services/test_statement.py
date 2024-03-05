@@ -16,7 +16,7 @@
 
 Test-Suite to ensure that the Statement Service is working as expected.
 """
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pytz
 from freezegun import freeze_time

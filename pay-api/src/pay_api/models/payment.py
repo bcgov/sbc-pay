@@ -288,7 +288,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         query = db.session.query(Invoice) \
             .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
         query = cls.filter(query, auth_account_id, search_filter, add_outer_joins=True)
-        count = query.group_by(Invoice.id).with_entities(func.count()).count()
+        count = query.group_by(Invoice.id).with_entities(func.count()).count()  # pylint:disable=not-callable
         return count
 
     @classmethod
@@ -312,7 +312,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             query = query.filter(
                 Invoice.created_name.ilike(f'%{created_by}%'))  # pylint: disable=no-member
         if created_name := search_filter.get('createdName', None):
-            query = query.filter(Invoice.created_name.ilike(f'%{created_name}%'))
+            query = query.filter(Invoice.created_name.ilike(f'%{created_name}%'))  # pylint: disable=no-member
         if invoice_id := search_filter.get('id', None):
             query = query.filter(cast(Invoice.id, String).like(f'%{invoice_id}%'))
 
