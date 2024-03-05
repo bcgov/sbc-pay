@@ -22,7 +22,6 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus
-from pay_api.utils.util import generate_transaction_number
 
 from .deposit_service import DepositService
 from .invoice import Invoice
@@ -63,10 +62,14 @@ class EftService(DepositService):
                                       payment_date=payment_date,
                                       paid_amount=invoice_balance - new_invoice_balance)
 
+        invoice_reference = self.create_invoice_reference(invoice=invoice_model, payment=payment)
+
+        receipt = self.create_receipt(invoice=invoice_model, payment=payment)
+
         if auto_save:
             payment.save()
 
-        return payment
+        return payment, invoice_reference, receipt
 
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
