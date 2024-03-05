@@ -172,7 +172,7 @@ def test_get_weekly_interim_statement(session, admin_users_mock):
                                      total=50).save()
 
     assert weekly_invoice is not None
-    assert localize_date(weekly_invoice.created_on) == invoice_create_date
+    assert weekly_invoice.created_on == invoice_create_date.replace(tzinfo=None)
 
     update_date = localize_date(datetime(2023, 10, 12, 12, 0))
     with freeze_time(update_date):
@@ -232,7 +232,7 @@ def test_get_monthly_interim_statement(session, admin_users_mock):
                                       total=50).save()
 
     assert monthly_invoice is not None
-    assert localize_date(monthly_invoice.created_on) == invoice_create_date
+    assert monthly_invoice.created_on == invoice_create_date.replace(tzinfo=None)
 
     update_date = localize_date(datetime(2023, 10, 12, 12, 0))
     with freeze_time(update_date):
