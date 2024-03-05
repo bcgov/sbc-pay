@@ -21,7 +21,6 @@ autopep8
 coverage
 pylint
 pylint-flask
-pylint-flask-sqlalchemy
 pydocstyle
 isort
 
