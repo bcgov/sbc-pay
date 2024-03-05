@@ -67,12 +67,13 @@ class Receipt(BaseModel):
         return cls.query.filter_by(invoice_id=invoice_id).all()
 
 
-class ReceiptSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class ReceiptSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Receipt."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Receipt
+        load_instance = True
 
     receipt_date = fields.DateTime(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))

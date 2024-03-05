@@ -329,9 +329,9 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                                  EFTShortnameModel.linked_by_name,
                                  EFTShortnameModel.linked_on,
                                  case(
-                                     [(PaymentAccountModel.name.like('%-' + PaymentAccountModel.branch_name),
-                                       func.replace(PaymentAccountModel.name, '-' + PaymentAccountModel.branch_name, '')
-                                       )],
+                                     (PaymentAccountModel.name.like('%-' + PaymentAccountModel.branch_name),
+                                      func.replace(PaymentAccountModel.name, '-' + PaymentAccountModel.branch_name, '')
+                                      ),
                                      else_=PaymentAccountModel.name
                                  ).label('account_name'),
                                  PaymentAccountModel.branch_name.label('account_branch'))

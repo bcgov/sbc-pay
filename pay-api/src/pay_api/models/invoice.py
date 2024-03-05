@@ -126,7 +126,7 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
             .join(PaymentLineItem, PaymentLineItem.invoice_id == Invoice.id) \
             .filter(PaymentLineItem.fee_distribution_id == fee_distribution_id)
 
-        invoices: [Invoice] = query.all()
+        invoices: List[Invoice] = query.all()
         for invoice in invoices:
             if invoice.invoice_status_code == InvoiceStatus.PAID.value:
                 invoice.invoice_status_code = InvoiceStatus.UPDATE_REVENUE_ACCOUNT.value
@@ -199,8 +199,8 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
                                 many=False)
 
     _links = ma.Hyperlinks({
-        'self': ma.URLFor('INVOICE.get_invoice', invoice_id='<id>'),
-        'collection': ma.URLFor('INVOICE.get_invoices', invoice_id='<id>')
+        'self': ma.URLFor('INVOICE.get_invoice', values={'invoice_id': '<id>'}),
+        'collection': ma.URLFor('INVOICE.get_invoices', values={'invoice_id': '<id>'})
     })
 
     total = fields.Float(data_key='total')
@@ -224,7 +224,7 @@ class InvoiceSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancest
         if data.get('business_identifier', None) and data.get('business_identifier').startswith('T'):
             data.pop('business_identifier')
 
-        # TODO remove it later, adding this here to make non-breaking changes for other teams
+        # Adding this here to make non-breaking changes for other teams EG: CSO
         if data.get('status_code') == InvoiceStatus.PAID.value:
             data['status_code'] = PaymentStatus.COMPLETED.value
 

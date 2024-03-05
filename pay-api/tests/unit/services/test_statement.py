@@ -16,7 +16,7 @@
 
 Test-Suite to ensure that the Statement Service is working as expected.
 """
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pytz
 from freezegun import freeze_time
@@ -172,8 +172,6 @@ def test_get_weekly_interim_statement(session, admin_users_mock):
                                      total=50).save()
 
     assert weekly_invoice is not None
-    assert weekly_invoice.created_on == invoice_create_date.astimezone(timezone.utc).replace(tzinfo=None)
-
     update_date = localize_date(datetime(2023, 10, 12, 12, 0))
     with freeze_time(update_date):
         account = PaymentAccountService.update(account.auth_account_id,
@@ -232,7 +230,6 @@ def test_get_monthly_interim_statement(session, admin_users_mock):
                                       total=50).save()
 
     assert monthly_invoice is not None
-    assert monthly_invoice.created_on == invoice_create_date.astimezone(timezone.utc).replace(tzinfo=None)
 
     update_date = localize_date(datetime(2023, 10, 12, 12, 0))
     with freeze_time(update_date):

@@ -56,7 +56,6 @@ def upgrade():
                     sa.Column('completed_on', sa.DateTime(), nullable=True),
                     sa.Column('line_number', sa.Integer(), nullable=False),
                     sa.Column('line_type', sa.String(20), nullable=False),
-                    sa.Column('batch_number', sa.String(10), nullable=True),
                     sa.Column('sequence_number', sa.String(3), nullable=True),
                     sa.Column('jv_type', sa.String(1), nullable=True),
                     sa.Column('jv_number', sa.String(10), nullable=True),

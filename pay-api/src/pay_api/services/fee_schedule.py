@@ -211,12 +211,12 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     @property
     def gst(self):
         """Return the fee amount."""
-        return 0  # TODO
+        return 0
 
     @property
     def pst(self):
         """Return the fee amount."""
-        return 0  # TODO
+        return 0
 
     @property
     def quantity(self):
@@ -338,7 +338,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         }
         fee_schdules = FeeScheduleModel.find_all(corp_type_code=corp_type, filing_type_code=filing_type_code,
                                                  description=description)
-        schdule_schema = FeeScheduleSchema(exclude=('distribution_codes',))
+        schdule_schema = FeeScheduleSchema()
         data['items'] = schdule_schema.dump(fee_schdules, many=True)
         current_app.logger.debug('>find_all')
         return data

@@ -28,7 +28,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version: [3.12]
 
     steps:
       - uses: actions/checkout@v3
@@ -60,6 +60,10 @@ jobs:
       JWT_OIDC_JWKS_CACHE_TIMEOUT: "6000"
 
     runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        python-version: [3.12]
 
     services:
       postgres:
@@ -97,6 +101,10 @@ jobs:
   build-check:
     needs: setup-job
     runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        python-version: [3.12]
 
     steps:
       - uses: actions/checkout@v3

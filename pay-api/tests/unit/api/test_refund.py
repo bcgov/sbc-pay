@@ -33,7 +33,7 @@ from tests.utilities.base_test import (
     get_routing_slip_request, get_unlinked_pad_account_payload, token_header)
 
 
-def test_create_refund(session, client, jwt, app, stan_server, monkeypatch):
+def test_create_refund(session, client, jwt, app, monkeypatch):
     """Assert that the endpoint  returns 202."""
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -61,7 +61,7 @@ def test_create_refund(session, client, jwt, app, stan_server, monkeypatch):
     assert RefundModel.find_by_invoice_id(inv_id) is not None
 
 
-def test_create_drawdown_refund(session, client, jwt, app, stan_server):
+def test_create_drawdown_refund(session, client, jwt, app):
     """Assert that the endpoint returns 202."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -83,7 +83,7 @@ def test_create_drawdown_refund(session, client, jwt, app, stan_server):
     assert rv.json.get('message') == REFUND_SUCCESS_MESSAGES['DIRECT_PAY.PAID']
 
 
-def test_create_pad_refund(session, client, jwt, app, stan_server):
+def test_create_pad_refund(session, client, jwt, app):
     """Assert that the endpoint returns 202 and creates a credit on the account."""
     # 1. Create a PAD payment_account and cfs_account.
     # 2. Create a PAD invoice and mark as PAID.
@@ -172,7 +172,7 @@ def test_create_pad_refund(session, client, jwt, app, stan_server):
     assert pay_account.credit == 0
 
 
-def test_create_duplicate_refund_fails(session, client, jwt, app, stan_server):
+def test_create_duplicate_refund_fails(session, client, jwt, app):
     """Assert that the endpoint returns 400."""
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -201,7 +201,7 @@ def test_create_duplicate_refund_fails(session, client, jwt, app, stan_server):
 
 
 def test_create_refund_with_existing_routing_slip(session, client,
-                                                  jwt, app, stan_server):
+                                                  jwt, app):
     """Assert that the endpoint  returns 202."""
     claims = get_claims(
         roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value, Role.FAS_REFUND.value, Role.STAFF.value, 'make_payment'])
@@ -242,7 +242,7 @@ def test_create_refund_with_existing_routing_slip(session, client,
 
 
 def test_create_refund_with_legacy_routing_slip(session, client,
-                                                jwt, app, stan_server):
+                                                jwt, app):
     """Assert that the endpoint returns 400."""
     claims = get_claims(
         roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value, Role.FAS_REFUND.value, Role.STAFF.value, 'make_payment'])
@@ -261,7 +261,7 @@ def test_create_refund_with_legacy_routing_slip(session, client,
     assert rv.json.get('type') == 'ROUTING_SLIP_REFUND'
 
 
-def test_create_refund_fails(session, client, jwt, app, stan_server, monkeypatch):
+def test_create_refund_fails(session, client, jwt, app, monkeypatch):
     """Assert that the endpoint returns 400."""
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}

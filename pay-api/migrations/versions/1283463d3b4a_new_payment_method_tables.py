@@ -101,8 +101,8 @@ def upgrade():
 
     # Update invoice which have credit_account_id with matching details from cfs_account
     conn = op.get_bind()
-    res = conn.execute("select cfs.id, credit.id from cfs_account cfs, credit_payment_account credit "
-                       "where credit.paybc_account=cfs.cfs_account and credit.account_id=cfs.account_id;")
+    res = conn.execute(sa.text("select cfs.id, credit.id from cfs_account cfs, credit_payment_account credit "
+                       "where credit.paybc_account=cfs.cfs_account and credit.account_id=cfs.account_id;"))
     cfs_accounts = res.fetchall()
     for cfs_account in cfs_accounts:
         cfs_id = cfs_account[0]

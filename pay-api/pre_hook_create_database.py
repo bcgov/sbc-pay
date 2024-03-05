@@ -37,4 +37,4 @@ DATABASE_URI = 'postgresql://postgres:{password}@{host}:{port}/{name}'.format(
 with contextlib.suppress(sqlalchemy.exc.ProgrammingError):
     with sqlalchemy.create_engine(DATABASE_URI, isolation_level='AUTOCOMMIT').connect() as connection:
         DATABASE_NAME = ProdConfig.DB_NAME
-        connection.execute(f'CREATE DATABASE {DATABASE_NAME}')
+        connection.execute(f'CREATE DATABASE "{DATABASE_NAME}"')

@@ -140,18 +140,19 @@ def test_receipt_creation_with_invalid_request(session, client, jwt, app):
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.post('/api/v1/payment-requests', data=json.dumps(get_payment_request()), headers=headers)
-    inovice_id = rv.json.get('id')
+    invoice_id = rv.json.get('id')
     redirect_uri = 'http%3A//localhost%3A8080/coops-web/transactions%3Ftransaction_id%3Dabcd'
     receipt_number = '123451'
-    rv = client.post(f'/api/v1/payment-requests/{inovice_id}/transactions?redirect_uri={redirect_uri}', data=None,
+    rv = client.post(f'/api/v1/payment-requests/{invoice_id}/transactions?redirect_uri={redirect_uri}',
+                     data=json.dumps({}),
                      headers=headers)
     txn_id = rv.json.get('id')
-    client.patch(f'/api/v1/payment-requests/{inovice_id}/transactions/{txn_id}',
+    client.patch(f'/api/v1/payment-requests/{invoice_id}/transactions/{txn_id}',
                  data=json.dumps({'receipt_number': receipt_number}), headers=headers)
     filing_data = {
         'corpName': 'CP0001234'
     }
-    rv = client.post(f'/api/v1/payment-requests/{inovice_id}/receipts', data=json.dumps(filing_data),
+    rv = client.post(f'/api/v1/payment-requests/{invoice_id}/receipts', data=json.dumps(filing_data),
                      headers=headers)
     assert rv.status_code == 400
     assert rv.json.get('type') == 'INVALID_REQUEST'

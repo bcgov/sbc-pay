@@ -30,7 +30,7 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version: [3.12]
 
     steps:
       - uses: actions/checkout@v3
@@ -64,6 +64,10 @@ jobs:
       SBC_AUTH_ADMIN_CLIENT_SECRET: "2222222222"
 
     runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        python-version: [3.12]
 
     services:
       postgres:
@@ -101,6 +105,10 @@ jobs:
   build-check:
     needs: setup-job
     runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        python-version: [3.12]
 
     steps:
       - uses: actions/checkout@v3

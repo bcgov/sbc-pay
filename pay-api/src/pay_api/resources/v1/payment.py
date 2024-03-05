@@ -26,7 +26,6 @@ from pay_api.utils.constants import EDIT_ROLE, MAKE_PAYMENT, VIEW_ROLE
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import PaymentMethod, Role
 from pay_api.utils.errors import Error
-from pay_api.utils.trace import tracing as _tracing
 
 
 bp = Blueprint('PAYMENTS', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/accounts/<string:account_id>/payments')
@@ -34,7 +33,6 @@ bp = Blueprint('PAYMENTS', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/ac
 
 @bp.route('', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET', 'POST'])
-@_tracing.trace()
 @_jwt.requires_auth
 def get_account_payments(account_id: str):
     """Get account payments."""
@@ -52,7 +50,6 @@ def get_account_payments(account_id: str):
 
 @bp.route('', methods=['POST'])
 @cross_origin(origins='*')
-@_tracing.trace()
 @_jwt.requires_auth
 def post_account_payment(account_id: str):
     """Create account payments."""

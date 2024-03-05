@@ -13,12 +13,12 @@
 # limitations under the License.
 """Super class to handle all operations related to base model."""
 
-from flask import current_app
-from sqlalchemy_continuum.plugins.flask import fetch_remote_addr
+# from flask import current_app
+# from sqlalchemy_continuum.plugins.flask import fetch_remote_addr
 
 from pay_api.utils.user_context import user_context
 
-from .db import activity_plugin, db
+from .db import db
 
 
 class BaseModel(db.Model):
@@ -74,18 +74,17 @@ class BaseModel(db.Model):
     @classmethod
     def create_activity(cls, obj, is_delete=False):
         """Create activity records if the model is versioned."""
-        if isinstance(obj, VersionedModel) and not current_app.config.get('DISABLE_ACTIVITY_LOGS'):
-            if is_delete:
-                verb = 'delete'
-            else:
-                verb = 'update'
-
-            activity = activity_plugin.activity_cls(verb=verb, object=obj, data={
-                'user_name': cls._get_user_name(),
-                'remote_addr': fetch_remote_addr()
-            })
-
-            db.session.add(activity)
+        # TODO fix this later
+        # if isinstance(obj, VersionedModel) and not current_app.config.get('DISABLE_ACTIVITY_LOGS'):
+        #     if is_delete:
+        #         verb = 'delete'
+        #     else:
+        #         verb = 'update'
+        #    activity = activity_plugin.activity_cls(verb=verb, object=obj, data={
+        #        'user_name': cls._get_user_name(),
+        #        'remote_addr': fetch_remote_addr()
+        #    })
+        #    db.session.add(activity)
 
     @staticmethod
     @user_context

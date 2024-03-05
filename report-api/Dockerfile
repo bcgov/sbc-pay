@@ -1,4 +1,4 @@
-FROM python:3.8-bullseye
+FROM python:3.12.2-bullseye
 #FROM python:.6-stretch
 
 #RUN echo "deb http://ftp.debian.org/debian stretch main contrib" > /etc/apt/sources.list

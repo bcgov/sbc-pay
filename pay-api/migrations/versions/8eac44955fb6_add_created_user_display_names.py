@@ -34,9 +34,9 @@ def upgrade():
 
     # Check if there are records in payment or invoice table to update names
     conn = op.get_bind()
-    res = conn.execute(f"select id from payment;")
+    res = conn.execute(sa.text(f"select id from payment;"))
     pay_results = res.fetchall()
-    res = conn.execute(f"select id from invoice;")
+    res = conn.execute(sa.text(f"select id from invoice;"))
     inv_results = res.fetchall()
 
     if len(pay_results) > 0 or len(inv_results) > 0:

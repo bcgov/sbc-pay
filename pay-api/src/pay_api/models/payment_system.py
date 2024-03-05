@@ -47,10 +47,11 @@ class PaymentSystem(db.Model, CodeTable):
         db.session.commit()
 
 
-class PaymentSystemSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class PaymentSystemSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the System Code."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = PaymentSystem
+        load_instance = True

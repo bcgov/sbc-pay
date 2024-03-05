@@ -8,7 +8,7 @@ Create Date: 2021-07-13 14:34:48.482182
 from datetime import date
 
 from alembic import op
-from sqlalchemy import Date, String, Float
+from sqlalchemy import Date, String, Float, text
 from sqlalchemy.sql import column, table
 
 # revision identifiers, used by Alembic.
@@ -76,11 +76,11 @@ def upgrade():
                                  "where upper(dc.name) = 'VITAL STATISTICS' and dc.start_date <= CURRENT_DATE " \
                                  "and (dc.end_date is null or dc.end_date > CURRENT_DATE)"
     conn = op.get_bind()
-    res = conn.execute(distribution_code_id_query)
+    res = conn.execute(text(distribution_code_id_query))
     if (res_fetch := res.fetchall()) and res_fetch[0]:
         distribution_code_id = res_fetch[0][0]
         res = conn.execute(
-            f"select fee_schedule_id from fee_schedules where corp_type_code='VS' and filing_type_code='WILLRUSH'")
+            text(f"select fee_schedule_id from fee_schedules where corp_type_code='VS' and filing_type_code='WILLRUSH'"))
         fee_schedule_id = res.fetchall()[0][0]
         distr_code_link = [{
             'distribution_code_id': distribution_code_id,

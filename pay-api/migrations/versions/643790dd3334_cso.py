@@ -80,11 +80,11 @@ def upgrade():
                                  "and dc.start_date <= CURRENT_DATE " \
                                  "and (dc.end_date is null or dc.end_date > CURRENT_DATE)"
     conn = op.get_bind()
-    res = conn.execute(distribution_code_id_query)
+    res = conn.execute(sa.text(distribution_code_id_query))
     if (res_fetch := res.fetchall()) and res_fetch[0]:
         distribution_code_id = res_fetch[0][0]
         res = conn.execute(
-            f"select fee_schedule_id from fee_schedules where corp_type_code='CSO' and filing_type_code='CSBFILE'")
+            sa.text(f"select fee_schedule_id from fee_schedules where corp_type_code='CSO' and filing_type_code='CSBFILE'"))
         fee_schedule_id = res.fetchall()[0][0]
         distr_code_link = [{
             'distribution_code_id': distribution_code_id,

@@ -74,8 +74,8 @@ def upgrade():
     conn = op.get_bind()
 
     res = conn.execute(
-        " select distinct service_fee_memo_name, service_fee_stob, service_fee_line, service_fee_client, service_fee_project_code, service_fee_responsibility_centre, distribution_code_id "
-        " from distribution_codes where service_fee_memo_name is not null and service_fee_stob is not null;")
+        sa.text(" select distinct service_fee_memo_name, service_fee_stob, service_fee_line, service_fee_client, service_fee_project_code, service_fee_responsibility_centre, distribution_code_id "
+        " from distribution_codes where service_fee_memo_name is not null and service_fee_stob is not null;"))
     results = res.fetchall()
     for result in results:
         service_fee_memo_name = result[0]
@@ -88,10 +88,10 @@ def upgrade():
         print('distribution_code_id..', distribution_code_id)
 
         # Check if there is a record existing with the service_fee_responsibility_centre as that's unique.
-        res = conn.execute(f"select distribution_code_id from distribution_codes "
+        res = conn.execute(sa.text(f"select distribution_code_id from distribution_codes "
                            f"where stob='{service_fee_stob}' and service_line='{service_fee_line}' and client='{service_fee_client}' "
                            f" and project_code='{service_fee_project_code}' and responsibility_centre='{service_fee_responsibility_centre}' "
-                           f"and service_fee_distribution_code_id is null")
+                           f"and service_fee_distribution_code_id is null"))
         results = res.fetchall()
         service_fee_distribution_code_id = None if len(results) == 0 else results[0][0]
         print('service_fee_distribution_code_id --->', service_fee_distribution_code_id)
@@ -102,10 +102,10 @@ def upgrade():
                 f"'{service_fee_stob}', '{service_fee_project_code}', '{today}', 'alembic');")
 
             # Get the inserted record id
-            res = conn.execute(f"select distribution_code_id from distribution_codes "
+            res = conn.execute(sa.text(f"select distribution_code_id from distribution_codes "
                                f"where stob='{service_fee_stob}' and service_line='{service_fee_line}' and client='{service_fee_client}' "
                                f" and project_code='{service_fee_project_code}' and responsibility_centre='{service_fee_responsibility_centre}' "
-                               f"and service_fee_distribution_code_id is null")
+                               f"and service_fee_distribution_code_id is null"))
 
             service_fee_distribution_code_id = res.fetchall()[0][0]
 

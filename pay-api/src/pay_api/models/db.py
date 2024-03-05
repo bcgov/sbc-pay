@@ -17,8 +17,8 @@ These will get initialized by the application using the models
 """
 from flask_marshmallow import Marshmallow
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy_continuum import make_versioned
-from sqlalchemy_continuum.plugins import ActivityPlugin
+# from sqlalchemy_continuum import make_versioned
+# from sqlalchemy_continuum.plugins import ActivityPlugin
 from .custom_query import CustomQuery
 
 # by convention in the Flask community these are lower case,
@@ -27,6 +27,8 @@ ma = Marshmallow()  # pylint: disable=invalid-name
 db = SQLAlchemy(query_class=CustomQuery)  # pylint: disable=invalid-name
 
 
-activity_plugin = ActivityPlugin()  # pylint: disable=invalid-name
+# TODO FIX THIS
+# activity_plugin = ActivityPlugin()  # pylint: disable=invalid-name
 
-make_versioned(user_cls=None, plugins=[activity_plugin])
+# TODO fix this
+# make_versioned(user_cls=None, plugins=[activity_plugin])
