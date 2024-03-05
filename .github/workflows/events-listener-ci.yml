@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - queue_python_upgrade
     paths:
       - "queue_services/events-listener/**"
       - "pay-api/src/pay_api/models/**"
