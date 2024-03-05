@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - queue_python_upgrade
     paths:
       - "pay-api/**"
 
