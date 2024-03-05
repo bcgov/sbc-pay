@@ -448,8 +448,7 @@ def _pay_invoice(invoice: InvoiceModel, shortname_balance: Dict):
     eft_payment_service: EFTService = PaymentSystemFactory.create_from_payment_method(PaymentMethod.EFT.value)
 
     payment, invoice_reference, receipt = eft_payment_service.apply_credit(invoice=invoice,
-                                                                           payment_date=payment_date,
-                                                                           auto_save=False)
+                                                                           payment_date=payment_date)
 
     db.session.add(payment)
     db.session.add(invoice_reference)
