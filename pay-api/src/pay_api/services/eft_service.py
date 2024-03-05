@@ -47,8 +47,7 @@ class EftService(DepositService):
 
     def apply_credit(self,
                      invoice: Invoice,
-                     payment_date: datetime = datetime.now(),
-                     auto_save: bool = True) -> tuple:
+                     payment_date: datetime = datetime.now()) -> tuple:
         """Apply eft credit to the invoice."""
         invoice_balance = invoice.total - (invoice.paid or 0)  # balance before applying credits
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
@@ -65,9 +64,6 @@ class EftService(DepositService):
         invoice_reference = self.create_invoice_reference(invoice=invoice_model, payment=payment)
 
         receipt = self.create_receipt(invoice=invoice_model, payment=payment)
-
-        if auto_save:
-            payment.save()
 
         return payment, invoice_reference, receipt
 
