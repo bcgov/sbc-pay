@@ -22,6 +22,7 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus
+from pay_api.utils.util import generate_transaction_number
 
 from .deposit_service import DepositService
 from .invoice import Invoice
@@ -40,7 +41,10 @@ class EftService(DepositService):
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number for direct pay."""
-        # Do nothing here as the invoice references will be created later for eft payment reconciliations (TDI17).
+        payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
+        invoice_reference = self.create_invoice_reference(invoice=invoice, payment=payment)
+
+        return invoice_reference
 
     def apply_credit(self,
                      invoice: Invoice,
@@ -59,15 +63,10 @@ class EftService(DepositService):
                                       payment_date=payment_date,
                                       paid_amount=invoice_balance - new_invoice_balance)
 
-        invoice_ref = self.create_invoice_reference(invoice=invoice_model, payment=payment)
-        receipt = self.create_receipt(invoice=invoice_model, payment=payment)
-
         if auto_save:
             payment.save()
-            invoice_ref.save()
-            receipt.save()
 
-        return payment, invoice_ref, receipt
+        return payment
 
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
@@ -97,7 +96,7 @@ class EftService(DepositService):
 
         invoice_reference.invoice_id = invoice.id
         invoice_reference.invoice_number = payment.invoice_number
-        invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value \
+        invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value \
             if invoice.invoice_status_code == InvoiceStatus.PAID.value \
             else InvoiceReferenceStatus.ACTIVE.value
 
