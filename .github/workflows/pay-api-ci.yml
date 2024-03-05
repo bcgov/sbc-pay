@@ -52,7 +52,7 @@ jobs:
     needs: setup-job
     env:
       FLASK_ENV: "testing"
-      DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+      DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/pay-test"
       TEST_NATS_DOCKER: "YES"
       USE_TEST_KEYCLOAK_DOCKER: "YES"
       USE_DOCKER_MOCK: "YES"
@@ -82,7 +82,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
+          POSTGRES_DB: pay-test
         ports:
           - 5432:5432
         # needed because the postgres container does not provide a healthcheck
