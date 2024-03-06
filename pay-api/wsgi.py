@@ -13,11 +13,13 @@
 # limitations under the License.
 """Provides the WSGI entry point for running the application
 """
-from pay_api import create_app
+from pay_api import create_app, db
 
+from flask_migrate import Migrate
 
 # Openshift s2i expects a lower case name of application
-application = create_app()  # pylint: disable=invalid-name
+app = create_app()  # pylint: disable=invalid-name
+migrate = Migrate(app, db)
 
 if __name__ == "__main__":
-    application.run()
+    app.run()
