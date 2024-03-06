@@ -47,8 +47,8 @@ class EjvInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    entity_id = db.Column(db.Integer, nullable=False, index=True)  # Repurposed for generic linking
-    entity_type = db.Column(db.String(50), nullable=False, index=True)
+    link_id = db.Column(db.Integer, nullable=False, index=True)  # Repurposed for generic linking
+    link_type = db.Column(db.String(50), nullable=False, index=True)
     ejv_header_id = db.Column(db.Integer, ForeignKey('ejv_headers.id'), nullable=False, index=True)
     disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
     message = db.Column('message', db.String, nullable=True, index=False)
