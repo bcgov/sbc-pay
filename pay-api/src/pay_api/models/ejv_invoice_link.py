@@ -36,6 +36,8 @@ class EjvInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
     __mapper_args__ = {
         'include_properties': [
             'id',
+            'link_id',
+            'link_type',
             'disbursement_status_code',
             'ejv_header_id',
             'invoice_id',
@@ -45,7 +47,8 @@ class EjvInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False, index=True)
+    entity_id = db.Column(db.Integer, nullable=False, index=True)  # Repurposed for generic linking
+    entity_type = db.Column(db.String(50), nullable=False, index=True)
     ejv_header_id = db.Column(db.Integer, ForeignKey('ejv_headers.id'), nullable=False, index=True)
     disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
     message = db.Column('message', db.String, nullable=True, index=False)

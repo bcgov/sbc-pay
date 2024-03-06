@@ -254,8 +254,8 @@ class EjvPartnerDistributionTask(CgiEjv):
 
             # Create ejv invoice/partial_refund link records and set invoice status
             sequence = 1
-            sequence = cls._process_items(invoices, ejv_header_model, sequence)
-            cls._process_items(refund_partial_items, ejv_header_model, sequence)
+            sequence = cls._process_items(invoices, ejv_header_model, sequence, 'invoice')
+            cls._process_items(refund_partial_items, ejv_header_model, sequence, 'refund')
 
             db.session.flush()
 
@@ -335,12 +335,13 @@ class EjvPartnerDistributionTask(CgiEjv):
         corp_type_codes: List[str] = db.session.scalars(corp_type_query).all()
 
         return db.session.query(CorpTypeModel).filter(CorpTypeModel.code.in_(corp_type_codes)).all()
-
+    
     @classmethod
-    def _process_items(cls, items, ejv_header_model, sequence):
+    def _process_items(cls, items, ejv_header_model, sequence, link_type):
         for item in items:
             # Create Ejv file link and flush
-            link_model = EjvInvoiceLinkModel(invoice_partial_refund_id=item.id,
+            link_model = EjvInvoiceLinkModel(entity_id=item.id,
+                                             entity_type=link_type,
                                              ejv_header_id=ejv_header_model.id,
                                              disbursement_status_code=DisbursementStatus.UPLOADED.value,
                                              sequence=sequence)
@@ -348,3 +349,4 @@ class EjvPartnerDistributionTask(CgiEjv):
             sequence += 1
             item.disbursement_status_code = DisbursementStatus.UPLOADED.value
         return sequence
+
