@@ -23,7 +23,7 @@ import pytest
 from flask import current_app
 from freezegun import freeze_time
 from pay_api.models import CorpType as CorpTypeModel
-from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvInvoiceLink, FeeSchedule, db
+from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvLink, FeeSchedule, db
 from pay_api.utils.enums import DisbursementStatus
 
 from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
@@ -78,7 +78,7 @@ def test_partial_refund_disbursement_for_partners(session, monkeypatch, client_c
         with freeze_time(day_after_time_delay):
             EjvPartnerDistributionTask.create_ejv_file()
 
-            ejv_inv_link = db.session.query(EjvInvoiceLink).filter(EjvInvoiceLink.invoice_id == invoice.id).first()
+            ejv_inv_link = db.session.query(EjvLink).filter(EjvLink.link_id == invoice.id).first()
             assert ejv_inv_link
 
             ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_inv_link.ejv_header_id).first()

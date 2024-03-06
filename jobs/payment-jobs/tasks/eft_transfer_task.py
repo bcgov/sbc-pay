@@ -23,7 +23,7 @@ from pay_api.models import EFTGLTransfer as EFTGLTransferModel
 from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
-from pay_api.models import EjvInvoiceLink as EjvInvoiceLinkModel
+from pay_api.models import EjvLink as EjvLinkModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
@@ -173,7 +173,7 @@ class EftTransferTask(CgiEjv):
         for inv in invoices:
             current_app.logger.debug(f'Creating EJV Invoice Link for invoice id: {inv.id}')
             # Create Ejv file link and flush
-            ejv_invoice_link = EjvInvoiceLinkModel(invoice_id=inv.id, ejv_header_id=ejv_header_model_id,
+            ejv_invoice_link = EjvLinkModel(link_id=inv.id, link_type='invoice', ejv_header_id=ejv_header_model_id,
                                                    disbursement_status_code=DisbursementStatus.UPLOADED.value,
                                                    sequence=sequence)
             db.session.add(ejv_invoice_link)

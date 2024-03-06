@@ -23,7 +23,7 @@ from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import DistributionCodeLink as DistributionCodeLinkModel
 from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
-from pay_api.models import EjvInvoiceLink as EjvInvoiceLinkModel
+from pay_api.models import EjvLink as EjvLinkModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
@@ -340,11 +340,11 @@ class EjvPartnerDistributionTask(CgiEjv):
     def _process_items(cls, items, ejv_header_model, sequence, link_type):
         for item in items:
             # Create Ejv file link and flush
-            link_model = EjvInvoiceLinkModel(entity_id=item.id,
-                                             entity_type=link_type,
-                                             ejv_header_id=ejv_header_model.id,
-                                             disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                             sequence=sequence)
+            link_model = EjvLinkModel(link_id=item.id,
+                                      link_type=link_type,
+                                      ejv_header_id=ejv_header_model.id,
+                                      disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                      sequence=sequence)
             db.session.add(link_model)
             sequence += 1
             item.disbursement_status_code = DisbursementStatus.UPLOADED.value

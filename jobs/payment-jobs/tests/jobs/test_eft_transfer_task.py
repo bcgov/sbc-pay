@@ -19,7 +19,9 @@ Test-Suite to ensure that the EFT Transfer task is working as expected.
 from datetime import datetime
 from typing import List
 
-from pay_api.models import DistributionCode, EFTGLTransfer, EjvFile, EjvHeader, EjvInvoiceLink, FeeSchedule, Invoice, db
+import pytest
+from flask import Flask
+from pay_api.models import DistributionCode, EFTGLTransfer, EjvFile, EjvHeader, EjvLink, FeeSchedule, Invoice, db
 from pay_api.utils.enums import DisbursementStatus, EFTGlTransferType, EjvFileType, InvoiceStatus, PaymentMethod
 
 from tasks.eft_transfer_task import EftTransferTask
@@ -89,8 +91,8 @@ def test_eft_transfer(app, session, monkeypatch):
 
     # Lookup invoice and assert disbursement status
     for invoice in invoices:
-        ejv_inv_link: EjvInvoiceLink = db.session.query(EjvInvoiceLink) \
-            .filter(EjvInvoiceLink.invoice_id == invoice.id).first()
+        ejv_inv_link: EjvLink = db.session.query(EjvLink) \
+            .filter(EjvLink.link_id == invoice.id).first()
         assert ejv_inv_link
 
         ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_inv_link.ejv_header_id).first()

@@ -19,7 +19,7 @@ from .base_model import BaseModel
 from .db import db
 
 
-class EjvInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
+class EjvLink(BaseModel):  # pylint: disable=too-few-public-methods
     """This class manages linkages between EJV and invoices."""
 
     __tablename__ = 'ejv_invoice_links'
@@ -40,7 +40,6 @@ class EjvInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
             'link_type',
             'disbursement_status_code',
             'ejv_header_id',
-            'invoice_id',
             'message',
             'sequence'
         ]

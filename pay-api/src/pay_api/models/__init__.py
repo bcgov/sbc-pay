@@ -36,7 +36,7 @@ from .eft_short_names import EFTShortnames, EFTShortnameSchema
 from .eft_transaction import EFTTransaction, EFTTransactionSchema
 from .ejv_file import EjvFile
 from .ejv_header import EjvHeader
-from .ejv_invoice_link import EjvInvoiceLink
+from .ejv_invoice_link import EjvLink
 from .error_code import ErrorCode, ErrorCodeSchema
 from .fee_code import FeeCode, FeeCodeSchema  # noqa: I001
 from .fee_schedule import FeeSchedule, FeeScheduleSchema
