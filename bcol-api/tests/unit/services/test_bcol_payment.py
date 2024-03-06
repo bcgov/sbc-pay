@@ -36,10 +36,5 @@ def test_payment(app, payment_mock):
                     has_non_match_error = True
             assert has_non_match_error
         # Success case.
-        with test_case.assertLogs(level='ERROR') as log:
+        with test_case.assertNoLogs(level='ERROR'):
             BcolPayment().create_payment({'serviceFees': 1.50}, False)
-            has_non_match_error = False
-            for message in log.output:
-                if "from BCOL doesn\'t match" in message:
-                    has_non_match_error = True
-            assert has_non_match_error is False
