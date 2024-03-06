@@ -22,7 +22,7 @@ from .db import db
 class EjvLink(BaseModel):  # pylint: disable=too-few-public-methods
     """This class manages linkages between EJV and invoices."""
 
-    __tablename__ = 'ejv_invoice_links'
+    __tablename__ = 'ejv_links'
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
