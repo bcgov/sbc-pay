@@ -15,17 +15,13 @@
 import asyncio
 import os
 import random
-import time
 from contextlib import contextmanager
-
 import pytest
 from flask import Flask
 from flask_migrate import Migrate, upgrade
-from nats.aio.client import Client as Nats
 from pay_api import db as _db
 from sqlalchemy import event, text
 from sqlalchemy.schema import DropConstraint, MetaData
-from stan.aio.client import Client as Stan
 
 from reconciliations.config import get_named_config
 
@@ -45,7 +41,6 @@ def not_raises(exception):
 @pytest.fixture(scope='session')
 def app():
     """Return a session-wide application configured in TEST mode."""
-    # _app = create_app('testing')
     _app = Flask(__name__)
     _app.config.from_object(get_named_config('testing'))
     _db.init_app(_app)
@@ -142,8 +137,6 @@ def client_ctx(app):  # pylint: disable=redefined-outer-name
 def client_id():
     """Return a unique client_id that can be used in tests."""
     _id = random.SystemRandom().getrandbits(0x58)
-    #     _id = (base64.urlsafe_b64encode(uuid.uuid4().bytes)).replace('=', '')
-
     return f'client-{_id}'
 
 
@@ -183,18 +176,6 @@ def session(app, db):  # pylint: disable=redefined-outer-name, invalid-name
         conn.close()
 
 
-@pytest.fixture(scope='session')
-def stan_server(docker_services):
-    """Create the nats / stan services that the integration tests will use."""
-    if os.getenv('TEST_NATS_DOCKER'):
-        docker_services.start('nats')
-        time.sleep(2)
-    # TODO get the wait part working, as opposed to sleeping for 2s
-    # public_port = docker_services.wait_for_service("nats", 4222)
-    # dsn = "{docker_services.docker_ip}:{public_port}".format(**locals())
-    # return dsn
-
-
 @pytest.fixture(scope='session', autouse=True)
 def auto(docker_services, app):
     """Spin up docker containers."""
@@ -202,50 +183,6 @@ def auto(docker_services, app):
         docker_services.start('minio')
         docker_services.start('proxy')
         docker_services.start('paybc')
-        docker_services.start('nats')
-
-
-@pytest.fixture(scope='function')
-@pytest.mark.asyncio
-async def stan(event_loop, client_id):
-    """Create a stan connection for each function, to be used in the tests."""
-    nc = Nats()
-    sc = Stan()
-    cluster_name = 'test-cluster'
-
-    await nc.connect(io_loop=event_loop, name='entity.filing.tester')
-
-    await sc.connect(cluster_name, client_id, nats=nc)
-
-    yield sc
-
-    await sc.close()
-    await nc.close()
-
-
-@pytest.fixture(scope='function')
-@pytest.mark.asyncio
-async def events_stan(app, event_loop, client_id):
-    """Create a stan connection for each function.
-
-    Uses environment variables for the cluster name.
-    """
-    nc = Nats()
-    sc = Stan()
-
-    await nc.connect(io_loop=event_loop)
-
-    cluster_name = os.getenv('STAN_CLUSTER_NAME', 'test-cluster')
-
-    if not cluster_name:
-        raise ValueError('Missing env variable: STAN_CLUSTER_NAME')
-
-    await sc.connect(cluster_name, client_id, nats=nc)
-
-    yield sc
-
-    await sc.close()
-    await nc.close()
 
 
 @pytest.fixture(scope='function')

@@ -29,8 +29,9 @@ from datetime import datetime
 from operator import and_
 from typing import Dict, List
 
+from flask import current_app
+
 from _decimal import Decimal
-from entity_queue_common.service_utils import logger
 from pay_api import db
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import EFTCredit as EFTCreditModel
@@ -78,7 +79,7 @@ async def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-ma
         EFTFileModel.file_ref == file_name).one_or_none()
 
     if eft_file_model and eft_file_model.status_code == EFTProcessStatus.COMPLETED.value:
-        logger.info('File: %s already completed processing on %s.', file_name, eft_file_model.completed_on)
+        current_app.logger.info('File: %s already completed processing on %s.', file_name, eft_file_model.completed_on)
         return
 
     # There is no existing EFT File record - instantiate one
@@ -93,7 +94,7 @@ async def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-ma
     # EFT File parsed data holders
     eft_header: EFTHeader = None
     eft_trailer: EFTTrailer = None
-    eft_transactions: [EFTRecord] = []
+    eft_transactions: List[EFTRecord] = []
 
     # Read and parse EFT file header, trailer, transactions
     for index, line in enumerate(lines):
@@ -109,7 +110,7 @@ async def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-ma
 
     # If header and/or trailer has errors do not proceed
     if not (eft_header_valid and eft_trailer_valid):
-        logger.error('Failed to process file %s with an invalid header or trailer.', file_name)
+        current_app.logger.error('Failed to process file %s with an invalid header or trailer.', file_name)
         eft_file_model.status_code = EFTProcessStatus.FAILED.value
         eft_file_model.save()
         return
@@ -128,7 +129,7 @@ async def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-ma
     # EFT Transactions have parsing errors - stop and FAIL transactions
     # We want a full file to be parseable as we want to get a full accurate balance before applying them to invoices
     if has_eft_transaction_errors:
-        logger.error('Failed to process file %s has transaction parsing errors.', file_name)
+        current_app.logger.error('Failed to process file %s has transaction parsing errors.', file_name)
         _update_transactions_to_fail(eft_file_model)
         return
 
@@ -146,7 +147,7 @@ async def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-ma
     if has_eft_transaction_errors or has_eft_credits_error:
         db.session.rollback()
         _update_transactions_to_fail(eft_file_model)
-        logger.error('Failed to process file %s due to transaction errors.', file_name)
+        current_app.logger.error('Failed to process file %s due to transaction errors.', file_name)
         return
 
     _finalize_process_state(eft_file_model)
@@ -165,7 +166,7 @@ def _finalize_process_state(eft_file_model: EFTFileModel):
 def _process_eft_header(eft_header: EFTHeader, eft_file_model: EFTFileModel) -> bool:
     """Process the EFT Header."""
     if eft_header is None:
-        logger.error('Failed to process file %s with an invalid header.', eft_file_model.file_ref)
+        current_app.logger.error('Failed to process file %s with an invalid header.', eft_file_model.file_ref)
         return False
 
     # Populate header and trailer data on EFT File record - values will return None if parsing failed
@@ -182,7 +183,7 @@ def _process_eft_header(eft_header: EFTHeader, eft_file_model: EFTFileModel) -> 
 def _process_eft_trailer(eft_trailer: EFTTrailer, eft_file_model: EFTFileModel) -> bool:
     """Process the EFT Trailer."""
     if eft_trailer is None:
-        logger.error('Failed to process file %s with an invalid trailer.', eft_file_model.file_ref)
+        current_app.logger.error('Failed to process file %s with an invalid trailer.', eft_file_model.file_ref)
         return False
 
     # Populate header and trailer data on EFT File record - values will return None if parsing failed
@@ -237,7 +238,7 @@ def _process_eft_credits(shortname_balance, eft_file_id):
                 db.session.add(eft_credit_model)
         except Exception as e:  # NOQA pylint: disable=broad-exception-caught
             has_credit_errors = True
-            logger.error(e)
+            current_app.logger.error(e)
             capture_message('EFT Failed to set EFT balance.', level='error')
     return has_credit_errors
 
@@ -252,7 +253,7 @@ def _process_eft_payments(shortname_balance: Dict, eft_file: EFTFileModel) -> bo
 
         # No balance to apply - move to next shortname
         if shortname_balance[shortname]['balance'] <= 0:
-            logger.warning('UNEXPECTED BALANCE: %s had zero or less balance on file: %s', shortname, eft_file.file_ref)
+            current_app.logger.warning('UNEXPECTED BALANCE: %s had zero or less balance on file: %s', shortname, eft_file.file_ref)
             continue
 
         # check if short name is mapped to an auth account
@@ -269,7 +270,7 @@ def _process_eft_payments(shortname_balance: Dict, eft_file: EFTFileModel) -> bo
 
             except Exception as e:  # NOQA pylint: disable=broad-exception-caught
                 has_eft_transaction_errors = True
-                logger.error(e)
+                current_app.logger.error(e)
                 capture_message('EFT Failed to apply balance to invoice.', level='error')
 
     return has_eft_transaction_errors

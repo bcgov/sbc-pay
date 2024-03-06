@@ -29,7 +29,8 @@ import os
 from datetime import datetime
 from typing import Dict, List, Optional
 
-from entity_queue_common.service_utils import logger
+from flask import current_app
+
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
@@ -76,7 +77,7 @@ def _update_acknowledgement(msg: Dict[str, any]):
     ack_exists: EjvFileModel = db.session.query(EjvFileModel).filter(
         EjvFileModel.ack_file_ref == ack_file_name).first()
     if ack_exists:
-        logger.warning('Ack file: %s - already exists, possible duplicate, skipping ack.', ack_file_name)
+        current_app.logger.warning('Ack file: %s - already exists, possible duplicate, skipping ack.', ack_file_name)
         return
 
     ejv_file: EjvFileModel = db.session.query(EjvFileModel).filter(
@@ -112,7 +113,7 @@ async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-loca
 
         if has_errors and not APP_CONFIG.DISABLE_EJV_ERROR_EMAIL:
             await _publish_mailer_events(file_name, minio_location)
-    logger.info('> update_feedback')
+    current_app.logger.info('> update_feedback')
 
 
 async def _process_ejv_feedback(group_batches, file_name) -> bool:  # pylint:disable=too-many-locals
@@ -132,7 +133,7 @@ async def _process_ejv_feedback(group_batches, file_name) -> bool:  # pylint:dis
                 batch_number = int(line[15:24])
                 ejv_file = EjvFileModel.find_by_id(batch_number)
                 if ejv_file.feedback_file_ref:
-                    logger.info(
+                    current_app.logger.info(
                         'EJV file id %s with feedback file %s has already been processed, skipping.',
                         batch_number, file_name)
                     already_processed = True
@@ -174,7 +175,7 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
     # Work around for CAS, they said fix the feedback files.
     line = _fix_invoice_line(line)
     invoice_id = int(line[205:315])
-    logger.info('Invoice id - %s', invoice_id)
+    current_app.logger.info('Invoice id - %s', invoice_id)
     invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
     invoice_link: EjvInvoiceLinkModel = db.session.query(EjvInvoiceLinkModel).filter(
         EjvInvoiceLinkModel.ejv_header_id == ejv_header_model_id).filter(
@@ -183,12 +184,12 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
     invoice_return_message = line[319:469]
     # If the JV process failed, then mark the GL code against the invoice to be stopped
     # for further JV process for the credit GL.
-    logger.info('Is Credit or Debit %s - %s', line[104:105], ejv_file.file_type)
+    current_app.logger.info('Is Credit or Debit %s - %s', line[104:105], ejv_file.file_type)
     if line[104:105] == 'C' and ejv_file.file_type == EjvFileType.DISBURSEMENT.value:
         disbursement_status = _get_disbursement_status(invoice_return_code)
         invoice_link.disbursement_status_code = disbursement_status
         invoice_link.message = invoice_return_message
-        logger.info('disbursement_status %s', disbursement_status)
+        current_app.logger.info('disbursement_status %s', disbursement_status)
         if disbursement_status == DisbursementStatus.ERRORED.value:
             has_errors = True
             invoice.disbursement_status_code = DisbursementStatus.ERRORED.value
@@ -209,10 +210,10 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
         invoice_link.disbursement_status_code = _get_disbursement_status(invoice_return_code)
 
         invoice_link.message = invoice_return_message
-        logger.info('Invoice ID %s', invoice_id)
+        current_app.logger.info('Invoice ID %s', invoice_id)
         inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice_id, InvoiceReferenceStatus.ACTIVE.value)
-        logger.info('invoice_link.disbursement_status_code %s', invoice_link.disbursement_status_code)
+        current_app.logger.info('invoice_link.disbursement_status_code %s', invoice_link.disbursement_status_code)
         if invoice_link.disbursement_status_code == DisbursementStatus.ERRORED.value:
             has_errors = True
             # Cancel the invoice reference.
@@ -337,7 +338,7 @@ async def _publish_mailer_events(file_name: str, minio_location: str):
                       client_name=APP_CONFIG.NATS_MAILER_CLIENT_NAME,
                       subject=APP_CONFIG.NATS_MAILER_SUBJECT)
     except Exception as e:  # NOQA pylint: disable=broad-except
-        logger.error(e)
+        current_app.logger.error(e)
         capture_message('EJV Failed message error', level='error')
 
 

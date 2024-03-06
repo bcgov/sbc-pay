@@ -20,7 +20,6 @@ from datetime import datetime
 from typing import List
 
 import pytest
-from entity_queue_common.service_utils import subscribe_to_queue
 from flask import current_app
 from pay_api import db
 from pay_api.models import EFTCredit as EFTCreditModel

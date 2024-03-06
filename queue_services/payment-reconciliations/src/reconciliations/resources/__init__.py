@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,22 +11,17 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Supply version and commit hash info.
+from flask import Flask
 
-When deployed in OKD, it adds the last commit hash onto the version info.
-"""
-import os
-
-from reconciliations.version import __version__
+from .worker import bp as worker_endpoint
 
 
-def _get_build_openshift_commit_hash():
-    return os.getenv('OPENSHIFT_BUILD_COMMIT', None)
+def register_endpoints(app: Flask):
+    """Register endpoints with the flask application"""
+    # Allow base route to match with, and without a trailing slash
+    app.url_map.strict_slashes = False
 
-
-def get_run_version():
-    """Return a formatted version string for this service."""
-    commit_hash = _get_build_openshift_commit_hash()
-    if commit_hash:
-        return f'{__version__}-{commit_hash}'
-    return __version__
+    app.register_blueprint(
+        url_prefix="/",
+        blueprint=worker_endpoint,
+    )

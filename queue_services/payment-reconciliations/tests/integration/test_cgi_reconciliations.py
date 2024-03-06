@@ -20,7 +20,6 @@ Test-Suite to ensure that the Payment Reconciliation queue service is working as
 from datetime import datetime
 
 import pytest
-from entity_queue_common.service_utils import subscribe_to_queue
 from flask import current_app
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import EjvFile as EjvFileModel
@@ -47,8 +46,8 @@ from .utils import helper_add_ejv_event_to_queue, upload_to_minio
 
 
 @pytest.mark.asyncio
-async def test_successful_partner_ejv_reconciliations(session, app, stan_server, event_loop, client_id, events_stan,
-                                                      future, mock_publish):
+async def test_successful_partner_ejv_reconciliations(session, app, event_loop, client_id,
+                                                      future):
     """Test Reconciliations worker."""
     # Call back for the subscription
     from reconciliations.worker import cb_subscription_handler
@@ -174,8 +173,7 @@ async def test_successful_partner_ejv_reconciliations(session, app, stan_server,
 
 
 @pytest.mark.asyncio
-async def test_failed_partner_ejv_reconciliations(session, app, stan_server, event_loop, client_id, events_stan, future,
-                                                  mock_publish):
+async def test_failed_partner_ejv_reconciliations(session, app, event_loop, client_id, future, mock_publish):
     """Test Reconciliations worker."""
     # Call back for the subscription
     from reconciliations.worker import cb_subscription_handler
@@ -304,8 +302,8 @@ async def test_failed_partner_ejv_reconciliations(session, app, stan_server, eve
 
 
 @pytest.mark.asyncio
-async def test_successful_partner_reversal_ejv_reconciliations(session, app, stan_server, event_loop, client_id,
-                                                               events_stan, future, mock_publish):
+async def test_successful_partner_reversal_ejv_reconciliations(session, app, event_loop, client_id,
+                                                               future):
     """Test Reconciliations worker."""
     # Call back for the subscription
     from reconciliations.worker import cb_subscription_handler
@@ -436,7 +434,7 @@ async def test_successful_partner_reversal_ejv_reconciliations(session, app, sta
 
 @pytest.mark.asyncio
 async def test_succesful_payment_ejv_reconciliations(session, app, stan_server, event_loop, client_id, events_stan,
-                                                     future, mock_publish):
+                                                     future):
     """Test Reconciliations worker."""
     # Call back for the subscription
     from reconciliations.worker import cb_subscription_handler
@@ -608,8 +606,7 @@ async def test_succesful_payment_ejv_reconciliations(session, app, stan_server, 
 
 
 @pytest.mark.asyncio
-async def test_succesful_payment_reversal_ejv_reconciliations(session, app, stan_server, event_loop, client_id,
-                                                              events_stan, future, mock_publish):
+async def test_succesful_payment_reversal_ejv_reconciliations(session, app, event_loop, client_id, future):
     """Test Reconciliations worker."""
     # Call back for the subscription
     from reconciliations.worker import cb_subscription_handler
@@ -777,15 +774,14 @@ async def test_succesful_payment_reversal_ejv_reconciliations(session, app, stan
 
 @pytest.mark.asyncio
 async def test_successful_refund_reconciliations(
-        session, app, stan_server, event_loop, client_id, events_stan, future, mock_publish
+        session, app, stan_server, client_id, future, mock_publish
 ):
     """Test Reconciliations worker."""
     # Call back for the subscription
     from reconciliations.worker import cb_subscription_handler
 
     # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
+    await subscribe_to_queue(current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
                              current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
                              current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
                              cb_subscription_handler)
@@ -923,7 +919,7 @@ async def test_successful_refund_reconciliations(
 
 @pytest.mark.asyncio
 async def test_failed_refund_reconciliations(
-        session, app, stan_server, event_loop, client_id, events_stan, future, mock_publish
+        session, app, event_loop, client_id, future, mock_publish
 ):
     """Test Reconciliations worker."""
     # Call back for the subscription
@@ -1072,19 +1068,9 @@ async def test_failed_refund_reconciliations(
 
 @pytest.mark.asyncio
 async def test_prevent_duplicate_ack(
-    session, app, stan_server, event_loop, client_id, events_stan, future, mock_publish
+    session, app, stan_server, event_loop, client_id, future, mock_publish
 ):
     """Assert processing completes when existing ack."""
-    # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
-
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
-
     file_ref = f'INBOX.{datetime.now()}'
     # Upload an acknowledgement file
     ack_file_name = f'ACK.{file_ref}'
@@ -1110,17 +1096,9 @@ async def test_prevent_duplicate_ack(
 
 @pytest.mark.asyncio
 async def test_successful_ap_disbursement(
-    session, app, stan_server, event_loop, client_id, events_stan, future, mock_publish
+    session, app, stan_server, event_loop, client_id, future, mock_publish
 ):
     """Test Reconciliations worker for ap disbursement."""
-    from reconciliations.worker import cb_subscription_handler
-
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
-
     # 1. Create invoice.
     # 2. Create a AP reconciliation file.
     # 3. Assert the status.

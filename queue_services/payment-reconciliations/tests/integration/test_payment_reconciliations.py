@@ -20,7 +20,6 @@ Test-Suite to ensure that the Payment Reconciliation queue service is working as
 from datetime import datetime
 
 import pytest
-from entity_queue_common.service_utils import subscribe_to_queue
 from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Credit as CreditModel
@@ -39,8 +38,7 @@ from .utils import create_and_upload_settlement_file, helper_add_event_to_queue
 
 
 @pytest.mark.asyncio
-async def test_online_banking_reconciliations(session, app, stan_server, event_loop, client_id, events_stan, future,
-                                              mock_publish):
+async def test_online_banking_reconciliations(session, app, stan_server, event_loop, client_id, future):
     """Test Reconciliations worker."""
     # Call back for the subscription
     from reconciliations.worker import cb_subscription_handler
@@ -281,8 +279,7 @@ async def test_online_banking_reconciliations_overflows_credit(session, app, sta
 
 
 @pytest.mark.asyncio
-async def test_online_banking_under_payment(session, app, stan_server, event_loop, client_id, events_stan, future,
-                                            mock_publish):
+async def test_online_banking_under_payment(session, app, event_loop, client_id, future):
     """Test Reconciliations worker."""
     # Call back for the subscription
     from reconciliations.worker import cb_subscription_handler
@@ -417,8 +414,7 @@ async def test_pad_reconciliations(session, app, stan_server, event_loop, client
 
 
 @pytest.mark.asyncio
-async def test_pad_reconciliations_with_credit_memo(session, app, stan_server, event_loop,
-                                                    client_id, events_stan, future, mock_publish):
+async def test_pad_reconciliations_with_credit_memo(session, app, event_loop, client_id, future):
     """Test Reconciliations worker."""
     # Call back for the subscription
     from reconciliations.worker import cb_subscription_handler
@@ -659,8 +655,7 @@ async def test_pad_reversal_reconciliations(session, app, stan_server, event_loo
 
 
 @pytest.mark.asyncio
-async def test_eft_wire_reconciliations(session, app, stan_server, event_loop, client_id, events_stan, future,
-                                        mock_publish):
+async def test_eft_wire_reconciliations(session, app, event_loop, client_id, future, mock_publish):
     """Test Reconciliations worker."""
     # Call back for the subscription
     from reconciliations.worker import cb_subscription_handler
@@ -725,8 +720,7 @@ async def test_eft_wire_reconciliations(session, app, stan_server, event_loop, c
 
 
 @pytest.mark.asyncio
-async def test_credits(session, app, stan_server, event_loop, client_id, events_stan, future, mock_publish,
-                       monkeypatch):
+async def test_credits(session, app, event_loop, client_id, future, monkeypatch):
     """Test Reconciliations worker."""
     # Call back for the subscription
     from reconciliations.worker import cb_subscription_handler

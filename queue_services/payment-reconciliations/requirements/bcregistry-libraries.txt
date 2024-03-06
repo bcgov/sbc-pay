@@ -1,4 +1,4 @@
 -e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
-# -e git+https://github.com/bcgov/sbc-pay.git@refunds#egg=pay-api&subdirectory=pay-api
 -e git+https://github.com/bcgov/sbc-pay.git@queue_python_upgrade#egg=pay-api&subdirectory=pay-api
-git+https://github.com/daxiom/simple-cloudevent.py.git
+-e git+https://github.com/thorwolpert/flask-jwt-oidc.git#egg=flask-jwt-oidc
+-e git+https://github.com/bolyachevets/namex.git@feature-queue-upgrade-python3.12#egg=gcp_queue&subdirectory=services/pubsub
