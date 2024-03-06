@@ -76,7 +76,7 @@ class EjvPartnerDistributionTask(CgiEjv):
             .join(InvoiceModel, PaymentLineItemModel.invoice_id == InvoiceModel.id) \
             .join(RefundsPartialModel, PaymentLineItemModel.id == RefundsPartialModel.payment_line_item_id) \
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
-            .filter(InvoiceModel.payment_method_code.in_([PaymentMethod.CC.value, PaymentMethod.DIRECT_PAY.value])) \
+            .filter(InvoiceModel.payment_method_code.in_([PaymentMethod.DIRECT_PAY.value])) \
             .filter((RefundsPartialModel.disbursement_status_code.is_(None)) |
                     (RefundsPartialModel.disbursement_status_code == DisbursementStatus.ERRORED.value)) \
             .filter(InvoiceModel.corp_type_code == partner.code) \
@@ -228,29 +228,34 @@ class EjvPartnerDistributionTask(CgiEjv):
                     control_total += 1
 
                 partial_refund_number: int = 0
-                ejv_content, control_total, partial_refund_number = cls._process_partial_refunds(
-                    batch_type=batch_type,
-                    refund_partial_items=refund_partial_items,
-                    ejv_content=ejv_content,
-                    control_total=control_total,
-                    partial_refund_number=partial_refund_number,
-                    credit_distribution=credit_distribution,
-                    debit_distribution=debit_distribution,
-                    journal_name=journal_name,
-                    effective_date=effective_date
-                )
+                for refund_partial in refund_partial_items:
+                    # JV Details for partial refunds
+                    partial_refund_number += 1
+                    # Flow Through add it as the refunds_partial id.
+                    flow_through = f'{refund_partial.id:<110}'
+                    refund_partial_number = f'#{refund_partial.id}'
+                    description = disbursement_desc[:-len(refund_partial_number)] + refund_partial_number
+                    description = f'{description[:100]:<100}'
+
+                    ejv_content = cls.get_jv_line(batch_type, credit_distribution, description,
+                                                  effective_date, flow_through, journal_name,
+                                                  refund_partial.refund_amount, partial_refund_number, 'C')
+                    partial_refund_number += 1
+                    control_total += 1
+
+                    # Add a line here for debit too
+                    ejv_content = cls.get_jv_line(batch_type, debit_distribution, description,
+                                                  effective_date, flow_through, journal_name,
+                                                  refund_partial.refund_amount, partial_refund_number, 'D')
+                    control_total += 1
+
+                    # Update partial refund status
+                    refund_partial.disbursement_status_code = DisbursementStatus.UPLOADED.value
+
+            # Create ejv invoice/partial_refund link records and set invoice status
             sequence = 1
-            # Create ejv invoice link records and set invoice status
-            for inv in invoices:
-                # Create Ejv file link and flush
-                link_model = EjvInvoiceLinkModel(invoice_id=inv.id,
-                                                 ejv_header_id=ejv_header_model.id,
-                                                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                                 sequence=sequence)
-                # Set distribution status to invoice
-                db.session.add(link_model)
-                sequence += 1
-                inv.disbursement_status_code = DisbursementStatus.UPLOADED.value
+            sequence = cls._process_items(invoices, ejv_header_model, sequence)
+            cls._process_items(refund_partial_items, ejv_header_model, sequence)
 
             db.session.flush()
 
@@ -332,30 +337,14 @@ class EjvPartnerDistributionTask(CgiEjv):
         return db.session.query(CorpTypeModel).filter(CorpTypeModel.code.in_(corp_type_codes)).all()
 
     @classmethod
-    def _process_partial_refunds(cls, batch_type, refund_partial_items, ejv_content, control_total,  # pylint: disable=too-many-arguments
-                                 partial_refund_number, credit_distribution, debit_distribution,
-                                 journal_name, effective_date):
-        for refund_partial in refund_partial_items:
-            # JV Details for partial refunds
-            partial_refund_number += 1
-            flow_through = (
-                f'Partial Refund#{refund_partial.id} '
-                f'for Payment Line Item#{refund_partial.payment_line_item_id:<110}'
-            )
-            description = f'Partial Refund {refund_partial.id} for PLI {refund_partial.payment_line_item_id}'
-            description = f'{description[:100]:<100}'
-
-            ejv_content += cls.get_jv_line(batch_type, credit_distribution, description, effective_date, flow_through,
-                                           journal_name, refund_partial.refund_amount, partial_refund_number, 'C')
-            partial_refund_number += 1
-            control_total += 1
-
-            # Add a line here for debit too
-            ejv_content += cls.get_jv_line(batch_type, debit_distribution, description, effective_date, flow_through,
-                                           journal_name, refund_partial.refund_amount, partial_refund_number, 'D')
-            control_total += 1
-
-            # Update partial refund status
-            refund_partial.disbursement_status_code = DisbursementStatus.UPLOADED.value
-
-        return ejv_content, control_total, partial_refund_number
+    def _process_items(cls, items, ejv_header_model, sequence):
+        for item in items:
+            # Create Ejv file link and flush
+            link_model = EjvInvoiceLinkModel(invoice_partial_refund_id=item.id,
+                                             ejv_header_id=ejv_header_model.id,
+                                             disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                             sequence=sequence)
+            db.session.add(link_model)
+            sequence += 1
+            item.disbursement_status_code = DisbursementStatus.UPLOADED.value
+        return sequence
