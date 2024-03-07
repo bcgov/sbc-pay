@@ -74,23 +74,6 @@ class _Config():  # pylint: disable=too-few-public-methods
     DB_HOST = os.getenv('DATABASE_HOST', '')
     DB_PORT = os.getenv('DATABASE_PORT', '5432')
     SQLALCHEMY_DATABASE_URI = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}'
-    NATS_CONNECTION_OPTIONS = {
-        'servers': os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(','),
-        'name': os.getenv('NATS_PAYMENT_RECONCILIATIONS_CLIENT_NAME', 'payment.reconciliations.worker')
-
-    }
-    STAN_CONNECTION_OPTIONS = {
-        'cluster_id': os.getenv('NATS_CLUSTER_ID', 'test-cluster'),
-        'client_id': str(random.SystemRandom().getrandbits(0x58)),
-        'ping_interval': 1,
-        'ping_max_out': 5,
-    }
-
-    SUBSCRIPTION_OPTIONS = {
-        'subject': os.getenv('NATS_PAYMENT_RECONCILIATIONS_SUBJECT', 'payment.reconciliations'),
-        'queue': os.getenv('NATS_PAYMENT_RECONCILIATIONS_QUEUE', 'payment-reconciliations-worker'),
-        'durable_name': os.getenv('NATS_PAYMENT_RECONCILIATIONS_QUEUE', 'payment-reconciliations-worker') + '_durable',
-    }
 
     # Minio configuration values
     MINIO_ENDPOINT = os.getenv('MINIO_ENDPOINT')
@@ -142,7 +125,6 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
         default=f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}'
     )
 
-    TEST_NATS_DOCKER = os.getenv('TEST_NATS_DOCKER', None)
     USE_DOCKER_MOCK = os.getenv('USE_DOCKER_MOCK', None)
 
     # Minio variables

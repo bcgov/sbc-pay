@@ -56,7 +56,6 @@ jobs:
     env:
       DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
       USE_DOCKER_MOCK: "YES"
-      STAN_CLUSTER_NAME: "test-cluster"
       MINIO_ENDPOINT: "localhost:9000"
       MINIO_ACCESS_KEY: "minio"
       MINIO_ACCESS_SECRET: "minio123"

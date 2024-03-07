@@ -14,7 +14,6 @@
 """Test Suite to ensure the worker routines are working as expected."""
 
 import pytest
-from entity_queue_common.service_utils import subscribe_to_queue
 from pay_api.models import Invoice
 from pay_api.utils.enums import PaymentMethod, PaymentSystem
 
