@@ -75,24 +75,6 @@ class _Config():  # pylint: disable=too-few-public-methods
     DB_PORT = os.getenv('DATABASE_PORT', '5432')
     SQLALCHEMY_DATABASE_URI = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}'
 
-    NATS_CONNECTION_OPTIONS = {
-        'servers': os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(','),
-        'name': os.getenv('NATS_ENTITY_EVENTS_CLIENT_NAME', 'entity.events.worker')
-
-    }
-    STAN_CONNECTION_OPTIONS = {
-        'cluster_id': os.getenv('NATS_CLUSTER_ID', 'test-cluster'),
-        'client_id': str(random.SystemRandom().getrandbits(0x58)),
-        'ping_interval': 1,
-        'ping_max_out': 5,
-    }
-
-    SUBSCRIPTION_OPTIONS = {
-        'subject': os.getenv('NATS_ENTITY_EVENTS_SUBJECT', 'entity.events'),
-        'queue': os.getenv('NATS_ENTITY_EVENTS_QUEUE', 'events-worker'),
-        'durable_name': os.getenv('NATS_ENTITY_EVENTS_QUEUE', 'events-worker') + '_durable',
-    }
-
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     """Creates the Development Config object."""

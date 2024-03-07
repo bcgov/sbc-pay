@@ -14,14 +14,6 @@
         ]
     },
     {
-        "vault": "nats",
-        "application": [
-            "base",
-            "account-events-listener",
-            "payment"
-        ]
-    },
-    {
         "vault": "payment-external-services",
         "application": [
             "paybc",

@@ -13,16 +13,6 @@
         ]
     },
     {
-        "vault": "nats",
-        "application": [
-            "base",
-            "account-events-listener",
-            "account-mailer",
-            "payment",
-            "payment-reconciliations"
-        ]
-    },
-    {
         "vault": "payment-external-services",
         "application": [
             "cfs"

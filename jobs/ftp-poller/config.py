@@ -89,16 +89,6 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CGI_FEEDBACK_FILE_PREFIX = os.getenv('CGI_FEEDBACK_FILE_PREFIX', 'FEEDBACK')
     CGI_INBOX_FILE_PREFIX = os.getenv('CGI_FEEDBACK_FILE_PREFIX', 'INBOX')
 
-    # NATS Config
-    NATS_SERVERS = os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(',')
-    NATS_CLUSTER_ID = os.getenv('NATS_CLUSTER_ID', 'test-cluster')
-    NATS_QUEUE = os.getenv('NATS_QUEUE', 'account-worker')
-
-    # NATS Config for account events
-    NATS_PAYMENT_RECONCILIATIONS_CLIENT_NAME = os.getenv('NATS_PAYMENT_RECONCILIATIONS_CLIENT_NAME',
-                                                         'payment.reconciliations.worker')
-    NATS_PAYMENT_RECONCILIATIONS_SUBJECT = os.getenv('NATS_SUBJECT', 'payment.reconciliations')
-
     SFTP_CONFIGS = {
         'CAS': {
             'SFTP_HOST': CAS_SFTP_HOST,
