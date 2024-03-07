@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - queue_python_upgrade
     paths:
       - "jobs/ftp-poller/**"
 
@@ -51,7 +52,7 @@ jobs:
   testing:
     needs: setup-job
     env:
-      DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+      DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/pay-test"
       NATS_QUEUE: "account-worker"
       NATS_CLUSTER_ID: "test-cluster"
       NATS_CLIENT_NAME: "account.events.worker"
@@ -73,7 +74,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
+          POSTGRES_DB: pay-test
         ports:
           - 5432:5432
         # needed because the postgres container does not provide a healthcheck
