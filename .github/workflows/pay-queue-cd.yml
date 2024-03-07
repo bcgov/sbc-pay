@@ -1,4 +1,4 @@
-name: Payment Reconciliations Queue CD
+name: Payment Queue CD
 
 on:
   push:

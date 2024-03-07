@@ -1,4 +1,4 @@
-name: Payment Reconciliations Queue CI
+name: Payment Queue CI
 
 on:
   pull_request:
