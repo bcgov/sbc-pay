@@ -21,7 +21,7 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus
+from pay_api.utils.enums import InvoiceReferenceStatus, PaymentMethod, PaymentStatus
 
 from .deposit_service import DepositService
 from .invoice import Invoice
@@ -43,11 +43,14 @@ class EftService(DepositService):
         payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
         invoice_reference = self.create_invoice_reference(invoice=invoice, payment=payment)
 
+        invoice_reference.save()
+
         return invoice_reference
 
     def apply_credit(self,
                      invoice: Invoice,
-                     payment_date: datetime = datetime.now()) -> tuple:
+                     payment_date: datetime = datetime.now(),
+                     auto_save: bool = True) -> tuple:
         """Apply eft credit to the invoice."""
         invoice_balance = invoice.total - (invoice.paid or 0)  # balance before applying credits
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
@@ -61,11 +64,13 @@ class EftService(DepositService):
                                       payment_date=payment_date,
                                       paid_amount=invoice_balance - new_invoice_balance)
 
-        invoice_reference = self.create_invoice_reference(invoice=invoice_model, payment=payment)
-
         receipt = self.create_receipt(invoice=invoice_model, payment=payment)
 
-        return payment, invoice_reference, receipt
+        if auto_save:
+            payment.save()
+            receipt.save()
+
+        return payment, receipt
 
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
@@ -95,9 +100,7 @@ class EftService(DepositService):
 
         invoice_reference.invoice_id = invoice.id
         invoice_reference.invoice_number = payment.invoice_number
-        invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value \
-            if invoice.invoice_status_code == InvoiceStatus.PAID.value \
-            else InvoiceReferenceStatus.ACTIVE.value
+        invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
 
         return invoice_reference
 
