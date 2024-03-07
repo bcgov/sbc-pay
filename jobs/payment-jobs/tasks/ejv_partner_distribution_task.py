@@ -237,16 +237,20 @@ class EjvPartnerDistributionTask(CgiEjv):
                     description = disbursement_desc[:-len(refund_partial_number)] + refund_partial_number
                     description = f'{description[:100]:<100}'
 
-                    ejv_content = cls.get_jv_line(batch_type, credit_distribution, description,
-                                                  effective_date, flow_through, journal_name,
-                                                  refund_partial.refund_amount, partial_refund_number, 'C')
+                    ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
+                                                cls.get_jv_line(batch_type, credit_distribution, description,
+                                                                effective_date, flow_through, journal_name,
+                                                                refund_partial.refund_amount,
+                                                                partial_refund_number, 'D'))
                     partial_refund_number += 1
                     control_total += 1
 
                     # Add a line here for debit too
-                    ejv_content = cls.get_jv_line(batch_type, debit_distribution, description,
-                                                  effective_date, flow_through, journal_name,
-                                                  refund_partial.refund_amount, partial_refund_number, 'D')
+                    ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
+                                                cls.get_jv_line(batch_type, debit_distribution, description,
+                                                                effective_date, flow_through, journal_name,
+                                                                refund_partial.refund_amount,
+                                                                partial_refund_number, 'C'))
                     control_total += 1
 
                     # Update partial refund status
