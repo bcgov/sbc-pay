@@ -61,13 +61,24 @@ async def worker():
         # Return a 200, so event is removed from the Queue
         return {}, HTTPStatus.OK
 
-    if (message_type := ce.get('type', None)) == MessageType.CAS_UPLOADED.value:
-        await reconcile_payments(ce)
-    elif message_type == MessageType.CGI_ACK_RECEIVED.value:
-        await reconcile_distributions(ce)
-    elif message_type == MessageType.CGI_FEEDBACK_RECEIVED.value:
-        await reconcile_distributions(ce, is_feedback=True)
-    elif message_type == MessageType.EFT_FILE_UPLOADED.value:
-        await reconcile_eft_payments(ce)
-    else:
-        raise Exception('Invalid type')  # pylint: disable=broad-exception-raised
+    if not (ce := queue.get_simple_cloud_event(request)):
+        # Return a 200, so event is removed from the Queue
+        return {}, HTTPStatus.OK
+
+    message_type = ce.get('type', None)
+    match message_type:
+        case MessageType.CAS_UPLOADED.value:
+            await reconcile_payments(ce)
+        case MessageType.CGI_ACK_RECEIVED.value:
+            await reconcile_distributions(ce)
+        case MessageType.CGI_FEEDBACK_RECEIVED.value:
+            await reconcile_distributions(ce, is_feedback=True)
+        case MessageType.EFT_FILE_UPLOADED.value:
+            await reconcile_eft_payments(ce)
+        case MessageType.INCORPORATION_TYPE.value | MessageType.REGISTRATION.value:
+            identifier_updater(ce)
+        case _:
+            # TODO QueueException
+            raise Exception('Invalid type')  # pylint: disable=broad-exception-raised
+        
+
