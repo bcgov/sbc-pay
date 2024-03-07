@@ -54,8 +54,6 @@ jobs:
     needs: setup-job
     env:
       DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
-      TEST_NATS_DOCKER: "YES"
-      STAN_CLUSTER_NAME: "test-cluster"
 
     runs-on: ubuntu-20.04
 

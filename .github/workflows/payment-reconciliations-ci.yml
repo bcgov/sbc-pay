@@ -55,7 +55,6 @@ jobs:
     needs: setup-job
     env:
       DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
-      TEST_NATS_DOCKER: "YES"
       USE_DOCKER_MOCK: "YES"
       STAN_CLUSTER_NAME: "test-cluster"
       MINIO_ENDPOINT: "localhost:9000"
