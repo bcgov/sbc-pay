@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - queue_python_upgrade
     paths:
       - "pay-admin/**"
       - "pay-api/src/pay_api/models/**"
@@ -53,7 +54,8 @@ jobs:
     needs: setup-job
     env:
       FLASK_ENV: "testing"
-      DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+      # Needs different database than POSTGRES otherwise dropping database doesn't work
+      DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/pay-test"
 
 
     runs-on: ubuntu-20.04
@@ -68,7 +70,8 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
+          # Needs different database than POSTGRES otherwise dropping database doesn't work
+          POSTGRES_DB: pay-test
         ports:
           - 5432:5432
         # needed because the postgres container does not provide a healthcheck
