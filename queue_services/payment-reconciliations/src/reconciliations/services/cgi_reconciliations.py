@@ -11,20 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""CGI reconciliation file.
-
-The entry-point is the **cb_subscription_handler**
-
-The design and flow leverage a few constraints that are placed upon it
-by NATS Streaming and using AWAIT on the default loop.
-- NATS streaming queues require one message to be processed at a time.
-- AWAIT on the default loop effectively runs synchronously
-
-If these constraints change, the use of Flask-SQLAlchemy would need to change.
-Flask-SQLAlchemy currently allows the base model to be changed, or reworking
-the model to a standalone SQLAlchemy usage with an async engine would need
-to be pursued.
-"""
+"""CGI reconciliation file."""
 import os
 from datetime import datetime
 from typing import Dict, List, Optional
@@ -316,7 +303,7 @@ def _get_disbursement_status(return_code: str) -> str:
     return DisbursementStatus.ERRORED.value
 
 
-async def _publish_mailer_events(file_name: str, minio_location: str):
+def _publish_mailer_events(file_name: str, minio_location: str):
     """Publish payment message to the mailer queue."""
     # Publish message to the Queue, saying account has been created. Using the event spec.
     queue_data = {
@@ -334,7 +321,7 @@ async def _publish_mailer_events(file_name: str, minio_location: str):
     }
 
     try:
-        await publish(payload=payload,
+        gcp_queue_publisher.publish_to_queue(payload=payload,
                       client_name=APP_CONFIG.NATS_MAILER_CLIENT_NAME,
                       subject=APP_CONFIG.NATS_MAILER_SUBJECT)
     except Exception as e:  # NOQA pylint: disable=broad-except

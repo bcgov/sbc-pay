@@ -18,15 +18,13 @@ import json
 import os
 from typing import List
 
-import stan
 from flask import current_app
 from minio import Minio
 
 from reconciliations.enums import MessageType
 
 
-async def helper_add_event_to_queue(stan_client: stan.aio.client.Client,
-                                    file_name: str):
+async def helper_add_event_to_queue(file_name: str):
     """Add event to the Queue."""
     payload = {
         'specversion': '1.x-wip',
@@ -41,11 +39,11 @@ async def helper_add_event_to_queue(stan_client: stan.aio.client.Client,
         }
     }
 
-    await stan_client.publish(subject=current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
+    gcp_queue_publisher.publish_to_queue(subject=current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
                               payload=json.dumps(payload).encode('utf-8'))
 
 
-async def helper_add_eft_event_to_queue(stan_client: stan.aio.client.Client, file_name: str,
+async def helper_add_eft_event_to_queue(file_name: str,
                                         message_type: str = MessageType.EFT_FILE_UPLOADED.value):
     """Add eft event to the Queue."""
     payload = {
@@ -61,11 +59,11 @@ async def helper_add_eft_event_to_queue(stan_client: stan.aio.client.Client, fil
         }
     }
 
-    await stan_client.publish(subject=current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
+    gcp_queue_publisher.publish_to_queue(subject=current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
                               payload=json.dumps(payload).encode('utf-8'))
 
 
-async def helper_add_ejv_event_to_queue(stan_client: stan.aio.client.Client, file_name: str,
+async def helper_add_ejv_event_to_queue(file_name: str,
                                         message_type: str = 'ACKReceived'):
     """Add event to the Queue."""
     payload = {
@@ -81,7 +79,7 @@ async def helper_add_ejv_event_to_queue(stan_client: stan.aio.client.Client, fil
         }
     }
 
-    await stan_client.publish(subject=current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
+    gcp_queue_publisher.publish_to_queue(subject=current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
                               payload=json.dumps(payload).encode('utf-8'))
 
 

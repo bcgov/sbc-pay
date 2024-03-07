@@ -11,20 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""EFT reconciliation file.
-
-The entry-point is the **cb_subscription_handler**
-
-The design and flow leverage a few constraints that are placed upon it
-by NATS Streaming and using AWAIT on the default loop.
-- NATS streaming queues require one message to be processed at a time.
-- AWAIT on the default loop effectively runs synchronously
-
-If these constraints change, the use of Flask-SQLAlchemy would need to change.
-Flask-SQLAlchemy currently allows the base model to be changed, or reworking
-the model to a standalone SQLAlchemy usage with an async engine would need
-to be pursued.
-"""
+"""EFT reconciliation file."""
 from datetime import datetime
 from operator import and_
 from typing import Dict, List
