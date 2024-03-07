@@ -83,7 +83,6 @@ class _Config():  # pylint: disable=too-few-public-methods
     # Normal Keycloak parameters.
     OIDC_CLIENT_SECRETS = os.getenv('PAY_OIDC_CLIENT_SECRETS', 'secrets/keycloak.json')
     OIDC_SCOPES = ['openid', 'email', 'profile']
-    OIDC_VALID_ISSUERS = [os.getenv('PAY_OIDC_VALID_ISSUERS')]
     # Undocumented Keycloak parameter: allows sending cookies without the secure flag, which we need for the local
     # non-TLS HTTP server. Set this to non-"True" for local development, and use the default everywhere else.
     OIDC_ID_TOKEN_COOKIE_SECURE = os.getenv('PAY_OIDC_ID_TOKEN_COOKIE_SECURE', 'True').lower() == 'true'
