@@ -449,7 +449,7 @@ def _pay_invoice(invoice: InvoiceModel, shortname_balance: Dict):
 
     payment, invoice_reference, receipt = eft_payment_service.apply_credit(invoice=invoice,
                                                                            payment_date=payment_date,
-                                                                           auto_save=False)
+                                                                           auto_save=True)
 
     db.session.add(payment)
     db.session.add(invoice_reference)
