@@ -1,6 +1,6 @@
 """This module provides Queue type services."""
 import base64
-import dataclasses
+import dataclass
 import json
 import uuid
 from concurrent.futures import CancelledError
@@ -13,7 +13,7 @@ from google.cloud import pubsub_v1
 from simple_cloudevent import SimpleCloudEvent, to_queue_message
 
 
-@dataclasses
+@dataclass
 class QueueMessage:
     """Queue message data class."""
 
