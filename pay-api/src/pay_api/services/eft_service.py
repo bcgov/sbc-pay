@@ -38,7 +38,7 @@ class EftService(DepositService):
     def get_payment_method_code(self):
         """Return EFT as the system code."""
         return PaymentMethod.EFT.value
-    
+
     def create_account(self, identifier: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
                        **kwargs) -> CfsAccountModel:
         """Create an account for the EFT transactions."""
