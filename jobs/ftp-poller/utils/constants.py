@@ -13,7 +13,7 @@
 # limitations under the License.
 """Enum definitions."""
 
-CAS_MESSAGE_TYPE = 'bc.registry.payment.casSettlementUploaded'
-CGI_ACK_MESSAGE_TYPE = 'bc.registry.payment.cgi.ACKReceived'
-CGI_FEEDBACK_MESSAGE_TYPE = 'bc.registry.payment.cgi.FEEDBACKReceived'
-EFT_MESSAGE_TYPE = 'bc.registry.payment.eft.fileUploaded'
+CAS_MESSAGE_TYPE = 'casSettlementUploaded'
+CGI_ACK_MESSAGE_TYPE = 'ACKReceived'
+CGI_FEEDBACK_MESSAGE_TYPE = 'FEEDBACKReceived'
+EFT_MESSAGE_TYPE = 'eftFileUploaded'
