@@ -18,10 +18,10 @@ from google.auth.transport.requests import Request
 import google.oauth2.id_token as id_token
 import functools
 from ..services import queue
-from reconciliations.services.cgi_reconciliations import reconcile_distributions
-from reconciliations.eft.eft_reconciliation import reconcile_eft_payments
-from reconciliations.enums import MessageType
-from reconciliations.services.payment_reconciliations import reconcile_payments
+from pay_queue.services.cgi_reconciliations import reconcile_distributions
+from pay_queue.eft.eft_reconciliation import reconcile_eft_payments
+from pay_queue.enums import MessageType
+from pay_queue.services.payment_reconciliations import reconcile_payments
 from cachecontrol import CacheControl
 bp = Blueprint('worker', __name__)
 

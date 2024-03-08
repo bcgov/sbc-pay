@@ -23,7 +23,7 @@ from pay_api import db as _db
 from sqlalchemy import event, text
 from sqlalchemy.schema import DropConstraint, MetaData
 
-from reconciliations.config import get_named_config
+from pay_queue.config import get_named_config
 
 
 @contextmanager

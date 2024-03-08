@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Defines the structure of EFT Errors."""
-from reconciliations.eft.eft_errors import EFTError
+from pay_queue.eft.eft_errors import EFTError
 
 
 class EFTParseError:  # pylint: disable=too-few-public-methods

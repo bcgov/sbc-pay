@@ -41,8 +41,8 @@ from pay_api.utils.enums import (
 from pay_api.utils.util import get_pay_subject_name
 from sentry_sdk import capture_message
 
-from reconciliations import config
-from reconciliations.minio import get_object
+from pay_queue import config
+from pay_queue.minio import get_object
 
 from ..enums import Column, RecordType, SourceTransaction, Status, TargetTransaction
 

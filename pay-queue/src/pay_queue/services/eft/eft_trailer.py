@@ -14,10 +14,10 @@
 """This manages the EFT Trailer record."""
 import decimal
 
-from reconciliations.eft.eft_base import EFTBase
-from reconciliations.eft.eft_enums import EFTConstants
-from reconciliations.eft.eft_errors import EFTError
-from reconciliations.eft.eft_parse_error import EFTParseError
+from pay_queue.eft.eft_base import EFTBase
+from pay_queue.eft.eft_enums import EFTConstants
+from pay_queue.eft.eft_errors import EFTError
+from pay_queue.eft.eft_parse_error import EFTParseError
 
 
 class EFTTrailer(EFTBase):

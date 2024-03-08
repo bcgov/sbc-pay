@@ -50,15 +50,9 @@ async def test_successful_partner_ejv_reconciliations(session, app, event_loop, 
                                                       future):
     """Test Reconciliations worker."""
     # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
+    from pay_queue.worker import cb_subscription_handler
 
-    # Create a Credit Card Payment
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
+
 
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -163,7 +157,7 @@ async def test_successful_partner_ejv_reconciliations(session, app, event_loop, 
         upload_to_minio(f.read(), feedback_file_name)
     # upload_to_minio(file_name=feedback_file_name, value_as_bytes=feedback_content.encode())
 
-    await helper_add_ejv_event_to_queue(events_stan, file_name=feedback_file_name, message_type='FEEDBACKReceived')
+    await helper_add_ejv_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -176,7 +170,7 @@ async def test_successful_partner_ejv_reconciliations(session, app, event_loop, 
 async def test_failed_partner_ejv_reconciliations(session, app, event_loop, client_id, future, mock_publish):
     """Test Reconciliations worker."""
     # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
+    from pay_queue.worker import cb_subscription_handler
 
     # Create a Credit Card Payment
     # register the handler to test it
@@ -306,7 +300,7 @@ async def test_successful_partner_reversal_ejv_reconciliations(session, app, eve
                                                                future):
     """Test Reconciliations worker."""
     # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
+    from pay_queue.worker import cb_subscription_handler
 
     # Create a Credit Card Payment
     # register the handler to test it
@@ -437,7 +431,7 @@ async def test_succesful_payment_ejv_reconciliations(session, app, stan_server, 
                                                      future):
     """Test Reconciliations worker."""
     # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
+    from pay_queue.worker import cb_subscription_handler
 
     # Create a Credit Card Payment
     # register the handler to test it
@@ -609,7 +603,7 @@ async def test_succesful_payment_ejv_reconciliations(session, app, stan_server, 
 async def test_succesful_payment_reversal_ejv_reconciliations(session, app, event_loop, client_id, future):
     """Test Reconciliations worker."""
     # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
+    from pay_queue.worker import cb_subscription_handler
 
     # Create a Credit Card Payment
     # register the handler to test it
@@ -778,7 +772,7 @@ async def test_successful_refund_reconciliations(
 ):
     """Test Reconciliations worker."""
     # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
+    from pay_queue.worker import cb_subscription_handler
 
     # register the handler to test it
     await subscribe_to_queue(current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
@@ -923,7 +917,7 @@ async def test_failed_refund_reconciliations(
 ):
     """Test Reconciliations worker."""
     # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
+    from pay_queue.worker import cb_subscription_handler
 
     # register the handler to test it
     await subscribe_to_queue(events_stan,
@@ -1250,7 +1244,7 @@ async def test_failure_ap_disbursement(
     session, app, stan_server, event_loop, client_id, events_stan, future, mock_publish
 ):
     """Test Reconciliations worker for ap disbursement."""
-    from reconciliations.worker import cb_subscription_handler
+    from pay_queue.worker import cb_subscription_handler
 
     await subscribe_to_queue(events_stan,
                              current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),

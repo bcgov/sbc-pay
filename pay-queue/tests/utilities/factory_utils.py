@@ -15,7 +15,7 @@
 
 Test Factory Utility for creating test data.
 """
-from reconciliations.eft.eft_enums import EFTConstants
+from pay_queue.eft.eft_enums import EFTConstants
 
 
 def factory_eft_header(record_type: str, file_creation_date: str, file_creation_time: str,

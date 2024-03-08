@@ -58,10 +58,11 @@
 """This manages the EFT base class."""
 import decimal
 from datetime import datetime
+from typing import List
 
-from reconciliations.eft.eft_enums import EFTConstants
-from reconciliations.eft.eft_errors import EFTError
-from reconciliations.eft.eft_parse_error import EFTParseError
+from pay_queue.eft.eft_enums import EFTConstants
+from pay_queue.eft.eft_errors import EFTError
+from pay_queue.eft.eft_parse_error import EFTParseError
 
 
 class EFTBase:
@@ -71,7 +72,7 @@ class EFTBase:
     record_type: str  # Always 1 for header, 2 for transaction, 7 for trailer
     content: str
     index: int
-    errors: [EFTParseError]
+    errors: List[EFTParseError]
 
     def __init__(self, content: str, index: int):
         """Return an EFT Base record."""
@@ -148,6 +149,6 @@ class EFTBase:
         """Return true if the error array has elements."""
         return len(self.errors) > 0
 
-    def get_error_messages(self) -> [str]:
+    def get_error_messages(self) -> List[str]:
         """Return a string array of the error messages."""
         return [error.message for error in self.errors]

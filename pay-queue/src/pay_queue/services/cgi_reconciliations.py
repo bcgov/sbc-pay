@@ -36,8 +36,8 @@ from pay_api.utils.enums import (
     RoutingSlipStatus)
 from sentry_sdk import capture_message
 
-from reconciliations import config
-from reconciliations.minio import get_object
+from pay_queue import config
+from pay_queue.minio import get_object
 
 
 APP_CONFIG = config.get_named_config(os.getenv('DEPLOYMENT_ENV', 'production'))

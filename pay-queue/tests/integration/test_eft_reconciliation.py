@@ -35,7 +35,7 @@ from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import (
     EFTFileLineType, EFTProcessStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus)
 
-from reconciliations.eft.eft_enums import EFTConstants
+from pay_queue.eft.eft_enums import EFTConstants
 from tests.integration.factory import factory_create_eft_account, factory_invoice
 from tests.integration.utils import create_and_upload_eft_file, helper_add_eft_event_to_queue
 from tests.utilities.factory_utils import factory_eft_header, factory_eft_record, factory_eft_trailer
@@ -46,13 +46,8 @@ async def test_eft_tdi17_fail_header(session, app, stan_server, event_loop, clie
                                      mock_publish):
     """Test EFT Reconciliations properly fails for a bad EFT header."""
     # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
+    from pay_queue.worker import cb_subscription_handler
 
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
 
     # Generate file with invalid header
     file_name: str = 'test_eft_tdi17.txt'
@@ -109,7 +104,7 @@ async def test_eft_tdi17_fail_trailer(session, app, stan_server, event_loop, cli
                                       mock_publish):
     """Test EFT Reconciliations properly fails for a bad EFT trailer."""
     # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
+    from pay_queue.worker import cb_subscription_handler
 
     await subscribe_to_queue(events_stan,
                              current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
@@ -174,7 +169,7 @@ async def test_eft_tdi17_fail_transactions(session, app, stan_server, event_loop
                                            mock_publish):
     """Test EFT Reconciliations properly fails for a bad EFT trailer."""
     # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
+    from pay_queue.worker import cb_subscription_handler
 
     await subscribe_to_queue(events_stan,
                              current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
@@ -242,7 +237,7 @@ async def test_eft_tdi17_basic_process(session, app, stan_server, event_loop, cl
                                        mock_publish):
     """Test EFT Reconciliations worker is able to create basic EFT processing records."""
     # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
+    from pay_queue.worker import cb_subscription_handler
 
     await subscribe_to_queue(events_stan,
                              current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
@@ -331,7 +326,7 @@ async def test_eft_tdi17_process(session, app, stan_server, event_loop, client_i
                                  mock_publish):
     """Test EFT Reconciliations worker."""
     # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
+    from pay_queue.worker import cb_subscription_handler
 
     payment_account, eft_shortname, invoice = create_test_data()
 
@@ -471,7 +466,7 @@ async def test_eft_tdi17_rerun(session, app, stan_server, event_loop, client_id,
                                mock_publish):
     """Test EFT Reconciliations can be re-executed with a corrected file."""
     # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
+    from pay_queue.worker import cb_subscription_handler
 
     payment_account, eft_shortname, invoice = create_test_data()
 

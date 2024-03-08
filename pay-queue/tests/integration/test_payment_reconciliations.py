@@ -29,7 +29,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus
 
-from reconciliations.enums import RecordType, SourceTransaction, Status, TargetTransaction
+from pay_queue.enums import RecordType, SourceTransaction, Status, TargetTransaction
 
 from .factory import (
     factory_create_online_banking_account, factory_create_pad_account, factory_invoice, factory_invoice_reference,
@@ -38,18 +38,8 @@ from .utils import create_and_upload_settlement_file, helper_add_event_to_queue
 
 
 @pytest.mark.asyncio
-async def test_online_banking_reconciliations(session, app, stan_server, event_loop, client_id, future):
+async def test_online_banking_reconciliations(session, app, client_id, future):
     """Test Reconciliations worker."""
-    # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
-
-    # Create a Credit Card Payment
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
 
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -79,7 +69,7 @@ async def test_online_banking_reconciliations(session, app, stan_server, event_l
            TargetTransaction.INV.value, invoice_number,
            total, 0, Status.PAID.value]
     create_and_upload_settlement_file(file_name, [row])
-    await helper_add_event_to_queue(events_stan, file_name=file_name)
+    await helper_add_event_to_queue(file_name=file_name)
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
@@ -94,20 +84,8 @@ async def test_online_banking_reconciliations(session, app, stan_server, event_l
 
 
 @pytest.mark.asyncio
-async def test_online_banking_reconciliations_over_payment(session, app, stan_server, event_loop, client_id,
-                                                           events_stan, future,
-                                                           mock_publish):
+async def test_online_banking_reconciliations_over_payment(session, app, client_id, future, mock_publish):
     """Test Reconciliations worker."""
-    # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
-
-    # Create a Credit Card Payment
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
 
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -139,7 +117,7 @@ async def test_online_banking_reconciliations_over_payment(session, app, stan_se
                   over_payment_amount, cfs_account_number, TargetTransaction.INV.value, invoice_number,
                   over_payment_amount, 0, Status.ON_ACC.value]
     create_and_upload_settlement_file(file_name, [inv_row, credit_row])
-    await helper_add_event_to_queue(events_stan, file_name=file_name)
+    await helper_add_event_to_queue(file_name=file_name)
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
@@ -154,20 +132,8 @@ async def test_online_banking_reconciliations_over_payment(session, app, stan_se
 
 
 @pytest.mark.asyncio
-async def test_online_banking_reconciliations_with_credit(session, app, stan_server, event_loop, client_id, events_stan,
-                                                          future,
-                                                          mock_publish):
+async def test_online_banking_reconciliations_with_credit(session, app, client_id, future, mock_publish):
     """Test Reconciliations worker."""
-    # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
-
-    # Create a Credit Card Payment
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
 
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -199,7 +165,7 @@ async def test_online_banking_reconciliations_with_credit(session, app, stan_ser
     credit_row = [RecordType.ONAC.value, SourceTransaction.EFT_WIRE.value, '555566677', 100001, date, credit_amount,
                   cfs_account_number, TargetTransaction.INV.value, invoice_number, total, 0, Status.PAID.value]
     create_and_upload_settlement_file(file_name, [inv_row, credit_row])
-    await helper_add_event_to_queue(events_stan, file_name=file_name)
+    await helper_add_event_to_queue(file_name=file_name)
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
@@ -214,20 +180,8 @@ async def test_online_banking_reconciliations_with_credit(session, app, stan_ser
 
 
 @pytest.mark.asyncio
-async def test_online_banking_reconciliations_overflows_credit(session, app, stan_server, event_loop, client_id,
-                                                               events_stan, future,
-                                                               mock_publish):
+async def test_online_banking_reconciliations_overflows_credit(session, app, client_id, future, mock_publish):
     """Test Reconciliations worker."""
-    # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
-
-    # Create a Credit Card Payment
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
 
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -264,7 +218,7 @@ async def test_online_banking_reconciliations_overflows_credit(session, app, sta
                 Status.ON_ACC.value]
 
     create_and_upload_settlement_file(file_name, [inv_row, credit_row, onac_row])
-    await helper_add_event_to_queue(events_stan, file_name=file_name)
+    await helper_add_event_to_queue(file_name=file_name)
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
@@ -279,19 +233,8 @@ async def test_online_banking_reconciliations_overflows_credit(session, app, sta
 
 
 @pytest.mark.asyncio
-async def test_online_banking_under_payment(session, app, event_loop, client_id, future):
+async def test_online_banking_under_payment(session, app, client_id, future):
     """Test Reconciliations worker."""
-    # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
-
-    # Create a Credit Card Payment
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
-
     # 1. Create payment account
     # 2. Create invoice and related records
     # 3. Create CFS Invoice records
@@ -322,7 +265,7 @@ async def test_online_banking_under_payment(session, app, event_loop, client_id,
            TargetTransaction.INV.value, invoice_number,
            total, total - paid_amount, Status.PARTIAL.value]
     create_and_upload_settlement_file(file_name, [row])
-    await helper_add_event_to_queue(events_stan, file_name=file_name)
+    await helper_add_event_to_queue(file_name=file_name)
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
@@ -338,18 +281,8 @@ async def test_online_banking_under_payment(session, app, event_loop, client_id,
 
 
 @pytest.mark.asyncio
-async def test_pad_reconciliations(session, app, stan_server, event_loop, client_id, events_stan, future, mock_publish):
+async def test_pad_reconciliations(session, app, client_id, future, mock_publish):
     """Test Reconciliations worker."""
-    # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
-
-    # Create a Credit Card Payment
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
 
     # 1. Create payment account
     # 2. Create invoices and related records
@@ -391,7 +324,7 @@ async def test_pad_reconciliations(session, app, stan_server, event_loop, client
            'INV', invoice_number,
            total, 0, Status.PAID.value]
     create_and_upload_settlement_file(file_name, [row])
-    await helper_add_event_to_queue(events_stan, file_name=file_name)
+    await helper_add_event_to_queue(file_name=file_name)
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice1 = InvoiceModel.find_by_id(invoice1_id)
@@ -414,18 +347,8 @@ async def test_pad_reconciliations(session, app, stan_server, event_loop, client
 
 
 @pytest.mark.asyncio
-async def test_pad_reconciliations_with_credit_memo(session, app, event_loop, client_id, future):
+async def test_pad_reconciliations_with_credit_memo(session, app, client_id, future):
     """Test Reconciliations worker."""
-    # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
-
-    # Create a Credit Card Payment
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
 
     # 1. Create payment account
     # 2. Create invoices and related records
@@ -471,7 +394,7 @@ async def test_pad_reconciliations_with_credit_memo(session, app, event_loop, cl
     pad_row = [RecordType.PAD.value, SourceTransaction.PAD.value, receipt_number, 100001, date, total - credit_amount,
                cfs_account_number, 'INV', invoice_number, total, 0, Status.PAID.value]
     create_and_upload_settlement_file(file_name, [credit_row, pad_row])
-    await helper_add_event_to_queue(events_stan, file_name=file_name)
+    await helper_add_event_to_queue(file_name=file_name)
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice1 = InvoiceModel.find_by_id(invoice1_id)
@@ -494,18 +417,10 @@ async def test_pad_reconciliations_with_credit_memo(session, app, event_loop, cl
 
 
 @pytest.mark.asyncio
-async def test_pad_nsf_reconciliations(session, app, stan_server, event_loop, client_id, events_stan, future,
+async def test_pad_nsf_reconciliations(session, app, client_id, future,
                                        mock_publish):
     """Test Reconciliations worker for NSF."""
-    # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
-
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
+    from pay_queue.worker import cb_subscription_handler
 
     # 1. Create payment account
     # 2. Create invoices and related records
@@ -548,7 +463,7 @@ async def test_pad_nsf_reconciliations(session, app, stan_server, event_loop, cl
            'INV', invoice_number,
            total, total, Status.NOT_PAID.value]
     create_and_upload_settlement_file(file_name, [row])
-    await helper_add_event_to_queue(events_stan, file_name=file_name)
+    await helper_add_event_to_queue(file_name=file_name)
 
     # The invoice should be in SETTLEMENT_SCHEDULED status and Payment should be FAILED
     updated_invoice1 = InvoiceModel.find_by_id(invoice1_id)
@@ -568,18 +483,9 @@ async def test_pad_nsf_reconciliations(session, app, stan_server, event_loop, cl
 
 
 @pytest.mark.asyncio
-async def test_pad_reversal_reconciliations(session, app, stan_server, event_loop, client_id, events_stan, future,
-                                            mock_publish):
+async def test_pad_reversal_reconciliations(session, app, client_id, future, mock_publish):
     """Test Reconciliations worker for NSF."""
-    # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
-
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
+    from pay_queue.worker import cb_subscription_handler
 
     # 1. Create payment account
     # 2. Create invoices and related records for a completed payment
@@ -631,7 +537,7 @@ async def test_pad_reversal_reconciliations(session, app, stan_server, event_loo
            'INV', invoice_number,
            total, total, Status.NOT_PAID.value]
     create_and_upload_settlement_file(file_name, [row])
-    await helper_add_event_to_queue(events_stan, file_name=file_name)
+    await helper_add_event_to_queue(file_name=file_name)
 
     # The invoice should be in SETTLEMENT_SCHEDULED status and Payment should be FAILED
     updated_invoice1 = InvoiceModel.find_by_id(invoice1_id)
@@ -655,18 +561,9 @@ async def test_pad_reversal_reconciliations(session, app, stan_server, event_loo
 
 
 @pytest.mark.asyncio
-async def test_eft_wire_reconciliations(session, app, event_loop, client_id, future, mock_publish):
+async def test_eft_wire_reconciliations(session, app, client_id, future, mock_publish):
     """Test Reconciliations worker."""
-    # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
-
-    # Create a Credit Card Payment
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
+    from pay_queue.worker import cb_subscription_handler
 
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -707,7 +604,7 @@ async def test_eft_wire_reconciliations(session, app, event_loop, client_id, fut
     row = [RecordType.EFTP.value, SourceTransaction.EFT_WIRE.value, eft_wire_receipt, 100001, date, total,
            cfs_account_number, TargetTransaction.INV.value, invoice_number, total, 0, Status.PAID.value]
     create_and_upload_settlement_file(file_name, [row])
-    await helper_add_event_to_queue(events_stan, file_name=file_name)
+    await helper_add_event_to_queue(file_name=file_name)
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
@@ -720,18 +617,8 @@ async def test_eft_wire_reconciliations(session, app, event_loop, client_id, fut
 
 
 @pytest.mark.asyncio
-async def test_credits(session, app, event_loop, client_id, future, monkeypatch):
+async def test_credits(session, app, client_id, future, monkeypatch):
     """Test Reconciliations worker."""
-    # Call back for the subscription
-    from reconciliations.worker import cb_subscription_handler
-
-    # Create a Credit Card Payment
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
 
     # 1. Create payment account.
     # 2. Create EFT/WIRE payment db record.
@@ -793,7 +680,7 @@ async def test_credits(session, app, event_loop, client_id, future, monkeypatch)
            cfs_account_number, TargetTransaction.RECEIPT.value, eft_wire_receipt, onac_amount, 0, Status.ON_ACC.value]
 
     create_and_upload_settlement_file(file_name, [row])
-    await helper_add_event_to_queue(events_stan, file_name=file_name)
+    await helper_add_event_to_queue(file_name=file_name)
 
     # Look up credit file and make sure the credits are recorded.
     pay_account = PaymentAccountModel.find_by_id(pay_account_id)

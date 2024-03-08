@@ -17,7 +17,7 @@
 """Provides the WSGI entry point for running the application."""
 import os
 
-from reconciliations import create_app
+from pay_queue import create_app
 
 app = create_app()
 
