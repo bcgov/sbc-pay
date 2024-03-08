@@ -14,10 +14,12 @@
 """Service to manage Fee Calculation."""
 
 from __future__ import annotations
+from dataclasses import asdict, dataclass
 
+import humps
 import uuid
 from datetime import datetime
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from flask import current_app
 from sentry_sdk import capture_message
@@ -28,15 +30,25 @@ from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import PaymentTransactionSchema
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services import gcp_queue_publisher
+from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, QueueSources, TransactionStatus
 from pay_api.utils.errors import Error
-from pay_api.utils.util import is_valid_redirect_url
+from pay_api.utils.util import get_topic_for_corp_type, is_valid_redirect_url
 
 from .payment import Payment
+
+@dataclass
+class PaymentToken:
+    """Payment Token payload common interface for LEAR and Names."""
+
+    id: Optional[str] = None
+    status_code: Optional[str] = None
+    filing_identifier: Optional[str] = None
+    corp_type_code: Optional[str] = None
 
 
 class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -493,11 +505,16 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         else:
             status_code = 'TRANSACTION_FAILED'
 
-        payload = PaymentTransaction.create_event_payload(invoice, status_code)
-
         try:
-            gcp_queue_publisher.publish_to_queue(payload=payload)
-
+            gcp_queue_publisher.publish_to_queue(
+                QueueMessage(
+                    source=QueueSources.PAY_API.value,
+                    subject='payment',
+                    message_type='bc.registry.payment',
+                    payload=PaymentTransaction.create_event_payload(invoice, status_code),
+                    topic=get_topic_for_corp_type(invoice.corp_type_code)
+                )
+            )
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(e)
             current_app.logger.warning(
@@ -509,12 +526,4 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
     @staticmethod
     def create_event_payload(invoice, status_code):
         """Create event payload for payment events."""
-        payload = {
-            'paymentToken': {
-                'id': invoice.id,
-                'statusCode': status_code,
-                'filingIdentifier': invoice.filing_id,
-                'corpTypeCode': invoice.corp_type_code
-            }
-        }
-        return payload
+        return humps.camelize(asdict(PaymentToken(invoice.id, status_code, invoice.filing_id, invoice.corp_type_code)))
