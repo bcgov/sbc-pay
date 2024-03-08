@@ -470,6 +470,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         # 2. Existing payment account:
         # -  If the account was on DIRECT_PAY and switching to Online Banking, and active CFS account is not present.
         # -  If the account was on DRAWDOWN and switching to PAD, and active CFS account is not present
+        # -  If the account was on PAD and switching to EFT, and active CFS account is not present
 
         if payment_method:
             pay_system = PaymentSystemFactory.create_from_payment_method(payment_method=payment_method)
