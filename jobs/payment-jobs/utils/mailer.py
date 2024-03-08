@@ -117,7 +117,7 @@ def publish_payment_notification(info: StatementNotificationInfo) -> bool:
         gcp_queue_publisher.publish_to_queue(
             QueueMessage(
                 source=QueueSources.PAY_JOBS.value,
-                message_type=notification_type
+                message_type=notification_type,
                 payload=payload,
                 topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
             )
