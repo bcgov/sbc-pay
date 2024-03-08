@@ -6,8 +6,8 @@
 MKFILE_PATH:=$(abspath $(lastword $(MAKEFILE_LIST)))
 CURRENT_ABS_DIR:=$(patsubst %/,%,$(dir $(MKFILE_PATH)))
 
-PROJECT_NAME:=reconciliations
-DOCKER_NAME:=payment-reconciliations
+PROJECT_NAME:=pay_queue
+DOCKER_NAME:=pay-queue
 
 #################################################################################
 # COMMANDS -- Setup                                                             #

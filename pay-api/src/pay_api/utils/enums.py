@@ -372,4 +372,3 @@ class QueueSources(Enum):
     PAY_JOBS = 'pay-jobs'
     PAY_QUEUE = 'pay-queue'
     FTP_POLLER = 'ftp-poller'
-
