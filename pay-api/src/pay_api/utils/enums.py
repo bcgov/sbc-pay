@@ -348,6 +348,7 @@ class MessageType(Enum):
     STATEMENT_NOTIFICATION = 'statementNotification'
     STATEMENT_DUE_NOTIFICATION = 'statementDueNotification'
     STATEMENT_REMINDER_NOTIFICATION = 'statementReminderNotification'
+    PAYMENT = 'payment'
 
 
 
