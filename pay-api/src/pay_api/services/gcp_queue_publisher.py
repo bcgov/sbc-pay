@@ -1,6 +1,6 @@
 """This module provides Queue type services."""
 import base64
-import dataclass
+from dataclass import dataclass
 import json
 import uuid
 from concurrent.futures import CancelledError
