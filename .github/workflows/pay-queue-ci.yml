@@ -6,7 +6,7 @@ on:
       - main
       - queue_python_upgrade
     paths:
-      - "queue_services/payment-reconciliations/**"
+      - "pay-queue/**"
       - "pay-api/src/pay_api/models/**"
       - "pay-api/src/pay_api/services/cfs_service.py"
 
@@ -54,7 +54,7 @@ jobs:
   testing:
     needs: setup-job
     env:
-      DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+      DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/pay-test"
       USE_DOCKER_MOCK: "YES"
       MINIO_ENDPOINT: "localhost:9000"
       MINIO_ACCESS_KEY: "minio"
@@ -79,7 +79,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
+          POSTGRES_DB: pay-test
         ports:
           - 5432:5432
         # needed because the postgres container does not provide a healthcheck
@@ -101,7 +101,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
-          file: ./queue_services/payment-reconciliations/coverage.xml
+          file: ./pay-queue/coverage.xml
           flags: paymentreconciliationsqueue
           name: codecov-payment-reconciliations
           fail_ci_if_error: true

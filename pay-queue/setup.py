@@ -23,7 +23,7 @@ from setuptools import find_packages, setup
 
 _version_re = re.compile(r'__version__\s+=\s+(.*)')  # pylint: disable=invalid-name
 
-with open('src/reconciliations/version.py', 'rb') as f:
+with open('src/pay_queue/version.py', 'rb') as f:
     version = str(ast.literal_eval(_version_re.search(  # pylint: disable=invalid-name
         f.read().decode('utf-8')).group(1)))
 

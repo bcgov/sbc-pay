@@ -1,11 +1,11 @@
-name: Payment Queue CD
+name: Pay Queue CD
 
 on:
   push:
     branches:
       - main
     paths:
-      - "queue_services/payment-reconciliations/**"
+      - "pay-queue/**"
       - "pay-api/src/pay_api/models/**"
       - "pay-api/src/pay_api/services/cfs_service.py"
   workflow_dispatch:
@@ -18,14 +18,14 @@ on:
 defaults:
   run:
     shell: bash
-    working-directory: ./queue_services/payment-reconciliations
+    working-directory: ./pay-queue
 
 env:
-  APP_NAME: "payment-reconciliations"
+  APP_NAME: "pay-queue"
   TAG_NAME: "dev"
 
 jobs:
-  payment-reconciliations-cd-by-push:
+  pay-queue-cd-by-push:
     runs-on: ubuntu-20.04
 
     if: github.event_name == 'push' && github.repository == 'bcgov/sbc-pay'
@@ -62,13 +62,13 @@ jobs:
         if: failure()
         with:
           type: ${{ job.status }}
-          job_name: "*Payment Reconciliations Queue Built and Deployed to ${{env.TAG_NAME}}*"
+          job_name: "*Pay Queue Built and Deployed to ${{env.TAG_NAME}}*"
           channel: "#registries-bot"
           url: ${{ secrets.ROCKETCHAT_WEBHOOK }}
           commit: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
-  payment-reconciliations-cd-by-dispatch:
+  pay-queue-cd-by-dispatch:
     runs-on: ubuntu-20.04
 
     if: github.event_name == 'workflow_dispatch' && github.repository == 'bcgov/sbc-pay'
@@ -108,7 +108,7 @@ jobs:
         if: failure()
         with:
           type: ${{ job.status }}
-          job_name: "*Payment Reconciliations Queue Built and Deployed to ${{env.TAG_NAME}}*"
+          job_name: "*Pay Queue Built and Deployed to ${{env.TAG_NAME}}*"
           channel: "#registries-bot"
           url: ${{ secrets.ROCKETCHAT_WEBHOOK }}
           commit: true
