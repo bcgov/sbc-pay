@@ -17,7 +17,6 @@ coverage:
           - payapi
           - bcolapi
           - reportapi
-          - eventlistenerqueue
           - paymentjobs
 
 ignore:
@@ -48,10 +47,6 @@ flags:
   reportapi:
     paths:
       - report-api/src/api
-    carryforward: true
-  eventlistenerqueue:
-    paths:
-      - queue_services/events-listener/src/events_listener
     carryforward: true
   paymentjobs:
     paths:
