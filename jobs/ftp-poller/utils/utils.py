@@ -18,6 +18,7 @@ from flask import current_app
 from paramiko import SFTPFile
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
+from pay_api.utils.enums import QueueSources
 
 
 from utils.constants import CAS_MESSAGE_TYPE

@@ -14,7 +14,6 @@
 
 """Common setup and fixtures for the py-test suite used by this service."""
 
-import sys
 import time
 
 import pytest
@@ -26,7 +25,8 @@ def app():
     """Return a session-wide application configured in TEST mode."""
     return create_app('testing')
 
-@pytest.fixture(scope='function')
+
+@pytest.fixture(scope='function', autouse=True)
 def session(app):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a function-scoped session."""
     with app.app_context():
