@@ -36,10 +36,11 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
+from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import (
-    CorpType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus)
+    CorpType, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus, QueueSources, TransactionStatus)
 from pay_api.utils.user_context import UserContext
-from pay_api.utils.util import get_local_formatted_date_time
+from pay_api.utils.util import get_local_formatted_date_time, get_topic_for_corp_type
 
 from .payment_line_item import PaymentLineItem
 from .receipt import Receipt
@@ -150,7 +151,12 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
         try:
             current_app.logger.info(f'Releasing record for invoice {invoice.id}')
-            gcp_queue_publisher.publish_to_queue(payload)
+            gcp_queue_publisher.publish_to_queue(QueueMessage(
+                source=QueueSources.PAY_API.value,
+                message_type=MessageType.PAYMENT.value,
+                payload=payload,
+                topic=get_topic_for_corp_type(invoice.corp_type_code)
+            ))
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(e)
             current_app.logger.error('Notification to Queue failed for the Payment Event %s', payload)
@@ -203,7 +209,6 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             invoice_id=invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value)
         payment_transaction: PaymentTransactionModel = PaymentTransactionModel.find_recent_completed_by_invoice_id(
             invoice_id=invoice.id)
-        message_type: str = f'bc.registry.payment.{invoice.payment_method_code.lower()}.refundRequest'
         transaction_date_time = receipt.receipt_date if invoice.payment_method_code == PaymentMethod.DRAWDOWN.value \
             else payment_transaction.transaction_end_time
         filing_description = ''
@@ -211,33 +216,34 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             if filing_description:
                 filing_description += ','
             filing_description += line_item.description
-        q_payload = {
-            'specversion': '1.x-wip',
-            'type': message_type,
-            'source': f'https://api.pay.bcregistry.gov.bc.ca/v1/invoices/{invoice.id}',
-            'id': invoice.id,
-            'datacontenttype': 'application/json',
-            'data': {
-                'identifier': invoice.business_identifier,
-                'orderNumber': receipt.receipt_number,
-                'transactionDateTime': get_local_formatted_date_time(transaction_date_time),
-                'transactionAmount': receipt.receipt_amount,
-                'transactionId': invoice_ref.invoice_number,
-                'refundDate': get_local_formatted_date_time(datetime.now(), '%Y%m%d'),
-                'filingDescription': filing_description
-            }
+        
+
+        payload = {
+            'identifier': invoice.business_identifier,
+            'orderNumber': receipt.receipt_number,
+            'transactionDateTime': get_local_formatted_date_time(transaction_date_time),
+            'transactionAmount': receipt.receipt_amount,
+            'transactionId': invoice_ref.invoice_number,
+            'refundDate': get_local_formatted_date_time(datetime.now(), '%Y%m%d'),
+            'filingDescription': filing_description
         }
         if invoice.payment_method_code == PaymentMethod.DRAWDOWN.value:
             payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice.payment_account_id)
             filing_description += ','
             filing_description += invoice_ref.invoice_number
-            q_payload['data'].update({
+            payload.update({
                 'bcolAccount': invoice.bcol_account,
                 'bcolUser': payment_account.bcol_user_id,
                 'filingDescription': filing_description
             })
-        current_app.logger.debug(f'Publishing payment refund request to mailer for {invoice.id} : {q_payload}')
-        gcp_queue_publisher.publish_to_queue(q_payload)
+        current_app.logger.debug(f'Publishing payment refund request to mailer for {invoice.id} : {payload}')
+        gcp_queue_publisher.publish_to_queue(        
+            QueueMessage(
+                source=QueueSources.PAY_API.value,
+                message_type=f'{invoice.payment_method_code.lower()}.refundRequest',
+                payload=payload,
+                topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
+        ))
 
     def complete_payment(self, invoice, invoice_reference):
         """Create payment and related records as if the payment is complete."""
