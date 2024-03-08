@@ -136,6 +136,8 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     SENTRY_ENABLE = os.getenv('SENTRY_ENABLE', 'False')
     SENTRY_DSN = os.getenv('SENTRY_DSN', None)
 
+    FTP_POLLER_TOPIC = os.getenv('FTP_POLLER_TOPIC', None)
+
     TESTING = False
     DEBUG = True
 

@@ -16,14 +16,10 @@
 
 Test-Suite to ensure that the CreateAccountTask is working as expected.
 """
-# import os
-# from typing import List
 
 from flask import current_app
 
 from services.sftp import SFTPService
-# from utils.minio import get_object
-# from tasks.poll_ftp_task import PollFtpTask
 
 
 def test_cget_sftp_connection(session):  # pylint:disable=unused-argument
@@ -39,11 +35,3 @@ def test_poll_ftp_task(session):    # pylint:disable=unused-argument
     ftp_dir: str = current_app.config.get('CAS_SFTP_DIRECTORY')
     files = con.listdir(ftp_dir)
     assert len(files) == 1, 'Files exist in FTP folder'
-
-    # TODO fixed this test case
-    # payment_file_list: List[str] = PollFtpTask.poll_ftp()
-    # minio_file_content = get_object(payment_file_list[0]).read().decode()
-    # full_path = os.path.join(os.path.dirname(__file__), '../docker/ftp/test.txt')
-    # sftp_local_file_content = open(full_path, 'r').read()
-    # assert minio_file_content == sftp_local_file_content, 'minio upload works fine.' \
-    #                                                      'Contents of ftp drive and minio verified'
