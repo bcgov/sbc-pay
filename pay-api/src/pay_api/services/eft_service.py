@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service to manage CFS EFT Payments."""
 from datetime import datetime
-from typing import Dict, Any
+from typing import Any, Dict
 
 from flask import current_app
 
