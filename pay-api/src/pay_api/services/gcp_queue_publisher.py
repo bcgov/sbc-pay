@@ -18,7 +18,6 @@ class QueueMessage:
     """Queue message data class."""
 
     source: str
-    subject: str
     message_type: str
     payload: dict
     topic: str
@@ -26,23 +25,27 @@ class QueueMessage:
 
 def publish_to_queue(queue_message: QueueMessage):
     """Publish to GCP PubSub Queue."""
-    ce = SimpleCloudEvent(
+    if queue_message.topic is None:
+        current_app.logger.info('Skipping queue message topic not set.')
+        return
+
+    queue_message_bytes = to_queue_message(SimpleCloudEvent(
         id=str(uuid.uuid4()),
         source=f'sbc-pay-{queue_message.source}',
-        subject=queue_message.subject,
+        # Intentionally blank, this field has been moved to topic.
+        subject=None,
         time=datetime.now(tz=timezone.utc).isoformat(),
         type=queue_message.message_type,
         data=queue_message.payload
-    )
+    ))
 
-    _send_to_queue(to_queue_message(ce), queue_message.topic)
+    _send_to_queue(queue_message.topic, queue_message_bytes)
 
 
-def _send_to_queue(payload: bytes, topic_name: str):
+def _send_to_queue(topic_name: str, payload: bytes):
     """Send payload to the queue."""
     if not ((gcp_auth_key := current_app.config.get('GCP_AUTH_KEY')) and
             (audience := current_app.config.get('AUDIENCE')) and
-            topic_name and
             (publisher_audience := current_app.config.get('PUBLISHER_AUDIENCE'))):
         raise Exception('Missing setup arguments')  # pylint: disable=W0719
 
