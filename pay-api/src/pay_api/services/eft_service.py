@@ -13,15 +13,17 @@
 # limitations under the License.
 """Service to manage CFS EFT Payments."""
 from datetime import datetime
+from typing import Any, Dict
 
 from flask import current_app
 
+from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import InvoiceReferenceStatus, PaymentMethod, PaymentStatus
+from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, PaymentMethod, PaymentStatus
 
 from .deposit_service import DepositService
 from .invoice import Invoice
@@ -36,6 +38,15 @@ class EftService(DepositService):
     def get_payment_method_code(self):
         """Return EFT as the system code."""
         return PaymentMethod.EFT.value
+
+    def create_account(self, identifier: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
+                       **kwargs) -> CfsAccountModel:
+        """Create an account for the EFT transactions."""
+        # Create CFS Account model instance, set the status as PENDING
+        current_app.logger.info(f'Creating EFT account details in PENDING status for {identifier}')
+        cfs_account = CfsAccountModel()
+        cfs_account.status = CfsAccountStatus.PENDING.value
+        return cfs_account
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
