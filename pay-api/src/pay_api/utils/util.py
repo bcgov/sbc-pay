@@ -254,6 +254,7 @@ def cents_to_decimal(amount: int):
 
     return amount / 100
 
+
 def get_topic_for_corp_type(corp_type: str):
     """Return a topic to direct the queue message to."""
     match corp_type:

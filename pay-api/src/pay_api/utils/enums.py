@@ -366,8 +366,10 @@ class PaymentDetailsGlStatus(Enum):
     RJCT = 'RJCT'  # Should have refundglerrormessage
     CMPLT = 'CMPLT'
 
+
 class QueueSources(Enum):
     """Queue sources for PAY."""
+
     PAY_API = 'pay-api'
     PAY_JOBS = 'pay-jobs'
     PAY_QUEUE = 'pay-queue'

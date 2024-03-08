@@ -38,7 +38,8 @@ from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import (
-    CorpType, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus, QueueSources, TransactionStatus)
+    CorpType, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus, QueueSources,
+    TransactionStatus)
 from pay_api.utils.user_context import UserContext
 from pay_api.utils.util import get_local_formatted_date_time, get_topic_for_corp_type
 
@@ -218,7 +219,6 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             if filing_description:
                 filing_description += ','
             filing_description += line_item.description
-        
 
         payload = {
             'identifier': invoice.business_identifier,

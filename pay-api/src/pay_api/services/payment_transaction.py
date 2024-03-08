@@ -14,13 +14,13 @@
 """Service to manage Fee Calculation."""
 
 from __future__ import annotations
-from dataclasses import asdict, dataclass
 
-import humps
 import uuid
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from typing import Dict, List, Optional
 
+import humps
 from flask import current_app
 from sentry_sdk import capture_message
 
@@ -28,18 +28,20 @@ from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import PaymentTransactionSchema
-from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services import gcp_queue_publisher
+from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus, QueueSources, TransactionStatus
+from pay_api.utils.enums import (
+    InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus, QueueSources, TransactionStatus)
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_topic_for_corp_type, is_valid_redirect_url
 
 from .payment import Payment
+
 
 @dataclass
 class PaymentToken:
