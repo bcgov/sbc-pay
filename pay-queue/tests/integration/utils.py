@@ -21,67 +21,13 @@ from typing import List
 from flask import current_app
 from minio import Minio
 
-from reconciliations.enums import MessageType
-
-
-async def helper_add_event_to_queue(file_name: str):
-    """Add event to the Queue."""
-    payload = {
-        'specversion': '1.x-wip',
-        'type': 'bc.registry.payment.casSettlementUploaded',
-        'source': 'https://api.business.bcregistry.gov.bc.ca/v1/accounts/1/',
-        'id': 'C234-1234-1234',
-        'time': '2020-08-28T17:37:34.651294+00:00',
-        'datacontenttype': 'application/json',
-        'data': {
-            'fileName': file_name,
-            'location': current_app.config['MINIO_BUCKET_NAME']
-        }
-    }
-
-    gcp_queue_publisher.publish_to_queue(subject=current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                              payload=json.dumps(payload).encode('utf-8'))
-
-
-async def helper_add_eft_event_to_queue(file_name: str,
-                                        message_type: str = MessageType.EFT_FILE_UPLOADED.value):
+async def helper_add_event_to_queue(file_name: str, message_type: str):
     """Add eft event to the Queue."""
     payload = {
-        'specversion': '1.x-wip',
-        'type': message_type,
-        'source': 'https://api.business.bcregistry.gov.bc.ca/v1/accounts/1/',
-        'id': 'C234-1234-1234',
-        'time': '2020-08-28T17:37:34.651294+00:00',
-        'datacontenttype': 'text/plain',
-        'data': {
-            'fileName': file_name,
-            'location': current_app.config['MINIO_BUCKET_NAME']
-        }
+        'fileName': file_name,
+        'location': current_app.config['MINIO_BUCKET_NAME']
     }
-
-    gcp_queue_publisher.publish_to_queue(subject=current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                              payload=json.dumps(payload).encode('utf-8'))
-
-
-async def helper_add_ejv_event_to_queue(file_name: str,
-                                        message_type: str = 'ACKReceived'):
-    """Add event to the Queue."""
-    payload = {
-        'specversion': '1.x-wip',
-        'type': f'bc.registry.payment.cgi.{message_type}',
-        'source': 'https://api.business.bcregistry.gov.bc.ca/v1/accounts/1/',
-        'id': 'C234-1234-1234',
-        'time': '2020-08-28T17:37:34.651294+00:00',
-        'datacontenttype': 'application/json',
-        'data': {
-            'fileName': file_name,
-            'location': current_app.config['MINIO_BUCKET_NAME']
-        }
-    }
-
-    gcp_queue_publisher.publish_to_queue(subject=current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                              payload=json.dumps(payload).encode('utf-8'))
-
+    # TODO, should be a POST to the queue.
 
 def create_and_upload_settlement_file(file_name: str, rows: List[List]):
     """Create settlement file, upload to minio and send event."""
@@ -125,26 +71,17 @@ def upload_to_minio(value_as_bytes, file_name: str):
 
 
 
-async def helper_add_event_to_queue(subject: str,
-                                    old_identifier: str = 'T1234567890',
+async def helper_add_event_to_queue(old_identifier: str = 'T1234567890',
                                     new_identifier: str = 'BC1234567890'):
     """Add event to the Queue."""
+    message_type = MessageType.INCORPORATION.value
     payload = {
-        'specversion': '1.x-wip',
-        'type': 'bc.registry.business.incorporationApplication',
-        'source': 'https://api.business.bcregistry.gov.bc.ca/v1/business/BC1234567/filing/12345678',
-        'id': 'C234-1234-1234',
-        'time': '2020-08-28T17:37:34.651294+00:00',
-        'datacontenttype': 'application/json',
+        'filing': {
+            'header': {'filingId': '12345678'},
+            'business': {'identifier': 'BC1234567'}
+        },
         'identifier': new_identifier,
         'tempidentifier': old_identifier,
-        'data': {
-            'filing': {
-                'header': {'filingId': '12345678'},
-                'business': {'identifier': 'BC1234567'}
-            }
-        }
     }
 
-    await publish(subject=subject,
-                              payload=json.dumps(payload).encode('utf-8'))
+    # TODO http post to application

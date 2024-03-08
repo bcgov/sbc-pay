@@ -339,7 +339,7 @@ class EFTShortnameState(Enum):
 
 
 class MessageType(Enum):
-    """Account Mailer Event Types."""
+    """Queue Event Types."""
 
     EFT_AVAILABLE_NOTIFICATION = 'eftAvailableNotification'
     PAD_ACCOUNT_CREATE = 'padAccountCreate'
@@ -349,7 +349,13 @@ class MessageType(Enum):
     STATEMENT_DUE_NOTIFICATION = 'statementDueNotification'
     STATEMENT_REMINDER_NOTIFICATION = 'statementReminderNotification'
     PAYMENT = 'payment'
-
+    EJV_FAILED = 'ejvFailed'
+    CAS_UPLOADED = 'casSettlementUploaded'
+    INCORPORATION = 'incorporationApplication'
+    REGISTRATION = 'registration'
+    CGI_ACK_RECEIVED = 'ACKReceived'
+    CGI_FEEDBACK_RECEIVED = 'FEEDBACKReceived'
+    EFT_FILE_UPLOADED = 'eftFileUploaded'
 
 
 class PaymentDetailsGlStatus(Enum):

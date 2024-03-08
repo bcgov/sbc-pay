@@ -305,25 +305,19 @@ def _get_disbursement_status(return_code: str) -> str:
 
 def _publish_mailer_events(file_name: str, minio_location: str):
     """Publish payment message to the mailer queue."""
-    # Publish message to the Queue, saying account has been created. Using the event spec.
-    queue_data = {
+    payload = {
         'fileName': file_name,
         'minioLocation': minio_location
     }
-    payload = {
-        'specversion': '1.x-wip',
-        'type': 'bc.registry.payment.ejvFailed',
-        'source': 'https://api.pay.bcregistry.gov.bc.ca/v1/accounts/',
-        'id': file_name,
-        'time': f'{datetime.now()}',
-        'datacontenttype': 'application/json',
-        'data': queue_data
-    }
-
     try:
-        gcp_queue_publisher.publish_to_queue(payload=payload,
-                      client_name=APP_CONFIG.NATS_MAILER_CLIENT_NAME,
-                      subject=APP_CONFIG.NATS_MAILER_SUBJECT)
+        gcp_queue_publisher.publish_to_queue(
+            QueueMessage(
+                source=QueueSources.PAY_QUEUE.value,
+                message_type=MessageType.EJV_FAILED.value,
+                payload=payload,
+                topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
+            )
+        )
     except Exception as e:  # NOQA pylint: disable=broad-except
         current_app.logger.error(e)
         capture_message('EJV Failed message error', level='error')

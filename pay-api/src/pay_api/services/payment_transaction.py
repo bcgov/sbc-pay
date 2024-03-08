@@ -35,7 +35,7 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, QueueSources, TransactionStatus
+from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus, QueueSources, TransactionStatus
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_topic_for_corp_type, is_valid_redirect_url
 
@@ -509,8 +509,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             gcp_queue_publisher.publish_to_queue(
                 QueueMessage(
                     source=QueueSources.PAY_API.value,
-                    subject='payment',
-                    message_type='bc.registry.payment',
+                    message_type=MessageType.PAYMENT.value,
                     payload=PaymentTransaction.create_event_payload(invoice, status_code),
                     topic=get_topic_for_corp_type(invoice.corp_type_code)
                 )

@@ -810,12 +810,14 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def _publish_queue_message(self, payload: dict, message_type: str):
         """Publish to account mailer to send out confirmation email or notification email."""
         try:
-            gcp_queue_publisher.publish_to_queue(QueueMessage(
-                source=QueueSources.PAY_API.value,
-                message_type=message_type,
-                payload=payload,
-                topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
-            ))
+            gcp_queue_publisher.publish_to_queue(
+                QueueMessage(
+                    source=QueueSources.PAY_API.value,
+                    message_type=message_type,
+                    payload=payload,
+                    topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
+                )
+            )
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(e)
             current_app.logger.error(
@@ -870,12 +872,14 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             )
 
             try:
-                gcp_queue_publisher.publish_to_queue(QueueMessage(
-                    source=QueueSources.PAY_API.value,
-                    message_type=MessageType.NSF_UNLOCK_ACCOUNT.value,
-                    payload=payload,
-                    topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
-                ))
+                gcp_queue_publisher.publish_to_queue(
+                    QueueMessage(
+                        source=QueueSources.PAY_API.value,
+                        message_type=MessageType.NSF_UNLOCK_ACCOUNT.value,
+                        payload=payload,
+                        topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
+                    )
+                )
             except Exception as e:  # NOQA pylint: disable=broad-except
                 current_app.logger.error(e)
                 current_app.logger.error(

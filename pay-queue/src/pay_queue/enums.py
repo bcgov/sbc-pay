@@ -76,13 +76,3 @@ class TargetTransaction(Enum):
     CREDIT_MEMO = 'CM'
     RECEIPT = 'RECEIPT'
 
-
-class MessageType(Enum):
-    """Event message types."""
-
-    INCORPORATION_TYPE = 'bc.registry.business.incorporationApplication'
-    REGISTRATION = 'bc.registry.business.registration'
-    CAS_UPLOADED = 'bc.registry.payment.casSettlementUploaded'
-    CGI_ACK_RECEIVED = 'bc.registry.payment.cgi.ACKReceived'
-    CGI_FEEDBACK_RECEIVED = 'bc.registry.payment.cgi.FEEDBACKReceived'
-    EFT_FILE_UPLOADED = 'bc.registry.payment.eft.fileUploaded'

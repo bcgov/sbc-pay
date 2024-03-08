@@ -582,27 +582,37 @@ def _validate_account(inv: InvoiceModel, row: Dict[str, str]):
 
 async def _publish_payment_event(inv: InvoiceModel):
     """Publish payment message to the queue."""
-    payment_event_payload = PaymentTransactionService.create_event_payload(invoice=inv,
-                                                                           status_code=PaymentStatus.COMPLETED.value)
+    payload = PaymentTransactionService.create_event_payload(invoice=inv,
+                                                             status_code=PaymentStatus.COMPLETED.value)
     try:
-        # TODO fix
-        gcp_queue_publisher.publish_to_queue(payload=payment_event_payload, client_name=APP_CONFIG.NATS_PAYMENT_CLIENT_NAME,
-                      subject=get_pay_subject_name(inv.corp_type_code, subject_format=APP_CONFIG.NATS_PAYMENT_SUBJECT))
+        gcp_queue_publisher.publish_to_queue(
+            QueueMessage(
+                source=QueueSources.PAY_QUEUE.value,
+                message_type=MessageType.PAYMENT.value,
+                payload=payload,
+                topic=get_topic_for_corp_type(inv.corp_type_code)
+            )
+        )
     except Exception as e:  # NOQA pylint: disable=broad-except
         current_app.logger.error(e)
-        current_app.logger.warning('Notification to Queue failed for the Payment Event - %s', payment_event_payload)
-        capture_message(f'Notification to Queue failed for the Payment Event {payment_event_payload}.',
+        current_app.logger.warning('Notification to Queue failed for the Payment Event - %s', payload)
+        capture_message(f'Notification to Queue failed for the Payment Event {payload}.',
                         level='error')
 
 
 async def _publish_mailer_events(message_type: str, pay_account: PaymentAccountModel, row: Dict[str, str]):
     """Publish payment message to the mailer queue."""
     # Publish message to the Queue, saying account has been created. Using the event spec.
-    payload = _create_event_payload(message_type, pay_account, row)
+    payload = _create_event_payload(pay_account, row)
     try:
-        gcp_queue_publisher.publish_to_queue(payload=payload,
-                      client_name=APP_CONFIG.NATS_MAILER_CLIENT_NAME,
-                      subject=APP_CONFIG.NATS_MAILER_SUBJECT)
+        gcp_queue_publisher.publish_to_queue(
+            QueueMessage(
+                source=QueueSources.PAY_QUEUE.value,
+                message_type=message_type,
+                payload=payload,
+                topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
+            )
+        )
     except Exception as e:  # NOQA pylint: disable=broad-except
         current_app.logger.error(e)
         current_app.logger.warning('Notification to Queue failed for the Account Mailer %s - %s', pay_account.auth_account_id,
@@ -631,27 +641,22 @@ async def _publish_online_banking_mailer_events(rows: List[Dict[str, str]], paid
     else:
         message_type = 'bc.registry.payment.Payment'
 
-    queue_data = {
+    payload = {
         'accountId': pay_account.auth_account_id,
         'paymentMethod': PaymentMethod.ONLINE_BANKING.value,
         'amount': '{:.2f}'.format(paid_amount),  # pylint: disable = consider-using-f-string
         'creditAmount': '{:.2f}'.format(credit_amount)  # pylint: disable = consider-using-f-string
     }
 
-    payload = {
-        'specversion': '1.x-wip',
-        'type': message_type,
-        'source': f'https://api.pay.bcregistry.gov.bc.ca/v1/accounts/{pay_account.auth_account_id}',
-        'id': f'{pay_account.auth_account_id}',
-        'time': f'{datetime.now()}',
-        'datacontenttype': 'application/json',
-        'data': queue_data
-    }
-
     try:
-        gcp_queue_publisher.publish_to_queue(payload=payload,
-                      client_name=APP_CONFIG.NATS_MAILER_CLIENT_NAME,
-                      subject=APP_CONFIG.NATS_MAILER_SUBJECT)
+        gcp_queue_publisher.publish_to_queue(
+            QueueMessage(
+                source=QueueSources.PAY_QUEUE.value,
+                message_type=message_type,
+                payload=payload,
+                topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
+            )
+        )
     except Exception as e:  # NOQA pylint: disable=broad-except
         current_app.logger.error(e)
         current_app.logger.warning('Notification to Queue failed for the Account Mailer %s - %s', pay_account.auth_account_id,
@@ -660,16 +665,19 @@ async def _publish_online_banking_mailer_events(rows: List[Dict[str, str]], paid
             auth_account_id=pay_account.auth_account_id, msg=payload), level='error')
 
 
-# TODO fix this.
 async def _publish_account_events(message_type: str, pay_account: PaymentAccountModel, row: Dict[str, str]):
     """Publish payment message to the mailer queue."""
     # Publish message to the Queue, saying account has been created. Using the event spec.
-    payload = _create_event_payload(message_type, pay_account, row)
-
+    payload = _create_event_payload(pay_account, row)
     try:
-        gcp_queue_publisher.publish_to_queue(payload=payload,
-                      client_name=APP_CONFIG.NATS_ACCOUNT_CLIENT_NAME,
-                      subject=APP_CONFIG.NATS_ACCOUNT_SUBJECT)
+        gcp_queue_publisher.publish_to_queue(
+            QueueMessage(
+                source=QueueSources.PAY_QUEUE.value,
+                message_type=message_type,
+                payload=payload,
+                topic=current_app.config.get('AUTH_QUEUE_TOPIC')
+            )
+        )
     except Exception as e:  # NOQA pylint: disable=broad-except
         current_app.logger.error(e)
         current_app.logger.warning('Notification to Queue failed for the Account %s - %s', pay_account.auth_account_id,
@@ -678,22 +686,13 @@ async def _publish_account_events(message_type: str, pay_account: PaymentAccount
             auth_account_id=pay_account.auth_account_id, msg=payload), level='error')
 
 
-def _create_event_payload(message_type, pay_account, row):
-    queue_data = {
+def _create_event_payload(pay_account, row):
+    return {
         'accountId': pay_account.auth_account_id,
         'paymentMethod': _convert_payment_method(_get_row_value(row, Column.SOURCE_TXN)),
         'outstandingAmount': _get_row_value(row, Column.TARGET_TXN_OUTSTANDING),
         'originalAmount': _get_row_value(row, Column.TARGET_TXN_ORIGINAL),
         'amount': _get_row_value(row, Column.APP_AMOUNT)
-    }
-    payload = {
-        'specversion': '1.x-wip',
-        'type': f'bc.registry.payment.{message_type}',
-        'source': f'https://api.pay.bcregistry.gov.bc.ca/v1/accounts/{pay_account.auth_account_id}',
-        'id': f'{pay_account.auth_account_id}',
-        'time': f'{datetime.now()}',
-        'datacontenttype': 'application/json',
-        'data': queue_data
     }
     return payload
 

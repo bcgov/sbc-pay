@@ -151,12 +151,14 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
         try:
             current_app.logger.info(f'Releasing record for invoice {invoice.id}')
-            gcp_queue_publisher.publish_to_queue(QueueMessage(
-                source=QueueSources.PAY_API.value,
-                message_type=MessageType.PAYMENT.value,
-                payload=payload,
-                topic=get_topic_for_corp_type(invoice.corp_type_code)
-            ))
+            gcp_queue_publisher.publish_to_queue(
+                QueueMessage(
+                    source=QueueSources.PAY_API.value,
+                    message_type=MessageType.PAYMENT.value,
+                    payload=payload,
+                    topic=get_topic_for_corp_type(invoice.corp_type_code)
+                )
+            )
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(e)
             current_app.logger.error('Notification to Queue failed for the Payment Event %s', payload)
@@ -237,13 +239,14 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
                 'filingDescription': filing_description
             })
         current_app.logger.debug(f'Publishing payment refund request to mailer for {invoice.id} : {payload}')
-        gcp_queue_publisher.publish_to_queue(        
+        gcp_queue_publisher.publish_to_queue(
             QueueMessage(
                 source=QueueSources.PAY_API.value,
                 message_type=f'{invoice.payment_method_code.lower()}.refundRequest',
                 payload=payload,
                 topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
-        ))
+            )
+        )
 
     def complete_payment(self, invoice, invoice_reference):
         """Create payment and related records as if the payment is complete."""
