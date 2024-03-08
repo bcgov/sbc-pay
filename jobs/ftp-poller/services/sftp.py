@@ -24,10 +24,10 @@ from pysftp import Connection, CnOpts
 class SFTPService:  # pylint: disable=too-few-public-methods
     """SFTP  Service class."""
 
-    DEFAUILT_CONNECT_SERVER = 'CAS'
+    DEFAULT_CONNECT_SERVER = 'CAS'
 
     @staticmethod
-    def get_connection(server_name: str = DEFAUILT_CONNECT_SERVER) -> Connection:
+    def get_connection(server_name: str = DEFAULT_CONNECT_SERVER) -> Connection:
         """Return a SFTP connection."""
         # pylint: disable=protected-access
         return SFTPService._connect(server_name)
@@ -38,7 +38,7 @@ class SFTPService:  # pylint: disable=too-few-public-methods
         sftp_configs = current_app.config.get('SFTP_CONFIGS')
         # if not passed , connect to CAS server always. to make the existing code work
         if not server_name or server_name not in sftp_configs.keys():
-            server_name = SFTPService.DEFAUILT_CONNECT_SERVER
+            server_name = SFTPService.DEFAULT_CONNECT_SERVER
 
         connect_configs = sftp_configs.get(server_name)
 
