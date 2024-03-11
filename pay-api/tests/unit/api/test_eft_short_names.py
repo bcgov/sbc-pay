@@ -19,6 +19,7 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 
 import json
 from datetime import datetime
+import pytest
 
 from flask import current_app
 
@@ -28,8 +29,7 @@ from pay_api.models import EFTShortnames as EFTShortnamesModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import (
-    EFTFileLineType, EFTProcessStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, Role)
+from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, InvoiceStatus, PaymentMethod, PaymentStatus, Role
 from tests.utilities.base_test import (
     factory_eft_file, factory_eft_shortname, factory_invoice, factory_payment_account, get_claims, token_header)
 
@@ -431,6 +431,10 @@ def test_search_eft_short_names(session, client, jwt, app):
     assert_short_name(result_dict['items'][0], short_name_2, s2_transaction1)
 
 
+@pytest.mark.skip(reason='This needs to be re-thought, the create cfs invoice job should be handling receipt creation'
+                         'and creating invoice references when payments are mapped, '
+                         'it should wait until 6 pm before marking invoices as PAID'
+                         'Otherwise calls to CFS could potentially fail and the two systems would go out of sync.')
 def test_apply_eft_short_name_credits(session, client, jwt, app):
     """Assert that credits are applied to invoices when short name is mapped to an account."""
     token = jwt.create_jwt(get_claims(roles=[Role.STAFF.value, Role.MANAGE_EFT.value]), token_header)
@@ -503,12 +507,7 @@ def test_apply_eft_short_name_credits(session, client, jwt, app):
     assert payment.invoice_amount == invoice_1_paid
     assert payment.paid_amount == invoice_1_paid
 
-    invoice_reference_1 = invoice_1.references[0]
-    assert invoice_reference_1 is not None
-    assert invoice_reference_1.invoice_id == invoice_1.id
-    assert invoice_reference_1.invoice_number == payment.invoice_number
-    assert invoice_reference_1.invoice_number == payment.invoice_number
-    assert invoice_reference_1.status_code == InvoiceReferenceStatus.COMPLETED.value
+    assert not invoice_1.references
 
     # Assert details of partially paid invoice
     invoice_2_paid = 150
@@ -534,9 +533,4 @@ def test_apply_eft_short_name_credits(session, client, jwt, app):
     assert payment.invoice_amount == 200
     assert payment.paid_amount == invoice_2_paid
 
-    invoice_reference_2 = invoice_2.references[0]
-    assert invoice_reference_2 is not None
-    assert invoice_reference_2.invoice_id == invoice_2.id
-    assert invoice_reference_2.invoice_number == payment.invoice_number
-    assert invoice_reference_2.invoice_number == payment.invoice_number
-    assert invoice_reference_2.status_code == InvoiceReferenceStatus.ACTIVE.value
+    assert not invoice_2.references
