@@ -251,22 +251,24 @@ class EjvPartnerDistributionTask(CgiEjv):
 
         if batch_type == 'GA':
             # Rule for GA. Credit is 112 and debit is 112.
-            partner_distribution_code_ids: List[int] = query.filter(
+            partner_distribution_code_ids: List[int] = db.session.scalars(query.filter(
                 DistributionCodeModel.client == bc_reg_client_code
-            ).all()
+            )).all()
         else:
             # Rule for GI. Debit is 112 and credit is not 112.
-            partner_distribution_code_ids: List[int] = query.filter(
+            partner_distribution_code_ids: List[int] = db.session.scalars(query.filter(
                 DistributionCodeModel.client != bc_reg_client_code
-            ).all()
+            )).all()
 
         # Find all distribution codes who have these partner distribution codes as disbursement.
-        fee_distribution_codes: List[int] = db.session.query(DistributionCodeModel.distribution_code_id).filter(
-            DistributionCodeModel.disbursement_distribution_code_id.in_(partner_distribution_code_ids)).all()
+        fee_query = db.session.query(DistributionCodeModel.distribution_code_id).filter(
+            DistributionCodeModel.disbursement_distribution_code_id.in_(partner_distribution_code_ids))
+        fee_distribution_codes: List[int] = db.session.scalars(fee_query).all()
 
-        corp_type_codes: List[str] = db.session.query(FeeScheduleModel.corp_type_code). \
+        corp_type_query = db.session.query(FeeScheduleModel.corp_type_code). \
             join(DistributionCodeLinkModel,
-                 DistributionCodeLinkModel.fee_schedule_id == FeeScheduleModel.fee_schedule_id). \
-            filter(DistributionCodeLinkModel.distribution_code_id.in_(fee_distribution_codes)).all()
+                 DistributionCodeLinkModel.fee_schedule_id == FeeScheduleModel.fee_schedule_id).\
+            filter(DistributionCodeLinkModel.distribution_code_id.in_(fee_distribution_codes))
+        corp_type_codes: List[str] = db.session.scalars(corp_type_query).all()
 
         return db.session.query(CorpTypeModel).filter(CorpTypeModel.code.in_(corp_type_codes)).all()

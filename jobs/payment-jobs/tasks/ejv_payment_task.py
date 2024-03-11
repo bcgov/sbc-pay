@@ -233,11 +233,11 @@ class EjvPaymentTask(CgiEjv):
 
         if batch_type == 'GA':
             # Rule for GA. Credit is 112 and debit is 112. For BCREG client code is 112
-            account_ids: List[int] = query.filter(DistributionCodeModel.client == bc_reg_client_code).all()
+            account_ids: List[int] = query.filter(DistributionCodeModel.client == bc_reg_client_code)
         else:
             # Rule for GI. Credit is 112 and debit is not 112. For BCREG client code is 112
-            account_ids: List[int] = query.filter(DistributionCodeModel.client != bc_reg_client_code).all()
-        return account_ids
+            account_ids: List[int] = query.filter(DistributionCodeModel.client != bc_reg_client_code)
+        return db.session.scalars(account_ids).all()
 
     @classmethod
     def _get_invoices_for_payment(cls, account_id: int) -> List[InvoiceModel]:

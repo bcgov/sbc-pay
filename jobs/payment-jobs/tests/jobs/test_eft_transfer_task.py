@@ -19,12 +19,9 @@ Test-Suite to ensure that the EFT Transfer task is working as expected.
 from datetime import datetime
 from typing import List
 
-import pytest
-from flask import Flask
 from pay_api.models import DistributionCode, EFTGLTransfer, EjvFile, EjvHeader, EjvInvoiceLink, FeeSchedule, Invoice, db
 from pay_api.utils.enums import DisbursementStatus, EFTGlTransferType, EjvFileType, InvoiceStatus, PaymentMethod
 
-import config
 from tasks.eft_transfer_task import EftTransferTask
 
 from .factory import (
@@ -32,20 +29,7 @@ from .factory import (
     factory_payment_line_item)
 
 
-app = None
-
-
-@pytest.fixture
-def setup():
-    """Initialize app with test env for testing."""
-    global app
-    app = Flask(__name__)
-    app.env = 'testing'
-    app.config.from_object(config.CONFIGURATION['testing'])
-    app.config['EFT_HOLDING_GL'] = '1128888888888888888000000000000000'
-
-
-def test_eft_transfer(setup, session, monkeypatch):
+def test_eft_transfer(app, session, monkeypatch):
     """Test EFT Holdings GL Transfer for EFT invoices.
 
     Steps:
@@ -77,6 +61,7 @@ def test_eft_transfer(setup, session, monkeypatch):
     dist_code.service_fee_distribution_code_id = service_fee_dist_code.distribution_code_id
     dist_code.save()
 
+    app.config['EFT_HOLDING_GL'] = '1128888888888888888000000000000000'
     eft_holding_gl = app.config['EFT_HOLDING_GL']
     distribution_gl = EftTransferTask.get_distribution_string(dist_code).strip()
     service_fee_gl = EftTransferTask.get_distribution_string(service_fee_dist_code).strip()
