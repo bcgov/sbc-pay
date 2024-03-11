@@ -2,7 +2,7 @@ gunicorn
 Flask
 Flask-Caching
 Flask-Cors
-Flask-Migrate<3
+Flask-Migrate
 Flask-Script
 Flask-Moment
 Flask-SQLAlchemy
