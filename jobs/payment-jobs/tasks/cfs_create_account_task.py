@@ -21,7 +21,7 @@ from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.oauth_service import OAuthService
-from pay_api.utils.constants import RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_EFT_MONTHLY
+from pay_api.utils.constants import RECEIPT_METHOD_EFT_MONTHLY, RECEIPT_METHOD_PAD_DAILY
 from pay_api.utils.enums import AuthHeaderType, CfsAccountStatus, ContentType, PaymentMethod
 from sentry_sdk import capture_message
 from services import routing_slip

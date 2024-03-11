@@ -39,7 +39,7 @@ class StatementNotificationInfo:
 
 
 def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel,
-                                additional_params: Dict = {}):
+                          additional_params: Dict = {}):
     """Publish payment message to the mailer queue."""
     # Publish message to the Queue, saying account has been activated. Using the event spec.
 

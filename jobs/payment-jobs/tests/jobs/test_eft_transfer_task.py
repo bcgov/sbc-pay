@@ -100,8 +100,7 @@ def test_eft_transfer(setup, session, monkeypatch):
                                   fee_dist_id=dist_code.distribution_code_id)
         invoices.append(inv)
 
-    with app.app_context():
-        EftTransferTask.create_ejv_file()
+    EftTransferTask.create_ejv_file()
 
     # Lookup invoice and assert disbursement status
     for invoice in invoices:

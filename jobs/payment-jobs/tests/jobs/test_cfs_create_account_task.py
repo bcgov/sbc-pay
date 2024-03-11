@@ -28,7 +28,7 @@ from requests.exceptions import HTTPError
 from tasks.cfs_create_account_task import CreateAccountTask
 from utils import mailer
 
-from .factory import factory_create_online_banking_account, factory_create_pad_account, factory_create_eft_account
+from .factory import factory_create_eft_account, factory_create_online_banking_account, factory_create_pad_account
 
 
 def test_create_account_setup(session):
@@ -50,7 +50,7 @@ def test_create_pad_account(session):
     assert cfs_account.cfs_site
     assert cfs_account.cfs_account
     assert cfs_account.payment_instrument_number
-    
+
 
 def test_create_eft_account(session):
     """Test create account."""

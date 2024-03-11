@@ -91,46 +91,45 @@ def test_send_notifications(session):
 ])
 def test_send_monthly_notifications(setup, session, payment_method_code):  # pylint: disable=unused-argument
     """Test send monthly statement notifications."""
-    with app.app_context():
-        # create statement, invoice, payment data for previous month
-        last_month, last_year = get_previous_month_and_year()
-        previous_month_year = datetime(last_year, last_month, 5)
+    # create statement, invoice, payment data for previous month
+    last_month, last_year = get_previous_month_and_year()
+    previous_month_year = datetime(last_year, last_month, 5)
 
-        account, invoice, inv_ref, payment, \
-            statement_recipient, statement_settings = create_test_data(payment_method_code,
-                                                                       previous_month_year,
-                                                                       StatementFrequency.MONTHLY.value)
+    account, invoice, inv_ref, payment, \
+        statement_recipient, statement_settings = create_test_data(payment_method_code,
+                                                                   previous_month_year,
+                                                                   StatementFrequency.MONTHLY.value)
 
-        assert invoice.payment_method_code == payment_method_code
-        assert account.payment_method == payment_method_code
+    assert invoice.payment_method_code == payment_method_code
+    assert account.payment_method == payment_method_code
 
-        # Generate statement for previous month - freeze time to the 1st of the current month
-        with freeze_time(datetime.now().replace(day=1)):
-            StatementTask.generate_statements()
+    # Generate statement for previous month - freeze time to the 1st of the current month
+    with freeze_time(datetime.now().replace(day=1)):
+        StatementTask.generate_statements()
 
-        # Assert statements and invoice was created
-        statements = Statement.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
-                                                               limit=100)
-        assert statements is not None
-        assert len(statements) == 2  # items results and page total
-        assert len(statements[0]) == 1  # items
-        invoices = StatementInvoices.find_all_invoices_for_statement(statements[0][0].id)
-        assert invoices is not None
-        assert invoices[0].invoice_id == invoice.id
+    # Assert statements and invoice was created
+    statements = Statement.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
+                                                           limit=100)
+    assert statements is not None
+    assert len(statements) == 2  # items results and page total
+    assert len(statements[0]) == 1  # items
+    invoices = StatementInvoices.find_all_invoices_for_statement(statements[0][0].id)
+    assert invoices is not None
+    assert invoices[0].invoice_id == invoice.id
 
-        # Assert notification send_email was invoked
-        with patch.object(StatementNotificationTask, 'send_email', return_value=True) as mock_mailer:
-            with patch('tasks.statement_notification_task.get_token') as mock_get_token:
-                mock_get_token.return_value = 'mock_token'
-                StatementNotificationTask.send_notifications()
-                mock_get_token.assert_called_once()
-                # Assert token and email recipient - mock any for HTML generated
-                mock_mailer.assert_called_with(mock_get_token.return_value, statement_recipient.email, ANY)
+    # Assert notification send_email was invoked
+    with patch.object(StatementNotificationTask, 'send_email', return_value=True) as mock_mailer:
+        with patch('tasks.statement_notification_task.get_token') as mock_get_token:
+            mock_get_token.return_value = 'mock_token'
+            StatementNotificationTask.send_notifications()
+            mock_get_token.assert_called_once()
+            # Assert token and email recipient - mock any for HTML generated
+            mock_mailer.assert_called_with(mock_get_token.return_value, statement_recipient.email, ANY)
 
-        # Assert statement notification code indicates success
-        statement: Statement = Statement.find_by_id(statements[0][0].id)
-        assert statement is not None
-        assert statement.notification_status_code == NotificationStatus.SUCCESS.value
+    # Assert statement notification code indicates success
+    statement: Statement = Statement.find_by_id(statements[0][0].id)
+    assert statement is not None
+    assert statement.notification_status_code == NotificationStatus.SUCCESS.value
 
 
 @pytest.mark.parametrize('payment_method_code', [
@@ -144,174 +143,170 @@ def test_send_monthly_notifications(setup, session, payment_method_code):  # pyl
 ])
 def test_send_monthly_notifications_failed(setup, session, payment_method_code):  # pylint: disable=unused-argument
     """Test send monthly statement notifications failure."""
-    with app.app_context():
-        # create statement, invoice, payment data for previous month
-        last_month, last_year = get_previous_month_and_year()
-        previous_month_year = datetime(last_year, last_month, 5)
+    # create statement, invoice, payment data for previous month
+    last_month, last_year = get_previous_month_and_year()
+    previous_month_year = datetime(last_year, last_month, 5)
 
-        account, invoice, inv_ref, payment, \
-            statement_recipient, statement_settings = create_test_data(payment_method_code,
-                                                                       previous_month_year,
-                                                                       StatementFrequency.MONTHLY.value)
+    account, invoice, inv_ref, payment, \
+        statement_recipient, statement_settings = create_test_data(payment_method_code,
+                                                                   previous_month_year,
+                                                                   StatementFrequency.MONTHLY.value)
 
-        assert invoice.payment_method_code == payment_method_code
-        assert account.payment_method == payment_method_code
+    assert invoice.payment_method_code == payment_method_code
+    assert account.payment_method == payment_method_code
 
-        # Generate statement for previous month - freeze time to the 1st of the current month
-        with freeze_time(datetime.now().replace(day=1)):
-            StatementTask.generate_statements()
+    # Generate statement for previous month - freeze time to the 1st of the current month
+    with freeze_time(datetime.now().replace(day=1)):
+        StatementTask.generate_statements()
 
-        # Assert statements and invoice was created
-        statements = Statement.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
-                                                               limit=100)
-        assert statements is not None
-        assert len(statements) == 2  # items results and page total
-        assert len(statements[0]) == 1  # items
-        invoices = StatementInvoices.find_all_invoices_for_statement(statements[0][0].id)
-        assert invoices is not None
-        assert invoices[0].invoice_id == invoice.id
+    # Assert statements and invoice was created
+    statements = Statement.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
+                                                           limit=100)
+    assert statements is not None
+    assert len(statements) == 2  # items results and page total
+    assert len(statements[0]) == 1  # items
+    invoices = StatementInvoices.find_all_invoices_for_statement(statements[0][0].id)
+    assert invoices is not None
+    assert invoices[0].invoice_id == invoice.id
 
-        # Assert notification send_email was invoked
-        with patch.object(StatementNotificationTask, 'send_email', return_value=False) as mock_mailer:
-            with patch('tasks.statement_notification_task.get_token') as mock_get_token:
-                mock_get_token.return_value = 'mock_token'
-                StatementNotificationTask.send_notifications()
-                mock_get_token.assert_called_once()
-                # Assert token and email recipient - mock any for HTML generated
-                mock_mailer.assert_called_with(mock_get_token.return_value, statement_recipient.email, ANY)
+    # Assert notification send_email was invoked
+    with patch.object(StatementNotificationTask, 'send_email', return_value=False) as mock_mailer:
+        with patch('tasks.statement_notification_task.get_token') as mock_get_token:
+            mock_get_token.return_value = 'mock_token'
+            StatementNotificationTask.send_notifications()
+            mock_get_token.assert_called_once()
+            # Assert token and email recipient - mock any for HTML generated
+            mock_mailer.assert_called_with(mock_get_token.return_value, statement_recipient.email, ANY)
 
-        # Assert statement notification code indicates failed
-        statement: Statement = Statement.find_by_id(statements[0][0].id)
-        assert statement is not None
-        assert statement.notification_status_code == NotificationStatus.FAILED.value
+    # Assert statement notification code indicates failed
+    statement: Statement = Statement.find_by_id(statements[0][0].id)
+    assert statement is not None
+    assert statement.notification_status_code == NotificationStatus.FAILED.value
 
 
 def test_send_eft_notifications(setup, session):  # pylint: disable=unused-argument
     """Test send monthly EFT statement notifications."""
-    with app.app_context():
-        # create statement, invoice, payment data for previous month
-        last_month, last_year = get_previous_month_and_year()
-        previous_month_year = datetime(last_year, last_month, 5)
-        account, invoice, inv_ref, payment, \
-            statement_recipient, statement_settings = create_test_data(PaymentMethod.EFT.value,
-                                                                       previous_month_year,
-                                                                       StatementFrequency.MONTHLY.value,
-                                                                       351.50)
+    # create statement, invoice, payment data for previous month
+    last_month, last_year = get_previous_month_and_year()
+    previous_month_year = datetime(last_year, last_month, 5)
+    account, invoice, inv_ref, payment, \
+        statement_recipient, statement_settings = create_test_data(PaymentMethod.EFT.value,
+                                                                   previous_month_year,
+                                                                   StatementFrequency.MONTHLY.value,
+                                                                   351.50)
 
-        assert invoice.payment_method_code == PaymentMethod.EFT.value
-        assert account.payment_method == PaymentMethod.EFT.value
+    assert invoice.payment_method_code == PaymentMethod.EFT.value
+    assert account.payment_method == PaymentMethod.EFT.value
 
-        # Generate statement for previous month - freeze time to the 1st of the current month
-        with freeze_time(datetime.now().replace(day=1)):
-            StatementTask.generate_statements()
+    # Generate statement for previous month - freeze time to the 1st of the current month
+    with freeze_time(datetime.now().replace(day=1)):
+        StatementTask.generate_statements()
 
-        # Assert statements and invoice was created
-        statements = Statement.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
-                                                               limit=100)
-        assert statements is not None
-        assert len(statements) == 2  # items results and page total
-        assert len(statements[0]) == 1  # items
-        invoices = StatementInvoices.find_all_invoices_for_statement(statements[0][0].id)
-        assert invoices is not None
-        assert invoices[0].invoice_id == invoice.id
+    # Assert statements and invoice was created
+    statements = Statement.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
+                                                           limit=100)
+    assert statements is not None
+    assert len(statements) == 2  # items results and page total
+    assert len(statements[0]) == 1  # items
+    invoices = StatementInvoices.find_all_invoices_for_statement(statements[0][0].id)
+    assert invoices is not None
+    assert invoices[0].invoice_id == invoice.id
 
-        # Assert notification was published to the mailer queue
-        with patch('tasks.statement_notification_task.publish_statement_notification') as mock_mailer:
-            with patch('tasks.statement_notification_task.get_token') as mock_get_token:
-                mock_get_token.return_value = 'mock_token'
-                StatementNotificationTask.send_notifications()
-                mock_get_token.assert_called_once()
-                mock_mailer.assert_called_once_with(account, statements[0][0], 351.5, statement_recipient.email)
+    # Assert notification was published to the mailer queue
+    with patch('tasks.statement_notification_task.publish_statement_notification') as mock_mailer:
+        with patch('tasks.statement_notification_task.get_token') as mock_get_token:
+            mock_get_token.return_value = 'mock_token'
+            StatementNotificationTask.send_notifications()
+            mock_get_token.assert_called_once()
+            mock_mailer.assert_called_once_with(account, statements[0][0], 351.5, statement_recipient.email)
 
-        # Assert statement notification code indicates success
-        statement: Statement = Statement.find_by_id(statements[0][0].id)
-        assert statement is not None
-        assert statement.notification_status_code == NotificationStatus.SUCCESS.value
+    # Assert statement notification code indicates success
+    statement: Statement = Statement.find_by_id(statements[0][0].id)
+    assert statement is not None
+    assert statement.notification_status_code == NotificationStatus.SUCCESS.value
 
 
 def test_send_eft_notifications_failure(setup, session):  # pylint: disable=unused-argument
     """Test send monthly EFT statement notifications failure."""
-    with app.app_context():
-        # create statement, invoice, payment data for previous month
-        last_month, last_year = get_previous_month_and_year()
-        previous_month_year = datetime(last_year, last_month, 5)
-        account, invoice, inv_ref, payment, \
-            statement_recipient, statement_settings = create_test_data(PaymentMethod.EFT.value,
-                                                                       previous_month_year,
-                                                                       StatementFrequency.MONTHLY.value,
-                                                                       351.50)
+    # create statement, invoice, payment data for previous month
+    last_month, last_year = get_previous_month_and_year()
+    previous_month_year = datetime(last_year, last_month, 5)
+    account, invoice, inv_ref, payment, \
+        statement_recipient, statement_settings = create_test_data(PaymentMethod.EFT.value,
+                                                                   previous_month_year,
+                                                                   StatementFrequency.MONTHLY.value,
+                                                                   351.50)
 
-        assert invoice.payment_method_code == PaymentMethod.EFT.value
-        assert account.payment_method == PaymentMethod.EFT.value
+    assert invoice.payment_method_code == PaymentMethod.EFT.value
+    assert account.payment_method == PaymentMethod.EFT.value
 
-        # Generate statement for previous month - freeze time to the 1st of the current month
-        with freeze_time(datetime.now().replace(day=1)):
-            StatementTask.generate_statements()
+    # Generate statement for previous month - freeze time to the 1st of the current month
+    with freeze_time(datetime.now().replace(day=1)):
+        StatementTask.generate_statements()
 
-        # Assert statements and invoice was created
-        statements = Statement.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
-                                                               limit=100)
-        assert statements is not None
-        assert len(statements) == 2  # items results and page total
-        assert len(statements[0]) == 1  # items
-        invoices = StatementInvoices.find_all_invoices_for_statement(statements[0][0].id)
-        assert invoices is not None
-        assert invoices[0].invoice_id == invoice.id
+    # Assert statements and invoice was created
+    statements = Statement.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
+                                                           limit=100)
+    assert statements is not None
+    assert len(statements) == 2  # items results and page total
+    assert len(statements[0]) == 1  # items
+    invoices = StatementInvoices.find_all_invoices_for_statement(statements[0][0].id)
+    assert invoices is not None
+    assert invoices[0].invoice_id == invoice.id
 
-        # Assert notification was published to the mailer queue
-        with patch('tasks.statement_notification_task.publish_statement_notification') as mock_mailer:
-            mock_mailer.side_effect = Exception('Mock Exception')
-            with patch('tasks.statement_notification_task.get_token') as mock_get_token:
-                mock_get_token.return_value = 'mock_token'
-                StatementNotificationTask.send_notifications()
-                mock_get_token.assert_called_once()
-                mock_mailer.assert_called_once_with(account, statements[0][0], 351.5, statement_recipient.email)
+    # Assert notification was published to the mailer queue
+    with patch('tasks.statement_notification_task.publish_statement_notification') as mock_mailer:
+        mock_mailer.side_effect = Exception('Mock Exception')
+        with patch('tasks.statement_notification_task.get_token') as mock_get_token:
+            mock_get_token.return_value = 'mock_token'
+            StatementNotificationTask.send_notifications()
+            mock_get_token.assert_called_once()
+            mock_mailer.assert_called_once_with(account, statements[0][0], 351.5, statement_recipient.email)
 
-        # Assert statement notification code indicates failed
-        statement: Statement = Statement.find_by_id(statements[0][0].id)
-        assert statement is not None
-        assert statement.notification_status_code == NotificationStatus.FAILED.value
+    # Assert statement notification code indicates failed
+    statement: Statement = Statement.find_by_id(statements[0][0].id)
+    assert statement is not None
+    assert statement.notification_status_code == NotificationStatus.FAILED.value
 
 
 def test_send_eft_notifications_ff_disabled(setup, session):  # pylint: disable=unused-argument
     """Test send monthly EFT statement notifications failure."""
-    with app.app_context():
-        # create statement, invoice, payment data for previous month
-        last_month, last_year = get_previous_month_and_year()
-        previous_month_year = datetime(last_year, last_month, 5)
-        account, invoice, inv_ref, payment, \
-            statement_recipient, statement_settings = create_test_data(PaymentMethod.EFT.value,
-                                                                       previous_month_year,
-                                                                       StatementFrequency.MONTHLY.value,
-                                                                       351.50)
+    # create statement, invoice, payment data for previous month
+    last_month, last_year = get_previous_month_and_year()
+    previous_month_year = datetime(last_year, last_month, 5)
+    account, invoice, inv_ref, payment, \
+        statement_recipient, statement_settings = create_test_data(PaymentMethod.EFT.value,
+                                                                   previous_month_year,
+                                                                   StatementFrequency.MONTHLY.value,
+                                                                   351.50)
 
-        assert invoice.payment_method_code == PaymentMethod.EFT.value
-        assert account.payment_method == PaymentMethod.EFT.value
+    assert invoice.payment_method_code == PaymentMethod.EFT.value
+    assert account.payment_method == PaymentMethod.EFT.value
 
-        # Generate statement for previous month - freeze time to the 1st of the current month
-        with freeze_time(datetime.now().replace(day=1)):
-            StatementTask.generate_statements()
+    # Generate statement for previous month - freeze time to the 1st of the current month
+    with freeze_time(datetime.now().replace(day=1)):
+        StatementTask.generate_statements()
 
-        # Assert statements and invoice was created
-        statements = Statement.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
-                                                               limit=100)
-        assert statements is not None
-        assert len(statements) == 2  # items results and page total
-        assert len(statements[0]) == 1  # items
-        invoices = StatementInvoices.find_all_invoices_for_statement(statements[0][0].id)
-        assert invoices is not None
-        assert invoices[0].invoice_id == invoice.id
+    # Assert statements and invoice was created
+    statements = Statement.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
+                                                           limit=100)
+    assert statements is not None
+    assert len(statements) == 2  # items results and page total
+    assert len(statements[0]) == 1  # items
+    invoices = StatementInvoices.find_all_invoices_for_statement(statements[0][0].id)
+    assert invoices is not None
+    assert invoices[0].invoice_id == invoice.id
 
-        # Assert notification was published to the mailer queue
-        with patch('tasks.statement_notification_task.publish_statement_notification') as mock_mailer:
-            with patch('tasks.statement_notification_task.get_token') as mock_get_token:
-                with patch('tasks.statement_notification_task.flags.is_on', return_value=False):
-                    mock_get_token.return_value = 'mock_token'
-                    StatementNotificationTask.send_notifications()
-                    mock_get_token.assert_called_once()
-                    mock_mailer.assert_not_called()
+    # Assert notification was published to the mailer queue
+    with patch('tasks.statement_notification_task.publish_statement_notification') as mock_mailer:
+        with patch('tasks.statement_notification_task.get_token') as mock_get_token:
+            with patch('tasks.statement_notification_task.flags.is_on', return_value=False):
+                mock_get_token.return_value = 'mock_token'
+                StatementNotificationTask.send_notifications()
+                mock_get_token.assert_called_once()
+                mock_mailer.assert_not_called()
 
-        # Assert statement notification code indicates skipped
-        statement: Statement = Statement.find_by_id(statements[0][0].id)
-        assert statement is not None
-        assert statement.notification_status_code == NotificationStatus.SKIP.value
+    # Assert statement notification code indicates skipped
+    statement: Statement = Statement.find_by_id(statements[0][0].id)
+    assert statement is not None
+    assert statement.notification_status_code == NotificationStatus.SKIP.value
