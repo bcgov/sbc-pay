@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
 # limitations under the License.
 """The Reconciliations queue service.
 
-This module is the service worker for applying payments, receipts and account balance to payment system.
+The service worker for applying payments, receipts and account balance to payment system.
 """
 from __future__ import annotations
 
@@ -23,27 +23,21 @@ import sentry_sdk
 from flask import Flask
 from pay_api.models import db
 from pay_api.services.flags import flags
+from pay_api.utils.run_version import get_run_version
 from sentry_sdk.integrations.flask import FlaskIntegration
 
-from pay_queue.config import ProdConfig, _Config
+from pay_queue.config import CONFIGURATION
 from pay_queue.version import __version__
 
 from .resources import register_endpoints
 from .services import queue
 
 
-def get_run_version():
-    """Get the git commit hash if available."""
-    commit_hash = os.getenv('OPENSHIFT_BUILD_COMMIT', None)
-    if commit_hash:
-        return f'{__version__}-{commit_hash}'
-    return __version__
-
-
-def create_app(environment: _Config = ProdConfig) -> Flask:
+def create_app(run_mode=os.getenv('FLASK_ENV', 'production')) -> Flask:
     """Return a configured Flask App using the Factory method."""
     app = Flask(__name__)
-    app.config.from_object(environment)
+    app.env = run_mode
+    app.config.from_object(CONFIGURATION[run_mode])
 
     # Configure Sentry
     if dsn := app.config.get('SENTRY_DSN', None):

@@ -28,10 +28,10 @@ from dotenv import find_dotenv, load_dotenv
 load_dotenv(find_dotenv())
 
 CONFIGURATION = {
-    'development': 'reconciliations.config.DevConfig',
-    'testing': 'reconciliations.config.TestConfig',
-    'production': 'reconciliations.config.ProdConfig',
-    'default': 'reconciliations.config.ProdConfig'
+    'development': 'pay_queue.config.DevConfig',
+    'testing': 'pay_queue.config.TestConfig',
+    'production': 'pay_queue.config.ProdConfig',
+    'default': 'pay_queue.config.ProdConfig'
 }
 
 
