@@ -59,7 +59,6 @@ class BcolProfile(Resource):
     """Endpoint resource to get bcol profile by user id."""
 
     @staticmethod
-    @_tracing.trace()
     @_jwt.has_one_of_roles(['system'])
     @cors.crossdomain(origin='*')
     def get(bcol_user_id: str):
