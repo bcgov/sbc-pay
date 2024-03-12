@@ -378,7 +378,7 @@ def _process_ap_header_routing_slips(line) -> bool:
     return has_errors
 
 
-async def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) -> bool:
+def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) -> bool:
     has_errors = False
     invoice_id = line[19:69].strip()
     invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
