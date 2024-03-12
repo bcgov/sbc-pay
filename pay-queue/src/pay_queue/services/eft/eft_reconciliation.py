@@ -250,10 +250,8 @@ def _process_eft_payments(shortname_balance: Dict, eft_file: EFTFileModel) -> bo
                 auth_account_id = eft_shortname_model.auth_account_id
                 # Find invoices to be paid
                 invoices: List[InvoiceModel] = EFTShortnames.get_invoices_owing(auth_account_id)
-                if invoices is not None:
-                    for invoice in invoices:
-                        _pay_invoice(invoice=invoice,
-                                     shortname_balance=shortname_balance[shortname])
+                for invoice in invoices:
+                    _pay_invoice(invoice=invoice, shortname_balance=shortname_balance[shortname])
 
             except Exception as e:  # NOQA pylint: disable=broad-exception-caught
                 has_eft_transaction_errors = True
@@ -420,7 +418,7 @@ def _shortname_balance_as_dict(eft_transactions: List[EFTRecord]) -> Dict:
 
     return shortname_balance
 
-
+# THIS NEEDS TO CHANGE TO WORK ON THE CFS JOB instead.
 def _pay_invoice(invoice: InvoiceModel, shortname_balance: Dict):
     """Pay for an invoice and update invoice state."""
     payment_date = shortname_balance.get('transaction_date') or datetime.now()
@@ -435,12 +433,11 @@ def _pay_invoice(invoice: InvoiceModel, shortname_balance: Dict):
     # Create the payment record
     eft_payment_service: EFTService = PaymentSystemFactory.create_from_payment_method(PaymentMethod.EFT.value)
 
-    payment, invoice_reference, receipt = eft_payment_service.apply_credit(invoice=invoice,
-                                                                           payment_date=payment_date,
-                                                                           auto_save=True)
+    payment, receipt = eft_payment_service.apply_credit(invoice=invoice,
+                                                        payment_date=payment_date,
+                                                        auto_save=True)
 
     db.session.add(payment)
-    db.session.add(invoice_reference)
     db.session.add(receipt)
 
     # Paid - update the shortname balance
