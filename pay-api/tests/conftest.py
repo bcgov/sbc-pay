@@ -14,9 +14,7 @@
 
 """Common setup and fixtures for the py-test suite used by this service."""
 
-import asyncio
 import os
-import random
 
 import pytest
 from flask_migrate import Migrate, upgrade
@@ -47,7 +45,6 @@ def mock_queue_publish(monkeypatch):
 def app_request():
     """Return a session-wide application configured in TEST mode."""
     _app = create_app('testing')
-
     return _app
 
 
@@ -117,38 +114,6 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
             finally:
                 db.session.remove()
                 transaction.rollback()
-
-
-@pytest.fixture(scope='function')
-def client_id():
-    """Return a unique client_id that can be used in tests."""
-    _id = random.SystemRandom().getrandbits(0x58)
-
-    return f'client-{_id}'
-
-
-@pytest.fixture(scope='function')
-def future(event_loop):
-    """Return a future that is used for managing function tests."""
-    _future = asyncio.Future(loop=event_loop)
-    return _future
-
-
-@pytest.fixture
-def create_mock_coro(mocker, monkeypatch):
-    """Return a mocked coroutine, and optionally patch-it in."""
-    def _create_mock_patch_coro(to_patch=None):
-        """Return a mocked coroutine, and optionally patch-it in."""
-        mock = mocker.Mock()
-
-        async def _coro(*args, **kwargs):
-            return mock(*args, **kwargs)
-
-        if to_patch:  # <-- may not need/want to patch anything
-            monkeypatch.setattr(to_patch, _coro)
-        return mock, _coro
-
-    return _create_mock_patch_coro
 
 
 @pytest.fixture()
