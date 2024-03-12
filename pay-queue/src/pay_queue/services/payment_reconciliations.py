@@ -19,7 +19,6 @@ from decimal import Decimal
 from typing import Dict, List, Tuple
 
 from flask import current_app
-
 from pay_api.models import CasSettlement as CasSettlementModel
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Credit as CreditModel
@@ -38,7 +37,8 @@ from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, MessageType, PaymentMethod, PaymentStatus, QueueSources)
+    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, MessageType, PaymentMethod, PaymentStatus,
+    QueueSources)
 from pay_api.utils.util import get_topic_for_corp_type
 from sentry_sdk import capture_message
 
@@ -49,6 +49,7 @@ from ..enums import Column, RecordType, SourceTransaction, Status, TargetTransac
 
 
 APP_CONFIG = config.get_named_config(os.getenv('DEPLOYMENT_ENV', 'production'))
+logger = current_app.logger
 
 
 async def _create_payment_records(csv_content: str):
@@ -193,13 +194,12 @@ async def reconcile_payments(msg: Dict[str, any]):
     cas_settlement: CasSettlementModel = db.session.query(CasSettlementModel) \
         .filter(CasSettlementModel.file_name == file_name).one_or_none()
     if cas_settlement and not cas_settlement.processed_on:
-        current_app.logger.info('File: %s has attempted to be processed before.', file_name)
+        logger.info('File: %s has attempted to be processed before.', file_name)
     elif cas_settlement and cas_settlement.processed_on:
-        current_app.logger.info('File: %s already processed on: %s. Skipping file.',
-                                file_name, cas_settlement.processed_on)
+        logger.info('File: %s already processed on: %s. Skipping file.', file_name, cas_settlement.processed_on)
         return
     else:
-        current_app.logger.info('Creating cas_settlement record for file: %s', file_name)
+        logger.info('Creating cas_settlement record for file: %s', file_name)
         cas_settlement = _create_cas_settlement(file_name)
 
     file = get_object(minio_location, file_name)
@@ -208,7 +208,7 @@ async def reconcile_payments(msg: Dict[str, any]):
     for row in csv.DictReader(content.splitlines()):
         # Convert lower case keys to avoid any key mismatch
         row = dict((k.lower(), v) for k, v in row.items())
-        current_app.logger.debug('Processing %s', row)
+        logger.debug('Processing %s', row)
 
         # IF not PAD and application amount is zero, continue
         record_type = _get_row_value(row, Column.RECORD_TYPE)
@@ -231,10 +231,10 @@ async def reconcile_payments(msg: Dict[str, any]):
         elif record_type in (RecordType.ONAC.value, RecordType.CMAP.value, RecordType.DRWP.value):
             await _process_credit_on_invoices(row)
         elif record_type == RecordType.ADJS.value:
-            current_app.logger.info('Adjustment received for %s.', msg)
+            logger.info('Adjustment received for %s.', msg)
         else:
             # For any other transactions like DM log error and continue.
-            current_app.logger.error('Record Type is received as %s, and cannot process %s.', record_type, msg)
+            logger.error('Record Type is received as %s, and cannot process %s.', record_type, msg)
             capture_message(f'Record Type is received as {record_type}, and cannot process {msg}.', level='error')
             # Continue processing
 
@@ -258,22 +258,21 @@ async def _process_consolidated_invoices(row):
     if (target_txn := _get_row_value(row, Column.TARGET_TXN)) == TargetTransaction.INV.value:
         inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
         record_type = _get_row_value(row, Column.RECORD_TYPE)
-        current_app.logger.debug('Processing invoice :  %s', inv_number)
+        logger.debug('Processing invoice :  %s', inv_number)
 
         inv_references = _find_invoice_reference_by_number_and_status(inv_number, InvoiceReferenceStatus.ACTIVE.value)
 
         payment_account: PaymentAccountModel = _get_payment_account(row)
 
         if target_txn_status.lower() == Status.PAID.value.lower():
-            current_app.logger.debug('Fully PAID payment.')
+            logger.debug('Fully PAID payment.')
             # if no inv reference is found, and if there are no COMPLETED inv ref, raise alert
             completed_inv_references = _find_invoice_reference_by_number_and_status(
                 inv_number, InvoiceReferenceStatus.COMPLETED.value
             )
 
             if not inv_references and not completed_inv_references:
-                current_app.logger.error('No invoice found for %s in the system, and cannot process %s.',
-                                         inv_number, row)
+                logger.error('No invoice found for %s in the system, and cannot process %s.', inv_number, row)
                 capture_message(f'No invoice found for {inv_number} in the system, and cannot process {row}.',
                                 level='error')
                 return
@@ -282,14 +281,14 @@ async def _process_consolidated_invoices(row):
                 await _publish_mailer_events('PAD.PaymentSuccess', payment_account, row)
         elif target_txn_status.lower() == Status.NOT_PAID.value.lower() \
                 or record_type in (RecordType.PADR.value, RecordType.PAYR.value):
-            current_app.logger.info('NOT PAID. NSF identified.')
+            logger.info('NOT PAID. NSF identified.')
             # NSF Condition. Publish to account events for NSF.
             if _process_failed_payments(row):
                 # Send mailer and account events to update status and send email notification
                 await _publish_account_events('lockAccount', payment_account, row)
         else:
-            current_app.logger.error('Target Transaction Type is received as %s for PAD, and cannot process %s.',
-                                     target_txn, row)
+            logger.error('Target Transaction Type is received as %s for PAD, and cannot process %s.',
+                         target_txn, row)
             capture_message(
                 f'Target Transaction Type is received as {target_txn} for PAD, and cannot process.', level='error')
 
@@ -320,10 +319,10 @@ async def _process_unconsolidated_invoices(row):
                 filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.COMPLETED.value). \
                 filter(InvoiceReferenceModel.invoice_number == inv_number). \
                 all()
-            current_app.logger.info('Found %s completed invoice references for invoice number %s', len(completed_inv_references),
-                        inv_number)
+            logger.info('Found %s completed invoice references for invoice number %s',
+                        len(completed_inv_references), inv_number)
             if len(completed_inv_references) != 1:
-                current_app.logger.error('More than one or none invoice reference received for invoice number %s for %s',
+                logger.error('More than one or none invoice reference received for invoice number %s for %s',
                              inv_number, record_type)
                 capture_message(
                     f'More than one or none invoice reference received for invoice number {inv_number} for '
@@ -331,14 +330,14 @@ async def _process_unconsolidated_invoices(row):
         else:
             # Handle fully PAID and Partially Paid scenarios.
             if target_txn_status.lower() == Status.PAID.value.lower():
-                current_app.logger.debug('Fully PAID payment.')
+                logger.debug('Fully PAID payment.')
                 await _process_paid_invoices(inv_references, row)
             elif target_txn_status.lower() == Status.PARTIAL.value.lower():
-                current_app.logger.info('Partially PAID.')
+                logger.info('Partially PAID.')
                 # As per validation above, get first and only inv ref
                 _process_partial_paid_invoices(inv_references[0], row)
             else:
-                current_app.logger.error('Target Transaction Type is received as %s for %s, and cannot process.',
+                logger.error('Target Transaction Type is received as %s for %s, and cannot process.',
                              target_txn, record_type)
                 capture_message(
                     f'Target Transaction Type is received as {target_txn} for {record_type}, and cannot process.',
@@ -350,7 +349,7 @@ async def _process_credit_on_invoices(row):
     target_txn_status = _get_row_value(row, Column.TARGET_TXN_STATUS)
     if _get_row_value(row, Column.TARGET_TXN) == TargetTransaction.INV.value:
         inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
-        current_app.logger.debug('Processing invoice :  %s', inv_number)
+        logger.debug('Processing invoice :  %s', inv_number)
 
         inv_references: List[InvoiceReferenceModel] = db.session.query(InvoiceReferenceModel). \
             filter(InvoiceReferenceModel.status_code == InvoiceReferenceStatus.ACTIVE.value). \
@@ -358,12 +357,12 @@ async def _process_credit_on_invoices(row):
             all()
 
         if target_txn_status.lower() == Status.PAID.value.lower():
-            current_app.logger.debug('Fully PAID payment.')
+            logger.debug('Fully PAID payment.')
             await _process_paid_invoices(inv_references, row)
         elif target_txn_status.lower() == Status.PARTIAL.value.lower():
-            current_app.logger.info('Partially PAID using credit memo. Ignoring as the credit memo payment is already captured.')
+            logger.info('Partially PAID using credit memo. Ignoring as the credit memo payment is already captured.')
         else:
-            current_app.logger.error('Target Transaction status is received as %s for CMAP, and cannot process.', target_txn_status)
+            logger.error('Target Transaction status is received as %s for CMAP, and cannot process.', target_txn_status)
             capture_message(
                 f'Target Transaction status is received as {target_txn_status} for CMAP, and cannot process.',
                 level='error')
@@ -380,7 +379,7 @@ async def _process_paid_invoices(inv_references, row):
     for inv_ref in inv_references:
         invoice: InvoiceModel = InvoiceModel.find_by_id(inv_ref.invoice_id)
         if invoice.payment_method_code == PaymentMethod.CC.value:
-            current_app.logger.info('Cannot mark CC invoices as PAID.')
+            logger.info('Cannot mark CC invoices as PAID.')
             return
 
     receipt_date: datetime = datetime.strptime(_get_row_value(row, Column.APP_DATE), '%d-%b-%y')
@@ -390,7 +389,7 @@ async def _process_paid_invoices(inv_references, row):
         # Find invoice, update status
         inv: InvoiceModel = InvoiceModel.find_by_id(inv_ref.invoice_id)
         _validate_account(inv, row)
-        current_app.logger.debug('PAID Invoice. Invoice Reference ID : %s, invoice ID : %s', inv_ref.id, inv_ref.invoice_id)
+        logger.debug('PAID Invoice. Invoice Reference ID : %s, invoice ID : %s', inv_ref.id, inv_ref.invoice_id)
 
         inv.invoice_status_code = InvoiceStatus.PAID.value
         inv.payment_date = receipt_date
@@ -404,7 +403,7 @@ async def _process_paid_invoices(inv_references, row):
         db.session.add(receipt)
         # Publish to the queue if it's an Online Banking payment
         if inv.payment_method_code == PaymentMethod.ONLINE_BANKING.value:
-            current_app.logger.debug('Publishing payment event for OB. Invoice : %s', inv.id)
+            logger.debug('Publishing payment event for OB. Invoice : %s', inv.id)
             await _publish_payment_event(inv)
 
 
@@ -420,7 +419,7 @@ def _process_partial_paid_invoices(inv_ref: InvoiceReferenceModel, row):
 
     inv: InvoiceModel = InvoiceModel.find_by_id(inv_ref.invoice_id)
     _validate_account(inv, row)
-    current_app.logger.debug('Partial Invoice. Invoice Reference ID : %s, invoice ID : %s', inv_ref.id, inv_ref.invoice_id)
+    logger.debug('Partial Invoice. Invoice Reference ID : %s, invoice ID : %s', inv_ref.id, inv_ref.invoice_id)
     inv.invoice_status_code = InvoiceStatus.PARTIAL.value
     inv.paid = inv.total - Decimal(_get_row_value(row, Column.TARGET_TXN_OUTSTANDING))
     # Create Receipt records
@@ -449,22 +448,22 @@ def _process_failed_payments(row):
         inv_number, PaymentStatus.FAILED.value
     )
     if payment:
-        current_app.logger.info('Ignoring duplicate NSF message for invoice : %s ', inv_number)
+        logger.info('Ignoring duplicate NSF message for invoice : %s ', inv_number)
         return False
     # If there is an NSF row, it means it's a duplicate NSF event. Ignore it.
     if NonSufficientFundsService.exists_for_invoice_number(inv_number):
-        current_app.logger.info('Ignoring duplicate NSF event for account: %s ', payment_account.auth_account_id)
+        logger.info('Ignoring duplicate NSF event for account: %s ', payment_account.auth_account_id)
         return False
 
     # Set CFS Account Status.
     cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
     is_already_frozen = cfs_account.status == CfsAccountStatus.FREEZE.value
-    current_app.logger.info('setting payment account id : %s status as FREEZE', payment_account.id)
+    logger.info('setting payment account id : %s status as FREEZE', payment_account.id)
     cfs_account.status = CfsAccountStatus.FREEZE.value
     # Call CFS to stop any further PAD transactions on this account.
     CFSService.suspend_cfs_account(cfs_account)
     if is_already_frozen:
-        current_app.logger.info('Ignoring NSF message for invoice : %s as the account is already FREEZE', inv_number)
+        logger.info('Ignoring NSF message for invoice : %s as the account is already FREEZE', inv_number)
         return False
     # Find the invoice_reference for this invoice and mark it as ACTIVE.
     inv_references: List[InvoiceReferenceModel] = db.session.query(InvoiceReferenceModel). \
@@ -521,7 +520,7 @@ def _sync_credit_records():
     # 3. If it's credit memo, call credit memo endpoint and calculate balance.
     # 4. Roll up the credits to credit field in payment_account.
     active_credits: List[CreditModel] = db.session.query(CreditModel).filter(CreditModel.remaining_amount > 0).all()
-    current_app.logger.info('Found %s credit records', len(active_credits))
+    logger.info('Found %s credit records', len(active_credits))
     account_ids: List[int] = []
     for credit in active_credits:
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(credit.account_id)
@@ -574,7 +573,7 @@ def _validate_account(inv: InvoiceModel, row: Dict[str, str]):
     # This should never happen, just in case
     cfs_account: CfsAccountModel = CfsAccountModel.find_by_id(inv.cfs_account_id)
     if (account_number := _get_row_value(row, Column.CUSTOMER_ACC)) != cfs_account.cfs_account:
-        current_app.logger.error('Customer Account received as %s, but expected %s.', account_number, cfs_account.cfs_account)
+        logger.error('Customer Account received as %s, but expected %s.', account_number, cfs_account.cfs_account)
         capture_message(f'Customer Account received as {account_number}, but expected {cfs_account.cfs_account}.',
                         level='error')
 
@@ -595,8 +594,8 @@ async def _publish_payment_event(inv: InvoiceModel):
             )
         )
     except Exception as e:  # NOQA pylint: disable=broad-except
-        current_app.logger.error(e)
-        current_app.logger.warning('Notification to Queue failed for the Payment Event - %s', payload)
+        logger.error(e)
+        logger.warning('Notification to Queue failed for the Payment Event - %s', payload)
         capture_message(f'Notification to Queue failed for the Payment Event {payload}.',
                         level='error')
 
@@ -615,8 +614,8 @@ async def _publish_mailer_events(message_type: str, pay_account: PaymentAccountM
             )
         )
     except Exception as e:  # NOQA pylint: disable=broad-except
-        current_app.logger.error(e)
-        current_app.logger.warning('Notification to Queue failed for the Account Mailer %s - %s', pay_account.auth_account_id,
+        logger.error(e)
+        logger.warning('Notification to Queue failed for the Account Mailer %s - %s', pay_account.auth_account_id,
                        payload)
         capture_message('Notification to Queue failed for the Account Mailer {auth_account_id}, {msg}.'.format(
             auth_account_id=pay_account.auth_account_id, msg=payload), level='error')
@@ -659,8 +658,8 @@ async def _publish_online_banking_mailer_events(rows: List[Dict[str, str]], paid
             )
         )
     except Exception as e:  # NOQA pylint: disable=broad-except
-        current_app.logger.error(e)
-        current_app.logger.warning('Notification to Queue failed for the Account Mailer %s - %s', pay_account.auth_account_id,
+        logger.error(e)
+        logger.warning('Notification to Queue failed for the Account Mailer %s - %s', pay_account.auth_account_id,
                        payload)
         capture_message('Notification to Queue failed for the Account Mailer {auth_account_id}, {msg}.'.format(
             auth_account_id=pay_account.auth_account_id, msg=payload), level='error')
@@ -680,9 +679,9 @@ async def _publish_account_events(message_type: str, pay_account: PaymentAccount
             )
         )
     except Exception as e:  # NOQA pylint: disable=broad-except
-        current_app.logger.error(e)
-        current_app.logger.warning('Notification to Queue failed for the Account %s - %s', pay_account.auth_account_id,
-                                   pay_account.name)
+        logger.error(e)
+        logger.warning('Notification to Queue failed for the Account %s - %s', pay_account.auth_account_id,
+                       pay_account.name)
         capture_message('Notification to Queue failed for the Account {auth_account_id}, {msg}.'.format(
             auth_account_id=pay_account.auth_account_id, msg=payload), level='error')
 

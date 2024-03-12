@@ -14,12 +14,13 @@
 """Utilities used by the integration tests."""
 import csv
 import io
-import json
 import os
 from typing import List
 
 from flask import current_app
 from minio import Minio
+from pay_api.utils.enums import MessageType
+
 
 async def helper_add_event_to_queue(file_name: str, message_type: str):
     """Add eft event to the Queue."""
@@ -27,7 +28,9 @@ async def helper_add_event_to_queue(file_name: str, message_type: str):
         'fileName': file_name,
         'location': current_app.config['MINIO_BUCKET_NAME']
     }
+    return payload
     # TODO, should be a POST to the queue.
+
 
 def create_and_upload_settlement_file(file_name: str, rows: List[List]):
     """Create settlement file, upload to minio and send event."""
@@ -37,7 +40,7 @@ def create_and_upload_settlement_file(file_name: str, rows: List[List]):
                'Target transaction Number', 'Target Transaction Original amount',
                'Target Transaction Outstanding Amount',
                'Target transaction status', 'Reversal Reason code', 'Reversal reason description']
-    with open(file_name, mode='w') as cas_file:
+    with open(file_name, mode='w', encoding='utf-8') as cas_file:
         cas_writer = csv.writer(cas_file, quoting=csv.QUOTE_ALL)
         cas_writer.writerow(headers)
         for row in rows:
@@ -49,7 +52,7 @@ def create_and_upload_settlement_file(file_name: str, rows: List[List]):
 
 def create_and_upload_eft_file(file_name: str, rows: List[List]):
     """Create eft file, upload to minio and send event."""
-    with open(file_name, mode='w') as eft_file:
+    with open(file_name, mode='w', encoding='utf-8') as eft_file:
         for row in rows:
             print(row, file=eft_file)
 
@@ -70,9 +73,8 @@ def upload_to_minio(value_as_bytes, file_name: str):
                             os.stat(file_name).st_size)
 
 
-
-async def helper_add_event_to_queue(old_identifier: str = 'T1234567890',
-                                    new_identifier: str = 'BC1234567890'):
+async def helper_add_event_to_queue_identifier(old_identifier: str = 'T1234567890',
+                                               new_identifier: str = 'BC1234567890'):
     """Add event to the Queue."""
     message_type = MessageType.INCORPORATION.value
     payload = {
@@ -83,5 +85,5 @@ async def helper_add_event_to_queue(old_identifier: str = 'T1234567890',
         'identifier': new_identifier,
         'tempidentifier': old_identifier,
     }
-
+    return payload + message_type
     # TODO http post to application

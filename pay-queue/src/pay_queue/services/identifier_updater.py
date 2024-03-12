@@ -13,8 +13,8 @@
 # limitations under the License.
 """Updates the temporary identifier to a permanent identifier in the invoice table."""
 from flask import current_app
-from pay_api.models.invoice import Invoice
 from pay_api.models import db
+from pay_api.models.invoice import Invoice
 
 
 def update_temporary_identifier(event_message):

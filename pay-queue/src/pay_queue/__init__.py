@@ -18,13 +18,14 @@ This module is the service worker for applying payments, receipts and account ba
 from __future__ import annotations
 
 import os
+
 import sentry_sdk
 from flask import Flask
-from sentry_sdk.integrations.flask import FlaskIntegration
-
 from pay_api.models import db
 from pay_api.services.flags import flags
-from pay_queue.config import _Config, ProdConfig
+from sentry_sdk.integrations.flask import FlaskIntegration
+
+from pay_queue.config import ProdConfig, _Config
 from pay_queue.version import __version__
 
 from .resources import register_endpoints

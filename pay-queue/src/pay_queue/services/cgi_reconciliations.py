@@ -17,7 +17,6 @@ from datetime import datetime
 from typing import Dict, List, Optional
 
 from flask import current_app
-
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel

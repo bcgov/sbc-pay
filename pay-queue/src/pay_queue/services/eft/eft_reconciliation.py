@@ -16,9 +16,8 @@ from datetime import datetime
 from operator import and_
 from typing import Dict, List
 
-from flask import current_app
-
 from _decimal import Decimal
+from flask import current_app
 from pay_api import db
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import EFTCredit as EFTCreditModel
@@ -32,8 +31,8 @@ from pay_api.services.eft_short_names import EFTShortnames
 from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, InvoiceStatus, PaymentMethod
 from sentry_sdk import capture_message
 
-from pay_queue.services.eft import EFTHeader, EFTRecord, EFTTrailer
 from pay_queue.minio import get_object
+from pay_queue.services.eft import EFTHeader, EFTRecord, EFTTrailer
 
 
 async def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-many-locals
@@ -240,7 +239,8 @@ def _process_eft_payments(shortname_balance: Dict, eft_file: EFTFileModel) -> bo
 
         # No balance to apply - move to next shortname
         if shortname_balance[shortname]['balance'] <= 0:
-            current_app.logger.warning('UNEXPECTED BALANCE: %s had zero or less balance on file: %s', shortname, eft_file.file_ref)
+            current_app.logger.warning('UNEXPECTED BALANCE: %s had zero or less balance on file: %s',
+                                       shortname, eft_file.file_ref)
             continue
 
         # check if short name is mapped to an auth account

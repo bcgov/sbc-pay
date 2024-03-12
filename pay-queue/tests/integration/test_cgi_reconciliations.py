@@ -20,7 +20,6 @@ Test-Suite to ensure that the Payment Reconciliation queue service is working as
 from datetime import datetime
 
 import pytest
-from flask import current_app
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
@@ -49,11 +48,6 @@ from .utils import helper_add_ejv_event_to_queue, upload_to_minio
 async def test_successful_partner_ejv_reconciliations(session, app, event_loop, client_id,
                                                       future):
     """Test Reconciliations worker."""
-    # Call back for the subscription
-    from pay_queue.worker import cb_subscription_handler
-
-
-
     # 1. Create payment account
     # 2. Create invoice and related records
     # 3. Create CFS Invoice records
@@ -114,7 +108,7 @@ async def test_successful_partner_ejv_reconciliations(session, app, event_loop, 
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    await helper_add_ejv_event_to_queue(events_stan, file_name=ack_file_name)
+    # await helper_add_ejv_event_to_queue(file_name=ack_file_name)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -169,17 +163,6 @@ async def test_successful_partner_ejv_reconciliations(session, app, event_loop, 
 @pytest.mark.asyncio
 async def test_failed_partner_ejv_reconciliations(session, app, event_loop, client_id, future, mock_publish):
     """Test Reconciliations worker."""
-    # Call back for the subscription
-    from pay_queue.worker import cb_subscription_handler
-
-    # Create a Credit Card Payment
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
-
     # 1. Create payment account
     # 2. Create invoice and related records
     # 3. Create CFS Invoice records
@@ -241,7 +224,7 @@ async def test_failed_partner_ejv_reconciliations(session, app, event_loop, clie
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    await helper_add_ejv_event_to_queue(events_stan, file_name=ack_file_name)
+    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -284,7 +267,7 @@ async def test_failed_partner_ejv_reconciliations(session, app, event_loop, clie
         upload_to_minio(f.read(), feedback_file_name)
     # upload_to_minio(file_name=feedback_file_name, value_as_bytes=feedback_content.encode())
 
-    await helper_add_ejv_event_to_queue(events_stan, file_name=feedback_file_name, message_type='FEEDBACKReceived')
+    await helper_add_ejv_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -299,17 +282,6 @@ async def test_failed_partner_ejv_reconciliations(session, app, event_loop, clie
 async def test_successful_partner_reversal_ejv_reconciliations(session, app, event_loop, client_id,
                                                                future):
     """Test Reconciliations worker."""
-    # Call back for the subscription
-    from pay_queue.worker import cb_subscription_handler
-
-    # Create a Credit Card Payment
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
-
     # 1. Create payment account
     # 2. Create invoice and related records
     # 3. Create CFS Invoice records
@@ -373,7 +345,7 @@ async def test_successful_partner_reversal_ejv_reconciliations(session, app, eve
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    await helper_add_ejv_event_to_queue(events_stan, file_name=ack_file_name)
+    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -416,7 +388,7 @@ async def test_successful_partner_reversal_ejv_reconciliations(session, app, eve
         upload_to_minio(f.read(), feedback_file_name)
     # upload_to_minio(file_name=feedback_file_name, value_as_bytes=feedback_content.encode())
 
-    await helper_add_ejv_event_to_queue(events_stan, file_name=feedback_file_name, message_type='FEEDBACKReceived')
+    await helper_add_ejv_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -430,17 +402,6 @@ async def test_successful_partner_reversal_ejv_reconciliations(session, app, eve
 async def test_succesful_payment_ejv_reconciliations(session, app, stan_server, event_loop, client_id, events_stan,
                                                      future):
     """Test Reconciliations worker."""
-    # Call back for the subscription
-    from pay_queue.worker import cb_subscription_handler
-
-    # Create a Credit Card Payment
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
-
     # 1. Create EJV payment accounts
     # 2. Create invoice and related records
     # 3. Create a feedback file and assert status
@@ -555,7 +516,7 @@ async def test_succesful_payment_ejv_reconciliations(session, app, stan_server, 
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    await helper_add_ejv_event_to_queue(events_stan, file_name=ack_file_name)
+    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -571,7 +532,7 @@ async def test_succesful_payment_ejv_reconciliations(session, app, stan_server, 
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    await helper_add_ejv_event_to_queue(events_stan, file_name=feedback_file_name, message_type='FEEDBACKReceived')
+    await helper_add_ejv_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -602,17 +563,6 @@ async def test_succesful_payment_ejv_reconciliations(session, app, stan_server, 
 @pytest.mark.asyncio
 async def test_succesful_payment_reversal_ejv_reconciliations(session, app, event_loop, client_id, future):
     """Test Reconciliations worker."""
-    # Call back for the subscription
-    from pay_queue.worker import cb_subscription_handler
-
-    # Create a Credit Card Payment
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
-
     # 1. Create EJV payment accounts
     # 2. Create invoice and related records
     # 3. Create a feedback file and assert status
@@ -724,7 +674,7 @@ async def test_succesful_payment_reversal_ejv_reconciliations(session, app, even
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    await helper_add_ejv_event_to_queue(events_stan, file_name=ack_file_name)
+    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -740,7 +690,7 @@ async def test_succesful_payment_reversal_ejv_reconciliations(session, app, even
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    await helper_add_ejv_event_to_queue(events_stan, file_name=feedback_file_name, message_type='FEEDBACKReceived')
+    await helper_add_ejv_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -771,15 +721,6 @@ async def test_successful_refund_reconciliations(
         session, app, stan_server, client_id, future, mock_publish
 ):
     """Test Reconciliations worker."""
-    # Call back for the subscription
-    from pay_queue.worker import cb_subscription_handler
-
-    # register the handler to test it
-    await subscribe_to_queue(current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
-
     # 1. Create a routing slip.
     # 2. Mark the routing slip for refund.
     # 3. Create a AP reconciliation file.
@@ -826,7 +767,7 @@ async def test_successful_refund_reconciliations(
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    await helper_add_ejv_event_to_queue(events_stan, file_name=ack_file_name)
+    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -901,7 +842,7 @@ async def test_successful_refund_reconciliations(
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    await helper_add_ejv_event_to_queue(events_stan, file_name=feedback_file_name, message_type='FEEDBACKReceived')
+    await helper_add_ejv_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -916,16 +857,6 @@ async def test_failed_refund_reconciliations(
         session, app, event_loop, client_id, future, mock_publish
 ):
     """Test Reconciliations worker."""
-    # Call back for the subscription
-    from pay_queue.worker import cb_subscription_handler
-
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
-
     # 1. Create a routing slip.
     # 2. Mark the routing slip for refund.
     # 3. Create a AP reconciliation file.
@@ -972,7 +903,7 @@ async def test_failed_refund_reconciliations(
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    await helper_add_ejv_event_to_queue(events_stan, file_name=ack_file_name)
+    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -1048,7 +979,7 @@ async def test_failed_refund_reconciliations(
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    await helper_add_ejv_event_to_queue(events_stan, file_name=feedback_file_name, message_type='FEEDBACKReceived')
+    await helper_add_ejv_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -1077,13 +1008,13 @@ async def test_prevent_duplicate_ack(
         jv_file.write('')
         jv_file.close()
 
-    await helper_add_ejv_event_to_queue(events_stan, file_name=ack_file_name)
+    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
     assert ejv.ack_file_ref == ack_file_name
     assert ejv.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
 
     # Nothing should change, because it's already processed this ACK.
     ejv.disbursement_status_code = DisbursementStatus.UPLOADED.value
-    await helper_add_ejv_event_to_queue(events_stan, file_name=ack_file_name)
+    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
     assert ejv.ack_file_ref == ack_file_name
     assert ejv.disbursement_status_code == DisbursementStatus.UPLOADED.value
 
@@ -1150,7 +1081,7 @@ async def test_successful_ap_disbursement(
 
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    await helper_add_ejv_event_to_queue(events_stan, file_name=ack_file_name)
+    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
@@ -1223,7 +1154,7 @@ async def test_successful_ap_disbursement(
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    await helper_add_ejv_event_to_queue(events_stan, file_name=feedback_file_name, message_type='FEEDBACKReceived')
+    await helper_add_ejv_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
@@ -1241,17 +1172,9 @@ async def test_successful_ap_disbursement(
 
 @pytest.mark.asyncio
 async def test_failure_ap_disbursement(
-    session, app, stan_server, event_loop, client_id, events_stan, future, mock_publish
+    session, app, stan_server, event_loop, client_id, future, mock_publish
 ):
     """Test Reconciliations worker for ap disbursement."""
-    from pay_queue.worker import cb_subscription_handler
-
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
-
     # 1. Create invoice.
     # 2. Create a AP reconciliation file.
     # 3. Assert the status.
@@ -1307,7 +1230,7 @@ async def test_failure_ap_disbursement(
 
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    await helper_add_ejv_event_to_queue(events_stan, file_name=ack_file_name)
+    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
@@ -1383,7 +1306,7 @@ async def test_failure_ap_disbursement(
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    await helper_add_ejv_event_to_queue(events_stan, file_name=feedback_file_name, message_type='FEEDBACKReceived')
+    await helper_add_ejv_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value

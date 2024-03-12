@@ -45,10 +45,6 @@ from tests.utilities.factory_utils import factory_eft_header, factory_eft_record
 async def test_eft_tdi17_fail_header(session, app, stan_server, event_loop, client_id, events_stan, future,
                                      mock_publish):
     """Test EFT Reconciliations properly fails for a bad EFT header."""
-    # Call back for the subscription
-    from pay_queue.worker import cb_subscription_handler
-
-
     # Generate file with invalid header
     file_name: str = 'test_eft_tdi17.txt'
     header = factory_eft_header(record_type=EFTConstants.HEADER_RECORD_TYPE.value, file_creation_date='20230814',
@@ -103,15 +99,6 @@ async def test_eft_tdi17_fail_header(session, app, stan_server, event_loop, clie
 async def test_eft_tdi17_fail_trailer(session, app, stan_server, event_loop, client_id, events_stan, future,
                                       mock_publish):
     """Test EFT Reconciliations properly fails for a bad EFT trailer."""
-    # Call back for the subscription
-    from pay_queue.worker import cb_subscription_handler
-
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
-
     # Generate file with invalid trailer
     file_name: str = 'test_eft_tdi17.txt'
     header = factory_eft_header(record_type=EFTConstants.HEADER_RECORD_TYPE.value, file_creation_date='20230814',
@@ -168,15 +155,6 @@ async def test_eft_tdi17_fail_trailer(session, app, stan_server, event_loop, cli
 async def test_eft_tdi17_fail_transactions(session, app, stan_server, event_loop, client_id, events_stan, future,
                                            mock_publish):
     """Test EFT Reconciliations properly fails for a bad EFT trailer."""
-    # Call back for the subscription
-    from pay_queue.worker import cb_subscription_handler
-
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
-
     # Generate file with invalid trailer
     file_name: str = 'test_eft_tdi17.txt'
     header = factory_eft_header(record_type=EFTConstants.HEADER_RECORD_TYPE.value, file_creation_date='20230814',
@@ -236,15 +214,6 @@ async def test_eft_tdi17_fail_transactions(session, app, stan_server, event_loop
 async def test_eft_tdi17_basic_process(session, app, stan_server, event_loop, client_id, events_stan, future,
                                        mock_publish):
     """Test EFT Reconciliations worker is able to create basic EFT processing records."""
-    # Call back for the subscription
-    from pay_queue.worker import cb_subscription_handler
-
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
-
     # Generate happy path file
     file_name: str = 'test_eft_tdi17.txt'
     generate_basic_tdi17_file(file_name)
@@ -325,21 +294,7 @@ async def test_eft_tdi17_basic_process(session, app, stan_server, event_loop, cl
 async def test_eft_tdi17_process(session, app, stan_server, event_loop, client_id, events_stan, future,
                                  mock_publish):
     """Test EFT Reconciliations worker."""
-    # Call back for the subscription
-    from pay_queue.worker import cb_subscription_handler
-
     payment_account, eft_shortname, invoice = create_test_data()
-
-    assert payment_account is not None
-    assert eft_shortname is not None
-    assert invoice is not None
-
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
-
     # Generate happy path file
     file_name: str = 'test_eft_tdi17.txt'
     generate_tdi17_file(file_name)
@@ -465,16 +420,7 @@ async def test_eft_tdi17_process(session, app, stan_server, event_loop, client_i
 async def test_eft_tdi17_rerun(session, app, stan_server, event_loop, client_id, events_stan, future,
                                mock_publish):
     """Test EFT Reconciliations can be re-executed with a corrected file."""
-    # Call back for the subscription
-    from pay_queue.worker import cb_subscription_handler
-
     payment_account, eft_shortname, invoice = create_test_data()
-
-    await subscribe_to_queue(events_stan,
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('subject'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('queue'),
-                             current_app.config.get('SUBSCRIPTION_OPTIONS').get('durable_name'),
-                             cb_subscription_handler)
 
     # Generate file with invalid trailer
     file_name: str = 'test_eft_tdi17.txt'

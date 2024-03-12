@@ -12,3 +12,4 @@ itsdangerous
 Jinja2
 protobuf
 launchdarkly-server-sdk
+CacheControl

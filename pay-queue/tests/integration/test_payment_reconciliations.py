@@ -20,7 +20,6 @@ Test-Suite to ensure that the Payment Reconciliation queue service is working as
 from datetime import datetime
 
 import pytest
-from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Credit as CreditModel
 from pay_api.models import Invoice as InvoiceModel
@@ -40,7 +39,6 @@ from .utils import create_and_upload_settlement_file, helper_add_event_to_queue
 @pytest.mark.asyncio
 async def test_online_banking_reconciliations(session, app, client_id, future):
     """Test Reconciliations worker."""
-
     # 1. Create payment account
     # 2. Create invoice and related records
     # 3. Create CFS Invoice records
@@ -86,7 +84,6 @@ async def test_online_banking_reconciliations(session, app, client_id, future):
 @pytest.mark.asyncio
 async def test_online_banking_reconciliations_over_payment(session, app, client_id, future, mock_publish):
     """Test Reconciliations worker."""
-
     # 1. Create payment account
     # 2. Create invoice and related records
     # 3. Create CFS Invoice records
@@ -134,7 +131,6 @@ async def test_online_banking_reconciliations_over_payment(session, app, client_
 @pytest.mark.asyncio
 async def test_online_banking_reconciliations_with_credit(session, app, client_id, future, mock_publish):
     """Test Reconciliations worker."""
-
     # 1. Create payment account
     # 2. Create invoice and related records
     # 3. Create CFS Invoice records
@@ -182,7 +178,6 @@ async def test_online_banking_reconciliations_with_credit(session, app, client_i
 @pytest.mark.asyncio
 async def test_online_banking_reconciliations_overflows_credit(session, app, client_id, future, mock_publish):
     """Test Reconciliations worker."""
-
     # 1. Create payment account
     # 2. Create invoice and related records
     # 3. Create CFS Invoice records
@@ -283,7 +278,6 @@ async def test_online_banking_under_payment(session, app, client_id, future):
 @pytest.mark.asyncio
 async def test_pad_reconciliations(session, app, client_id, future, mock_publish):
     """Test Reconciliations worker."""
-
     # 1. Create payment account
     # 2. Create invoices and related records
     # 3. Create CFS Invoice records
@@ -349,7 +343,6 @@ async def test_pad_reconciliations(session, app, client_id, future, mock_publish
 @pytest.mark.asyncio
 async def test_pad_reconciliations_with_credit_memo(session, app, client_id, future):
     """Test Reconciliations worker."""
-
     # 1. Create payment account
     # 2. Create invoices and related records
     # 3. Create CFS Invoice records
@@ -420,8 +413,6 @@ async def test_pad_reconciliations_with_credit_memo(session, app, client_id, fut
 async def test_pad_nsf_reconciliations(session, app, client_id, future,
                                        mock_publish):
     """Test Reconciliations worker for NSF."""
-    from pay_queue.worker import cb_subscription_handler
-
     # 1. Create payment account
     # 2. Create invoices and related records
     # 3. Create CFS Invoice records
@@ -485,8 +476,6 @@ async def test_pad_nsf_reconciliations(session, app, client_id, future,
 @pytest.mark.asyncio
 async def test_pad_reversal_reconciliations(session, app, client_id, future, mock_publish):
     """Test Reconciliations worker for NSF."""
-    from pay_queue.worker import cb_subscription_handler
-
     # 1. Create payment account
     # 2. Create invoices and related records for a completed payment
     # 3. Create CFS Invoice records
@@ -563,8 +552,6 @@ async def test_pad_reversal_reconciliations(session, app, client_id, future, moc
 @pytest.mark.asyncio
 async def test_eft_wire_reconciliations(session, app, client_id, future, mock_publish):
     """Test Reconciliations worker."""
-    from pay_queue.worker import cb_subscription_handler
-
     # 1. Create payment account
     # 2. Create invoice and related records
     # 3. Create CFS Invoice records
@@ -619,7 +606,6 @@ async def test_eft_wire_reconciliations(session, app, client_id, future, mock_pu
 @pytest.mark.asyncio
 async def test_credits(session, app, client_id, future, monkeypatch):
     """Test Reconciliations worker."""
-
     # 1. Create payment account.
     # 2. Create EFT/WIRE payment db record.
     # 3. Create a credit memo db record.

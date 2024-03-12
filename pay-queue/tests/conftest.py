@@ -16,6 +16,7 @@ import asyncio
 import os
 import random
 from contextlib import contextmanager
+
 import pytest
 from flask import Flask
 from flask_migrate import Migrate, upgrade

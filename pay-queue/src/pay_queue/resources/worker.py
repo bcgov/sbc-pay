@@ -11,74 +11,40 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Worker resource to handle incoming queue pushes from gcp."""
 from http import HTTPStatus
-from flask import Blueprint, current_app, request, abort
-from requests.sessions import Session
-from google.auth.transport.requests import Request
-import google.oauth2.id_token as id_token
-import functools
-from ..services import queue
+
+from flask import Blueprint, request
+from pay_api.utils.enums import MessageType
+
+from pay_queue.external.gcp_auth import ensure_authorized_queue_user
+from pay_queue.services import queue, update_temporary_identifier
 from pay_queue.services.cgi_reconciliations import reconcile_distributions
-from pay_queue.eft.eft_reconciliation import reconcile_eft_payments
-from pay_queue.enums import MessageType
+from pay_queue.services.eft.eft_reconciliation import reconcile_eft_payments
 from pay_queue.services.payment_reconciliations import reconcile_payments
-from cachecontrol import CacheControl
+
+
 bp = Blueprint('worker', __name__)
 
-def verify_jwt(session):
-    """Verify token is valid."""
-    msg = ''
-    try:
-        # Get the Cloud Pub/Sub-generated JWT in the "Authorization" header.
-        id_token.verify_oauth2_token(
-            request.headers.get("Authorization").split()[1],
-            Request(session=session),
-            audience=current_app.config.get("PAY_SUB_AUDIENCE")
-        )
-    except Exception as e:  # TODO fix
-        msg = f"Invalid token: {e}\n"
-    finally:
-        return msg
 
-
-def ensure_authorized_queue_user(f):
-    """Ensures the user is authorized to use the queue."""
-    @functools.wraps(f)
-    def decorated_function(*args, **kwargs):
-        # Use CacheControl to avoid re-fetching certificates for every request.
-        if message := verify_jwt(CacheControl(Session())):
-            print(message)
-            abort(400)
-        return f(*args, **kwargs)
-    return decorated_function
-
-
-@bp.route("/", methods=("POST",))
+@bp.route('/', methods=('POST',))
 @ensure_authorized_queue_user
-async def worker():
+def worker():
     """Worker to handle incoming queue pushes."""
     if not (ce := queue.get_simple_cloud_event(request)):
         # Return a 200, so event is removed from the Queue
         return {}, HTTPStatus.OK
 
-    if not (ce := queue.get_simple_cloud_event(request)):
-        # Return a 200, so event is removed from the Queue
-        return {}, HTTPStatus.OK
-
-    message_type = ce.get('type', None)
-    match message_type:
+    match ce.get('type', None):
         case MessageType.CAS_UPLOADED.value:
-            await reconcile_payments(ce)
+            reconcile_payments(ce)
         case MessageType.CGI_ACK_RECEIVED.value:
-            await reconcile_distributions(ce)
+            reconcile_distributions(ce)
         case MessageType.CGI_FEEDBACK_RECEIVED.value:
-            await reconcile_distributions(ce, is_feedback=True)
+            reconcile_distributions(ce, is_feedback=True)
         case MessageType.EFT_FILE_UPLOADED.value:
-            await reconcile_eft_payments(ce)
-        case MessageType.INCORPORATION_TYPE.value | MessageType.REGISTRATION.value:
-            identifier_updater(ce)
+            reconcile_eft_payments(ce)
+        case MessageType.INCORPORATION.value | MessageType.REGISTRATION.value:
+            update_temporary_identifier(ce)
         case _:
-            # TODO QueueException
-            raise Exception('Invalid type')  # pylint: disable=broad-exception-raised
-        
-
+            raise Exception('Invalid queue message type')  # pylint: disable=broad-exception-raised
