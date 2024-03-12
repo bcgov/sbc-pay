@@ -18,9 +18,9 @@ Test-Suite to ensure that the EFT File parser is working as intended.
 """
 from datetime import datetime
 
-from pay_queue.eft import EFTHeader, EFTRecord, EFTTrailer
-from pay_queue.eft.eft_enums import EFTConstants
-from pay_queue.eft.eft_errors import EFTError
+from pay_queue.services.eft import EFTHeader, EFTRecord, EFTTrailer
+from pay_queue.services.eft.eft_enums import EFTConstants
+from pay_queue.services.eft.eft_errors import EFTError
 from tests.utilities.factory_utils import factory_eft_header, factory_eft_record, factory_eft_trailer
 
 

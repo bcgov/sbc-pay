@@ -22,7 +22,7 @@ from minio import Minio
 from pay_api.utils.enums import MessageType
 
 
-async def helper_add_event_to_queue(file_name: str, message_type: str):
+def helper_add_event_to_queue(file_name: str, message_type: str):
     """Add eft event to the Queue."""
     payload = {
         'fileName': file_name,

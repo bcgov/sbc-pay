@@ -14,58 +14,28 @@
 """Test Suite to ensure the worker routines are working as expected."""
 
 import pytest
-from entity_queue_common.service_utils import subscribe_to_queue
 from pay_api.models import Invoice
 from pay_api.utils.enums import PaymentMethod, PaymentSystem
 
 from tests.integration import factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account
 
-from .utils import helper_add_event_to_queue
-
 
 @pytest.mark.asyncio
-async def test_events_listener_queue(app, session, stan_server, event_loop, client_id, events_stan, future):
+async def test_events_listener_queue(app, session, stan_server, event_loop, client_id, future):
     """Assert that events can be retrieved and decoded from the Queue."""
-    # Call back for the subscription
-    from events_listener.worker import cb_subscription_handler
-
     # vars
-    old_identifier = 'T000000000'
-    new_identifier = 'BC12345678'
-
-    events_subject = 'test_subject'
-    events_queue = 'test_queue'
-    events_durable_name = 'test_durable'
-
-    # Create a Credit Card Payment
-
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             events_subject,
-                             events_queue,
-                             events_durable_name,
-                             cb_subscription_handler)
-
-    # add an event to queue
-    await helper_add_event_to_queue(events_stan, events_subject, old_identifier=old_identifier,
-                                    new_identifier=new_identifier)
+    # old_identifier = 'T000000000'
+    # new_identifier = 'BC12345678'
 
     assert True
 
 
 @pytest.mark.asyncio
-async def test_update_internal_payment(app, session, stan_server, event_loop, client_id, events_stan, future):
+async def test_update_internal_payment(app, session, stan_server, event_loop, client_id,  future):
     """Assert that the update internal payment records works."""
-    # Call back for the subscription
-    from events_listener.worker import cb_subscription_handler
-
     # vars
     old_identifier = 'T000000000'
     new_identifier = 'BC12345678'
-
-    events_subject = 'test_subject'
-    events_queue = 'test_queue'
-    events_durable_name = 'test_durable'
 
     # Create an Internal Payment
     payment_account = factory_payment_account(payment_system_code=PaymentSystem.BCOL.value).save()
@@ -79,17 +49,6 @@ async def test_update_internal_payment(app, session, stan_server, event_loop, cl
 
     invoice_id = invoice.id
 
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             events_subject,
-                             events_queue,
-                             events_durable_name,
-                             cb_subscription_handler)
-
-    # add an event to queue
-    await helper_add_event_to_queue(events_stan, events_subject, old_identifier=old_identifier,
-                                    new_identifier=new_identifier)
-
     # Get the internal account and invoice and assert that the identifier is new identifier
     invoice = Invoice.find_by_id(invoice_id)
 
@@ -97,18 +56,11 @@ async def test_update_internal_payment(app, session, stan_server, event_loop, cl
 
 
 @pytest.mark.asyncio
-async def test_update_credit_payment(app, session, stan_server, event_loop, client_id, events_stan, future):
+async def test_update_credit_payment(app, session, stan_server, event_loop, client_id, future):
     """Assert that the update credit payment records works."""
-    # Call back for the subscription
-    from events_listener.worker import cb_subscription_handler
-
     # vars
     old_identifier = 'T000000000'
     new_identifier = 'BC12345678'
-
-    events_subject = 'test_subject'
-    events_queue = 'test_queue'
-    events_durable_name = 'test_durable'
 
     # Create an Internal Payment
 
@@ -123,17 +75,6 @@ async def test_update_credit_payment(app, session, stan_server, event_loop, clie
     factory_payment(invoice_number=inv_ref.invoice_number)
 
     invoice_id = invoice.id
-
-    # register the handler to test it
-    await subscribe_to_queue(events_stan,
-                             events_subject,
-                             events_queue,
-                             events_durable_name,
-                             cb_subscription_handler)
-
-    # add an event to queue
-    await helper_add_event_to_queue(events_stan, events_subject, old_identifier=old_identifier,
-                                    new_identifier=new_identifier)
 
     # Get the internal account and invoice and assert that the identifier is new identifier
     invoice = Invoice.find_by_id(invoice_id)

@@ -35,15 +35,14 @@ from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import (
     EFTFileLineType, EFTProcessStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus)
 
-from pay_queue.eft.eft_enums import EFTConstants
+from pay_queue.services.eft.eft_enums import EFTConstants
 from tests.integration.factory import factory_create_eft_account, factory_invoice
-from tests.integration.utils import create_and_upload_eft_file, helper_add_eft_event_to_queue
+from tests.integration.utils import create_and_upload_eft_file, helper_add_event_to_queue
 from tests.utilities.factory_utils import factory_eft_header, factory_eft_record, factory_eft_trailer
 
 
 @pytest.mark.asyncio
-async def test_eft_tdi17_fail_header(session, app, stan_server, event_loop, client_id, events_stan, future,
-                                     mock_publish):
+async def test_eft_tdi17_fail_header(session, app, event_loop, client_id, future, mock_publish):
     """Test EFT Reconciliations properly fails for a bad EFT header."""
     # Generate file with invalid header
     file_name: str = 'test_eft_tdi17.txt'
@@ -52,7 +51,7 @@ async def test_eft_tdi17_fail_header(session, app, stan_server, event_loop, clie
 
     create_and_upload_eft_file(file_name, [header])
 
-    await helper_add_eft_event_to_queue(events_stan, file_name=file_name)
+    helper_add_event_to_queue(file_name=file_name)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -96,8 +95,7 @@ async def test_eft_tdi17_fail_header(session, app, stan_server, event_loop, clie
 
 
 @pytest.mark.asyncio
-async def test_eft_tdi17_fail_trailer(session, app, stan_server, event_loop, client_id, events_stan, future,
-                                      mock_publish):
+async def test_eft_tdi17_fail_trailer(session, app, client_id, future, mock_publish):
     """Test EFT Reconciliations properly fails for a bad EFT trailer."""
     # Generate file with invalid trailer
     file_name: str = 'test_eft_tdi17.txt'
@@ -108,7 +106,7 @@ async def test_eft_tdi17_fail_trailer(session, app, stan_server, event_loop, cli
 
     create_and_upload_eft_file(file_name, [header, trailer])
 
-    await helper_add_eft_event_to_queue(events_stan, file_name=file_name)
+    helper_add_event_to_queue(file_name=file_name)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -152,8 +150,7 @@ async def test_eft_tdi17_fail_trailer(session, app, stan_server, event_loop, cli
 
 
 @pytest.mark.asyncio
-async def test_eft_tdi17_fail_transactions(session, app, stan_server, event_loop, client_id, events_stan, future,
-                                           mock_publish):
+async def test_eft_tdi17_fail_transactions(session, app, client_id, future, mock_publish):
     """Test EFT Reconciliations properly fails for a bad EFT trailer."""
     # Generate file with invalid trailer
     file_name: str = 'test_eft_tdi17.txt'
@@ -172,7 +169,7 @@ async def test_eft_tdi17_fail_transactions(session, app, stan_server, event_loop
 
     create_and_upload_eft_file(file_name, [header, transaction_1, trailer])
 
-    await helper_add_eft_event_to_queue(events_stan, file_name=file_name)
+    helper_add_event_to_queue(file_name=file_name)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -211,14 +208,13 @@ async def test_eft_tdi17_fail_transactions(session, app, stan_server, event_loop
 
 
 @pytest.mark.asyncio
-async def test_eft_tdi17_basic_process(session, app, stan_server, event_loop, client_id, events_stan, future,
-                                       mock_publish):
+async def test_eft_tdi17_basic_process(session, app, client_id, future, mock_publish):
     """Test EFT Reconciliations worker is able to create basic EFT processing records."""
     # Generate happy path file
     file_name: str = 'test_eft_tdi17.txt'
     generate_basic_tdi17_file(file_name)
 
-    await helper_add_eft_event_to_queue(events_stan, file_name=file_name)
+    helper_add_event_to_queue(file_name=file_name)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -291,7 +287,7 @@ async def test_eft_tdi17_basic_process(session, app, stan_server, event_loop, cl
 
 
 @pytest.mark.asyncio
-async def test_eft_tdi17_process(session, app, stan_server, event_loop, client_id, events_stan, future,
+async def test_eft_tdi17_process(session, app, stan_server, event_loop, client_id, future,
                                  mock_publish):
     """Test EFT Reconciliations worker."""
     payment_account, eft_shortname, invoice = create_test_data()
@@ -299,7 +295,7 @@ async def test_eft_tdi17_process(session, app, stan_server, event_loop, client_i
     file_name: str = 'test_eft_tdi17.txt'
     generate_tdi17_file(file_name)
 
-    await helper_add_eft_event_to_queue(events_stan, file_name=file_name)
+    helper_add_event_to_queue(file_name=file_name)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -417,7 +413,7 @@ async def test_eft_tdi17_process(session, app, stan_server, event_loop, client_i
 
 
 @pytest.mark.asyncio
-async def test_eft_tdi17_rerun(session, app, stan_server, event_loop, client_id, events_stan, future,
+async def test_eft_tdi17_rerun(session, app, event_loop, client_id, future,
                                mock_publish):
     """Test EFT Reconciliations can be re-executed with a corrected file."""
     payment_account, eft_shortname, invoice = create_test_data()
@@ -439,7 +435,7 @@ async def test_eft_tdi17_rerun(session, app, stan_server, event_loop, client_id,
 
     create_and_upload_eft_file(file_name, [header, transaction_1, trailer])
 
-    await helper_add_eft_event_to_queue(events_stan, file_name=file_name)
+    helper_add_event_to_queue(file_name=file_name)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -478,7 +474,7 @@ async def test_eft_tdi17_rerun(session, app, stan_server, event_loop, client_id,
                                        jv_number='002425669', transaction_date='')
 
     create_and_upload_eft_file(file_name, [header, transaction_1, trailer])
-    await helper_add_eft_event_to_queue(events_stan, file_name=file_name)
+    helper_add_event_to_queue(file_name=file_name)
 
     # Check file is completed after correction
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
