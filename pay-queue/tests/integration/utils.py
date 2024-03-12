@@ -14,22 +14,51 @@
 """Utilities used by the integration tests."""
 import csv
 import io
+import json
 import os
+import uuid
+from datetime import datetime, timezone
 from typing import List
 
 from flask import current_app
 from minio import Minio
 from pay_api.utils.enums import MessageType
+from simple_cloudevent import SimpleCloudEvent, to_queue_message
 
 
-def helper_add_event_to_queue(file_name: str, message_type: str):
-    """Add eft event to the Queue."""
-    payload = {
+def build_request_for_queue_message(message_type, payload):
+    """Build request for queue message."""
+    queue_message_bytes = to_queue_message(SimpleCloudEvent(
+        id=str(uuid.uuid4()),
+        source='pay-queue',
+        subject=None,
+        time=datetime.now(tz=timezone.utc).isoformat(),
+        type=message_type,
+        data=payload
+    ))
+
+    return {
+        'message': {
+            'data': queue_message_bytes
+        },
+        'subscription': 'foobar'
+    }
+
+
+def post_to_queue(client, request_payload):
+    """Post request to queue."""
+    response = client.post('/', data=json.dumps(request_payload))
+    assert response.status_code == 200
+
+
+def helper_add_event_to_queue(client, file_name: str, message_type: str):
+    """Add event to the Queue."""
+    queue_payload = {
         'fileName': file_name,
         'location': current_app.config['MINIO_BUCKET_NAME']
     }
-    return payload
-    # TODO, should be a POST to the queue.
+    request_payload = build_request_for_queue_message(message_type, queue_payload)
+    post_to_queue(client, request_payload)
 
 
 def create_and_upload_settlement_file(file_name: str, rows: List[List]):
@@ -73,7 +102,7 @@ def upload_to_minio(value_as_bytes, file_name: str):
                             os.stat(file_name).st_size)
 
 
-async def helper_add_event_to_queue_identifier(old_identifier: str = 'T1234567890',
+async def helper_add_event_to_queue_identifier(client, old_identifier: str = 'T1234567890',
                                                new_identifier: str = 'BC1234567890'):
     """Add event to the Queue."""
     message_type = MessageType.INCORPORATION.value
@@ -85,5 +114,5 @@ async def helper_add_event_to_queue_identifier(old_identifier: str = 'T123456789
         'identifier': new_identifier,
         'tempidentifier': old_identifier,
     }
-    return payload + message_type
-    # TODO http post to application
+    request_payload = build_request_for_queue_message(message_type, payload)
+    post_to_queue(client, request_payload)

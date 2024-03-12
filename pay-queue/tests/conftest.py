@@ -13,7 +13,6 @@
 # limitations under the License.
 """Common setup and fixtures for the pytest suite used by this service."""
 import sys
-from contextlib import contextmanager
 
 import pytest
 from flask_migrate import Migrate, upgrade
@@ -21,7 +20,6 @@ from pay_api import db as _db
 from sqlalchemy import event, text
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
-from pay_queue.config import get_named_config
 from pay_queue import create_app
 
 
@@ -108,4 +106,10 @@ def auto(docker_services, app):
 @pytest.fixture()
 def mock_publish(monkeypatch):
     """Mock check_auth."""
-    monkeypatch.setattr('pay_api.services.queue_publisher.publish', lambda *args, **kwargs: None)
+    monkeypatch.setattr('pay_api.services.gcp_queue_publisher.publish_to_queue', lambda *args, **kwargs: None)
+
+
+@pytest.fixture(autouse=True)
+def mock_queue_auth(monkeypatch):
+    """Mock queue authorization."""
+    monkeypatch.setattr('pay_queue.external.gcp_auth.ensure_authorized_queue_user', lambda *args, **kwargs: None)
