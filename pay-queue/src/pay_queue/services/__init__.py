@@ -32,6 +32,6 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 """This module provides Queue type services."""
-from gcp_queue import GcpQueue
 
-queue = GcpQueue()
+
+from .identifier_updater import update_temporary_identifier

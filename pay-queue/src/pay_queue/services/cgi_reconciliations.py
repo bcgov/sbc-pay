@@ -30,10 +30,11 @@ from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
-from pay_api.services.queue_publisher import publish
+from pay_api.services import gcp_queue_publisher
+from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import (
-    DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem,
-    RoutingSlipStatus)
+    DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus,
+    PaymentSystem, QueueSources, RoutingSlipStatus)
 from sentry_sdk import capture_message
 
 from pay_queue import config
@@ -43,14 +44,14 @@ from pay_queue.minio import get_object
 APP_CONFIG = config.get_named_config(os.getenv('DEPLOYMENT_ENV', 'production'))
 
 
-async def reconcile_distributions(msg: Dict[str, any], is_feedback: bool = False):
+def reconcile_distributions(msg: Dict[str, any], is_feedback: bool = False):
     """Read the file and update distribution details.
 
     1: Lookup the invoice details based on the file content.
     2: Update the statuses
     """
     if is_feedback:
-        await _update_feedback(msg)
+        _update_feedback(msg)
     else:
         _update_acknowledgement(msg)
 
@@ -86,24 +87,24 @@ def _update_acknowledgement(msg: Dict[str, any]):
     db.session.commit()
 
 
-async def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-locals, too-many-statements
+def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-locals, too-many-statements
     # Read the file and find records from the database, and update status.
     file_name: str = msg.get('data').get('fileName')
     minio_location: str = msg.get('data').get('location')
     file = get_object(minio_location, file_name)
     content = file.data.decode('utf-8-sig')
     group_batches: List[str] = _group_batches(content)
-    has_errors, already_processed = await _process_ejv_feedback(group_batches['EJV'], file_name)
+    has_errors, already_processed = _process_ejv_feedback(group_batches['EJV'], file_name)
 
     if not already_processed:
-        has_errors = await _process_ap_feedback(group_batches['AP']) or has_errors
+        has_errors = _process_ap_feedback(group_batches['AP']) or has_errors
 
         if has_errors and not APP_CONFIG.DISABLE_EJV_ERROR_EMAIL:
-            await _publish_mailer_events(file_name, minio_location)
+            _publish_mailer_events(file_name, minio_location)
     current_app.logger.info('> update_feedback')
 
 
-async def _process_ejv_feedback(group_batches, file_name) -> bool:  # pylint:disable=too-many-locals
+def _process_ejv_feedback(group_batches, file_name) -> bool:  # pylint:disable=too-many-locals
     """Process EJV Feedback contents."""
     has_errors = False
     already_processed = False
@@ -147,16 +148,16 @@ async def _process_ejv_feedback(group_batches, file_name) -> bool:  # pylint:dis
                 elif ejv_file.file_type == EjvFileType.PAYMENT.value:
                     amount = float(line[42:57])
                     receipt_number = line[0:42].strip()
-                    await _create_payment_record(amount, ejv_header, receipt_number)
+                    _create_payment_record(amount, ejv_header, receipt_number)
 
             elif is_jv_detail:
-                has_errors = await _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number)
+                has_errors = _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number)
 
     db.session.commit()
     return has_errors, already_processed
 
 
-async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  # pylint:disable=too-many-locals
+def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  # pylint:disable=too-many-locals
     journal_name: str = line[7:17]  # {ministry}{ejv_header_model.id:0>8}
     ejv_header_model_id = int(journal_name[2:])
     # Work around for CAS, they said fix the feedback files.
@@ -190,7 +191,7 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
                 credit_distribution.stop_ejv = True
         else:
             effective_date = datetime.strptime(line[22:30], '%Y%m%d')
-            await _update_invoice_disbursement_status(invoice, effective_date)
+            _update_invoice_disbursement_status(invoice, effective_date)
 
     elif line[104:105] == 'D' and ejv_file.file_type == EjvFileType.PAYMENT.value:
         # This is for gov account payment JV.
@@ -252,7 +253,7 @@ def _fix_invoice_line(line):
     return line
 
 
-async def _update_invoice_disbursement_status(invoice, effective_date: datetime):
+def _update_invoice_disbursement_status(invoice, effective_date: datetime):
     """Update status to reversed if its a refund, else to completed."""
     invoice.disbursement_date = effective_date
     if invoice.invoice_status_code in (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value,
@@ -262,7 +263,7 @@ async def _update_invoice_disbursement_status(invoice, effective_date: datetime)
         invoice.disbursement_status_code = DisbursementStatus.COMPLETED.value
 
 
-async def _create_payment_record(amount, ejv_header, receipt_number):
+def _create_payment_record(amount, ejv_header, receipt_number):
     """Create payment record."""
     PaymentModel(
         payment_system_code=PaymentSystem.CGI.value,
@@ -323,7 +324,7 @@ def _publish_mailer_events(file_name: str, minio_location: str):
         capture_message('EJV Failed message error', level='error')
 
 
-async def _process_ap_feedback(group_batches) -> bool:  # pylint:disable=too-many-locals
+def _process_ap_feedback(group_batches) -> bool:  # pylint:disable=too-many-locals
     """Process AP Feedback contents."""
     has_errors = False
     for group_batch in group_batches:
@@ -344,22 +345,22 @@ async def _process_ap_feedback(group_batches) -> bool:  # pylint:disable=too-man
                 if ejv_file.disbursement_status_code == DisbursementStatus.ERRORED.value:
                     has_errors = True
             elif is_ap_header:
-                has_errors = await _process_ap_header(line, ejv_file) or has_errors
+                has_errors = _process_ap_header(line, ejv_file) or has_errors
 
     db.session.commit()
     return has_errors
 
 
-async def _process_ap_header(line, ejv_file: EjvFileModel) -> bool:
+def _process_ap_header(line, ejv_file: EjvFileModel) -> bool:
     has_errors = False
     if ejv_file.file_type == EjvFileType.REFUND.value:
-        has_errors = await _process_ap_header_routing_slips(line)
+        has_errors = _process_ap_header_routing_slips(line)
     else:
-        has_errors = await _process_ap_header_non_gov_disbursement(line, ejv_file)
+        has_errors = _process_ap_header_non_gov_disbursement(line, ejv_file)
     return has_errors
 
 
-async def _process_ap_header_routing_slips(line) -> bool:
+def _process_ap_header_routing_slips(line) -> bool:
     has_errors = False
     routing_slip_number = line[19:69].strip()
     routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_number(routing_slip_number)
@@ -399,7 +400,7 @@ async def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) 
                         level='error')
     else:
         # TODO - Fix this on BC Assessment launch, so the effective date reads from the feedback.
-        await _update_invoice_disbursement_status(invoice, effective_date=datetime.now())
+        _update_invoice_disbursement_status(invoice, effective_date=datetime.now())
         if invoice.invoice_status_code != InvoiceStatus.PAID.value:
             refund = RefundModel.find_by_invoice_id(invoice.id)
             refund.gl_posted = datetime.now()

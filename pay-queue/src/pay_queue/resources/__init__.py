@@ -11,17 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+"""Resource package for the pay-queue service."""
 from flask import Flask
+from pay_api.resources.ops import bp as ops_bp
 
 from .worker import bp as worker_endpoint
 
 
 def register_endpoints(app: Flask):
-    """Register endpoints with the flask application"""
+    """Register endpoints with the flask application."""
     # Allow base route to match with, and without a trailing slash
     app.url_map.strict_slashes = False
 
     app.register_blueprint(
-        url_prefix="/",
+        url_prefix='/',
         blueprint=worker_endpoint,
     )
+    app.register_blueprint(ops_bp)

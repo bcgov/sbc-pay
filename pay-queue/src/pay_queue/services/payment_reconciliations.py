@@ -32,13 +32,14 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
+from pay_api.services import gcp_queue_publisher
 from pay_api.services.cfs_service import CFSService
+from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
-from pay_api.services.queue_publisher import publish
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus)
-from pay_api.utils.util import get_pay_subject_name
+    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, MessageType, PaymentMethod, PaymentStatus, QueueSources)
+from pay_api.utils.util import get_topic_for_corp_type
 from sentry_sdk import capture_message
 
 from pay_queue import config
@@ -694,7 +695,6 @@ def _create_event_payload(pay_account, row):
         'originalAmount': _get_row_value(row, Column.TARGET_TXN_ORIGINAL),
         'amount': _get_row_value(row, Column.APP_AMOUNT)
     }
-    return payload
 
 
 def _convert_payment_method(cfs_method: str) -> str:

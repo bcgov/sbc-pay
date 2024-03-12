@@ -14,10 +14,10 @@
 """This manages the EFT Header record."""
 from datetime import datetime
 
-from pay_queue.eft.eft_base import EFTBase
-from pay_queue.eft.eft_enums import EFTConstants
-from pay_queue.eft.eft_errors import EFTError
-from pay_queue.eft.eft_parse_error import EFTParseError
+from pay_queue.services.eft.eft_base import EFTBase
+from pay_queue.services.eft.eft_enums import EFTConstants
+from pay_queue.services.eft.eft_errors import EFTError
+from pay_queue.services.eft.eft_parse_error import EFTParseError
 
 
 class EFTHeader(EFTBase):

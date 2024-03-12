@@ -75,4 +75,3 @@ class TargetTransaction(Enum):
     DEBIT_MEMO = 'DM'
     CREDIT_MEMO = 'CM'
     RECEIPT = 'RECEIPT'
-

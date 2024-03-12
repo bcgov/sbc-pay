@@ -32,7 +32,7 @@ from pay_api.services.eft_short_names import EFTShortnames
 from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, InvoiceStatus, PaymentMethod
 from sentry_sdk import capture_message
 
-from pay_queue.eft import EFTHeader, EFTRecord, EFTTrailer
+from pay_queue.services.eft import EFTHeader, EFTRecord, EFTTrailer
 from pay_queue.minio import get_object
 
 
