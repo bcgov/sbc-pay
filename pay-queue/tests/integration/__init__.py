@@ -53,7 +53,6 @@ def factory_payment(
         payment_system_code=payment_system_code,
         payment_method_code=payment_method_code,
         payment_status_code=payment_status_code,
-        created_on=created_on,
         invoice_number=invoice_number
     ).save()
 

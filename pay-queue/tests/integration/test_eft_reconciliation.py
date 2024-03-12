@@ -19,7 +19,6 @@ Test-Suite to ensure that the EFT Reconciliation queue service and parser is wor
 from datetime import datetime
 from typing import List
 
-from flask import current_app
 from pay_api import db
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
@@ -27,16 +26,12 @@ from pay_api.models import EFTFile as EFTFileModel
 from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Invoice as InvoiceModel
-from pay_api.models import InvoiceReference as InvoiceReferenceModel
-from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import (
-    EFTFileLineType, EFTProcessStatus, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus)
+from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, MessageType, PaymentMethod
 
 from pay_queue.services.eft.eft_enums import EFTConstants
 from tests.integration.factory import factory_create_eft_account, factory_invoice
-from tests.integration.utils import create_and_upload_eft_file, helper_add_event_to_queue
+from tests.integration.utils import create_and_upload_eft_file, helper_add_file_event_to_queue
 from tests.utilities.factory_utils import factory_eft_header, factory_eft_record, factory_eft_trailer
 
 
@@ -49,7 +44,7 @@ def test_eft_tdi17_fail_header(client, mock_publish):
 
     create_and_upload_eft_file(file_name, [header])
 
-    helper_add_event_to_queue(client, file_name, MessageType.EFT_FILE_UPLOADED.value)
+    helper_add_file_event_to_queue(client, file_name, MessageType.EFT_FILE_UPLOADED.value)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -103,7 +98,7 @@ def test_eft_tdi17_fail_trailer(client, mock_publish):
 
     create_and_upload_eft_file(file_name, [header, trailer])
 
-    helper_add_event_to_queue(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
+    helper_add_file_event_to_queue(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -165,7 +160,7 @@ def test_eft_tdi17_fail_transactions(client, mock_publish):
 
     create_and_upload_eft_file(file_name, [header, transaction_1, trailer])
 
-    helper_add_event_to_queue(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
+    helper_add_file_event_to_queue(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -209,7 +204,7 @@ def test_eft_tdi17_basic_process(client, mock_publish):
     file_name: str = 'test_eft_tdi17.txt'
     generate_basic_tdi17_file(file_name)
 
-    helper_add_event_to_queue(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
+    helper_add_file_event_to_queue(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -288,7 +283,7 @@ def test_eft_tdi17_process(client, mock_publish):
     file_name: str = 'test_eft_tdi17.txt'
     generate_tdi17_file(file_name)
 
-    helper_add_event_to_queue(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
+    helper_add_file_event_to_queue(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -377,7 +372,8 @@ def test_eft_tdi17_process(client, mock_publish):
     # assert invoice_reference.invoice_number == expected_invoice_number
     # assert invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
 
-    # eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).order_by(EFTCreditModel.created_on.asc()).all()
+    # eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel) \
+    # .order_by(EFTCreditModel.created_on.asc()).all()
     # assert eft_credits is not None
     # assert len(eft_credits) == 3
     # assert eft_credits[0].payment_account_id == payment_account.id
@@ -427,7 +423,7 @@ def test_eft_tdi17_rerun(client, mock_publish):
 
     create_and_upload_eft_file(file_name, [header, transaction_1, trailer])
 
-    helper_add_event_to_queue(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
+    helper_add_file_event_to_queue(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -466,7 +462,7 @@ def test_eft_tdi17_rerun(client, mock_publish):
                                        jv_number='002425669', transaction_date='')
 
     create_and_upload_eft_file(file_name, [header, transaction_1, trailer])
-    helper_add_event_to_queue(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
+    helper_add_file_event_to_queue(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
 
     # Check file is completed after correction
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -534,7 +530,8 @@ def test_eft_tdi17_rerun(client, mock_publish):
     # assert invoice_reference.invoice_number == expected_invoice_number
     # assert invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
 
-    # eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).order_by(EFTCreditModel.created_on.asc()).all()
+    # eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel) \
+    # .order_by(EFTCreditModel.created_on.asc()).all()
     # assert eft_credits is not None
     # assert len(eft_credits) == 1
     # assert eft_credits[0].payment_account_id == payment_account.id

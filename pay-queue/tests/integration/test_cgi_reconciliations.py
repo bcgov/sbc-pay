@@ -37,7 +37,7 @@ from pay_api.utils.enums import (
     CfsAccountStatus, DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, MessageType,
     PaymentMethod, PaymentStatus, RoutingSlipStatus)
 
-from tests.integration.utils import helper_add_event_to_queue
+from tests.integration.utils import helper_add_file_event_to_queue
 
 from .factory import (
     factory_create_ejv_account, factory_create_pad_account, factory_distribution, factory_invoice,
@@ -107,7 +107,7 @@ def test_successful_partner_ejv_reconciliations(client):
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    helper_add_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -149,7 +149,7 @@ def test_successful_partner_ejv_reconciliations(client):
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    helper_add_event_to_queue(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -221,7 +221,7 @@ def test_failed_partner_ejv_reconciliations(client, mock_publish):
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    helper_add_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -263,7 +263,7 @@ def test_failed_partner_ejv_reconciliations(client, mock_publish):
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    helper_add_event_to_queue(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -339,7 +339,7 @@ def test_successful_partner_reversal_ejv_reconciliations(client):
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    helper_add_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -381,7 +381,7 @@ def test_successful_partner_reversal_ejv_reconciliations(client):
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    helper_add_event_to_queue(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -507,7 +507,7 @@ def test_succesful_payment_ejv_reconciliations(client):
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    helper_add_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -523,7 +523,7 @@ def test_succesful_payment_ejv_reconciliations(client):
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    helper_add_event_to_queue(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -664,7 +664,7 @@ def test_succesful_payment_reversal_ejv_reconciliations(client):
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    helper_add_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -680,7 +680,7 @@ def test_succesful_payment_reversal_ejv_reconciliations(client):
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    helper_add_event_to_queue(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -754,7 +754,7 @@ def test_successful_refund_reconciliations(client, mock_publish):
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    helper_add_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -829,7 +829,7 @@ def test_successful_refund_reconciliations(client, mock_publish):
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    helper_add_event_to_queue(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -887,7 +887,7 @@ def test_failed_refund_reconciliations(client, mock_publish):
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    helper_add_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -963,7 +963,7 @@ def test_failed_refund_reconciliations(client, mock_publish):
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    helper_add_event_to_queue(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -989,13 +989,13 @@ def test_prevent_duplicate_ack(client, mock_publish):
         jv_file.write('')
         jv_file.close()
 
-    helper_add_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
     assert ejv.ack_file_ref == ack_file_name
     assert ejv.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
 
     # Nothing should change, because it's already processed this ACK.
     ejv.disbursement_status_code = DisbursementStatus.UPLOADED.value
-    helper_add_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
     assert ejv.ack_file_ref == ack_file_name
     assert ejv.disbursement_status_code == DisbursementStatus.UPLOADED.value
 
@@ -1059,7 +1059,7 @@ def test_successful_ap_disbursement(client, mock_publish):
 
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    helper_add_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
@@ -1132,8 +1132,8 @@ def test_successful_ap_disbursement(client, mock_publish):
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    helper_add_event_to_queue(client, file_name=feedback_file_name,
-                              message_type=MessageType.CGI_FEEDBACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, file_name=feedback_file_name,
+                                   message_type=MessageType.CGI_FEEDBACK_RECEIVED.value)
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
@@ -1206,7 +1206,7 @@ def test_failure_ap_disbursement(client, mock_publish):
 
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    helper_add_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, file_name=ack_file_name, message_type=MessageType.CGI_ACK_RECEIVED.value)
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
@@ -1282,7 +1282,7 @@ def test_failure_ap_disbursement(client, mock_publish):
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    helper_add_event_to_queue(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
+    helper_add_file_event_to_queue(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value

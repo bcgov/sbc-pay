@@ -52,16 +52,6 @@ def post_to_queue(client, request_payload):
     assert response.status_code == 200
 
 
-def helper_add_event_to_queue(client, file_name: str, message_type: str):
-    """Add event to the Queue."""
-    queue_payload = {
-        'fileName': file_name,
-        'location': current_app.config['MINIO_BUCKET_NAME']
-    }
-    request_payload = build_request_for_queue_message(message_type, queue_payload)
-    post_to_queue(client, request_payload)
-
-
 def create_and_upload_settlement_file(file_name: str, rows: List[List]):
     """Create settlement file, upload to minio and send event."""
     headers = ['Record type', 'Source Transaction Type', 'Source Transaction Number',
@@ -103,11 +93,21 @@ def upload_to_minio(value_as_bytes, file_name: str):
                             os.stat(file_name).st_size)
 
 
-async def helper_add_event_to_queue_identifier(client, old_identifier: str = 'T1234567890',
-                                               new_identifier: str = 'BC1234567890'):
+def helper_add_file_event_to_queue(client, file_name: str, message_type: str):
+    """Add event to the Queue."""
+    queue_payload = {
+        'fileName': file_name,
+        'location': current_app.config['MINIO_BUCKET_NAME']
+    }
+    request_payload = build_request_for_queue_message(message_type, queue_payload)
+    post_to_queue(client, request_payload)
+
+
+def helper_add_identifier_event_to_queue(client, old_identifier: str = 'T1234567890',
+                                         new_identifier: str = 'BC1234567890'):
     """Add event to the Queue."""
     message_type = MessageType.INCORPORATION.value
-    payload = {
+    queue_payload = {
         'filing': {
             'header': {'filingId': '12345678'},
             'business': {'identifier': 'BC1234567'}
@@ -115,5 +115,5 @@ async def helper_add_event_to_queue_identifier(client, old_identifier: str = 'T1
         'identifier': new_identifier,
         'tempidentifier': old_identifier,
     }
-    request_payload = build_request_for_queue_message(message_type, payload)
+    request_payload = build_request_for_queue_message(message_type, queue_payload)
     post_to_queue(client, request_payload)
