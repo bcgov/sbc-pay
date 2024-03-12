@@ -36,8 +36,7 @@ from .factory import (
 from .utils import create_and_upload_settlement_file, helper_add_event_to_queue
 
 
-@pytest.mark.asyncio
-async def test_online_banking_reconciliations(session, app, client_id, future):
+def test_online_banking_reconciliations():
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -81,8 +80,7 @@ async def test_online_banking_reconciliations(session, app, client_id, future):
     assert payment.invoice_number == invoice_number
 
 
-@pytest.mark.asyncio
-async def test_online_banking_reconciliations_over_payment(session, app, client_id, future, mock_publish):
+def test_online_banking_reconciliations_over_payment():
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -128,8 +126,7 @@ async def test_online_banking_reconciliations_over_payment(session, app, client_
     assert payment.invoice_number is None  # No invoice_number if payment is not for 1 invoice
 
 
-@pytest.mark.asyncio
-async def test_online_banking_reconciliations_with_credit(session, app, client_id, future, mock_publish):
+def test_online_banking_reconciliations_with_credit():
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -175,8 +172,7 @@ async def test_online_banking_reconciliations_with_credit(session, app, client_i
     assert payment.invoice_number == invoice_number
 
 
-@pytest.mark.asyncio
-async def test_online_banking_reconciliations_overflows_credit(session, app, client_id, future, mock_publish):
+def test_online_banking_reconciliations_overflows_credit(mock_publish):
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -227,8 +223,7 @@ async def test_online_banking_reconciliations_overflows_credit(session, app, cli
     assert payment.invoice_number is None
 
 
-@pytest.mark.asyncio
-async def test_online_banking_under_payment(session, app, client_id, future):
+def test_online_banking_under_payment():
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -275,8 +270,7 @@ async def test_online_banking_under_payment(session, app, client_id, future):
     assert payment.invoice_number == invoice_number
 
 
-@pytest.mark.asyncio
-async def test_pad_reconciliations(session, app, client_id, future, mock_publish):
+def test_pad_reconciliations(mock_publish):
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoices and related records
@@ -340,8 +334,7 @@ async def test_pad_reconciliations(session, app, client_id, future, mock_publish
     assert rcpt1.receipt_date == rcpt2.receipt_date
 
 
-@pytest.mark.asyncio
-async def test_pad_reconciliations_with_credit_memo(session, app, client_id, future):
+def test_pad_reconciliations_with_credit_memo():
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoices and related records
@@ -409,9 +402,7 @@ async def test_pad_reconciliations_with_credit_memo(session, app, client_id, fut
     assert rcpt1.receipt_date == rcpt2.receipt_date
 
 
-@pytest.mark.asyncio
-async def test_pad_nsf_reconciliations(session, app, client_id, future,
-                                       mock_publish):
+def test_pad_nsf_reconciliations(mock_publish):
     """Test Reconciliations worker for NSF."""
     # 1. Create payment account
     # 2. Create invoices and related records
@@ -473,8 +464,7 @@ async def test_pad_nsf_reconciliations(session, app, client_id, future,
     assert cfs_account.status == CfsAccountStatus.FREEZE.value
 
 
-@pytest.mark.asyncio
-async def test_pad_reversal_reconciliations(session, app, client_id, future, mock_publish):
+def test_pad_reversal_reconciliations(mock_publish):
     """Test Reconciliations worker for NSF."""
     # 1. Create payment account
     # 2. Create invoices and related records for a completed payment
@@ -550,7 +540,7 @@ async def test_pad_reversal_reconciliations(session, app, client_id, future, moc
 
 
 @pytest.mark.asyncio
-async def test_eft_wire_reconciliations(session, app, client_id, future, mock_publish):
+async def test_eft_wire_reconciliations(mock_publish):
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -604,7 +594,7 @@ async def test_eft_wire_reconciliations(session, app, client_id, future, mock_pu
 
 
 @pytest.mark.asyncio
-async def test_credits(session, app, client_id, future, monkeypatch):
+async def test_credits(monkeypatch):
     """Test Reconciliations worker."""
     # 1. Create payment account.
     # 2. Create EFT/WIRE payment db record.

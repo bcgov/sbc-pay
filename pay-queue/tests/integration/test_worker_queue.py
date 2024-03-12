@@ -21,7 +21,7 @@ from tests.integration import factory_invoice, factory_invoice_reference, factor
 
 
 @pytest.mark.asyncio
-async def test_events_listener_queue(app, session, stan_server, event_loop, client_id, future):
+async def test_events_listener_queue():
     """Assert that events can be retrieved and decoded from the Queue."""
     # vars
     # old_identifier = 'T000000000'
@@ -31,7 +31,7 @@ async def test_events_listener_queue(app, session, stan_server, event_loop, clie
 
 
 @pytest.mark.asyncio
-async def test_update_internal_payment(app, session, stan_server, event_loop, client_id,  future):
+async def test_update_internal_payment():
     """Assert that the update internal payment records works."""
     # vars
     old_identifier = 'T000000000'
@@ -56,7 +56,7 @@ async def test_update_internal_payment(app, session, stan_server, event_loop, cl
 
 
 @pytest.mark.asyncio
-async def test_update_credit_payment(app, session, stan_server, event_loop, client_id, future):
+async def test_update_credit_payment():
     """Assert that the update credit payment records works."""
     # vars
     old_identifier = 'T000000000'

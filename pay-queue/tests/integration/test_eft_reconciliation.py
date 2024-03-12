@@ -42,7 +42,7 @@ from tests.utilities.factory_utils import factory_eft_header, factory_eft_record
 
 
 @pytest.mark.asyncio
-async def test_eft_tdi17_fail_header(session, app, event_loop, client_id, future, mock_publish):
+async def test_eft_tdi17_fail_header(mock_publish):
     """Test EFT Reconciliations properly fails for a bad EFT header."""
     # Generate file with invalid header
     file_name: str = 'test_eft_tdi17.txt'
@@ -95,7 +95,7 @@ async def test_eft_tdi17_fail_header(session, app, event_loop, client_id, future
 
 
 @pytest.mark.asyncio
-async def test_eft_tdi17_fail_trailer(session, app, client_id, future, mock_publish):
+async def test_eft_tdi17_fail_trailer(mock_publish):
     """Test EFT Reconciliations properly fails for a bad EFT trailer."""
     # Generate file with invalid trailer
     file_name: str = 'test_eft_tdi17.txt'
@@ -150,7 +150,7 @@ async def test_eft_tdi17_fail_trailer(session, app, client_id, future, mock_publ
 
 
 @pytest.mark.asyncio
-async def test_eft_tdi17_fail_transactions(session, app, client_id, future, mock_publish):
+async def test_eft_tdi17_fail_transactions(mock_publish):
     """Test EFT Reconciliations properly fails for a bad EFT trailer."""
     # Generate file with invalid trailer
     file_name: str = 'test_eft_tdi17.txt'
@@ -208,7 +208,7 @@ async def test_eft_tdi17_fail_transactions(session, app, client_id, future, mock
 
 
 @pytest.mark.asyncio
-async def test_eft_tdi17_basic_process(session, app, client_id, future, mock_publish):
+async def test_eft_tdi17_basic_process(mock_publish):
     """Test EFT Reconciliations worker is able to create basic EFT processing records."""
     # Generate happy path file
     file_name: str = 'test_eft_tdi17.txt'
@@ -287,8 +287,7 @@ async def test_eft_tdi17_basic_process(session, app, client_id, future, mock_pub
 
 
 @pytest.mark.asyncio
-async def test_eft_tdi17_process(session, app, stan_server, event_loop, client_id, future,
-                                 mock_publish):
+async def test_eft_tdi17_process(mock_publish):
     """Test EFT Reconciliations worker."""
     payment_account, eft_shortname, invoice = create_test_data()
     # Generate happy path file
@@ -413,8 +412,7 @@ async def test_eft_tdi17_process(session, app, stan_server, event_loop, client_i
 
 
 @pytest.mark.asyncio
-async def test_eft_tdi17_rerun(session, app, event_loop, client_id, future,
-                               mock_publish):
+async def test_eft_tdi17_rerun(mock_publish):
     """Test EFT Reconciliations can be re-executed with a corrected file."""
     payment_account, eft_shortname, invoice = create_test_data()
 

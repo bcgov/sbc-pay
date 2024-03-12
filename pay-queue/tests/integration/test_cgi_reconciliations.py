@@ -35,7 +35,7 @@ from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.utils.enums import (
-    CfsAccountStatus, DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
+    CfsAccountStatus, DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod,
     PaymentStatus, RoutingSlipStatus)
 
 from .factory import (
@@ -45,8 +45,7 @@ from .utils import helper_add_ejv_event_to_queue, upload_to_minio
 
 
 @pytest.mark.asyncio
-async def test_successful_partner_ejv_reconciliations(session, app, event_loop, client_id,
-                                                      future):
+async def test_successful_partner_ejv_reconciliations():
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -108,7 +107,7 @@ async def test_successful_partner_ejv_reconciliations(session, app, event_loop, 
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    # await helper_add_ejv_event_to_queue(file_name=ack_file_name)
+    helper_add_event_to_queue(file_name=ack_file_name, message_type=MessageType.ACKReceived.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -151,7 +150,7 @@ async def test_successful_partner_ejv_reconciliations(session, app, event_loop, 
         upload_to_minio(f.read(), feedback_file_name)
     # upload_to_minio(file_name=feedback_file_name, value_as_bytes=feedback_content.encode())
 
-    await helper_add_ejv_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
+    helper_add_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -161,7 +160,7 @@ async def test_successful_partner_ejv_reconciliations(session, app, event_loop, 
 
 
 @pytest.mark.asyncio
-async def test_failed_partner_ejv_reconciliations(session, app, event_loop, client_id, future, mock_publish):
+async def test_failed_partner_ejv_reconciliations(mock_publish):
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -224,7 +223,7 @@ async def test_failed_partner_ejv_reconciliations(session, app, event_loop, clie
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
+    helper_add_event_to_queue(file_name=ack_file_name)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -265,9 +264,8 @@ async def test_failed_partner_ejv_reconciliations(session, app, event_loop, clie
     # Now upload the ACK file to minio and publish message.
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
-    # upload_to_minio(file_name=feedback_file_name, value_as_bytes=feedback_content.encode())
 
-    await helper_add_ejv_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
+    helper_add_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -279,8 +277,7 @@ async def test_failed_partner_ejv_reconciliations(session, app, event_loop, clie
 
 
 @pytest.mark.asyncio
-async def test_successful_partner_reversal_ejv_reconciliations(session, app, event_loop, client_id,
-                                                               future):
+async def test_successful_partner_reversal_ejv_reconciliations():
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -345,7 +342,7 @@ async def test_successful_partner_reversal_ejv_reconciliations(session, app, eve
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
+    helper_add_event_to_queue(file_name=ack_file_name)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -386,9 +383,8 @@ async def test_successful_partner_reversal_ejv_reconciliations(session, app, eve
     # Now upload the ACK file to minio and publish message.
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
-    # upload_to_minio(file_name=feedback_file_name, value_as_bytes=feedback_content.encode())
 
-    await helper_add_ejv_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
+    helper_add_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -399,8 +395,7 @@ async def test_successful_partner_reversal_ejv_reconciliations(session, app, eve
 
 
 @pytest.mark.asyncio
-async def test_succesful_payment_ejv_reconciliations(session, app, stan_server, event_loop, client_id, events_stan,
-                                                     future):
+async def test_succesful_payment_ejv_reconciliations():
     """Test Reconciliations worker."""
     # 1. Create EJV payment accounts
     # 2. Create invoice and related records
@@ -516,7 +511,7 @@ async def test_succesful_payment_ejv_reconciliations(session, app, stan_server, 
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
+    helper_add_event_to_queue(file_name=ack_file_name)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -532,7 +527,7 @@ async def test_succesful_payment_ejv_reconciliations(session, app, stan_server, 
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    await helper_add_ejv_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
+    helper_add_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -561,7 +556,7 @@ async def test_succesful_payment_ejv_reconciliations(session, app, stan_server, 
 
 
 @pytest.mark.asyncio
-async def test_succesful_payment_reversal_ejv_reconciliations(session, app, event_loop, client_id, future):
+async def test_succesful_payment_reversal_ejv_reconciliations():
     """Test Reconciliations worker."""
     # 1. Create EJV payment accounts
     # 2. Create invoice and related records
@@ -674,7 +669,7 @@ async def test_succesful_payment_reversal_ejv_reconciliations(session, app, even
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
+    helper_add_event_to_queue(file_name=ack_file_name)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -690,7 +685,7 @@ async def test_succesful_payment_reversal_ejv_reconciliations(session, app, even
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    await helper_add_ejv_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
+    helper_add_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -767,7 +762,7 @@ async def test_successful_refund_reconciliations(
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
+    helper_add_event_to_queue(file_name=ack_file_name)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -842,7 +837,7 @@ async def test_successful_refund_reconciliations(
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    await helper_add_ejv_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
+    helper_add_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -853,9 +848,7 @@ async def test_successful_refund_reconciliations(
 
 
 @pytest.mark.asyncio
-async def test_failed_refund_reconciliations(
-        session, app, event_loop, client_id, future, mock_publish
-):
+async def test_failed_refund_reconciliations(mock_publish):
     """Test Reconciliations worker."""
     # 1. Create a routing slip.
     # 2. Mark the routing slip for refund.
@@ -903,7 +896,7 @@ async def test_failed_refund_reconciliations(
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
+    helper_add_event_to_queue(file_name=ack_file_name)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -979,7 +972,7 @@ async def test_failed_refund_reconciliations(
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    await helper_add_ejv_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
+    helper_add_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -992,9 +985,7 @@ async def test_failed_refund_reconciliations(
 
 
 @pytest.mark.asyncio
-async def test_prevent_duplicate_ack(
-    session, app, stan_server, event_loop, client_id, future, mock_publish
-):
+async def test_prevent_duplicate_ack(mock_publish):
     """Assert processing completes when existing ack."""
     file_ref = f'INBOX.{datetime.now()}'
     # Upload an acknowledgement file
@@ -1008,21 +999,19 @@ async def test_prevent_duplicate_ack(
         jv_file.write('')
         jv_file.close()
 
-    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
+    helper_add_event_to_queue(file_name=ack_file_name)
     assert ejv.ack_file_ref == ack_file_name
     assert ejv.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
 
     # Nothing should change, because it's already processed this ACK.
     ejv.disbursement_status_code = DisbursementStatus.UPLOADED.value
-    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
+    helper_add_event_to_queue(file_name=ack_file_name)
     assert ejv.ack_file_ref == ack_file_name
     assert ejv.disbursement_status_code == DisbursementStatus.UPLOADED.value
 
 
 @pytest.mark.asyncio
-async def test_successful_ap_disbursement(
-    session, app, stan_server, event_loop, client_id, future, mock_publish
-):
+async def test_successful_ap_disbursement(mock_publish):
     """Test Reconciliations worker for ap disbursement."""
     # 1. Create invoice.
     # 2. Create a AP reconciliation file.
@@ -1081,7 +1070,7 @@ async def test_successful_ap_disbursement(
 
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
+    helper_add_event_to_queue(file_name=ack_file_name)
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
@@ -1154,7 +1143,7 @@ async def test_successful_ap_disbursement(
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    await helper_add_ejv_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
+    helper_add_event_to_queue(file_name=feedback_file_name, message_type=MessageType.'FEEDBACKReceived')
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
@@ -1171,9 +1160,7 @@ async def test_successful_ap_disbursement(
 
 
 @pytest.mark.asyncio
-async def test_failure_ap_disbursement(
-    session, app, stan_server, event_loop, client_id, future, mock_publish
-):
+async def test_failure_ap_disbursement(mock_publish):
     """Test Reconciliations worker for ap disbursement."""
     # 1. Create invoice.
     # 2. Create a AP reconciliation file.
@@ -1230,7 +1217,7 @@ async def test_failure_ap_disbursement(
 
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    await helper_add_ejv_event_to_queue(file_name=ack_file_name)
+    helper_add_event_to_queue(file_name=ack_file_name)
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
@@ -1306,7 +1293,7 @@ async def test_failure_ap_disbursement(
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    await helper_add_ejv_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
+    helper_add_event_to_queue(file_name=feedback_file_name, message_type='FEEDBACKReceived')
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
