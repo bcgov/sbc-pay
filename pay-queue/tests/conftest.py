@@ -110,6 +110,6 @@ def mock_publish(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def mock_queue_auth(monkeypatch):
+def mock_queue_auth(mocker):
     """Mock queue authorization."""
-    monkeypatch.setattr('pay_queue.external.gcp_auth.ensure_authorized_queue_user', lambda *args, **kwargs: None)
+    mocker.patch('pay_queue.external.gcp_auth.verify_jwt', return_value='')

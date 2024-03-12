@@ -36,7 +36,6 @@ from .factory import (
     factory_payment, factory_payment_line_item, factory_receipt)
 from .utils import create_and_upload_settlement_file, helper_add_event_to_queue
 
-
 def test_online_banking_reconciliations(client):
     """Test Reconciliations worker."""
     # 1. Create payment account

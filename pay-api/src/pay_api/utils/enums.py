@@ -342,6 +342,7 @@ class MessageType(Enum):
     """Queue Event Types."""
 
     EFT_AVAILABLE_NOTIFICATION = 'eftAvailableNotification'
+    PAD_PAYMENT_SUCCESS = 'PAD.PaymentSuccess'
     PAD_ACCOUNT_CREATE = 'padAccountCreate'
     NSF_LOCK_ACCOUNT = 'lockAccount'
     NSF_UNLOCK_ACCOUNT = 'unlockAccount'

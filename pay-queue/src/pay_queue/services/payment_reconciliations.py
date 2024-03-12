@@ -51,7 +51,7 @@ from ..enums import Column, RecordType, SourceTransaction, Status, TargetTransac
 APP_CONFIG = config.get_named_config(os.getenv('DEPLOYMENT_ENV', 'production'))
 
 
-async def _create_payment_records(csv_content: str):
+def _create_payment_records(csv_content: str):
     """Create payment records by grouping the lines with target transaction number."""
     # Iterate the rows and create a dict with key as the source transaction number.
     source_txns: Dict[str, List[Dict[str, str]]] = {}
@@ -105,8 +105,7 @@ async def _create_payment_records(csv_content: str):
 
             _save_payment(payment_date, inv_number, invoice_amount, paid_amount, row, PaymentStatus.COMPLETED.value,
                           PaymentMethod.ONLINE_BANKING.value, source_txn_number)
-            # publish email event.
-            await _publish_online_banking_mailer_events(payment_lines, paid_amount)
+            _publish_online_banking_mailer_events(payment_lines, paid_amount)
 
         elif settlement_type == RecordType.EFTP.value:
             # Find the payment using receipt_number and mark it as COMPLETED
@@ -175,7 +174,7 @@ def _get_payment_by_inv_number_and_status(inv_number: str, status: str) -> Payme
     return payment
 
 
-async def reconcile_payments(msg: Dict[str, any]):
+def reconcile_payments(msg: Dict[str, any]):
     """Read the file and update payment details.
 
     1: Check to see if file has been processed already.
@@ -187,8 +186,8 @@ async def reconcile_payments(msg: Dict[str, any]):
     3.3 : If transaction status is PARTIAL, update payment and invoice status, publish to account mailer.
     4: If the transaction is On Account for Credit, apply the credit to the account.
     """
-    file_name: str = msg.get('data').get('fileName')
-    minio_location: str = msg.get('data').get('location')
+    file_name: str = msg.get('fileName')
+    minio_location: str = msg.get('location')
 
     cas_settlement: CasSettlementModel = db.session.query(CasSettlementModel) \
         .filter(CasSettlementModel.file_name == file_name).one_or_none()
@@ -224,12 +223,12 @@ async def reconcile_payments(msg: Dict[str, any]):
         # PS : Duplicating some code to make the code more readable.
         if record_type in pad_record_types:
             # Handle invoices
-            await _process_consolidated_invoices(row)
+            _process_consolidated_invoices(row)
         elif record_type in (RecordType.BOLP.value, RecordType.EFTP.value):
             # EFT, WIRE and Online Banking are one-to-one invoice. So handle them in same way.
-            await _process_unconsolidated_invoices(row)
+            _process_unconsolidated_invoices(row)
         elif record_type in (RecordType.ONAC.value, RecordType.CMAP.value, RecordType.DRWP.value):
-            await _process_credit_on_invoices(row)
+            _process_credit_on_invoices(row)
         elif record_type == RecordType.ADJS.value:
             current_app.logger.info('Adjustment received for %s.', msg)
         else:
@@ -242,7 +241,7 @@ async def reconcile_payments(msg: Dict[str, any]):
         db.session.commit()
 
     # Create payment records for lines other than PAD
-    await _create_payment_records(content)
+    _create_payment_records(content)
 
     # Create Credit Records.
     _create_credit_records(content)
@@ -253,7 +252,7 @@ async def reconcile_payments(msg: Dict[str, any]):
     cas_settlement.save()
 
 
-async def _process_consolidated_invoices(row):
+def _process_consolidated_invoices(row):
     target_txn_status = _get_row_value(row, Column.TARGET_TXN_STATUS)
     if (target_txn := _get_row_value(row, Column.TARGET_TXN)) == TargetTransaction.INV.value:
         inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
@@ -277,16 +276,16 @@ async def _process_consolidated_invoices(row):
                 capture_message(f'No invoice found for {inv_number} in the system, and cannot process {row}.',
                                 level='error')
                 return
-            await _process_paid_invoices(inv_references, row)
+            _process_paid_invoices(inv_references, row)
             if not APP_CONFIG.DISABLE_PAD_SUCCESS_EMAIL:
-                await _publish_mailer_events('PAD.PaymentSuccess', payment_account, row)
+                _publish_mailer_events('PAD.PaymentSuccess', payment_account, row)  # TODO replace with enum
         elif target_txn_status.lower() == Status.NOT_PAID.value.lower() \
                 or record_type in (RecordType.PADR.value, RecordType.PAYR.value):
             current_app.logger.info('NOT PAID. NSF identified.')
             # NSF Condition. Publish to account events for NSF.
             if _process_failed_payments(row):
                 # Send mailer and account events to update status and send email notification
-                await _publish_account_events('lockAccount', payment_account, row)
+                _publish_account_events(MessageType.NSF_LOCK_ACCOUNT.value, payment_account, row)
         else:
             current_app.logger.error('Target Transaction Type is received as %s for PAD, and cannot process %s.',
                                      target_txn, row)
@@ -302,7 +301,7 @@ def _find_invoice_reference_by_number_and_status(inv_number: str, status: str):
     return inv_references
 
 
-async def _process_unconsolidated_invoices(row):
+def _process_unconsolidated_invoices(row):
     target_txn_status = _get_row_value(row, Column.TARGET_TXN_STATUS)
     record_type = _get_row_value(row, Column.RECORD_TYPE)
     if (target_txn := _get_row_value(row, Column.TARGET_TXN)) == TargetTransaction.INV.value:
@@ -332,7 +331,7 @@ async def _process_unconsolidated_invoices(row):
             # Handle fully PAID and Partially Paid scenarios.
             if target_txn_status.lower() == Status.PAID.value.lower():
                 current_app.logger.debug('Fully PAID payment.')
-                await _process_paid_invoices(inv_references, row)
+                _process_paid_invoices(inv_references, row)
             elif target_txn_status.lower() == Status.PARTIAL.value.lower():
                 current_app.logger.info('Partially PAID.')
                 # As per validation above, get first and only inv ref
@@ -345,7 +344,7 @@ async def _process_unconsolidated_invoices(row):
                     level='error')
 
 
-async def _process_credit_on_invoices(row):
+def _process_credit_on_invoices(row):
     # Credit memo can happen for any type of accounts.
     target_txn_status = _get_row_value(row, Column.TARGET_TXN_STATUS)
     if _get_row_value(row, Column.TARGET_TXN) == TargetTransaction.INV.value:
@@ -359,7 +358,7 @@ async def _process_credit_on_invoices(row):
 
         if target_txn_status.lower() == Status.PAID.value.lower():
             current_app.logger.debug('Fully PAID payment.')
-            await _process_paid_invoices(inv_references, row)
+            _process_paid_invoices(inv_references, row)
         elif target_txn_status.lower() == Status.PARTIAL.value.lower():
             current_app.logger.info('Partially PAID using credit memo. '
                                     'Ignoring as the credit memo payment is already captured.')
@@ -371,7 +370,7 @@ async def _process_credit_on_invoices(row):
                 level='error')
 
 
-async def _process_paid_invoices(inv_references, row):
+def _process_paid_invoices(inv_references, row):
     """Process PAID invoices.
 
     Update invoices as PAID
@@ -408,7 +407,7 @@ async def _process_paid_invoices(inv_references, row):
         # Publish to the queue if it's an Online Banking payment
         if inv.payment_method_code == PaymentMethod.ONLINE_BANKING.value:
             current_app.logger.debug('Publishing payment event for OB. Invoice : %s', inv.id)
-            await _publish_payment_event(inv)
+            _publish_payment_event(inv)
 
 
 def _process_partial_paid_invoices(inv_ref: InvoiceReferenceModel, row):
@@ -586,7 +585,7 @@ def _validate_account(inv: InvoiceModel, row: Dict[str, str]):
         raise Exception('Invalid Account Number')  # pylint: disable=broad-exception-raised
 
 
-async def _publish_payment_event(inv: InvoiceModel):
+def _publish_payment_event(inv: InvoiceModel):
     """Publish payment message to the queue."""
     payload = PaymentTransactionService.create_event_payload(invoice=inv,
                                                              status_code=PaymentStatus.COMPLETED.value)
@@ -606,7 +605,7 @@ async def _publish_payment_event(inv: InvoiceModel):
                         level='error')
 
 
-async def _publish_mailer_events(message_type: str, pay_account: PaymentAccountModel, row: Dict[str, str]):
+def _publish_mailer_events(message_type: str, pay_account: PaymentAccountModel, row: Dict[str, str]):
     """Publish payment message to the mailer queue."""
     # Publish message to the Queue, saying account has been created. Using the event spec.
     payload = _create_event_payload(pay_account, row)
@@ -627,7 +626,7 @@ async def _publish_mailer_events(message_type: str, pay_account: PaymentAccountM
             auth_account_id=pay_account.auth_account_id, msg=payload), level='error')
 
 
-async def _publish_online_banking_mailer_events(rows: List[Dict[str, str]], paid_amount: float):
+def _publish_online_banking_mailer_events(rows: List[Dict[str, str]], paid_amount: float):
     """Publish payment message to the mailer queue."""
     # Publish message to the Queue, saying account has been created. Using the event spec.
     pay_account = _get_payment_account(rows[0])  # All rows are for same account.
@@ -672,7 +671,7 @@ async def _publish_online_banking_mailer_events(rows: List[Dict[str, str]], paid
                         level='error')
 
 
-async def _publish_account_events(message_type: str, pay_account: PaymentAccountModel, row: Dict[str, str]):
+def _publish_account_events(message_type: str, pay_account: PaymentAccountModel, row: Dict[str, str]):
     """Publish payment message to the mailer queue."""
     # Publish message to the Queue, saying account has been created. Using the event spec.
     payload = _create_event_payload(pay_account, row)

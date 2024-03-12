@@ -35,16 +35,18 @@ def worker():
         # Return a 200, so event is removed from the Queue
         return {}, HTTPStatus.OK
 
-    match ce.get('type', None):
+    match ce.type:
         case MessageType.CAS_UPLOADED.value:
-            reconcile_payments(ce)
+            reconcile_payments(ce.data)
         case MessageType.CGI_ACK_RECEIVED.value:
-            reconcile_distributions(ce)
+            reconcile_distributions(ce.data)
         case MessageType.CGI_FEEDBACK_RECEIVED.value:
-            reconcile_distributions(ce, is_feedback=True)
+            reconcile_distributions(ce.data, is_feedback=True)
         case MessageType.EFT_FILE_UPLOADED.value:
-            reconcile_eft_payments(ce)
+            reconcile_eft_payments(ce.data)
         case MessageType.INCORPORATION.value | MessageType.REGISTRATION.value:
-            update_temporary_identifier(ce)
+            update_temporary_identifier(ce.data)
         case _:
             raise Exception('Invalid queue message type')  # pylint: disable=broad-exception-raised
+
+    return {}, HTTPStatus.OK

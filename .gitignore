@@ -47,6 +47,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 pytest.xml
+test_eft_tdi17.txt
 
 # Translations
 *.mo

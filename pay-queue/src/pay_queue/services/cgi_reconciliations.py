@@ -60,7 +60,7 @@ def _update_acknowledgement(msg: Dict[str, any]):
     # so query uploaded jv file records and mark it as acknowledged.
 
     # Check to see that our ack file doesn't exist, if it exists, skip it.
-    ack_file_name = msg.get('data').get('fileName')
+    ack_file_name = msg.get('fileName')
     ack_exists: EjvFileModel = db.session.query(EjvFileModel).filter(
         EjvFileModel.ack_file_ref == ack_file_name).first()
     if ack_exists:
@@ -88,8 +88,8 @@ def _update_acknowledgement(msg: Dict[str, any]):
 
 def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-locals, too-many-statements
     # Read the file and find records from the database, and update status.
-    file_name: str = msg.get('data').get('fileName')
-    minio_location: str = msg.get('data').get('location')
+    file_name: str = msg.get('fileName')
+    minio_location: str = msg.get('location')
     file = get_object(minio_location, file_name)
     content = file.data.decode('utf-8-sig')
     group_batches: List[str] = _group_batches(content)

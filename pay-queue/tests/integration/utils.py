@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Utilities used by the integration tests."""
+import base64
 import csv
 import io
 import json
@@ -39,7 +40,7 @@ def build_request_for_queue_message(message_type, payload):
 
     return {
         'message': {
-            'data': queue_message_bytes
+            'data': base64.b64encode(queue_message_bytes).decode('utf-8')
         },
         'subscription': 'foobar'
     }
@@ -47,7 +48,7 @@ def build_request_for_queue_message(message_type, payload):
 
 def post_to_queue(client, request_payload):
     """Post request to queue."""
-    response = client.post('/', data=json.dumps(request_payload))
+    response = client.post('/', data=json.dumps(request_payload), headers={'Content-Type': 'application/json'})
     assert response.status_code == 200
 
 

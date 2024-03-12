@@ -35,7 +35,7 @@ from pay_queue.minio import get_object
 from pay_queue.services.eft import EFTHeader, EFTRecord, EFTTrailer
 
 
-async def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-many-locals
+def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-many-locals
     """Read the TDI17 file, create processing records and update payment details.
 
     1: Check to see if file has been previously processed.
@@ -49,11 +49,11 @@ async def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-ma
     7: Apply balance to outstanding EFT invoices - Update invoice paid amount and status, create payment,
         invoice reference, and receipt
     8: Create EFT Credit records for left over balances
-    9: Finalize and complete
+    9: Finalize and completeF
     """
     # Fetch EFT File
-    file_name: str = msg.get('data').get('fileName')
-    minio_location: str = msg.get('data').get('location')
+    file_name: str = msg.get('fileName')
+    minio_location: str = msg.get('location')
     file = get_object(minio_location, file_name)
     file_content = file.data.decode('utf-8-sig')
 
