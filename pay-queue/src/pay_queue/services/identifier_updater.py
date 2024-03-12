@@ -26,7 +26,6 @@ def update_temporary_identifier(event_message):
     new_identifier = event_message.get('identifier')
     current_app.logger.debug('Received message to update %s to %s', old_identifier, new_identifier)
 
-    # Find all invoice records which have the old corp number
     invoices = Invoice.find_by_business_identifier(old_identifier)
     for inv in invoices:
         inv.business_identifier = new_identifier
