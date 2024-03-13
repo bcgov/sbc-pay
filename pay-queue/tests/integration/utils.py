@@ -27,7 +27,7 @@ from pay_api.utils.enums import MessageType
 from simple_cloudevent import SimpleCloudEvent, to_queue_message
 
 
-def build_request_for_queue_message(message_type, payload):
+def build_request_for_queue_push(message_type, payload):
     """Build request for queue message."""
     queue_message_bytes = to_queue_message(SimpleCloudEvent(
         id=str(uuid.uuid4()),
@@ -99,7 +99,7 @@ def helper_add_file_event_to_queue(client, file_name: str, message_type: str):
         'fileName': file_name,
         'location': current_app.config['MINIO_BUCKET_NAME']
     }
-    request_payload = build_request_for_queue_message(message_type, queue_payload)
+    request_payload = build_request_for_queue_push(message_type, queue_payload)
     post_to_queue(client, request_payload)
 
 
@@ -115,5 +115,5 @@ def helper_add_identifier_event_to_queue(client, old_identifier: str = 'T1234567
         'identifier': new_identifier,
         'tempidentifier': old_identifier,
     }
-    request_payload = build_request_for_queue_message(message_type, queue_payload)
+    request_payload = build_request_for_queue_push(message_type, queue_payload)
     post_to_queue(client, request_payload)

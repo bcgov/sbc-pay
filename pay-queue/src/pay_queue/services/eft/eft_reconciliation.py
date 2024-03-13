@@ -49,7 +49,7 @@ def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-many-loc
     7: Apply balance to outstanding EFT invoices - Update invoice paid amount and status, create payment,
         invoice reference, and receipt
     8: Create EFT Credit records for left over balances
-    9: Finalize and completeF
+    9: Finalize and complete
     """
     # Fetch EFT File
     file_name: str = msg.get('fileName')

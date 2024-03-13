@@ -124,10 +124,9 @@ class _Config():  # pylint: disable=too-few-public-methods
     AUDIENCE = os.getenv('AUDIENCE', None)
     GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
     PUBLISHER_AUDIENCE = os.getenv('PUBLISHER_AUDIENCE', None)
-    # Used for sending queue messages for Namex transactions
-    NRO_TOPIC = os.getenv('NRO_TOPIC', None)
-    # Used for sending queue messages for Entity or Business transactions.
-    BUSINESS_TOPIC = os.getenv('BUSINESS_TOPIC', None)
+    ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', None)
+    NAMEX_PAY_TOPIC = os.getenv('NAMEX_PAY_TOPIC', None)
+    BUSINESS_PAY_TOPIC = os.getenv('BUSINESS_PAY_TOPIC', None)
 
     # Auth API Endpoint
     AUTH_API_ENDPOINT = f'{_get_config("AUTH_API_URL")}/'

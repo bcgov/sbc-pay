@@ -18,14 +18,12 @@ from flask import current_app
 from paramiko import SFTPFile
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
-from pay_api.utils.enums import QueueSources
+from pay_api.utils.enums import MessageType, QueueSources
 
-
-from utils.constants import CAS_MESSAGE_TYPE
 from utils.minio import put_object
 
 
-def publish_to_queue(payment_file_list: List[str], message_type=CAS_MESSAGE_TYPE, location: str = ''):
+def publish_to_queue(payment_file_list: List[str], message_type=MessageType.CAS_UPLOADED.value, location: str = ''):
     """Publish message to the Queue, saying file has been uploaded. Using the event spec."""
     queue_data = {
         'fileSource': 'MINIO',

@@ -97,6 +97,11 @@ class _Config():  # pylint: disable=too-few-public-methods
     # Disable PAD Success Email - Incase we need to reprocess records weeks/months later
     DISABLE_PAD_SUCCESS_EMAIL = os.getenv('DISABLE_PAD_SUCCESS_EMAIL', 'false').lower() == 'true'
 
+    # GCP PubSub
+    AUDIENCE = os.getenv('AUDIENCE', None)
+    GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
+    PUBLISHER_AUDIENCE = os.getenv('PUBLISHER_AUDIENCE', None)
+    ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', None)
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     """Creates the Development Config object."""
