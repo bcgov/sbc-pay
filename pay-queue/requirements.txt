@@ -1,5 +1,5 @@
 -e git+https://github.com/bcgov/sbc-common-components.git@5f99e135214ae949c9af951d4aa0b88b1067d853#egg=sbc_common_components&subdirectory=python
--e git+https://github.com/seeker25/sbc-pay.git@46c2e509e2c5af2c1ba5398399d4d5756836ac93#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/seeker25/sbc-pay.git@ca0a69dce17ec602f2c3ceee164f15d0c6e7e804#egg=pay_api&subdirectory=pay-api
 -e git+https://github.com/thorwolpert/flask-jwt-oidc.git@40cc811ccf70e838c5f7522fe8d83b7e58853539#egg=flask_jwt_oidc
 CacheControl==0.14.0
 Flask-Caching==2.1.0
@@ -74,7 +74,7 @@ pytz==2024.1
 requests==2.31.0
 rsa==4.9
 semver==3.0.2
-sentry-sdk==1.41.0
+sentry-sdk==1.42.0
 simple-cloudevent @ git+https://github.com/daxiom/simple-cloudevent.py.git@447cabb988202206ac69e71177d7cd11b6c0b002
 six==1.16.0
 strict-rfc3339==0.7
