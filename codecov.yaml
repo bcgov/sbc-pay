@@ -18,6 +18,7 @@ coverage:
           - bcolapi
           - reportapi
           - paymentjobs
+          - payqueue
 
 ignore:
   - "^/tests/**/*" # ignore test harness code
@@ -52,3 +53,8 @@ flags:
     paths:
       - jobs/payment-jobs/tasks
     carryforward: true
+  payqueue:
+      paths:
+      - pay-queue/src/pay_queue
+      carryforward: true
+
