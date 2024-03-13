@@ -1,3 +1,19 @@
+FROM python:3.12.2-bullseye as development_build
+
+ARG VCS_REF="missing"
+ARG BUILD_DATE="missing"
+
+ENV VCS_REF=${VCS_REF}
+ENV BUILD_DATE=${BUILD_DATE}
+
+LABEL org.label-schema.vcs-ref=${VCS_REF} \
+    org.label-schema.build-date=${BUILD_DATE}
+
+USER root
+
+LABEL maintainer="thorwolpert"
+LABEL vendor="BCROS"
+
 ARG APP_ENV \
   # Needed for fixing permissions of files created by Docker:
   UID=1000 \
