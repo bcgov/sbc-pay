@@ -103,6 +103,7 @@ class _Config():  # pylint: disable=too-few-public-methods
     PUBLISHER_AUDIENCE = os.getenv('PUBLISHER_AUDIENCE', None)
     ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', None)
 
+
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     """Creates the Development Config object."""
 
