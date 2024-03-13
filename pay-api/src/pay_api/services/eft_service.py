@@ -38,6 +38,10 @@ class EftService(DepositService):
     def get_payment_method_code(self):
         """Return EFT as the payment method code."""
         return PaymentMethod.EFT.value
+    
+    def get_payment_system_code(self):
+        """Return PAYBC as the system code."""
+        return PaymentSystem.PAYBC.value
 
     def get_payment_system_code(self):
         """Return PAYBC as the system code."""
