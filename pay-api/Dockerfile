@@ -84,6 +84,4 @@ USER web
 FROM development_build AS production_build
 COPY --chown=web:web . /code
 
-# ENV PYTHONPATH=/opt/app-root/src
-
 CMD gunicorn --bind 0.0.0.0:${PORT} --config /code/gunicorn_config.py wsgi:app
