@@ -101,7 +101,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                 'bankAccountNumber': pending_account.bank_account_number,
                 'bankAccountName': pay_account.name
             }
-            # switch from PAD to EFT
+
             if pay_account.payment_method == PaymentMethod.EFT.value:
                 cfs_account_details = CFSService.create_cfs_account(identifier=pay_account.auth_account_id,
                                                     contact_info=contact_info,
