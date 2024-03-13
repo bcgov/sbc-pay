@@ -12,7 +12,7 @@ DOCKER_NAME:=pay-api
 #################################################################################
 # COMMANDS -- Setup                                                             #
 #################################################################################
-setup: install install-dev ## Setup the project
+setup: install ## Setup the project
 
 clean: clean-build clean-pyc clean-test ## Clean the project
 	rm -rf venv/
@@ -36,8 +36,8 @@ clean-test: ## clean test files
 	rm -f .coverage
 	rm -fr htmlcov/
 
-install: clean
-  pip install poetry; \
+install: clean ## hey
+	pip install poetry ;\
 	poetry install
 
 #################################################################################
