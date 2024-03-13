@@ -60,7 +60,7 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
             drop_database(_db.engine.url)
         create_database(_db.engine.url)
         _db.session().execute(text('SET TIME ZONE "UTC";'))
-        pay_api_dir = os.path.abspath('..').replace('payment-jobs', 'pay-api')
+        pay_api_dir = os.path.abspath('..').replace('jobs', 'pay-api')
         pay_api_dir = os.path.join(pay_api_dir, 'migrations')
         Migrate(app, _db, directory=pay_api_dir)
         upgrade()
