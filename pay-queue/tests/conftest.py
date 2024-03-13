@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Common setup and fixtures for the pytest suite used by this service."""
-import sys
+import os
 
 import pytest
 from flask_migrate import Migrate, upgrade
@@ -38,10 +38,9 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
             drop_database(_db.engine.url)
         create_database(_db.engine.url)
         _db.session().execute(text('SET TIME ZONE "UTC";'))
-        migrations_path = [folder for folder in sys.path if 'pay-api/pay-api' in folder]
-        if len(migrations_path) > 0:
-            migrations_path = migrations_path[0].replace('/pay-api/src', '/pay-api/migrations')
-        Migrate(app, _db, directory=migrations_path)
+        pay_api_dir = os.path.abspath('..').replace('pay-queue', 'pay-api')
+        pay_api_dir = os.path.join(pay_api_dir, 'migrations')
+        Migrate(app, _db, directory=pay_api_dir)
         upgrade()
         return _db
 

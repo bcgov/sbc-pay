@@ -15,7 +15,6 @@
 """Common setup and fixtures for the py-test suite used by this service."""
 
 import os
-import sys
 import time
 
 import pytest
