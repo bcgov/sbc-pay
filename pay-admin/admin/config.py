@@ -58,7 +58,6 @@ def _get_config(config_key: str, **kwargs):
         value = os.getenv(config_key, kwargs.get('default'))
     else:
         value = os.getenv(config_key)
-        # assert value TODO Un-comment once we find a solution to run pre-hook without initializing app
     return value
 
 

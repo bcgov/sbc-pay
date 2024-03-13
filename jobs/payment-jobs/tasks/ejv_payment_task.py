@@ -226,7 +226,7 @@ class EjvPaymentTask(CgiEjv):
         """Return account IDs for payment."""
         # CREDIT : Distribution code against fee schedule
         # DEBIT : Distribution code against account.
-        bc_reg_client_code = current_app.config.get('CGI_BCREG_CLIENT_CODE')  # 112 #TODO
+        bc_reg_client_code = current_app.config.get('CGI_BCREG_CLIENT_CODE')
         query = db.session.query(DistributionCodeModel.account_id) \
             .filter(DistributionCodeModel.stop_ejv.is_(False) | DistributionCodeModel.stop_ejv.is_(None)) \
             .filter(DistributionCodeModel.account_id.isnot(None))

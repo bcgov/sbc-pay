@@ -73,13 +73,6 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
 
     @classmethod
     def _create_cfs_account(cls, pending_account: CfsAccountModel, pay_account: PaymentAccountModel, auth_token: str):
-        # If PAD Account creation in CFS is paused, then just continue
-        # TODO Remove once PAD account bugs are fixed and stable on CAS side.
-        if current_app.config.get('CFS_STOP_PAD_ACCOUNT_CREATION') and \
-                pay_account.payment_method == PaymentMethod.PAD.value:
-            current_app.logger.info('Continuing to next record as CFS PAD account creation is stopped.')
-            return
-
         current_app.logger.info(
             f'Creating pay system instance for {pay_account.payment_method} for account {pay_account.id}.')
 

@@ -278,7 +278,7 @@ def _process_consolidated_invoices(row):
                 return
             _process_paid_invoices(inv_references, row)
             if not APP_CONFIG.DISABLE_PAD_SUCCESS_EMAIL:
-                _publish_mailer_events('PAD.PaymentSuccess', payment_account, row)  # TODO replace with enum
+                _publish_mailer_events(MessageType.PAD_PAYMENT_SUCCESS.value, payment_account, row)
         elif target_txn_status.lower() == Status.NOT_PAID.value.lower() \
                 or record_type in (RecordType.PADR.value, RecordType.PAYR.value):
             current_app.logger.info('NOT PAID. NSF identified.')
@@ -759,7 +759,7 @@ def _create_nsf_invoice(cfs_account: CfsAccountModel, inv_number: str,
         future_effective_fees=0,
         line_item_status_code=LineItemStatus.ACTIVE.value,
         service_fees=0,
-        fee_distribution_id=distribution.distribution_code_id if distribution else 1)  # TODO
+        fee_distribution_id=distribution.distribution_code_id if distribution else 1)
     line_item.save()
 
     inv_ref: InvoiceReferenceModel = InvoiceReferenceModel(
@@ -778,7 +778,6 @@ def _get_settlement_type(payment_lines) -> str:
     """Exclude ONAC, ADJS, PAYR, ONAP and return the record type."""
     settlement_type: str = None
     for row in payment_lines:
-        # TODO Add BC Online Drawdown record type.
         if _get_row_value(row, Column.RECORD_TYPE) in \
                 (RecordType.BOLP.value, RecordType.EFTP.value, RecordType.PAD.value, RecordType.PADR.value,
                  RecordType.PAYR.value):
