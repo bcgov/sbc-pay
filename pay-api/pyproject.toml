@@ -2,7 +2,7 @@
 name = "pay-api"
 version = "0.1.0"
 description = ""
-authors = ["Your Name <you@example.com>"]
+authors = ["BC Registries and Online Services"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
@@ -83,6 +83,30 @@ urllib3 = "2.2.1"
 simple-cloudevent = {git = "https://github.com/daxiom/simple-cloudevent.py.git"}
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
 
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.1.1"
+pytest-mock = "^3.12.0"
+requests = "^2.31.0"
+pyhamcrest = "^2.1.0"
+pytest-cov = "^4.1.0"
+freezegun = "^1.4.0"
+flake8 = "^7.0.0"
+flake8-blind-except = "^0.2.1"
+flake8-debugger = "^4.1.2"
+flake8-docstrings = "^1.7.0"
+flake8-isort = "^6.1.1"
+flake8-quotes = "^3.4.0"
+pep8-naming = "^0.13.3"
+autopep8 = "^2.0.4"
+coverage = "^7.4.3"
+pylint = "^3.1.0"
+pylint-flask = "^0.6"
+pydocstyle = "^6.3.0"
+isort = "^5.13.2"
+lovely-pytest-docker = "^0.3.1"
+pytest-asyncio = "0.18.3"
+faker = "^24.2.0"
 
 [build-system]
 requires = ["poetry-core"]
