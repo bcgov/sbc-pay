@@ -1,0 +1,15 @@
+Flask
+jsonschema==4.17.3
+python-dotenv
+sentry-sdk[flask]
+pycountry
+Werkzeug
+minio
+jaeger-client
+attrs
+sqlalchemy
+itsdangerous
+Jinja2
+protobuf
+launchdarkly-server-sdk
+CacheControl

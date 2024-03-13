@@ -1,0 +1,39 @@
+[
+  {
+      "vault": "shared",
+      "application": [
+          "encryption-key"
+      ]
+  },
+  {
+        "vault": "minio",
+        "application": [
+            "base",
+            "payment-reconciliations"
+        ]
+    },
+    {
+        "vault": "payment-external-services",
+        "application": [
+            "cfs"
+        ]
+    },
+	{
+        "vault": "relationship",
+        "application": [
+            "postgres-pay"
+        ]
+    },
+	{
+        "vault": "sentry",
+        "application": [
+            "relationship-api"
+        ]
+    },
+    {
+        "vault": "launchdarkly",
+        "application": [
+            "pay"
+        ]
+    }
+]

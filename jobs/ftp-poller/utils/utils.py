@@ -12,19 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage PAYBC services."""
-from datetime import datetime
 from typing import List
 
 from flask import current_app
 from paramiko import SFTPFile
-from pay_api.services.queue_publisher import publish_response
+from pay_api.services import gcp_queue_publisher
+from pay_api.services.gcp_queue_publisher import QueueMessage
+from pay_api.utils.enums import MessageType, QueueSources
 
-from utils.constants import CAS_MESSAGE_TYPE
 from utils.minio import put_object
 
 
-def publish_to_queue(payment_file_list: List[str], message_type=CAS_MESSAGE_TYPE, location: str = ''
-                     ):
+def publish_to_queue(payment_file_list: List[str], message_type=MessageType.CAS_UPLOADED.value, location: str = ''):
     """Publish message to the Queue, saying file has been uploaded. Using the event spec."""
     queue_data = {
         'fileSource': 'MINIO',
@@ -33,20 +32,15 @@ def publish_to_queue(payment_file_list: List[str], message_type=CAS_MESSAGE_TYPE
     for file_name in payment_file_list:
         queue_data['fileName'] = file_name
 
-        payload = {
-            'specversion': '1.x-wip',
-            'type': message_type,
-            'source': file_name,
-            'id': file_name,
-            'time': f'{datetime.now()}',
-            'datacontenttype': 'application/json',
-            'data': queue_data
-        }
-
         try:
-            publish_response(payload=payload,
-                             client_name=current_app.config.get('NATS_PAYMENT_RECONCILIATIONS_CLIENT_NAME'),
-                             subject=current_app.config.get('NATS_PAYMENT_RECONCILIATIONS_SUBJECT'))
+            gcp_queue_publisher.publish_to_queue(
+                QueueMessage(
+                    source=QueueSources.FTP_POLLER.value,
+                    message_type=message_type,
+                    payload=queue_data,
+                    topic=current_app.config.get('FTP_POLLER_TOPIC')
+                )
+            )
         except Exception as e:  # NOQA # pylint: disable=broad-except
             current_app.logger.error(e)
             current_app.logger.warning(

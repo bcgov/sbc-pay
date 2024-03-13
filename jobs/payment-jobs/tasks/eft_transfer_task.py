@@ -84,18 +84,19 @@ class EftTransferTask(CgiEjv):
     @staticmethod
     def get_account_ids() -> List[int]:
         """Return account IDs for EFT payments."""
-        return db.session.query(func.DISTINCT(InvoiceModel.payment_account_id)) \
+        query = db.session.query(func.DISTINCT(InvoiceModel.payment_account_id)) \
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value) \
             .filter(~exists().where((EFTGLTransferModel.invoice_id == InvoiceModel.id) &
-                                    (EFTGLTransferModel.transfer_type == EFTGlTransferType.TRANSFER.value))).all()
+                                    (EFTGLTransferModel.transfer_type == EFTGlTransferType.TRANSFER.value)))
+        return db.session.scalars(query).all()
 
     @staticmethod
     def create_eft_gl_transfer(eft_holding_gl: str, line_distribution_gl: str, transfer_type: str,
                                line_item: PaymentLineItemModel, payment_account: PaymentAccountModel):
         """Create EFT GL Transfer record."""
         short_name_id = db.session.query(EFTShortnameModel.id) \
-            .filter(EFTShortnameModel.auth_account_id == payment_account.auth_account_id).one()
+            .filter(EFTShortnameModel.auth_account_id == payment_account.auth_account_id).one()[0]
         source_gl = eft_holding_gl if transfer_type == EFTGlTransferType.TRANSFER.value else line_distribution_gl
         target_gl = line_distribution_gl if transfer_type == EFTGlTransferType.TRANSFER.value else eft_holding_gl
         now = datetime.now()
@@ -112,8 +113,8 @@ class EftTransferTask(CgiEjv):
         )
 
     @classmethod
-    def _process_eft_transfer_invoices(cls, invoices: [InvoiceModel], transfer_type: str,
-                                       eft_gl_transfers: dict = None) -> [EFTGLTransferModel]:
+    def _process_eft_transfer_invoices(cls, invoices: List[InvoiceModel], transfer_type: str,
+                                       eft_gl_transfers: dict = None) -> List[EFTGLTransferModel]:
         """Create EFT GL Transfer for invoice line items."""
         eft_holding_gl = current_app.config.get('EFT_HOLDING_GL')
         eft_gl_transfers = eft_gl_transfers or {}
@@ -165,7 +166,7 @@ class EftTransferTask(CgiEjv):
         return eft_gl_transfers
 
     @staticmethod
-    def process_invoice_ejv_links(invoices: [InvoiceModel], ejv_header_model_id: int):
+    def process_invoice_ejv_links(invoices: List[InvoiceModel], ejv_header_model_id: int):
         """Create EJV Invoice Links."""
         current_app.logger.info('Creating ejv invoice link records and setting invoice status.')
         sequence = 1
@@ -223,7 +224,7 @@ class EftTransferTask(CgiEjv):
             total: float = 0
 
             current_app.logger.info(f'Processing EFT Transfers for account_id: {account_id}.')
-            account_transfers: List[EFTGLTransferModel] = transfers[account_id[0]]
+            account_transfers: List[EFTGLTransferModel] = transfers[account_id]
 
             for eft_transfer in account_transfers:
                 invoice_number = f'#{eft_transfer.invoice_id}'

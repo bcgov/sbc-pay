@@ -24,7 +24,6 @@ from bcol_api.services.bcol_payment import BcolPayment
 from bcol_api.utils.auth import jwt as _jwt
 from bcol_api.utils.constants import Role
 from bcol_api.utils.errors import Error
-from bcol_api.utils.trace import tracing as _tracing
 from bcol_api.utils.util import cors_preflight
 
 
@@ -37,7 +36,6 @@ class AccountPayment(Resource):
     """Endpoint resource to manage BCOL Payments."""
 
     @staticmethod
-    @_tracing.trace()
     @_jwt.requires_auth
     @cors.crossdomain(origin='*')
     def post():

@@ -29,7 +29,7 @@ from dpath import util as dpath_util
 from flask import current_app
 
 from .constants import DT_SHORT_FORMAT
-from .enums import StatementFrequency
+from .enums import CorpType, StatementFrequency
 
 
 def cors_preflight(methods: str = 'GET'):
@@ -253,3 +253,15 @@ def cents_to_decimal(amount: int):
         return None
 
     return amount / 100
+
+
+def get_topic_for_corp_type(corp_type: str):
+    """Return a topic to direct the queue message to."""
+    match corp_type:
+        case CorpType.NRO.value:
+            return current_app.config.get('NAMEX_PAY_TOPIC')
+        # Unused for now, intentionally don't send a queue message for these.
+        case CorpType.PPR.value | CorpType.VS.value | CorpType.CSO.value:
+            return None
+        case _:
+            return current_app.config.get('BUSINESS_PAY_TOPIC')

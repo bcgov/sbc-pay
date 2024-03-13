@@ -1,0 +1,5 @@
+-e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
+-e git+https://github.com/seeker25/sbc-pay.git@18263#egg=pay-api&subdirectory=pay-api
+-e git+https://github.com/thorwolpert/flask-jwt-oidc.git#egg=flask-jwt-oidc
+# Note move out queue stuff into here.
+git+https://github.com/daxiom/simple-cloudevent.py.git

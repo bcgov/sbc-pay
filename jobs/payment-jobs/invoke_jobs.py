@@ -39,6 +39,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production'), job_name='unknown'
     from pay_api.models import db, ma
 
     app = Flask(__name__)
+    app.env = run_mode
 
     app.config.from_object(config.CONFIGURATION[run_mode])
     # Configure Sentry
@@ -49,7 +50,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production'), job_name='unknown'
                 integrations=[FlaskIntegration()],
                 release=f'payment-jobs-{job_name}@-',
             )
-    app.logger.info(f'<<<< Starting Payment Jobs >>>>')
+    app.logger.info('<<<< Starting Payment Jobs >>>>')
     db.init_app(app)
     if init_oracle:
         oracle_db.init_app(app)

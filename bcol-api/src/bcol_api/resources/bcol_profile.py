@@ -23,7 +23,6 @@ from bcol_api.schemas import utils as schema_utils
 from bcol_api.services.bcol_profile import BcolProfile as BcolProfileService
 from bcol_api.utils.auth import jwt as _jwt
 from bcol_api.utils.errors import Error
-from bcol_api.utils.trace import tracing as _tracing
 from bcol_api.utils.util import cors_preflight
 
 
@@ -36,7 +35,6 @@ class BcolProfiles(Resource):
     """Endpoint query bcol profile using user id and password."""
 
     @staticmethod
-    @_tracing.trace()
     @_jwt.requires_auth
     @cors.crossdomain(origin='*')
     def post():
@@ -61,7 +59,6 @@ class BcolProfile(Resource):
     """Endpoint resource to get bcol profile by user id."""
 
     @staticmethod
-    @_tracing.trace()
     @_jwt.has_one_of_roles(['system'])
     @cors.crossdomain(origin='*')
     def get(bcol_user_id: str):

@@ -1,11 +1,11 @@
--e git+https://github.com/bcgov/sbc-common-components.git@5807c201b057875f9061f60b408ab765ebaa4235#egg=sbc_common_components&subdirectory=python
--e git+https://github.com/bcgov/sbc-pay.git@e0bc6979b761347b32628a28fa1489e919e5d806#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-common-components.git@5f99e135214ae949c9af951d4aa0b88b1067d853#egg=sbc_common_components&subdirectory=python
+-e git+https://github.com/seeker25/sbc-pay.git@5bf7ab87481a96a72c59db7d6a88c32f712f1ab6#egg=pay_api&subdirectory=pay-api
 -e git+https://github.com/thorwolpert/flask-jwt-oidc.git@40cc811ccf70e838c5f7522fe8d83b7e58853539#egg=flask_jwt_oidc
 Flask-Caching==2.1.0
 Flask-Cors==4.0.0
-Flask-Migrate==2.7.0
+Flask-Migrate==4.0.7
 Flask-Moment==1.0.5
-Flask-OpenTracing==2.0.0
+Flask-OpenTracing==1.1.0
 Flask-SQLAlchemy==3.1.1
 Flask-Script==2.0.6
 Flask==3.0.2
@@ -31,26 +31,23 @@ charset-normalizer==3.3.2
 click==8.1.7
 croniter==2.0.2
 cryptography==42.0.5
-cx-Oracle==8.3.0
+cx_Oracle==8.3.0
 dataclass-wizard==0.22.3
 dpath==2.1.6
 ecdsa==0.18.0
-exceptiongroup==1.2.0
 expiringdict==1.2.2
 flask-marshmallow==1.2.0
 google-api-core==2.17.1
 google-auth==2.28.1
 google-cloud-pubsub==2.20.0
-googleapis-common-protos==1.62.0
+googleapis-common-protos==1.63.0
 greenlet==3.0.3
 grpc-google-iam-v1==0.13.0
-grpcio-status==1.62.0
-grpcio==1.62.0
+grpcio-status==1.62.1
+grpcio==1.62.1
 gunicorn==21.2.0
 holidays==0.37
 idna==3.6
-importlib_metadata==7.0.2
-importlib_resources==6.1.3
 itsdangerous==2.1.2
 jaeger-client==4.8.0
 jsonschema==4.17.3
@@ -61,9 +58,8 @@ marshmallow==3.21.1
 minio==7.2.5
 more-itertools==10.2.0
 opentracing==2.4.0
-packaging==23.2
+packaging==24.0
 paramiko==3.4.0
-pkgutil_resolve_name==1.3.10
 proto-plus==1.23.0
 protobuf==4.25.3
 psycopg2-binary==2.9.9
@@ -72,6 +68,7 @@ pyasn1-modules==0.3.0
 pyasn1==0.5.1
 pycparser==2.21
 pycryptodome==3.20.0
+pyhumps==3.8.0
 pyrsistent==0.20.0
 pysftp==0.2.9
 python-dateutil==2.9.0.post0
@@ -90,4 +87,3 @@ thrift==0.16.0
 tornado==6.4
 typing_extensions==4.10.0
 urllib3==2.2.1
-zipp==3.17.0

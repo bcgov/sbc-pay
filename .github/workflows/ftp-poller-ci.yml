@@ -4,7 +4,7 @@ on:
   pull_request:
     branches:
       - main
-      - queue_python_upgrade
+      - feature-queue-python-upgrade
     paths:
       - "jobs/ftp-poller/**"
 
@@ -53,10 +53,6 @@ jobs:
     needs: setup-job
     env:
       DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/pay-test"
-      NATS_QUEUE: "account-worker"
-      NATS_CLUSTER_ID: "test-cluster"
-      NATS_CLIENT_NAME: "account.events.worker"
-      NATS_SUBJECT: "account.events"
       USE_DOCKER_MOCK: "YES"
       JWT_OIDC_ISSUER: "http://localhost:8081/auth/realms/demo"
       SBC_AUTH_ADMIN_CLIENT_ID: "sbc-auth-admin"

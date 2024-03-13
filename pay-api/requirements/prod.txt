@@ -2,7 +2,7 @@ gunicorn
 Flask
 Flask-Caching
 Flask-Cors
-Flask-Migrate<3
+Flask-Migrate
 Flask-Script
 Flask-Moment
 Flask-SQLAlchemy
@@ -28,3 +28,4 @@ launchdarkly-server-sdk
 holidays==0.37
 google-auth==2.28.1
 google-cloud-pubsub==2.20.0
+pyhumps

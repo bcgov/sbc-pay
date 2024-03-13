@@ -44,7 +44,6 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
                 integrations=[FlaskIntegration()]
             )
     app.logger.info(f'<<<< Starting Ftp Poller Job >>>>')
-    db.init_app(app)
     ma.init_app(app)
 
     register_shellcontext(app)

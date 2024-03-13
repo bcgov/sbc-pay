@@ -339,13 +339,24 @@ class EFTShortnameState(Enum):
 
 
 class MessageType(Enum):
-    """Account Mailer Event Types."""
+    """Queue Event Types."""
 
-    # Ideally Should match account mailer project - FUTURE: move into sbc-common-components.
-    EFT_AVAILABLE_NOTIFICATION = 'bc.registry.payment.eftAvailableNotification'
-    PAD_ACCOUNT_CREATE = 'bc.registry.payment.padAccountCreate'
-    NSF_LOCK_ACCOUNT = 'bc.registry.payment.lockAccount'
-    NSF_UNLOCK_ACCOUNT = 'bc.registry.payment.unlockAccount'
+    EFT_AVAILABLE_NOTIFICATION = 'eftAvailableNotification'
+    PAD_PAYMENT_SUCCESS = 'PAD.PaymentSuccess'
+    PAD_ACCOUNT_CREATE = 'padAccountCreate'
+    NSF_LOCK_ACCOUNT = 'lockAccount'
+    NSF_UNLOCK_ACCOUNT = 'unlockAccount'
+    STATEMENT_NOTIFICATION = 'statementNotification'
+    STATEMENT_DUE_NOTIFICATION = 'statementDueNotification'
+    STATEMENT_REMINDER_NOTIFICATION = 'statementReminderNotification'
+    PAYMENT = 'payment'
+    EJV_FAILED = 'ejvFailed'
+    CAS_UPLOADED = 'casSettlementUploaded'
+    INCORPORATION = 'incorporationApplication'
+    REGISTRATION = 'registration'
+    CGI_ACK_RECEIVED = 'ACKReceived'
+    CGI_FEEDBACK_RECEIVED = 'FEEDBACKReceived'
+    EFT_FILE_UPLOADED = 'eftFileUploaded'
 
 
 class PaymentDetailsGlStatus(Enum):
@@ -355,3 +366,12 @@ class PaymentDetailsGlStatus(Enum):
     INPRG = 'INPRG'
     RJCT = 'RJCT'  # Should have refundglerrormessage
     CMPLT = 'CMPLT'
+
+
+class QueueSources(Enum):
+    """Queue sources for PAY."""
+
+    PAY_API = 'pay-api'
+    PAY_JOBS = 'pay-jobs'
+    PAY_QUEUE = 'pay-queue'
+    FTP_POLLER = 'ftp-poller'

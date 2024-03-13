@@ -45,6 +45,6 @@ tornado==6.4
 typing_extensions==4.10.0
 urllib3==2.2.1
 -e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
--e git+https://github.com/bcgov/sbc-pay.git@queue_python_upgrade#egg=pay-api&subdirectory=pay-api
+-e git+https://github.com/seeker25/sbc-pay.git@18263#egg=pay-api&subdirectory=pay-api
 git+https://github.com/daxiom/simple-cloudevent.py.git
 git+https://github.com/thorwolpert/flask-jwt-oidc.git

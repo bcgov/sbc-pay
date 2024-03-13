@@ -17,8 +17,8 @@ coverage:
           - payapi
           - bcolapi
           - reportapi
-          - eventlistenerqueue
           - paymentjobs
+          - payqueue
 
 ignore:
   - "^/tests/**/*" # ignore test harness code
@@ -49,11 +49,12 @@ flags:
     paths:
       - report-api/src/api
     carryforward: true
-  eventlistenerqueue:
-    paths:
-      - queue_services/events-listener/src/events_listener
-    carryforward: true
   paymentjobs:
     paths:
       - jobs/payment-jobs/tasks
     carryforward: true
+  payqueue:
+      paths:
+      - pay-queue/src/pay_queue
+      carryforward: true
+

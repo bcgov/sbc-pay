@@ -13,7 +13,7 @@
 # limitations under the License.
 """Service to manage CFS EFT Payments."""
 from datetime import datetime
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from flask import current_app
 
@@ -24,7 +24,6 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, PaymentMethod, PaymentStatus
-
 from .deposit_service import DepositService
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
@@ -48,15 +47,10 @@ class EftService(DepositService):
         cfs_account.status = CfsAccountStatus.PENDING.value
         return cfs_account
 
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
+    def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
-        """Return a static invoice number for direct pay."""
-        payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
-        invoice_reference = self.create_invoice_reference(invoice=invoice, payment=payment)
-
-        invoice_reference.save()
-
-        return invoice_reference
+        """Do nothing here, we create invoice references on the create CFS_INVOICES job."""
+        return
 
     def apply_credit(self,
                      invoice: Invoice,
