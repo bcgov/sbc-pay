@@ -125,6 +125,7 @@ class _Config():  # pylint: disable=too-few-public-methods
     GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
     PUBLISHER_AUDIENCE = os.getenv('PUBLISHER_AUDIENCE', None)
     ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', None)
+    EVENT_LISTENER_TOPIC = os.getenv('EVENT_LISTENER_TOPIC', None)
     NAMEX_PAY_TOPIC = os.getenv('NAMEX_PAY_TOPIC', None)
     BUSINESS_PAY_TOPIC = os.getenv('BUSINESS_PAY_TOPIC', None)
 

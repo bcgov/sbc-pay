@@ -877,7 +877,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                         source=QueueSources.PAY_API.value,
                         message_type=MessageType.NSF_UNLOCK_ACCOUNT.value,
                         payload=payload,
-                        topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
+                        topic=current_app.config.get('EVENT_LISTENER_TOPIC')
                     )
                 )
             except Exception as e:  # NOQA pylint: disable=broad-except
