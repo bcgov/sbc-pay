@@ -48,15 +48,6 @@ class EftService(DepositService):
         cfs_account.status = CfsAccountStatus.PENDING.value
         return cfs_account
 
-    def create_account(self, identifier: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
-                       **kwargs) -> CfsAccountModel:
-        """Create an account for the EFT transactions."""
-        # Create CFS Account model instance, set the status as PENDING
-        current_app.logger.info(f'Creating EFT account details in PENDING status for {identifier}')
-        cfs_account = CfsAccountModel()
-        cfs_account.status = CfsAccountStatus.PENDING.value
-        return cfs_account
-
     def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number for direct pay."""
