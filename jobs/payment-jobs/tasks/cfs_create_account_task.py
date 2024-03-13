@@ -24,7 +24,7 @@ from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import RECEIPT_METHOD_EFT_MONTHLY, RECEIPT_METHOD_PAD_DAILY
 from pay_api.utils.enums import AuthHeaderType, CfsAccountStatus, ContentType, PaymentMethod
 from sentry_sdk import capture_message
-from services import eft_service, routing_slip
+from services import routing_slip
 from utils import mailer
 from utils.auth import get_token
 
@@ -97,8 +97,8 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
 
             if pay_account.payment_method == PaymentMethod.EFT.value:
                 cfs_account_details = CFSService.create_cfs_account(identifier=pay_account.auth_account_id,
-                                                    contact_info=contact_info,
-                                                    receipt_method=RECEIPT_METHOD_EFT_MONTHLY)
+                                                                    contact_info=contact_info,
+                                                                    receipt_method=RECEIPT_METHOD_EFT_MONTHLY)
             elif pending_account.cfs_account and pending_account.cfs_party and pending_account.cfs_site:
                 # This means, PAD account details have changed. So update banking details for this CFS account
                 bank_details = CFSService.update_bank_details(name=pay_account.auth_account_id,
