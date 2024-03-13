@@ -12,7 +12,7 @@ DOCKER_NAME:=ftp-poller
 #################################################################################
 # COMMANDS -- Setup                                                             #
 #################################################################################
-setup: install install-dev ## Setup the project
+setup: install ## Setup the project
 
 clean: clean-build clean-pyc clean-test ## Clean the project
 	rm -rf venv/
@@ -37,6 +37,7 @@ clean-test: ## clean test files
 	rm -fr htmlcov/
 
 install: clean
+	pip install poetry ;\
 	poetry install
 
 #################################################################################

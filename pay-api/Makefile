@@ -36,7 +36,7 @@ clean-test: ## clean test files
 	rm -f .coverage
 	rm -fr htmlcov/
 
-install: clean ## hey
+install: clean
 	pip install poetry ;\
 	poetry install
 

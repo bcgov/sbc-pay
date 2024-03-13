@@ -37,6 +37,7 @@ clean-test: ## clean test files
 	rm -fr htmlcov/
 
 install: clean
+	pip install poetry ;\
 	poetry install
 
 #################################################################################
