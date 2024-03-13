@@ -23,7 +23,8 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, PaymentMethod, PaymentStatus
+from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, PaymentMethod, PaymentStatus, PaymentSystem
+
 from .deposit_service import DepositService
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
@@ -35,8 +36,12 @@ class EftService(DepositService):
     """Service to manage electronic fund transfers."""
 
     def get_payment_method_code(self):
-        """Return EFT as the system code."""
+        """Return EFT as the payment method code."""
         return PaymentMethod.EFT.value
+    
+    def get_payment_system_code(self):
+        """Return PAYBC as the system code."""
+        return PaymentSystem.PAYBC.value
 
     def create_account(self, identifier: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
                        **kwargs) -> CfsAccountModel:
