@@ -24,7 +24,7 @@ from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_EFT_MONTHLY
 from pay_api.utils.enums import AuthHeaderType, CfsAccountStatus, ContentType, PaymentMethod
 from sentry_sdk import capture_message
-from services import routing_slip
+from services import eft_service, routing_slip
 from utils import mailer
 from utils.auth import get_token
 
@@ -101,8 +101,12 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                 'bankAccountNumber': pending_account.bank_account_number,
                 'bankAccountName': pay_account.name
             }
-
-            if pending_account.cfs_account and pending_account.cfs_party and pending_account.cfs_site:
+            # switch from PAD to EFT
+            if pay_account.payment_method == PaymentMethod.EFT.value:
+                cfs_account_details = CFSService.create_cfs_account(identifier=pay_account.auth_account_id,
+                                                    contact_info=contact_info,
+                                                    receipt_method=RECEIPT_METHOD_EFT_MONTHLY)
+            elif pending_account.cfs_account and pending_account.cfs_party and pending_account.cfs_site:
                 # This means, PAD account details have changed. So update banking details for this CFS account
                 bank_details = CFSService.update_bank_details(name=pay_account.auth_account_id,
                                                               party_number=pending_account.cfs_party,
@@ -111,12 +115,8 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                                                               payment_info=payment_info)
                 pending_account.payment_instrument_number = bank_details.get('payment_instrument_number', None)
             else:  # It's a new account, now create
-                if pay_account.payment_method == PaymentMethod.EFT.value:
-                    cfs_account_details = CFSService.create_cfs_account(identifier=pay_account.auth_account_id,
-                                                                        contact_info=contact_info,
-                                                                        receipt_method=RECEIPT_METHOD_EFT_MONTHLY)
                 # If the account have banking information, then create a PAD account else a regular account.
-                elif pending_account.bank_number and pending_account.bank_branch_number \
+                if pending_account.bank_number and pending_account.bank_branch_number \
                         and pending_account.bank_account_number:
                     cfs_account_details = CFSService.create_cfs_account(identifier=pay_account.auth_account_id,
                                                                         contact_info=contact_info,
