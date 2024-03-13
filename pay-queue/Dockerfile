@@ -84,4 +84,4 @@ USER web
 FROM development_build AS production_build
 COPY --chown=web:web . /code
 
-CMD [ "python", "/opt/app-root/app.py" ]
+CMD [ "python", "/code/app.py" ]
