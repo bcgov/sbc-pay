@@ -1,5 +1,5 @@
 -e git+https://github.com/bcgov/sbc-common-components.git@5807c201b057875f9061f60b408ab765ebaa4235#egg=sbc_common_components&subdirectory=python
--e git+https://github.com/bcgov/sbc-pay.git@e0bc6979b761347b32628a28fa1489e919e5d806#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/Jxio/sbc-pay.git@7bb0a0a09649355f3c54739731c986e8b8865202#egg=pay_api&subdirectory=pay-api
 -e git+https://github.com/thorwolpert/flask-jwt-oidc.git@40cc811ccf70e838c5f7522fe8d83b7e58853539#egg=flask_jwt_oidc
 Flask-Caching==2.1.0
 Flask-Cors==4.0.0

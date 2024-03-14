@@ -339,7 +339,7 @@ class EjvPartnerDistributionTask(CgiEjv):
         corp_type_codes: List[str] = db.session.scalars(corp_type_query).all()
 
         return db.session.query(CorpTypeModel).filter(CorpTypeModel.code.in_(corp_type_codes)).all()
-    
+
     @classmethod
     def _process_items(cls, items, ejv_header_model, sequence, link_type):
         for item in items:
@@ -353,4 +353,3 @@ class EjvPartnerDistributionTask(CgiEjv):
             sequence += 1
             item.disbursement_status_code = DisbursementStatus.UPLOADED.value
         return sequence
-
