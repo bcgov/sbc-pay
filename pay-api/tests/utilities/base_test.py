@@ -921,15 +921,3 @@ def factory_distribution_link(distribution_code_id: int, fee_schedule_id: int):
     """Return Factory."""
     return DistributionCodeLink(fee_schedule_id=fee_schedule_id,
                                 distribution_code_id=distribution_code_id)
-
-
-def get_eft_account_payload(account_id: int = randrange(999999)):
-    """Return an EFT payment account object."""
-    return {
-        'accountId': account_id,
-        'accountName': 'Test Account',
-        'paymentInfo': {
-            'methodOfPayment': PaymentMethod.EFT.value,
-            'billable': True
-        }
-    }
