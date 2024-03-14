@@ -473,7 +473,7 @@ def test_update_pad_account_when_cfs_up(session, client, jwt, app):
                     headers=headers)
 
     assert rv.status_code == 200
-    
+
 
 def test_switch_eft_account_when_cfs_down(session, client, jwt, app, admin_users_mock):
     """Assert that the payment records are created with 202."""
