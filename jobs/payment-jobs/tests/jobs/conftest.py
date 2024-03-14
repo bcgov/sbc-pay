@@ -15,7 +15,6 @@
 """Common setup and fixtures for the py-test suite used by this service."""
 
 import os
-import sys
 import time
 
 import pytest
@@ -57,16 +56,13 @@ def client_ctx(app):
 def db(app):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a session-wide initialised database."""
     with app.app_context():
-        # even though this isn't referenced directly, it sets up the internal configs that upgrade needs
-        migrations_path = [folder for folder in sys.path if 'pay-api/pay-api' in folder]
-        if len(migrations_path) > 0:
-            migrations_path = migrations_path[0].replace('/pay-api/src', '/pay-api/migrations')
-
         if database_exists(_db.engine.url):
             drop_database(_db.engine.url)
         create_database(_db.engine.url)
         _db.session().execute(text('SET TIME ZONE "UTC";'))
-        Migrate(app, _db, directory=migrations_path)
+        pay_api_dir = os.path.abspath('..').replace('jobs', 'pay-api')
+        pay_api_dir = os.path.join(pay_api_dir, 'migrations')
+        Migrate(app, _db, directory=pay_api_dir)
         upgrade()
         # Restore the logging, alembic and sqlalchemy have their own logging from alembic.ini.
         setup_logging(os.path.abspath('logging.conf'))
