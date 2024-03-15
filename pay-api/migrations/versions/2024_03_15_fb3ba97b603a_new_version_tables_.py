@@ -34,6 +34,9 @@ def upgrade():
     with op.batch_alter_table('payment_accounts', schema=None) as batch_op:
         batch_op.add_column(sa.Column('version', sa.Integer(), nullable=False, server_default='1'))
 
+    with op.batch_alter_table('refunds_partial', schema=None) as batch_op:
+        batch_op.add_column(sa.Column('version', sa.Integer(), nullable=False, server_default='1'))
+
     op.create_table('eft_short_names_history',
     sa.Column('id', sa.Integer(), autoincrement=False, nullable=False),
     sa.Column('auth_account_id', sa.String(length=50), autoincrement=False, nullable=True),
@@ -214,6 +217,9 @@ def downgrade():
         batch_op.drop_index(batch_op.f('ix_eft_short_names_history_auth_account_id'))
 
     op.drop_table('eft_short_names_history')
+
+    with op.batch_alter_table('refunds_partial', schema=None) as batch_op:
+        batch_op.drop_column('version')
 
     with op.batch_alter_table('payment_accounts', schema=None) as batch_op:
         batch_op.drop_column('version')
