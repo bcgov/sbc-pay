@@ -7,8 +7,6 @@ Create Date: 2024-03-06 11:40:00.153387
 """
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy.dialects import postgresql
-from pay_api.utils.enums import EJVLinkType
 
 # revision identifiers, used by Alembic.
 revision = '04b8a7bed74e'
@@ -24,7 +22,7 @@ def upgrade():
                     existing_type=sa.Integer(), nullable=True)
     op.rename_table('ejv_invoice_links', 'ejv_links')
     # Update statement to set link_type to 'invoice' for all existing records as there is no data for partial refunds yet.
-    op.execute("UPDATE ejv_links SET link_type = :link_type", {'link_type': EJVLinkType.INVOICE.value})
+    op.execute("UPDATE ejv_links set link_type='invoice'")
 
     # Index for link_type + link_id
     op.create_index('ix_ejv_links_link_type_link_id', 'ejv_links', ['link_type', 'link_id'], unique=False)
