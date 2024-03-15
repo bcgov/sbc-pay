@@ -28,7 +28,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
-from pay_api.utils.enums import DisbursementStatus, EjvFileType, RoutingSlipStatus
+from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, RoutingSlipStatus
 from tasks.common.cgi_ap import CgiAP
 from tasks.common.dataclasses import APLine
 from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
@@ -157,7 +157,7 @@ class ApTask(CgiAP):
 
             for inv in invoices:
                 db.session.add(EjvLinkModel(link_id=inv.id,
-                                            link_type='invoice',
+                                            link_type=EJVLinkType.INVOICE.value,
                                                    ejv_header_id=ejv_header_model.id,
                                                    disbursement_status_code=DisbursementStatus.UPLOADED.value))
                 inv.disbursement_status_code = DisbursementStatus.UPLOADED.value

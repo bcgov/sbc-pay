@@ -25,7 +25,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import db
-from pay_api.utils.enums import DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod
 from pay_api.utils.util import generate_transaction_number
 
 from tasks.common.cgi_ejv import CgiEjv
@@ -181,7 +181,7 @@ class EjvPaymentTask(CgiEjv):
             for inv in invoices:
                 current_app.logger.debug(f'Creating EJV Invoice Link for invoice id: {inv.id}')
                 # Create Ejv file link and flush
-                ejv_invoice_link = EjvLinkModel(link_id=inv.id, link_type='invoice', ejv_header_id=ejv_header_model.id,
+                ejv_invoice_link = EjvLinkModel(link_id=inv.id, link_type=EJVLinkType.INVOICE.value, ejv_header_id=ejv_header_model.id,
                                                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
                                                 sequence=sequence)
                 db.session.add(ejv_invoice_link)

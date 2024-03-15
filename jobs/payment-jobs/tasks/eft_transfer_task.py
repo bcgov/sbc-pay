@@ -29,7 +29,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import db
 from pay_api.services.flags import flags
-from pay_api.utils.enums import DisbursementStatus, EFTGlTransferType, EjvFileType, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import DisbursementStatus, EFTGlTransferType, EjvFileType, EJVLinkType, InvoiceStatus, PaymentMethod
 from sqlalchemy import exists, func
 
 from tasks.common.cgi_ejv import CgiEjv
@@ -173,7 +173,7 @@ class EftTransferTask(CgiEjv):
         for inv in invoices:
             current_app.logger.debug(f'Creating EJV Invoice Link for invoice id: {inv.id}')
             # Create Ejv file link and flush
-            ejv_invoice_link = EjvLinkModel(link_id=inv.id, link_type='invoice', ejv_header_id=ejv_header_model_id,
+            ejv_invoice_link = EjvLinkModel(link_id=inv.id, link_type=EJVLinkType.INVOICE.value, ejv_header_id=ejv_header_model_id,
                                                    disbursement_status_code=DisbursementStatus.UPLOADED.value,
                                                    sequence=sequence)
             db.session.add(ejv_invoice_link)
