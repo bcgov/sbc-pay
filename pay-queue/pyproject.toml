@@ -10,7 +10,7 @@ python = "^3.12"
 flask = "^3.0.2"
 jsonschema = "4.17.3"
 python-dotenv = "^1.0.1"
-sentry-sdk = {extras = ["flask"], version = "^1.42.0"}
+sentry-sdk = {extras = ["flask"], version = "^1.41.0"}
 pycountry = "^23.12.11"
 werkzeug = "^3.0.1"
 minio = "^7.2.5"
@@ -22,7 +22,7 @@ protobuf = "4.25.3"
 launchdarkly-server-sdk = "^9.2.2"
 cachecontrol = "^0.14.0"
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
-pay-api = {git = "https://github.com/seeker25/sbc-pay.git", rev = "18263", subdirectory = "pay-api"}
+pay-api = {git = "https://github.com/seeker25/sbc-pay.git", rev = "pubsub_emulation", subdirectory = "pay-api"}
 flask-jwt-oidc = {git = "https://github.com/thorwolpert/flask-jwt-oidc.git"}
 simple-cloudevent = {git = "https://github.com/daxiom/simple-cloudevent.py.git"}
 pg8000 = "^1.30.5"
