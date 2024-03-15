@@ -17,12 +17,14 @@ from _decimal import Decimal
 from attrs import define
 
 
-from .base_model import VersionedModel
+from sql_versioning import Versioned
+
+from .base_model import BaseModel
 from .db import db
 from ..utils.util import cents_to_decimal
 
 
-class EFTShortnames(VersionedModel):  # pylint: disable=too-many-instance-attributes
+class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages the EFT short name to auth account mapping."""
 
     __tablename__ = 'eft_short_names'

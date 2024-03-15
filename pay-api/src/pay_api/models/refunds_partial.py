@@ -15,15 +15,16 @@
 
 from decimal import Decimal
 from attrs import define
+from sql_versioning import Versioned
 from sqlalchemy import ForeignKey
 
 from .audit import Audit
-from .base_model import VersionedModel
+from .base_model import BaseModel
 from .db import db
 from ..utils.enums import RefundsPartialType
 
 
-class RefundsPartial(Audit, VersionedModel):  # pylint: disable=too-many-instance-attributes
+class RefundsPartial(Audit, Versioned, BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages the data for payment line item partial refunds."""
 
     __tablename__ = 'refunds_partial'
@@ -40,11 +41,17 @@ class RefundsPartial(Audit, VersionedModel):  # pylint: disable=too-many-instanc
     __mapper_args__ = {
         'include_properties': [
             'id',
+            'created_by',
+            'created_on',
+            'created_name',
+            'disbursement_status_code',
+            'disbursement_date',
             'payment_line_item_id',
             'refund_amount',
             'refund_type',
-            'disbursement_status_code',
-            'disbursement_date'
+            'updated_by',
+            'updated_on',
+            'updated_name'
         ]
     }
 

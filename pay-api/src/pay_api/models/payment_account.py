@@ -16,13 +16,14 @@
 from attrs import define
 from marshmallow import fields
 from sqlalchemy import Boolean, ForeignKey
+from sql_versioning import Versioned
 
-from .base_model import VersionedModel
+from .base_model import BaseModel
 from .db import db
 from .base_schema import BaseSchema
 
 
-class PaymentAccount(VersionedModel):  # pylint: disable=too-many-instance-attributes
+class PaymentAccount(Versioned, BaseModel):  # pylint: disable=too-many-instance-attributes
     """This class manages all of the base data about Payment Account."""
 
     __tablename__ = 'payment_accounts'
