@@ -105,8 +105,8 @@ def forward_incoming_message_to_test_instance(client):
     # This is simpler than running another flask instance and tieing it to all the same as our unit tests.
     with socket() as server_socket:
         server_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        server_socket.settimeout(3)
-        server_socket.bind(('localhost', current_app.config.get('TEST_PUSH_ENDPOINT_PORT')))
+        server_socket.settimeout(2)
+        server_socket.bind(('0.0.0.0', current_app.config.get('TEST_PUSH_ENDPOINT_PORT')))
         server_socket.listen(10)
         tries = 100
         while tries > 0:
