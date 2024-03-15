@@ -121,10 +121,9 @@ def mock_queue_auth(mocker):
 def initialize_pubsub(app):
     """Initialize pubsub emulator and respective publisher and subscribers."""
     os.environ['PUBSUB_EMULATOR_HOST'] = 'localhost:8085'
-    # TODO add these to config
-    project = 'gtksf3-dev'
-    topics = ['account-mailer-dev', 'ftp-poller-dev', 'business-identifier-update-pay-dev']
-    push_config = pubsub.types.PushConfig(push_endpoint='http://host.docker.internal:5020/')
+    project = app.config.get('TEST_GCP_PROJECT_NAME')
+    topics = app.config.get('TEST_GCP_TOPICS')
+    push_config = pubsub.types.PushConfig(push_endpoint=app.config.get('TEST_PUSH_ENDPOINT'))
     publisher = pubsub.PublisherClient()
     subscriber = pubsub.SubscriberClient()
     with publisher, subscriber:

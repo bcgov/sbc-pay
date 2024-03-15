@@ -106,7 +106,7 @@ def forward_incoming_message_to_test_instance(client):
     with socket() as server_socket:
         server_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         server_socket.settimeout(3)
-        server_socket.bind(('localhost', 5020))
+        server_socket.bind(('localhost', current_app.config.get('TEST_PUSH_ENDPOINT_PORT')))
         server_socket.listen(10)
         tries = 100
         while tries > 0:
@@ -130,12 +130,11 @@ def add_file_event_to_queue_and_process(client, file_name: str, message_type: st
     }
     if use_pubsub_emulator:
         gcp_queue_publisher.publish_to_queue(
-            # TODO fix topic
             QueueMessage(
                 source=QueueSources.FTP_POLLER.value,
                 message_type=message_type,
                 payload=queue_payload,
-                topic='projects/gtksf3-dev/topics/ftp-poller-dev'
+                topic=f'projects/{current_app.config["TEST_GCP_PROJECT_NAME"]}/topics/ftp-poller-dev'
             )
         )
         forward_incoming_message_to_test_instance(client)
