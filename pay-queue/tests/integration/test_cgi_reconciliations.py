@@ -104,7 +104,7 @@ def test_successful_partner_ejv_reconciliations(client):
         jv_file.close()
 
     # Now upload the ACK file to minio and publish message.
-    upload_to_minio(ack_file_name, value_as_bytes=str.encode(''))
+    upload_to_minio(str.encode(''), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
 
@@ -218,7 +218,7 @@ def test_failed_partner_ejv_reconciliations(client):
         jv_file.close()
 
     # Now upload the ACK file to minio and publish message.
-    upload_to_minio(ack_file_name, value_as_bytes=str.encode(''))
+    upload_to_minio(str.encode(''), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
 
@@ -336,7 +336,7 @@ def test_successful_partner_reversal_ejv_reconciliations(client):
         jv_file.close()
 
     # Now upload the ACK file to minio and publish message.
-    upload_to_minio(ack_file_name, value_as_bytes=str.encode(''))
+    upload_to_minio(str.encode(''), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
 
@@ -504,7 +504,7 @@ def test_succesful_payment_ejv_reconciliations(client):
         jv_file.close()
 
     # Now upload the ACK file to minio and publish message.
-    upload_to_minio(ack_file_name, value_as_bytes=str.encode(''))
+    upload_to_minio(str.encode(''), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
 
@@ -661,7 +661,7 @@ def test_succesful_payment_reversal_ejv_reconciliations(client):
         jv_file.close()
 
     # Now upload the ACK file to minio and publish message.
-    upload_to_minio(ack_file_name, value_as_bytes=str.encode(''))
+    upload_to_minio(str.encode(''), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
 
@@ -751,7 +751,7 @@ def test_successful_refund_reconciliations(client):
         jv_file.close()
 
     # Now upload the ACK file to minio and publish message.
-    upload_to_minio(ack_file_name, value_as_bytes=str.encode(''))
+    upload_to_minio(str.encode(''), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
 
@@ -884,7 +884,7 @@ def test_failed_refund_reconciliations(client):
         jv_file.close()
 
     # Now upload the ACK file to minio and publish message.
-    upload_to_minio(ack_file_name, value_as_bytes=str.encode(''))
+    upload_to_minio(str.encode(''), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
 
@@ -1056,7 +1056,7 @@ def test_successful_ap_disbursement(client):
         jv_file.write('')
         jv_file.close()
 
-    upload_to_minio(ack_file_name, value_as_bytes=str.encode(''))
+    upload_to_minio(str.encode(''), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
 
@@ -1202,7 +1202,7 @@ def test_failure_ap_disbursement(client):
         jv_file.write('')
         jv_file.close()
 
-    upload_to_minio(ack_file_name, value_as_bytes=str.encode(''))
+    upload_to_minio(str.encode(''), ack_file_name)
 
     add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
 
