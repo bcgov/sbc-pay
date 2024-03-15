@@ -16,8 +16,7 @@
 
 Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
-from pay_api.models import (
-    DistributionCode, EjvFile, EjvHeader, EjvLink, FeeSchedule, Invoice, InvoiceReference, db)
+from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvLink, FeeSchedule, Invoice, InvoiceReference, db
 from pay_api.utils.enums import DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus
 
 from tasks.ejv_payment_task import EjvPaymentTask

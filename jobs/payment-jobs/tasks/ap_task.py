@@ -158,8 +158,8 @@ class ApTask(CgiAP):
             for inv in invoices:
                 db.session.add(EjvLinkModel(link_id=inv.id,
                                             link_type=EJVLinkType.INVOICE.value,
-                                                   ejv_header_id=ejv_header_model.id,
-                                                   disbursement_status_code=DisbursementStatus.UPLOADED.value))
+                                            ejv_header_id=ejv_header_model.id,
+                                            disbursement_status_code=DisbursementStatus.UPLOADED.value))
                 inv.disbursement_status_code = DisbursementStatus.UPLOADED.value
             db.session.flush()
 

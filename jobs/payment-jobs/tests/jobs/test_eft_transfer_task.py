@@ -19,8 +19,6 @@ Test-Suite to ensure that the EFT Transfer task is working as expected.
 from datetime import datetime
 from typing import List
 
-import pytest
-from flask import Flask
 from pay_api.models import DistributionCode, EFTGLTransfer, EjvFile, EjvHeader, EjvLink, FeeSchedule, Invoice, db
 from pay_api.utils.enums import DisbursementStatus, EFTGlTransferType, EjvFileType, InvoiceStatus, PaymentMethod
 
