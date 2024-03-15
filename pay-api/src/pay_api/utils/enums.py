@@ -375,8 +375,8 @@ class QueueSources(Enum):
     PAY_JOBS = 'pay-jobs'
     PAY_QUEUE = 'pay-queue'
     FTP_POLLER = 'ftp-poller'
-    
-    
+  
+  
 class EJVLinkType(Enum):
     """EJV link types for ejv_link table."""
 
