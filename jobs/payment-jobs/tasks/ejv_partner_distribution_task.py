@@ -30,7 +30,7 @@ from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import RefundsPartial as RefundsPartialModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
-from pay_api.utils.enums import DisbursementStatus, EjvFileType, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, InvoiceStatus, PaymentMethod
 from sqlalchemy import Date, cast
 
 from tasks.common.cgi_ejv import CgiEjv
@@ -258,8 +258,8 @@ class EjvPartnerDistributionTask(CgiEjv):
 
             # Create ejv invoice/partial_refund link records and set invoice status
             sequence = 1
-            sequence = cls._process_items(invoices, ejv_header_model, sequence, 'invoice')
-            cls._process_items(refund_partial_items, ejv_header_model, sequence, 'refund')
+            sequence = cls._process_items(invoices, ejv_header_model, sequence, EJVLinkType.INVOICE.value)
+            cls._process_items(refund_partial_items, ejv_header_model, sequence, EJVLinkType.REFUND.value)
 
             db.session.flush()
 
