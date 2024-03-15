@@ -15,7 +15,7 @@
 from flask import Flask
 from pay_api.resources.ops import bp as ops_bp
 
-from .worker import bp as worker_endpoint
+from pay_queue.resources.worker import bp as worker_endpoint
 
 
 def register_endpoints(app: Flask):

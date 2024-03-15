@@ -419,7 +419,6 @@ def _shortname_balance_as_dict(eft_transactions: List[EFTRecord]) -> Dict:
     return shortname_balance
 
 
-# TODO: THIS NEEDS TO CHANGE TO WORK ON THE CFS JOB instead.
 def _pay_invoice(invoice: InvoiceModel, shortname_balance: Dict):
     """Pay for an invoice and update invoice state."""
     payment_date = shortname_balance.get('transaction_date') or datetime.now()

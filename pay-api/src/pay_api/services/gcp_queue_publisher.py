@@ -44,18 +44,19 @@ def publish_to_queue(queue_message: QueueMessage):
 
 def _send_to_queue(topic_name: str, payload: bytes):
     """Send payload to the queue."""
-    if not ((gcp_auth_key := current_app.config.get('GCP_AUTH_KEY')) and
-            (audience := current_app.config.get('AUDIENCE')) and
-            (publisher_audience := current_app.config.get('PUBLISHER_AUDIENCE'))):
-        raise Exception('Missing setup arguments')  # pylint: disable=W0719
-
+    gcp_auth_key = current_app.config.get('GCP_AUTH_KEY')
+    audience = current_app.config.get('AUDIENCE')
+    publisher_audience = current_app.config.get('PUBLISHER_AUDIENCE')
     try:
-        service_account_info = json.loads(base64.b64decode(gcp_auth_key).decode('utf-8'))
-        credentials = jwt.Credentials.from_service_account_info(
-            service_account_info, audience=audience
-        )
-        credentials_pub = credentials.with_claims(audience=publisher_audience)
-        publisher = pubsub_v1.PublisherClient(credentials=credentials_pub)
+        if gcp_auth_key:
+            service_account_info = json.loads(base64.b64decode(gcp_auth_key).decode('utf-8'))
+            credentials = jwt.Credentials.from_service_account_info(
+                service_account_info, audience=audience
+            )
+            credentials_pub = credentials.with_claims(audience=publisher_audience)
+            publisher = pubsub_v1.PublisherClient(credentials=credentials_pub)
+        else:
+            publisher = pubsub_v1.PublisherClient()
     except Exception as error:  # noqa: B902
         raise Exception('Unable to create a connection', error) from error  # pylint: disable=W0719
 

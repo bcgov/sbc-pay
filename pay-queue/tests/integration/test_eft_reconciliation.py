@@ -31,11 +31,11 @@ from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, MessageType, 
 
 from pay_queue.services.eft.eft_enums import EFTConstants
 from tests.integration.factory import factory_create_eft_account, factory_invoice
-from tests.integration.utils import create_and_upload_eft_file, helper_add_file_event_to_queue
+from tests.integration.utils import add_file_event_to_queue_and_process, create_and_upload_eft_file
 from tests.utilities.factory_utils import factory_eft_header, factory_eft_record, factory_eft_trailer
 
 
-def test_eft_tdi17_fail_header(client, mock_publish):
+def test_eft_tdi17_fail_header(client):
     """Test EFT Reconciliations properly fails for a bad EFT header."""
     # Generate file with invalid header
     file_name: str = 'test_eft_tdi17.txt'
@@ -44,7 +44,7 @@ def test_eft_tdi17_fail_header(client, mock_publish):
 
     create_and_upload_eft_file(file_name, [header])
 
-    helper_add_file_event_to_queue(client, file_name, MessageType.EFT_FILE_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name, MessageType.EFT_FILE_UPLOADED.value)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -87,7 +87,7 @@ def test_eft_tdi17_fail_header(client, mock_publish):
     assert not bool(eft_transactions)
 
 
-def test_eft_tdi17_fail_trailer(client, mock_publish):
+def test_eft_tdi17_fail_trailer(client):
     """Test EFT Reconciliations properly fails for a bad EFT trailer."""
     # Generate file with invalid trailer
     file_name: str = 'test_eft_tdi17.txt'
@@ -98,7 +98,7 @@ def test_eft_tdi17_fail_trailer(client, mock_publish):
 
     create_and_upload_eft_file(file_name, [header, trailer])
 
-    helper_add_file_event_to_queue(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -141,7 +141,7 @@ def test_eft_tdi17_fail_trailer(client, mock_publish):
     assert not bool(eft_transactions)
 
 
-def test_eft_tdi17_fail_transactions(client, mock_publish):
+def test_eft_tdi17_fail_transactions(client):
     """Test EFT Reconciliations properly fails for a bad EFT trailer."""
     # Generate file with invalid trailer
     file_name: str = 'test_eft_tdi17.txt'
@@ -160,7 +160,7 @@ def test_eft_tdi17_fail_transactions(client, mock_publish):
 
     create_and_upload_eft_file(file_name, [header, transaction_1, trailer])
 
-    helper_add_file_event_to_queue(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -198,13 +198,13 @@ def test_eft_tdi17_fail_transactions(client, mock_publish):
     assert eft_transactions[0].error_messages[0] == 'Invalid transaction deposit amount CAD.'
 
 
-def test_eft_tdi17_basic_process(client, mock_publish):
+def test_eft_tdi17_basic_process(client):
     """Test EFT Reconciliations worker is able to create basic EFT processing records."""
     # Generate happy path file
     file_name: str = 'test_eft_tdi17.txt'
     generate_basic_tdi17_file(file_name)
 
-    helper_add_file_event_to_queue(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -276,14 +276,14 @@ def test_eft_tdi17_basic_process(client, mock_publish):
     assert not eft_credit_invoice_links
 
 
-def test_eft_tdi17_process(client, mock_publish):
+def test_eft_tdi17_process(client):
     """Test EFT Reconciliations worker."""
     payment_account, eft_shortname, invoice = create_test_data()
     # Generate happy path file
     file_name: str = 'test_eft_tdi17.txt'
     generate_tdi17_file(file_name)
 
-    helper_add_file_event_to_queue(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -402,7 +402,7 @@ def test_eft_tdi17_process(client, mock_publish):
     # assert eft_credit_invoice_links[0].invoice_id == invoice.id
 
 
-def test_eft_tdi17_rerun(client, mock_publish):
+def test_eft_tdi17_rerun(client):
     """Test EFT Reconciliations can be re-executed with a corrected file."""
     payment_account, eft_shortname, invoice = create_test_data()
 
@@ -423,7 +423,7 @@ def test_eft_tdi17_rerun(client, mock_publish):
 
     create_and_upload_eft_file(file_name, [header, transaction_1, trailer])
 
-    helper_add_file_event_to_queue(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -462,7 +462,7 @@ def test_eft_tdi17_rerun(client, mock_publish):
                                        jv_number='002425669', transaction_date='')
 
     create_and_upload_eft_file(file_name, [header, transaction_1, trailer])
-    helper_add_file_event_to_queue(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
 
     # Check file is completed after correction
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
