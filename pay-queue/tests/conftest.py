@@ -16,6 +16,8 @@ import os
 
 import pytest
 from flask_migrate import Migrate, upgrade
+from google.api_core.exceptions import NotFound
+from google.cloud import pubsub
 from pay_api import db as _db
 from sqlalchemy import event, text
 from sqlalchemy_utils import create_database, database_exists, drop_database
@@ -100,6 +102,7 @@ def auto(docker_services, app):
         docker_services.start('minio')
         docker_services.start('proxy')
         docker_services.start('paybc')
+        docker_services.start('pubsub-emulator')
 
 
 @pytest.fixture()
@@ -112,3 +115,35 @@ def mock_publish(monkeypatch):
 def mock_queue_auth(mocker):
     """Mock queue authorization."""
     mocker.patch('pay_queue.external.gcp_auth.verify_jwt', return_value='')
+
+
+@pytest.fixture(scope='session', autouse=True)
+def initialize_pubsub(app):
+    """Initialize pubsub emulator and respective publisher and subscribers."""
+    os.environ['PUBSUB_EMULATOR_HOST'] = 'localhost:8085'
+    # TODO add these to config
+    project = 'gtksf3-dev'
+    topics = ['account-mailer-dev', 'ftp-poller-dev', 'business-identifier-update-pay-dev']
+    push_config = pubsub.types.PushConfig(push_endpoint='http://host.docker.internal:5020/')
+    publisher = pubsub.PublisherClient()
+    subscriber = pubsub.SubscriberClient()
+    with publisher, subscriber:
+        for topic in topics:
+            topic_path = publisher.topic_path(project, topic)
+            try:
+                publisher.delete_topic(topic=topic_path)
+            except NotFound:
+                pass
+            publisher.create_topic(name=topic_path)
+            subscription_path = subscriber.subscription_path(project,  f'{topic}_subscription')
+            try:
+                subscriber.delete_subscription(subscription=subscription_path)
+            except NotFound:
+                pass
+            subscriber.create_subscription(
+                request={
+                    'name': subscription_path,
+                    'topic': topic_path,
+                    'push_config': push_config,
+                }
+            )

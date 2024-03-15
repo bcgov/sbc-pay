@@ -22,3 +22,8 @@ services:
         command: >
           mock -p 4010 --host 0.0.0.0
           https://raw.githubusercontent.com/bcgov/sbc-pay/main/docs/docs/PayBC%20Mocking/paybc-1.0.0.yaml
+    pubsub-emulator:
+        image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+        command: gcloud beta emulators pubsub start --host-port=0.0.0.0:8085
+        ports:
+          - "8085:8085"

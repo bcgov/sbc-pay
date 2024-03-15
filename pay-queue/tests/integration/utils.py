@@ -19,11 +19,15 @@ import json
 import os
 import uuid
 from datetime import datetime, timezone
+from socket import SO_REUSEADDR, SOL_SOCKET, socket
+from time import sleep
 from typing import List
 
 from flask import current_app
 from minio import Minio
-from pay_api.utils.enums import MessageType
+from pay_api.services import gcp_queue_publisher
+from pay_api.services.gcp_queue_publisher import QueueMessage
+from pay_api.utils.enums import MessageType, QueueSources
 from simple_cloudevent import SimpleCloudEvent, to_queue_message
 
 
@@ -47,8 +51,9 @@ def build_request_for_queue_push(message_type, payload):
 
 
 def post_to_queue(client, request_payload):
-    """Post request to queue."""
-    response = client.post('/', data=json.dumps(request_payload), headers={'Content-Type': 'application/json'})
+    """Post request to worker using an http request on our wrapped flask instance."""
+    response = client.post('/', data=json.dumps(request_payload),
+                           headers={'Content-Type': 'application/json'})
     assert response.status_code == 200
 
 
@@ -93,14 +98,50 @@ def upload_to_minio(value_as_bytes, file_name: str):
                             os.stat(file_name).st_size)
 
 
-def helper_add_file_event_to_queue(client, file_name: str, message_type: str):
+def forward_incoming_message_to_test_instance(client):
+    """Forward incoming http message to test instance."""
+    # Note this is a bit different than how the queue could behave, it could send multiples.
+    # This just receives one HTTP request and forwards it to the test instance.
+    # This is simpler than running another flask instance and tieing it to all the same as our unit tests.
+    with socket() as server_socket:
+        server_socket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
+        server_socket.settimeout(3)
+        server_socket.bind(('localhost', 5020))
+        server_socket.listen(10)
+        tries = 100
+        while tries > 0:
+            client_socket, _ = server_socket.accept()
+            if socket_data := client_socket.recv(4096):
+                body = socket_data.decode('utf8').split('\r\n')[-1]
+                payload = json.loads(body)
+                post_to_queue(client, payload)
+                client_socket.send('HTTP/1.1 200 OK\n\n'.encode('utf8'))
+                break
+            sleep(0.01)
+            tries -= 1
+        assert tries > 0
+
+
+def add_file_event_to_queue_and_process(client, file_name: str, message_type: str, use_pubsub_emulator=True):
     """Add event to the Queue."""
     queue_payload = {
         'fileName': file_name,
         'location': current_app.config['MINIO_BUCKET_NAME']
     }
-    request_payload = build_request_for_queue_push(message_type, queue_payload)
-    post_to_queue(client, request_payload)
+    if use_pubsub_emulator:
+        gcp_queue_publisher.publish_to_queue(
+            # TODO fix topic
+            QueueMessage(
+                source=QueueSources.FTP_POLLER.value,
+                message_type=message_type,
+                payload=queue_payload,
+                topic='projects/gtksf3-dev/topics/ftp-poller-dev'
+            )
+        )
+        forward_incoming_message_to_test_instance(client)
+    else:
+        payload = build_request_for_queue_push(message_type, queue_payload)
+        post_to_queue(client, payload)
 
 
 def helper_add_identifier_event_to_queue(client, old_identifier: str = 'T1234567890',
