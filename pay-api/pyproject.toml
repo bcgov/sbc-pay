@@ -82,6 +82,7 @@ typing-extensions = "4.10.0"
 urllib3 = "2.2.1"
 simple-cloudevent = {git = "https://github.com/daxiom/simple-cloudevent.py.git"}
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
+pg8000 = "^1.30.5"
 
 
 [tool.poetry.group.dev.dependencies]

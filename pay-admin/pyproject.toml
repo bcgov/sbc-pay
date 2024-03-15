@@ -26,6 +26,7 @@ pay-api = {git = "https://github.com/bcgov/sbc-pay.git", rev = "feature-queue-py
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
 simple-cloudevent = {git = "https://github.com/daxiom/simple-cloudevent.py.git"}
 flask-jwt-oidc = {git = "https://github.com/thorwolpert/flask-jwt-oidc.git"}
+pg8000 = "^1.30.5"
 
 
 [tool.poetry.group.dev.dependencies]

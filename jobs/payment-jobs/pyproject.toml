@@ -31,6 +31,7 @@ dataclass-wizard = "^0.22.3"
 launchdarkly-server-sdk = "^9.2.2"
 cx-oracle = "^8.3.0"
 more-itertools = "^10.2.0"
+pg8000 = "^1.30.5"
 
 
 [tool.poetry.group.dev.dependencies]
