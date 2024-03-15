@@ -156,7 +156,8 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     # Needs to have ftp-poller-dev in it.
     TEST_GCP_TOPICS = ['account-mailer-dev', 'ftp-poller-dev', 'business-identifier-update-pay-dev']
     TEST_PUSH_ENDPOINT_PORT = 5020
-    TEST_PUSH_ENDPOINT = f'http://host.docker.internal:{str(TEST_PUSH_ENDPOINT_PORT)}/'
+    # Use host.docker.internal for windows and mac
+    TEST_PUSH_ENDPOINT = os.getenv('TEST_PUSH_ENDPOINT', f'http://172.17.0.1:{str(TEST_PUSH_ENDPOINT_PORT)}/')
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
