@@ -32,8 +32,8 @@ from pay_api.models import db
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import (
-    DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus,
-    PaymentSystem, QueueSources, RoutingSlipStatus)
+    DisbursementStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod,
+    PaymentStatus, PaymentSystem, QueueSources, RoutingSlipStatus)
 from sentry_sdk import capture_message
 
 from pay_queue import config
@@ -78,10 +78,12 @@ def _update_acknowledgement(msg: Dict[str, any]):
     for ejv_header in ejv_headers:
         ejv_header.disbursement_status_code = DisbursementStatus.ACKNOWLEDGED.value
         if ejv_file.file_type == EjvFileType.DISBURSEMENT.value:
-            ejv_links: List[EjvLinkModel] = db.session.query(EjvLinkModel).filter(
-                EjvLinkModel.ejv_header_id == ejv_header.id).all()
+            ejv_links: List[EjvLinkModel] = db.session.query(EjvLinkModel) \
+                .filter(EjvLinkModel.ejv_header_id == ejv_header.id) \
+                .filter(EjvLinkModel.link_type == EJVLinkType.INVOICE.value) \
+                .all()
             for ejv_link in ejv_links:
-                invoice: InvoiceModel = InvoiceModel.find_by_id(ejv_link.invoice_id)
+                invoice: InvoiceModel = InvoiceModel.find_by_id(ejv_link.link_id)
                 invoice.disbursement_status_code = DisbursementStatus.ACKNOWLEDGED.value
     db.session.commit()
 
@@ -166,7 +168,8 @@ def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  #
     invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
     invoice_link: EjvLinkModel = db.session.query(EjvLinkModel).filter(
         EjvLinkModel.ejv_header_id == ejv_header_model_id).filter(
-        EjvLinkModel.link_id == invoice_id).one_or_none()
+        EjvLinkModel.link_id == invoice_id).filter(
+        EjvLinkModel.link_type == EJVLinkType.INVOICE.value).one_or_none()
     invoice_return_code = line[315:319]
     invoice_return_message = line[319:469]
     # If the JV process failed, then mark the GL code against the invoice to be stopped
@@ -389,6 +392,7 @@ def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) -> boo
         .join(EjvHeaderModel).join(EjvFileModel)\
         .filter(EjvFileModel.id == ejv_file.id)\
         .filter(EjvLinkModel.link_id == invoice_id)\
+        .filter(EjvLinkModel.link_type == EJVLinkType.INVOICE.value) \
         .one_or_none()
     invoice_link.disbursement_status_code = disbursement_status
     invoice_link.message = ap_header_error_message

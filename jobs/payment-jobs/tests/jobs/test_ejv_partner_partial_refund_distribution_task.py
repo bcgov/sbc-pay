@@ -55,7 +55,7 @@ def test_partial_refund_disbursement_for_partners(session, monkeypatch):
 
     inv_ref = factory_invoice_reference(invoice_id=invoice.id)
     factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code='COMPLETED')
-    
+
     refund_partial = factory_refund_partial(pli.id, refund_amount=1.5, created_by='test',
                                             refund_type=RefundsPartialType.SERVICE_FEES.value)
 
@@ -80,7 +80,7 @@ def test_partial_refund_disbursement_for_partners(session, monkeypatch):
         ejv_file = EjvFile.find_by_id(ejv_header.ejv_file_id)
         assert ejv_file
         assert ejv_file.disbursement_status_code == DisbursementStatus.UPLOADED.value
-        
+
     refund_partial_link = EjvLink.find_ejv_link_by_link_id(refund_partial.id)
     assert refund_partial_link.disbursement_status_code == DisbursementStatus.UPLOADED.value
     assert refund_partial.disbursement_status_code == DisbursementStatus.UPLOADED.value

@@ -33,8 +33,8 @@ from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.utils.enums import (
-    CfsAccountStatus, DisbursementStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus,
-    InvoiceStatus, MessageType, PaymentMethod, PaymentStatus, RoutingSlipStatus)
+    CfsAccountStatus, DisbursementStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus, MessageType,
+    PaymentMethod, PaymentStatus, RoutingSlipStatus)
 
 from tests.integration.utils import add_file_event_to_queue_and_process
 
