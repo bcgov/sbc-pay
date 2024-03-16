@@ -138,7 +138,7 @@ class EjvPartnerDistributionTask(CgiEjv):
             refund_partial_items = cls.get_refund_partial_payment_line_items_for_disbursement(partner)
 
             # If no invoices continue.
-            if not invoices or refund_partial_items:
+            if not invoices and not refund_partial_items:
                 continue
 
             effective_date: str = cls.get_effective_date()
@@ -258,10 +258,8 @@ class EjvPartnerDistributionTask(CgiEjv):
 
             # Create ejv invoice/partial_refund link records and set invoice status
             sequence = 1
-            sequence = cls._process_items(invoices, ejv_header_model, sequence, EJVLinkType.INVOICE.value)
-            cls._process_items(refund_partial_items, ejv_header_model, sequence, EJVLinkType.REFUND.value)
-
-            db.session.flush()
+            sequence = cls._create_ejv_link(invoices, ejv_header_model, sequence, EJVLinkType.INVOICE.value)
+            cls._create_ejv_link(refund_partial_items, ejv_header_model, sequence, EJVLinkType.REFUND.value)
 
         if not ejv_content:
             db.session.rollback()
@@ -341,9 +339,9 @@ class EjvPartnerDistributionTask(CgiEjv):
         return db.session.query(CorpTypeModel).filter(CorpTypeModel.code.in_(corp_type_codes)).all()
 
     @classmethod
-    def _process_items(cls, items, ejv_header_model, sequence, link_type):
+    def _create_ejv_link(cls, items, ejv_header_model, sequence, link_type):
+        # Create Ejv file link and flush
         for item in items:
-            # Create Ejv file link and flush
             link_model = EjvLinkModel(link_id=item.id,
                                       link_type=link_type,
                                       ejv_header_id=ejv_header_model.id,
@@ -352,4 +350,5 @@ class EjvPartnerDistributionTask(CgiEjv):
             db.session.add(link_model)
             sequence += 1
             item.disbursement_status_code = DisbursementStatus.UPLOADED.value
+        db.session.flush()
         return sequence

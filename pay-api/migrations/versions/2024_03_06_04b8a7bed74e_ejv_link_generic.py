@@ -1,4 +1,4 @@
-"""empty message
+"""Rename ejv_invoice_links to ejv_links, alter invoice_id to link_id, removed foreign constraint, and added link_type column
 
 Revision ID: 04b8a7bed74e
 Revises: bacb2b859d78
@@ -21,10 +21,9 @@ def upgrade():
     op.alter_column('ejv_invoice_links', 'invoice_id', new_column_name='link_id',
                     existing_type=sa.Integer(), nullable=True)
     op.rename_table('ejv_invoice_links', 'ejv_links')
-    # Update statement to set link_type to 'invoice' for all existing records as there is no data for partial refunds yet.
+    # as there is no data for partial refunds yet.
     op.execute("UPDATE ejv_links set link_type='invoice'")
 
-    # Index for link_type + link_id
     op.create_index('ix_ejv_links_link_type_link_id', 'ejv_links', ['link_type', 'link_id'], unique=False)
 
 def downgrade():

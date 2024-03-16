@@ -17,31 +17,28 @@
 Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
 from datetime import datetime, timedelta
-from unittest.mock import patch
 
-import pytest
 from flask import current_app
 from freezegun import freeze_time
 from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvLink, FeeSchedule, db
-from pay_api.utils.enums import DisbursementStatus
+from pay_api.utils.enums import DisbursementStatus, RefundsPartialType
 
 from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
 
 from .factory import (
     factory_create_direct_pay_account, factory_distribution, factory_distribution_link, factory_invoice,
-    factory_invoice_reference, factory_payment, factory_payment_line_item, factory_receipt)
+    factory_invoice_reference, factory_payment, factory_payment_line_item, factory_refund_partial)
 
 
-@pytest.mark.parametrize('client_code, batch_type', [('112', 'GA'), ('113', 'GI'), ('ABC', 'GI')])
-def test_partial_refund_disbursement_for_partners(session, monkeypatch, client_code, batch_type):
+def test_partial_refund_disbursement_for_partners(session, monkeypatch):
     """Test partial refund disbursement for partners."""
     monkeypatch.setattr('pysftp.Connection.put', lambda *args, **kwargs: None)
     corp_type: CorpTypeModel = CorpTypeModel.find_by_code('VS')
 
     pay_account = factory_create_direct_pay_account()
 
-    disbursement_distribution: DistributionCode = factory_distribution(name='VS Disbursement', client=client_code)
+    disbursement_distribution: DistributionCode = factory_distribution(name='VS Disbursement', client='112')
     service_fee_distribution: DistributionCode = factory_distribution(name='VS Service Fee', client='112')
     fee_distribution: DistributionCode = factory_distribution(
         name='VS Fee distribution', client='112', service_fee_dist_id=service_fee_distribution.distribution_code_id,
@@ -50,41 +47,40 @@ def test_partial_refund_disbursement_for_partners(session, monkeypatch, client_c
     fee_schedule: FeeSchedule = FeeSchedule.find_by_filing_type_and_corp_type(corp_type.code, 'WILLNOTICE')
     factory_distribution_link(fee_distribution.distribution_code_id, fee_schedule.fee_schedule_id)
 
-    invoice = factory_invoice(payment_account=pay_account,
+    invoice = factory_invoice(payment_account=pay_account, disbursement_status_code=DisbursementStatus.COMPLETED.value,
                               corp_type_code=corp_type.code, total=21.5, status_code='PAID')
-    factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id,
-                              filing_fees=10, total=10, service_fees=1.5,
-                              fee_dist_id=fee_distribution.distribution_code_id)
-
-    # Partially refunded line item
-    pli_refunded = factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id,
-                                             filing_fees=10, total=10, service_fees=1.5,
-                                             fee_dist_id=fee_distribution.distribution_code_id)
+    pli = factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id,
+                                    filing_fees=0, total=1.5, service_fees=1.5,
+                                    fee_dist_id=fee_distribution.distribution_code_id)
 
     inv_ref = factory_invoice_reference(invoice_id=invoice.id)
     factory_payment(invoice_number=inv_ref.invoice_number, payment_status_code='COMPLETED')
-    factory_receipt(invoice_id=invoice.id, receipt_date=datetime.today()).save()
+    
+    refund_partial = factory_refund_partial(pli.id, refund_amount=1.5, created_by='test',
+                                            refund_type=RefundsPartialType.SERVICE_FEES.value)
 
-    # Mock the factory_refund_partial_line to simulate partial refund creation, cause 'RefundPartialLine' has no 'save'
-    with patch('pay_api.models.RefundPartialLine') as mock_refund_partial:
-        mock_refund_partial.return_value = None
+    assert refund_partial.disbursement_status_code is None
+    # Lookup refund_partial_link
+    refund_partial_link = EjvLink.find_ejv_link_by_link_id(refund_partial.id)
+    assert refund_partial_link is None
 
-        # Simulate partial refund for this line item
-        mock_refund_partial(payment_line_item_id=pli_refunded.id, refund_amount=1.5, refund_type='service fee')
+    day_after_time_delay = datetime.today() + timedelta(days=(
+        current_app.config.get('DISBURSEMENT_DELAY_IN_DAYS') + 1))
 
-        day_after_time_delay = datetime.today() + timedelta(days=(
-            current_app.config.get('DISBURSEMENT_DELAY_IN_DAYS') + 1))
+    with freeze_time(day_after_time_delay):
+        EjvPartnerDistributionTask.create_ejv_file()
 
-        with freeze_time(day_after_time_delay):
-            EjvPartnerDistributionTask.create_ejv_file()
+        ejv_inv_link = db.session.query(EjvLink).filter(EjvLink.link_id == pli.id).first()
+        assert ejv_inv_link
 
-            ejv_inv_link = db.session.query(EjvLink).filter(EjvLink.link_id == invoice.id).first()
-            assert ejv_inv_link
+        ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_inv_link.ejv_header_id).first()
+        assert ejv_header.disbursement_status_code == DisbursementStatus.UPLOADED.value
+        assert ejv_header
 
-            ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_inv_link.ejv_header_id).first()
-            assert ejv_header.disbursement_status_code == DisbursementStatus.UPLOADED.value
-            assert ejv_header
-
-            ejv_file = EjvFile.find_by_id(ejv_header.ejv_file_id)
-            assert ejv_file
-            assert ejv_file.disbursement_status_code == DisbursementStatus.UPLOADED.value, f'{batch_type}'
+        ejv_file = EjvFile.find_by_id(ejv_header.ejv_file_id)
+        assert ejv_file
+        assert ejv_file.disbursement_status_code == DisbursementStatus.UPLOADED.value
+        
+    refund_partial_link = EjvLink.find_ejv_link_by_link_id(refund_partial.id)
+    assert refund_partial_link.disbursement_status_code == DisbursementStatus.UPLOADED.value
+    assert refund_partial.disbursement_status_code == DisbursementStatus.UPLOADED.value

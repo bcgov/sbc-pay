@@ -21,7 +21,7 @@ from datetime import datetime
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
-from pay_api.models import EjvLink as EjvInvoiceLinkModel
+from pay_api.models import EjvLink as EjvLinkModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
@@ -33,8 +33,8 @@ from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.utils.enums import (
-    CfsAccountStatus, DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, MessageType,
-    PaymentMethod, PaymentStatus, RoutingSlipStatus)
+    CfsAccountStatus, DisbursementStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus,
+    InvoiceStatus, MessageType, PaymentMethod, PaymentStatus, RoutingSlipStatus)
 
 from tests.integration.utils import add_file_event_to_queue_and_process
 
@@ -93,8 +93,9 @@ def test_successful_partner_ejv_reconciliations(client):
                                                 partner_code=partner_code,
                                                 payment_account_id=pay_account.id).save()
     ejv_header_id = ejv_header.id
-    EjvInvoiceLinkModel(
-        invoice_id=invoice.id, ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
+    EjvLinkModel(
+        link_id=invoice.id, link_type=EJVLinkType.INVOICE.value,
+        ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
     ).save()
 
     ack_file_name = f'ACK.{file_ref}'
@@ -207,8 +208,10 @@ def test_failed_partner_ejv_reconciliations(client):
                                                 partner_code=partner_code,
                                                 payment_account_id=pay_account.id).save()
     ejv_header_id = ejv_header.id
-    EjvInvoiceLinkModel(
-        invoice_id=invoice.id, ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
+    EjvLinkModel(
+        link_id=invoice.id,
+        link_type=EJVLinkType.INVOICE.value,
+        ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
     ).save()
 
     ack_file_name = f'ACK.{file_ref}'
@@ -325,8 +328,9 @@ def test_successful_partner_reversal_ejv_reconciliations(client):
                                                 partner_code=partner_code,
                                                 payment_account_id=pay_account.id).save()
     ejv_header_id = ejv_header.id
-    EjvInvoiceLinkModel(
-        invoice_id=invoice.id, ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
+    EjvLinkModel(
+        link_id=invoice.id, link_type=EJVLinkType.INVOICE.value,
+        ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
     ).save()
 
     ack_file_name = f'ACK.{file_ref}'
@@ -457,8 +461,9 @@ def test_succesful_payment_ejv_reconciliations(client):
         ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
                                                     ejv_file_id=ejv_file.id, payment_account_id=jv_acc.id).save()
 
-        EjvInvoiceLinkModel(
-            invoice_id=inv.id, ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
+        EjvLinkModel(
+                    link_id=inv.id, link_type=EJVLinkType.INVOICE.value,
+                    ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
         ).save()
         inv_total = f'{inv.total:.2f}'.zfill(15)
         pay_line_amount = f'{line.total:.2f}'.zfill(15)
@@ -615,8 +620,9 @@ def test_succesful_payment_reversal_ejv_reconciliations(client):
         ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
                                                     ejv_file_id=ejv_file.id, payment_account_id=jv_acc.id).save()
 
-        EjvInvoiceLinkModel(
-            invoice_id=inv.id, ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
+        EjvLinkModel(
+                    link_id=inv.id, link_type=EJVLinkType.INVOICE.value,
+                    ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
         ).save()
         inv_total = f'{inv.total:.2f}'.zfill(15)
         pay_line_amount = f'{line.total:.2f}'.zfill(15)
@@ -1041,12 +1047,13 @@ def test_successful_ap_disbursement(client):
     ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
                                                 ejv_file_id=ejv_file.id, payment_account_id=account.id).save()
 
-    EjvInvoiceLinkModel(
-        invoice_id=invoice.id, ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
+    EjvLinkModel(
+                link_id=invoice.id, link_type=EJVLinkType.INVOICE.value,
+                ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
     ).save()
 
-    EjvInvoiceLinkModel(
-        invoice_id=refund_invoice.id, ejv_header_id=ejv_header.id,
+    EjvLinkModel(
+        link_id=refund_invoice.id,  link_type=EJVLinkType.INVOICE.value, ejv_header_id=ejv_header.id,
         disbursement_status_code=DisbursementStatus.UPLOADED.value
     ).save()
 
@@ -1187,12 +1194,13 @@ def test_failure_ap_disbursement(client):
     ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
                                                 ejv_file_id=ejv_file.id, payment_account_id=account.id).save()
 
-    EjvInvoiceLinkModel(
-        invoice_id=invoice.id, ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
+    EjvLinkModel(
+        link_id=invoice.id, link_type=EJVLinkType.INVOICE.value,
+        ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
     ).save()
 
-    EjvInvoiceLinkModel(
-        invoice_id=refund_invoice.id, ejv_header_id=ejv_header.id,
+    EjvLinkModel(
+        link_id=refund_invoice.id, link_type=EJVLinkType.INVOICE.value, ejv_header_id=ejv_header.id,
         disbursement_status_code=DisbursementStatus.UPLOADED.value
     ).save()
 
@@ -1287,14 +1295,14 @@ def test_failure_ap_disbursement(client):
     invoice_1 = InvoiceModel.find_by_id(invoice_ids[0])
     assert invoice_1.disbursement_status_code == DisbursementStatus.COMPLETED.value
     assert invoice_1.disbursement_date is not None
-    invoice_link = db.session.query(EjvInvoiceLinkModel)\
-        .filter(EjvInvoiceLinkModel.invoice_id == invoice_ids[0])\
+    invoice_link = db.session.query(EjvLinkModel)\
+        .filter(EjvLinkModel.link_id == invoice_ids[0])\
         .one_or_none()
     assert invoice_link.disbursement_status_code == DisbursementStatus.COMPLETED.value
 
     invoice_2 = InvoiceModel.find_by_id(invoice_ids[1])
     assert invoice_2.disbursement_status_code == DisbursementStatus.ERRORED.value
-    invoice_link = db.session.query(EjvInvoiceLinkModel)\
-        .filter(EjvInvoiceLinkModel.invoice_id == invoice_ids[1])\
+    invoice_link = db.session.query(EjvLinkModel)\
+        .filter(EjvLinkModel.link_id == invoice_ids[1])\
         .one_or_none()
     assert invoice_link.disbursement_status_code == DisbursementStatus.ERRORED.value

@@ -52,3 +52,8 @@ class EjvLink(BaseModel):  # pylint: disable=too-few-public-methods
     disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
     message = db.Column('message', db.String, nullable=True, index=False)
     sequence = db.Column(db.Integer, nullable=True)
+
+    @classmethod
+    def find_ejv_link_by_link_id(cls, link_id: str):
+        """Return any ejv link by link_id."""
+        return cls.query.filter_by(link_id=link_id).first()

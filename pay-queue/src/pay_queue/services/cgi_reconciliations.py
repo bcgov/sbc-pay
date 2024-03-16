@@ -20,7 +20,7 @@ from flask import current_app
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
-from pay_api.models import EjvLink as EjvInvoiceLinkModel
+from pay_api.models import EjvLink as EjvLinkModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
@@ -78,8 +78,8 @@ def _update_acknowledgement(msg: Dict[str, any]):
     for ejv_header in ejv_headers:
         ejv_header.disbursement_status_code = DisbursementStatus.ACKNOWLEDGED.value
         if ejv_file.file_type == EjvFileType.DISBURSEMENT.value:
-            ejv_links: List[EjvInvoiceLinkModel] = db.session.query(EjvInvoiceLinkModel).filter(
-                EjvInvoiceLinkModel.ejv_header_id == ejv_header.id).all()
+            ejv_links: List[EjvLinkModel] = db.session.query(EjvLinkModel).filter(
+                EjvLinkModel.ejv_header_id == ejv_header.id).all()
             for ejv_link in ejv_links:
                 invoice: InvoiceModel = InvoiceModel.find_by_id(ejv_link.invoice_id)
                 invoice.disbursement_status_code = DisbursementStatus.ACKNOWLEDGED.value
@@ -164,9 +164,9 @@ def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  #
     invoice_id = int(line[205:315])
     current_app.logger.info('Invoice id - %s', invoice_id)
     invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
-    invoice_link: EjvInvoiceLinkModel = db.session.query(EjvInvoiceLinkModel).filter(
-        EjvInvoiceLinkModel.ejv_header_id == ejv_header_model_id).filter(
-        EjvInvoiceLinkModel.invoice_id == invoice_id).one_or_none()
+    invoice_link: EjvLinkModel = db.session.query(EjvLinkModel).filter(
+        EjvLinkModel.ejv_header_id == ejv_header_model_id).filter(
+        EjvLinkModel.link_id == invoice_id).one_or_none()
     invoice_return_code = line[315:319]
     invoice_return_message = line[319:469]
     # If the JV process failed, then mark the GL code against the invoice to be stopped
@@ -385,10 +385,10 @@ def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) -> boo
     ap_header_return_code = line[414:418]
     ap_header_error_message = line[418:568]
     disbursement_status = _get_disbursement_status(ap_header_return_code)
-    invoice_link = db.session.query(EjvInvoiceLinkModel)\
+    invoice_link = db.session.query(EjvLinkModel)\
         .join(EjvHeaderModel).join(EjvFileModel)\
         .filter(EjvFileModel.id == ejv_file.id)\
-        .filter(EjvInvoiceLinkModel.invoice_id == invoice_id)\
+        .filter(EjvLinkModel.link_id == invoice_id)\
         .one_or_none()
     invoice_link.disbursement_status_code = disbursement_status
     invoice_link.message = ap_header_error_message

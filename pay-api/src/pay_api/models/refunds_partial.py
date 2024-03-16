@@ -45,6 +45,8 @@ class RefundsPartial(Audit, VersionedModel):  # pylint: disable=too-many-instanc
             'refund_type',
             'disbursement_status_code',
             'disbursement_date'
+            'created_on',
+            'created_by'
         ]
     }
 

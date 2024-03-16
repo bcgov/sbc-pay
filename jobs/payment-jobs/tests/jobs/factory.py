@@ -21,7 +21,8 @@ from datetime import datetime, timedelta
 
 from pay_api.models import (
     CfsAccount, DistributionCode, DistributionCodeLink, EFTShortnames, Invoice, InvoiceReference, Payment,
-    PaymentAccount, PaymentLineItem, Receipt, Refund, RoutingSlip, StatementRecipients, StatementSettings)
+    PaymentAccount, PaymentLineItem, Receipt, Refund, RefundsPartial, RoutingSlip, StatementRecipients,
+    StatementSettings)
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
     PaymentSystem, RoutingSlipStatus)
@@ -333,4 +334,21 @@ def factory_refund_invoice(
         reason='TEST',
         requested_by='TEST',
         details=details
+    ).save()
+
+
+def factory_refund_partial(
+        payment_line_item_id: int,
+        refund_amount: float,
+        refund_type: str,
+        created_by='test',
+        created_on: datetime = datetime.now()
+):
+    """Return Factory."""
+    return RefundsPartial(
+        payment_line_item_id=payment_line_item_id,
+        refund_amount=refund_amount,
+        refund_type=refund_type,
+        created_by=created_by,
+        created_on=created_on
     ).save()
