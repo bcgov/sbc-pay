@@ -95,8 +95,14 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # legislative timezone for future effective dating
     LEGISLATIVE_TIMEZONE = os.getenv('LEGISLATIVE_TIMEZONE', 'America/Vancouver')
 
-    # notify-API URL
-    NOTIFY_API_URL = os.getenv('NOTIFY_API_URL')
+    # API Endpoints
+    AUTH_API_URL = os.getenv('AUTH_API_URL', '')
+    AUTH_API_VERSION = os.getenv('AUTH_API_VERSION', '')
+    NOTIFY_API_URL = os.getenv('NOTIFY_API_URL', '')
+    NOTIFY_API_VERSION = os.getenv('NOTIFY_API_VERSION', '')
+
+    AUTH_API_ENDPOINT = f'{AUTH_API_URL + AUTH_API_VERSION}/'
+    NOTIFY_API_ENDPOINT = f'{NOTIFY_API_URL + NOTIFY_API_VERSION}/'
 
     # Service account details
     KEYCLOAK_SERVICE_ACCOUNT_ID = os.getenv('SBC_AUTH_ADMIN_CLIENT_ID')
@@ -109,9 +115,6 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     AUTH_WEB_URL = os.getenv('AUTH_WEB_PAY_TRANSACTION_URL', '')
     AUTH_WEB_STATEMENT_URL = os.getenv('AUTH_WEB_STATEMENT_URL', 'account/orgId/settings/statements')
     REGISTRIES_LOGO_IMAGE_NAME = os.getenv('REGISTRIES_LOGO_IMAGE_NAME', 'bc_logo_for_email.png')
-
-    # Auth API Endpoint
-    AUTH_API_ENDPOINT = f'{os.getenv("AUTH_API_URL")}/'
 
     CFS_ACCOUNT_DESCRIPTION = os.getenv('CFS_ACCOUNT_DESCRIPTION', 'BCR')
     CFS_INVOICE_PREFIX = os.getenv('CFS_INVOICE_PREFIX', 'REG')
@@ -180,7 +183,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CGI_AP_REMITTANCE_CODE = os.getenv('CGI_AP_REMITTANCE_CODE', '78')
     BCA_SUPPLIER_NUMBER = os.getenv('BCA_SUPPLIER_NUMBER', '')
     BCA_SUPPLIER_LOCATION = os.getenv('BCA_SUPPLIER_LOCATION', '')
-    
+
     # FAS Client and secret
     CFS_FAS_CLIENT_ID = os.getenv('CFS_FAS_CLIENT_ID', '')
     CFS_FAS_CLIENT_SECRET = os.getenv('CFS_FAS_CLIENT_SECRET', '')
