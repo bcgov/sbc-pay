@@ -17,7 +17,8 @@ depends_on = None
 
 def upgrade():
     # Currently these are only set to version = 1
-    op.execute("""update account_fees set version =
+    op.execute("""
+               update account_fees set version =
                     (select coalesce(
                         (select count(transaction_id) as version
                             from account_fees_version
@@ -25,47 +26,58 @@ def upgrade():
                             account_fees.id = account_fees_version.id
                         group by
                             id
-                    ), 1));""")
+                    ), 1));
+               """)
 
-    op.execute("""update cfs_accounts set version =
+    op.execute("""
+               update cfs_accounts set version =
                 (select coalesce(
                (select count(transaction_id) as version
                     from cfs_accounts_version
                     where cfs_accounts.id = cfs_accounts_version.id
                     group by id
-               ), 1));""")
+               ), 1));
+               """)
 
-    op.execute("""update distribution_codes set version =
+    op.execute("""
+               update distribution_codes set version =
                (select coalesce(
                (select count(transaction_id) as version
                     from distribution_codes_version
                     where distribution_codes.distribution_code_id = distribution_codes_version.distribution_code_id
                     group by distribution_code_id
-               ),1));""")
+               ),1));
+               """)
 
-    op.execute("""update eft_short_names set version =
+    op.execute("""
+               update eft_short_names set version =
                (select coalesce(
                (select count(transaction_id) as version
                     from eft_short_names_version
                     where eft_short_names.id = eft_short_names_version.id
                     group by id
-               ),1));""")
+               ),1));
+               """)
 
-    op.execute("""update payment_accounts set version =
+    op.execute("""
+               update payment_accounts set version =
                 (select coalesce(
                 (select count(transaction_id) as version
                         from payment_accounts_version
                         where payment_accounts.id = payment_accounts_version.id 
                         group by id
-                ),1));""")
+                ),1));
+               """)
 
-    op.execute("""update refunds_partial set version =
+    op.execute("""
+               update refunds_partial set version =
                 (select coalesce(
                 (select count(transaction_id) as version
                     from refunds_partial_version
                     where refunds_partial.id = refunds_partial_version.id
                     group by id
-               ),1));""")
+               ),1));
+               """)
 
     op.execute("""
         with subquery as (
