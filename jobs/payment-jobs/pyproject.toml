@@ -8,7 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.12"
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
-pay-api = {git = "https://github.com/seeker25/sbc-pay.git", rev = "18263", subdirectory = "pay-api"}
+pay-api = {git = "https://github.com/Jxio/sbc-pay.git", rev = "19875", subdirectory = "pay-api"}
 flask-jwt-oidc = {git = "https://github.com/thorwolpert/flask-jwt-oidc.git"}
 simple-cloudevent = {git = "https://github.com/daxiom/simple-cloudevent.py.git"}
 gunicorn = "^21.2.0"
