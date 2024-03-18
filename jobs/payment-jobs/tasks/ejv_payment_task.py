@@ -181,7 +181,6 @@ class EjvPaymentTask(CgiEjv):
             sequence = 1
             for inv in invoices:
                 current_app.logger.debug(f'Creating EJV Invoice Link for invoice id: {inv.id}')
-                # Create Ejv file link and flush
                 ejv_invoice_link = EjvLinkModel(link_id=inv.id, link_type=EJVLinkType.INVOICE.value,
                                                 ejv_header_id=ejv_header_model.id,
                                                 disbursement_status_code=DisbursementStatus.UPLOADED.value,

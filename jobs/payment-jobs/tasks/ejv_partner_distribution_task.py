@@ -340,7 +340,6 @@ class EjvPartnerDistributionTask(CgiEjv):
 
     @classmethod
     def _create_ejv_link(cls, items, ejv_header_model, sequence, link_type):
-        # Create Ejv file link and flush
         for item in items:
             link_model = EjvLinkModel(link_id=item.id,
                                       link_type=link_type,

@@ -40,13 +40,13 @@ class RefundsPartial(Audit, VersionedModel):  # pylint: disable=too-many-instanc
     __mapper_args__ = {
         'include_properties': [
             'id',
+            'created_by',
+            'created_on',
+            'disbursement_date',
+            'disbursement_status_code',
             'payment_line_item_id',
             'refund_amount',
             'refund_type',
-            'disbursement_status_code',
-            'disbursement_date'
-            'created_on',
-            'created_by'
         ]
     }
 
