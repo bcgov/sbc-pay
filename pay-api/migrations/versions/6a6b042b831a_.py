@@ -60,8 +60,8 @@ def upgrade():
                                     )
 
     distribution_code_link_table = table('distribution_code_links',
-                                        column('distribution_code_id', String),
-                                        column('fee_schedule_id', String)
+                                        column('distribution_code_id', Integer),
+                                        column('fee_schedule_id', Integer)
                                         )
 
     # Product code/corp type

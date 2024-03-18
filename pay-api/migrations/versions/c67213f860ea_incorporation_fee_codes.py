@@ -8,7 +8,7 @@ Create Date: 2021-06-10 14:20:33.590691
 from datetime import date
 
 from alembic import op
-from sqlalchemy import Date, String, Boolean, text
+from sqlalchemy import Date, String, Boolean, text, Integer
 from sqlalchemy.sql import column, table
 
 # revision identifiers, used by Alembic.
@@ -29,8 +29,8 @@ def upgrade():
                             column('bcol_staff_fee_code', String)
                             )
     distribution_code_link_table = table('distribution_code_links',
-                                         column('distribution_code_id', String),
-                                         column('fee_schedule_id', String)
+                                         column('distribution_code_id', Integer),
+                                         column('fee_schedule_id', Integer)
                                          )
     fee_schedule_table = table('fee_schedules',
                                column('filing_type_code', String),
