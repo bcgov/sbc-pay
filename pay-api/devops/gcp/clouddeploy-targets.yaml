@@ -18,6 +18,7 @@ metadata:
  name: dev
 description: Dev Environment
 deployParameters:
+  deploy-env: "development"
   deploy-project-id: "gtksf3-dev"
   service-name: "pay-api-dev"
   container-name: "pay-api-dev"
@@ -37,6 +38,7 @@ metadata:
  name: test
 description: Test Environment
 deployParameters:
+  deploy-env: "testing"
   deploy-project-id: "gtksf3-test"
   service-name: "pay-api-test"
   container-name: "pay-api-test"
@@ -57,6 +59,7 @@ metadata:
 description: Sandbox Environment
 requireApproval: true
 deployParameters:
+  deploy-env: "sandbox"
   deploy-project-id: "gtksf3-tools"
   service-name: "pay-api-sandbox"
   container-name: "pay-api-sandbox"
@@ -82,6 +85,7 @@ metadata:
 description: Production Environment
 requireApproval: true
 deployParameters:
+  deploy-env: "production"
   deploy-project-id: "gtksf3-prod"
   service-name: "pay-api-prod"
   container-name: "pay-api-prod"
