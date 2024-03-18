@@ -24,6 +24,7 @@ deployParameters:
   app-env: "dev"
   cloudsql-instances: "gtksf3-dev:northamerica-northeast1:pay-db-dev"
   run-command: "./run.sh"
+  service-account: "sa-job@gtksf3-dev.iam.gserviceaccount.com"
 run:
  location: projects/gtksf3-dev/locations/northamerica-northeast1
 executionConfigs:
@@ -43,6 +44,7 @@ deployParameters:
   app-env: "test"
   cloudsql-instances: "gtksf3-test:northamerica-northeast1:pay-db-test"
   run-command: "./run.sh"
+  service-account: "sa-job@gtksf3-test.iam.gserviceaccount.com"
 run:
  location: projects/gtksf3-test/locations/northamerica-northeast1
 executionConfigs:
@@ -63,6 +65,7 @@ deployParameters:
   app-env: "sandbox"
   cloudsql-instances: "gtksf3-tools:northamerica-northeast1:pay-db-sandbox"
   run-command: "./run.sh"
+  service-account: "sa-job@gtksf3-tools.iam.gserviceaccount.com"
 run:
  location: projects/gtksf3-tools/locations/northamerica-northeast1
 executionConfigs:
@@ -83,6 +86,7 @@ deployParameters:
   app-env: "production"
   cloudsql-instances: "gtksf3-prod:northamerica-northeast1:pay-db-prod"
   run-command: "./run.sh"
+  service-account: "sa-job@gtksf3-prod.iam.gserviceaccount.com"
 run:
  location: projects/gtksf3-prod/locations/northamerica-northeast1
 executionConfigs:
