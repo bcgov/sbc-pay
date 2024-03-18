@@ -70,10 +70,10 @@ def test_partial_refund_disbursement(session, monkeypatch):
     with freeze_time(day_after_time_delay):
         EjvPartnerDistributionTask.create_ejv_file()
 
-        ejv_inv_link = db.session.query(EjvLink).filter(EjvLink.link_id == pli.id).first()
-        assert ejv_inv_link
+        ejv_link = db.session.query(EjvLink).filter(EjvLink.link_id == refund_partial.id).first()
+        assert ejv_link
 
-        ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_inv_link.ejv_header_id).first()
+        ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_link.ejv_header_id).first()
         assert ejv_header.disbursement_status_code == DisbursementStatus.UPLOADED.value
         assert ejv_header
 
