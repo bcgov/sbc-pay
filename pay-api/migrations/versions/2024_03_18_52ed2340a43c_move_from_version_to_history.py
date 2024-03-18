@@ -1,5 +1,5 @@
 """Move data from version to history table.
-A special thanks to LEAR for this:
+A special thanks to LEAR devs (Thor, Argus, Vysakh) for this migration and the history table implementation:
 https://github.com/bcgov/lear/blob/feature-legal-name/legal-api/scripts/manual_db_scripts/legal_name_change/transfer_to_new_lear.sql
 
 Revision ID: 52ed2340a43c

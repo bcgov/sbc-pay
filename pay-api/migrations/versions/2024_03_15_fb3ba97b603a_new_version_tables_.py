@@ -1,5 +1,8 @@
 """Migration for new history tables
 
+A special thanks to LEAR devs (Thor, Argus, Vysakh) for this migration and the history table implementation:
+https://github.com/bcgov/lear/blob/feature-legal-name/legal-api/scripts/manual_db_scripts/legal_name_change/transfer_to_new_lear.sql
+
 Revision ID: fb3ba97b603a
 Revises: 04b8a7bed74e
 Create Date: 2024-03-15 15:22:53.140353
