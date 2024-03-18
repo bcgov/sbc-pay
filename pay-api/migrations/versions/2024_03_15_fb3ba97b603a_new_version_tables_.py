@@ -1,7 +1,7 @@
 """Migration for new history tables
 
 Revision ID: fb3ba97b603a
-Revises: bacb2b859d78
+Revises: 04b8a7bed74e
 Create Date: 2024-03-15 15:22:53.140353
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'fb3ba97b603a'
-down_revision = 'bacb2b859d78'
+down_revision = '04b8a7bed74e'
 branch_labels = None
 depends_on = None
 
