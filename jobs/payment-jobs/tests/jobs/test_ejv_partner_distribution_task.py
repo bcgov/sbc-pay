@@ -22,7 +22,7 @@ import pytest
 from flask import current_app
 from freezegun import freeze_time
 from pay_api.models import CorpType as CorpTypeModel
-from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvInvoiceLink, FeeSchedule, Invoice, db
+from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvLink, FeeSchedule, Invoice, db
 from pay_api.utils.enums import CfsAccountStatus, DisbursementStatus, InvoiceStatus, PaymentMethod
 
 from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
@@ -89,7 +89,7 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
         invoice = Invoice.find_by_id(invoice.id)
         assert invoice.disbursement_status_code == DisbursementStatus.UPLOADED.value
 
-        ejv_inv_link = db.session.query(EjvInvoiceLink).filter(EjvInvoiceLink.invoice_id == invoice.id).first()
+        ejv_inv_link = db.session.query(EjvLink).filter(EjvLink.link_id == invoice.id).first()
         assert ejv_inv_link
 
         ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_inv_link.ejv_header_id).first()

@@ -19,10 +19,10 @@ from .base_model import BaseModel
 from .db import db
 
 
-class EjvInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
+class EjvLink(BaseModel):  # pylint: disable=too-few-public-methods
     """This class manages linkages between EJV and invoices."""
 
-    __tablename__ = 'ejv_invoice_links'
+    __tablename__ = 'ejv_links'
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -38,15 +38,22 @@ class EjvInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
             'id',
             'disbursement_status_code',
             'ejv_header_id',
-            'invoice_id',
+            'link_id',
+            'link_type',
             'message',
             'sequence'
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False, index=True)
-    ejv_header_id = db.Column(db.Integer, ForeignKey('ejv_headers.id'), nullable=False, index=True)
     disbursement_status_code = db.Column(db.String(20), ForeignKey('disbursement_status_codes.code'), nullable=True)
+    ejv_header_id = db.Column(db.Integer, ForeignKey('ejv_headers.id'), nullable=False, index=True)
+    link_id = db.Column(db.Integer, nullable=True, index=True)  # Repurposed for generic linking
+    link_type = db.Column(db.String(50), nullable=True, index=True)
     message = db.Column('message', db.String, nullable=True, index=False)
     sequence = db.Column(db.Integer, nullable=True)
+
+    @classmethod
+    def find_ejv_link_by_link_id(cls, link_id: str):
+        """Return any ejv link by link_id."""
+        return cls.query.filter_by(link_id=link_id).first()

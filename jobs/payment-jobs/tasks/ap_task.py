@@ -23,12 +23,12 @@ from pay_api.models import CorpType as CorpTypeModel
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
-from pay_api.models import EjvInvoiceLink as EjvInvoiceLinkModel
+from pay_api.models import EjvLink as EjvLinkModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
-from pay_api.utils.enums import DisbursementStatus, EjvFileType, RoutingSlipStatus
+from pay_api.utils.enums import DisbursementStatus, EjvFileType, EJVLinkType, RoutingSlipStatus
 from tasks.common.cgi_ap import CgiAP
 from tasks.common.dataclasses import APLine
 from tasks.ejv_partner_distribution_task import EjvPartnerDistributionTask
@@ -156,9 +156,10 @@ class ApTask(CgiAP):
             ap_content = f'{ap_content}{batch_trailer}'
 
             for inv in invoices:
-                db.session.add(EjvInvoiceLinkModel(invoice_id=inv.id,
-                                                   ejv_header_id=ejv_header_model.id,
-                                                   disbursement_status_code=DisbursementStatus.UPLOADED.value))
+                db.session.add(EjvLinkModel(link_id=inv.id,
+                                            link_type=EJVLinkType.INVOICE.value,
+                                            ejv_header_id=ejv_header_model.id,
+                                            disbursement_status_code=DisbursementStatus.UPLOADED.value))
                 inv.disbursement_status_code = DisbursementStatus.UPLOADED.value
             db.session.flush()
 
