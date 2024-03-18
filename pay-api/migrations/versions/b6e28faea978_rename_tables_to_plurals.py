@@ -8,7 +8,7 @@ Create Date: 2021-01-25 21:50:58.043768
 import re
 
 from alembic import op
-from sqlalchemy import MetaData, create_engine
+from sqlalchemy import MetaData, create_engine, inspect
 from sqlalchemy.engine import reflection
 # revision identifiers, used by Alembic.
 from sqlalchemy.engine.reflection import Inspector
@@ -72,7 +72,7 @@ def upgrade():
     """
 
     conn = op.get_bind()
-    inspector = Inspector.from_engine(conn)
+    inspector = inspect(conn)
     tables = inspector.get_table_names()
     metadata = MetaData()
     metadata.reflect(conn)
@@ -88,7 +88,7 @@ def upgrade():
 
 def downgrade():
     conn = op.get_bind()
-    inspector = Inspector.from_engine(conn)
+    inspector = inspect(conn)
     tables = inspector.get_table_names()
     metadata = MetaData()
     metadata.reflect(conn)

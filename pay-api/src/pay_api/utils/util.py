@@ -25,7 +25,7 @@ from urllib.parse import parse_qsl
 from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC
 from holidays.countries import Canada
 import pytz
-from dpath import util as dpath_util
+from dpath import get as dpath_get
 from flask import current_app
 
 from .constants import DT_SHORT_FORMAT
@@ -73,7 +73,7 @@ def get_str_by_path(payload: Dict, path: str) -> str:
         return None
 
     try:
-        raw = dpath_util.get(payload, path)
+        raw = dpath_get(payload, path)
         return str(raw) if raw is not None else raw
     except (IndexError, KeyError, TypeError):
         return None
