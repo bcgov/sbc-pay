@@ -31,8 +31,8 @@ from .factory import (
     factory_invoice_reference, factory_payment, factory_payment_line_item, factory_refund_partial)
 
 
-def test_partial_refund_disbursement_for_partners(session, monkeypatch):
-    """Test partial refund disbursement for partners."""
+def test_partial_refund_disbursement(session, monkeypatch):
+    """Test partial refund disbursement."""
     monkeypatch.setattr('pysftp.Connection.put', lambda *args, **kwargs: None)
     corp_type: CorpTypeModel = CorpTypeModel.find_by_code('VS')
 
