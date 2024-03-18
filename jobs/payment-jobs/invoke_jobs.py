@@ -34,7 +34,7 @@ from pay_api.services import Flags
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
 
-def create_app(run_mode=os.getenv('FLASK_ENV', 'production'), job_name='unknown', init_oracle=False):
+def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production'), job_name='unknown', init_oracle=False):
     """Return a configured Flask App using the Factory method."""
     from pay_api.models import db, ma
 

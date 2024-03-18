@@ -33,7 +33,7 @@ from .keycloak import Keycloak
 setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))
 
 
-def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
+def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
     """Return a configured Flask App using the Factory method."""
     app = Flask(__name__)
     app.config.from_object(config.CONFIGURATION[run_mode])

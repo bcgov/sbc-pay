@@ -33,7 +33,7 @@ from .resources import register_endpoints
 from .services import queue
 
 
-def create_app(run_mode=os.getenv('FLASK_ENV', 'production')) -> Flask:
+def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')) -> Flask:
     """Return a configured Flask App using the Factory method."""
     app = Flask(__name__)
     app.env = run_mode

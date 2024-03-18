@@ -18,6 +18,7 @@ metadata:
  name: dev
 description: Dev Environment
 deployParameters:
+  deploy-env: "development"
   deploy-project-id: "gtksf3-dev"
   job-name: "payment-jobs-dev"
   app-env: "dev"
@@ -36,6 +37,7 @@ metadata:
  name: test
 description: Test Environment
 deployParameters:
+  deploy-env: "development"
   deploy-project-id: "gtksf3-test"
   job-name: "payment-jobs-test"
   app-env: "test"
@@ -55,13 +57,14 @@ metadata:
 description: Sandbox Environment
 requireApproval: true
 deployParameters:
-  deploy-project-id: "gtksf3-integration"
+  deploy-env: "production"
+  deploy-project-id: "gtksf3-tools"
   job-name: "payment-jobs-sandbox"
   app-env: "sandbox"
-  cloudsql-instances: "gtksf3-integration:northamerica-northeast1:pay-db-sandbox"
+  cloudsql-instances: "gtksf3-tools:northamerica-northeast1:pay-db-sandbox"
   run-command: "./run.sh"
 run:
- location: projects/gtksf3-integration/locations/northamerica-northeast1
+ location: projects/gtksf3-tools/locations/northamerica-northeast1
 executionConfigs:
 - usages: [DEPLOY, RENDER]
   artifactStorage: 'gs://c4hnrd-tools_clouddeploy/history'
@@ -74,6 +77,7 @@ metadata:
 description: Production Environment
 requireApproval: true
 deployParameters:
+  deploy-env: "production"
   deploy-project-id: "gtksf3-prod"
   job-name: "payment-jobs-prod"
   app-env: "production"
