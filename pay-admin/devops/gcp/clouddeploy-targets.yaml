@@ -38,7 +38,7 @@ metadata:
  name: test
 description: Test Environment
 deployParameters:
-  deploy-env: "testing"
+  deploy-env: "development"
   deploy-project-id: "gtksf3-test"
   service-name: "pay-admin-test"
   container-name: "pay-admin-test"
@@ -59,7 +59,7 @@ metadata:
 description: Sandbox Environment
 requireApproval: true
 deployParameters:
-  deploy-env: "sandbox"
+  deploy-env: "production"
   deploy-project-id: "gtksf3-tools"
   service-name: "pay-admin-sandbox"
   container-name: "pay-admin-sandbox"

@@ -37,7 +37,7 @@ metadata:
  name: test
 description: Test Environment
 deployParameters:
-  deploy-env: "testing"
+  deploy-env: "development"
   deploy-project-id: "gtksf3-test"
   job-name: "payment-jobs-test"
   app-env: "test"
@@ -57,7 +57,7 @@ metadata:
 description: Sandbox Environment
 requireApproval: true
 deployParameters:
-  deploy-env: "sandbox"
+  deploy-env: "production"
   deploy-project-id: "gtksf3-tools"
   job-name: "payment-jobs-sandbox"
   app-env: "sandbox"
