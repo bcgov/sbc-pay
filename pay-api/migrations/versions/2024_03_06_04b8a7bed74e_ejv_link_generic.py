@@ -17,6 +17,7 @@ depends_on = None
 
 def upgrade():
     op.add_column('ejv_invoice_links', sa.Column('link_type', sa.String(length=20), nullable=True))
+    op.drop_constraint('ejv_invoice_links_invoice_id_fkey', 'ejv_invoice_links', type_='foreignkey')
     op.drop_index(op.f('ix_ejv_invoice_links_invoice_id'), table_name='ejv_invoice_links')
     op.alter_column('ejv_invoice_links', 'invoice_id', new_column_name='link_id',
                     existing_type=sa.Integer(), nullable=True)
@@ -33,3 +34,4 @@ def downgrade():
                     existing_type=sa.Integer(), nullable=False)
     op.create_index(op.f('ix_ejv_invoice_links_invoice_id'), 'ejv_invoice_links', ['invoice_id'], unique=False)
     op.drop_column('ejv_invoice_links', 'link_type')
+    op.create_foreign_key('ejv_invoice_links_invoice_id_fkey', 'ejv_invoice_links', 'invoices', ['invoice_id'], ['id'])
