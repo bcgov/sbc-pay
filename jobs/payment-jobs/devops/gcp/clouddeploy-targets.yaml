@@ -20,11 +20,11 @@ description: Dev Environment
 deployParameters:
   deploy-env: "development"
   deploy-project-id: "gtksf3-dev"
-  service-name: "pay-api-dev"
-  container-name: "pay-api-dev"
+  job-name: "payment-jobs-dev"
   app-env: "dev"
   cloudsql-instances: "gtksf3-dev:northamerica-northeast1:pay-db-dev"
-  service-account: "sa-api@gtksf3-dev.iam.gserviceaccount.com"
+  run-command: "./run.sh"
+  service-account: "sa-job@gtksf3-dev.iam.gserviceaccount.com"
 run:
  location: projects/gtksf3-dev/locations/northamerica-northeast1
 executionConfigs:
@@ -40,11 +40,11 @@ description: Test Environment
 deployParameters:
   deploy-env: "development"
   deploy-project-id: "gtksf3-test"
-  service-name: "pay-api-test"
-  container-name: "pay-api-test"
+  job-name: "payment-jobs-test"
   app-env: "test"
   cloudsql-instances: "gtksf3-test:northamerica-northeast1:pay-db-test"
-  service-account: "sa-api@gtksf3-test.iam.gserviceaccount.com"
+  run-command: "./run.sh"
+  service-account: "sa-job@gtksf3-test.iam.gserviceaccount.com"
 run:
  location: projects/gtksf3-test/locations/northamerica-northeast1
 executionConfigs:
@@ -61,16 +61,11 @@ requireApproval: true
 deployParameters:
   deploy-env: "production"
   deploy-project-id: "gtksf3-tools"
-  service-name: "pay-api-sandbox"
-  container-name: "pay-api-sandbox"
+  job-name: "payment-jobs-sandbox"
   app-env: "sandbox"
   cloudsql-instances: "gtksf3-tools:northamerica-northeast1:pay-db-sandbox"
-  service-account: "sa-api@gtksf3-tools.iam.gserviceaccount.com"
-  max-scale: "50"
-  container-concurrency: "20"
-  container-port: "8080"
-  resources-cpu: 4000m
-  resources-memory: 8Gi
+  run-command: "./run.sh"
+  service-account: "sa-job@gtksf3-tools.iam.gserviceaccount.com"
 run:
  location: projects/gtksf3-tools/locations/northamerica-northeast1
 executionConfigs:
@@ -87,16 +82,11 @@ requireApproval: true
 deployParameters:
   deploy-env: "production"
   deploy-project-id: "gtksf3-prod"
-  service-name: "pay-api-prod"
-  container-name: "pay-api-prod"
+  job-name: "payment-jobs-prod"
   app-env: "production"
   cloudsql-instances: "gtksf3-prod:northamerica-northeast1:pay-db-prod"
-  service-account: "sa-api@gtksf3-prod.iam.gserviceaccount.com"
-  max-scale: "50"
-  container-concurrency: "20"
-  container-port: "8080"
-  resources-cpu: 4000m
-  resources-memory: 8Gi
+  run-command: "./run.sh"
+  service-account: "sa-job@gtksf3-prod.iam.gserviceaccount.com"
 run:
  location: projects/gtksf3-prod/locations/northamerica-northeast1
 executionConfigs:

@@ -1,4 +1,4 @@
-# Copyright 2022 Google LLC
+# Copyright 2022 Google LLCpay-queue
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ description: Dev Environment
 deployParameters:
   deploy-env: "development"
   deploy-project-id: "gtksf3-dev"
-  service-name: "pay-api-dev"
-  container-name: "pay-api-dev"
+  service-name: "pay-queue-dev"
+  container-name: "pay-queue-dev"
   app-env: "dev"
   cloudsql-instances: "gtksf3-dev:northamerica-northeast1:pay-db-dev"
   service-account: "sa-api@gtksf3-dev.iam.gserviceaccount.com"
@@ -40,8 +40,8 @@ description: Test Environment
 deployParameters:
   deploy-env: "development"
   deploy-project-id: "gtksf3-test"
-  service-name: "pay-api-test"
-  container-name: "pay-api-test"
+  service-name: "pay-queue-test"
+  container-name: "pay-queue-test"
   app-env: "test"
   cloudsql-instances: "gtksf3-test:northamerica-northeast1:pay-db-test"
   service-account: "sa-api@gtksf3-test.iam.gserviceaccount.com"
@@ -61,8 +61,8 @@ requireApproval: true
 deployParameters:
   deploy-env: "production"
   deploy-project-id: "gtksf3-tools"
-  service-name: "pay-api-sandbox"
-  container-name: "pay-api-sandbox"
+  service-name: "pay-queue-sandbox"
+  container-name: "pay-queue-sandbox"
   app-env: "sandbox"
   cloudsql-instances: "gtksf3-tools:northamerica-northeast1:pay-db-sandbox"
   service-account: "sa-api@gtksf3-tools.iam.gserviceaccount.com"
@@ -87,8 +87,8 @@ requireApproval: true
 deployParameters:
   deploy-env: "production"
   deploy-project-id: "gtksf3-prod"
-  service-name: "pay-api-prod"
-  container-name: "pay-api-prod"
+  service-name: "pay-queue-prod"
+  container-name: "pay-queue-prod"
   app-env: "production"
   cloudsql-instances: "gtksf3-prod:northamerica-northeast1:pay-db-prod"
   service-account: "sa-api@gtksf3-prod.iam.gserviceaccount.com"

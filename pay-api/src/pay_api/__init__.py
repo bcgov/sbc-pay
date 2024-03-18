@@ -39,7 +39,7 @@ from pay_api.utils.run_version import get_run_version
 setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))
 
 
-def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
+def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
     """Return a configured Flask App using the Factory method."""
     app = Flask(__name__)
     app.env = run_mode
