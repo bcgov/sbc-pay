@@ -320,7 +320,7 @@ def test_payment_creation_with_routing_slip(session, client, jwt, app):
     assert schema_utils.validate(rv.json, 'invoice')[0]
 
 
-def test_zero_dollar_payment_creation_with_existing_routing_slip(client, jwt):
+def test_zero_dollar_payment_creation_with_existing_routing_slip(session, client, jwt):
     """Assert that the endpoint returns 201."""
     claims = get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value, Role.STAFF.value, 'make_payment'])
     token = jwt.create_jwt(claims, token_header)
@@ -349,7 +349,7 @@ def test_zero_dollar_payment_creation_with_existing_routing_slip(client, jwt):
     get_payment_request(),
     get_payment_request_without_bn()
 ])
-def test_payment_creation_with_existing_routing_slip(client, jwt, payment_requests):
+def test_payment_creation_with_existing_routing_slip(session, client, jwt, payment_requests):
     """Assert that the endpoint returns 201."""
     claims = get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value, Role.STAFF.value, 'make_payment'])
     token = jwt.create_jwt(claims, token_header)
@@ -375,7 +375,7 @@ def test_payment_creation_with_existing_routing_slip(client, jwt, payment_reques
     assert items[0].get('remainingAmount') == payload.get('payments')[0].get('paidAmount') - total
 
 
-def test_payment_creation_with_existing_invalid_routing_slip_invalid(client, jwt):
+def test_payment_creation_with_existing_invalid_routing_slip_invalid(session, client, jwt):
     """Assert that the endpoint returns 201."""
     claims = get_claims(
         roles=[Role.FAS_CREATE.value, Role.FAS_EDIT.value, Role.STAFF.value, 'make_payment', Role.FAS_LINK.value])

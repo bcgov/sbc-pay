@@ -15,6 +15,7 @@
 from __future__ import annotations
 from typing import List
 from flask import current_app
+from sql_versioning import Versioned
 from sqlalchemy import ForeignKey
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
@@ -24,11 +25,11 @@ from sqlalchemy_utils.types.encrypted.encrypted_type import AesEngine, StringEnc
 from pay_api.utils.enums import CfsAccountStatus
 
 from .base_schema import BaseSchema
-from .base_model import VersionedModel
+from .base_model import BaseModel
 from .db import db
 
 
-class CfsAccount(VersionedModel):  # pylint:disable=too-many-instance-attributes
+class CfsAccount(Versioned, BaseModel):  # pylint:disable=too-many-instance-attributes
     """This class manages all of the base data about PayBC Account."""
 
     __tablename__ = 'cfs_accounts'

@@ -215,7 +215,7 @@ class RoutingSlip(Audit):  # pylint: disable=too-many-instance-attributes
                              limit(limit).\
                              offset((page - 1) * limit).\
                              subquery()
-            query = query.filter(RoutingSlip.id.in_(sub_query))
+            query = query.filter(RoutingSlip.id.in_(sub_query.select()))
 
         result = query.all()
         count = len(result)

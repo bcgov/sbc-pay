@@ -180,7 +180,7 @@ def test_get_receipt(session, public_user_mock):
     assert rcpt is not None
 
 
-def test_process_cfs_refund_success(monkeypatch):
+def test_process_cfs_refund_success(session, monkeypatch):
     """Assert refund is successful, when providing a PAID invoice, receipt, a COMPLETED invoice reference."""
     payment_account = factory_payment_account()
     invoice = factory_invoice(payment_account)
@@ -199,7 +199,7 @@ def test_process_cfs_refund_success(monkeypatch):
     assert True
 
 
-def test_process_cfs_refund_bad_request():
+def test_process_cfs_refund_bad_request(session):
     """
     Assert refund is rejected, only PAID and UPDATE_REVENUE_ACCOUNT are allowed.
 
@@ -215,7 +215,7 @@ def test_process_cfs_refund_bad_request():
         assert excinfo.value.code == Error.INVALID_REQUEST.name
 
 
-def test_process_cfs_refund_duplicate_refund(monkeypatch):
+def test_process_cfs_refund_duplicate_refund(session, monkeypatch):
     """
     Assert duplicate refund throws an exception.
 
@@ -325,7 +325,7 @@ def _automated_refund_preparation():
                           refund_amount=3,
                           refund_type=RefundsPartialType.SERVICE_FEES.value)]),
 ])
-def test_build_automated_refund_payload_validation(test_name, refund_partial):
+def test_build_automated_refund_payload_validation(session, test_name, refund_partial):
     """Assert validations are working correctly for building refund payload."""
     invoice, payment_line_item = _automated_refund_preparation()
     if test_name == 'pay_pli_not_exist':
@@ -344,7 +344,7 @@ def test_build_automated_refund_payload_validation(test_name, refund_partial):
     ('paybc_amount_too_high', True),
     ('paybc_already_refunded', True),
 ])
-def test_build_automated_refund_payload_paybc_validation(test_name, has_exception):
+def test_build_automated_refund_payload_paybc_validation(session, test_name, has_exception):
     """Assert refund payload building works correctly with various PAYBC responses."""
     invoice, payment_line_item = _automated_refund_preparation()
     refund_partial = [

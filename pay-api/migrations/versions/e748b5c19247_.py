@@ -10,7 +10,7 @@ from re import M
 
 from alembic import op
 import sqlalchemy as sa
-from sqlalchemy import Date, Float, Integer, Boolean, String
+from sqlalchemy import Date, Integer, Boolean, String
 from sqlalchemy.sql import column, table
 
 
@@ -56,8 +56,8 @@ def upgrade():
                                     )
 
     distribution_code_link_table = table('distribution_code_links',
-                                        column('distribution_code_id', String),
-                                        column('fee_schedule_id', String)
+                                        column('distribution_code_id', Integer),
+                                        column('fee_schedule_id', Integer)
                                         )
 
     # Product code/corp type

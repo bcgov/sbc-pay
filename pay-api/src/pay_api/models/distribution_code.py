@@ -17,11 +17,11 @@ from __future__ import annotations
 from datetime import date
 
 from marshmallow import fields
+from sql_versioning import Versioned
 from sqlalchemy import Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 
 from .audit import Audit, AuditSchema, BaseModel
-from .base_model import VersionedModel
 from .base_schema import BaseSchema
 from .db import db, ma
 
@@ -72,7 +72,7 @@ class DistributionCodeLink(BaseModel):
         BaseModel.commit()
 
 
-class DistributionCode(Audit, VersionedModel):  # pylint:disable=too-many-instance-attributes
+class DistributionCode(Audit, Versioned, BaseModel):  # pylint:disable=too-many-instance-attributes
     """This class manages all of the base data about distribution code.
 
     Distribution code holds details on the codes for how the collected payment is going to be distributed.

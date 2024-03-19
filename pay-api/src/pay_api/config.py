@@ -239,7 +239,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     DB_PORT = _get_config('DATABASE_TEST_PORT', default='5432')
     SQLALCHEMY_DATABASE_URI = _get_config(
         'DATABASE_TEST_URL',
-        default=f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}',
+        default=f'postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}',
     )
 
     JWT_OIDC_TEST_MODE = True
