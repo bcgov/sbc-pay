@@ -272,7 +272,7 @@ def test_statement_various_payment_methods_history(db, app):
     # We aren't using the session fixture here because we want to test the history_cls
     # history_cls wont work on scoped session flush.
     with app.app_context():
-        db.session.commit = lambda: None
+        db.session.commit = db.session.flush
         account: PaymentAccountService = PaymentAccountService.create(
             get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value))
 
