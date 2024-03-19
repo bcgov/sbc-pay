@@ -307,7 +307,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def cfs_account_status(self, value: int):
         """Set the cfs_account_status."""
         self._cfs_account_status = value
-        self._dao.cfs_account_status = value
+        if self._dao.cfs_account_status != value:
+            self._dao.cfs_account_status = value
 
     @property
     def credit(self):
@@ -330,7 +331,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def billable(self, value: bool):
         """Set the billable."""
         self._billable = value
-        self._dao.billable = value
+        if self._dao.billable != value:
+            self._dao.billable = value
 
     @property
     def eft_enable(self):
@@ -341,7 +343,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def eft_enable(self, value: bool):
         """Set the eft_enable."""
         self._eft_enable = value
-        self._dao.eft_enable = value
+        if self._dao.eft_enable != value:
+            self._dao.eft_enable = value
 
     def save(self):
         """Save the information to the DB."""

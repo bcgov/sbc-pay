@@ -107,7 +107,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     def auth_account_id(self, value: str):
         """Set the auth_account_id."""
         self._auth_account_id = value
-        self._dao.auth_account_id = value
+        if self._dao.auth_account_id != value:
+            self._dao.auth_account_id = value
 
     @property
     def short_name(self):
@@ -118,7 +119,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     def short_name(self, value: str):
         """Set the short name."""
         self._short_name = value
-        self._dao.short_name = value
+        if self._dao.short_name != value:
+            self._dao.short_name = value
 
     @property
     def created_on(self):
@@ -129,7 +131,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     def created_on(self, value: datetime):
         """Set the created on date."""
         self._created_on = value
-        self._dao.created_on = value
+        if self.__dao.created_on != value:
+            self._dao.created_on = value
 
     @property
     def linked_by(self):
@@ -140,7 +143,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     def linked_by(self, value: str):
         """Set the linked by user name."""
         self._linked_by = value
-        self._dao.linked_by = value
+        if self.__dao.linked_by != value:
+            self._dao.linked_by = value
 
     @property
     def linked_by_name(self):
@@ -151,7 +155,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     def linked_by_name(self, value: str):
         """Set the linked by name."""
         self._linked_by_name = value
-        self._dao.linked_by_name = value
+        if self.__dao.linked_by_name != value:
+            self._dao.linked_by_name = value
 
     @property
     def linked_on(self):
@@ -162,7 +167,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     def linked_on(self, value: str):
         """Set the linked on date."""
         self._linked_on = value
-        self._dao.linked_on = value
+        if self.__dao.linked_on != value:
+            self._dao.linked_on = value
 
     def save(self):
         """Save the information to the DB."""
