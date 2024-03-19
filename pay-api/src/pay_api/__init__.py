@@ -18,6 +18,7 @@ This module is the API for the Legal Entity system.
 
 import os
 
+from flask_migrate import Migrate
 import sentry_sdk  # noqa: I001; pylint: disable=ungrouped-imports,wrong-import-order; conflicts with Flake8
 from flask import Flask
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
@@ -47,6 +48,7 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
 
     flags.init_app(app)
     db.init_app(app)
+    Migrate(app, db)
     ma.init_app(app)
     endpoints.init_app(app)
 
