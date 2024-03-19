@@ -475,6 +475,21 @@ def test_update_pad_account_when_cfs_up(session, client, jwt, app):
     assert rv.status_code == 200
 
 
+def test_switch_eft_account_when_cfs_up(session, client, jwt, app, admin_users_mock):
+    """Assert that the payment records are created with 202."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post('/api/v1/accounts',
+                     data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.PAD.value)),
+                     headers=headers)
+    auth_account_id = rv.json.get('accountId')
+    rv = client.put(f'/api/v1/accounts/{auth_account_id}',
+                    data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.EFT.value)),
+                    headers=headers)
+
+    assert rv.status_code == 200
+
+
 def test_update_online_banking_account_when_cfs_down(session, client, jwt, app):
     """Assert that the payment records are created with 200, as there is no CFS update."""
     token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)

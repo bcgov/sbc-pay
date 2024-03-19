@@ -23,7 +23,8 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, PaymentMethod, PaymentStatus
+from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, PaymentMethod, PaymentStatus, PaymentSystem
+
 from .deposit_service import DepositService
 from .invoice import Invoice
 from .invoice_reference import InvoiceReference
@@ -35,8 +36,12 @@ class EftService(DepositService):
     """Service to manage electronic fund transfers."""
 
     def get_payment_method_code(self):
-        """Return EFT as the system code."""
+        """Return EFT as the payment method code."""
         return PaymentMethod.EFT.value
+
+    def get_payment_system_code(self):
+        """Return PAYBC as the system code."""
+        return PaymentSystem.PAYBC.value
 
     def create_account(self, identifier: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
                        **kwargs) -> CfsAccountModel:
@@ -45,6 +50,17 @@ class EftService(DepositService):
         current_app.logger.info(f'Creating EFT account details in PENDING status for {identifier}')
         cfs_account = CfsAccountModel()
         cfs_account.status = CfsAccountStatus.PENDING.value
+        return cfs_account
+
+    def update_account(self, name: str, cfs_account: CfsAccountModel, payment_info: Dict[str, Any]) -> CfsAccountModel:
+        """Update pad account."""
+        if str(payment_info.get('bankInstitutionNumber')) != cfs_account.bank_number or \
+                str(payment_info.get('bankTransitNumber')) != cfs_account.bank_branch_number or \
+                str(payment_info.get('bankAccountNumber')) != cfs_account.bank_account_number:
+            # This means, the current cfs_account is for PAD, not EFT
+            # Make the current CFS Account as INACTIVE in DB
+            cfs_account.status = CfsAccountStatus.INACTIVE.value
+            cfs_account.flush()
         return cfs_account
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
