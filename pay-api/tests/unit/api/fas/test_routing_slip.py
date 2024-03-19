@@ -44,7 +44,7 @@ fake = Faker()
                                 ]),
     get_routing_slip_request(cheque_receipt_numbers=[('0001', PaymentMethod.CASH.value, 2000)])
 ])
-def test_create_routing_slips(client, jwt, payload):
+def test_create_routing_slips(session, client, jwt, payload):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -59,7 +59,7 @@ def test_create_routing_slips(client, jwt, payload):
     assert len(allowed_statuses) == len(RoutingSlipStatusTransitionService.STATUS_TRANSITIONS.get('ACTIVE'))
 
 
-def test_create_routing_slips_search(client, jwt, app):
+def test_create_routing_slips_search(session, client, jwt, app):
     """Assert that the search works."""
     claims = get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value])
     token = jwt.create_jwt(claims, token_header)
@@ -137,7 +137,7 @@ def test_create_routing_slips_search(client, jwt, app):
     assert len(items) == 0
 
 
-def test_link_routing_slip_parent_is_a_child(client, jwt):
+def test_link_routing_slip_parent_is_a_child(session, client, jwt):
     """Assert linking to a child fails."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value, Role.FAS_SEARCH.value]),
                            token_header)
@@ -163,7 +163,7 @@ def test_link_routing_slip_parent_is_a_child(client, jwt):
     assert rv.status_code == 400
 
 
-def test_link_nsf(client, jwt):
+def test_link_nsf(session, client, jwt):
     """Assert linking to a child fails."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value,
                                              Role.FAS_SEARCH.value, Role.FAS_EDIT.value]),
@@ -186,7 +186,7 @@ def test_link_nsf(client, jwt):
     assert rv.json.get('title') == 'Routing Slip cannot be linked.'
 
 
-def test_link_routing_slip_invalid_status(client, jwt, app):
+def test_link_routing_slip_invalid_status(session, client, jwt, app):
     """Assert that the linking of routing slip works as expected."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value,
                                              Role.FAS_SEARCH.value, Role.FAS_REFUND.value,
@@ -225,7 +225,7 @@ def test_link_routing_slip_invalid_status(client, jwt, app):
     assert rv.json.get('type') == 'RS_IN_INVALID_STATUS', 'parent is invalid.'
 
 
-def test_link_routing_slip(client, jwt, app):
+def test_link_routing_slip(session, client, jwt, app):
     """Assert that the linking of routing slip works as expected."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value,
                                              Role.FAS_SEARCH.value, Role.FAS_EDIT.value]),
@@ -328,7 +328,7 @@ def test_link_routing_slip(client, jwt, app):
     assert rv.status_code == 200, 'parent can have transactions'
 
 
-def test_create_routing_slips_search_with_folio_number(client, jwt, app):
+def test_create_routing_slips_search_with_folio_number(session, client, jwt, app):
     """Assert that the search works."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -398,7 +398,7 @@ def test_create_routing_slips_search_with_folio_number(client, jwt, app):
     assert len(items[0].get('invoices')) == 2, 'folio alone works.'
 
 
-def test_create_routing_slips_search_with_receipt(client, jwt, app):
+def test_create_routing_slips_search_with_receipt(session, client, jwt, app):
     """Assert that the search works."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -455,7 +455,7 @@ def test_create_routing_slips_search_with_receipt(client, jwt, app):
 @pytest.mark.parametrize('payload', [
     get_routing_slip_request(number='559555333'),
 ])
-def test_create_routing_slips_unauthorized(client, jwt, payload):
+def test_create_routing_slips_unauthorized(session, client, jwt, payload):
     """Assert that the endpoint returns 401 for users with no fas_editor role."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_USER.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -475,7 +475,7 @@ Example valid routing slip numbers:
 @pytest.mark.parametrize('payload', [
     get_routing_slip_request(number='559555333'),
 ])
-def test_create_routing_slips_invalid_digits(client, jwt, payload):
+def test_create_routing_slips_invalid_digits(session, client, jwt, payload):
     """Assert POST returns 400 when providing invalid routing slip number."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_USER.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -486,7 +486,7 @@ def test_create_routing_slips_invalid_digits(client, jwt, payload):
     current_app.config['ALLOW_LEGACY_ROUTING_SLIPS'] = True
 
 
-def test_get_routing_slips_invalid_digits(client, jwt, app):
+def test_get_routing_slips_invalid_digits(session, client, jwt, app):
     """Assert GET returns 400 when providing invalid routing slip number."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_VIEW.value, Role.FAS_CREATE.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -500,7 +500,7 @@ def test_get_routing_slips_invalid_digits(client, jwt, app):
 @pytest.mark.parametrize('payload', [
     get_routing_slip_request(number='206380883'),
 ])
-def test_routing_slips_for_errors(client, jwt, payload):
+def test_routing_slips_for_errors(session, client, jwt, payload):
     """Assert that the endpoint returns 401 for users with no fas_editor role."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -521,7 +521,7 @@ def test_routing_slips_for_errors(client, jwt, payload):
     assert rv.status_code == 204
 
 
-def test_update_routing_slip_status(client, jwt, app):
+def test_update_routing_slip_status(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_EDIT.value, Role.FAS_VIEW.value]),
                            token_header)
@@ -552,7 +552,7 @@ def test_update_routing_slip_status(client, jwt, app):
     assert rv.status_code == 400
 
 
-def test_routing_slip_report(client, jwt, app):
+def test_routing_slip_report(session, client, jwt, app):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_REPORTS.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -561,7 +561,7 @@ def test_routing_slip_report(client, jwt, app):
     assert rv.status_code == 201
 
 
-def test_create_comment_with_valid_routing_slips(client, jwt):
+def test_create_comment_with_valid_routing_slips(session, client, jwt):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -577,7 +577,7 @@ def test_create_comment_with_valid_routing_slips(client, jwt):
     assert rv.json.get('submitterDisplayName')
 
 
-def test_create_comment_with_invalid_routing_slips(client, jwt):
+def test_create_comment_with_invalid_routing_slips(session, client, jwt):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -589,7 +589,7 @@ def test_create_comment_with_invalid_routing_slips(client, jwt):
     assert rv.status_code == 400
 
 
-def test_create_comment_with_invalid_body_request(client, jwt):
+def test_create_comment_with_invalid_body_request(session, client, jwt):
     """Assert that the endpoint returns 201."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -602,7 +602,7 @@ def test_create_comment_with_invalid_body_request(client, jwt):
     assert rv.status_code == 400
 
 
-def test_create_comment_with_valid_comment_schema(client, jwt):
+def test_create_comment_with_valid_comment_schema(session, client, jwt):
     """Assert that the endpoint returns 201 for valid comment schema."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -618,7 +618,7 @@ def test_create_comment_with_valid_comment_schema(client, jwt):
     assert rv.json.get('submitterDisplayName')
 
 
-def test_create_comment_with_invalid_comment_schema(client, jwt):
+def test_create_comment_with_invalid_comment_schema(session, client, jwt):
     """Assert that the endpoint returns 400 for invalid comment schema."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -634,7 +634,7 @@ def test_create_comment_with_invalid_comment_schema(client, jwt):
     assert rv.status_code == 400
 
 
-def test_create_comment_with_valid_comment_bcrs_schema(client, jwt):
+def test_create_comment_with_valid_comment_bcrs_schema(session, client, jwt):
     """Assert that the endpoint returns 201 for valid comment schema."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -650,7 +650,7 @@ def test_create_comment_with_valid_comment_bcrs_schema(client, jwt):
     assert rv.json.get('submitterDisplayName')
 
 
-def test_create_comment_with_invalid_comment_bcrs_schema(client, jwt):
+def test_create_comment_with_invalid_comment_bcrs_schema(session, client, jwt):
     """Assert that the endpoint returns 201 for valid comment schema."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -666,7 +666,7 @@ def test_create_comment_with_invalid_comment_bcrs_schema(client, jwt):
     assert rv.status_code == 400
 
 
-def test_get_valid_comments(client, jwt):
+def test_get_valid_comments(session, client, jwt):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -696,7 +696,7 @@ def test_get_valid_comments(client, jwt):
     assert rv.status_code == 400
 
 
-def test_get_invalid_comments(client, jwt):
+def test_get_invalid_comments(session, client, jwt):
     """Assert that the endpoint returns 400 based on conditions."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -706,7 +706,7 @@ def test_get_invalid_comments(client, jwt):
     assert rv.json.get('type') == 'FAS_INVALID_ROUTING_SLIP_NUMBER'
 
 
-def test_create_routing_slips_invalid_number(client, jwt, app):
+def test_create_routing_slips_invalid_number(session, client, jwt, app):
     """Assert that the rs number validation works."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_SEARCH.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -720,7 +720,7 @@ def test_create_routing_slips_invalid_number(client, jwt, app):
     assert rv.status_code == 400
 
 
-def test_update_routing_slip_writeoff(client, jwt, app):
+def test_update_routing_slip_writeoff(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_EDIT.value, Role.FAS_VIEW.value]),
                            token_header)
@@ -748,7 +748,7 @@ def test_update_routing_slip_writeoff(client, jwt, app):
     assert rv.status_code == 200
 
 
-def test_create_routing_slip_null_cheque_date(client, jwt, app):
+def test_create_routing_slip_null_cheque_date(session, client, jwt, app):
     """Assert that the endpoint returns invalid request for null payment date."""
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_EDIT.value, Role.FAS_VIEW.value]),
                            token_header)
@@ -772,7 +772,7 @@ def test_create_routing_slip_null_cheque_date(client, jwt, app):
     assert rv.status_code == 400
 
 
-def test_routing_slip_link_attempt(client, jwt, app):
+def test_routing_slip_link_attempt(session, client, jwt, app):
     """12033 - Scenario 3.
 
     Routing slip is Completed, attempt to be linked.
@@ -803,7 +803,7 @@ def test_routing_slip_link_attempt(client, jwt, app):
     assert rv.status_code == 400
 
 
-def test_routing_slip_status_to_nsf_attempt(client, jwt, app):
+def test_routing_slip_status_to_nsf_attempt(session, client, jwt, app):
     """12033 - Scenario 4.
 
     Routing slip in Completed,
@@ -831,7 +831,7 @@ def test_routing_slip_status_to_nsf_attempt(client, jwt, app):
     assert rv.status_code == 200, 'status changed successfully.'
 
 
-def test_routing_slip_void(client, jwt, app):
+def test_routing_slip_void(session, client, jwt, app):
     """For testing void routing slips."""
     # Create routing slip.
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value,
@@ -872,7 +872,7 @@ def test_routing_slip_void(client, jwt, app):
     assert rv.json.get('remainingAmount') == 0
 
 
-def test_routing_slip_correction(client, jwt, app):
+def test_routing_slip_correction(session, client, jwt, app):
     """For testing correction of routing slips."""
     # Create routing slip.
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_LINK.value,

@@ -151,7 +151,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def auth_account_id(self, value: str):
         """Set the auth_account_id."""
         self._auth_account_id = value
-        self._dao.auth_account_id = value
+        if self._dao.auth_account_id != value:
+            self._dao.auth_account_id = value
 
     @property
     def name(self):
@@ -162,7 +163,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def name(self, value: str):
         """Set the name."""
         self._name = value
-        self._dao.name = value
+        if self._dao.name != value:
+            self._dao.name = value
 
     @property
     def payment_method(self):
@@ -173,7 +175,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def payment_method(self, value: int):
         """Set the payment_method."""
         self._payment_method = value
-        self._dao.payment_method = value
+        if self._dao.payment_method != value:
+            self._dao.payment_method = value
 
     @property
     def cfs_account(self):
@@ -244,7 +247,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def bcol_user_id(self, value: int):
         """Set the bcol_user_id."""
         self._bcol_user_id = value
-        self._dao.bcol_user_id = value
+        if self._dao.bcol_user_id != value:
+            self._dao.bcol_user_id = value
 
     @property
     def pad_activation_date(self):
@@ -255,7 +259,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def pad_activation_date(self, value: datetime):
         """Set the pad_activation_date."""
         self._pad_activation_date = value
-        self._dao.pad_activation_date = value
+        if self._dao.pad_activation_date != value:
+            self._dao.pad_activation_date = value
 
     @property
     def pad_tos_accepted_by(self):
@@ -266,7 +271,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def pad_tos_accepted_by(self, value: datetime):
         """Set the pad_tos_accepted_by."""
         self._pad_tos_accepted_by = value
-        self._dao.pad_tos_accepted_by = value
+        if self._dao.pad_tos_accepted_by != value:
+            self._dao.pad_tos_accepted_by = value
 
     @property
     def pad_tos_accepted_date(self):
@@ -277,7 +283,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def pad_tos_accepted_date(self, value: datetime):
         """Set the pad_tos_accepted_by."""
         self._pad_tos_accepted_date = value
-        self._dao.pad_tos_accepted_date = value
+        if self._dao.pad_tos_accepted_date != value:
+            self._dao.pad_tos_accepted_date = value
 
     @property
     def bcol_account(self):
@@ -288,7 +295,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def bcol_account(self, value: int):
         """Set the bcol_account."""
         self._bcol_account = value
-        self._dao.bcol_account = value
+        if self._dao.bcol_account != value:
+            self._dao.bcol_account = value
 
     @property
     def cfs_account_status(self):
@@ -310,7 +318,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def credit(self, value: float):
         """Set the credit."""
         self._credit = value
-        self._dao.credit = value
+        if self._dao.credit != value:
+            self._dao.credit = value
 
     @property
     def billable(self):

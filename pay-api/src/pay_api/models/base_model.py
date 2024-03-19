@@ -44,14 +44,12 @@ class BaseModel(db.Model):
     def save(self):
         """Save and commit."""
         db.session.add(self)
-        db.session.flush()
         db.session.commit()
         return self
 
     def delete(self):
         """Delete and commit."""
         db.session.delete(self)
-        db.session.flush()
         db.session.commit()
 
     @staticmethod

@@ -80,7 +80,7 @@ def db(app):  # pylint: disable=redefined-outer-name, invalid-name
         return _db
 
 
-@pytest.fixture(scope='function', autouse=True)
+@pytest.fixture(scope='function')
 def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a function-scoped session."""
     with app.app_context():
@@ -89,6 +89,7 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
             sess = db._make_scoped_session(dict(bind=conn))  # pylint: disable=protected-access
             # Establish SAVEPOINT (http://docs.sqlalchemy.org/en/latest/orm/session_transaction.html#using-savepoint)
             nested = sess.begin_nested()
+            old_session = db.session
             db.session = sess
             db.session.commit = nested.commit
             db.session.rollback = nested.rollback
@@ -114,6 +115,9 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
             finally:
                 db.session.remove()
                 transaction.rollback()
+                event.remove(sess, 'after_transaction_end', restart_savepoint)
+                db.session = old_session
+
 
 
 @pytest.fixture()

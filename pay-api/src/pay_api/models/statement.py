@@ -13,10 +13,11 @@
 # limitations under the License.
 """Model to handle statements data."""
 
+from datetime import datetime
 import pytz
 from marshmallow import fields
 from sql_versioning import history_cls
-from sqlalchemy import ForeignKey, and_, case, func, literal_column
+from sqlalchemy import ForeignKey, and_, case, literal_column
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
@@ -71,20 +72,46 @@ class Statement(BaseModel):
     @hybrid_property
     def payment_methods(self):
         """Return all payment methods that were active during the statement period based on payment account versions."""
-        payment_account_history = history_cls(PaymentAccount)
+        payment_account = PaymentAccount.find_by_id(self.payment_account_id)
+        payment_account_history_class = history_cls(PaymentAccount)
+        payment_account_history = db.session.query(payment_account_history_class) \
+            .join(Statement, Statement.payment_account_id == payment_account_history_class.id) \
+            .filter(payment_account_history_class.id == self.payment_account_id) \
+            .filter(Statement.id == self.id) \
+            .order_by(payment_account_history_class.changed.asc()) \
+            .all()
 
-        # TODO make sure this includes current payment method? Not sure if a unit test exists for this.
-        subquery = db.session.query(
-                func.array_agg(func.DISTINCT(payment_account_history.payment_method))  # pylint: disable=not-callable
-                    .label('payment_methods'))\
-            .join(Statement, Statement.payment_account_id == payment_account_history.id)\
-            .filter(payment_account_history.id == self.payment_account_id) \
-            .filter(and_(Statement.id == self.id, payment_account_history.changed <= Statement.to_date,
-                         payment_account_history.changed >= Statement.from_date
-                         ))\
-            .group_by(Statement.id).first()
+        # The code below combines the history rows with the current state of payment_account.
+        # This is necessary because the new versioning doesn't have from and to dates, only changed.
+        # It is possible to handle this through SQL using LEAD and LAG functions.
+        # Since the volume of rows is low, the pythonic approach should be sufficient.
+        history_ranges = [
+            {
+                'from_date': datetime.min.date() if idx == 0 else payment_account_history[idx - 1].changed.date(),
+                'to_date': historical.changed.date(),
+                'payment_method': payment_account.payment_method if idx == len(payment_account_history) - 1
+                else historical.payment_method
+            }
+            for idx, historical in enumerate(payment_account_history)
+        ]
 
-        return subquery[0] if subquery else []
+        history_ranges.append({
+            'from_date': payment_account_history[-1].changed.date() if payment_account_history else datetime.min.date(),
+            'to_date': datetime.max.date(),
+            'payment_method': payment_account.payment_method
+        })
+
+        payment_methods = {
+            history_item['payment_method']
+            for history_item in history_ranges
+            if (
+                history_item['from_date'] <= self.from_date <= history_item['to_date'] or
+                history_item['from_date'] <= self.to_date <= history_item['to_date'] or
+                self.from_date <= history_item['from_date'] <= self.to_date <= history_item['to_date']
+            )
+        }
+
+        return list(payment_methods)
 
     @classmethod
     def find_all_statements_for_account(cls, auth_account_id: str, page, limit):

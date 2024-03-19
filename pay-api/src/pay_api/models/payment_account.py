@@ -45,9 +45,6 @@ class PaymentAccount(Versioned, BaseModel):  # pylint: disable=too-many-instance
             'bcol_user_id',
             'billable',
             'branch_name',
-            'created_by',
-            'created_name',
-            'created_on',
             'credit',
             'eft_enable',
             'name',
@@ -55,10 +52,7 @@ class PaymentAccount(Versioned, BaseModel):  # pylint: disable=too-many-instance
             'pad_tos_accepted_by',
             'pad_tos_accepted_date',
             'payment_method',
-            'statement_notification_enabled',
-            'updated_by',
-            'updated_name',
-            'updated_on'
+            'statement_notification_enabled'
         ]
     }
 
