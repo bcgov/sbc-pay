@@ -119,7 +119,6 @@ def session(db, app):  # pylint: disable=redefined-outer-name, invalid-name
                 db.session = old_session
 
 
-
 @pytest.fixture()
 def auth_mock(monkeypatch):
     """Mock check_auth."""

@@ -300,4 +300,3 @@ def test_statement_various_payment_methods_history(db, app):
         assert 'DIRECT_PAY' in payment_methods
         assert 'DRAWDOWN' in payment_methods
         assert 'PAD' in payment_methods
-        db.session.remove()
