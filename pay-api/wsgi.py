@@ -19,7 +19,9 @@ from flask_migrate import Migrate
 
 # Openshift s2i expects a lower case name of application
 app = create_app()  # pylint: disable=invalid-name
+app.logger.info('Starting migrations.')
 migrate = Migrate(app, db)
+app.logger.info('Migrations complete.')
 
 if __name__ == "__main__":
     app.run()
