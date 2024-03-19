@@ -112,10 +112,10 @@ def upgrade():
         )
                
         insert into 
-               account_fees_history (apply_filing_fees, service_fee_code, product, created_on, updated_on, 
+               account_fees_history (id, apply_filing_fees, service_fee_code, product, created_on, updated_on, 
                                      created_by, created_name, updated_by, updated_name, changed, version) 
         select 
-            apply_filing_fees, service_fee_code, product, created_on, updated_on, 
+            sq.id, apply_filing_fees, service_fee_code, product, created_on, updated_on, 
                                      created_by, created_name, updated_by, updated_name, changed, version
         from 
             subquery sq
@@ -150,10 +150,10 @@ def upgrade():
             group by id
         )
         insert into
-            cfs_accounts_history (cfs_account, cfs_party, cfs_site, payment_instrument_number,
+            cfs_accounts_history (id, cfs_account, cfs_party, cfs_site, payment_instrument_number,
             contact_party, bank_number, bank_branch_number, changed, version)
         select 
-            cfs_account, cfs_party, cfs_site, payment_instrument_number,
+            sq.id, cfs_account, cfs_party, cfs_site, payment_instrument_number,
             contact_party, bank_number, bank_branch_number, changed, version
         from 
             subquery sq
@@ -239,9 +239,9 @@ def upgrade():
             group by id
         )
         insert into 
-            eft_short_names_history (auth_account_id, created_on, short_name, linked_by, linked_by_name, linked_on, changed, version)
+            eft_short_names_history (id, auth_account_id, created_on, short_name, linked_by, linked_by_name, linked_on, changed, version)
         select 
-            auth_account_id, created_on, short_name, linked_by, linked_by_name, linked_on, changed, version
+            sq.id, auth_account_id, created_on, short_name, linked_by, linked_by_name, linked_on, changed, version
         from 
             subquery sq
         left join 
@@ -282,11 +282,11 @@ def upgrade():
                 group by id
             )
             insert into
-               payment_accounts_history (auth_account_id, name, branch_name, payment_method, bcol_user_id,
+               payment_accounts_history (id, auth_account_id, name, branch_name, payment_method, bcol_user_id,
                     bcol_account, statement_notification_enabled, credit, billable, eft_enable, pad_activation_date,
                     pad_tos_accepted_date, pad_tos_accepted_by, changed, version)
             select
-               auth_account_id, name, branch_name, payment_method, bcol_user_id,
+               sq.id, auth_account_id, name, branch_name, payment_method, bcol_user_id,
                     bcol_account, statement_notification_enabled, credit, billable, eft_enable, pad_activation_date,
                     pad_tos_accepted_date, pad_tos_accepted_by, changed, version
             from
@@ -328,11 +328,11 @@ def upgrade():
         )
         
         insert into
-            refunds_partial_history (payment_line_item_id, refund_amount, refund_type, disbursement_status_code,
+            refunds_partial_history (id, payment_line_item_id, refund_amount, refund_type, disbursement_status_code,
                disbursement_date, created_on, updated_on, created_by, created_name, updated_by,
                updated_name, changed, version)
         select
-            payment_line_item_id, refund_amount, refund_type, disbursement_status_code,
+            sq.id, payment_line_item_id, refund_amount, refund_type, disbursement_status_code,
                disbursement_date, created_on, updated_on, created_by, created_name, updated_by,
                updated_name, changed, version
         from
