@@ -109,8 +109,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     def service_fee_distribution_code_id(self, value: int):
         """Set the service_fee_distribution_code_id."""
         self._service_fee_distribution_code_id = value
-        if self._dao.service_fee_distribution_code_id != value:
-            self._dao.service_fee_distribution_code_id = value
+        self._dao.service_fee_distribution_code_id = value
 
     @property
     def disbursement_distribution_code_id(self):
@@ -121,8 +120,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     def disbursement_distribution_code_id(self, value: int):
         """Set the disbursement_distribution_code_id."""
         self._disbursement_distribution_code_id = value
-        if self._dao.disbursement_distribution_code_id != value:
-            self._dao.disbursement_distribution_code_id = value
+        self._dao.disbursement_distribution_code_id = value
 
     @property
     def end_date(self):
@@ -144,8 +142,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     def start_date(self, value: date):
         """Set the start_date."""
         self._start_date = value
-        if self._dao.start_date != value:
-            self._dao.start_date = value
+        self._dao.start_date = value
 
     @property
     def name(self):
@@ -156,8 +153,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     def name(self, value: str):
         """Set the name."""
         self._name = value
-        if self._dao.name != value:
-            self._dao.name = value
+        self._dao.name = value
 
     @property
     def service_fee_stob(self):
@@ -208,8 +204,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     def stob(self, value: str):
         """Set the stob."""
         self._stob = value
-        if self._dao.stob != value:
-            self._dao.stob = value
+        self._dao.stob = value
 
     @property
     def responsibility_centre(self):
@@ -220,8 +215,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     def responsibility_centre(self, value: str):
         """Set the responsibility_centre."""
         self._responsibility_centre = value
-        if self._dao.responsibility_centre != value:
-            self._dao.responsibility_centre = value
+        self._dao.responsibility_centre = value
 
     @property
     def service_line(self):
@@ -232,8 +226,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     def service_line(self, value: str):
         """Set the service_line."""
         self._service_line = value
-        if self._dao.service_line != value:
-            self._dao.service_line = value
+        self._dao.service_line = value
 
     @property
     def client(self):
@@ -244,8 +237,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     def client(self, value: str):
         """Set the client."""
         self._client = value
-        if self._dao.client != value:
-            self._dao.client = value
+        self._dao.client = value
 
     @property
     def project_code(self):
@@ -256,8 +248,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     def project_code(self, value: str):
         """Set the project_code."""
         self._project_code = value
-        if self._dao.project_code != value:
-            self._dao.project_code = value
+        self._dao.project_code = value
 
     @property
     def service_fee_client(self):
@@ -288,8 +279,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     def stop_ejv(self, value: bool):
         """Set the stop_ejv."""
         self._stop_ejv = value
-        if self._dao.stop_ejv != value:
-            self._dao.stop_ejv = value
+        self._dao.stop_ejv = value
 
     @property
     def account_id(self):
@@ -300,8 +290,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     def account_id(self, value: int):
         """Set the account id."""
         self._account_id = value
-        if self._dao.account_id != value:
-            self._dao.account_id = value
+        self._dao.account_id = value
 
     def save(self):
         """Save the distribution code information and commit."""
