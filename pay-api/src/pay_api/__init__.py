@@ -52,40 +52,38 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
     ma.init_app(app)
     endpoints.init_app(app)
 
-    if run_mode != 'migration':
+    # Configure Sentry
+    if str(app.config.get('SENTRY_ENABLE')).lower() == 'true':
+        if app.config.get('SENTRY_DSN', None):  # pragma: no cover
+            sentry_sdk.init(  # pylint: disable=abstract-class-instantiated
+                dsn=app.config.get('SENTRY_DSN'),
+                integrations=[FlaskIntegration()]
+            )
 
-        # Configure Sentry
-        if str(app.config.get('SENTRY_ENABLE')).lower() == 'true':
-            if app.config.get('SENTRY_DSN', None):  # pragma: no cover
-                sentry_sdk.init(  # pylint: disable=abstract-class-instantiated
-                    dsn=app.config.get('SENTRY_DSN'),
-                    integrations=[FlaskIntegration()]
-                )
+    app.after_request(convert_to_camel)
 
-        app.after_request(convert_to_camel)
+    setup_jwt_manager(app, jwt)
 
-        setup_jwt_manager(app, jwt)
+    ExceptionHandler(app)
 
-        ExceptionHandler(app)
+    @app.after_request
+    def handle_after_request(response):  # pylint: disable=unused-variable
+        add_version(response)
+        set_access_control_header(response)
+        return response
 
-        @app.after_request
-        def handle_after_request(response):  # pylint: disable=unused-variable
-            add_version(response)
-            set_access_control_header(response)
-            return response
+    def set_access_control_header(response):
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, registries-trace-id, ' \
+                                                            'Account-Id'
 
-        def set_access_control_header(response):
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, registries-trace-id, ' \
-                                                               'Account-Id'
+    def add_version(response):  # pylint: disable=unused-variable
+        version = get_run_version()
+        response.headers['API'] = f'pay_api/{version}'
+        return response
 
-        def add_version(response):  # pylint: disable=unused-variable
-            version = get_run_version()
-            response.headers['API'] = f'pay_api/{version}'
-            return response
-
-        register_shellcontext(app)
-        build_cache(app)
+    register_shellcontext(app)
+    build_cache(app)
     return app
 
 
