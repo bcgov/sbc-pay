@@ -113,14 +113,16 @@ class EftService(DepositService):
         return payment
 
     @staticmethod
-    def create_invoice_reference(invoice: InvoiceModel, payment: PaymentModel) -> InvoiceReferenceModel:
+    def create_invoice_reference(invoice: InvoiceModel, invoice_number: str,
+                                 reference_number: str) -> InvoiceReferenceModel:
         """Create an invoice reference record."""
         if not (invoice_reference := InvoiceReferenceModel
-                .find_any_active_reference_by_invoice_number(payment.invoice_number)):
+                .find_any_active_reference_by_invoice_number(invoice_number)):
             invoice_reference = InvoiceReferenceModel()
 
         invoice_reference.invoice_id = invoice.id
-        invoice_reference.invoice_number = payment.invoice_number
+        invoice_reference.invoice_number = invoice_number
+        invoice_reference.reference_number = reference_number
         invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
 
         return invoice_reference

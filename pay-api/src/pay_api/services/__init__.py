@@ -15,6 +15,7 @@
 
 from .cfs_service import CFSService
 from .distribution_code import DistributionCode
+from .eft_service import EftService
 from .eft_gl_transfer import EFTGlTransfer
 from .fee_schedule import FeeSchedule
 from .hashing import HashingService
