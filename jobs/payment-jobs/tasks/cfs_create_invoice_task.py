@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task to create CFS invoices offline."""
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 import time
 from typing import List
@@ -37,6 +37,7 @@ from pay_api.utils.util import generate_transaction_number
 from sentry_sdk import capture_message
 
 from utils import mailer
+from utils.enums import MailerEvents
 
 from .routing_slip_task import RoutingSlipTask
 
@@ -425,9 +426,9 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     current_app.logger.error(e)
                     continue
 
-            mailer.publish_mailer_events('eft.invoiceCreated', payment_account, {
+            mailer.publish_mailer_events(MailerEvents.EFT_INVOICE_CREATED, payment_account, {
                 'invoice_total': float(invoice_total),
-                'invoice_process_date': f'{datetime.now()}'
+                'invoice_process_date': f'{datetime.now(tz=timezone.utc)}'
             })
             for invoice in account_invoices:
                 payment: Payment = Payment.find_payment_for_invoice(invoice.id)
