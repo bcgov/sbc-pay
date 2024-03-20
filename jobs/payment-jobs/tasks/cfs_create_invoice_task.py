@@ -26,6 +26,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
+from pay_api.services import EftService
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
@@ -330,6 +331,129 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     status_code=InvoiceReferenceStatus.ACTIVE.value
                 )
                 db.session.add(invoice_reference)
+                invoice.cfs_account_id = cfs_account.id
+            db.session.commit()
+
+    @classmethod
+    def _create_eft_invoices(cls):  # pylint: disable=too-many-locals
+        """Create EFT invoices in CFS."""
+
+        # Select EFT APPROVED invoices
+        invoice_subquery = db.session.query(InvoiceModel.payment_account_id) \
+            .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value) \
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value).subquery()
+
+        # Get all EFT accounts that are not FREEZE
+        eft_accounts: List[PaymentAccountModel] = db.session.query(PaymentAccountModel) \
+            .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
+            .filter(CfsAccountModel.status != CfsAccountStatus.FREEZE.value) \
+            .filter(PaymentAccountModel.id.in_(invoice_subquery)).all()
+
+        current_app.logger.info(f'Found {len(eft_accounts)} with EFT transactions.')
+
+        # Select ACTIVE invoice references
+        invoice_reference_subquery = db.session.query(InvoiceReferenceModel.invoice_id). \
+            filter(InvoiceReferenceModel.status_code.in_((InvoiceReferenceStatus.ACTIVE.value,)))
+
+        for eft_account in eft_accounts:
+            # Get EFT APPROVED invoices
+            account_invoices = db.session.query(InvoiceModel) \
+                .filter(InvoiceModel.payment_account_id == eft_account.id) \
+                .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value) \
+                .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value) \
+                .filter(InvoiceModel.id.notin_(invoice_reference_subquery)) \
+                .order_by(InvoiceModel.created_on.desc()).all()
+
+            # Get payment account
+            payment_account: PaymentAccountService = PaymentAccountService.find_by_id(eft_account.id)
+
+            if len(account_invoices) == 0:
+                continue
+            current_app.logger.debug(
+                f'Found {len(account_invoices)} invoices for account {payment_account.auth_account_id}')
+
+            # Get CFS account
+            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
+            
+            # If no CFS account then the payment method might have changed from EFT to DRAWDOWN
+            if cfs_account is None:
+                # Get last CFS account
+                cfs_account: CfsAccountModel = CfsAccountModel.query.\
+                    filter(CfsAccountModel.account_id == payment_account.id).order_by(CfsAccountModel.id.desc()).first()
+
+            # If CFS account is not ACTIVE or INACTIVE (for above case), raise error and continue
+            if cfs_account.status not in (CfsAccountStatus.ACTIVE.value, CfsAccountStatus.INACTIVE.value):
+                current_app.logger.info(f'CFS status for account {payment_account.auth_account_id} '
+                                        f'is {payment_account.cfs_account_status} skipping.')
+                continue
+
+            # Add all payment line items together
+            lines = []
+            invoice_total = Decimal('0')
+            for invoice in account_invoices:
+                lines.extend(invoice.payment_line_items)
+                invoice_total += invoice.total
+            invoice_number = account_invoices[-1].id
+            try:
+                # Get the first invoice id as the trx number for CFS
+                invoice_response = CFSService.create_account_invoice(transaction_number=invoice_number,
+                                                                     line_items=lines,
+                                                                     cfs_account=cfs_account)
+            except Exception as e:  # NOQA # pylint: disable=broad-except
+                # There is a chance that the error is a timeout from CAS side,
+                # so to make sure we are not missing any data, make a GET call for the invoice we tried to create
+                # and use it if it got created.
+                current_app.logger.info(e)  # INFO is intentional as sentry alerted only after the following try/catch
+                has_invoice_created: bool = False
+                try:
+                    # add a 10 seconds delay here as safe bet, as CFS takes time to create the invoice
+                    time.sleep(10)
+                    invoice_number = generate_transaction_number(str(invoice_number))
+                    invoice_response = CFSService.get_invoice(
+                        cfs_account=cfs_account, inv_number=invoice_number
+                    )
+                    has_invoice_created = invoice_response.get('invoice_number', None) == invoice_number
+                    invoice_total_matches = Decimal(invoice_response.get('total', '0')) == invoice_total
+                except Exception as exc:  # NOQA # pylint: disable=broad-except,unused-variable
+                    # Ignore this error, as it is irrelevant and error on outer level is relevant.
+                    pass
+                # If no invoice is created raise an error for sentry
+                if not has_invoice_created:
+                    capture_message(f'Error on creating EFT invoice: account id={payment_account.id}, '
+                                    f'auth account : {payment_account.auth_account_id}, ERROR : {str(e)}',
+                                    level='error')
+                    current_app.logger.error(e)
+                    continue
+                if not invoice_total_matches:
+                    capture_message(f'Error on creating EFT invoice: account id={payment_account.id}, '
+                                    f'auth account : {payment_account.auth_account_id}, Invoice exists: '
+                                    f' CAS total: {invoice_response.get("total", 0)}, PAY-BC total: {invoice_total}',
+                                    level='error')
+                    current_app.logger.error(e)
+                    continue
+
+            additional_params = {
+                'invoice_total': float(invoice_total),
+                'invoice_process_date': f'{datetime.now()}'
+            }
+            mailer.publish_mailer_events('eft.invoiceCreated', payment_account, additional_params)
+            # Iterate invoices
+            for invoice in account_invoices:
+                # Find payment record for the invoice
+                payment: Payment = Payment.find_payment_for_invoice(invoice.id)
+
+                # Create invoice reference
+                invoice_reference = EftService.create_invoice_reference(
+                    invoice=invoice,
+                    invoice_number=invoice_response.get('invoice_number'),
+                    reference_number=invoice_response.get('pbc_ref_number', None)
+                )
+                db.session.add(invoice_reference)
+
+                # Create a receipt for the payment
+                receipt = EftService.create_receipt(invoice=invoice, payment=payment)
+                db.session.add(receipt)
+
                 invoice.cfs_account_id = cfs_account.id
             db.session.commit()
 
