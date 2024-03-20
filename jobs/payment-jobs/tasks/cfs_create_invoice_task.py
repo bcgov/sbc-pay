@@ -374,7 +374,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
             # Get CFS account
             cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
-            
+
             # If no CFS account then the payment method might have changed from EFT to DRAWDOWN
             if cfs_account is None:
                 # Get last CFS account
@@ -432,11 +432,10 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     current_app.logger.error(e)
                     continue
 
-            additional_params = {
+            mailer.publish_mailer_events('eft.invoiceCreated', payment_account, {
                 'invoice_total': float(invoice_total),
                 'invoice_process_date': f'{datetime.now()}'
-            }
-            mailer.publish_mailer_events('eft.invoiceCreated', payment_account, additional_params)
+            })
             # Iterate invoices
             for invoice in account_invoices:
                 # Find payment record for the invoice
