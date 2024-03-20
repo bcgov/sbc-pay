@@ -18,7 +18,7 @@ This module is the API for the Legal Entity system.
 
 import os
 
-from flask_migrate import Migrate
+from flask_migrate import Migrate, upgrade
 import sentry_sdk  # noqa: I001; pylint: disable=ungrouped-imports,wrong-import-order; conflicts with Flake8
 from flask import Flask
 from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
@@ -49,6 +49,12 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
     flags.init_app(app)
     db.init_app(app)
     Migrate(app, db)
+    app.logger.info('Running migration upgrade.')
+    with app.app_context():
+        upgrade(directory='migrations', revision='head', sql=False, tag=None)
+    # Alembic has it's own logging config, we'll need to restore our logging here.
+    setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))
+    app.logger.info('Finished migration upgrade.')
     ma.init_app(app)
     endpoints.init_app(app)
 
@@ -75,7 +81,7 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
     def set_access_control_header(response):
         response.headers['Access-Control-Allow-Origin'] = '*'
         response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, registries-trace-id, ' \
-                                                            'Account-Id'
+            'Account-Id'
 
     def add_version(response):  # pylint: disable=unused-variable
         version = get_run_version()
