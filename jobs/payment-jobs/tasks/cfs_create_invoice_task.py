@@ -338,12 +338,10 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
     def _create_eft_invoices(cls):  # pylint: disable=too-many-locals
         """Create EFT invoices in CFS."""
 
-        # Select EFT APPROVED invoices
         invoice_subquery = db.session.query(InvoiceModel.payment_account_id) \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value) \
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value).subquery()
 
-        # Get all EFT accounts that are not FREEZE
         eft_accounts: List[PaymentAccountModel] = db.session.query(PaymentAccountModel) \
             .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
             .filter(CfsAccountModel.status != CfsAccountStatus.FREEZE.value) \
@@ -351,12 +349,10 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
         current_app.logger.info(f'Found {len(eft_accounts)} with EFT transactions.')
 
-        # Select ACTIVE invoice references
         invoice_reference_subquery = db.session.query(InvoiceReferenceModel.invoice_id). \
             filter(InvoiceReferenceModel.status_code.in_((InvoiceReferenceStatus.ACTIVE.value,)))
 
         for eft_account in eft_accounts:
-            # Get EFT APPROVED invoices
             account_invoices = db.session.query(InvoiceModel) \
                 .filter(InvoiceModel.payment_account_id == eft_account.id) \
                 .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value) \
@@ -364,7 +360,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 .filter(InvoiceModel.id.notin_(invoice_reference_subquery)) \
                 .order_by(InvoiceModel.created_on.desc()).all()
 
-            # Get payment account
             payment_account: PaymentAccountService = PaymentAccountService.find_by_id(eft_account.id)
 
             if len(account_invoices) == 0:
@@ -372,12 +367,10 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             current_app.logger.debug(
                 f'Found {len(account_invoices)} invoices for account {payment_account.auth_account_id}')
 
-            # Get CFS account
             cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
 
             # If no CFS account then the payment method might have changed from EFT to DRAWDOWN
             if cfs_account is None:
-                # Get last CFS account
                 cfs_account: CfsAccountModel = CfsAccountModel.query.\
                     filter(CfsAccountModel.account_id == payment_account.id).order_by(CfsAccountModel.id.desc()).first()
 
@@ -436,12 +429,9 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 'invoice_total': float(invoice_total),
                 'invoice_process_date': f'{datetime.now()}'
             })
-            # Iterate invoices
             for invoice in account_invoices:
-                # Find payment record for the invoice
                 payment: Payment = Payment.find_payment_for_invoice(invoice.id)
 
-                # Create invoice reference
                 invoice_reference = EftService.create_invoice_reference(
                     invoice=invoice,
                     invoice_number=invoice_response.get('invoice_number'),
@@ -449,7 +439,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 )
                 db.session.add(invoice_reference)
 
-                # Create a receipt for the payment
                 receipt = EftService.create_receipt(invoice=invoice, payment=payment)
                 db.session.add(receipt)
 
