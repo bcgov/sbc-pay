@@ -16,7 +16,7 @@
 
 Test-Suite to ensure that the CreateInvoiceTask is working as expected.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 from pay_api.models import DistributionCode as DistributionCodeModel
@@ -277,7 +277,7 @@ def test_create_eft_invoices(session):
     """Assert EFT invoices are created."""
     # Create an account and an invoice for the account
     account = factory_create_eft_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
-    previous_day = datetime.now() - timedelta(days=1)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
     # Create an invoice for this account
     invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10,
                               status_code=InvoiceStatus.APPROVED.value, payment_method_code=PaymentMethod.EFT.value)
