@@ -334,10 +334,10 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 db.session.add(invoice_reference)
                 invoice.cfs_account_id = cfs_account.id
             db.session.commit()
-
+            
     @classmethod
-    def _create_eft_invoices(cls):  # pylint: disable=too-many-locals
-        """Create EFT invoices in CFS."""
+    def _return_eft_accounts(cls):
+        """Return EFT accounts."""
 
         invoice_subquery = db.session.query(InvoiceModel.payment_account_id) \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value) \
@@ -349,6 +349,33 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             .filter(PaymentAccountModel.id.in_(invoice_subquery)).all()
 
         current_app.logger.info(f'Found {len(eft_accounts)} with EFT transactions.')
+        
+        return eft_accounts
+    
+    def _save_invoice_reference_records(cls, account_invoices, cfs_account, invoice_response):
+        """Save invoice reference records."""
+
+        for invoice in account_invoices:
+            payment: Payment = Payment.find_payment_for_invoice(invoice.id)
+
+            invoice_reference = EftService.create_invoice_reference(
+                invoice=invoice,
+                invoice_number=invoice_response.get('invoice_number'),
+                reference_number=invoice_response.get('pbc_ref_number', None)
+            )
+            db.session.add(invoice_reference)
+
+            receipt = EftService.create_receipt(invoice=invoice, payment=payment)
+            db.session.add(receipt)
+
+            invoice.cfs_account_id = cfs_account.id
+        db.session.commit()
+
+    @classmethod
+    def _create_eft_invoices(cls):
+        """Create EFT invoices in CFS."""
+
+        eft_accounts = cls._return_eft_accounts()
 
         invoice_reference_subquery = db.session.query(InvoiceReferenceModel.invoice_id). \
             filter(InvoiceReferenceModel.status_code.in_((InvoiceReferenceStatus.ACTIVE.value,)))
@@ -387,6 +414,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             for invoice in account_invoices:
                 lines.extend(invoice.payment_line_items)
                 invoice_total += invoice.total
+
             invoice_number = account_invoices[-1].id
             try:
                 # Get the first invoice id as the trx number for CFS
@@ -430,21 +458,8 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 'invoice_total': float(invoice_total),
                 'invoice_process_date': f'{datetime.now(tz=timezone.utc)}'
             })
-            for invoice in account_invoices:
-                payment: Payment = Payment.find_payment_for_invoice(invoice.id)
 
-                invoice_reference = EftService.create_invoice_reference(
-                    invoice=invoice,
-                    invoice_number=invoice_response.get('invoice_number'),
-                    reference_number=invoice_response.get('pbc_ref_number', None)
-                )
-                db.session.add(invoice_reference)
-
-                receipt = EftService.create_receipt(invoice=invoice, payment=payment)
-                db.session.add(receipt)
-
-                invoice.cfs_account_id = cfs_account.id
-            db.session.commit()
+            cls._save_invoice_reference_records(account_invoices, cfs_account, invoice_response)
 
     @classmethod
     def _create_online_banking_invoices(cls):
