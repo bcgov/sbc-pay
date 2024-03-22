@@ -32,12 +32,11 @@ from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
+    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus, PaymentSystem)
 from pay_api.utils.util import generate_transaction_number
 from sentry_sdk import capture_message
 
 from utils import mailer
-from utils.enums import MailerEvents
 
 from .routing_slip_task import RoutingSlipTask
 
@@ -322,7 +321,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 'invoice_total': float(invoice_total),
                 'invoice_process_date': f'{datetime.now()}'
             }
-            mailer.publish_mailer_events('pad.invoiceCreated', payment_account, additional_params)
+            mailer.publish_mailer_events(MessageType.PAD_INVOICE_CREATED, payment_account, additional_params)
             # Iterate invoice and create invoice reference records
             for invoice in account_invoices:
                 invoice_reference = InvoiceReferenceModel(
@@ -454,7 +453,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     current_app.logger.error(e)
                     continue
 
-            mailer.publish_mailer_events(MailerEvents.EFT_INVOICE_CREATED, payment_account, {
+            mailer.publish_mailer_events(MessageType.EFT_INVOICE_CREATED, payment_account, {
                 'invoice_total': float(invoice_total),
                 'invoice_process_date': f'{datetime.now(tz=timezone.utc)}'
             })

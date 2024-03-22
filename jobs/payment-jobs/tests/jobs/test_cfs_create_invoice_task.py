@@ -275,7 +275,6 @@ def test_create_online_banking_transaction(session):
 
 def test_create_eft_invoices(session):
     """Assert EFT invoices are created."""
-    # Create an account and an invoice for the account
     account = factory_create_eft_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
     previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
     # Create an invoice for this account
