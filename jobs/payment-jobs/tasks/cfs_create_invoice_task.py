@@ -333,7 +333,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 db.session.add(invoice_reference)
                 invoice.cfs_account_id = cfs_account.id
             db.session.commit()
-            
+
     @classmethod
     def _return_eft_accounts(cls):
         """Return EFT accounts."""
@@ -348,9 +348,10 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             .filter(PaymentAccountModel.id.in_(invoice_subquery)).all()
 
         current_app.logger.info(f'Found {len(eft_accounts)} with EFT transactions.')
-        
+
         return eft_accounts
-    
+
+    @classmethod
     def _save_invoice_reference_records(cls, account_invoices, cfs_account, invoice_response):
         """Save invoice reference records."""
 
