@@ -240,16 +240,13 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
         current_app.logger.info(f'Found {len(pad_accounts)} with PAD transactions.')
 
-        invoice_ref_subquery = db.session.query(InvoiceReferenceModel.invoice_id). \
-            filter(InvoiceReferenceModel.status_code.in_((InvoiceReferenceStatus.ACTIVE.value,)))
-
         for account in pad_accounts:
             # Find all PAD invoices for this account
             account_invoices = db.session.query(InvoiceModel) \
                 .filter(InvoiceModel.payment_account_id == account.id) \
                 .filter(InvoiceModel.payment_method_code == PaymentMethod.PAD.value) \
                 .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value) \
-                .filter(InvoiceModel.id.notin_(invoice_ref_subquery)) \
+                .filter(InvoiceModel.id.notin_(cls._active_invoice_reference_subquery())) \
                 .order_by(InvoiceModel.created_on.desc()).all()
 
             # Get cfs account
@@ -372,33 +369,39 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         db.session.commit()
 
     @classmethod
+    def _active_invoice_reference_subquery(cls):
+        return db.session.query(InvoiceReferenceModel.invoice_id). \
+            filter(InvoiceReferenceModel.status_code.in_((InvoiceReferenceStatus.ACTIVE.value,)))
+
+    @classmethod
     def _create_eft_invoices(cls):
         """Create EFT invoices in CFS."""
 
         eft_accounts = cls._return_eft_accounts()
-
-        invoice_reference_subquery = db.session.query(InvoiceReferenceModel.invoice_id). \
-            filter(InvoiceReferenceModel.status_code.in_((InvoiceReferenceStatus.ACTIVE.value,)))
 
         for eft_account in eft_accounts:
             account_invoices = db.session.query(InvoiceModel) \
                 .filter(InvoiceModel.payment_account_id == eft_account.id) \
                 .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value) \
                 .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value) \
-                .filter(InvoiceModel.id.notin_(invoice_reference_subquery)) \
+                .filter(InvoiceModel.id.notin_(cls._active_invoice_reference_subquery())) \
                 .order_by(InvoiceModel.created_on.desc()).all()
+
+            if not account_invoices:
+                continue
 
             payment_account: PaymentAccountService = PaymentAccountService.find_by_id(eft_account.id)
 
-            if len(account_invoices) == 0:
+            if not payment_account:
                 continue
+
             current_app.logger.debug(
                 f'Found {len(account_invoices)} invoices for account {payment_account.auth_account_id}')
 
             cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
 
             # If no CFS account then the payment method might have changed from EFT to DRAWDOWN
-            if cfs_account is None:
+            if not cfs_account:
                 cfs_account: CfsAccountModel = CfsAccountModel.query.\
                     filter(CfsAccountModel.account_id == payment_account.id).order_by(CfsAccountModel.id.desc()).first()
 
