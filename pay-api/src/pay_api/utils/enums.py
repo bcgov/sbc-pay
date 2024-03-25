@@ -357,6 +357,11 @@ class MessageType(Enum):
     CGI_ACK_RECEIVED = 'ACKReceived'
     CGI_FEEDBACK_RECEIVED = 'FEEDBACKReceived'
     EFT_FILE_UPLOADED = 'eftFileUploaded'
+    EFT_INVOICE_CREATED = 'eft.invoiceCreated'
+    PAD_INVOICE_CREATED = 'pad.invoiceCreated'
+    PAD_SETUP_FAILED = 'PadSetupFailed'
+    PAD_CONFIRMATION_PERIOD_OVER = 'confirmationPeriodOver'
+    ONLINE_BANKING_OUTSTANDING_INVOICE = 'ob.outstandingInvoice'
 
 
 class PaymentDetailsGlStatus(Enum):
