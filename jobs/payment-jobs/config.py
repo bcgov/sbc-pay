@@ -173,9 +173,6 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # disbursement delay
     DISBURSEMENT_DELAY_IN_DAYS = int(os.getenv('DISBURSEMENT_DELAY', 5))
 
-    # Is FAS-CFS integration disabled
-    DISABLE_CFS_FAS_INTEGRATION = os.getenv('DISABLE_CFS_FAS_INTEGRATION', 'false').lower() == 'true'
-
     # CP Job variables
     CGI_AP_DISTRIBUTION = os.getenv('CGI_AP_DISTRIBUTION', '')
     CGI_AP_SUPPLIER_NUMBER = os.getenv('CGI_AP_SUPPLIER_NUMBER', '')

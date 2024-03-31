@@ -58,12 +58,14 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         current_app.logger.info('<< Starting PAD Invoice Creation')
         cls._create_pad_invoices()
         current_app.logger.info('>> Done PAD Invoice Creation')
+
+        current_app.logger.info('<< Starting EFT Invoice Creation')
+        cls._create_eft_invoices()
+        current_app.logger.info('>> Done EFT Invoice Creation')
+
         current_app.logger.info('<< Starting Online Banking Invoice Creation')
         cls._create_online_banking_invoices()
         current_app.logger.info('>> Done Online Banking Invoice Creation')
-
-        if current_app.config.get('DISABLE_CFS_FAS_INTEGRATION'):
-            return
 
         # Cancel invoice is the only non-creation of invoice in this job.
         current_app.logger.info('<< Starting CANCEL Routing Slip Invoices')
@@ -334,7 +336,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _return_eft_accounts(cls):
         """Return EFT accounts."""
-
         invoice_subquery = db.session.query(InvoiceModel.payment_account_id) \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value) \
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value).subquery()
@@ -351,9 +352,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _save_invoice_reference_records(cls, account_invoices, cfs_account, invoice_response):
         """Save invoice reference records."""
-
         for invoice in account_invoices:
-            payment: Payment = Payment.find_payment_for_invoice(invoice.id)
 
             invoice_reference = EftService.create_invoice_reference(
                 invoice=invoice,
@@ -361,9 +360,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 reference_number=invoice_response.get('pbc_ref_number', None)
             )
             db.session.add(invoice_reference)
-
-            receipt = EftService.create_receipt(invoice=invoice, payment=payment)
-            db.session.add(receipt)
 
             invoice.cfs_account_id = cfs_account.id
         db.session.commit()
@@ -376,7 +372,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _create_eft_invoices(cls):
         """Create EFT invoices in CFS."""
-
         eft_accounts = cls._return_eft_accounts()
 
         for eft_account in eft_accounts:
