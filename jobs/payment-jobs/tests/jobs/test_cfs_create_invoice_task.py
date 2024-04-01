@@ -16,7 +16,7 @@
 
 Test-Suite to ensure that the CreateInvoiceTask is working as expected.
 """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
 from pay_api.models import DistributionCode as DistributionCodeModel
@@ -32,8 +32,8 @@ from requests.exceptions import HTTPError
 from tasks.cfs_create_invoice_task import CreateInvoiceTask
 
 from .factory import (
-    factory_create_online_banking_account, factory_create_pad_account, factory_invoice, factory_payment_line_item,
-    factory_routing_slip_account)
+    factory_create_eft_account, factory_create_online_banking_account, factory_create_pad_account, factory_invoice,
+    factory_payment_line_item, factory_routing_slip_account)
 
 
 def test_create_invoice(session):
@@ -272,3 +272,128 @@ def test_create_online_banking_transaction(session):
 
     assert inv_ref
     assert updated_invoice.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
+
+
+def test_create_eft_invoice(session):
+    """Assert EFT invoice is created."""
+    account = factory_create_eft_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
+    # Create an invoice for this account
+    invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10,
+                              status_code=InvoiceStatus.APPROVED.value, payment_method_code=PaymentMethod.EFT.value)
+
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+
+    CreateInvoiceTask.create_invoices()
+
+    updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
+    invoice_reference: InvoiceReferenceModel = InvoiceReferenceModel. \
+        find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+
+    assert invoice_reference
+    assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+
+
+def test_create_eft_invoice_rerun(session):
+    """Assert EFT invoice is created."""
+    account = factory_create_eft_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
+    # Create an invoice for this account
+    invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10,
+                              status_code=InvoiceStatus.APPROVED.value, payment_method_code=PaymentMethod.EFT.value)
+
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+    invoice_response = {'invoice_number': '10021', 'pbc_ref_number': '10005', 'party_number': '11111',
+                        'party_name': 'invoice'}
+    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+
+    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_response) as mock_cfs:
+        CreateInvoiceTask.create_invoices()
+        mock_cfs.assert_called()
+
+    updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
+    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
+        find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+
+    assert inv_ref
+    assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+
+    with patch.object(CFSService, 'create_account_invoice', return_value=invoice_response) as mock_cfs:
+        CreateInvoiceTask.create_invoices()
+        mock_cfs.assert_not_called()
+
+
+def test_create_eft_invoice_on_frozen_account(session):
+    """Assert EFT invoice is created."""
+    account = factory_create_eft_account(auth_account_id='1', status=CfsAccountStatus.FREEZE.value)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
+    # Create an invoice for this account
+    invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10,
+                              status_code=InvoiceStatus.APPROVED.value, payment_method_code=PaymentMethod.EFT.value)
+
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+
+    CreateInvoiceTask.create_invoices()
+
+    updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
+    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
+        find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+
+    assert inv_ref is None
+    assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+
+
+def test_create_eft_invoices(session):
+    """Assert EFT invoices are created."""
+    account = factory_create_eft_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=1)
+    # Create an invoice for this account
+    invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10,
+                              status_code=InvoiceStatus.APPROVED.value, payment_method_code=PaymentMethod.EFT.value)
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    # Create another invoice for this account
+    invoice2 = factory_invoice(payment_account=account, created_on=previous_day, total=10,
+                               status_code=InvoiceStatus.APPROVED.value, payment_method_code=PaymentMethod.EFT.value)
+    fee_schedule2 = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTADD')
+    line2 = factory_payment_line_item(invoice2.id, fee_schedule_id=fee_schedule2.fee_schedule_id)
+    line2.save()
+
+    CreateInvoiceTask.create_invoices()
+    invoice2 = InvoiceModel.find_by_id(invoice2.id)
+    invoice = InvoiceModel.find_by_id(invoice.id)
+    assert invoice2.invoice_status_code == invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+
+
+def test_create_eft_invoice_before_cutoff(session):
+    """Assert EFT invoices are created."""
+    account = factory_create_eft_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
+    previous_day = datetime.now(tz=timezone.utc) - timedelta(days=2)
+    # Create an invoice for this account
+    invoice = factory_invoice(payment_account=account, created_on=previous_day, total=10,
+                              status_code=InvoiceStatus.APPROVED.value, payment_method_code=PaymentMethod.EFT.value)
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    assert invoice.invoice_status_code == InvoiceStatus.APPROVED.value
+
+    CreateInvoiceTask.create_invoices()
+
+    updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
+    inv_ref: InvoiceReferenceModel = InvoiceReferenceModel. \
+        find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+
+    assert inv_ref is not None  # As EFT will be summed up for all outstanding invoices
+    assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
