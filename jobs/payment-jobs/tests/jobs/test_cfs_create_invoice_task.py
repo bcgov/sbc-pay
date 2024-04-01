@@ -293,8 +293,6 @@ def test_create_eft_invoice(session):
     invoice_reference: InvoiceReferenceModel = InvoiceReferenceModel. \
         find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
 
-    print('test')
-
     assert invoice_reference
     assert updated_invoice.invoice_status_code == InvoiceStatus.APPROVED.value
 
