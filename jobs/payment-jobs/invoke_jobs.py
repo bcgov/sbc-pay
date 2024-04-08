@@ -26,6 +26,7 @@ import config
 from services import oracle_db
 from tasks.eft_transfer_task import EftTransferTask
 from tasks.routing_slip_task import RoutingSlipTask
+from tasks.electronic_funds_transfer_task import ElectronicFundsTransferTask
 from tasks.statement_due_task import StatementDueTask
 from utils.logger import setup_logging
 
@@ -131,6 +132,8 @@ def run(job_name, argument=None):
         RoutingSlipTask.process_correction()
         RoutingSlipTask.adjust_routing_slips()
         application.logger.info(f'<<<< Completed Routing Slip tasks >>>>')
+    elif job_name == 'EFT':
+        ElectronicFundsTransferTask.link_electronic_funds_transfer()
     elif job_name == 'EJV_PAYMENT':
         EjvPaymentTask.create_ejv_file()
         application.logger.info(f'<<<< Completed running EJV payment >>>>')
