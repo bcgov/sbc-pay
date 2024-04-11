@@ -38,7 +38,7 @@ def app():
 def mock_queue_publish(monkeypatch):
     """Mock queue publish."""
     # TODO: so it can be used like this from gcp_queue_service import publish_to_queue
-    monkeypatch.setattr('pay_api.services.gcp_queue.gcp_queue_service.publish_to_queue', lambda *args, **kwargs: None)
+    monkeypatch.setattr('pay_api.services.gcp_queue.gcp_queue_publisher.publish_to_queue', lambda *args, **kwargs: None)
 
 
 @pytest.fixture(scope='function')

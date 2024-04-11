@@ -151,7 +151,7 @@ class GcpQueue:
         ):
             try:
                 return from_queue_message(str_data)
-            except (
+            except (  # pylint: disable=broad-exception-caught
                 CloudEventVersionException,
                 InvalidCloudEventError,
                 ValueError,

@@ -482,7 +482,7 @@ def test_event_failed_transactions(session, public_user_mock, monkeypatch):
 
     monkeypatch.setattr('pay_api.services.direct_pay_service.DirectPayService.get_receipt', get_receipt)
 
-    with patch('pay_api.services.payment_transaction.gcp_queue_publisher.publish_to_queue',
+    with patch('pay_api.services.gcp_queue.gcp_queue_publisher.publish_to_queue',
                side_effect=ConnectionError('mocked error')):
         transaction = PaymentTransactionService.update_transaction(transaction.id,
                                                                    pay_response_url='?key=value')

@@ -19,7 +19,7 @@ Test-Suite to ensure that the GCP Queue Service layer is working as expected.
 from unittest.mock import MagicMock, PropertyMock, patch
 import pytest
 from pay_api.services.gcp_queue.gcp_queue import GcpQueue
-from pay_api.services.gcp_queue.gcp_queue_service import QueueMessage, publish_to_queue
+from pay_api.services.gcp_queue.gcp_queue_publisher import QueueMessage, publish_to_queue
 
 # Sample data for testing
 SAMPLE_QUEUE_MESSAGE = QueueMessage(
@@ -46,14 +46,14 @@ def mock_credentials():
 
 
 @pytest.fixture(autouse=True)
-def setup_gcp_queue(mock_publisher_client):
+def setup_gcp_queue():
     """Mock gcp queue setup."""
     with patch.object(GcpQueue, 'publisher', new_callable=PropertyMock) as mock_publisher:
         mock_publisher.return_value = mock_publisher_client.return_value
         yield
 
 
-def test_publish_to_queue_success(mock_publisher_client):
+def test_publish_to_queue_success():
     """Test that publish_to_queue successfully publishes a message to the queue."""
     # Mock the publish method to return a future object with a result method
     future_mock = MagicMock()
@@ -66,7 +66,7 @@ def test_publish_to_queue_success(mock_publisher_client):
     mock_publisher_client.return_value.publish.assert_called_once()
 
 
-def test_publish_to_queue_no_topic(mock_publisher_client, app):
+def test_publish_to_queue_no_topic(app):
     """Test that publish_to_queue does not attempt to publish if no topic is set."""
     with app.app_context():
         message_without_topic = QueueMessage(
