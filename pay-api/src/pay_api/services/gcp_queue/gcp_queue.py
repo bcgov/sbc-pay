@@ -1,9 +1,6 @@
-# pylint: skip-file
-# flake8: noqa
-# This will get moved to an external library, which is linted by black (different than our rules)
 # Copyright © 2023 Province of British Columbia
 #
-# Licensed under the BSD 3 Clause License, (the 'License');
+# Licensed under the BSD 3 Clause License, (the "License");
 # you may not use this file except in compliance with the License.
 # The template for the license can be found here
 #    https://opensource.org/license/bsd-3-clause/
@@ -74,47 +71,41 @@ class GcpQueue:
 
     def init_app(self, app: Flask):
         """Initializes the application"""
-
-        self.gcp_auth_key = app.config.get('GCP_AUTH_KEY')
+        self.gcp_auth_key = app.config.get("GCP_AUTH_KEY")
         if self.gcp_auth_key:
             try:
                 audience = current_app.config.get(
-                    'AUDIENCE',
-                    'https://pubsub.googleapis.com/google.pubsub.v1.Subscriber',
+                    "AUDIENCE",
+                    "https://pubsub.googleapis.com/google.pubsub.v1.Subscriber",
                 )
                 publisher_audience = current_app.config.get(
-                    'PUBLISHER_AUDIENCE',
-                    'https://pubsub.googleapis.com/google.pubsub.v1.Publisher',
+                    "PUBLISHER_AUDIENCE",
+                    "https://pubsub.googleapis.com/google.pubsub.v1.Publisher",
                 )
 
-                self.service_account_info = json.loads(
-                    base64.b64decode(self.gcp_auth_key).decode('utf-8'))
-                credentials = jwt.Credentials.from_service_account_info(
-                    self.service_account_info, audience=audience)
-                self.credentials_pub = credentials.with_claims(
-                    audience=publisher_audience)
+                self.service_account_info = json.loads(base64.b64decode(self.gcp_auth_key).decode("utf-8"))
+                credentials = jwt.Credentials.from_service_account_info(self.service_account_info, audience=audience)
+                self.credentials_pub = credentials.with_claims(audience=publisher_audience)
             except Exception as error:  # noqa: B902
-                raise Exception('Unable to create a connection',
-                                error) from error  # pylint: disable=W0719
+                raise Exception("Unable to create a connection", error) from error  # pylint: disable=W0719
 
     @property
     def publisher(self):
         """Returns the publisher"""
-
         if not self._publisher and self.credentials_pub:
-            self._publisher = pubsub_v1.PublisherClient(
-                credentials=self.credentials_pub)
-        return self._publisher
+            self._publisher = pubsub_v1.PublisherClient(credentials=self.credentials_pub)
+        else:
+            self._publisher = pubsub_v1.PublisherClient()
+        return self.credentials_pub
 
     @staticmethod
     def is_valid_envelope(msg: dict):
         """Checks if the envelope is valid"""
-
         if (
-            msg.get('subscription')
-            and (message := msg.get('message'))
+            msg.get("subscription")
+            and (message := msg.get("message"))
             and isinstance(message, dict)
-            and message.get('data')
+            and message.get("data")
         ):
             return True
         return False
@@ -122,7 +113,6 @@ class GcpQueue:
     @staticmethod
     def get_envelope(request: LocalProxy) -> Optional[dict]:
         """Returns the envelope"""
-
         with suppress(Exception):
             if (envelope := request.get_json()) and GcpQueue.is_valid_envelope(envelope):
                 return envelope
@@ -155,8 +145,8 @@ class GcpQueue:
             return None
 
         if (
-            (message := envelope.get('message'))
-            and (raw_data := message.get('data'))
+            (message := envelope.get("message"))
+            and (raw_data := message.get("data"))
             and (str_data := base64.b64decode(raw_data))
         ):
             try:
@@ -174,20 +164,18 @@ class GcpQueue:
     def publish(self, topic: str, payload: bytes):
         """Send payload to the queue."""
         if not (publisher := self.publisher):
-            raise Exception('missing setup arguments')  # pylint: disable=W0719
+            raise Exception("missing setup arguments")  # pylint: disable=W0719
 
         try:
             future = publisher.publish(topic, payload)
 
             return future.result()
         except (CancelledError, TimeoutError) as error:
-            raise Exception('Unable to post to queue',
-                            error) from error  # pylint: disable=W0719
+            raise Exception("Unable to post to queue", error) from error  # pylint: disable=W0719
 
     @staticmethod
     def to_queue_message(ce: SimpleCloudEvent):
         """Return a byte string of the CloudEvent in JSON format"""
-
         return to_queue_message(ce)
 
     @staticmethod

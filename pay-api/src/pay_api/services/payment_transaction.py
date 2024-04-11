@@ -28,9 +28,9 @@ from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import PaymentTransactionSchema
-from pay_api.services import gcp_queue_publisher
+from pay_api.services.gcp_queue import gcp_queue_message
 from pay_api.services.base_payment_system import PaymentSystemService
-from pay_api.services.gcp_queue_publisher import QueueMessage
+from pay_api.services.gcp_queue.gcp_queue_message import QueueMessage
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
@@ -508,14 +508,16 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             status_code = 'TRANSACTION_FAILED'
 
         try:
-            gcp_queue_publisher.publish_to_queue(
+            gcp_queue_message.publish_to_queue(
                 QueueMessage(
                     source=QueueSources.PAY_API.value,
                     message_type=MessageType.PAYMENT.value,
                     payload=PaymentTransaction.create_event_payload(invoice, status_code),
                     topic=get_topic_for_corp_type(invoice.corp_type_code)
-                )
+                ),
+                current_app
             )
+
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(e)
             current_app.logger.warning(
