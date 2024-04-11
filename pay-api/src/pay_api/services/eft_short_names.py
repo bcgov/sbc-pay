@@ -106,8 +106,9 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     @auth_account_id.setter
     def auth_account_id(self, value: str):
         """Set the auth_account_id."""
-        self._auth_account_id = value
-        self._dao.auth_account_id = value
+        if self._auth_account_id != value:
+            self._auth_account_id = value
+            self._dao.auth_account_id = value
 
     @property
     def short_name(self):
@@ -117,8 +118,9 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     @short_name.setter
     def short_name(self, value: str):
         """Set the short name."""
-        self._short_name = value
-        self._dao.short_name = value
+        if self._short_name != value:
+            self._short_name = value
+            self._dao.short_name = value
 
     @property
     def created_on(self):
@@ -139,8 +141,9 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     @linked_by.setter
     def linked_by(self, value: str):
         """Set the linked by user name."""
-        self._linked_by = value
-        self._dao.linked_by = value
+        if self._linked_by != value:
+            self._linked_by = value
+            self._dao.linked_by = value
 
     @property
     def linked_by_name(self):
@@ -150,8 +153,9 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     @linked_by_name.setter
     def linked_by_name(self, value: str):
         """Set the linked by name."""
-        self._linked_by_name = value
-        self._dao.linked_by_name = value
+        if self._linked_by_name != value:
+            self._linked_by_name = value
+            self._dao.linked_by_name = value
 
     @property
     def linked_on(self):

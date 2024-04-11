@@ -150,8 +150,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @auth_account_id.setter
     def auth_account_id(self, value: str):
         """Set the auth_account_id."""
-        self._auth_account_id = value
-        self._dao.auth_account_id = value
+        if self._auth_account_id != value:
+            self._auth_account_id = value
+            self._dao.auth_account_id = value
 
     @property
     def name(self):
@@ -161,8 +162,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @name.setter
     def name(self, value: str):
         """Set the name."""
-        self._name = value
-        self._dao.name = value
+        if self._name != value:
+            self._name = value
+            self._dao.name = value
 
     @property
     def payment_method(self):
@@ -172,8 +174,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @payment_method.setter
     def payment_method(self, value: int):
         """Set the payment_method."""
-        self._payment_method = value
-        self._dao.payment_method = value
+        if self._payment_method != value:
+            self._payment_method = value
+            self._dao.payment_method = value
 
     @property
     def cfs_account(self):
@@ -320,8 +323,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @billable.setter
     def billable(self, value: bool):
         """Set the billable."""
-        self._billable = value
-        self._dao.billable = value
+        if self._billable != value:
+            self._billable = value
+            self._dao.billable = value
 
     @property
     def eft_enable(self):
@@ -331,8 +335,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @eft_enable.setter
     def eft_enable(self, value: bool):
         """Set the eft_enable."""
-        self._eft_enable = value
-        self._dao.eft_enable = value
+        if self._eft_enable != value:
+            self._eft_enable = value
+            self._dao.eft_enable = value
 
     def save(self):
         """Save the information to the DB."""
