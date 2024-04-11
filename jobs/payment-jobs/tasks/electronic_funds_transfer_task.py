@@ -41,7 +41,9 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
 
         Steps:
         1. Find all pending electronic funds transfer with pending status.
-        2. Notify mailer
+        2. Receipts created in CAS representing the EFT.
+        3. Apply the receipts to the invoices.
+        4. Notify mailer
         """
         electronic_funds_transfers = cls._get_electronic_funds_transfer_by_state(EFTShortnameState.LINKED.value)
         for electronic_funds_transfer in electronic_funds_transfers:
@@ -103,7 +105,6 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
             electronic_funds_transfer.auth_account_id)
 
-        # apply invoice to the CFS_ACCOUNT
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
 
         invoices: List[InvoiceModel] = EftShortNamesService.get_invoices_owing(
@@ -115,6 +116,8 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
             inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
                 inv.id, InvoiceReferenceStatus.ACTIVE.value
             )
+
+            # apply invoice to the CFS_ACCOUNT
             cls.apply_electronic_funds_transfer_to_invoice(
                 payment_account, cfs_account, electronic_funds_transfer, inv, inv_ref.invoice_number
             )
@@ -140,7 +143,6 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
         has_errors = False
         # an invoice has to be applied to multiple receipts (incl. all linked RS); apply till the balance is zero
         try:
-            # apply receipt now
             receipt_number = electronic_funds_transfer.generate_cas_receipt_number()
             current_app.logger.debug(f'Apply receipt {receipt_number} on invoice {invoice_number} '
                                      f'for electronic funds transfer {electronic_funds_transfer.id}')
@@ -154,7 +156,6 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.debug(f'Applying receipt {receipt_number} to {invoice_number}')
                 receipt_response = CFSService.apply_receipt(cfs_account, receipt_number, invoice_number)
 
-                # Create receipt.
                 receipt = Receipt()
                 receipt.receipt_number = receipt_response.json().get('receipt_number', None)
                 receipt_amount = receipt_balance_before_apply - float(receipt_response.json().get('unapplied_amount'))
