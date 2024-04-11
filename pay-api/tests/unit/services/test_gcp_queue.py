@@ -16,11 +16,10 @@
 
 Test-Suite to ensure that the GCP Queue Service layer is working as expected.
 """
-from unittest.mock import MagicMock, patch
-
-from flask import current_app
+from unittest.mock import MagicMock, PropertyMock, patch
 import pytest
-from pay_api.services.gcp_queue.gcp_queue_message import QueueMessage, publish_to_queue
+from pay_api.services.gcp_queue.gcp_queue import GcpQueue
+from pay_api.services.gcp_queue.gcp_queue_service import QueueMessage, publish_to_queue
 
 # Sample data for testing
 SAMPLE_QUEUE_MESSAGE = QueueMessage(
@@ -31,14 +30,14 @@ SAMPLE_QUEUE_MESSAGE = QueueMessage(
 )
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_publisher_client():
     """Mock Publisher."""
     with patch('google.cloud.pubsub_v1.PublisherClient') as mock:
         yield mock
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def mock_credentials():
     """Mock Credentials."""
     with patch('google.auth.jwt.Credentials') as mock:
@@ -46,7 +45,15 @@ def mock_credentials():
         yield mock
 
 
-def test_publish_to_queue_success(mock_publisher_client, mock_credentials):
+@pytest.fixture(autouse=True)
+def setup_gcp_queue(mock_publisher_client):
+    """Mock gcp queue setup."""
+    with patch.object(GcpQueue, 'publisher', new_callable=PropertyMock) as mock_publisher:
+        mock_publisher.return_value = mock_publisher_client.return_value
+        yield
+
+
+def test_publish_to_queue_success(mock_publisher_client):
     """Test that publish_to_queue successfully publishes a message to the queue."""
     # Mock the publish method to return a future object with a result method
     future_mock = MagicMock()
@@ -54,20 +61,21 @@ def test_publish_to_queue_success(mock_publisher_client, mock_credentials):
     mock_publisher_client.return_value.publish.return_value = future_mock
 
     # Call the function under test
-    publish_to_queue(SAMPLE_QUEUE_MESSAGE, current_app)
+    publish_to_queue(SAMPLE_QUEUE_MESSAGE)
 
     mock_publisher_client.return_value.publish.assert_called_once()
 
 
-def test_publish_to_queue_no_topic(mock_publisher_client, mock_credentials):
+def test_publish_to_queue_no_topic(mock_publisher_client, app):
     """Test that publish_to_queue does not attempt to publish if no topic is set."""
-    message_without_topic = QueueMessage(
-        source='test-source',
-        message_type='test-message-type',
-        payload={'key': 'value'},
-        topic=None  # No topic provided
-    )
+    with app.app_context():
+        message_without_topic = QueueMessage(
+            source='test-source',
+            message_type='test-message-type',
+            payload={'key': 'value'},
+            topic=None  # No topic provided
+        )
 
-    publish_to_queue(message_without_topic, current_app)
+        publish_to_queue(message_without_topic)
 
-    mock_publisher_client.return_value.publish.assert_not_called()
+        mock_publisher_client.return_value.publish.assert_not_called()

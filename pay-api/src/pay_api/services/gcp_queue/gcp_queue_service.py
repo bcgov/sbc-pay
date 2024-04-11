@@ -2,6 +2,7 @@
 from dataclasses import dataclass
 import uuid
 from datetime import datetime, timezone
+from flask import current_app
 from simple_cloudevent import SimpleCloudEvent
 
 from pay_api.services.gcp_queue.gcp_queue import GcpQueue
@@ -17,10 +18,10 @@ class QueueMessage:
     topic: str
 
 
-def publish_to_queue(queue_message: QueueMessage, app):
+def publish_to_queue(queue_message: QueueMessage):
     """Publish to GCP PubSub Queue using GcpQueue."""
     if queue_message.topic is None:
-        app.logger.info('Skipping queue message topic not set.')
+        current_app.logger.info('Skipping queue message topic not set.')
         return
 
     # Create a SimpleCloudEvent from the QueueMessage
@@ -35,5 +36,5 @@ def publish_to_queue(queue_message: QueueMessage, app):
     )
 
     # Initialize GcpQueue and publish
-    gcp_queue = GcpQueue(app)
+    gcp_queue = GcpQueue()
     gcp_queue.publish(queue_message.topic, GcpQueue.to_queue_message(cloud_event))

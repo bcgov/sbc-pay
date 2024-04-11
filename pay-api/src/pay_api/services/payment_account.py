@@ -35,10 +35,10 @@ from pay_api.models import StatementRecipients as StatementRecipientModel
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import db
 from pay_api.models.payment_account import PaymentAccountSearchModel
-from pay_api.services.gcp_queue import gcp_queue_message
+from pay_api.services.gcp_queue import gcp_queue_service
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.distribution_code import DistributionCode
-from pay_api.services.gcp_queue.gcp_queue_message import QueueMessage
+from pay_api.services.gcp_queue.gcp_queue_service import QueueMessage
 from pay_api.services.oauth_service import OAuthService
 from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.services.statement import Statement
@@ -818,14 +818,13 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def _publish_queue_message(self, payload: dict, message_type: str):
         """Publish to account mailer to send out confirmation email or notification email."""
         try:
-            gcp_queue_message.publish_to_queue(
+            gcp_queue_service.publish_to_queue(
                 QueueMessage(
                     source=QueueSources.PAY_API.value,
                     message_type=message_type,
                     payload=payload,
                     topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
-                ),
-                current_app
+                )
             )
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(e)
@@ -881,14 +880,13 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             )
 
             try:
-                gcp_queue_message.publish_to_queue(
+                gcp_queue_service.publish_to_queue(
                     QueueMessage(
                         source=QueueSources.PAY_API.value,
                         message_type=MessageType.NSF_UNLOCK_ACCOUNT.value,
                         payload=payload,
                         topic=current_app.config.get('EVENT_LISTENER_TOPIC')
-                    ),
-                    current_app
+                    )
                 )
             except Exception as e:  # NOQA pylint: disable=broad-except
                 current_app.logger.error(e)
