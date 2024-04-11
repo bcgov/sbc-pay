@@ -36,7 +36,7 @@ from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.services.gcp_queue_publisher import QueueMessage
+from pay_api.services.gcp_queue.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import (
     CorpType, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus, QueueSources,
     TransactionStatus)

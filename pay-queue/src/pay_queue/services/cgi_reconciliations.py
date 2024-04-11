@@ -29,7 +29,7 @@ from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
-from pay_api.services import gcp_queue_publisher
+from pay_api.services.gcp_queue import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import (
     DisbursementStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod,

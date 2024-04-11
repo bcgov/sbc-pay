@@ -31,7 +31,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models import db
-from pay_api.services import gcp_queue_publisher
+from pay_api.services.gcp_queue import gcp_queue_publisher
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.non_sufficient_funds import NonSufficientFundsService
