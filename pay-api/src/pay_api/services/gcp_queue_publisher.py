@@ -19,7 +19,7 @@ class QueueMessage:
 
 
 def publish_to_queue(queue_message: QueueMessage):
-    """Publish to GCP PubSub Queue using GcpQueue."""
+    """Publish to GCP PubSub Queue using queue."""
     if queue_message.topic is None:
         current_app.logger.info('Skipping queue message topic not set.')
         return
@@ -35,6 +35,6 @@ def publish_to_queue(queue_message: QueueMessage):
         data=queue_message.payload
     )
 
-    # Initialize GcpQueue and publish
+    # Initialize queue and publish
     gcp_queue = GcpQueue()
-    gcp_queue.publish(queue_message.topic, GcpQueue.to_queue_message(cloud_event))
+    gcp_queue.publish(queue_message.topic, gcp_queue.to_queue_message(cloud_event))

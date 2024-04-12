@@ -30,8 +30,8 @@ from pay_api import config
 from pay_api.config import _Config
 from pay_api.resources import endpoints
 from pay_api.services.flags import flags
-from pay_api.services.gcp_queue import gcp_queue
 from pay_api.models import db, ma
+from pay_api.services.gcp_queue import queue
 from pay_api.utils.auth import jwt
 from pay_api.utils.cache import cache
 from pay_api.utils.logging import setup_logging
@@ -49,7 +49,7 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
 
     flags.init_app(app)
     db.init_app(app)
-    gcp_queue.init_app(app)
+    queue.init_app(app)
     Migrate(app, db)
     app.logger.info('Running migration upgrade.')
     with app.app_context():

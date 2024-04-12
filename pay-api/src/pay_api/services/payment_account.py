@@ -35,10 +35,10 @@ from pay_api.models import StatementRecipients as StatementRecipientModel
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import db
 from pay_api.models.payment_account import PaymentAccountSearchModel
-from pay_api.services.gcp_queue import gcp_queue_publisher
+from pay_api.services import gcp_queue_publisher
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.distribution_code import DistributionCode
-from pay_api.services.gcp_queue.gcp_queue_publisher import QueueMessage
+from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.oauth_service import OAuthService
 from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.services.statement import Statement

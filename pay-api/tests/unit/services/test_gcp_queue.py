@@ -18,8 +18,8 @@ Test-Suite to ensure that the GCP Queue Service layer is working as expected.
 """
 from unittest.mock import MagicMock, PropertyMock, patch
 import pytest
-from pay_api.services.gcp_queue.gcp_queue import GcpQueue
-from pay_api.services.gcp_queue.gcp_queue_publisher import QueueMessage, publish_to_queue
+from pay_api.services.gcp_queue import GcpQueue
+from pay_api.services.gcp_queue_publisher import QueueMessage, publish_to_queue
 
 # Sample data for testing
 SAMPLE_QUEUE_MESSAGE = QueueMessage(

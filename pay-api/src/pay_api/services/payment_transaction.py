@@ -28,9 +28,9 @@ from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import PaymentTransactionSchema
-from pay_api.services.gcp_queue import gcp_queue_publisher
+from pay_api.services import gcp_queue_publisher
 from pay_api.services.base_payment_system import PaymentSystemService
-from pay_api.services.gcp_queue.gcp_queue_publisher import QueueMessage
+from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount

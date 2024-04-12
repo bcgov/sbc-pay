@@ -34,4 +34,4 @@
 """This module contains all the services used."""
 from .gcp_queue import GcpQueue
 
-gcp_queue = GcpQueue()
+queue = GcpQueue()
