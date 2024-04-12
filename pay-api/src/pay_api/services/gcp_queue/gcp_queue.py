@@ -1,5 +1,5 @@
-# Copyright © 2023 Province of British Columbia
 # NOTE: This module is planned to be replaced with a version from LEAR's library in the future.
+# Copyright © 2023 Province of British Columbia
 # Licensed under the BSD 3 Clause License, (the "License");
 # you may not use this file except in compliance with the License.
 # The template for the license can be found here
@@ -45,12 +45,7 @@ from flask import Flask
 from google.auth import jwt
 from google.cloud import pubsub_v1
 from simple_cloudevent import (
-    CloudEventVersionException,
-    InvalidCloudEventError,
-    SimpleCloudEvent,
-    from_queue_message,
-    to_queue_message,
-)
+    CloudEventVersionException, InvalidCloudEventError, SimpleCloudEvent, from_queue_message, to_queue_message)
 from werkzeug.local import LocalProxy
 
 
@@ -102,12 +97,13 @@ class GcpQueue:
     def is_valid_envelope(msg: dict):
         """Check if the envelope is valid."""
         if (
-            msg.get('subscription')
-            and (message := msg.get('message'))
-            and isinstance(message, dict)
-            and message.get('data')
+            msg.get('subscription') and
+            (message := msg.get('message')) and
+            isinstance(message, dict) and
+            message.get('data')
         ):
             return True
+
         return False
 
     @staticmethod
@@ -145,9 +141,9 @@ class GcpQueue:
             return None
 
         if (
-            (message := envelope.get('message'))
-            and (raw_data := message.get('data'))
-            and (str_data := base64.b64decode(raw_data))
+            (message := envelope.get('message')) and
+            (raw_data := message.get('data')) and
+            (str_data := base64.b64decode(raw_data))
         ):
             try:
                 return from_queue_message(str_data)
