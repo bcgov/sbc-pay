@@ -16,25 +16,28 @@
 
 Test-Suite to ensure that the GCP Queue Service layer is working as expected.
 """
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import ANY, MagicMock, patch
+
 import pytest
-from pay_api.services.gcp_queue import GcpQueue
+from flask import Flask
+
+from pay_api.services.gcp_queue.gcp_queue import GcpQueue
 from pay_api.services.gcp_queue_publisher import QueueMessage, publish_to_queue
 
-# Sample data for testing
-SAMPLE_QUEUE_MESSAGE = QueueMessage(
-    source='test-source',
-    message_type='test-message-type',
-    payload={'key': 'value'},
-    topic='projects/project-id/topics/topic'
-)
+
+@pytest.fixture(autouse=True)
+def setup():
+    """Initialize app with test env for testing."""
+    global app
+    app = Flask(__name__)
+    app.env = 'testing'
 
 
 @pytest.fixture(autouse=True)
 def mock_publisher_client():
-    """Mock Publisher."""
-    with patch('google.cloud.pubsub_v1.PublisherClient') as mock:
-        yield mock
+    """Mock the PublisherClient used in GcpQueue."""
+    with patch('google.cloud.pubsub_v1.PublisherClient') as publisher:
+        yield publisher.return_value
 
 
 @pytest.fixture(autouse=True)
@@ -45,37 +48,32 @@ def mock_credentials():
         yield mock
 
 
-@pytest.fixture(autouse=True)
-def setup_gcp_queue():
-    """Mock gcp queue setup."""
-    with patch.object(GcpQueue, 'publisher', new_callable=PropertyMock) as mock_publisher:
-        mock_publisher.return_value = mock_publisher_client.return_value
-        yield
-
-
 def test_publish_to_queue_success():
-    """Test that publish_to_queue successfully publishes a message to the queue."""
-    # Mock the publish method to return a future object with a result method
-    future_mock = MagicMock()
-    future_mock.result.return_value = 'message_id'
-    mock_publisher_client.return_value.publish.return_value = future_mock
+    """Test publishing to GCP PubSub Queue successfully."""
+    with patch.object(GcpQueue, 'publish') as mock_publisher:
+        with app.app_context():
+            queue_message = QueueMessage(
+                source='test-source',
+                message_type='test-message-type',
+                payload={'key': 'value'},
+                topic='projects/project-id/topics/topic'
+            )
 
-    # Call the function under test
-    publish_to_queue(SAMPLE_QUEUE_MESSAGE)
-
-    mock_publisher_client.return_value.publish.assert_called_once()
+            publish_to_queue(queue_message)
+            mock_publisher.assert_called_once_with('projects/project-id/topics/topic', ANY)
 
 
-def test_publish_to_queue_no_topic(app):
-    """Test that publish_to_queue does not attempt to publish if no topic is set."""
-    with app.app_context():
-        message_without_topic = QueueMessage(
-            source='test-source',
-            message_type='test-message-type',
-            payload={'key': 'value'},
-            topic=None  # No topic provided
-        )
-
-        publish_to_queue(message_without_topic)
-
-        mock_publisher_client.return_value.publish.assert_not_called()
+def test_publish_to_queue_no_topic():
+    """Test that publish_to_queue does not publish if no topic is set."""
+    with patch.object(GcpQueue, 'publish') as mock_publisher:
+        with patch.object(Flask, 'logger') as logger:
+            with app.app_context():
+                queue_message = QueueMessage(
+                    source='test-source',
+                    message_type='test-message-type',
+                    payload={'key': 'value'},
+                    topic=None
+                )
+                publish_to_queue(queue_message)
+                mock_publisher.publish.assert_not_called()
+                logger.info.assert_called_once_with('Skipping queue message topic not set.')
