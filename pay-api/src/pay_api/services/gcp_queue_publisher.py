@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from flask import current_app
 from simple_cloudevent import SimpleCloudEvent
 
-from pay_api.services.gcp_queue.gcp_queue import GcpQueue
+from pay_api.services.gcp_queue import GcpQueue
 
 
 @dataclass

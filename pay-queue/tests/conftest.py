@@ -19,6 +19,7 @@ from flask_migrate import Migrate, upgrade
 from google.api_core.exceptions import NotFound
 from google.cloud import pubsub
 from pay_api import db as _db
+from pay_api.services.gcp_queue import GcpQueue
 from sqlalchemy import event, text
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
@@ -29,7 +30,17 @@ from pay_queue import create_app
 def app():
     """Return a session-wide application configured in TEST mode."""
     _app = create_app('testing')
+    _app.config['GCP_AUTH_KEY'] = 'xxxxx'
+    _app.config['AUDIENCE'] = 'https://pubsub.googleapis.com/google.pubsub.v1.Subscriber'
+    _app.config['PUBLISHER_AUDIENCE'] = 'https://pubsub.googleapis.com/google.pubsub.v1.Publisher'
     return _app
+
+
+@pytest.fixture(scope='function', autouse=True)
+def gcp_queue(app, mocker):
+    """Mock GcpQueue to avoid initializing the external connections."""
+    mocker.patch.object(GcpQueue, 'init_app')
+    return GcpQueue(app)
 
 
 @pytest.fixture(scope='session', autouse=True)
