@@ -14,7 +14,7 @@
 
 """Tests to assure the EFT Reconciliation.
 
-Test-Suite to ensure that the EFT Reconciliation queue service and parser is working as expected.
+Test-Suite  to ensure that the EFT Reconciliation queue service and parser is working as expected.
 """
 from datetime import datetime
 from typing import List
