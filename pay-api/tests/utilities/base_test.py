@@ -379,7 +379,7 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
                             name=None,
                             branch_name=None):
     """Return Factory."""
-    # Create a payment account
+    # Create a payment  account
     account = PaymentAccount(
         auth_account_id=auth_account_id,
         bcol_user_id=bcol_user_id,
