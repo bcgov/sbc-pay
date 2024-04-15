@@ -660,13 +660,13 @@ tests = ["coverage", "coveralls", "dill", "mock", "nose"]
 
 [[package]]
 name = "faker"
-version = "24.3.0"
+version = "24.8.0"
 description = "Faker is a Python package that generates fake data for you."
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "Faker-24.3.0-py3-none-any.whl", hash = "sha256:9978025e765ba79f8bf6154c9630a9c2b7f9c9b0f175d4ad5e04b19a82a8d8d6"},
-    {file = "Faker-24.3.0.tar.gz", hash = "sha256:5fb5aa9749d09971e04a41281ae3ceda9414f683d4810a694f8a8eebb8f9edec"},
+    {file = "Faker-24.8.0-py3-none-any.whl", hash = "sha256:2f70a7817b4147d67c544192e169c5653060fce8aef758db0ea8823d89caac94"},
+    {file = "Faker-24.8.0.tar.gz", hash = "sha256:1a46466b22c6bf5925448f725f90c6e0d8bf085819906520ddaa15aec58a6df5"},
 ]
 
 [package.dependencies]
@@ -1693,7 +1693,7 @@ werkzeug = "3.0.1"
 type = "git"
 url = "https://github.com/bcgov/sbc-pay.git"
 reference = "feature-queue-python-upgrade"
-resolved_reference = "f34b20fd5d6c6710523f5935cc315f0ef733310f"
+resolved_reference = "727d3385439146f9616ded4548c22a4867f42ff3"
 subdirectory = "pay-api"
 
 [[package]]
@@ -1712,13 +1712,13 @@ flake8 = ">=5.0.0"
 
 [[package]]
 name = "pg8000"
-version = "1.30.5"
+version = "1.31.1"
 description = "PostgreSQL interface library"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "pg8000-1.30.5-py3-none-any.whl", hash = "sha256:1abf18da652b0ad8e9cbfe57ed841c350b5330c33d8151303555db1fe5ce57f8"},
-    {file = "pg8000-1.30.5.tar.gz", hash = "sha256:072f7ad00cd723695cb2e9fc02c1dfb84c781455e97b8de6f4c4281eea08078c"},
+    {file = "pg8000-1.31.1-py3-none-any.whl", hash = "sha256:69aac9dba4114c9c8d0408232d54eaf7d06d271df7765caeed39960e057800e4"},
+    {file = "pg8000-1.31.1.tar.gz", hash = "sha256:b11130d4c615dd3062ea8fed8143064a7978b7fe6d44f14b72261d43c8e27087"},
 ]
 
 [package.dependencies]
@@ -2492,7 +2492,7 @@ develop = false
 type = "git"
 url = "https://github.com/bcgov/lear.git"
 reference = "feature-legal-name"
-resolved_reference = "1d171cb28fc5044cbe40014ea89a3e8eb20a4266"
+resolved_reference = "2d4c389743ff307be74af1861d6debda8bc8d194"
 subdirectory = "python/common/sql-versioning"
 
 [[package]]
