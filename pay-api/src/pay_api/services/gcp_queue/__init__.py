@@ -31,11 +31,7 @@
 # CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
-"""This module provides Queue type services."""
-
-from pay_api.services.gcp_queue import GcpQueue
-
-from .identifier_updater import update_temporary_identifier
-
+"""This module contains all the services used."""
+from .gcp_queue import GcpQueue
 
 queue = GcpQueue()

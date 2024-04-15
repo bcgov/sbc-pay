@@ -516,6 +516,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
                     topic=get_topic_for_corp_type(invoice.corp_type_code)
                 )
             )
+
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(e)
             current_app.logger.warning(
