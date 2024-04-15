@@ -119,7 +119,6 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
 
         current_app.logger.info(f'Found {len(invoices)} to apply receipt')
         applied_amount = 0
-        print('FIRE')
         for invoice in invoices:
             invoice_reference: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
                 invoice.id, InvoiceReferenceStatus.ACTIVE.value
