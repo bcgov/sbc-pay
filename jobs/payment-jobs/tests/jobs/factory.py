@@ -20,12 +20,12 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 from datetime import datetime, timedelta
 
 from pay_api.models import (
-    CfsAccount, DistributionCode, DistributionCodeLink, EFTShortnames, Invoice, InvoiceReference, Payment,
-    PaymentAccount, PaymentLineItem, Receipt, Refund, RefundsPartial, RoutingSlip, StatementRecipients,
-    StatementSettings)
+    CfsAccount, DistributionCode, DistributionCodeLink, EFTCredit, EFTFile, EFTShortnames, EFTTransaction, Invoice,
+    InvoiceReference, Payment, PaymentAccount, PaymentLineItem, Receipt, Refund, RefundsPartial, RoutingSlip,
+    StatementRecipients, StatementSettings)
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
-    PaymentSystem, RoutingSlipStatus)
+    CfsAccountStatus, EFTProcessStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod,
+    PaymentStatus, PaymentSystem, RoutingSlipStatus)
 
 
 def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='1234567890', auth_account_id='1234'):
@@ -65,7 +65,9 @@ def factory_payment(
         payment_system_code: str = 'PAYBC', payment_method_code: str = 'CC',
         payment_status_code: str = PaymentStatus.CREATED.value,
         payment_date: datetime = datetime.now(),
-        invoice_number: str = None
+        invoice_number: str = None,
+        payment_account_id: int = None,
+        invoice_amount: float = None,
 ):
     """Return Factory."""
     return Payment(
@@ -73,7 +75,9 @@ def factory_payment(
         payment_method_code=payment_method_code,
         payment_status_code=payment_status_code,
         payment_date=payment_date,
-        invoice_number=invoice_number
+        invoice_number=invoice_number,
+        payment_account_id=payment_account_id,
+        invoice_amount=invoice_amount
     ).save()
 
 
@@ -228,6 +232,41 @@ def factory_create_eft_shortname(auth_account_id: str, short_name: str):
         short_name=short_name
     ).save()
     return short_name
+
+
+def factory_create_eft_credit(amount=100, remaining_amount=0, eft_file_id=1, short_name_id=1, payment_account_id=1,
+                              eft_transaction_id=1):
+    """Return Factory."""
+    eft_credit = EFTCredit(
+        amount=amount,
+        remaining_amount=remaining_amount,
+        eft_file_id=eft_file_id,
+        short_name_id=short_name_id,
+        payment_account_id=payment_account_id,
+        eft_transaction_id=eft_transaction_id
+    ).save()
+    return eft_credit
+
+
+def factory_create_eft_file(file_ref='test.txt', status_code=EFTProcessStatus.COMPLETED.value):
+    """Return Factory."""
+    eft_file = EFTFile(
+        file_ref=file_ref,
+        status_code=status_code
+    ).save()
+    return eft_file
+
+
+def factory_create_eft_transaction(file_id=1, line_number=1, line_type='T',
+                                   status_code=EFTProcessStatus.COMPLETED.value):
+    """Return Factory."""
+    eft_transaction = EFTTransaction(
+        file_id=file_id,
+        line_number=line_number,
+        line_type=line_type,
+        status_code=status_code,
+    ).save()
+    return eft_transaction
 
 
 def factory_create_account(auth_account_id: str = '1234', payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
