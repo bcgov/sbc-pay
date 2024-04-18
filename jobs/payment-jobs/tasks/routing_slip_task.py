@@ -123,7 +123,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
 
                 CFSService.reverse_receipt_in_cfs(cfs_account, rs.generate_cas_receipt_number(),
-                                                     ReverseOperation.CORRECTION.value)
+                                                  ReverseOperation.CORRECTION.value)
                 # Update the version, which generates a new receipt number. This is to avoid duplicate receipt number.
                 rs.cas_version_suffix += 1
                 # Recreate the receipt with the modified total.

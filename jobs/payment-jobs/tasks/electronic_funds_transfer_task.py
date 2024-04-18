@@ -18,21 +18,19 @@ from typing import List
 
 from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import EFTCredit as EFTCreditModel
+from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
+from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.models import Payment as PaymentModel
 from pay_api.models import db
-from pay_api.services.cfs_service import CFSService
 from pay_api.services import EFTShortNamesService
+from pay_api.services.cfs_service import CFSService
 from pay_api.services.receipt import Receipt
 from pay_api.utils.enums import (
-    CfsAccountStatus, EFTShortnameState, InvoiceReferenceStatus, InvoiceStatus, ReverseOperation
-)
-from pay_api.utils.util import generate_receipt_number
+    CfsAccountStatus, EFTShortnameState, InvoiceReferenceStatus, InvoiceStatus, ReverseOperation)
 from sentry_sdk import capture_message
 
 
@@ -109,11 +107,11 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                     .filter(EFTShortnameModel.id == eft_short_name.id).first()
 
                 receipt_number = eft_short_name.generate_receipt_number(payment.id)
-                
+
                 CFSService.reverse_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.CORRECTION.value)
-                
+
                 eft_short_name.cas_version_suffix += 1
-                
+
                 CFSService.create_cfs_receipt(
                     cfs_account=cfs_account,
                     rcpt_number=f'R{receipt_number}',
@@ -121,7 +119,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                     amount=payment.invoice_amount,
                     payment_method=payment_account.payment_method,
                     access_token=CFSService.get_fas_token().json().get('access_token'))
-                
+
                 cls._reset_invoices_and_references_to_created_for_electronic_funds_transfer(eft_short_name)
 
                 cls._apply_electronic_funds_transfer_to_pending_invoices(eft_short_name)
@@ -136,7 +134,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                     f'EFT Short Name : {eft_short_name.id}, ERROR : {str(e)}', level='error')
                 current_app.logger.error(e)
                 continue
-    
+
     @classmethod
     def _get_eft_short_names_by_state(cls, state: EFTShortnameState) -> List[EFTShortnameModel]:
         """Get electronic funds transfer by state."""
@@ -189,7 +187,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 invoice.payment_date = datetime.now()
 
         return applied_amount
-                
+
     @classmethod
     def _reset_invoices_and_references_to_created_for_electronic_funds_transfer(cls, eft_short_name: EFTShortnameModel):
         """Reset Invoices, Invoice references and Receipts for EFT."""
@@ -208,7 +206,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
             # Delete receipts as receipts are reversed in CFS.
             for receipt in ReceiptModel.find_all_receipts_for_invoice(invoice.id):
                 db.session.delete(receipt)
-    
+
     @classmethod
     def _apply_electronic_funds_transfer_to_pending_invoices(cls, eft_short_name: EFTShortnameModel) -> float:
         """Apply the electronic funds transfers again."""
