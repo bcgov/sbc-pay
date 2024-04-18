@@ -225,11 +225,12 @@ def factory_create_eft_account(auth_account_id='1234', status=CfsAccountStatus.P
     return account
 
 
-def factory_create_eft_shortname(auth_account_id: str, short_name: str):
+def factory_create_eft_shortname(auth_account_id: str, short_name: str, linked_on=datetime.now()):
     """Return Factory."""
     short_name = EFTShortnames(
         auth_account_id=auth_account_id,
-        short_name=short_name
+        short_name=short_name,
+        linked_on=linked_on
     ).save()
     return short_name
 

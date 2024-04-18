@@ -54,7 +54,7 @@ def test_link_rs(session):
     cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
         payment_account.id)
 
-    with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_cfs_reverse:
+    with patch('pay_api.services.CFSService.reverse_receipt_in_cfs') as mock_cfs_reverse:
         with patch('pay_api.services.CFSService.create_cfs_receipt') as mock_create_cfs:
             with patch.object(CFSService, 'get_receipt') as mock_get_receipt:
                 RoutingSlipTask.link_routing_slips()
@@ -71,7 +71,7 @@ def test_link_rs(session):
     assert cfs_account.status == CfsAccountStatus.INACTIVE.value
 
     # make sure next invocation doesnt fetch any records
-    with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_cfs_reverse:
+    with patch('pay_api.services.CFSService.reverse_receipt_in_cfs') as mock_cfs_reverse:
         with patch('pay_api.services.CFSService.create_cfs_receipt') as mock_create_cfs:
             RoutingSlipTask.link_routing_slips()
             mock_cfs_reverse.assert_not_called()
@@ -129,7 +129,7 @@ def test_process_nsf(session):
     factory_receipt(invoice.id, child_1_rs.number)
     factory_receipt(invoice.id, child_2_rs.number)
 
-    with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_cfs_reverse:
+    with patch('pay_api.services.CFSService.reverse_receipt_in_cfs') as mock_cfs_reverse:
         RoutingSlipTask.process_nsf()
         mock_cfs_reverse.assert_called()
 
@@ -142,7 +142,7 @@ def test_process_nsf(session):
     assert not ReceiptModel.find_all_receipts_for_invoice(invoice.id)
     assert float(RoutingSlipModel.find_by_number(parent_rs.number).remaining_amount) == -60  # Including NSF Fee
 
-    with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_cfs_reverse_2:
+    with patch('pay_api.services.CFSService.reverse_receipt_in_cfs') as mock_cfs_reverse_2:
         RoutingSlipTask.process_nsf()
         mock_cfs_reverse_2.assert_not_called()
 
@@ -174,14 +174,14 @@ def test_process_void(session):
     parent_rs.status = RoutingSlipStatus.VOID.value
     parent_rs.save()
 
-    with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_cfs_reverse:
+    with patch('pay_api.services.CFSService.reverse_receipt_in_cfs') as mock_cfs_reverse:
         RoutingSlipTask.process_void()
         mock_cfs_reverse.assert_called()
 
     # Assert the records.
     assert float(RoutingSlipModel.find_by_number(parent_rs.number).remaining_amount) == 0
 
-    with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_cfs_reverse_2:
+    with patch('pay_api.services.CFSService.reverse_receipt_in_cfs') as mock_cfs_reverse_2:
         RoutingSlipTask.process_void()
         mock_cfs_reverse_2.assert_not_called()
 
@@ -214,7 +214,7 @@ def test_process_correction(session):
 
     session.commit()
 
-    with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_reverse:
+    with patch('pay_api.services.CFSService.reverse_receipt_in_cfs') as mock_reverse:
         with patch('pay_api.services.CFSService.create_cfs_receipt') as mock_create_receipt:
             with patch('pay_api.services.CFSService.get_invoice') as mock_get_invoice:
                 RoutingSlipTask.process_correction()
@@ -278,7 +278,7 @@ def test_link_to_nsf_rs(session):
     child_2_rs.save()
 
     # Run link process
-    with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs'):
+    with patch('pay_api.services.CFSService.reverse_receipt_in_cfs'):
         RoutingSlipTask.link_routing_slips()
 
     # Now the invoice status should be PAID as RS has recovered.
