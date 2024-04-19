@@ -20,12 +20,12 @@ Test-Suite to ensure that the /payments endpoint is working as expected.
 from datetime import datetime, timedelta
 
 from pay_api.models import (
-    CfsAccount, DistributionCode, DistributionCodeLink, EFTCredit, EFTFile, EFTShortnames, EFTTransaction, Invoice,
-    InvoiceReference, Payment, PaymentAccount, PaymentLineItem, Receipt, Refund, RefundsPartial, RoutingSlip,
-    StatementRecipients, StatementSettings)
+    CfsAccount, DistributionCode, DistributionCodeLink, EFTCredit, EFTFile, EFTShortnameLinks, EFTShortnames,
+    EFTTransaction, Invoice, InvoiceReference, Payment, PaymentAccount, PaymentLineItem, Receipt, Refund,
+    RefundsPartial, RoutingSlip, StatementRecipients, StatementSettings)
 from pay_api.utils.enums import (
-    CfsAccountStatus, EFTProcessStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod,
-    PaymentStatus, PaymentSystem, RoutingSlipStatus)
+    CfsAccountStatus, EFTProcessStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus,
+    PaymentMethod, PaymentStatus, PaymentSystem, RoutingSlipStatus)
 
 
 def factory_premium_payment_account(bcol_user_id='PB25020', bcol_account_id='1234567890', auth_account_id='1234'):
@@ -225,13 +225,25 @@ def factory_create_eft_account(auth_account_id='1234', status=CfsAccountStatus.P
     return account
 
 
-def factory_create_eft_shortname(auth_account_id: str, short_name: str):
+def factory_create_eft_shortname(short_name: str):
     """Return Factory."""
     short_name = EFTShortnames(
-        auth_account_id=auth_account_id,
         short_name=short_name
     ).save()
     return short_name
+
+
+def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234',
+                               updated_by: str = None, updated_on: datetime = datetime.now()):
+    """Return an EFT short name link model."""
+    return EFTShortnameLinks(
+        eft_short_name_id=short_name_id,
+        auth_account_id=auth_account_id,
+        status_code=EFTShortnameStatus.LINKED.value,
+        updated_by=updated_by,
+        updated_by_name=updated_by,
+        updated_on=updated_on
+    )
 
 
 def factory_create_eft_credit(amount=100, remaining_amount=0, eft_file_id=1, short_name_id=1, payment_account_id=1,
