@@ -20,7 +20,7 @@ from datetime import datetime
 from typing import List
 
 from pay_api.models import EFTCredit, EFTFile, EFTShortnames, EFTTransaction
-from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus
+from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameStatus
 from tests.utilities.base_test import factory_payment_account
 
 
@@ -33,6 +33,7 @@ def test_eft_credits(session):
 
     eft_short_name = EFTShortnames()
     eft_short_name.auth_account_id = payment_account.auth_account_id
+    eft_short_name.status_code = EFTShortnameStatus.LINKED.value
     eft_short_name.short_name = 'TESTSHORTNAME'
     eft_short_name.save()
 

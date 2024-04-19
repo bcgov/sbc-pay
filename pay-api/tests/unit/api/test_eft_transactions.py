@@ -25,7 +25,8 @@ from pay_api.models import EFTShortnames as EFTShortnamesModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
-    factory_eft_file, factory_eft_shortname, factory_payment_account, get_claims, token_header)
+    factory_eft_file, factory_eft_shortname, factory_eft_shortname_link, factory_payment_account, get_claims,
+    token_header)
 
 
 def assert_transaction(result_dict: dict, short_name: EFTShortnamesModel, transaction: EFTTransactionModel):
@@ -48,7 +49,12 @@ def test_search_short_name_transactions(session, client, jwt, app):
                                               auth_account_id='1234').save()
     eft_file: EFTFileModel = factory_eft_file()
     short_name_1 = factory_eft_shortname(short_name='TESTSHORTNAME1').save()
-    short_name_2 = factory_eft_shortname(short_name='TESTSHORTNAME2', auth_account_id='1234').save()
+    short_name_2 = factory_eft_shortname(short_name='TESTSHORTNAME2').save()
+    factory_eft_shortname_link(
+        short_name_id=short_name_2.id,
+        auth_account_id='1234',
+        updated_by='IDIR/JSMITH'
+    ).save()
 
     # short_name_1 transactions
     s1_transaction1: EFTTransactionModel = EFTTransactionModel(

@@ -40,7 +40,7 @@ def get_eft_shortnames():
     """Get all eft short name records."""
     current_app.logger.info('<get_eft_shortnames')
 
-    state = request.args.get('state', None)
+    state = request.args.get('state').split(',') if request.args.get('state', None) else None
     page: int = int(request.args.get('page', '1'))
     limit: int = int(request.args.get('limit', '10'))
     transaction_start_date = request.args.get('transactionStartDate', None)
@@ -50,8 +50,7 @@ def get_eft_shortnames():
     deposit_end_date = request.args.get('depositEndDate', None)
     short_name = request.args.get('shortName', None)
     account_id = request.args.get('accountId', None)
-    account_id_list = request.args.get('accountIdList', None)
-    account_id_list = account_id_list.split(',') if account_id_list else None
+    account_id_list = request.args.get('accountIdList').split(',') if request.args.get('accountIdList', None) else None
     account_name = request.args.get('accountName', None)
     account_branch = request.args.get('accountBranch', None)
 
@@ -70,11 +69,12 @@ def get_eft_shortnames():
         page=page,
         limit=limit)), HTTPStatus.OK
     current_app.logger.debug('>get_eft_shortnames')
+
     return jsonify(response), status
 
 
 @bp.route('/<int:short_name_id>', methods=['GET', 'OPTIONS'])
-@cross_origin(origins='*', methods=['GET', 'PATCH'])
+@cross_origin(origins='*', methods=['GET'])
 @_jwt.requires_auth
 @_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
 def get_eft_shortname(short_name_id: int):
@@ -87,28 +87,6 @@ def get_eft_shortname(short_name_id: int):
     else:
         response, status = eft_short_name, HTTPStatus.OK
     current_app.logger.debug('>get_eft_shortname')
-    return jsonify(response), status
-
-
-@bp.route('/<int:short_name_id>', methods=['PATCH'])
-@cross_origin(origins='*')
-@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
-def patch_eft_shortname(short_name_id: int):
-    """Update EFT short name mapping."""
-    current_app.logger.info('<patch_eft_shortname')
-    request_json = request.get_json()
-
-    try:
-        if not EFTShortnameService.find_by_short_name_id(short_name_id):
-            response, status = {'message': 'The requested EFT short name could not be found.'}, \
-                HTTPStatus.NOT_FOUND
-        else:
-            account_id = request_json.get('accountId', None)
-            response, status = EFTShortnameService.patch(short_name_id, account_id), HTTPStatus.OK
-    except BusinessException as exception:
-        return exception.response()
-
-    current_app.logger.debug('>patch_eft_shortname')
     return jsonify(response), status
 
 
@@ -127,4 +105,46 @@ def get_eft_shortname_transactions(short_name_id: int):
                                                     EFTTransactionSearch(page=page, limit=limit)), HTTPStatus.OK
 
     current_app.logger.debug('>get_eft_shortname_transactions')
+    return jsonify(response), status
+
+
+@bp.route('/<int:short_name_id>/links', methods=['GET', 'OPTIONS'])
+@cross_origin(origins='*', methods=['GET', 'POST'])
+@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
+def get_eft_shortname_links(short_name_id: int):
+    """Get EFT short name account links."""
+    current_app.logger.info('<get_eft_shortname_links')
+
+    try:
+        if not EFTShortnameService.find_by_short_name_id(short_name_id):
+            response, status = {'message': 'The requested EFT short name could not be found.'}, \
+                HTTPStatus.NOT_FOUND
+        else:
+            response, status = EFTShortnameService.get_shortname_links(short_name_id), HTTPStatus.OK
+    except BusinessException as exception:
+        return exception.response()
+
+    current_app.logger.debug('>get_eft_shortname_links')
+    return jsonify(response), status
+
+
+@bp.route('/<int:short_name_id>/links', methods=['POST'])
+@cross_origin(origins='*')
+@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
+def post_eft_shortname_link(short_name_id: int):
+    """Create EFT short name to account link."""
+    current_app.logger.info('<post_eft_shortname_link')
+    request_json = request.get_json()
+
+    try:
+        if not EFTShortnameService.find_by_short_name_id(short_name_id):
+            response, status = {'message': 'The requested EFT short name could not be found.'}, \
+                HTTPStatus.NOT_FOUND
+        else:
+            account_id = request_json.get('accountId', None)
+            response, status = EFTShortnameService.create_shortname_link(short_name_id, account_id), HTTPStatus.OK
+    except BusinessException as exception:
+        return exception.response()
+
+    current_app.logger.debug('>post_eft_shortname_link')
     return jsonify(response), status
