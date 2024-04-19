@@ -20,20 +20,22 @@ from datetime import datetime
 from unittest.mock import patch
 
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import EFTShortnames as EFTShortnameModel
-from pay_api.utils.enums import CfsAccountStatus, PaymentMethod
+from pay_api.models import FeeSchedule as FeeScheduleModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.utils.enums import (
+    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, RoutingSlipStatus)
 from pay_api.services import CFSService
 from tasks.electronic_funds_transfer_task import ElectronicFundsTransferTask
 
-
 from .factory import (
     factory_create_eft_account, factory_create_eft_credit, factory_create_eft_file, factory_create_eft_shortname,
-    factory_create_eft_transaction, factory_invoice, factory_invoice_reference, factory_payment)
+    factory_create_eft_transaction, factory_invoice, factory_invoice_reference, factory_payment,
+    factory_payment_line_item, factory_receipt)
 
 
-def test_link_electronic_funds_transfer(session):
-    """Test link electronic funds transfer."""
+def test_link_electronic_funds_transfers(session):
+    """Test link electronic funds transfers."""
     auth_account_id = '1234'
     short_name = 'TEST1'
 
@@ -69,3 +71,44 @@ def test_link_electronic_funds_transfer(session):
 
     cfs_account: CfsAccountModel = CfsAccountModel.find_by_id(cfs_account.id)
     assert cfs_account.status == CfsAccountStatus.ACTIVE.value
+
+
+def test_unlink_electronic_funds_transfers(session):
+    """Test unlink electronic funds transfers."""
+    auth_account_id = '1234'
+    short_name = 'TEST1'
+    receipt_number = '1111R'
+
+    payment_account = factory_create_eft_account(auth_account_id=auth_account_id, status=CfsAccountStatus.ACTIVE.value)
+    invoice = factory_invoice(payment_account=payment_account, total=30,
+                              status_code=InvoiceStatus.PAID.value,
+                              payment_method_code=PaymentMethod.EFT.value)
+
+    fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
+    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    line.save()
+
+    # Create invoice reference
+    factory_invoice_reference(invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value)
+
+    # Create receipts for the invoices
+    factory_receipt(invoice.id, receipt_number)
+
+    eft_short_name = EFTShortnameModel.find_by_short_name(short_name)
+    eft_short_name.linked_by = None
+    eft_short_name.linked_by_name = None
+    eft_short_name.linked_on = None
+    eft_short_name.save()
+
+    session.commit()
+
+    with patch('pay_api.services.CFSService.reverse_receipt_in_cfs') as mock_reverse:
+        with patch('pay_api.services.CFSService.create_cfs_receipt') as mock_create_receipt:
+            with patch('pay_api.services.CFSService.get_invoice') as mock_get_invoice:
+                ElectronicFundsTransferTask.unlink_electronic_funds_transfers()
+                mock_reverse.assert_called()
+                mock_get_invoice.assert_called()
+                mock_create_receipt.assert_called()
+
+    assert rs.status == RoutingSlipStatus.COMPLETE.value
+    assert rs.cas_version_suffix == 2
