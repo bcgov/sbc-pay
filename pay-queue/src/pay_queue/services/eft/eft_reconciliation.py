@@ -28,7 +28,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.eft_service import EftService as EFTService
 from pay_api.services.eft_short_names import EFTShortnames
-from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, InvoiceStatus, PaymentMethod, EFTShortnameStatus
+from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, InvoiceStatus, PaymentMethod
 from sentry_sdk import capture_message
 
 from pay_queue.minio import get_object

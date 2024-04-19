@@ -23,12 +23,12 @@ from pay_api import db
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTFile as EFTFileModel
-from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
+from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, MessageType, PaymentMethod, EFTShortnameStatus
+from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, MessageType, PaymentMethod
 
 from pay_queue.services.eft.eft_enums import EFTConstants
 from tests.integration.factory import factory_create_eft_account, factory_invoice
@@ -554,7 +554,7 @@ def create_test_data():
     """Create test seed data."""
     payment_account: PaymentAccountModel = factory_create_eft_account()
     eft_shortname: EFTShortnameModel = EFTShortnameModel(short_name='TESTSHORTNAME').save()
-    eft_shortname_link: EFTShortnameLinksModel = EFTShortnameLinksModel(
+    EFTShortnameLinksModel(
         eft_short_name_id=eft_shortname.id,
         auth_account_id=payment_account.auth_account_id,
         status_code=EFTShortnameStatus.LINKED.value,

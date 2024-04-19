@@ -72,7 +72,7 @@ class EFTRecord(EFTBase):
         self.program_code = self.extract_value(3, 7)
 
         deposit_time = self.extract_value(20, 24)
-        deposit_time = '0000' if len(deposit_time) == 0 else deposit_time # default to 0000 if time not provided
+        deposit_time = '0000' if len(deposit_time) == 0 else deposit_time  # default to 0000 if time not provided
 
         self.deposit_datetime = self.parse_datetime(self.extract_value(7, 15) + deposit_time,
                                                     EFTError.INVALID_DEPOSIT_DATETIME)
