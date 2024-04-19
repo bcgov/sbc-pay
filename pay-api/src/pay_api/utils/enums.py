@@ -331,11 +331,13 @@ class EFTGlTransferType(Enum):
     TRANSFER = 'TRANSFER'
 
 
-class EFTShortnameState(Enum):
-    """EFT Short name search states."""
+class EFTShortnameStatus(Enum):
+    """EFT Short name statuses."""
 
+    INACTIVE = 'INACTIVE'
     LINKED = 'LINKED'
     UNLINKED = 'UNLINKED'
+    PENDING = 'PENDING'
 
 
 class MessageType(Enum):
