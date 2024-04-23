@@ -109,7 +109,8 @@ class _Config():  # pylint: disable=too-few-public-methods
     ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', None)
     PAY_SUB_AUDIENCE = os.getenv('PAY_SUB_AUDIENCE', None)
     VERIFY_PUBSUB_EMAIL = os.getenv('VERIFY_PUBSUB_EMAIL', None)
-    VERIFY_PUBSUB_VIA_JWT = os.getenv('VERIFY_PUBSUB_VIA_JWT', None)
+    VERIFY_PUBSUB_VIA_JWT = os.getenv('VERIFY_PUBSUB_VIA_JWT', 'true')
+    DEBUG_REQUEST = os.getenv('DEBUG_REQUEST', 'false')
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
