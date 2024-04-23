@@ -13,19 +13,21 @@ from requests.sessions import Session
 
 
 def verify_jwt(session):
-    """Verify token is valid."""
-    msg = ''
+    """Check token is valid with the correct audience and email claims for configured email address."""
     try:
-        # Get the Cloud Pub/Sub-generated JWT in the "Authorization" header.
-        id_token.verify_oauth2_token(
-            request.headers.get('Authorization').split()[1],
+        jwt_token = request.headers.get('Authorization', '').split()[1]
+        claims = id_token.verify_oauth2_token(
+            jwt_token,
             Request(session=session),
             audience=current_app.config.get('PAY_SUB_AUDIENCE')
         )
-    except Exception as e:  # TODO fix
-        msg = f'Invalid token: {e}\n'
-    finally:
-        return msg
+        # Check if the email is verified and matches the configured email
+        required_email = current_app.config.get('VERIFY_PUBSUB_EMAIL')
+        if not claims.get('email_verified') or claims.get('email') != required_email:
+            return 'Email not verified or does not match', 401
+    except Exception as e:
+        return f'Invalid token: {e}', 400
+    return None
 
 
 def ensure_authorized_queue_user(f):
@@ -33,8 +35,8 @@ def ensure_authorized_queue_user(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
         # Use CacheControl to avoid re-fetching certificates for every request.
-        if message := verify_jwt(CacheControl(Session())):
-            print(message)
-            abort(HTTPStatus.UNAUTHORIZED)
+        if current_app.config.get('VERIFY_PUBSUB_VIA_JWT', True):
+            if message := verify_jwt(CacheControl(Session())):
+                abort(HTTPStatus.UNAUTHORIZED)
         return f(*args, **kwargs)
     return decorated_function
