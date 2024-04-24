@@ -54,6 +54,8 @@ class EFTShortnamesSearch:  # pylint: disable=too-many-instance-attributes
     deposit_start_date: Optional[date] = None
     deposit_end_date: Optional[date] = None
     deposit_amount: Optional[Decimal] = None
+    credit_remaining: Optional[Decimal] = None
+    linked_accounts_count: Optional[int] = None
     short_name: Optional[str] = None
     state: Optional[List[str]] = None
     page: Optional[int] = 1
@@ -147,7 +149,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     def find_by_short_name_id(cls, short_name_id: int) -> EFTShortnames:
         """Find EFT short name by short name id."""
         current_app.logger.debug('<find_by_short_name_id')
-        short_name_model: EFTShortnameModel = cls.get_search_query(EFTShortnamesSearch(id=short_name_id)).one_or_none()
+        short_name_model: EFTShortnameModel = cls.get_search_query(EFTShortnamesSearch(id=short_name_id)).first()
         converter = Converter()
         result = converter.unstructure(EFTShortnameSchema.from_row(short_name_model))
 
@@ -341,6 +343,6 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             return query.order_by(EFTShortnameLinksModel.updated_on.desc())
 
         if EFTShortnameStatus.UNLINKED.value in search_criteria.state and sub_query is not None:
-            return query.order_by(sub_query.c.transaction_date.desc())
+            return query.order_by(sub_query.c.deposit_date.desc())
 
         return query

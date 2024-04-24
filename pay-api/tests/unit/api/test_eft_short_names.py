@@ -19,6 +19,7 @@ Test-Suite to ensure that the /accounts endpoint is working as expected.
 
 import json
 from datetime import datetime
+from decimal import Decimal
 
 import pytest
 from flask import current_app
@@ -135,6 +136,278 @@ def test_get_eft_short_name_links(session, client, jwt, app):
     assert link['updatedBy'] == 'IDIR/JSMITH'
 
 
+def assert_short_name_summary(result_dict: dict,
+                              short_name: EFTShortnamesModel,
+                              transaction: EFTTransactionModel,
+                              expected_credits_remaining: Decimal,
+                              expected_linked_accounts_count: int):
+    """Assert short name summary result."""
+    date_format = '%Y-%m-%dT%H:%M:%S'
+    assert result_dict['id'] == short_name.id
+    assert result_dict['shortName'] == short_name.short_name
+    assert result_dict['creditsRemaining'] == expected_credits_remaining
+    assert result_dict['linkedAccountsCount'] == expected_linked_accounts_count
+    assert datetime.strptime(result_dict['lastPaymentReceivedDate'], date_format) == transaction.deposit_date
+
+
+def test_eft_short_name_summaries(session, client, jwt, app):
+    """Assert that EFT short names summaries can be searched."""
+    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    # Assert initial search returns empty items
+    rv = client.get('/api/v1/eft-shortnames/summaries', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 0
+
+    # create test data
+    factory_payment_account(payment_method_code=PaymentMethod.EFT.value,
+                            auth_account_id='1234',
+                            name='ABC-123',
+                            branch_name='123').save()
+
+    short_name_1, s1_transaction1, short_name_2, s2_transaction1 = create_eft_search_data()
+
+    # Assert short name search brings back both short names
+    rv = client.get('/api/v1/eft-shortnames/summaries?shortName=SHORT', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 1
+    assert result_dict['stateTotal'] == 2
+    assert result_dict['total'] == 2
+    assert result_dict['limit'] == 10
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 2
+    assert_short_name_summary(result_dict['items'][0],
+                              short_name_1, s1_transaction1, 204.0, 0)
+    assert_short_name_summary(result_dict['items'][1],
+                              short_name_2, s2_transaction1, 302.5, 1)
+
+    # Assert short name search brings back first short name
+    rv = client.get('/api/v1/eft-shortnames/summaries?shortName=name1', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 1
+    assert result_dict['stateTotal'] == 2
+    assert result_dict['total'] == 1
+    assert result_dict['limit'] == 10
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 1
+    assert_short_name_summary(result_dict['items'][0],
+                              short_name_1, s1_transaction1, 204.0, 0)
+
+    # Assert search linked accounts count
+    rv = client.get('/api/v1/eft-shortnames/summaries?linkedAccountsCount=0', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 1
+    assert result_dict['stateTotal'] == 2
+    assert result_dict['total'] == 1
+    assert result_dict['limit'] == 10
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 1
+    assert_short_name_summary(result_dict['items'][0],
+                              short_name_1, s1_transaction1, 204.0, 0)
+
+    rv = client.get('/api/v1/eft-shortnames/summaries?linkedAccountsCount=1', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 1
+    assert result_dict['stateTotal'] == 2
+    assert result_dict['total'] == 1
+    assert result_dict['limit'] == 10
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 1
+    assert_short_name_summary(result_dict['items'][0],
+                              short_name_2, s2_transaction1, 302.5, 1)
+
+    # Assert search by payment received date
+    rv = client.get('/api/v1/eft-shortnames/summaries?'
+                    'paymentReceivedStartDate=2024-01-16&paymentReceivedEndDate=2024-01-16', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 1
+    assert result_dict['stateTotal'] == 2
+    assert result_dict['total'] == 1
+    assert result_dict['limit'] == 10
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 1
+    assert_short_name_summary(result_dict['items'][0],
+                              short_name_2, s2_transaction1, 302.5, 1)
+
+    # Assert search by short name id
+    rv = client.get(f'/api/v1/eft-shortnames/summaries?shortNameId={short_name_2.id}', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 1
+    assert result_dict['stateTotal'] == 2
+    assert result_dict['total'] == 1
+    assert result_dict['limit'] == 10
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 1
+    assert_short_name_summary(result_dict['items'][0],
+                              short_name_2, s2_transaction1, 302.5, 1)
+
+    # Assert search by remaining credits
+    rv = client.get('/api/v1/eft-shortnames/summaries?creditsRemaining=204', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 1
+    assert result_dict['stateTotal'] == 2
+    assert result_dict['total'] == 1
+    assert result_dict['limit'] == 10
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 1
+    assert_short_name_summary(result_dict['items'][0],
+                              short_name_1, s1_transaction1, 204.0, 0)
+
+    # Assert search query by no state will return all records
+    rv = client.get('/api/v1/eft-shortnames/summaries', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 1
+    assert result_dict['stateTotal'] == 2
+    assert result_dict['total'] == 2
+    assert result_dict['limit'] == 10
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 2
+    assert_short_name_summary(result_dict['items'][0],
+                              short_name_1, s1_transaction1, 204.0, 0)
+    assert_short_name_summary(result_dict['items'][1],
+                              short_name_2, s2_transaction1, 302.5, 1)
+
+    # Assert search pagination - page 1 works
+    rv = client.get('/api/v1/eft-shortnames/summaries?page=1&limit=1', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 1
+    assert result_dict['stateTotal'] == 2
+    assert result_dict['total'] == 2
+    assert result_dict['limit'] == 1
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 1
+    assert_short_name_summary(result_dict['items'][0],
+                              short_name_1, s1_transaction1, 204.0, 0)
+
+    # Assert search pagination - page 2 works
+    rv = client.get('/api/v1/eft-shortnames/summaries?page=2&limit=1', headers=headers)
+    assert rv.status_code == 200
+
+    result_dict = rv.json
+    assert result_dict is not None
+    assert result_dict['page'] == 2
+    assert result_dict['stateTotal'] == 2
+    assert result_dict['total'] == 2
+    assert result_dict['limit'] == 1
+    assert result_dict['items'] is not None
+    assert len(result_dict['items']) == 1
+    assert_short_name_summary(result_dict['items'][0],
+                              short_name_2, s2_transaction1, 302.5, 1)
+
+
+def create_eft_search_data():
+    """Create seed data for EFT searches."""
+    eft_file: EFTFileModel = factory_eft_file()
+    short_name_1 = factory_eft_shortname(short_name='TESTSHORTNAME1').save()
+    short_name_2 = factory_eft_shortname(short_name='TESTSHORTNAME2').save()
+    factory_eft_shortname_link(
+        short_name_id=short_name_2.id,
+        auth_account_id='1234',
+        updated_by='IDIR/JSMITH'
+    ).save()
+
+    # short_name_1 transactions to test getting first payment
+    s1_transaction1: EFTTransactionModel = EFTTransactionModel(
+        line_type=EFTFileLineType.TRANSACTION.value,
+        line_number=1,
+        file_id=eft_file.id,
+        status_code=EFTProcessStatus.COMPLETED.value,
+        transaction_date=datetime(2024, 1, 5, 2, 30),
+        deposit_date=datetime(2024, 1, 6, 10, 5),
+        deposit_amount_cents=10150,
+        short_name_id=short_name_1.id
+    ).save()
+
+    EFTCreditModel(eft_file_id=eft_file.id,
+                   short_name_id=s1_transaction1.short_name_id,
+                   amount=s1_transaction1.deposit_amount_cents / 100,
+                   remaining_amount=s1_transaction1.deposit_amount_cents / 100
+                   ).save()
+
+    # Identical to transaction 1 should not return duplicate short name rows - partitioned by transaction date, id
+    s1_transaction2: EFTTransactionModel = EFTTransactionModel(
+        line_type=EFTFileLineType.TRANSACTION.value,
+        line_number=1,
+        file_id=eft_file.id,
+        status_code=EFTProcessStatus.COMPLETED.value,
+        transaction_date=datetime(2024, 1, 5, 2, 30),
+        deposit_date=datetime(2024, 1, 6, 10, 5),
+        deposit_amount_cents=10250,
+        short_name_id=short_name_1.id
+
+    ).save()
+
+    EFTCreditModel(eft_file_id=eft_file.id,
+                   short_name_id=s1_transaction2.short_name_id,
+                   amount=s1_transaction2.deposit_amount_cents / 100,
+                   remaining_amount=s1_transaction2.deposit_amount_cents / 100
+                   ).save()
+
+    EFTTransactionModel(
+        line_type=EFTFileLineType.TRANSACTION.value,
+        line_number=1,
+        file_id=eft_file.id,
+        status_code=EFTProcessStatus.COMPLETED.value,
+        transaction_date=datetime(2024, 1, 10, 2, 30),
+        deposit_date=datetime(2024, 1, 5, 10, 5),
+        deposit_amount_cents=30150,
+        short_name_id=short_name_1.id
+    ).save()
+
+    # short_name_2 transactions - to test date filters
+    s2_transaction1: EFTTransactionModel = EFTTransactionModel(
+        line_type=EFTFileLineType.TRANSACTION.value,
+        line_number=1,
+        file_id=eft_file.id,
+        status_code=EFTProcessStatus.COMPLETED.value,
+        transaction_date=datetime(2024, 1, 15, 2, 30),
+        deposit_date=datetime(2024, 1, 16, 10, 5),
+        deposit_amount_cents=30250,
+        short_name_id=short_name_2.id
+
+    ).save()
+
+    EFTCreditModel(eft_file_id=eft_file.id,
+                   short_name_id=s2_transaction1.short_name_id,
+                   amount=s2_transaction1.deposit_amount_cents / 100,
+                   remaining_amount=s2_transaction1.deposit_amount_cents / 100
+                   ).save()
+
+    return short_name_1, s1_transaction1, short_name_2, s2_transaction1
+
+
 def assert_short_name(result_dict: dict, short_name: EFTShortnamesModel, transaction: EFTTransactionModel,
                       expected_status: str):
     """Assert short name result."""
@@ -167,64 +440,7 @@ def test_search_eft_short_names(session, client, jwt, app):
                                               name='ABC-123',
                                               branch_name='123').save()
 
-    eft_file: EFTFileModel = factory_eft_file()
-    short_name_1 = factory_eft_shortname(short_name='TESTSHORTNAME1').save()
-    short_name_2 = factory_eft_shortname(short_name='TESTSHORTNAME2').save()
-    factory_eft_shortname_link(
-        short_name_id=short_name_2.id,
-        auth_account_id='1234',
-        updated_by='IDIR/JSMITH'
-    ).save()
-
-    # short_name_1 transactions to test getting first payment
-    s1_transaction1: EFTTransactionModel = EFTTransactionModel(
-        line_type=EFTFileLineType.TRANSACTION.value,
-        line_number=1,
-        file_id=eft_file.id,
-        status_code=EFTProcessStatus.COMPLETED.value,
-        transaction_date=datetime(2024, 1, 5, 2, 30),
-        deposit_date=datetime(2024, 1, 6, 10, 5),
-        deposit_amount_cents=10150,
-        short_name_id=short_name_1.id
-
-    ).save()
-
-    # Identical to transaction 1 should not return duplicate short name rows - partitioned by transaction date, id
-    EFTTransactionModel(
-        line_type=EFTFileLineType.TRANSACTION.value,
-        line_number=1,
-        file_id=eft_file.id,
-        status_code=EFTProcessStatus.COMPLETED.value,
-        transaction_date=datetime(2024, 1, 5, 2, 30),
-        deposit_date=datetime(2024, 1, 6, 10, 5),
-        deposit_amount_cents=10250,
-        short_name_id=short_name_1.id
-
-    ).save()
-
-    EFTTransactionModel(
-        line_type=EFTFileLineType.TRANSACTION.value,
-        line_number=1,
-        file_id=eft_file.id,
-        status_code=EFTProcessStatus.COMPLETED.value,
-        transaction_date=datetime(2024, 1, 10, 2, 30),
-        deposit_date=datetime(2024, 1, 11, 10, 5),
-        deposit_amount_cents=30150,
-        short_name_id=short_name_1.id
-    ).save()
-
-    # short_name_2 transactions - to test date filters
-    s2_transaction1: EFTTransactionModel = EFTTransactionModel(
-        line_type=EFTFileLineType.TRANSACTION.value,
-        line_number=1,
-        file_id=eft_file.id,
-        status_code=EFTProcessStatus.COMPLETED.value,
-        transaction_date=datetime(2024, 1, 15, 2, 30),
-        deposit_date=datetime(2024, 1, 16, 10, 5),
-        deposit_amount_cents=30250,
-        short_name_id=short_name_2.id
-
-    ).save()
+    short_name_1, s1_transaction1, short_name_2, s2_transaction1 = create_eft_search_data()
 
     # Assert search returns unlinked short names
     rv = client.get('/api/v1/eft-shortnames?state=UNLINKED', headers=headers)

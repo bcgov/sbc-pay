@@ -20,6 +20,7 @@ from flask_cors import cross_origin
 
 from pay_api.exceptions import BusinessException
 from pay_api.services.eft_short_names import EFTShortnames as EFTShortnameService
+from pay_api.services.eft_short_name_summaries import EFTShortnameSummaries as EFTShortnameSummariesService
 from pay_api.services.eft_short_names import EFTShortnamesSearch
 from pay_api.services.eft_transactions import EFTTransactions as EFTTransactionService
 from pay_api.services.eft_transactions import EFTTransactionSearch
@@ -70,6 +71,36 @@ def get_eft_shortnames():
         limit=limit)), HTTPStatus.OK
     current_app.logger.debug('>get_eft_shortnames')
 
+    return jsonify(response), status
+
+
+@bp.route('/summaries', methods=['GET', 'OPTIONS'])
+@cross_origin(origins='*', methods=['GET'])
+@_jwt.requires_auth
+@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
+def get_eft_shortname_summaries():
+    """Get all eft short name summaries."""
+    current_app.logger.info('<get_eft_shortname_summaries')
+    page: int = int(request.args.get('page', '1'))
+    limit: int = int(request.args.get('limit', '10'))
+    short_name = request.args.get('shortName', None)
+    short_name_id = request.args.get('shortNameId', None)
+    credits_remaining = request.args.get('creditsRemaining', None)
+    linked_accounts_count = request.args.get('linkedAccountsCount', None)
+    payment_received_start_date = request.args.get('paymentReceivedStartDate', None)
+    payment_received_end_date = request.args.get('paymentReceivedEndDate', None)
+
+    response, status = EFTShortnameSummariesService.search(EFTShortnamesSearch(
+        id=short_name_id,
+        deposit_start_date=string_to_date(payment_received_start_date),
+        deposit_end_date=string_to_date(payment_received_end_date),
+        credit_remaining=Decimal(credits_remaining) if credits_remaining is not None else None,
+        linked_accounts_count=int(linked_accounts_count) if linked_accounts_count is not None else None,
+        short_name=short_name,
+        page=page,
+        limit=limit)), HTTPStatus.OK
+
+    current_app.logger.debug('>get_eft_shortname_summaries')
     return jsonify(response), status
 
 
