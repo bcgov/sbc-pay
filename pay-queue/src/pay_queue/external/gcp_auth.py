@@ -36,9 +36,9 @@ def ensure_authorized_queue_user(f):
     def decorated_function(*args, **kwargs):
         # Use CacheControl to avoid re-fetching certificates for every request.
         if current_app.config.get('DEBUG_REQUEST') is True:
-            current_app.logger.info('INFO - Headers: %s', request.headers)
+            current_app.logger.info(f'Headers: {request.headers}')
         verifyJWT = current_app.config.get('VERIFY_PUBSUB_VIA_JWT', True)
-        current_app.logger.info('INFO - verifyJWT: %s', verifyJWT)
+        current_app.logger.info(f'verifyJWT: {verifyJWT}')
         if verifyJWT is True:
             if message := verify_jwt(CacheControl(Session())):
                 abort(HTTPStatus.UNAUTHORIZED)
