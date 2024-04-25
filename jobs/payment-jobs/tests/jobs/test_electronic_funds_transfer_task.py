@@ -20,20 +20,19 @@ from datetime import datetime
 from unittest.mock import patch
 
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, RoutingSlipStatus)
+    CfsAccountStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod)
 from pay_api.services import CFSService
 from tasks.electronic_funds_transfer_task import ElectronicFundsTransferTask
 
 from .factory import (
     factory_create_eft_account, factory_create_eft_credit, factory_create_eft_file, factory_create_eft_shortname,
     factory_create_eft_transaction, factory_eft_shortname_link, factory_invoice, factory_invoice_reference,
-    factory_payment)
+    factory_payment, factory_payment_line_item, factory_receipt)
 
 
 def test_link_electronic_funds_transfers(session):
@@ -118,5 +117,5 @@ def test_unlink_electronic_funds_transfers(session):
                 mock_get_invoice.assert_called()
                 mock_create_receipt.assert_called()
 
-    assert rs.status == RoutingSlipStatus.COMPLETE.value
-    assert rs.cas_version_suffix == 2
+    assert eft_short_name.status_code == EFTShortnameStatus.UNLINKED.value
+    assert eft_short_name.cas_version_suffix == 2

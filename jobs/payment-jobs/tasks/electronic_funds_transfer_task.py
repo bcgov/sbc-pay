@@ -18,9 +18,8 @@ from typing import List
 
 from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import EFTShortnames as EFTShortnameModel
-from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTCredit as EFTCreditModel
+from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnames as EFTShortNamesModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
@@ -32,8 +31,8 @@ from pay_api.models import db
 from pay_api.services import EFTShortNamesService
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.receipt import Receipt
-from pay_api.utils.enums import CfsAccountStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus
-from pay_api.utils.util import generate_receipt_number
+from pay_api.utils.enums import (
+    CfsAccountStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, ReverseOperation)
 from sentry_sdk import capture_message
 
 
@@ -100,10 +99,57 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 continue
 
     @classmethod
-    def _get_eft_short_names_by_status(cls, status: str) -> List[EFTShortnameModel]:
+    def unlink_electronic_funds_transfers(cls):
+        """Unlink electronic funds transfers."""
+        eft_short_names = cls._get_eft_short_names_by_status(EFTShortnameStatus.UNLINKED.value)
+        for eft_short_name in eft_short_names:
+            try:
+                current_app.logger.debug(f'Unlinking Electronic Funds Transfer: {eft_short_name.id}')
+                payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
+                    eft_short_name.auth_account_id)
+                cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
+                eft_credit: EFTCreditModel = EFTCreditModel.find_by_payment_account_id(payment_account.id)
+
+                payment = db.session.query(PaymentModel) \
+                    .join(PaymentAccountModel, PaymentAccountModel.id == PaymentModel.payment_account_id) \
+                    .join(EFTCreditModel, EFTCreditModel.payment_account_id == PaymentAccountModel.id) \
+                    .join(EFTShortNamesModel, EFTShortNamesModel.id == EFTCreditModel.short_name_id) \
+                    .filter(EFTShortNamesModel.id == eft_short_name.id).first()
+
+                receipt_number = eft_short_name.generate_receipt_number(payment.id)
+
+                CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.CORRECTION.value)
+
+                eft_short_name.cas_version_suffix += 1
+
+                CFSService.create_cfs_receipt(
+                    cfs_account=cfs_account,
+                    rcpt_number=f'R{receipt_number}',
+                    rcpt_date=payment.payment_date.strftime('%Y-%m-%d'),
+                    amount=payment.invoice_amount,
+                    payment_method=payment_account.payment_method,
+                    access_token=CFSService.get_fas_token().json().get('access_token'))
+
+                cls._reset_invoices_and_references_to_created_for_electronic_funds_transfer(eft_short_name)
+
+                cls._apply_electronic_funds_transfer_to_pending_invoices(payment, eft_short_name)
+
+                eft_credit.remaining_amount = eft_credit.amount
+
+                eft_short_name.save()
+
+            except Exception as e:  # NOQA # pylint: disable=broad-except
+                capture_message(
+                    f'Error on Processing UNLINKING for :={receipt_number}, '
+                    f'EFT Short Name : {eft_short_name.id}, ERROR : {str(e)}', level='error')
+                current_app.logger.error(e)
+                continue
+
+    @classmethod
+    def _get_eft_short_names_by_status(cls, status: str) -> List[EFTShortNamesModel]:
         """Get electronic funds transfer by state."""
-        query = db.session.query(EFTShortnameModel.id.label('short_name_id'), EFTShortnameLinksModel.auth_account_id) \
-            .join(EFTShortnameLinksModel, EFTShortnameLinksModel.eft_short_name_id == EFTShortnameModel.id) \
+        query = db.session.query(EFTShortNamesModel.id.label('short_name_id'), EFTShortnameLinksModel.auth_account_id) \
+            .join(EFTShortnameLinksModel, EFTShortnameLinksModel.eft_short_name_id == EFTShortNamesModel.id) \
             .join(PaymentAccountModel, PaymentAccountModel.auth_account_id == EFTShortnameLinksModel.auth_account_id) \
             .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
             .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value)
@@ -186,7 +232,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 db.session.delete(receipt)
 
     @classmethod
-    def _apply_electronic_funds_transfer_to_pending_invoices(cls, eft_short_name: EFTShortNamesModel) -> float:
+    def _apply_electronic_funds_transfer_to_pending_invoices(cls, payment, eft_short_name: EFTShortNamesModel) -> float:
         """Apply the electronic funds transfers again."""
         current_app.logger.info(
             f'Applying electronic funds transfer to pending invoices: {eft_short_name.id}')
@@ -208,7 +254,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
 
             # apply invoice to the CFS_ACCOUNT
             cls.apply_electronic_funds_transfer_to_invoice(
-                payment_account, cfs_account, eft_short_name, invoice, invoice_reference.invoice_number
+                payment_account, cfs_account, eft_short_name, invoice, invoice_reference.invoice_number, payment
             )
 
             # IF invoice balance is zero, then update records.

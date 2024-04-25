@@ -62,7 +62,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
 
                 # reverse routing slip receipt
                 if CFSService.get_receipt(cfs_account, routing_slip.number).get('status') != CfsReceiptStatus.REV.value:
-                    CFSService.reverse_receipt_in_cfs(cfs_account, routing_slip.number, ReverseOperation.LINK.value)
+                    CFSService.reverse_rs_receipt_in_cfs(cfs_account, routing_slip.number, ReverseOperation.LINK.value)
                 cfs_account.status = CfsAccountStatus.INACTIVE.value
 
                 # apply receipt to parent cfs account
@@ -122,8 +122,8 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(rs.payment_account_id)
                 cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
 
-                CFSService.reverse_receipt_in_cfs(cfs_account, rs.generate_cas_receipt_number(),
-                                                  ReverseOperation.CORRECTION.value)
+                CFSService.reverse_rs_receipt_in_cfs(cfs_account, rs.generate_cas_receipt_number(),
+                                                     ReverseOperation.CORRECTION.value)
                 # Update the version, which generates a new receipt number. This is to avoid duplicate receipt number.
                 rs.cas_version_suffix += 1
                 # Recreate the receipt with the modified total.
@@ -176,7 +176,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 child_routing_slips: List[RoutingSlipModel] = RoutingSlipModel.find_children(routing_slip.number)
                 for rs in (routing_slip, *child_routing_slips):
                     receipt_number = rs.generate_cas_receipt_number()
-                    CFSService.reverse_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
+                    CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.VOID.value)
                 # Void routing slips aren't supposed to have pending transactions, so no need to look at invoices.
                 cfs_account.status = CfsAccountStatus.INACTIVE.value
                 routing_slip.remaining_amount = 0
@@ -214,7 +214,7 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 child_routing_slips: List[RoutingSlipModel] = RoutingSlipModel.find_children(routing_slip.number)
                 for rs in (routing_slip, *child_routing_slips):
                     receipt_number = rs.generate_cas_receipt_number()
-                    CFSService.reverse_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.NSF.value)
+                    CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.NSF.value)
 
                     for payment in db.session.query(PaymentModel) \
                             .filter(PaymentModel.receipt_number == receipt_number).all():
