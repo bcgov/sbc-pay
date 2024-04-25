@@ -96,3 +96,27 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
                    updated_by_name=getattr(row, 'updated_by_name'),
                    updated_on=getattr(row, 'updated_on')
                    )
+
+
+@define
+class EFTShortnameSummarySchema:
+    """Main schema used to serialize the EFT Short name summaries."""
+
+    id: int
+    short_name: str
+    last_payment_received_date: datetime
+    credits_remaining: Decimal
+    linked_accounts_count: int
+
+    @classmethod
+    def from_row(cls, row: EFTShortnames):
+        """From row is used so we don't tightly couple to our database class.
+
+        https://www.attrs.org/en/stable/init.html
+        """
+        return cls(id=row.id,
+                   short_name=row.short_name,
+                   last_payment_received_date=getattr(row, 'last_payment_received_date', None),
+                   credits_remaining=getattr(row, 'credits_remaining', None),
+                   linked_accounts_count=getattr(row, 'linked_accounts_count', None)
+                   )

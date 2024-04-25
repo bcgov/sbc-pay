@@ -29,6 +29,7 @@ from dpath import get as dpath_get
 from flask import current_app
 
 from .constants import DT_SHORT_FORMAT
+from .converter import Converter
 from .enums import CorpType, StatementFrequency
 
 
@@ -242,6 +243,22 @@ def string_to_date(date_val: str, dt_format: str = DT_SHORT_FORMAT):
     return datetime.strptime(date_val, dt_format).date()
 
 
+def string_to_decimal(val: str):
+    """Return decimal from string."""
+    if val is None:
+        return None
+
+    return Decimal(val)
+
+
+def string_to_int(val: str):
+    """Return int from string."""
+    if val is None:
+        return None
+
+    return int(val)
+
+
 def get_quantized(amount: float) -> Decimal:
     """Return rounded decimal. (Default = ROUND_HALF_EVEN)."""
     return Decimal(amount).quantize(Decimal('1.00'))
@@ -265,3 +282,11 @@ def get_topic_for_corp_type(corp_type: str):
             return None
         case _:
             return current_app.config.get('BUSINESS_PAY_TOPIC')
+
+
+def unstructure_schema_items(schema, items):
+    """Return unstructured results by schema."""
+    results = [schema.from_row(item) for item in items]
+    converter = Converter()
+
+    return converter.unstructure(results)
