@@ -107,6 +107,11 @@ class _Config():  # pylint: disable=too-few-public-methods
     GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
     PUBLISHER_AUDIENCE = os.getenv('PUBLISHER_AUDIENCE', None)
     ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', None)
+    PAY_SUB_AUDIENCE = os.getenv('PAY_SUB_AUDIENCE', None)
+    VERIFY_PUBSUB_EMAIL = os.getenv('VERIFY_PUBSUB_EMAIL', None)
+
+    VERIFY_PUBSUB_VIA_JWT = os.getenv('VERIFY_PUBSUB_VIA_JWT', 'true').lower() == 'true'
+    VERIFY_PUBSUB_VIA_JWT = os.getenv('DEBUG_REQUEST', 'true').lower() == 'true'
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods

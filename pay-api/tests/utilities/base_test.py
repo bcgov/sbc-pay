@@ -25,13 +25,13 @@ from typing import Dict, List, Tuple
 from faker import Faker
 
 from pay_api.models import (
-    CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTFile, EFTShortnames, Invoice, InvoiceReference,
-    NonSufficientFundsModel, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip,
-    Statement, StatementInvoices, StatementSettings)
+    CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTFile, EFTShortnameLinks, EFTShortnames, Invoice,
+    InvoiceReference, NonSufficientFundsModel, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction, Receipt,
+    RoutingSlip, Statement, StatementInvoices, StatementSettings)
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
-    PaymentSystem, Role, RoutingSlipStatus)
+    CfsAccountStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod,
+    PaymentStatus, PaymentSystem, Role, RoutingSlipStatus)
 
 
 token_header = {
@@ -891,9 +891,22 @@ def factory_eft_file(file_ref: str = 'test_ref.txt'):
     return EFTFile(file_ref=file_ref).save()
 
 
-def factory_eft_shortname(short_name: str, auth_account_id: str = None):
+def factory_eft_shortname(short_name: str):
     """Return an EFT short name model."""
-    return EFTShortnames(short_name=short_name, auth_account_id=auth_account_id)
+    return EFTShortnames(short_name=short_name)
+
+
+def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234',
+                               updated_by: str = None, updated_on: datetime = datetime.now()):
+    """Return an EFT short name link model."""
+    return EFTShortnameLinks(
+        eft_short_name_id=short_name_id,
+        auth_account_id=auth_account_id,
+        status_code=EFTShortnameStatus.PENDING.value,
+        updated_by=updated_by,
+        updated_by_name=updated_by,
+        updated_on=updated_on
+    )
 
 
 def factory_non_sufficient_funds(invoice_id: int, invoice_number: str, description: str = None):

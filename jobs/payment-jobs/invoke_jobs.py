@@ -24,7 +24,6 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 
 import config
 from services import oracle_db
-from tasks.eft_transfer_task import EftTransferTask
 from tasks.routing_slip_task import RoutingSlipTask
 from tasks.electronic_funds_transfer_task import ElectronicFundsTransferTask
 from tasks.statement_due_task import StatementDueTask
@@ -148,9 +147,6 @@ def run(job_name, argument=None):
     elif job_name == 'BCOL_REFUND_CONFIRMATION':
         BcolRefundConfirmationTask.update_bcol_refund_invoices()
         application.logger.info(f'<<<< Completed running BCOL Refund Confirmation Job >>>>')
-    elif job_name == 'EFT_TRANSFER':
-        EftTransferTask.create_ejv_file()
-        application.logger.info(f'<<<< Completed Creating EFT Transfer File for transfer to internal GLs>>>>')
     else:
         application.logger.debug('No valid args passed. Exiting job without running any ***************')
 

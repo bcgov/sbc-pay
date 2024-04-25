@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Task for linking electronic funds transfers."""
-
+from dataclasses import dataclass
 from datetime import datetime
 from typing import List
 
 from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import EFTShortnames as EFTShortnameModel
+from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTShortnames as EFTShortNamesModel
 from pay_api.models import Invoice as InvoiceModel
@@ -30,9 +32,17 @@ from pay_api.models import db
 from pay_api.services import EFTShortNamesService
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.receipt import Receipt
-from pay_api.utils.enums import (
-    CfsAccountStatus, EFTShortnameState, InvoiceReferenceStatus, InvoiceStatus, ReverseOperation)
+from pay_api.utils.enums import CfsAccountStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus
+from pay_api.utils.util import generate_receipt_number
 from sentry_sdk import capture_message
+
+
+@dataclass
+class EFTShortnameInfo:
+    """Consolidated EFT Short name information for processing."""
+
+    id: int
+    auth_account_id: str
 
 
 class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
@@ -48,7 +58,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
         3. Apply the receipts to the invoices.
         4. Notify mailer
         """
-        eft_short_names = cls._get_eft_short_names_by_state(EFTShortnameState.LINKED.value)
+        eft_short_names: List[EFTShortnameInfo] = cls._get_eft_short_names_by_status(EFTShortnameStatus.LINKED.value)
         for eft_short_name in eft_short_names:
             try:
                 current_app.logger.debug(f'Linking Electronic Funds Transfer: {eft_short_name.id}')
@@ -90,66 +100,28 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 continue
 
     @classmethod
-    def unlink_electronic_funds_transfers(cls):
-        """Unlink electronic funds transfers."""
-        eft_short_names = cls._get_eft_short_names_by_state(EFTShortnameState.UNLINKED.value)
-        for eft_short_name in eft_short_names:
-            try:
-                current_app.logger.debug(f'Unlinking Electronic Funds Transfer: {eft_short_name.id}')
-                payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
-                    eft_short_name.auth_account_id)
-                cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
-                eft_credit: EFTCreditModel = EFTCreditModel.find_by_payment_account_id(payment_account.id)
-
-                payment = db.session.query(PaymentModel) \
-                    .join(PaymentAccountModel, PaymentAccountModel.id == PaymentModel.payment_account_id) \
-                    .join(EFTCreditModel, EFTCreditModel.payment_account_id == PaymentAccountModel.id) \
-                    .join(EFTShortNamesModel, EFTShortNamesModel.id == EFTCreditModel.short_name_id) \
-                    .filter(EFTShortNamesModel.id == eft_short_name.id).first()
-
-                receipt_number = eft_short_name.generate_receipt_number(payment.id)
-
-                CFSService.reverse_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.CORRECTION.value)
-
-                eft_short_name.cas_version_suffix += 1
-
-                CFSService.create_cfs_receipt(
-                    cfs_account=cfs_account,
-                    rcpt_number=f'R{receipt_number}',
-                    rcpt_date=payment.payment_date.strftime('%Y-%m-%d'),
-                    amount=payment.invoice_amount,
-                    payment_method=payment_account.payment_method,
-                    access_token=CFSService.get_fas_token().json().get('access_token'))
-
-                cls._reset_invoices_and_references_to_created_for_electronic_funds_transfer(eft_short_name)
-
-                cls._apply_electronic_funds_transfer_to_pending_invoices(eft_short_name)
-
-                eft_credit.remaining_amount = eft_credit.amount
-
-                eft_short_name.save()
-
-            except Exception as e:  # NOQA # pylint: disable=broad-except
-                capture_message(
-                    f'Error on Processing CORRECTION for :={receipt_number}, '
-                    f'EFT Short Name : {eft_short_name.id}, ERROR : {str(e)}', level='error')
-                current_app.logger.error(e)
-                continue
-
-    @classmethod
-    def _get_eft_short_names_by_state(cls, state: EFTShortnameState) -> List[EFTShortNamesModel]:
+    def _get_eft_short_names_by_status(cls, status: str) -> List[EFTShortnameModel]:
         """Get electronic funds transfer by state."""
-        query = db.session.query(EFTShortNamesModel) \
-            .join(PaymentAccountModel, PaymentAccountModel.auth_account_id == EFTShortNamesModel.auth_account_id) \
+        query = db.session.query(EFTShortnameModel.id.label('short_name_id'), EFTShortnameLinksModel.auth_account_id) \
+            .join(EFTShortnameLinksModel, EFTShortnameLinksModel.eft_short_name_id == EFTShortnameModel.id) \
+            .join(PaymentAccountModel, PaymentAccountModel.auth_account_id == EFTShortnameLinksModel.auth_account_id) \
             .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
             .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value)
 
-        if state == EFTShortnameState.UNLINKED.value:
-            query = query.filter(EFTShortNamesModel.auth_account_id.is_(None))
-        if state == EFTShortnameState.LINKED.value:
-            query = query.filter(EFTShortNamesModel.auth_account_id.isnot(None))
+        if status == EFTShortnameStatus.UNLINKED.value:
+            query = query.filter(EFTShortnameLinksModel.id.is_(None))
+        if status == EFTShortnameStatus.LINKED.value:
+            query = query.filter(EFTShortnameLinksModel.status_code == status)
 
-        return query.all()
+        result = query.all()
+        short_name_results = []
+
+        #  Short name can have multiple linked accounts, prepare list of dataclasses with the associated
+        #  auth_account_ids for the outer processing loops
+        for short_name_id, auth_account_id in result:
+            short_name_results.append(EFTShortnameInfo(id=short_name_id, auth_account_id=auth_account_id))
+
+        return short_name_results
 
     @classmethod
     def _apply_electronic_funds_transfers_to_pending_invoices(cls,

@@ -20,7 +20,7 @@ from datetime import datetime
 
 from pay_api.models.eft_gl_transfers import EFTGLTransfer as EFTGLTransferModel
 from pay_api.models.eft_short_names import EFTShortnames as EFTShortnamesModel
-from pay_api.utils.enums import EFTGlTransferType
+from pay_api.utils.enums import EFTGlTransferType, EFTShortnameStatus
 from tests.utilities.base_test import factory_invoice, factory_payment, factory_payment_account
 
 
@@ -41,6 +41,7 @@ def create_short_name_data():
     """Create shortname seed data for test."""
     eft_short_name = EFTShortnamesModel()
     eft_short_name.short_name = 'ABC'
+    eft_short_name.status_code = EFTShortnameStatus.LINKED.value
     eft_short_name.save()
 
     return eft_short_name

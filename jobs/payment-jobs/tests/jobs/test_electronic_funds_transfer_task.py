@@ -20,6 +20,8 @@ from datetime import datetime
 from unittest.mock import patch
 
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
@@ -30,8 +32,8 @@ from tasks.electronic_funds_transfer_task import ElectronicFundsTransferTask
 
 from .factory import (
     factory_create_eft_account, factory_create_eft_credit, factory_create_eft_file, factory_create_eft_shortname,
-    factory_create_eft_transaction, factory_invoice, factory_invoice_reference, factory_payment,
-    factory_payment_line_item, factory_receipt)
+    factory_create_eft_transaction, factory_eft_shortname_link, factory_invoice, factory_invoice_reference,
+    factory_payment)
 
 
 def test_link_electronic_funds_transfers(session):
@@ -42,7 +44,12 @@ def test_link_electronic_funds_transfers(session):
     payment_account = factory_create_eft_account(auth_account_id=auth_account_id, status=CfsAccountStatus.ACTIVE.value)
     eft_file = factory_create_eft_file()
     factory_create_eft_transaction(file_id=eft_file.id)
-    eft_short_name = factory_create_eft_shortname(auth_account_id=auth_account_id, short_name=short_name)
+    eft_short_name = factory_create_eft_shortname(short_name=short_name)
+    eft_short_name_link = factory_eft_shortname_link(
+        short_name_id=eft_short_name.id,
+        auth_account_id=auth_account_id,
+        updated_by='test'
+    ).save()
     invoice = factory_invoice(payment_account=payment_account, payment_method_code=PaymentMethod.EFT.value)
     factory_invoice_reference(invoice_id=invoice.id)
     factory_payment(payment_account_id=payment_account.id, payment_method_code=PaymentMethod.EFT.value,
@@ -52,13 +59,14 @@ def test_link_electronic_funds_transfers(session):
         payment_account_id=payment_account.id)
 
     eft_short_name = EFTShortnameModel.find_by_short_name(short_name)
-    eft_short_name.linked_by = 'test'
-    eft_short_name.linked_by_name = 'test'
-    eft_short_name.linked_on = datetime.now()
+    eft_short_name_link = EFTShortnameLinksModel.find_by_short_name_id(eft_short_name.id)[0]
+    eft_short_name_link.updated_by = 'test'
+    eft_short_name_link.updated_by_name = 'test'
+    eft_short_name_link.updated_on = datetime.now()
     eft_short_name.save()
 
     payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
-        eft_short_name.auth_account_id)
+        eft_short_name_link.auth_account_id)
 
     cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
         payment_account.id)
