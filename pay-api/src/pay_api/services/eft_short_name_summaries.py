@@ -24,8 +24,8 @@ from pay_api.models import EFTShortnameSummarySchema as EFTSummarySchema
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import db
 from pay_api.services.eft_short_names import EFTShortnamesSearch
-from pay_api.utils.converter import Converter
 from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameStatus
+from pay_api.utils.util import unstructure_schema_items
 
 
 class EFTShortnameSummaries:
@@ -40,9 +40,7 @@ class EFTShortnameSummaries:
         pagination = search_query.paginate(per_page=search_criteria.limit,
                                            page=search_criteria.page)
 
-        summary_list = [EFTSummarySchema.from_row(short_name_summary) for short_name_summary in pagination.items]
-        converter = Converter()
-        summary_list = converter.unstructure(summary_list)
+        summary_list = unstructure_schema_items(EFTSummarySchema, pagination.items)
 
         current_app.logger.debug('>search')
         return {
