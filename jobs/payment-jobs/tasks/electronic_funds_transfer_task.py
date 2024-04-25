@@ -120,7 +120,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
 
                 CFSService.reverse_rs_receipt_in_cfs(cfs_account, receipt_number, ReverseOperation.CORRECTION.value)
 
-                eft_short_name.cas_version_suffix += 1
+                eft_short_name.version += 1
 
                 CFSService.create_cfs_receipt(
                     cfs_account=cfs_account,

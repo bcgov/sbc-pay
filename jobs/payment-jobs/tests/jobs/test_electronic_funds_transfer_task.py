@@ -109,7 +109,7 @@ def test_unlink_electronic_funds_transfers(session):
 
     session.commit()
 
-    with patch('pay_api.services.CFSService.reverse_receipt_in_cfs') as mock_reverse:
+    with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_reverse:
         with patch('pay_api.services.CFSService.create_cfs_receipt') as mock_create_receipt:
             with patch('pay_api.services.CFSService.get_invoice') as mock_get_invoice:
                 ElectronicFundsTransferTask.unlink_electronic_funds_transfers()
@@ -118,4 +118,4 @@ def test_unlink_electronic_funds_transfers(session):
                 mock_create_receipt.assert_called()
 
     assert eft_short_name.status_code == EFTShortnameStatus.UNLINKED.value
-    assert eft_short_name.cas_version_suffix == 2
+    assert eft_short_name.version == 2

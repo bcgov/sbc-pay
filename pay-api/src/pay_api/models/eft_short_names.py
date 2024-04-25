@@ -53,9 +53,7 @@ class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-
     def generate_receipt_number(self, payment_id) -> str:
         """Return a unique identifier - receipt number for CAS."""
         receipt_number: str = payment_id
-        if self.linked_on:
-            receipt_number += 'L'
-        else:
+        if not self.linked_on:
             receipt_number += 'R'
         return receipt_number
 
