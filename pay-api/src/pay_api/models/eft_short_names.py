@@ -50,13 +50,6 @@ class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
     short_name = db.Column('short_name', db.String, nullable=False, index=True)
 
-    def generate_receipt_number(self, payment_id) -> str:
-        """Return a unique identifier - receipt number for CAS."""
-        receipt_number: str = payment_id
-        if not self.linked_on:
-            receipt_number += 'R'
-        return receipt_number
-
     @classmethod
     def find_by_short_name(cls, short_name: str):
         """Find by eft short name."""

@@ -85,26 +85,40 @@ def test_unlink_electronic_funds_transfers(session):
     auth_account_id = '1234'
     short_name = 'TEST1'
     receipt_number = '1111R'
+    invoice_number = '1234'
 
     payment_account = factory_create_eft_account(auth_account_id=auth_account_id, status=CfsAccountStatus.ACTIVE.value)
+    eft_file = factory_create_eft_file()
+    factory_create_eft_transaction(file_id=eft_file.id)
+    eft_short_name = factory_create_eft_shortname(short_name=short_name)
+    eft_short_name_link = factory_eft_shortname_link(
+        short_name_id=eft_short_name.id,
+        auth_account_id=auth_account_id,
+        updated_by='test',
+        status_code=EFTShortnameStatus.UNLINKED.value
+    ).save()
+
     invoice = factory_invoice(payment_account=payment_account, total=30,
                               status_code=InvoiceStatus.PAID.value,
                               payment_method_code=PaymentMethod.EFT.value)
 
+    factory_payment(payment_account_id=payment_account.id, payment_method_code=PaymentMethod.EFT.value,
+                    invoice_amount=351.50, invoice_number=invoice_number)
     fee_schedule = FeeScheduleModel.find_by_filing_type_and_corp_type('CP', 'OTANN')
-    line = factory_payment_line_item(invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
-    line.save()
+    factory_payment_line_item(invoice_id=invoice.id, fee_schedule_id=fee_schedule.fee_schedule_id)
+    factory_invoice_reference(invoice_id=invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value,
+                              invoice_number=invoice_number)
+    factory_create_eft_credit(
+        amount=100, remaining_amount=0, eft_file_id=eft_file.id, short_name_id=eft_short_name.id,
+        payment_account_id=payment_account.id)
 
-    # Create invoice reference
-    factory_invoice_reference(invoice.id, status_code=InvoiceReferenceStatus.COMPLETED.value)
-
-    # Create receipts for the invoices
     factory_receipt(invoice.id, receipt_number)
 
     eft_short_name = EFTShortnameModel.find_by_short_name(short_name)
-    eft_short_name.linked_by = None
-    eft_short_name.linked_by_name = None
-    eft_short_name.linked_on = None
+    eft_short_name_link = EFTShortnameLinksModel.find_by_short_name_id(eft_short_name.id)[0]
+    eft_short_name_link.updated_by = None
+    eft_short_name_link.updated_by_name = None
+    eft_short_name_link.updated_on = None
     eft_short_name.save()
 
     session.commit()
