@@ -194,7 +194,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
             )
 
             # apply invoice to the CFS_ACCOUNT
-            cls.apply_electronic_funds_transfer_to_invoice(
+            cls.apply_eft_receipt_to_invoice(
                 payment_account, cfs_account, eft_short_name, invoice, invoice_reference.invoice_number, receipt_number
             )
             # IF invoice balance is zero, then update records.
@@ -235,7 +235,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 db.session.delete(receipt)
 
     @classmethod
-    def apply_electronic_funds_transfer_to_invoice(cls,  # pylint: disable = too-many-arguments, too-many-locals
+    def apply_eft_receipt_to_invoice(cls,  # pylint: disable = too-many-arguments, too-many-locals
                                                    payment_account: PaymentAccountModel,
                                                    cfs_account: CfsAccountModel,
                                                    eft_short_name: EFTShortNamesModel,
