@@ -1,5 +1,7 @@
 """This module provides Queue type services."""
 import base64
+from dataclasses import dataclass
+from datetime import datetime, timezone
 import json
 import uuid
 from concurrent.futures import CancelledError
@@ -10,45 +12,38 @@ from google.auth import jwt
 from google.cloud import pubsub_v1
 from simple_cloudevent import SimpleCloudEvent, to_queue_message
 
+from pay_api.services.gcp_queue.gcp_queue import GcpQueue
+
 from .invoice import Invoice
 
 
-def publish_to_queue(payload: dict, invoice: Invoice):
-    """Publish a 'COMPLETED' invoice's info to the GCP PubSub Queue."""
-    ce = SimpleCloudEvent()
-    ce.id = payload.get('paymentToken', {}).get('id', str(uuid.uuid4()))
-    ce.source = 'sbc-pay'
-    ce.subject = invoice.business_identifier
-    ce.time = invoice.payment_date
-    ce.type = 'payment'
-    ce.data = payload
+@dataclass
+class QueueMessage:
+    """Queue message data class."""
 
-    _send_to_queue(to_queue_message(ce))
+    source: str
+    message_type: str
+    payload: dict
+    topic: str
 
 
-def _send_to_queue(payload: bytes):
-    """Send payload to the queue."""
-    if not ((gcp_auth_key := current_app.config.get('GCP_AUTH_KEY')) and
-            (audience := current_app.config.get('AUDIENCE')) and
-            (topic_name := current_app.config.get('TOPIC_NAME')) and
-            (publisher_audience := current_app.config.get('PUBLISHER_AUDIENCE'))):
+def publish_to_queue(queue_message: QueueMessage):
+    """Publish to GCP PubSub Queue using queue."""
+    if queue_message.topic is None:
+        current_app.logger.info('Skipping queue message topic not set.')
+        return
 
-        raise Exception('missing setup arguments')  # pylint: disable=W0719
+    # Create a SimpleCloudEvent from the QueueMessage
+    cloud_event = SimpleCloudEvent(
+        id=str(uuid.uuid4()),
+        source=f'sbc-pay-{queue_message.source}',
+        # Intentionally blank, this field has been moved to topic.
+        subject=None,
+        time=datetime.now(tz=timezone.utc).isoformat(),
+        type=queue_message.message_type,
+        data=queue_message.payload
+    )
 
-    # get authenticated publisher
-    try:
-        service_account_info = json.loads(base64.b64decode(gcp_auth_key).decode('utf-8'))
-        credentials = jwt.Credentials.from_service_account_info(
-            service_account_info, audience=audience
-        )
-        credentials_pub = credentials.with_claims(audience=publisher_audience)
-        publisher = pubsub_v1.PublisherClient(credentials=credentials_pub)
-    except Exception as error:  # noqa: B902
-        raise Exception('Unable to create a connection', error) from error  # pylint: disable=W0719
-
-    try:
-        future = publisher.publish(topic_name, payload)
-
-        return future.result()
-    except (CancelledError, TimeoutError) as error:
-        raise Exception('Unable to post to queue', error) from error  # pylint: disable=W0719
+    # Initialize queue and publish
+    gcp_queue = GcpQueue()
+    gcp_queue.publish(queue_message.topic, gcp_queue.to_queue_message(cloud_event))

@@ -339,13 +339,14 @@ class EFTShortnameState(Enum):
 
 
 class MessageType(Enum):
-    """Account Mailer Event Types."""
+    """Queue Event Types."""
 
     # Ideally Should match account mailer project - FUTURE: move into sbc-common-components.
     EFT_AVAILABLE_NOTIFICATION = 'bc.registry.payment.eftAvailableNotification'
     PAD_ACCOUNT_CREATE = 'bc.registry.payment.padAccountCreate'
     NSF_LOCK_ACCOUNT = 'bc.registry.payment.lockAccount'
     NSF_UNLOCK_ACCOUNT = 'bc.registry.payment.unlockAccount'
+    PAYMENT = 'payment'
 
 
 class PaymentDetailsGlStatus(Enum):
@@ -355,3 +356,12 @@ class PaymentDetailsGlStatus(Enum):
     INPRG = 'INPRG'
     RJCT = 'RJCT'  # Should have refundglerrormessage
     CMPLT = 'CMPLT'
+
+
+class QueueSources(Enum):
+    """Queue sources for PAY."""
+
+    PAY_API = 'pay-api'
+    PAY_JOBS = 'pay-jobs'
+    PAY_QUEUE = 'pay-queue'
+    FTP_POLLER = 'ftp-poller'

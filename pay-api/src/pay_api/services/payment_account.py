@@ -36,15 +36,15 @@ from pay_api.models import StatementRecipients as StatementRecipientModel
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import db
 from pay_api.models.payment_account import PaymentAccountSearchModel
+from pay_api.services import gcp_queue_publisher
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.oauth_service import OAuthService
-from pay_api.services.queue_publisher import publish_response
 from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings
 from pay_api.utils.enums import (
-    AuthHeaderType, CfsAccountStatus, ContentType, InvoiceStatus, MessageType, PaymentMethod, PaymentSystem,
+    AuthHeaderType, CfsAccountStatus, ContentType, InvoiceStatus, MessageType, PaymentMethod, PaymentSystem, QueueSources,
     StatementFrequency)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
@@ -803,14 +803,19 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         """Publish to account mailer message to send out confirmation email on creation."""
         if self.payment_method == PaymentMethod.PAD.value:
             payload = self.create_account_event_payload(MessageType.PAD_ACCOUNT_CREATE.value, include_pay_info=True)
-            self._publish_queue_message(payload)
+            self._publish_queue_message(payload, MessageType.PAD_ACCOUNT_CREATE.value)
 
-    def _publish_queue_message(self, payload):
+    def _publish_queue_message(self, payload, message_type):
         """Publish to account mailer to send out confirmation email or notification email."""
         try:
-            publish_response(payload=payload,
-                             client_name=current_app.config['NATS_MAILER_CLIENT_NAME'],
-                             subject=current_app.config['NATS_MAILER_SUBJECT'])
+            gcp_queue_publisher.publish_to_queue(
+                gcp_queue_publisher.QueueMessage(
+                    source=QueueSources.PAY_API.value,
+                    message_type=message_type,
+                    payload=payload,
+                    topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
+                )
+            )
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(e)
             current_app.logger.error(
@@ -873,9 +878,14 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             )
 
             try:
-                publish_response(payload=payload,
-                                 client_name=current_app.config['NATS_ACCOUNT_CLIENT_NAME'],
-                                 subject=current_app.config['NATS_ACCOUNT_SUBJECT'])
+                gcp_queue_publisher.publish_to_queue(
+                    gcp_queue_publisher.QueueMessage(
+                        source=QueueSources.PAY_API.value,
+                        message_type=MessageType.NSF_UNLOCK_ACCOUNT.value,
+                        payload=payload,
+                        topic=current_app.config.get('EVENT_LISTENER_TOPIC')
+                    )
+                )
             except Exception as e:  # NOQA pylint: disable=broad-except
                 current_app.logger.error(e)
                 current_app.logger.error(

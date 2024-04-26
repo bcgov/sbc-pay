@@ -7,13 +7,6 @@
             "ftp-poller"
         ]
     },
-    {
-        "vault": "nats",
-        "application": [
-            "base",
-            "payment-reconciliations"
-        ]
-    },
 	{
         "vault": "relationship",
         "application": [

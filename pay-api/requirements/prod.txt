@@ -13,8 +13,6 @@ psycopg2-binary
 marshmallow-sqlalchemy==0.25.0
 jsonschema==4.17.3
 requests
-asyncio-nats-client
-asyncio-nats-streaming
 croniter
 sentry-sdk[flask]
 cattrs

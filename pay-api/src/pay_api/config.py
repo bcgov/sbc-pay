@@ -121,23 +121,15 @@ class _Config():  # pylint: disable=too-few-public-methods
     PAYBC_DIRECT_PAY_CLIENT_SECRET = _get_config('PAYBC_DIRECT_PAY_CLIENT_SECRET')
     PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL = _get_config('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL')
 
-    # NATS Config
-    NATS_SERVERS = _get_config('NATS_SERVERS', default='nats://127.0.0.1:4222').split(',')
-    NATS_CLUSTER_ID = _get_config('NATS_CLUSTER_ID', default='test-cluster')
-    NATS_PAYMENT_CLIENT_NAME = _get_config('NATS_PAYMENT_CLIENT_NAME', default='entity.filing.worker')
-    NATS_PAYMENT_SUBJECT = _get_config('NATS_PAYMENT_SUBJECT', default='entity.{product}.payment')
-
-    NATS_MAILER_CLIENT_NAME = _get_config('NATS_MAILER_CLIENT_NAME', default='account.mailer.worker')
-    NATS_MAILER_SUBJECT = _get_config('NATS_MAILER_SUBJECT', default='account.mailer')
-
-    NATS_ACCOUNT_CLIENT_NAME = os.getenv('NATS_ACCOUNT_CLIENT_NAME', 'account.events.worker')
-    NATS_ACCOUNT_SUBJECT = os.getenv('NATS_ACCOUNT_SUBJECT', 'account.events')
 
     # GCP PubSub
     AUDIENCE = os.getenv('AUDIENCE', None)
     GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
     PUBLISHER_AUDIENCE = os.getenv('PUBLISHER_AUDIENCE', None)
-    TOPIC_NAME = os.getenv('TOPIC_NAME', None)
+    ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', None)
+    EVENT_LISTENER_TOPIC = os.getenv('EVENT_LISTENER_TOPIC', None)
+    NAMEX_PAY_TOPIC = os.getenv('NAMEX_PAY_TOPIC', None)
+    BUSINESS_PAY_TOPIC = os.getenv('BUSINESS_PAY_TOPIC', None)
 
     # Auth API Endpoint
     AUTH_API_ENDPOINT = f'{_get_config("AUTH_API_URL")}/'
