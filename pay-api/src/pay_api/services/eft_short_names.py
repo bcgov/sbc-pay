@@ -21,7 +21,7 @@ from typing import List, Optional
 
 from _decimal import Decimal
 from flask import current_app
-from sqlalchemy import case, func
+from sqlalchemy import case, func, or_
 from sqlalchemy.sql.expression import exists
 
 from pay_api.exceptions import BusinessException
@@ -30,14 +30,16 @@ from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnameLinkSchema
 from pay_api.models import EFTShortnameSchema
-from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.models import Statement as StatementModel
+from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.models import db
 from pay_api.utils.converter import Converter
-from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import EFTShortnameStatus, InvoiceStatus, PaymentMethod
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
+from pay_api.utils.util import unstructure_schema_items
 
 
 @dataclass
@@ -45,18 +47,16 @@ class EFTShortnamesSearch:  # pylint: disable=too-many-instance-attributes
     """Used for searching EFT short name records."""
 
     id: Optional[int] = None
-    account_id_list: Optional[List[str]] = None
     account_id: Optional[str] = None
     account_name: Optional[str] = None
     account_branch: Optional[str] = None
-    transaction_start_date: Optional[date] = None
-    transaction_end_date: Optional[date] = None
+    amount_owing: Optional[Decimal] = None
     deposit_start_date: Optional[date] = None
     deposit_end_date: Optional[date] = None
-    deposit_amount: Optional[Decimal] = None
     credit_remaining: Optional[Decimal] = None
     linked_accounts_count: Optional[int] = None
     short_name: Optional[str] = None
+    statement_id: Optional[int] = None
     state: Optional[List[str]] = None
     page: Optional[int] = 1
     limit: Optional[int] = 10
@@ -203,9 +203,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         pagination = search_query.paginate(per_page=search_criteria.limit,
                                            page=search_criteria.page)
 
-        short_name_list = [EFTShortnameSchema.from_row(short_name) for short_name in pagination.items]
-        converter = Converter()
-        short_name_list = converter.unstructure(short_name_list)
+        short_name_list = unstructure_schema_items(EFTShortnameSchema, pagination.items)
 
         current_app.logger.debug('>search')
         return {
@@ -215,6 +213,21 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             'items': short_name_list,
             'total': pagination.total
         }
+
+    @staticmethod
+    def get_statement_summary_query():
+        """Query for latest statement id and total amount owing of invoices in statements."""
+        return db.session.query(
+            StatementModel.payment_account_id,
+            func.max(StatementModel.id).label('latest_statement_id'),
+            func.coalesce(func.sum(InvoiceModel.total - InvoiceModel.paid), 0).label('total_owing')
+        ).outerjoin(
+            StatementInvoicesModel,
+            StatementInvoicesModel.statement_id == StatementModel.id
+        ).outerjoin(
+            InvoiceModel,
+            InvoiceModel.id == StatementInvoicesModel.invoice_id
+        ).group_by(StatementModel.payment_account_id)
 
     @classmethod
     def get_search_count(cls, search_criteria: EFTShortnamesSearch):
@@ -227,25 +240,10 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('>get_search_count')
         return count_query.count()
 
-    @staticmethod
-    def get_ordered_transaction_query():
-        """Query for EFT transactions."""
-        return db.session.query(
-            EFTTransactionModel.id,
-            EFTTransactionModel.transaction_date,
-            EFTTransactionModel.deposit_date,
-            EFTTransactionModel.deposit_amount_cents,
-            EFTTransactionModel.short_name_id,
-            func.row_number().over(partition_by=EFTTransactionModel.short_name_id,
-                                   order_by=[EFTTransactionModel.transaction_date, EFTTransactionModel.id]).label('rn')
-        ).filter(and_(EFTTransactionModel.short_name_id.isnot(None),
-                      EFTTransactionModel.status_code == EFTProcessStatus.COMPLETED.value))\
-            .filter(EFTTransactionModel.line_type == EFTFileLineType.TRANSACTION.value)
-
     @classmethod
     def get_search_query(cls, search_criteria: EFTShortnamesSearch, is_count: bool = False):
         """Query for short names based on search criteria."""
-        sub_query = None
+        statement_summary_query = cls.get_statement_summary_query().subquery()
 
         # Case statement is to check for and remove the branch name from the name, so they can be filtered on separately
         # The branch name was added to facilitate a better short name search experience and the existing
@@ -255,45 +253,33 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                                   EFTShortnameModel.created_on,
                                   EFTShortnameLinksModel.status_code,
                                   EFTShortnameLinksModel.auth_account_id,
-                                  EFTShortnameLinksModel.updated_by,
-                                  EFTShortnameLinksModel.updated_by_name,
-                                  EFTShortnameLinksModel.updated_on,
                                   case(
                                       (EFTShortnameLinksModel.auth_account_id.is_(None),
                                        EFTShortnameStatus.UNLINKED.value
                                        ),
                                       else_=EFTShortnameLinksModel.status_code
                                   ).label('status_code'))
-                 .outerjoin(EFTShortnameLinksModel, EFTShortnameLinksModel.eft_short_name_id == EFTShortnameModel.id))
+                 .outerjoin(EFTShortnameLinksModel, EFTShortnameLinksModel.eft_short_name_id == EFTShortnameModel.id)
+                 .outerjoin(PaymentAccountModel,
+                            PaymentAccountModel.auth_account_id == EFTShortnameLinksModel.auth_account_id))
 
         # Join payment information if this is NOT the count query
         if not is_count:
-            sub_query = cls.get_ordered_transaction_query().subquery()
-            query = query.add_columns(
+            query = (query.add_columns(
                 case(
                     (PaymentAccountModel.name.like('%-' + PaymentAccountModel.branch_name),
                      func.replace(PaymentAccountModel.name, '-' + PaymentAccountModel.branch_name, '')
                      ), else_=PaymentAccountModel.name).label('account_name'),
                 PaymentAccountModel.branch_name.label('account_branch'),
-                sub_query.c.id.label('transaction_id'),
-                sub_query.c.deposit_date.label('deposit_date'),
-                sub_query.c.transaction_date.label('transaction_date'),
-                sub_query.c.deposit_amount_cents.label('deposit_amount')) \
-                .outerjoin(sub_query, and_(sub_query.c.short_name_id == EFTShortnameModel.id, sub_query.c.rn == 1)) \
-                .outerjoin(PaymentAccountModel,
-                           PaymentAccountModel.auth_account_id == EFTShortnameLinksModel.auth_account_id)
+                statement_summary_query.c.total_owing,
+                statement_summary_query.c.latest_statement_id
+            ).outerjoin(
+                statement_summary_query,
+                statement_summary_query.c.payment_account_id == PaymentAccountModel.id
+            ))
 
-            # Sub query filters for EFT dates
-            query = query.filter_conditional_date_range(start_date=search_criteria.transaction_start_date,
-                                                        end_date=search_criteria.transaction_end_date,
-                                                        model_attribute=sub_query.c.transaction_date)
-
-            query = query.filter_conditional_date_range(start_date=search_criteria.deposit_start_date,
-                                                        end_date=search_criteria.deposit_end_date,
-                                                        model_attribute=sub_query.c.deposit_date)
-
-            # Sub query filters
-            query = query.filter_conditionally(search_criteria.deposit_amount, sub_query.c.deposit_amount_cents)
+            # Short name link filters
+            query = query.filter_conditionally(search_criteria.id, EFTShortnameModel.id)
             query = query.filter_conditionally(search_criteria.account_id,
                                                EFTShortnameLinksModel.auth_account_id, is_like=True)
             # Payment account filters
@@ -301,19 +287,26 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             query = query.filter_conditionally(search_criteria.account_branch, PaymentAccountModel.branch_name,
                                                is_like=True)
 
-        query = cls.get_link_state_filters(search_criteria, query)
+            # Statement summary filters
+            query = query.filter_conditionally(search_criteria.statement_id,
+                                               statement_summary_query.c.latest_statement_id,
+                                               is_like=True)
+            if search_criteria.amount_owing == 0:
+                query = query.filter(or_(statement_summary_query.c.total_owing == 0,
+                                         statement_summary_query.c.total_owing.is_(None)))
+            else:
+                query = query.filter_conditionally(search_criteria.amount_owing, statement_summary_query.c.total_owing)
 
-        # Filter by a list of auth account ids - full match
-        if search_criteria.account_id_list:
-            query = query.filter(EFTShortnameLinksModel.auth_account_id.in_(search_criteria.account_id_list))
+        query = cls.get_link_state_filters(search_criteria, query)
+        query = query.filter(
+            or_(PaymentAccountModel.payment_method == PaymentMethod.EFT.value, PaymentAccountModel.id.is_(None))
+        )
 
         # Short name filters
         query = query.filter_conditionally(search_criteria.id, EFTShortnameModel.id)
         query = query.filter_conditionally(search_criteria.short_name, EFTShortnameModel.short_name, is_like=True)
-
         if not is_count:
-            query = cls.get_order_by(search_criteria, query, sub_query) if search_criteria.state else query
-
+            query = query.order_by(EFTShortnameModel.short_name.asc(), EFTShortnameLinksModel.auth_account_id.asc())
         return query
 
     @classmethod
@@ -322,7 +315,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         if search_criteria.state:
             if EFTShortnameStatus.UNLINKED.value in search_criteria.state:
                 #  There can be multiple links to a short name, look for any links that don't have an UNLINKED status
-                #  if they don't exist return them.
+                #  if they don't exist return the short name.
                 query = query.filter(
                     ~exists()
                     .where(EFTShortnameLinksModel.status_code != EFTShortnameStatus.UNLINKED.value)
@@ -334,15 +327,4 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                     EFTShortnameLinksModel.status_code.in_([EFTShortnameStatus.PENDING.value,
                                                             EFTShortnameStatus.LINKED.value])
                 )
-        return query
-
-    @classmethod
-    def get_order_by(cls, search_criteria, query, sub_query):
-        """Get the order by for search query."""
-        if EFTShortnameStatus.LINKED.value in search_criteria.state:
-            return query.order_by(EFTShortnameLinksModel.updated_on.desc())
-
-        if EFTShortnameStatus.UNLINKED.value in search_criteria.state and sub_query is not None:
-            return query.order_by(sub_query.c.deposit_date.desc())
-
         return query
