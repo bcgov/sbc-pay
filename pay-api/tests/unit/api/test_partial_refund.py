@@ -35,7 +35,7 @@ from pay_api.utils.errors import Error
 from tests.utilities.base_test import get_claims, get_payment_request, token_header
 
 
-def test_create_refund(session, client, jwt, app, stan_server, monkeypatch):
+def test_create_refund(session, client, jwt, app, monkeypatch):
     """Assert that the endpoint  returns 202."""
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -106,7 +106,7 @@ def test_create_refund(session, client, jwt, app, stan_server, monkeypatch):
             assert refund.refund_type == RefundsPartialType.BASE_FEES.value
 
 
-def test_create_refund_fails(session, client, jwt, app, stan_server, monkeypatch):
+def test_create_refund_fails(session, client, jwt, app, monkeypatch):
     """Assert that the endpoint returns 400."""
     token = jwt.create_jwt(get_claims(app_request=app), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
