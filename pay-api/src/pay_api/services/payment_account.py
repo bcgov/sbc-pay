@@ -17,8 +17,8 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
-from cattr import Converter
 
+from cattr import Converter
 from flask import current_app
 from sentry_sdk import capture_message
 from sqlalchemy import and_, desc, func, or_
@@ -44,8 +44,8 @@ from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings
 from pay_api.utils.enums import (
-    AuthHeaderType, CfsAccountStatus, ContentType, InvoiceStatus, MessageType, PaymentMethod, PaymentSystem, QueueSources,
-    StatementFrequency)
+    AuthHeaderType, CfsAccountStatus, ContentType, InvoiceStatus, MessageType, PaymentMethod, PaymentSystem,
+    QueueSources, StatementFrequency)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
@@ -935,5 +935,5 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         pa_service = cls.find_by_id(pay_account.id)
         if not already_has_eft_enabled:
             payload = pa_service.create_account_event_payload(MessageType.EFT_AVAILABLE_NOTIFICATION.value)
-            pa_service._publish_queue_message(payload)
+            pa_service._publish_queue_message(payload, MessageType.EFT_AVAILABLE_NOTIFICATION.value)
         return pa_service

@@ -121,7 +121,6 @@ class _Config():  # pylint: disable=too-few-public-methods
     PAYBC_DIRECT_PAY_CLIENT_SECRET = _get_config('PAYBC_DIRECT_PAY_CLIENT_SECRET')
     PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL = _get_config('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL')
 
-
     # GCP PubSub
     AUDIENCE = os.getenv('AUDIENCE', None)
     GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)

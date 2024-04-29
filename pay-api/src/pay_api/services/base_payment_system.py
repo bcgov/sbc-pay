@@ -37,9 +37,10 @@ from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import (
-    CorpType, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus, QueueSources, TransactionStatus)
+    CorpType, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus, QueueSources,
+    TransactionStatus)
 from pay_api.utils.user_context import UserContext
-from pay_api.utils.util import get_local_formatted_date_time, get_pay_subject_name, get_topic_for_corp_type
+from pay_api.utils.util import get_local_formatted_date_time, get_topic_for_corp_type
 
 from .payment_line_item import PaymentLineItem
 from .receipt import Receipt
@@ -150,7 +151,6 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         payload = PaymentTransaction.create_event_payload(invoice, TransactionStatus.COMPLETED.value)
         try:
             current_app.logger.info(f'Releasing record for invoice {invoice.id}')
-            # publish_response(payload=payload, subject=get_pay_subject_name(invoice.corp_type_code))
             gcp_queue_publisher.publish_to_queue(
                 gcp_queue_publisher.QueueMessage(
                     source=QueueSources.PAY_API.value,

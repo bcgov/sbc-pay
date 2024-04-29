@@ -1,20 +1,12 @@
 """This module provides Queue type services."""
-import base64
 from dataclasses import dataclass
 from datetime import datetime, timezone
-import json
 import uuid
-from concurrent.futures import CancelledError
-from concurrent.futures import TimeoutError  # pylint: disable=W0622
 
 from flask import current_app
-from google.auth import jwt
-from google.cloud import pubsub_v1
-from simple_cloudevent import SimpleCloudEvent, to_queue_message
+from simple_cloudevent import SimpleCloudEvent
 
 from pay_api.services.gcp_queue.gcp_queue import GcpQueue
-
-from .invoice import Invoice
 
 
 @dataclass
