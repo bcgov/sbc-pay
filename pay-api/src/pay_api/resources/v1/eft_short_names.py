@@ -57,7 +57,7 @@ def get_eft_shortnames():
         account_branch=account_branch,
         amount_owing=string_to_decimal(amount_owing),
         short_name=short_name,
-        statement_id=statement_id,
+        statement_id=string_to_int(statement_id),
         state=state,
         page=page,
         limit=limit)), HTTPStatus.OK

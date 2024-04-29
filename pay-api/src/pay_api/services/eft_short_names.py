@@ -289,8 +289,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
 
             # Statement summary filters
             query = query.filter_conditionally(search_criteria.statement_id,
-                                               statement_summary_query.c.latest_statement_id,
-                                               is_like=True)
+                                               statement_summary_query.c.latest_statement_id)
             if search_criteria.amount_owing == 0:
                 query = query.filter(or_(statement_summary_query.c.total_owing == 0,
                                          statement_summary_query.c.total_owing.is_(None)))
