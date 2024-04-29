@@ -16,11 +16,12 @@ import os
 from datetime import datetime
 from typing import Dict, List, Optional
 
+from entity_queue_common.service_utils import logger
 from flask import current_app
 from pay_api.models import DistributionCode as DistributionCodeModel
 from pay_api.models import EjvFile as EjvFileModel
 from pay_api.models import EjvHeader as EjvHeaderModel
-from pay_api.models import EjvLink as EjvLinkModel
+from pay_api.models import EjvInvoiceLink as EjvInvoiceLinkModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
@@ -32,8 +33,9 @@ from pay_api.models import db
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import (
-    DisbursementStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod,
-    PaymentStatus, PaymentSystem, QueueSources, RoutingSlipStatus)
+    DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus,
+    MessageType, PaymentMethod, PaymentStatus, PaymentSystem,
+    RoutingSlipStatus, QueueSources)
 from sentry_sdk import capture_message
 
 from pay_queue import config
@@ -60,11 +62,11 @@ def _update_acknowledgement(msg: Dict[str, any]):
     # so query uploaded jv file records and mark it as acknowledged.
 
     # Check to see that our ack file doesn't exist, if it exists, skip it.
-    ack_file_name = msg.get('fileName')
+    ack_file_name = msg.get('data').get('fileName')
     ack_exists: EjvFileModel = db.session.query(EjvFileModel).filter(
         EjvFileModel.ack_file_ref == ack_file_name).first()
     if ack_exists:
-        current_app.logger.warning('Ack file: %s - already exists, possible duplicate, skipping ack.', ack_file_name)
+        logger.warning('Ack file: %s - already exists, possible duplicate, skipping ack.', ack_file_name)
         return
 
     ejv_file: EjvFileModel = db.session.query(EjvFileModel).filter(
@@ -78,12 +80,10 @@ def _update_acknowledgement(msg: Dict[str, any]):
     for ejv_header in ejv_headers:
         ejv_header.disbursement_status_code = DisbursementStatus.ACKNOWLEDGED.value
         if ejv_file.file_type == EjvFileType.DISBURSEMENT.value:
-            ejv_links: List[EjvLinkModel] = db.session.query(EjvLinkModel) \
-                .filter(EjvLinkModel.ejv_header_id == ejv_header.id) \
-                .filter(EjvLinkModel.link_type == EJVLinkType.INVOICE.value) \
-                .all()
+            ejv_links: List[EjvInvoiceLinkModel] = db.session.query(EjvInvoiceLinkModel).filter(
+                EjvInvoiceLinkModel.ejv_header_id == ejv_header.id).all()
             for ejv_link in ejv_links:
-                invoice: InvoiceModel = InvoiceModel.find_by_id(ejv_link.link_id)
+                invoice: InvoiceModel = InvoiceModel.find_by_id(ejv_link.invoice_id)
                 invoice.disbursement_status_code = DisbursementStatus.ACKNOWLEDGED.value
     db.session.commit()
 
@@ -158,28 +158,27 @@ def _process_ejv_feedback(group_batches, file_name) -> bool:  # pylint:disable=t
     return has_errors, already_processed
 
 
-def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  # pylint:disable=too-many-locals
+async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  # pylint:disable=too-many-locals
     journal_name: str = line[7:17]  # {ministry}{ejv_header_model.id:0>8}
     ejv_header_model_id = int(journal_name[2:])
     # Work around for CAS, they said fix the feedback files.
     line = _fix_invoice_line(line)
     invoice_id = int(line[205:315])
-    current_app.logger.info('Invoice id - %s', invoice_id)
+    logger.info('Invoice id - %s', invoice_id)
     invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
-    invoice_link: EjvLinkModel = db.session.query(EjvLinkModel).filter(
-        EjvLinkModel.ejv_header_id == ejv_header_model_id).filter(
-        EjvLinkModel.link_id == invoice_id).filter(
-        EjvLinkModel.link_type == EJVLinkType.INVOICE.value).one_or_none()
+    invoice_link: EjvInvoiceLinkModel = db.session.query(EjvInvoiceLinkModel).filter(
+        EjvInvoiceLinkModel.ejv_header_id == ejv_header_model_id).filter(
+        EjvInvoiceLinkModel.invoice_id == invoice_id).one_or_none()
     invoice_return_code = line[315:319]
     invoice_return_message = line[319:469]
     # If the JV process failed, then mark the GL code against the invoice to be stopped
     # for further JV process for the credit GL.
-    current_app.logger.info('Is Credit or Debit %s - %s', line[104:105], ejv_file.file_type)
+    logger.info('Is Credit or Debit %s - %s', line[104:105], ejv_file.file_type)
     if line[104:105] == 'C' and ejv_file.file_type == EjvFileType.DISBURSEMENT.value:
         disbursement_status = _get_disbursement_status(invoice_return_code)
         invoice_link.disbursement_status_code = disbursement_status
         invoice_link.message = invoice_return_message
-        current_app.logger.info('disbursement_status %s', disbursement_status)
+        logger.info('disbursement_status %s', disbursement_status)
         if disbursement_status == DisbursementStatus.ERRORED.value:
             has_errors = True
             invoice.disbursement_status_code = DisbursementStatus.ERRORED.value
@@ -193,17 +192,17 @@ def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  #
                 credit_distribution.stop_ejv = True
         else:
             effective_date = datetime.strptime(line[22:30], '%Y%m%d')
-            _update_invoice_disbursement_status(invoice, effective_date)
+            await _update_invoice_disbursement_status(invoice, effective_date)
 
     elif line[104:105] == 'D' and ejv_file.file_type == EjvFileType.PAYMENT.value:
         # This is for gov account payment JV.
         invoice_link.disbursement_status_code = _get_disbursement_status(invoice_return_code)
 
         invoice_link.message = invoice_return_message
-        current_app.logger.info('Invoice ID %s', invoice_id)
+        logger.info('Invoice ID %s', invoice_id)
         inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice_id, InvoiceReferenceStatus.ACTIVE.value)
-        current_app.logger.info('invoice_link.disbursement_status_code %s', invoice_link.disbursement_status_code)
+        logger.info('invoice_link.disbursement_status_code %s', invoice_link.disbursement_status_code)
         if invoice_link.disbursement_status_code == DisbursementStatus.ERRORED.value:
             has_errors = True
             # Cancel the invoice reference.
@@ -381,18 +380,17 @@ def _process_ap_header_routing_slips(line) -> bool:
     return has_errors
 
 
-def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) -> bool:
+async def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) -> bool:
     has_errors = False
     invoice_id = line[19:69].strip()
     invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
     ap_header_return_code = line[414:418]
     ap_header_error_message = line[418:568]
     disbursement_status = _get_disbursement_status(ap_header_return_code)
-    invoice_link = db.session.query(EjvLinkModel)\
+    invoice_link = db.session.query(EjvInvoiceLinkModel)\
         .join(EjvHeaderModel).join(EjvFileModel)\
         .filter(EjvFileModel.id == ejv_file.id)\
-        .filter(EjvLinkModel.link_id == invoice_id)\
-        .filter(EjvLinkModel.link_type == EJVLinkType.INVOICE.value) \
+        .filter(EjvInvoiceLinkModel.invoice_id == invoice_id)\
         .one_or_none()
     invoice_link.disbursement_status_code = disbursement_status
     invoice_link.message = ap_header_error_message
@@ -403,7 +401,7 @@ def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) -> boo
                         level='error')
     else:
         # TODO - Fix this on BC Assessment launch, so the effective date reads from the feedback.
-        _update_invoice_disbursement_status(invoice, effective_date=datetime.now())
+        await _update_invoice_disbursement_status(invoice, effective_date=datetime.now())
         if invoice.invoice_status_code != InvoiceStatus.PAID.value:
             refund = RefundModel.find_by_invoice_id(invoice.id)
             refund.gl_posted = datetime.now()

@@ -13,8 +13,6 @@
 # limitations under the License.
 
 """Common setup and fixtures for the py-test suite used by this service."""
-import os
-import time
 
 import pytest
 from flask_migrate import Migrate, upgrade

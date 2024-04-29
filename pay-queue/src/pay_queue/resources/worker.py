@@ -31,22 +31,21 @@ bp = Blueprint('worker', __name__)
 @ensure_authorized_queue_user
 def worker():
     """Worker to handle incoming queue pushes."""
-    if not (ce := queue.get_simple_cloud_event(request)):
-        # Return a 200, so event is removed from the Queue
+    ce = queue.get_simple_cloud_event(request)
+    if not ce:
         return {}, HTTPStatus.OK
 
-    match ce.type:
-        case MessageType.CAS_UPLOADED.value:
-            reconcile_payments(ce.data)
-        case MessageType.CGI_ACK_RECEIVED.value:
-            reconcile_distributions(ce.data)
-        case MessageType.CGI_FEEDBACK_RECEIVED.value:
-            reconcile_distributions(ce.data, is_feedback=True)
-        case MessageType.EFT_FILE_UPLOADED.value:
-            reconcile_eft_payments(ce.data)
-        case MessageType.INCORPORATION.value | MessageType.REGISTRATION.value:
-            update_temporary_identifier(ce.data)
-        case _:
-            raise Exception('Invalid queue message type')  # pylint: disable=broad-exception-raised
+    if ce.type == MessageType.CAS_UPLOADED.value:
+        reconcile_payments(ce.data)
+    elif ce.type == MessageType.CGI_ACK_RECEIVED.value:
+        reconcile_distributions(ce.data)
+    elif ce.type == MessageType.CGI_FEEDBACK_RECEIVED.value:
+        reconcile_distributions(ce.data, is_feedback=True)
+    elif ce.type == MessageType.EFT_FILE_UPLOADED.value:
+        reconcile_eft_payments(ce.data)
+    elif ce.type in [MessageType.INCORPORATION.value, MessageType.REGISTRATION.value]:
+        update_temporary_identifier(ce.data)
+    else:
+        raise Exception('Invalid queue message type')  # pylint: disable=broad-exception-raised
 
     return {}, HTTPStatus.OK

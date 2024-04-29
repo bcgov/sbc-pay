@@ -1,6 +1,6 @@
--e git+https://github.com/bcgov/lear.git@30dba30463c99aaedfdcfd463213e71ba0d35b51#egg=entity_queue_common&subdirectory=queue_services/common
+-e git+https://github.com/bcgov/lear.git#egg=entity_queue_common&subdirectory=queue_services/common
 -e git+https://github.com/bcgov/sbc-common-components.git@b93585ea3ac273b9e51c4dd5ddbc8190fd95da6a#egg=sbc_common_components&subdirectory=python
--e git+https://github.com/bcgov/sbc-pay.git@6d4a94c8d78f11322487f93eb65ec6e9d5238b35#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/Jxio/sbc-pay.git@20941#egg=pay_api&subdirectory=pay-api
 -e git+https://github.com/daxiom/simple-cloudevent.py.git@447cabb988202206ac69e71177d7cd11b6c0b002#egg=simple_cloudevent
 Flask-Caching==2.0.2
 Flask-Migrate==2.7.0
