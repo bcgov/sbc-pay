@@ -1,0 +1,49 @@
+[
+  {
+      "vault": "shared",
+      "application": [
+          "encryption-key"
+      ]
+  },
+  {
+        "vault": "minio",
+        "application": [
+            "base",
+            "pay-queue"
+        ]
+    },
+    {
+        "vault": "nats",
+        "application": [
+            "base",
+            "account-events-listener",
+            "account-mailer",
+            "payment",
+            "pay-queue"
+        ]
+    },
+    {
+        "vault": "payment-external-services",
+        "application": [
+            "cfs"
+        ]
+    },
+	{
+        "vault": "relationship",
+        "application": [
+            "postgres-pay"
+        ]
+    },
+	{
+        "vault": "sentry",
+        "application": [
+            "relationship-api"
+        ]
+    },
+    {
+        "vault": "launchdarkly",
+        "application": [
+            "pay"
+        ]
+    }
+]

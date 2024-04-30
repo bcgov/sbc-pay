@@ -53,7 +53,6 @@ jobs:
     env:
       FLASK_ENV: "testing"
       DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
-      TEST_NATS_DOCKER: "YES"
       USE_TEST_KEYCLOAK_DOCKER: "YES"
       USE_DOCKER_MOCK: "YES"
 
@@ -63,9 +62,6 @@ jobs:
       JWT_OIDC_TEST_AUDIENCE: "sbc-auth-web"
       JWT_OIDC_TEST_CLIENT_SECRET: "1111111111"
       JWT_OIDC_TEST_JWKS_CACHE_TIMEOUT: "6000"
-
-      NATS_QUEUE: "test-worker"
-      NATS_SUBJECT: "entity.payment.test"
 
       SBC_AUTH_ADMIN_CLIENT_ID: "sbc-auth-admin"
       SBC_AUTH_ADMIN_CLIENT_SECRET: "2222222222"

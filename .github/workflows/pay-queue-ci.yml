@@ -1,19 +1,18 @@
-name: Payment Reconciliations Queue CI
+name: Payment Queue CI
 
 on:
   pull_request:
     branches:
       - main
     paths:
-      - "queue_services/payment-reconciliations/**"
+      - "pay-queue/**"
       - "pay-api/src/pay_api/models/**"
       - "pay-api/src/pay_api/services/cfs_service.py"
 
 defaults:
   run:
     shell: bash
-    working-directory: ./queue_services/payment-reconciliations
-
+    working-directory: ./pay-queue
 jobs:
   setup-job:
     runs-on: ubuntu-20.04
@@ -54,9 +53,7 @@ jobs:
     needs: setup-job
     env:
       DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
-      TEST_NATS_DOCKER: "YES"
       USE_DOCKER_MOCK: "YES"
-      STAN_CLUSTER_NAME: "test-cluster"
       MINIO_ENDPOINT: "localhost:9000"
       MINIO_ACCESS_KEY: "minio"
       MINIO_ACCESS_SECRET: "minio123"
