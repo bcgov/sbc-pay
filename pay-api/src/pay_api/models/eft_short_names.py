@@ -56,7 +56,6 @@ class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-
         return cls.query.filter_by(short_name=short_name).one_or_none()
 
 
-
 @define
 class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
     """Main schema used to serialize the EFT Short name."""
