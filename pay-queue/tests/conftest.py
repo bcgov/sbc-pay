@@ -14,12 +14,12 @@
 """Common setup and fixtures for the pytest suite used by this service."""
 import os
 
-import pytest
 from flask_migrate import Migrate, upgrade
 from google.api_core.exceptions import NotFound
 from google.cloud import pubsub
 from pay_api import db as _db
 from pay_api.services.gcp_queue import GcpQueue
+import pytest
 from sqlalchemy import event, text
 from sqlalchemy_utils import create_database, database_exists, drop_database
 
