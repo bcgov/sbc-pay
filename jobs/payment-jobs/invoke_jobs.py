@@ -132,7 +132,9 @@ def run(job_name, argument=None):
         RoutingSlipTask.adjust_routing_slips()
         application.logger.info(f'<<<< Completed Routing Slip tasks >>>>')
     elif job_name == 'EFT':
-        ElectronicFundsTransferTask.link_electronic_funds_transfer()
+        ElectronicFundsTransferTask.link_electronic_funds_transfers()
+        ElectronicFundsTransferTask.unlink_electronic_funds_transfers()
+        application.logger.info(f'<<<< Completed EFT tasks >>>>')
     elif job_name == 'EJV_PAYMENT':
         EjvPaymentTask.create_ejv_file()
         application.logger.info(f'<<<< Completed running EJV payment >>>>')

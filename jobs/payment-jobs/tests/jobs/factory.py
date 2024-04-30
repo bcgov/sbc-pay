@@ -218,11 +218,11 @@ def factory_routing_slip_account(
 
 def factory_create_eft_account(auth_account_id='1234', status=CfsAccountStatus.PENDING.value):
     """Return Factory."""
-    account = PaymentAccount(auth_account_id=auth_account_id,
-                             payment_method=PaymentMethod.EFT.value,
-                             name=f'Test {auth_account_id}').save()
-    CfsAccount(status=status, account_id=account.id).save()
-    return account
+    payment_account = PaymentAccount(auth_account_id=auth_account_id,
+                                     payment_method=PaymentMethod.EFT.value,
+                                     name=f'Test {auth_account_id}').save()
+    CfsAccount(status=status, account_id=payment_account.id).save()
+    return payment_account
 
 
 def factory_create_eft_shortname(short_name: str):
@@ -234,12 +234,13 @@ def factory_create_eft_shortname(short_name: str):
 
 
 def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234',
-                               updated_by: str = None, updated_on: datetime = datetime.now()):
+                               updated_by: str = None, updated_on: datetime = datetime.now(),
+                               status_code: str = EFTShortnameStatus.LINKED.value):
     """Return an EFT short name link model."""
     return EFTShortnameLinks(
         eft_short_name_id=short_name_id,
         auth_account_id=auth_account_id,
-        status_code=EFTShortnameStatus.LINKED.value,
+        status_code=status_code,
         updated_by=updated_by,
         updated_by_name=updated_by,
         updated_on=updated_on
