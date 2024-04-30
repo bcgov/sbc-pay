@@ -261,7 +261,7 @@ class CFSService(OAuthService):
         return invoice_response.json()
 
     @classmethod
-    def reverse_receipt_in_cfs(cls, cfs_account, receipt_number, operation: ReverseOperation):
+    def reverse_rs_receipt_in_cfs(cls, cfs_account, receipt_number, operation: ReverseOperation):
         """Reverse Receipt."""
         current_app.logger.debug('>Reverse receipt: %s', receipt_number)
         access_token: str = CFSService.get_fas_token().json().get('access_token')

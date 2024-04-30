@@ -236,12 +236,12 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
 
     @classmethod
     def apply_eft_receipt_to_invoice(cls,  # pylint: disable = too-many-arguments, too-many-locals
-                                                   payment_account: PaymentAccountModel,
-                                                   cfs_account: CfsAccountModel,
-                                                   eft_short_name: EFTShortNamesModel,
-                                                   invoice: InvoiceModel,
-                                                   invoice_number: str,
-                                                   receipt_number) -> bool:
+                                     payment_account: PaymentAccountModel,
+                                     cfs_account: CfsAccountModel,
+                                     eft_short_name: EFTShortNamesModel,
+                                     invoice: InvoiceModel,
+                                     invoice_number: str,
+                                     receipt_number) -> bool:
         """Apply electronic funds transfers (receipts in CFS) to invoice."""
         has_errors = False
         # an invoice has to be applied to multiple receipts (incl. all linked RS); apply till the balance is zero
