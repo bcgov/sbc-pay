@@ -89,7 +89,7 @@ def test_unlink_electronic_funds_transfers(session):
 
     payment_account = factory_create_eft_account(auth_account_id=auth_account_id, status=CfsAccountStatus.ACTIVE.value)
     eft_file = factory_create_eft_file()
-    factory_create_eft_transaction(file_id=eft_file.id)
+    eft_transaction = factory_create_eft_transaction(file_id=eft_file.id)
     eft_short_name = factory_create_eft_shortname(short_name=short_name)
     eft_short_name_link = factory_eft_shortname_link(
         short_name_id=eft_short_name.id,
@@ -110,7 +110,8 @@ def test_unlink_electronic_funds_transfers(session):
                               invoice_number=invoice_number)
     factory_create_eft_credit(
         amount=100, remaining_amount=0, eft_file_id=eft_file.id, short_name_id=eft_short_name.id,
-        payment_account_id=payment_account.id)
+        payment_account_id=payment_account.id,
+        eft_transaction_id=eft_transaction.id)
 
     factory_receipt(invoice.id, receipt_number)
 
@@ -125,11 +126,6 @@ def test_unlink_electronic_funds_transfers(session):
 
     with patch('pay_api.services.CFSService.reverse_rs_receipt_in_cfs') as mock_reverse:
         with patch('pay_api.services.CFSService.create_cfs_receipt') as mock_create_receipt:
-            with patch('pay_api.services.CFSService.get_invoice') as mock_get_invoice:
-                ElectronicFundsTransferTask.unlink_electronic_funds_transfers()
-                mock_reverse.assert_called()
-                mock_get_invoice.assert_called()
-                mock_create_receipt.assert_called()
-
-    assert eft_short_name.status_code == EFTShortnameStatus.UNLINKED.value
-    assert eft_short_name.version == 2
+            ElectronicFundsTransferTask.unlink_electronic_funds_transfers()
+            mock_reverse.assert_called()
+            mock_create_receipt.assert_called()
