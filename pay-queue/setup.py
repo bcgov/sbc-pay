@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia.
+# Copyright © 2024 Province of British Columbia.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ def read(filepath):
 REQUIREMENTS = read_requirements('requirements.txt')
 
 setup(
-    name="reconciliations",
+    name="pay_queue",
     version=version,
     author_email='',
     packages=find_packages('src'),

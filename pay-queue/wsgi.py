@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -15,9 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Provides the WSGI entry point for running the application."""
+import sys
 import os
-
 from pay_queue import create_app
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 
 
 app = create_app()

@@ -131,7 +131,7 @@
       "displayName": "Name",
       "description": "The name assigned to all of the OpenShift resources associated to the server instance.",
       "required": true,
-      "value": "payment-reconciliations"
+      "value": "pay_queue"
     },
     {
       "name": "APP_GROUP",

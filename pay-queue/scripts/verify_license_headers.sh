@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
 # limitations under the License.
 
 
-COPYRIGHT="Copyright © 2019 Province of British Columbia"
+COPYRIGHT="Copyright © 2024 Province of British Columbia"
 RET=0
 
 for file in $(find $@ -not \( -path */venv -prune \) -not \( -path */migrations -prune \) -not \( -path */tests -prune \) -not \( -path */.egg* -prune \) -name \*.py)

@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The Reconciliations queue service.
+"""The pay-queue service.
 
 The service worker for applying payments, receipts and account balance to payment system.
 """
@@ -26,7 +26,7 @@ from pay_api.services.flags import flags
 from pay_api.utils.run_version import get_run_version
 from sentry_sdk.integrations.flask import FlaskIntegration
 
-from pay_queue.config import CONFIGURATION
+from pay_queue import config
 from pay_queue.version import __version__
 
 from .resources import register_endpoints
@@ -37,7 +37,7 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')) -> Flask:
     """Return a configured Flask App using the Factory method."""
     app = Flask(__name__)
     app.env = run_mode
-    app.config.from_object(CONFIGURATION[run_mode])
+    app.config.from_object(config.CONFIGURATION[run_mode])
 
     # Configure Sentry
     if dsn := app.config.get('SENTRY_DSN', None):

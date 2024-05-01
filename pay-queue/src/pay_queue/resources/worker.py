@@ -13,8 +13,8 @@
 # limitations under the License.
 """Worker resource to handle incoming queue pushes from gcp."""
 from http import HTTPStatus
-
-from flask import Blueprint, request
+import json
+from flask import current_app, Blueprint, request
 from pay_api.utils.enums import MessageType
 
 from pay_queue.external.gcp_auth import ensure_authorized_queue_user
@@ -35,17 +35,23 @@ def worker():
     if not ce:
         return {}, HTTPStatus.OK
 
-    if ce.type == MessageType.CAS_UPLOADED.value:
-        reconcile_payments(ce.data)
-    elif ce.type == MessageType.CGI_ACK_RECEIVED.value:
-        reconcile_distributions(ce.data)
-    elif ce.type == MessageType.CGI_FEEDBACK_RECEIVED.value:
-        reconcile_distributions(ce.data, is_feedback=True)
-    elif ce.type == MessageType.EFT_FILE_UPLOADED.value:
-        reconcile_eft_payments(ce.data)
-    elif ce.type in [MessageType.INCORPORATION.value, MessageType.REGISTRATION.value]:
-        update_temporary_identifier(ce.data)
-    else:
-        raise Exception('Invalid queue message type')  # pylint: disable=broad-exception-raised
+    current_app.logger.info('Event Message Received: %s', json.dumps(ce))
+    try:
+        if ce.type == MessageType.CAS_UPLOADED.value:
+            reconcile_payments(ce.data)
+        elif ce.type == MessageType.CGI_ACK_RECEIVED.value:
+            reconcile_distributions(ce.data)
+        elif ce.type == MessageType.CGI_FEEDBACK_RECEIVED.value:
+            reconcile_distributions(ce.data, is_feedback=True)
+        elif ce.type == MessageType.EFT_FILE_UPLOADED.value:
+            reconcile_eft_payments(ce.data)
+        elif ce.type in [MessageType.INCORPORATION.value, MessageType.REGISTRATION.value]:
+            update_temporary_identifier(ce.data)
+        else:
+            raise Exception('Invalid queue message type')  # pylint: disable=broad-exception-raised
 
-    return {}, HTTPStatus.OK
+        return {}, HTTPStatus.OK
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        current_app.logger.error('Error processing event: %s', e)
+        # Optionally, return an error status code or message
+        return {'error': 'Failed to process queue message'}, HTTPStatus.INTERNAL_SERVER_ERROR

@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ def get_named_config(config_name: str = 'production'):
     return app_config
 
 
-class _Config():  # pylint: disable=too-few-public-methods
+class _Config():  # pylint: disable=too-few-public-methods,protected-access
     """Base class configuration that should set reasonable defaults.
 
     Used as the base for all the other configurations.
@@ -147,7 +147,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY', 'test')
 
     # Secrets for integration tests
-    TEST_GCP_PROJECT_NAME = 'abdefg-dev'
+    TEST_GCP_PROJECT_NAME = 'pay-queue-dev'
     # Needs to have ftp-poller-dev in it.
     TEST_GCP_TOPICS = ['account-mailer-dev', 'ftp-poller-dev', 'business-identifier-update-pay-dev']
     TEST_PUSH_ENDPOINT_PORT = 5020

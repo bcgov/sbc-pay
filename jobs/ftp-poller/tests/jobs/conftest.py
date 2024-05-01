@@ -109,16 +109,6 @@ def session(app):  # pylint: disable=redefined-outer-name, invalid-name
         yield app
 
 
-@pytest.fixture(scope='session', autouse=True)
-def auto(docker_services, app):  # pylint: disable=redefined-outer-name
-    """Spin up docker instances."""
-    if app.config['USE_DOCKER_MOCK']:
-        docker_services.start('proxy')
-        docker_services.start('nats')
-        docker_services.start('sftp')
-        time.sleep(2)
-
-
 @pytest.fixture(scope='session')
 def docker_compose_files(pytestconfig):
     """Get the docker-compose.yml absolute path."""
