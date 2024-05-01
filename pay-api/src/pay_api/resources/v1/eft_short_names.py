@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Resource for EFT Short name."""
-from decimal import Decimal
 from http import HTTPStatus
 
 from flask import Blueprint, current_app, jsonify, request
@@ -43,28 +42,22 @@ def get_eft_shortnames():
     state = request.args.get('state').split(',') if request.args.get('state', None) else None
     page: int = int(request.args.get('page', '1'))
     limit: int = int(request.args.get('limit', '10'))
-    transaction_start_date = request.args.get('transactionStartDate', None)
-    transaction_end_date = request.args.get('transactionEndDate', None)
-    deposit_amount = request.args.get('depositAmount', None)
-    deposit_start_date = request.args.get('depositStartDate', None)
-    deposit_end_date = request.args.get('depositEndDate', None)
+    amount_owing = request.args.get('amountOwing', None)
     short_name = request.args.get('shortName', None)
+    short_name_id = request.args.get('shortNameId', None)
+    statement_id = request.args.get('statementId', None)
     account_id = request.args.get('accountId', None)
-    account_id_list = request.args.get('accountIdList').split(',') if request.args.get('accountIdList', None) else None
     account_name = request.args.get('accountName', None)
     account_branch = request.args.get('accountBranch', None)
 
     response, status = EFTShortnameService.search(EFTShortnamesSearch(
+        id=short_name_id,
         account_id=account_id,
-        account_id_list=account_id_list,
         account_name=account_name,
         account_branch=account_branch,
-        deposit_start_date=string_to_date(deposit_start_date),
-        deposit_end_date=string_to_date(deposit_end_date),
-        deposit_amount=Decimal(deposit_amount) * Decimal(100) if deposit_amount else None,
+        amount_owing=string_to_decimal(amount_owing),
         short_name=short_name,
-        transaction_start_date=string_to_date(transaction_start_date),
-        transaction_end_date=string_to_date(transaction_end_date),
+        statement_id=string_to_int(statement_id),
         state=state,
         page=page,
         limit=limit)), HTTPStatus.OK

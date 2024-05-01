@@ -21,7 +21,6 @@ from sql_versioning import Versioned
 
 from .base_model import BaseModel
 from .db import db
-from ..utils.util import cents_to_decimal
 
 
 class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-attributes
@@ -61,19 +60,14 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
     """Main schema used to serialize the EFT Short name."""
 
     id: int
-    short_name: str
-    status_code: str
     account_id: str
     account_name: str
     account_branch: str
+    amount_owing: Decimal
     created_on: datetime
-    transaction_id: int
-    transaction_date: datetime
-    deposit_date: datetime
-    deposit_amount: Decimal
-    updated_by: str
-    updated_by_name: str
-    updated_on: datetime
+    short_name: str
+    statement_id: int
+    status_code: str
 
     @classmethod
     def from_row(cls, row: EFTShortnames):
@@ -82,19 +76,14 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
         https://www.attrs.org/en/stable/init.html
         """
         return cls(id=row.id,
-                   short_name=row.short_name,
-                   status_code=getattr(row, 'status_code', None),
                    account_id=getattr(row, 'auth_account_id', None),
                    account_name=getattr(row, 'account_name', None),
                    account_branch=getattr(row, 'account_branch', None),
+                   amount_owing=getattr(row, 'total_owing', None),
                    created_on=row.created_on,
-                   transaction_id=getattr(row, 'transaction_id', None),
-                   transaction_date=getattr(row, 'transaction_date', None),
-                   deposit_date=getattr(row, 'deposit_date', None),
-                   deposit_amount=cents_to_decimal(getattr(row, 'deposit_amount', None)),
-                   updated_by=getattr(row, 'updated_by'),
-                   updated_by_name=getattr(row, 'updated_by_name'),
-                   updated_on=getattr(row, 'updated_on')
+                   short_name=row.short_name,
+                   statement_id=getattr(row, 'latest_statement_id', None),
+                   status_code=getattr(row, 'status_code', None)
                    )
 
 
