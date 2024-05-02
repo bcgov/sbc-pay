@@ -114,7 +114,6 @@ def auto(docker_services, app):  # pylint: disable=redefined-outer-name
     """Spin up docker instances."""
     if app.config['USE_DOCKER_MOCK']:
         docker_services.start('proxy')
-        docker_services.start('nats')
         docker_services.start('sftp')
         time.sleep(2)
 

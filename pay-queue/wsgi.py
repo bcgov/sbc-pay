@@ -15,15 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Provides the WSGI entry point for running the application."""
-import sys
 import os
 from pay_queue import create_app
-
-sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'src'))
 
 
 app = create_app()
 
 if __name__ == '__main__':
-    server_port = os.environ.get('PORT', '5000')
+    server_port = os.environ.get('PORT', '8080')
     app.run(debug=False, port=server_port, host='0.0.0.0')

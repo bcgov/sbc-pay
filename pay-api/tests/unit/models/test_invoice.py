@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ def test_invoice(session):
 
     # assert overdue default is set
     assert invoice.overdue_date is not None
-    assert invoice.overdue_date.date() == (current_local_time() + relativedelta(months=1, day=1)).date()
+    assert invoice.overdue_date.date() == (current_local_time() + relativedelta(months=1, days=1)).date()
 
 
 def test_invoice_find_by_id(session):

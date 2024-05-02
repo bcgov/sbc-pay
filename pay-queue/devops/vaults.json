@@ -13,7 +13,7 @@
         ]
     },
     {
-        "vault": "nats",
+        "vault": "gcp-queue",
         "application": [
             "base",
             "account-events-listener",

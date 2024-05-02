@@ -18,13 +18,15 @@ import random
 from contextlib import contextmanager
 
 import pytest
-from flask import Flask
 from flask_migrate import Migrate, upgrade
+from google.api_core.exceptions import NotFound
+from google.cloud import pubsub
 from pay_api import db as _db
+from pay_api.services.gcp_queue import GcpQueue
 from sqlalchemy import event, text
 from sqlalchemy.schema import DropConstraint, MetaData
 
-from pay_queue.config import get_named_config
+from pay_queue import create_app
 
 
 @contextmanager
@@ -39,15 +41,21 @@ def not_raises(exception):
         raise pytest.fail(f'DID RAISE {exception}')
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope='session', autouse=True)
 def app():
     """Return a session-wide application configured in TEST mode."""
-    # _app = create_app('testing')
-    _app = Flask(__name__)
-    _app.config.from_object(get_named_config('testing'))
-    _db.init_app(_app)
-
+    _app = create_app('testing')
+    _app.config['GCP_AUTH_KEY'] = 'xxxxx'
+    _app.config['AUDIENCE'] = 'https://pubsub.googleapis.com/google.pubsub.v1.Subscriber'
+    _app.config['PUBLISHER_AUDIENCE'] = 'https://pubsub.googleapis.com/google.pubsub.v1.Publisher'
     return _app
+
+
+@pytest.fixture(scope='function', autouse=True)
+def gcp_queue(app, mocker):
+    """Mock GcpQueue to avoid initializing the external connections."""
+    mocker.patch.object(GcpQueue, 'init_app')
+    return GcpQueue(app)
 
 
 @pytest.fixture(scope='session')
@@ -136,15 +144,6 @@ def client_ctx(app):  # pylint: disable=redefined-outer-name
 
 
 @pytest.fixture(scope='function')
-def client_id():
-    """Return a unique client_id that can be used in tests."""
-    _id = random.SystemRandom().getrandbits(0x58)
-    #     _id = (base64.urlsafe_b64encode(uuid.uuid4().bytes)).replace('=', '')
-
-    return f'client-{_id}'
-
-
-@pytest.fixture(scope='function')
 def session(app, db):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a function-scoped session."""
     with app.app_context():
@@ -163,7 +162,7 @@ def session(app, db):  # pylint: disable=redefined-outer-name, invalid-name
             # Detecting whether this is indeed the nested transaction of the test
             if trans.nested and not trans._parent.nested:  # pylint: disable=protected-access
                 # Handle where test DOESN'T session.commit(),
-                # sess2.expire_all()
+                sess2.expire_all()
                 sess.begin_nested()
 
         db.session = sess
@@ -189,31 +188,44 @@ def auto(docker_services, app):
         docker_services.start('paybc')
 
 
-@pytest.fixture(scope='function')
-def future(event_loop):
-    """Return a future that is used for managing function tests."""
-    _future = asyncio.Future(loop=event_loop)
-    return _future
-
-
-@pytest.fixture
-def create_mock_coro(mocker, monkeypatch):
-    """Return a mocked coroutine, and optionally patch-it in."""
-
-    def _create_mock_patch_coro(to_patch=None):
-        mock = mocker.Mock()
-
-        async def _coro(*args, **kwargs):
-            return mock(*args, **kwargs)
-
-        if to_patch:  # <-- may not need/want to patch anything
-            monkeypatch.setattr(to_patch, _coro)
-        return mock, _coro
-
-    return _create_mock_patch_coro
+@pytest.fixture(autouse=True)
+def mock_queue_auth(mocker):
+    """Mock queue authorization."""
+    mocker.patch('pay_queue.external.gcp_auth.verify_jwt', return_value='')
 
 
 @pytest.fixture()
 def mock_publish(monkeypatch):
     """Mock check_auth."""
-    monkeypatch.setattr('pay_api.services.queue_publisher.publish', lambda *args, **kwargs: None)
+    monkeypatch.setattr('pay_api.services.gcp_queue_publisher.publish_to_queue', lambda *args, **kwargs: None)
+
+
+@pytest.fixture(scope='session', autouse=True)
+def initialize_pubsub(app):
+    """Initialize pubsub emulator and respective publisher and subscribers."""
+    os.environ['PUBSUB_EMULATOR_HOST'] = 'localhost:8085'
+    project = app.config.get('TEST_GCP_PROJECT_NAME')
+    topics = app.config.get('TEST_GCP_TOPICS')
+    push_config = pubsub.types.PushConfig(push_endpoint=app.config.get('TEST_PUSH_ENDPOINT'))
+    publisher = pubsub.PublisherClient()
+    subscriber = pubsub.SubscriberClient()
+    with publisher, subscriber:
+        for topic in topics:
+            topic_path = publisher.topic_path(project, topic)
+            try:
+                publisher.delete_topic(topic=topic_path)
+            except NotFound:
+                pass
+            publisher.create_topic(name=topic_path)
+            subscription_path = subscriber.subscription_path(project,  f'{topic}_subscription')
+            try:
+                subscriber.delete_subscription(subscription=subscription_path)
+            except NotFound:
+                pass
+            subscriber.create_subscription(
+                request={
+                    'name': subscription_path,
+                    'topic': topic_path,
+                    'push_config': push_config,
+                }
+            )

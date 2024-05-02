@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Worker resource to handle incoming queue pushes from gcp."""
-from http import HTTPStatus
+
 import json
-from flask import current_app, Blueprint, request
+from http import HTTPStatus
+
+from flask import Blueprint, current_app, request
 from pay_api.utils.enums import MessageType
 
 from pay_queue.external.gcp_auth import ensure_authorized_queue_user

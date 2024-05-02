@@ -12,7 +12,7 @@ DOCKER_NAME:=pay-queue
 #################################################################################
 # COMMANDS -- Setup                                                             #
 #################################################################################
-setup: install ## Setup the project
+setup: install install-dev  ## Setup the project
 
 clean: clean-build clean-pyc clean-test ## Clean the project
 	rm -rf venv/
@@ -130,7 +130,7 @@ tag: push ## tag image
 #################################################################################
 
 run: ## Run the project in local
-	. venv/bin/activate && python app.py
+	. venv/bin/activate && python -m flask run -p 8080
 
 #################################################################################
 # Self Documenting Commands                                                     #
