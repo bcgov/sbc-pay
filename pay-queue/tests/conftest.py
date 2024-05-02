@@ -200,32 +200,32 @@ def mock_publish(monkeypatch):
     monkeypatch.setattr('pay_api.services.gcp_queue_publisher.publish_to_queue', lambda *args, **kwargs: None)
 
 
-@pytest.fixture(scope='session', autouse=True)
-def initialize_pubsub(app):
-    """Initialize pubsub emulator and respective publisher and subscribers."""
-    os.environ['PUBSUB_EMULATOR_HOST'] = 'localhost:8085'
-    project = app.config.get('TEST_GCP_PROJECT_NAME')
-    topics = app.config.get('TEST_GCP_TOPICS')
-    push_config = pubsub.types.PushConfig(push_endpoint=app.config.get('TEST_PUSH_ENDPOINT'))
-    publisher = pubsub.PublisherClient()
-    subscriber = pubsub.SubscriberClient()
-    with publisher, subscriber:
-        for topic in topics:
-            topic_path = publisher.topic_path(project, topic)
-            try:
-                publisher.delete_topic(topic=topic_path)
-            except NotFound:
-                pass
-            publisher.create_topic(name=topic_path)
-            subscription_path = subscriber.subscription_path(project,  f'{topic}_subscription')
-            try:
-                subscriber.delete_subscription(subscription=subscription_path)
-            except NotFound:
-                pass
-            subscriber.create_subscription(
-                request={
-                    'name': subscription_path,
-                    'topic': topic_path,
-                    'push_config': push_config,
-                }
-            )
+# @pytest.fixture(scope='session', autouse=True)
+# def initialize_pubsub(app):
+#     """Initialize pubsub emulator and respective publisher and subscribers."""
+#     os.environ['PUBSUB_EMULATOR_HOST'] = 'localhost:8085'
+#     project = app.config.get('TEST_GCP_PROJECT_NAME')
+#     topics = app.config.get('TEST_GCP_TOPICS')
+#     push_config = pubsub.types.PushConfig(push_endpoint=app.config.get('TEST_PUSH_ENDPOINT'))
+#     publisher = pubsub.PublisherClient()
+#     subscriber = pubsub.SubscriberClient()
+#     with publisher, subscriber:
+#         for topic in topics:
+#             topic_path = publisher.topic_path(project, topic)
+#             try:
+#                 publisher.delete_topic(topic=topic_path)
+#             except NotFound:
+#                 pass
+#             publisher.create_topic(name=topic_path)
+#             subscription_path = subscriber.subscription_path(project,  f'{topic}_subscription')
+#             try:
+#                 subscriber.delete_subscription(subscription=subscription_path)
+#             except NotFound:
+#                 pass
+#             subscriber.create_subscription(
+#                 request={
+#                     'name': subscription_path,
+#                     'topic': topic_path,
+#                     'push_config': push_config,
+#                 }
+#             )

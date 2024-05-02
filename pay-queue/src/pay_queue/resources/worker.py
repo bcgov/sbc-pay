@@ -37,7 +37,7 @@ def worker():
     ce = queue.get_simple_cloud_event(request)
     if not ce:
         return {}, HTTPStatus.OK
-    
+
     current_app.logger.info('Event Message Received: %s ', json.dumps(dataclasses.asdict(ce)))
     try:
         if ce.type == MessageType.CAS_UPLOADED.value:
