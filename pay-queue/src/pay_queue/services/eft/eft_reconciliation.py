@@ -250,8 +250,9 @@ def _process_eft_payments(shortname_balance: Dict, eft_file: EFTFileModel) -> bo
                 auth_account_id = eft_shortname_model.auth_account_id
                 # Find invoices to be paid
                 invoices: List[InvoiceModel] = EFTShortnames.get_invoices_owing(auth_account_id)
-                for invoice in invoices:
-                    _pay_invoice(invoice=invoice, shortname_balance=shortname_balance[shortname])
+                if invoices is not None:
+                    for invoice in invoices:
+                        _pay_invoice(invoice=invoice, shortname_balance=shortname_balance[shortname])
 
             except Exception as e:  # NOQA pylint: disable=broad-exception-caught
                 has_eft_transaction_errors = True
@@ -433,11 +434,12 @@ def _pay_invoice(invoice: InvoiceModel, shortname_balance: Dict):
     # Create the payment record
     eft_payment_service: EFTService = PaymentSystemFactory.create_from_payment_method(PaymentMethod.EFT.value)
 
-    payment, receipt = eft_payment_service.apply_credit(invoice=invoice,
-                                                        payment_date=payment_date,
-                                                        auto_save=True)
+    payment, invoice_reference, receipt = eft_payment_service.apply_credit(invoice=invoice,
+                                                                           payment_date=payment_date,
+                                                                           auto_save=False)
 
     db.session.add(payment)
+    db.session.add(invoice_reference)
     db.session.add(receipt)
 
     # Paid - update the shortname balance

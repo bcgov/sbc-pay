@@ -18,8 +18,8 @@ Test-Suite to ensure that the EFT Reconciliation queue service and parser is wor
 """
 from datetime import datetime
 from typing import List
-from flask import current_app
 
+from flask import current_app
 from pay_api import db
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
@@ -31,8 +31,8 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import (EFTFileLineType, EFTProcessStatus, InvoiceReferenceStatus,
-                                 InvoiceStatus, PaymentMethod, PaymentStatus, MessageType)
+from pay_api.utils.enums import (
+    EFTFileLineType, EFTProcessStatus, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus)
 
 from pay_queue.services.eft.eft_enums import EFTConstants
 from tests.integration.factory import factory_create_eft_account, factory_invoice
@@ -284,7 +284,7 @@ def test_eft_tdi17_basic_process(session, app, client):
 def test_eft_tdi17_process(session, app, client):
     """Test EFT Reconciliations worker."""
     payment_account, eft_shortname, invoice = create_test_data()
-    
+
     assert payment_account is not None
     assert eft_shortname is not None
     assert invoice is not None
@@ -343,6 +343,7 @@ def test_eft_tdi17_process(session, app, client):
     assert eft_shortnames[1].short_name == 'ABC123'
 
     # NOTE THIS NEEDS TO BE RE-WRITTEN INSIDE OF THE JOB.
+    today = datetime.now().date()
     # Assert Invoice is paid
     invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
     expected_amount = 100
@@ -537,7 +538,7 @@ def test_eft_tdi17_rerun(session, app, client):
     assert invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
 
     eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel) \
-    .order_by(EFTCreditModel.created_on.asc()).all()
+        .order_by(EFTCreditModel.created_on.asc()).all()
     assert eft_credits is not None
     assert len(eft_credits) == 1
     assert eft_credits[0].payment_account_id == payment_account.id

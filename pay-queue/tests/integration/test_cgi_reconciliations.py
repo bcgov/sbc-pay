@@ -104,7 +104,7 @@ def test_successful_partner_ejv_reconciliations(session, app, client):
         jv_file.close()
 
     # Now upload the ACK file to minio and publish message.
-    upload_to_minio(str.encode(''), ack_file_name)
+    upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
     add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
 

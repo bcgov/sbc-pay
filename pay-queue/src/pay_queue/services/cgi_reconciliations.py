@@ -160,7 +160,7 @@ def _process_ejv_feedback(group_batches, file_name) -> bool:  # pylint:disable=t
     return has_errors, already_processed
 
 
-async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  # pylint:disable=too-many-locals
+def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  # pylint:disable=too-many-locals
     journal_name: str = line[7:17]  # {ministry}{ejv_header_model.id:0>8}
     ejv_header_model_id = int(journal_name[2:])
     # Work around for CAS, they said fix the feedback files.
@@ -201,7 +201,7 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
                 credit_distribution.stop_ejv = True
         else:
             effective_date = datetime.strptime(line[22:30], '%Y%m%d')
-            await _update_invoice_disbursement_status(invoice, effective_date)
+            _update_invoice_disbursement_status(invoice, effective_date)
 
     elif line[104:105] == 'D' and ejv_file.file_type == EjvFileType.PAYMENT.value:
         # This is for gov account payment JV.
@@ -393,7 +393,7 @@ def _process_ap_header_routing_slips(line) -> bool:
     return has_errors
 
 
-async def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) -> bool:
+def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) -> bool:
     has_errors = False
     invoice_id = line[19:69].strip()
     invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
@@ -414,7 +414,7 @@ async def _process_ap_header_non_gov_disbursement(line, ejv_file: EjvFileModel) 
                         level='error')
     else:
         # TODO - Fix this on BC Assessment launch, so the effective date reads from the feedback.
-        await _update_invoice_disbursement_status(invoice, effective_date=datetime.now())
+        _update_invoice_disbursement_status(invoice, effective_date=datetime.now())
         if invoice.invoice_status_code != InvoiceStatus.PAID.value:
             refund = RefundModel.find_by_invoice_id(invoice.id)
             refund.gl_posted = datetime.now()
