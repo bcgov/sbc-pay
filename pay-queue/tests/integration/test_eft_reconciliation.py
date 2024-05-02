@@ -529,13 +529,13 @@ def test_eft_tdi17_rerun(session, app, client):
     assert payment.invoice_amount == expected_amount
 
     invoice_reference: InvoiceReferenceModel = InvoiceReferenceModel \
-        .find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+        .find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.COMPLETED.value)
 
     assert invoice_reference is not None
     assert invoice_reference.invoice_id == invoice.id
     assert invoice_reference.invoice_number == payment.invoice_number
     assert invoice_reference.invoice_number == expected_invoice_number
-    assert invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
+    assert invoice_reference.status_code == InvoiceReferenceStatus.COMPLETED.value
 
     eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel) \
         .order_by(EFTCreditModel.created_on.asc()).all()
