@@ -81,7 +81,7 @@ def test_online_banking_reconciliations(session, app, mock_publish, client):
     assert payment.invoice_number == invoice_number
 
 
-def test_online_banking_reconciliations_over_payment(client):
+def test_online_banking_reconciliations_over_payment(session, app, client):
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -127,7 +127,7 @@ def test_online_banking_reconciliations_over_payment(client):
     assert payment.invoice_number is None  # No invoice_number if payment is not for 1 invoice
 
 
-def test_online_banking_reconciliations_with_credit(client):
+def test_online_banking_reconciliations_with_credit(session, app, client):
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -173,7 +173,7 @@ def test_online_banking_reconciliations_with_credit(client):
     assert payment.invoice_number == invoice_number
 
 
-def test_online_banking_reconciliations_overflows_credit(client):
+def test_online_banking_reconciliations_overflows_credit(session, app, client):
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -224,7 +224,7 @@ def test_online_banking_reconciliations_overflows_credit(client):
     assert payment.invoice_number is None
 
 
-def test_online_banking_under_payment(client):
+def test_online_banking_under_payment(session, app, client):
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -271,7 +271,7 @@ def test_online_banking_under_payment(client):
     assert payment.invoice_number == invoice_number
 
 
-def test_pad_reconciliations(client):
+def test_pad_reconciliations(session, app, client):
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoices and related records
@@ -335,7 +335,7 @@ def test_pad_reconciliations(client):
     assert rcpt1.receipt_date == rcpt2.receipt_date
 
 
-def test_pad_reconciliations_with_credit_memo(client):
+def test_pad_reconciliations_with_credit_memo(session, app, client):
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoices and related records
@@ -403,7 +403,7 @@ def test_pad_reconciliations_with_credit_memo(client):
     assert rcpt1.receipt_date == rcpt2.receipt_date
 
 
-def test_pad_nsf_reconciliations(client):
+def test_pad_nsf_reconciliations(session, app, client):
     """Test Reconciliations worker for NSF."""
     # 1. Create payment account
     # 2. Create invoices and related records
@@ -465,7 +465,7 @@ def test_pad_nsf_reconciliations(client):
     assert cfs_account.status == CfsAccountStatus.FREEZE.value
 
 
-def test_pad_reversal_reconciliations(client):
+def test_pad_reversal_reconciliations(session, app, client):
     """Test Reconciliations worker for NSF."""
     # 1. Create payment account
     # 2. Create invoices and related records for a completed payment
@@ -541,7 +541,7 @@ def test_pad_reversal_reconciliations(client):
 
 
 @pytest.mark.asyncio
-async def test_eft_wire_reconciliations(client):
+async def test_eft_wire_reconciliations(session, app, client):
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -595,7 +595,7 @@ async def test_eft_wire_reconciliations(client):
 
 
 @pytest.mark.asyncio
-async def test_credits(client, monkeypatch):
+async def test_credits(session, app, client, monkeypatch):
     """Test Reconciliations worker."""
     # 1. Create payment account.
     # 2. Create EFT/WIRE payment db record.

@@ -18,6 +18,7 @@ Test-Suite to ensure that the EFT Reconciliation queue service and parser is wor
 """
 from datetime import datetime
 from typing import List
+from flask import current_app
 
 from pay_api import db
 from pay_api.models import EFTCredit as EFTCreditModel
@@ -26,8 +27,12 @@ from pay_api.models import EFTFile as EFTFileModel
 from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import InvoiceReference as InvoiceReferenceModel
+from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
-from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, MessageType, PaymentMethod
+from pay_api.models import Receipt as ReceiptModel
+from pay_api.utils.enums import (EFTFileLineType, EFTProcessStatus, InvoiceReferenceStatus,
+                                 InvoiceStatus, PaymentMethod, PaymentStatus, MessageType)
 
 from pay_queue.services.eft.eft_enums import EFTConstants
 from tests.integration.factory import factory_create_eft_account, factory_invoice
@@ -35,7 +40,7 @@ from tests.integration.utils import add_file_event_to_queue_and_process, create_
 from tests.utilities.factory_utils import factory_eft_header, factory_eft_record, factory_eft_trailer
 
 
-def test_eft_tdi17_fail_header(client):
+def test_eft_tdi17_fail_header(session, app, client):
     """Test EFT Reconciliations properly fails for a bad EFT header."""
     # Generate file with invalid header
     file_name: str = 'test_eft_tdi17.txt'
@@ -87,7 +92,7 @@ def test_eft_tdi17_fail_header(client):
     assert not bool(eft_transactions)
 
 
-def test_eft_tdi17_fail_trailer(client):
+def test_eft_tdi17_fail_trailer(session, app, client):
     """Test EFT Reconciliations properly fails for a bad EFT trailer."""
     # Generate file with invalid trailer
     file_name: str = 'test_eft_tdi17.txt'
@@ -141,7 +146,7 @@ def test_eft_tdi17_fail_trailer(client):
     assert not bool(eft_transactions)
 
 
-def test_eft_tdi17_fail_transactions(client):
+def test_eft_tdi17_fail_transactions(session, app, client):
     """Test EFT Reconciliations properly fails for a bad EFT trailer."""
     # Generate file with invalid trailer
     file_name: str = 'test_eft_tdi17.txt'
@@ -198,7 +203,7 @@ def test_eft_tdi17_fail_transactions(client):
     assert eft_transactions[0].error_messages[0] == 'Invalid transaction deposit amount CAD.'
 
 
-def test_eft_tdi17_basic_process(client):
+def test_eft_tdi17_basic_process(session, app, client):
     """Test EFT Reconciliations worker is able to create basic EFT processing records."""
     # Generate happy path file
     file_name: str = 'test_eft_tdi17.txt'
@@ -276,9 +281,13 @@ def test_eft_tdi17_basic_process(client):
     assert not eft_credit_invoice_links
 
 
-def test_eft_tdi17_process(client):
+def test_eft_tdi17_process(session, app, client):
     """Test EFT Reconciliations worker."""
     payment_account, eft_shortname, invoice = create_test_data()
+    
+    assert payment_account is not None
+    assert eft_shortname is not None
+    assert invoice is not None
     # Generate happy path file
     file_name: str = 'test_eft_tdi17.txt'
     generate_tdi17_file(file_name)
@@ -334,75 +343,72 @@ def test_eft_tdi17_process(client):
     assert eft_shortnames[1].short_name == 'ABC123'
 
     # NOTE THIS NEEDS TO BE RE-WRITTEN INSIDE OF THE JOB.
-    # today = datetime.now().date()
+    # Assert Invoice is paid
+    invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
+    expected_amount = 100
+    assert invoice is not None
+    assert invoice.payment_method_code == PaymentMethod.EFT.value
+    assert invoice.invoice_status_code == InvoiceStatus.PAID.value
+    assert invoice.payment_date is not None
+    assert invoice.payment_date.date() == today
+    assert invoice.paid == expected_amount
+    assert invoice.total == expected_amount
 
-    # # Assert Invoice is paid
-    # invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
-    # expected_amount = 100
-    # assert invoice is not None
-    # assert invoice.payment_method_code == PaymentMethod.EFT.value
-    # assert invoice.invoice_status_code == InvoiceStatus.PAID.value
-    # assert invoice.payment_date is not None
-    # assert invoice.payment_date.date() == today
-    # assert invoice.paid == expected_amount
-    # assert invoice.total == expected_amount
+    receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice.id, invoice.id)
+    assert receipt is not None
+    assert receipt.receipt_number == str(invoice.id)
+    assert receipt.receipt_amount == expected_amount
 
-    # receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice.id, invoice.id)
-    # assert receipt is not None
-    # assert receipt.receipt_number == str(invoice.id)
-    # assert receipt.receipt_amount == expected_amount
+    expected_invoice_number = f'{current_app.config["EFT_INVOICE_PREFIX"]}{invoice.id}'
+    payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
+    assert payment is not None
+    assert payment.payment_date.date() == today
+    assert payment.invoice_number == expected_invoice_number
+    assert payment.payment_account_id == payment_account.id
+    assert payment.payment_status_code == PaymentStatus.COMPLETED.value
+    assert payment.payment_method_code == PaymentMethod.EFT.value
+    assert payment.invoice_amount == expected_amount
+    assert payment.paid_amount == expected_amount
 
-    # expected_invoice_number = f'{current_app.config["EFT_INVOICE_PREFIX"]}{invoice.id}'
-    # payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
-    # assert payment is not None
-    # assert payment.payment_date.date() == today
-    # assert payment.invoice_number == expected_invoice_number
-    # assert payment.payment_account_id == payment_account.id
-    # assert payment.payment_status_code == PaymentStatus.COMPLETED.value
-    # assert payment.payment_method_code == PaymentMethod.EFT.value
-    # assert payment.invoice_amount == expected_amount
-    # assert payment.paid_amount == expected_amount
+    invoice_reference: InvoiceReferenceModel = InvoiceReferenceModel\
+        .find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.COMPLETED.value)
 
-    # invoice_reference: InvoiceReferenceModel = InvoiceReferenceModel\
-    #     .find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+    assert invoice_reference is not None
+    assert invoice_reference.invoice_id == invoice.id
+    assert invoice_reference.invoice_number == payment.invoice_number
+    assert invoice_reference.invoice_number == expected_invoice_number
+    assert invoice_reference.status_code == InvoiceReferenceStatus.COMPLETED.value
 
-    # assert invoice_reference is not None
-    # assert invoice_reference.invoice_id == invoice.id
-    # assert invoice_reference.invoice_number == payment.invoice_number
-    # assert invoice_reference.invoice_number == expected_invoice_number
-    # assert invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
+    eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel).order_by(EFTCreditModel.created_on.asc()).all()
+    assert eft_credits is not None
+    assert len(eft_credits) == 3
+    assert eft_credits[0].payment_account_id == payment_account.id
+    assert eft_credits[0].short_name_id == eft_shortnames[0].id
+    assert eft_credits[0].eft_file_id == eft_file_model.id
+    assert eft_credits[0].amount == 100.00
+    assert eft_credits[0].remaining_amount == 0
+    assert eft_credits[0].eft_transaction_id == eft_transactions[0].id
+    assert eft_credits[1].payment_account_id == payment_account.id
+    assert eft_credits[1].short_name_id == eft_shortnames[0].id
+    assert eft_credits[1].eft_file_id == eft_file_model.id
+    assert eft_credits[1].amount == 50.5
+    assert eft_credits[1].remaining_amount == 50.5
+    assert eft_credits[1].eft_transaction_id == eft_transactions[1].id
+    assert eft_credits[2].payment_account_id is None
+    assert eft_credits[2].short_name_id == eft_shortnames[1].id
+    assert eft_credits[2].eft_file_id == eft_file_model.id
+    assert eft_credits[2].amount == 351.5
+    assert eft_credits[2].remaining_amount == 351.5
+    assert eft_credits[2].eft_transaction_id == eft_transactions[2].id
 
-    # eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel) \
-    # .order_by(EFTCreditModel.created_on.asc()).all()
-    # assert eft_credits is not None
-    # assert len(eft_credits) == 3
-    # assert eft_credits[0].payment_account_id == payment_account.id
-    # assert eft_credits[0].short_name_id == eft_shortnames[0].id
-    # assert eft_credits[0].eft_file_id == eft_file_model.id
-    # assert eft_credits[0].amount == 100.00
-    # assert eft_credits[0].remaining_amount == 0
-    # assert eft_credits[0].eft_transaction_id == eft_transactions[0].id
-    # assert eft_credits[1].payment_account_id == payment_account.id
-    # assert eft_credits[1].short_name_id == eft_shortnames[0].id
-    # assert eft_credits[1].eft_file_id == eft_file_model.id
-    # assert eft_credits[1].amount == 50.5
-    # assert eft_credits[1].remaining_amount == 50.5
-    # assert eft_credits[1].eft_transaction_id == eft_transactions[1].id
-    # assert eft_credits[2].payment_account_id is None
-    # assert eft_credits[2].short_name_id == eft_shortnames[1].id
-    # assert eft_credits[2].eft_file_id == eft_file_model.id
-    # assert eft_credits[2].amount == 351.5
-    # assert eft_credits[2].remaining_amount == 351.5
-    # assert eft_credits[2].eft_transaction_id == eft_transactions[2].id
-
-    # eft_credit_invoice_links: List[EFTCreditInvoiceLinkModel] = db.session.query(EFTCreditInvoiceLinkModel).all()
-    # assert eft_credit_invoice_links is not None
-    # assert len(eft_credit_invoice_links) == 1
-    # assert eft_credit_invoice_links[0].eft_credit_id == eft_credits[0].id
-    # assert eft_credit_invoice_links[0].invoice_id == invoice.id
+    eft_credit_invoice_links: List[EFTCreditInvoiceLinkModel] = db.session.query(EFTCreditInvoiceLinkModel).all()
+    assert eft_credit_invoice_links is not None
+    assert len(eft_credit_invoice_links) == 1
+    assert eft_credit_invoice_links[0].eft_credit_id == eft_credits[0].id
+    assert eft_credit_invoice_links[0].invoice_id == invoice.id
 
 
-def test_eft_tdi17_rerun(client):
+def test_eft_tdi17_rerun(session, app, client):
     """Test EFT Reconciliations can be re-executed with a corrected file."""
     payment_account, eft_shortname, invoice = create_test_data()
 
@@ -494,52 +500,52 @@ def test_eft_tdi17_rerun(client):
     assert eft_transactions[0].deposit_amount_cents == 13500
 
     # NOTE THIS NEEDS TO BE REWRITTEN IN A JOB
-    # today = datetime.now().date()
-    # # Assert Invoice is paid
-    # invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
-    # expected_amount = 100
-    # assert invoice is not None
-    # assert invoice.payment_method_code == PaymentMethod.EFT.value
-    # assert invoice.invoice_status_code == InvoiceStatus.PAID.value
-    # assert invoice.payment_date is not None
-    # assert invoice.payment_date.date() == today
-    # assert invoice.paid == expected_amount
-    # assert invoice.total == expected_amount
+    today = datetime.now().date()
+    # Assert Invoice is paid
+    invoice: InvoiceModel = InvoiceModel.find_by_id(invoice.id)
+    expected_amount = 100
+    assert invoice is not None
+    assert invoice.payment_method_code == PaymentMethod.EFT.value
+    assert invoice.invoice_status_code == InvoiceStatus.PAID.value
+    assert invoice.payment_date is not None
+    assert invoice.payment_date.date() == today
+    assert invoice.paid == expected_amount
+    assert invoice.total == expected_amount
 
-    # receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice.id, invoice.id)
-    # assert receipt is not None
-    # assert receipt.receipt_number == str(invoice.id)
-    # assert receipt.receipt_amount == expected_amount
+    receipt: ReceiptModel = ReceiptModel.find_by_invoice_id_and_receipt_number(invoice.id, invoice.id)
+    assert receipt is not None
+    assert receipt.receipt_number == str(invoice.id)
+    assert receipt.receipt_amount == expected_amount
 
-    # expected_invoice_number = f'{current_app.config["EFT_INVOICE_PREFIX"]}{invoice.id}'
-    # payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
-    # assert payment is not None
-    # assert payment.payment_date.date() == today
-    # assert payment.invoice_number == expected_invoice_number
-    # assert payment.payment_account_id == payment_account.id
-    # assert payment.payment_status_code == PaymentStatus.COMPLETED.value
-    # assert payment.payment_method_code == PaymentMethod.EFT.value
-    # assert payment.invoice_amount == expected_amount
+    expected_invoice_number = f'{current_app.config["EFT_INVOICE_PREFIX"]}{invoice.id}'
+    payment: PaymentModel = PaymentModel.find_payment_for_invoice(invoice.id)
+    assert payment is not None
+    assert payment.payment_date.date() == today
+    assert payment.invoice_number == expected_invoice_number
+    assert payment.payment_account_id == payment_account.id
+    assert payment.payment_status_code == PaymentStatus.COMPLETED.value
+    assert payment.payment_method_code == PaymentMethod.EFT.value
+    assert payment.invoice_amount == expected_amount
 
-    # invoice_reference: InvoiceReferenceModel = InvoiceReferenceModel \
-    #     .find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
+    invoice_reference: InvoiceReferenceModel = InvoiceReferenceModel \
+        .find_by_invoice_id_and_status(invoice.id, InvoiceReferenceStatus.ACTIVE.value)
 
-    # assert invoice_reference is not None
-    # assert invoice_reference.invoice_id == invoice.id
-    # assert invoice_reference.invoice_number == payment.invoice_number
-    # assert invoice_reference.invoice_number == expected_invoice_number
-    # assert invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
+    assert invoice_reference is not None
+    assert invoice_reference.invoice_id == invoice.id
+    assert invoice_reference.invoice_number == payment.invoice_number
+    assert invoice_reference.invoice_number == expected_invoice_number
+    assert invoice_reference.status_code == InvoiceReferenceStatus.ACTIVE.value
 
-    # eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel) \
-    # .order_by(EFTCreditModel.created_on.asc()).all()
-    # assert eft_credits is not None
-    # assert len(eft_credits) == 1
-    # assert eft_credits[0].payment_account_id == payment_account.id
-    # assert eft_credits[0].short_name_id == eft_shortname.id
-    # assert eft_credits[0].eft_file_id == eft_file_model.id
-    # assert eft_credits[0].amount == 135
-    # assert eft_credits[0].remaining_amount == 35
-    # assert eft_credits[0].eft_transaction_id == eft_transactions[0].id
+    eft_credits: List[EFTCreditModel] = db.session.query(EFTCreditModel) \
+    .order_by(EFTCreditModel.created_on.asc()).all()
+    assert eft_credits is not None
+    assert len(eft_credits) == 1
+    assert eft_credits[0].payment_account_id == payment_account.id
+    assert eft_credits[0].short_name_id == eft_shortname.id
+    assert eft_credits[0].eft_file_id == eft_file_model.id
+    assert eft_credits[0].amount == 135
+    assert eft_credits[0].remaining_amount == 35
+    assert eft_credits[0].eft_transaction_id == eft_transactions[0].id
 
 
 def create_test_data():

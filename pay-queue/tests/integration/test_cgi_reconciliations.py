@@ -44,7 +44,7 @@ from .factory import (
 from .utils import upload_to_minio
 
 
-def test_successful_partner_ejv_reconciliations(session, client):
+def test_successful_partner_ejv_reconciliations(session, app, client):
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -157,7 +157,7 @@ def test_successful_partner_ejv_reconciliations(session, client):
     assert invoice.disbursement_status_code == DisbursementStatus.COMPLETED.value
 
 
-def test_failed_partner_ejv_reconciliations(client):
+def test_failed_partner_ejv_reconciliations(session, app, client):
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -273,7 +273,7 @@ def test_failed_partner_ejv_reconciliations(client):
     assert disbursement_distribution_code.stop_ejv
 
 
-def test_successful_partner_reversal_ejv_reconciliations(client):
+def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoice and related records
@@ -390,7 +390,7 @@ def test_successful_partner_reversal_ejv_reconciliations(client):
     assert invoice.disbursement_date == datetime(2023, 5, 29)
 
 
-def test_succesful_payment_ejv_reconciliations(client):
+def test_succesful_payment_ejv_reconciliations(session, app, client):
     """Test Reconciliations worker."""
     # 1. Create EJV payment accounts
     # 2. Create invoice and related records
@@ -550,7 +550,7 @@ def test_succesful_payment_ejv_reconciliations(client):
         assert payment[0][0].paid_amount == inv_total_amount
 
 
-def test_succesful_payment_reversal_ejv_reconciliations(client):
+def test_succesful_payment_reversal_ejv_reconciliations(session, app, client):
     """Test Reconciliations worker."""
     # 1. Create EJV payment accounts
     # 2. Create invoice and related records
@@ -705,7 +705,7 @@ def test_succesful_payment_reversal_ejv_reconciliations(client):
         assert payment[0][0].paid_amount == inv_total_amount
 
 
-def test_successful_refund_reconciliations(client):
+def test_successful_refund_reconciliations(session, app, client):
     """Test Reconciliations worker."""
     # 1. Create a routing slip.
     # 2. Mark the routing slip for refund.
@@ -838,7 +838,7 @@ def test_successful_refund_reconciliations(client):
         assert routing_slip.status == RoutingSlipStatus.REFUND_COMPLETED.value
 
 
-def test_failed_refund_reconciliations(client):
+def test_failed_refund_reconciliations(session, app, client):
     """Test Reconciliations worker."""
     # 1. Create a routing slip.
     # 2. Mark the routing slip for refund.
@@ -974,7 +974,7 @@ def test_failed_refund_reconciliations(client):
     assert routing_slip_2.status == RoutingSlipStatus.REFUND_REJECTED.value
 
 
-def test_prevent_duplicate_ack(client):
+def test_prevent_duplicate_ack(session, app, client):
     """Assert processing completes when existing ack."""
     file_ref = f'INBOX.{datetime.now()}'
     # Upload an acknowledgement file
@@ -999,7 +999,7 @@ def test_prevent_duplicate_ack(client):
     assert ejv.disbursement_status_code == DisbursementStatus.UPLOADED.value
 
 
-def test_successful_ap_disbursement(client):
+def test_successful_ap_disbursement(session, app, client):
     """Test Reconciliations worker for ap disbursement."""
     # 1. Create invoice.
     # 2. Create a AP reconciliation file.
@@ -1147,7 +1147,7 @@ def test_successful_ap_disbursement(client):
             assert refund.gl_posted is not None
 
 
-def test_failure_ap_disbursement(client):
+def test_failure_ap_disbursement(session, app, client):
     """Test Reconciliations worker for ap disbursement."""
     # 1. Create invoice.
     # 2. Create a AP reconciliation file.

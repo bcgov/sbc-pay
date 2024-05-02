@@ -62,7 +62,7 @@ def _update_acknowledgement(msg: Dict[str, any]):
     # so query uploaded jv file records and mark it as acknowledged.
 
     # Check to see that our ack file doesn't exist, if it exists, skip it.
-    ack_file_name = msg.get('data').get('fileName')
+    ack_file_name = msg.get('fileName')
     ack_exists: EjvFileModel = db.session.query(EjvFileModel).filter(
         EjvFileModel.ack_file_ref == ack_file_name).first()
     if ack_exists:

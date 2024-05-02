@@ -98,7 +98,7 @@ def upload_to_minio(value_as_bytes, file_name: str):
                             os.stat(file_name).st_size)
 
 
-def forward_incoming_message_to_test_instance(client):
+def forward_incoming_message_to_test_instance(session, app, client):
     """Forward incoming http message to test instance."""
     # Note this is a bit different than how the queue could behave, it could send multiples.
     # This just receives one HTTP request and forwards it to the test instance.
@@ -122,7 +122,7 @@ def forward_incoming_message_to_test_instance(client):
         assert tries > 0
 
 
-def add_file_event_to_queue_and_process(client, file_name: str, message_type: str, use_pubsub_emulator=True):
+def add_file_event_to_queue_and_process(client, file_name: str, message_type: str, use_pubsub_emulator=False):
     """Add event to the Queue."""
     queue_payload = {
         'fileName': file_name,
