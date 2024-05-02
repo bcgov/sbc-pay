@@ -14,8 +14,8 @@
 
 """Common setup and fixtures for the py-test suite used by this service."""
 
+from datetime import time
 import sys
-import time
 
 import pytest
 from flask_migrate import Migrate, upgrade
@@ -107,6 +107,16 @@ def session(app):  # pylint: disable=redefined-outer-name, invalid-name
     """Return a function-scoped session."""
     with app.app_context():
         yield app
+
+
+@pytest.fixture(scope='session', autouse=True)
+def auto(docker_services, app):  # pylint: disable=redefined-outer-name
+    """Spin up docker instances."""
+    if app.config['USE_DOCKER_MOCK']:
+        docker_services.start('proxy')
+        docker_services.start('nats')
+        docker_services.start('sftp')
+        time.sleep(2)
 
 
 @pytest.fixture(scope='session')

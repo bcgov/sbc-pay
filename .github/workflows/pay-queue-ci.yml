@@ -95,7 +95,7 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
         with:
-          file: ./queue_services/payment-reconciliations/coverage.xml
+          file: ./pay-queue/coverage.xml
           flags: paymentreconciliationsqueue
           name: codecov-payment-reconciliations
           fail_ci_if_error: true
