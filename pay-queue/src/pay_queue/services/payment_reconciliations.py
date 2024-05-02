@@ -638,13 +638,13 @@ def _publish_online_banking_mailer_events(rows: List[Dict[str, str]], paid_amoun
 
     credit_amount: float = 0
     if credit_rows:
-        message_type = 'bc.registry.payment.OverPaid'
+        message_type = MessageType.MAILER_PAYMENT_OVERPAID.value
         for row in credit_rows:
             credit_amount += float(_get_row_value(row, Column.APP_AMOUNT))
     elif under_pay_rows:
-        message_type = 'bc.registry.payment.UnderPaid'
+        message_type = MessageType.MAILER_PAYMENT_UNDERPAID.value
     else:
-        message_type = 'bc.registry.payment.Payment'
+        message_type = MessageType.MAILER_PAYMENT.value
 
     payload = {
         'accountId': pay_account.auth_account_id,
