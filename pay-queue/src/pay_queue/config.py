@@ -101,6 +101,7 @@ class _Config():  # pylint: disable=too-few-public-methods,protected-access
     GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
     ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', None)
     VERIFY_PUBSUB_EMAILS = os.getenv('VERIFY_PUBSUB_EMAILS', 'email1,email2').split(',')
+    # If blank in PUBSUB, this should match the https endpoint the subscription is pushing to.
     PAY_SUB_AUDIENCE = os.getenv('PAY_SUB_AUDIENCE', None)
 
 
