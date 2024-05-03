@@ -57,6 +57,6 @@ def upload_to_minio(file, file_full_name, sftp_client, bucket_name):
         value_as_bytes = f.read()
         try:
             put_object(value_as_bytes, file.filename, bucket_name, file.st_size, )
-        except Exception as e:  # NOQA # pylint: disable=broad-except
+        except Exception:  # NOQA # pylint: disable=broad-except
             current_app.logger.error(f'upload to minio failed for the file: {file_full_name}')
             raise
