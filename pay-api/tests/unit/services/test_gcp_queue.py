@@ -28,14 +28,14 @@ from pay_api.services.gcp_queue.gcp_queue import GcpQueue
 from pay_api.services.gcp_queue_publisher import QueueMessage, publish_to_queue
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def mock_publisher_client():
     """Mock the PublisherClient used in GcpQueue."""
     with patch('google.cloud.pubsub_v1.PublisherClient') as publisher:
         yield publisher.return_value
 
 
-@pytest.fixture(autouse=True)
+@pytest.fixture()
 def mock_credentials():
     """Mock Credentials."""
     with patch('google.auth.jwt.Credentials') as mock:
@@ -43,7 +43,7 @@ def mock_credentials():
         yield mock
 
 
-def test_publish_to_queue_success(app):
+def test_publish_to_queue_success(app, mock_credentials, mock_publisher_client):
     """Test publishing to GCP PubSub Queue successfully."""
     with patch.object(GcpQueue, 'publish') as mock_publisher:
         with app.app_context():
@@ -58,7 +58,7 @@ def test_publish_to_queue_success(app):
             mock_publisher.assert_called_once_with('projects/project-id/topics/topic', ANY)
 
 
-def test_publish_to_queue_no_topic(app):
+def test_publish_to_queue_no_topic(app, mock_credentials, mock_publisher_client):
     """Test that publish_to_queue does not publish if no topic is set."""
     with patch.object(GcpQueue, 'publish') as mock_publisher:
         with patch.object(Flask, 'logger') as logger:
@@ -74,12 +74,14 @@ def test_publish_to_queue_no_topic(app):
                 logger.info.assert_called_once_with('Skipping queue message topic not set.')
 
 
-# @pytest.mark.skip(reason='ADHOC only test.')
-# def test_gcp_pubsub_connectivity(monkeypatch):
-#     """Test that a queue can publish to gcp pubsub."""
-#     # We don't want any of the monkeypatches by the fixtures.
-#     monkeypatch.undo()
-#     load_dotenv('.env')
-#     app_prod = create_app('production')
-#     with app_prod.app_context():
-#         gcp_queue_publisher.publish_to_queue()
+@pytest.mark.skip(reason='ADHOC only test.')
+def test_gcp_pubsub_connectivity(monkeypatch):
+    """Test that a queue can publish to gcp pubsub."""
+    # We don't want any of the monkeypatches by the fixtures.
+    monkeypatch.undo()
+    load_dotenv('.env')
+    app_prod = create_app('production')
+    with app_prod.app_context():
+        gcp_queue_publisher.publish_to_queue(
+            QueueMessage(source='test', message_type='test', payload={'key': 'value'},
+                         topic=app_prod.config.get('ACCOUNT_MAILER_TOPIC')))
