@@ -98,10 +98,10 @@ class _Config():  # pylint: disable=too-few-public-methods,protected-access
     DISABLE_PAD_SUCCESS_EMAIL = os.getenv('DISABLE_PAD_SUCCESS_EMAIL', 'false').lower() == 'true'
 
     # GCP PubSub
-    AUDIENCE = os.getenv('AUDIENCE', None)
     GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
-    PUBLISHER_AUDIENCE = os.getenv('PUBLISHER_AUDIENCE', None)
     ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', None)
+    VERIFY_PUBSUB_EMAILS = os.getenv('VERIFY_PUBSUB_EMAILS', 'email1,email2').split(',')
+    PAY_SUB_AUDIENCE = os.getenv('PAY_SUB_AUDIENCE', None)
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
