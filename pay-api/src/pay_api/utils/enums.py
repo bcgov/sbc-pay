@@ -341,31 +341,29 @@ class EFTShortnameState(Enum):
 class MessageType(Enum):
     """Queue Event Types."""
 
-    EFT_AVAILABLE_NOTIFICATION = 'eftAvailableNotification'
-    PAD_PAYMENT_SUCCESS = 'PAD.PaymentSuccess'
-    PAD_ACCOUNT_CREATE = 'padAccountCreate'
-    NSF_LOCK_ACCOUNT = 'lockAccount'
-    NSF_UNLOCK_ACCOUNT = 'unlockAccount'
-    STATEMENT_NOTIFICATION = 'statementNotification'
-    STATEMENT_DUE_NOTIFICATION = 'statementDueNotification'
-    STATEMENT_REMINDER_NOTIFICATION = 'statementReminderNotification'
-    PAYMENT = 'payment'
-    EJV_FAILED = 'ejvFailed'
+    CAS_MESSAGE_TYPE = 'bc.registry.payment.casSettlementUploaded'
     CAS_UPLOADED = 'casSettlementUploaded'
-    INCORPORATION = 'incorporationApplication'
-    REGISTRATION = 'registration'
+    CGI_ACK_MESSAGE_TYPE = 'bc.registry.payment.cgi.ACKReceived'
     CGI_ACK_RECEIVED = 'ACKReceived'
+    CGI_FEEDBACK_MESSAGE_TYPE = 'bc.registry.payment.cgi.FEEDBACKReceived'
     CGI_FEEDBACK_RECEIVED = 'FEEDBACKReceived'
+    EFT_AVAILABLE_NOTIFICATION = 'eftAvailableNotification'
     EFT_FILE_UPLOADED = 'eftFileUploaded'
-    # pay-queue
+    EFT_MESSAGE_TYPE = 'bc.registry.payment.eft.fileUploaded'
+    EJV_FAILED = 'ejvFailed'
+    INCORPORATION = 'incorporationApplication'
+    MAILER_PAYMENT = 'bc.registry.payment.Payment'
     MAILER_PAYMENT_OVERPAID = 'bc.registry.payment.OverPaid'
     MAILER_PAYMENT_UNDERPAID = 'bc.registry.payment.UnderPaid'
-    MAILER_PAYMENT = 'bc.registry.payment.Payment'
-    # ftp-poller
-    CAS_MESSAGE_TYPE = 'bc.registry.payment.casSettlementUploaded'
-    CGI_ACK_MESSAGE_TYPE = 'bc.registry.payment.cgi.ACKReceived'
-    CGI_FEEDBACK_MESSAGE_TYPE = 'bc.registry.payment.cgi.FEEDBACKReceived'
-    EFT_MESSAGE_TYPE = 'bc.registry.payment.eft.fileUploaded'
+    NSF_LOCK_ACCOUNT = 'lockAccount'
+    NSF_UNLOCK_ACCOUNT = 'bc.registry.unlockAccount'
+    PAD_ACCOUNT_CREATE = 'padAccountCreate'
+    PAD_PAYMENT_SUCCESS = 'PAD.PaymentSuccess'
+    PAYMENT = 'bc.registry.payment'
+    REGISTRATION = 'registration'
+    STATEMENT_DUE_NOTIFICATION = 'statementDueNotification'
+    STATEMENT_NOTIFICATION = 'statementNotification'
+    STATEMENT_REMINDER_NOTIFICATION = 'statementReminderNotification'
 
 
 class PaymentDetailsGlStatus(Enum):

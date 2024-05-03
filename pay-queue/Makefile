@@ -130,7 +130,7 @@ tag: push ## tag image
 #################################################################################
 
 run: ## Run the project in local
-	. venv/bin/activate && python -m flask run -p 8080
+	. venv/bin/activate && python app.py -m flask run -p 5001
 
 #################################################################################
 # Self Documenting Commands                                                     #

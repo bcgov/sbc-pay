@@ -7,7 +7,7 @@ BC Registries Pay Queue
 
 ## Technology Stack Used
 * Python, Flask
-* Postgres -  SQLAlchemy, psycopg2-binary & alembic
+* Postgres -  SQLAlchemy, psycopg2-binary, alembic & Google PUB/SUB
 
 
 ## License

@@ -19,7 +19,7 @@ def verify_jwt(session):
         claims = id_token.verify_oauth2_token(
             jwt_token,
             Request(session=session),
-            audience=current_app.config.get('PAY_SUB_AUDIENCE')
+            audience=current_app.config.get('AUTH_SUB_AUDIENCE')
         )
         # Check if the email is verified and matches the configured email
         required_email = current_app.config.get('VERIFY_PUBSUB_EMAIL')
@@ -36,11 +36,8 @@ def ensure_authorized_queue_user(f):
     def decorated_function(*args, **kwargs):
         if current_app.config.get('DEBUG_REQUEST') is True:
             current_app.logger.info(f'Headers: {request.headers}')
-        verifyJWT = current_app.config.get('VERIFY_PUBSUB_VIA_JWT', True)
-        current_app.logger.info(f'verifyJWT: {verifyJWT}')
-        if verifyJWT is True:
-            if message := verify_jwt(CacheControl(Session())):
-                # Use CacheControl to avoid re-fetching certificates for every request.
-                abort(HTTPStatus.UNAUTHORIZED)
+        # Use CacheControl to avoid re-fetching certificates for every request.
+        if verify_jwt(CacheControl(Session())):
+            abort(HTTPStatus.UNAUTHORIZED)
         return f(*args, **kwargs)
     return decorated_function

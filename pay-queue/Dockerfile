@@ -31,6 +31,6 @@ USER 1001
 # Set Python path
 ENV PYTHONPATH=/opt/app-root/src
 
-#EXPOSE 8080
+#EXPOSE 5001
 
 CMD [ "python", "/opt/app-root/app.py" ]

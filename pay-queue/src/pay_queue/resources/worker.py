@@ -38,8 +38,8 @@ def worker():
     if not ce:
         return {}, HTTPStatus.OK
 
-    current_app.logger.info('Event Message Received: %s ', json.dumps(dataclasses.asdict(ce)))
     try:
+        current_app.logger.info('Event Message Received: %s ', json.dumps(dataclasses.asdict(ce)))
         if ce.type == MessageType.CAS_UPLOADED.value:
             reconcile_payments(ce.data)
         elif ce.type == MessageType.CGI_ACK_RECEIVED.value:
@@ -54,7 +54,7 @@ def worker():
             raise Exception('Invalid queue message type')  # pylint: disable=broad-exception-raised
 
         return {}, HTTPStatus.OK
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        current_app.logger.error('Error processing event: %s', e)
+    except Exception:  # pylint: disable=broad-exception-caught
+        current_app.logger.error('Failed to process queue message: %s', HTTPStatus.INTERNAL_SERVER_ERROR)
         # Optionally, return an error status code or message
-        return {'error': 'Failed to process queue message'}, HTTPStatus.INTERNAL_SERVER_ERROR
+        return {}, HTTPStatus.OK

@@ -6,7 +6,7 @@ import uuid
 from flask import current_app
 from simple_cloudevent import SimpleCloudEvent
 
-from pay_api.services.gcp_queue.gcp_queue import GcpQueue
+from pay_api.services.gcp_queue import GcpQueue, queue
 
 
 @dataclass
@@ -36,6 +36,4 @@ def publish_to_queue(queue_message: QueueMessage):
         data=queue_message.payload
     )
 
-    # Initialize queue and publish
-    gcp_queue = GcpQueue()
-    gcp_queue.publish(queue_message.topic, gcp_queue.to_queue_message(cloud_event))
+    queue.publish(queue_message.topic, GcpQueue.to_queue_message(cloud_event))

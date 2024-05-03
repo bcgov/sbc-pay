@@ -18,19 +18,14 @@ Test-Suite to ensure that the GCP Queue Service layer is working as expected.
 """
 from unittest.mock import ANY, MagicMock, patch
 
+from dotenv import load_dotenv
 import pytest
 from flask import Flask
 
+from pay_api import create_app
+from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue.gcp_queue import GcpQueue
 from pay_api.services.gcp_queue_publisher import QueueMessage, publish_to_queue
-
-
-@pytest.fixture(autouse=True)
-def setup():
-    """Initialize app with test env for testing."""
-    global app
-    app = Flask(__name__)
-    app.env = 'testing'
 
 
 @pytest.fixture(autouse=True)
@@ -48,7 +43,7 @@ def mock_credentials():
         yield mock
 
 
-def test_publish_to_queue_success():
+def test_publish_to_queue_success(app):
     """Test publishing to GCP PubSub Queue successfully."""
     with patch.object(GcpQueue, 'publish') as mock_publisher:
         with app.app_context():
@@ -63,7 +58,7 @@ def test_publish_to_queue_success():
             mock_publisher.assert_called_once_with('projects/project-id/topics/topic', ANY)
 
 
-def test_publish_to_queue_no_topic():
+def test_publish_to_queue_no_topic(app):
     """Test that publish_to_queue does not publish if no topic is set."""
     with patch.object(GcpQueue, 'publish') as mock_publisher:
         with patch.object(Flask, 'logger') as logger:
@@ -77,3 +72,14 @@ def test_publish_to_queue_no_topic():
                 publish_to_queue(queue_message)
                 mock_publisher.publish.assert_not_called()
                 logger.info.assert_called_once_with('Skipping queue message topic not set.')
+
+
+# @pytest.mark.skip(reason='ADHOC only test.')
+# def test_gcp_pubsub_connectivity(monkeypatch):
+#     """Test that a queue can publish to gcp pubsub."""
+#     # We don't want any of the monkeypatches by the fixtures.
+#     monkeypatch.undo()
+#     load_dotenv('.env')
+#     app_prod = create_app('production')
+#     with app_prod.app_context():
+#         gcp_queue_publisher.publish_to_queue()
