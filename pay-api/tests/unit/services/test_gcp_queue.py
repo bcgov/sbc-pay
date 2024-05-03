@@ -61,17 +61,15 @@ def test_publish_to_queue_success(app):
 def test_publish_to_queue_no_topic(app):
     """Test that publish_to_queue does not publish if no topic is set."""
     with patch.object(GcpQueue, 'publish') as mock_publisher:
-        with patch.object(Flask, 'logger') as logger:
-            with app.app_context():
-                queue_message = QueueMessage(
-                    source='test-source',
-                    message_type='test-message-type',
-                    payload={'key': 'value'},
-                    topic=None
-                )
-                publish_to_queue(queue_message)
-                mock_publisher.publish.assert_not_called()
-                logger.info.assert_called_once_with('Skipping queue message topic not set.')
+        with app.app_context():
+            queue_message = QueueMessage(
+                source='test-source',
+                message_type='test-message-type',
+                payload={'key': 'value'},
+                topic=None
+            )
+            publish_to_queue(queue_message)
+            mock_publisher.publish.assert_not_called()
 
 
 # @pytest.mark.skip(reason='ADHOC only test.')

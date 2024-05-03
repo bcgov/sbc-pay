@@ -33,7 +33,7 @@ def app():
     return _app
 
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(autouse=True)
 def mock_queue_publish(monkeypatch):
     """Mock queue publish."""
     # TODO: so it can be used like this from gcp_queue_publisher  import publish_to_queue
