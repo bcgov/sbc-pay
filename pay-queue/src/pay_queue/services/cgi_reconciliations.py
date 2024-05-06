@@ -89,34 +89,46 @@ def _update_acknowledgement(msg: Dict[str, any]):
 
 def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-locals, too-many-statements
     # Read the file and find records from the database, and update status.
-    # TODO add in start processing
-    # if no current file processing:
-    # create row with processing start date COMMIT right away
-    # update processing end date
-    # else:
-    # if 8 hours since it started processing:
-    # create row with processing start date COMMIT right away
-    # update processing end date
 
     file_name: str = msg.get('fileName')
     minio_location: str = msg.get('location')
     file = get_object(minio_location, file_name)
     content = file.data.decode('utf-8-sig')
     group_batches: List[str] = _group_batches(content)
-    has_errors, already_processed = _process_ejv_feedback(group_batches['EJV'], file_name)
 
-    if not already_processed:
-        has_errors = _process_ap_feedback(group_batches['AP']) or has_errors
+    if _is_processed_or_processing(group_batches['EJV'], file_name):
+        return
 
-        if has_errors and not APP_CONFIG.DISABLE_EJV_ERROR_EMAIL:
-            _publish_mailer_events(file_name, minio_location)
-    current_app.logger.info('> update_feedback')
+    has_errors = _process_ejv_feedback(group_batches['EJV'], file_name)
+    has_errors = _process_ap_feedback(group_batches['AP']) or has_errors
+
+    if has_errors and not APP_CONFIG.DISABLE_EJV_ERROR_EMAIL:
+        _publish_mailer_events(file_name, minio_location)
+    current_app.logger.info('Feedback file processing completed.')
 
 
-def _process_ejv_feedback(group_batches, file_name) -> bool:  # pylint:disable=too-many-locals
+def _is_processed_or_processing(group_batches, file_name) -> bool:
+    """Check to see if file has already been processed. Mark them as processing."""
+    for group_batch in group_batches:
+        ejv_file: Optional[EjvFileModel] = None
+        for line in group_batch.splitlines():
+            is_batch_group: bool = line[2:4] == 'BG'
+            if is_batch_group:
+                batch_number = int(line[15:24])
+                ejv_file = EjvFileModel.find_by_id(batch_number)
+                if ejv_file.feedback_file_ref:
+                    current_app.logger.info(
+                        'EJV file id %s with feedback file %s is already processing or has been processed. Skipping.',
+                        batch_number, file_name)
+                    return True
+                ejv_file.feedback_file_ref = file_name
+                ejv_file.save()
+    return False
+
+def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-locals
     """Process EJV Feedback contents."""
     has_errors = False
-    already_processed = False
+    already_processing = False
     for group_batch in group_batches:
         ejv_file: Optional[EjvFileModel] = None
         receipt_number: Optional[str] = None
@@ -129,13 +141,6 @@ def _process_ejv_feedback(group_batches, file_name) -> bool:  # pylint:disable=t
             if is_batch_group:
                 batch_number = int(line[15:24])
                 ejv_file = EjvFileModel.find_by_id(batch_number)
-                if ejv_file.feedback_file_ref:
-                    current_app.logger.info(
-                        'EJV file id %s with feedback file %s has already been processed, skipping.',
-                        batch_number, file_name)
-                    already_processed = True
-                    return has_errors, already_processed
-                ejv_file.feedback_file_ref = file_name
             elif is_batch_header:
                 return_code = line[7:11]
                 return_message = line[11:161]
@@ -163,7 +168,7 @@ def _process_ejv_feedback(group_batches, file_name) -> bool:  # pylint:disable=t
                 has_errors = _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number)
 
     db.session.commit()
-    return has_errors, already_processed
+    return has_errors, already_processing
 
 
 def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  # pylint:disable=too-many-locals
