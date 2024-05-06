@@ -57,14 +57,6 @@ def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-many-loc
     file = get_object(minio_location, file_name)
     file_content = file.data.decode('utf-8-sig')
 
-    # if no current file processing:
-    # create row with processing start date COMMIT right away
-    # update processing end date
-    # else:
-    # if 8 hours since it started processing:
-    # create row with processing start date COMMIT right away
-    # update processing end date
-
     # Split into lines
     lines = file_content.splitlines()
 
@@ -72,8 +64,9 @@ def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-many-loc
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
         EFTFileModel.file_ref == file_name).one_or_none()
 
-    if eft_file_model and eft_file_model.status_code == EFTProcessStatus.COMPLETED.value:
-        current_app.logger.info('File: %s already completed processing on %s.', file_name, eft_file_model.completed_on)
+    if eft_file_model and \
+        eft_file_model.status_code in [EFTProcessStatus.IN_PROGRESS.value, EFTProcessStatus.COMPLETED.value]:
+        current_app.logger.info('File: %s already %s.', file_name, str(eft_file_model.status_code))
         return
 
     # There is no existing EFT File record - instantiate one
