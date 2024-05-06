@@ -29,6 +29,7 @@ from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import MessageType, QueueSources
 from simple_cloudevent import SimpleCloudEvent, to_queue_message
+from sbc_common_components.utils.enums import QueueMessageTypes
 
 
 def build_request_for_queue_push(message_type, payload):
@@ -146,7 +147,7 @@ def add_file_event_to_queue_and_process(client, file_name: str, message_type: st
 def helper_add_identifier_event_to_queue(client, old_identifier: str = 'T1234567890',
                                          new_identifier: str = 'BC1234567890'):
     """Add event to the Queue."""
-    message_type = MessageType.INCORPORATION.value
+    message_type = QueueMessageTypes.INCORPORATION.value
     queue_payload = {
         'filing': {
             'header': {'filingId': '12345678'},

@@ -27,7 +27,8 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus)
+    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus)
+from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_queue.enums import RecordType, SourceTransaction, Status, TargetTransaction
 
@@ -67,7 +68,7 @@ def test_online_banking_reconciliations(session, app, mock_publish, client):
            TargetTransaction.INV.value, invoice_number,
            total, 0, Status.PAID.value]
     create_and_upload_settlement_file(file_name, [row])
-    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.CAS_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
@@ -113,7 +114,7 @@ def test_online_banking_reconciliations_over_payment(session, app, client):
                   over_payment_amount, cfs_account_number, TargetTransaction.INV.value, invoice_number,
                   over_payment_amount, 0, Status.ON_ACC.value]
     create_and_upload_settlement_file(file_name, [inv_row, credit_row])
-    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.CAS_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
@@ -159,7 +160,7 @@ def test_online_banking_reconciliations_with_credit(session, app, client):
     credit_row = [RecordType.ONAC.value, SourceTransaction.EFT_WIRE.value, '555566677', 100001, date, credit_amount,
                   cfs_account_number, TargetTransaction.INV.value, invoice_number, total, 0, Status.PAID.value]
     create_and_upload_settlement_file(file_name, [inv_row, credit_row])
-    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.CAS_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
@@ -210,7 +211,7 @@ def test_online_banking_reconciliations_overflows_credit(session, app, client):
                 Status.ON_ACC.value]
 
     create_and_upload_settlement_file(file_name, [inv_row, credit_row, onac_row])
-    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.CAS_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
@@ -256,7 +257,7 @@ def test_online_banking_under_payment(session, app, client):
            TargetTransaction.INV.value, invoice_number,
            total, total - paid_amount, Status.PARTIAL.value]
     create_and_upload_settlement_file(file_name, [row])
-    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.CAS_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice: InvoiceModel = InvoiceModel.find_by_id(invoice_id)
@@ -313,7 +314,7 @@ def test_pad_reconciliations(session, app, client):
            'INV', invoice_number,
            total, 0, Status.PAID.value]
     create_and_upload_settlement_file(file_name, [row])
-    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.CAS_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice1 = InvoiceModel.find_by_id(invoice1_id)
@@ -381,7 +382,7 @@ def test_pad_reconciliations_with_credit_memo(session, app, client):
     pad_row = [RecordType.PAD.value, SourceTransaction.PAD.value, receipt_number, 100001, date, total - credit_amount,
                cfs_account_number, 'INV', invoice_number, total, 0, Status.PAID.value]
     create_and_upload_settlement_file(file_name, [credit_row, pad_row])
-    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.CAS_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice1 = InvoiceModel.find_by_id(invoice1_id)
@@ -446,7 +447,7 @@ def test_pad_nsf_reconciliations(session, app, client):
            'INV', invoice_number,
            total, total, Status.NOT_PAID.value]
     create_and_upload_settlement_file(file_name, [row])
-    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.CAS_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
 
     # The invoice should be in SETTLEMENT_SCHEDULED status and Payment should be FAILED
     updated_invoice1 = InvoiceModel.find_by_id(invoice1_id)
@@ -517,7 +518,7 @@ def test_pad_reversal_reconciliations(session, app, client):
            'INV', invoice_number,
            total, total, Status.NOT_PAID.value]
     create_and_upload_settlement_file(file_name, [row])
-    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.CAS_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
 
     # The invoice should be in SETTLEMENT_SCHEDULED status and Payment should be FAILED
     updated_invoice1 = InvoiceModel.find_by_id(invoice1_id)
@@ -582,7 +583,7 @@ async def test_eft_wire_reconciliations(session, app, client):
     row = [RecordType.EFTP.value, SourceTransaction.EFT_WIRE.value, eft_wire_receipt, 100001, date, total,
            cfs_account_number, TargetTransaction.INV.value, invoice_number, total, 0, Status.PAID.value]
     create_and_upload_settlement_file(file_name, [row])
-    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.CAS_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
 
     # The invoice should be in PAID status and Payment should be completed
     updated_invoice = InvoiceModel.find_by_id(invoice_id)
@@ -657,7 +658,7 @@ async def test_credits(session, app, client, monkeypatch):
            cfs_account_number, TargetTransaction.RECEIPT.value, eft_wire_receipt, onac_amount, 0, Status.ON_ACC.value]
 
     create_and_upload_settlement_file(file_name, [row])
-    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.CAS_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
 
     # Look up credit file and make sure the credits are recorded.
     pay_account = PaymentAccountModel.find_by_id(pay_account_id)

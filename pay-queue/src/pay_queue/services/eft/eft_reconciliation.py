@@ -57,6 +57,14 @@ def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-many-loc
     file = get_object(minio_location, file_name)
     file_content = file.data.decode('utf-8-sig')
 
+    # if no current file processing:
+    # create row with processing start date COMMIT right away
+    # update processing end date
+    # else:
+    # if 8 hours since it started processing:
+    # create row with processing start date COMMIT right away
+    # update processing end date
+
     # Split into lines
     lines = file_content.splitlines()
 

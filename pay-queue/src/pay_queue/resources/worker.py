@@ -18,7 +18,7 @@ import json
 from http import HTTPStatus
 
 from flask import Blueprint, current_app, request
-from pay_api.utils.enums import MessageType
+from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_queue.external.gcp_auth import ensure_authorized_queue_user
 from pay_queue.services import queue, update_temporary_identifier
@@ -40,15 +40,15 @@ def worker():
 
     try:
         current_app.logger.info('Event Message Received: %s ', json.dumps(dataclasses.asdict(ce)))
-        if ce.type == MessageType.CAS_UPLOADED.value:
+        if ce.type == QueueMessageTypes.CAS_MESSAGE_TYPE.value:
             reconcile_payments(ce.data)
-        elif ce.type == MessageType.CGI_ACK_RECEIVED.value:
+        elif ce.type == QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value:
             reconcile_distributions(ce.data)
-        elif ce.type == MessageType.CGI_FEEDBACK_RECEIVED.value:
+        elif ce.type == QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value:
             reconcile_distributions(ce.data, is_feedback=True)
-        elif ce.type == MessageType.EFT_FILE_UPLOADED.value:
+        elif ce.type == QueueMessageTypes.EFT_FILE_UPLOADED.value:
             reconcile_eft_payments(ce.data)
-        elif ce.type in [MessageType.INCORPORATION.value, MessageType.REGISTRATION.value]:
+        elif ce.type in [QueueMessageTypes.INCORPORATION.value, QueueMessageTypes.REGISTRATION.value]:
             update_temporary_identifier(ce.data)
         else:
             raise Exception('Invalid queue message type')  # pylint: disable=broad-exception-raised

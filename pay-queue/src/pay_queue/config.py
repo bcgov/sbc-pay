@@ -97,12 +97,13 @@ class _Config():  # pylint: disable=too-few-public-methods,protected-access
     # Disable PAD Success Email - Incase we need to reprocess records weeks/months later
     DISABLE_PAD_SUCCESS_EMAIL = os.getenv('DISABLE_PAD_SUCCESS_EMAIL', 'false').lower() == 'true'
 
-    # GCP PubSub
+    # GCP PubSub - PUB: account-mailer-dev, auth-event-dev, SUB to ftp-poller-payment-reconciliation-dev
+    ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', 'account-mailer-dev')
+    AUTH_EVENT_TOPIC = os.getenv('AUTH_EVENT_TOPIC', 'auth-event-dev')
     GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
-    ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', None)
-    VERIFY_PUBSUB_EMAILS = os.getenv('VERIFY_PUBSUB_EMAILS', 'email1,email2').split(',')
     # If blank in PUBSUB, this should match the https endpoint the subscription is pushing to.
     PAY_SUB_AUDIENCE = os.getenv('PAY_SUB_AUDIENCE', None)
+    VERIFY_PUBSUB_EMAILS = os.getenv('VERIFY_PUBSUB_EMAILS', 'email1,email2').split(',')
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods

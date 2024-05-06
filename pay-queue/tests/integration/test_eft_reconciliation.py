@@ -32,7 +32,8 @@ from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.utils.enums import (
-    EFTFileLineType, EFTProcessStatus, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus)
+    EFTFileLineType, EFTProcessStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus)
+from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_queue.services.eft.eft_enums import EFTConstants
 from tests.integration.factory import factory_create_eft_account, factory_invoice
@@ -49,7 +50,7 @@ def test_eft_tdi17_fail_header(session, app, client):
 
     create_and_upload_eft_file(file_name, [header])
 
-    add_file_event_to_queue_and_process(client, file_name, MessageType.EFT_FILE_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name, QueueMessageTypes.EFT_FILE_UPLOADED.value)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -103,7 +104,7 @@ def test_eft_tdi17_fail_trailer(session, app, client):
 
     create_and_upload_eft_file(file_name, [header, trailer])
 
-    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=QueueMessageTypes.EFT_FILE_UPLOADED.value)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -165,7 +166,7 @@ def test_eft_tdi17_fail_transactions(session, app, client):
 
     create_and_upload_eft_file(file_name, [header, transaction_1, trailer])
 
-    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=QueueMessageTypes.EFT_FILE_UPLOADED.value)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -209,7 +210,7 @@ def test_eft_tdi17_basic_process(session, app, client):
     file_name: str = 'test_eft_tdi17.txt'
     generate_basic_tdi17_file(file_name)
 
-    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=QueueMessageTypes.EFT_FILE_UPLOADED.value)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -292,7 +293,7 @@ def test_eft_tdi17_process(session, app, client):
     file_name: str = 'test_eft_tdi17.txt'
     generate_tdi17_file(file_name)
 
-    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=QueueMessageTypes.EFT_FILE_UPLOADED.value)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -430,7 +431,7 @@ def test_eft_tdi17_rerun(session, app, client):
 
     create_and_upload_eft_file(file_name, [header, transaction_1, trailer])
 
-    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=QueueMessageTypes.EFT_FILE_UPLOADED.value)
 
     # Assert EFT File record was created
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
@@ -469,7 +470,7 @@ def test_eft_tdi17_rerun(session, app, client):
                                        jv_number='002425669', transaction_date='')
 
     create_and_upload_eft_file(file_name, [header, transaction_1, trailer])
-    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=MessageType.EFT_FILE_UPLOADED.value)
+    add_file_event_to_queue_and_process(client, file_name=file_name, message_type=QueueMessageTypes.EFT_FILE_UPLOADED.value)
 
     # Check file is completed after correction
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(

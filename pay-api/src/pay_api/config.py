@@ -121,14 +121,12 @@ class _Config():  # pylint: disable=too-few-public-methods
     PAYBC_DIRECT_PAY_CLIENT_SECRET = _get_config('PAYBC_DIRECT_PAY_CLIENT_SECRET')
     PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL = _get_config('PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL')
 
-    # GCP PubSub
-    AUDIENCE = os.getenv('AUDIENCE', None)
+    # GCP PubSub - PUB: auth-event-dev, account-mailer-dev, business-pay-dev, namex-pay-dev
+    ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', 'account-mailer-dev')
+    AUTH_EVENT_TOPIC = os.getenv('AUTH_EVENT_TOPIC', 'auth-event-dev')
+    BUSINESS_PAY_TOPIC = os.getenv('BUSINESS_PAY_TOPIC', 'business-pay-dev')
     GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
-    PUBLISHER_AUDIENCE = os.getenv('PUBLISHER_AUDIENCE', None)
-    ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', None)
-    EVENT_LISTENER_TOPIC = os.getenv('EVENT_LISTENER_TOPIC', None)
-    NAMEX_PAY_TOPIC = os.getenv('NAMEX_PAY_TOPIC', None)
-    BUSINESS_PAY_TOPIC = os.getenv('BUSINESS_PAY_TOPIC', None)
+    NAMEX_PAY_TOPIC = os.getenv('NAMEX_PAY_TOPIC', 'namex-pay-dev')
 
     # Auth API Endpoint
     AUTH_API_ENDPOINT = f'{_get_config("AUTH_API_URL")}/'

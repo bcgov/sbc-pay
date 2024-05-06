@@ -18,14 +18,17 @@ Test-Suite to ensure that the GCP Queue Service layer is working as expected.
 """
 from unittest.mock import ANY, MagicMock, patch
 
+from dataclasses import asdict
 from dotenv import load_dotenv
+import humps
 import pytest
-from flask import Flask
 
 from pay_api import create_app
 from pay_api.services import gcp_queue_publisher
+from pay_api.services.payment_transaction import PaymentToken
 from pay_api.services.gcp_queue.gcp_queue import GcpQueue
 from pay_api.services.gcp_queue_publisher import QueueMessage, publish_to_queue
+from pay_api.utils.enums import TransactionStatus
 
 
 @pytest.fixture()
@@ -79,7 +82,13 @@ def test_gcp_pubsub_connectivity(monkeypatch):
     monkeypatch.undo()
     load_dotenv('.env')
     app_prod = create_app('production')
+    payload = humps.camelize(asdict(PaymentToken(55, TransactionStatus.COMPLETED.value, 55, 'NRO')))
     with app_prod.app_context():
         gcp_queue_publisher.publish_to_queue(
+            QueueMessage(source='test', message_type='bc.registry.payment', payload=payload,
+                         topic=app_prod.config.get('NAMEX_PAY_TOPIC'))
+        )
+        gcp_queue_publisher.publish_to_queue(
             QueueMessage(source='test', message_type='test', payload={'key': 'value'},
-                         topic=app_prod.config.get('ACCOUNT_MAILER_TOPIC')))
+                         topic=app_prod.config.get('ACCOUNT_MAILER_TOPIC'))
+        )

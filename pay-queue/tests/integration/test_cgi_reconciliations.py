@@ -33,8 +33,9 @@ from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.utils.enums import (
-    CfsAccountStatus, DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, MessageType,
-    PaymentMethod, PaymentStatus, RoutingSlipStatus)
+    CfsAccountStatus, DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
+    PaymentStatus, RoutingSlipStatus)
+from sbc_common_components.utils.enums import QueueMessageTypes
 
 from tests.integration.utils import add_file_event_to_queue_and_process
 
@@ -106,7 +107,7 @@ def test_successful_partner_ejv_reconciliations(session, app, client):
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(file_name=ack_file_name, value_as_bytes=str.encode(''))
 
-    add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -148,7 +149,7 @@ def test_successful_partner_ejv_reconciliations(session, app, client):
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    add_file_event_to_queue_and_process(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -220,7 +221,7 @@ def test_failed_partner_ejv_reconciliations(session, app, client):
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(str.encode(''), ack_file_name)
 
-    add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -262,7 +263,7 @@ def test_failed_partner_ejv_reconciliations(session, app, client):
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    add_file_event_to_queue_and_process(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -338,7 +339,7 @@ def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(str.encode(''), ack_file_name)
 
-    add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -380,7 +381,7 @@ def test_successful_partner_reversal_ejv_reconciliations(session, app, client):
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    add_file_event_to_queue_and_process(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -506,7 +507,7 @@ def test_succesful_payment_ejv_reconciliations(session, app, client):
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(str.encode(''), ack_file_name)
 
-    add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -522,7 +523,7 @@ def test_succesful_payment_ejv_reconciliations(session, app, client):
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    add_file_event_to_queue_and_process(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -663,7 +664,7 @@ def test_succesful_payment_reversal_ejv_reconciliations(session, app, client):
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(str.encode(''), ack_file_name)
 
-    add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -679,7 +680,7 @@ def test_succesful_payment_reversal_ejv_reconciliations(session, app, client):
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    add_file_event_to_queue_and_process(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -753,7 +754,7 @@ def test_successful_refund_reconciliations(session, app, client):
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(str.encode(''), ack_file_name)
 
-    add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -828,7 +829,7 @@ def test_successful_refund_reconciliations(session, app, client):
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    add_file_event_to_queue_and_process(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -886,7 +887,7 @@ def test_failed_refund_reconciliations(session, app, client):
     # Now upload the ACK file to minio and publish message.
     upload_to_minio(str.encode(''), ack_file_name)
 
-    add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -962,7 +963,7 @@ def test_failed_refund_reconciliations(session, app, client):
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    add_file_event_to_queue_and_process(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
     # Query EJV File and assert the status is changed
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
@@ -988,13 +989,13 @@ def test_prevent_duplicate_ack(session, app, client):
         jv_file.write('')
         jv_file.close()
 
-    add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
     assert ejv.ack_file_ref == ack_file_name
     assert ejv.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
 
     # Nothing should change, because it's already processed this ACK.
     ejv.disbursement_status_code = DisbursementStatus.UPLOADED.value
-    add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
     assert ejv.ack_file_ref == ack_file_name
     assert ejv.disbursement_status_code == DisbursementStatus.UPLOADED.value
 
@@ -1058,7 +1059,7 @@ def test_successful_ap_disbursement(session, app, client):
 
     upload_to_minio(str.encode(''), ack_file_name)
 
-    add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
@@ -1131,7 +1132,7 @@ def test_successful_ap_disbursement(session, app, client):
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    add_file_event_to_queue_and_process(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value
@@ -1204,7 +1205,7 @@ def test_failure_ap_disbursement(session, app, client):
 
     upload_to_minio(str.encode(''), ack_file_name)
 
-    add_file_event_to_queue_and_process(client, ack_file_name, MessageType.CGI_ACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, ack_file_name, QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.ACKNOWLEDGED.value
@@ -1280,7 +1281,7 @@ def test_failure_ap_disbursement(session, app, client):
     with open(feedback_file_name, 'rb') as f:
         upload_to_minio(f.read(), feedback_file_name)
 
-    add_file_event_to_queue_and_process(client, feedback_file_name, MessageType.CGI_FEEDBACK_RECEIVED.value)
+    add_file_event_to_queue_and_process(client, feedback_file_name, QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value)
 
     ejv_file = EjvFileModel.find_by_id(ejv_file_id)
     assert ejv_file.disbursement_status_code == DisbursementStatus.COMPLETED.value

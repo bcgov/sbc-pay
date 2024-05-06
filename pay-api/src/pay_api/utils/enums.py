@@ -338,34 +338,6 @@ class EFTShortnameState(Enum):
     UNLINKED = 'UNLINKED'
 
 
-class MessageType(Enum):
-    """Queue Event Types."""
-
-    CAS_MESSAGE_TYPE = 'bc.registry.payment.casSettlementUploaded'
-    CAS_UPLOADED = 'casSettlementUploaded'
-    CGI_ACK_MESSAGE_TYPE = 'bc.registry.payment.cgi.ACKReceived'
-    CGI_ACK_RECEIVED = 'ACKReceived'
-    CGI_FEEDBACK_MESSAGE_TYPE = 'bc.registry.payment.cgi.FEEDBACKReceived'
-    CGI_FEEDBACK_RECEIVED = 'FEEDBACKReceived'
-    EFT_AVAILABLE_NOTIFICATION = 'eftAvailableNotification'
-    EFT_FILE_UPLOADED = 'eftFileUploaded'
-    EFT_MESSAGE_TYPE = 'bc.registry.payment.eft.fileUploaded'
-    EJV_FAILED = 'ejvFailed'
-    INCORPORATION = 'incorporationApplication'
-    MAILER_PAYMENT = 'bc.registry.payment.Payment'
-    MAILER_PAYMENT_OVERPAID = 'bc.registry.payment.OverPaid'
-    MAILER_PAYMENT_UNDERPAID = 'bc.registry.payment.UnderPaid'
-    NSF_LOCK_ACCOUNT = 'lockAccount'
-    NSF_UNLOCK_ACCOUNT = 'bc.registry.unlockAccount'
-    PAD_ACCOUNT_CREATE = 'padAccountCreate'
-    PAD_PAYMENT_SUCCESS = 'PAD.PaymentSuccess'
-    PAYMENT = 'bc.registry.payment'
-    REGISTRATION = 'registration'
-    STATEMENT_DUE_NOTIFICATION = 'statementDueNotification'
-    STATEMENT_NOTIFICATION = 'statementNotification'
-    STATEMENT_REMINDER_NOTIFICATION = 'statementReminderNotification'
-
-
 class PaymentDetailsGlStatus(Enum):
     """Payment details GL status."""
 

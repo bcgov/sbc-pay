@@ -20,6 +20,7 @@ from typing import Any, Dict, List
 
 from flask import current_app
 from sentry_sdk import capture_message
+from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Credit as CreditModel
@@ -37,8 +38,7 @@ from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import (
-    CorpType, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus, QueueSources,
-    TransactionStatus)
+    CorpType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, QueueSources, TransactionStatus)
 from pay_api.utils.user_context import UserContext
 from pay_api.utils.util import get_local_formatted_date_time, get_topic_for_corp_type
 
@@ -154,7 +154,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             gcp_queue_publisher.publish_to_queue(
                 gcp_queue_publisher.QueueMessage(
                     source=QueueSources.PAY_API.value,
-                    message_type=MessageType.PAYMENT.value,
+                    message_type=QueueMessageTypes.PAYMENT.value,
                     payload=payload,
                     topic=get_topic_for_corp_type(invoice.corp_type_code)
                 )
