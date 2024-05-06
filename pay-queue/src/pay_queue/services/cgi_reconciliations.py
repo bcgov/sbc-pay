@@ -99,7 +99,7 @@ def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-locals, to
     if _is_processed_or_processing(group_batches['EJV'], file_name):
         return
 
-    has_errors = _process_ejv_feedback(group_batches['EJV'], file_name)
+    has_errors = _process_ejv_feedback(group_batches['EJV'])
     has_errors = _process_ap_feedback(group_batches['AP']) or has_errors
 
     if has_errors and not APP_CONFIG.DISABLE_EJV_ERROR_EMAIL:
@@ -124,6 +124,7 @@ def _is_processed_or_processing(group_batches, file_name) -> bool:
                 ejv_file.feedback_file_ref = file_name
                 ejv_file.save()
     return False
+
 
 def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-locals
     """Process EJV Feedback contents."""
