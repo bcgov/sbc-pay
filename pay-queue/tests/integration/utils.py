@@ -27,9 +27,9 @@ from flask import current_app
 from minio import Minio
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
-from pay_api.utils.enums import MessageType, QueueSources
-from simple_cloudevent import SimpleCloudEvent, to_queue_message
+from pay_api.utils.enums import QueueSources
 from sbc_common_components.utils.enums import QueueMessageTypes
+from simple_cloudevent import SimpleCloudEvent, to_queue_message
 
 
 def build_request_for_queue_push(message_type, payload):

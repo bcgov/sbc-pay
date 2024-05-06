@@ -32,8 +32,8 @@ from pay_api.models import db
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import (
-    DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus,
-    PaymentSystem, QueueSources, RoutingSlipStatus)
+    DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem,
+    QueueSources, RoutingSlipStatus)
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
 
@@ -90,15 +90,14 @@ def _update_acknowledgement(msg: Dict[str, any]):
 def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-locals, too-many-statements
     # Read the file and find records from the database, and update status.
     # TODO add in start processing
-    """
-        if no current file processing:
-        create row with processing start date COMMIT right away
-        update processing end date
-        else:
-        if 8 hours since it started processing:
-        create row with processing start date COMMIT right away
-        update processing end date
-    """
+    # if no current file processing:
+    # create row with processing start date COMMIT right away
+    # update processing end date
+    # else:
+    # if 8 hours since it started processing:
+    # create row with processing start date COMMIT right away
+    # update processing end date
+
     file_name: str = msg.get('fileName')
     minio_location: str = msg.get('location')
     file = get_object(minio_location, file_name)

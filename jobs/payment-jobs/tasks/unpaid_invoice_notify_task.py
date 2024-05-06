@@ -77,7 +77,9 @@ class UnpaidInvoiceNotifyTask:  # pylint:disable=too-few-public-methods
                                              'cfsAccountId': cfs_account.cfs_account,
                                              'authAccountId': pay_account.auth_account_id,
                                              }
-                mailer.publish_mailer_events(QueueMessageTypes.PAYMENT_PENDING.value, pay_account, addition_params_to_mailer)
+                mailer.publish_mailer_events(QueueMessageTypes.PAYMENT_PENDING.value,
+                                             pay_account,
+                                             addition_params_to_mailer)
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(f'Error on notifying mailer  OB Pending invoice: account id={pay_account.id}, '
                                 f'auth account : {pay_account.auth_account_id}, ERROR : {str(e)}', level='error')
