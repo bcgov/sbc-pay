@@ -136,7 +136,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     SENTRY_ENABLE = os.getenv('SENTRY_ENABLE', 'False')
     SENTRY_DSN = os.getenv('SENTRY_DSN', None)
 
-    # GCP PubSub - PUB: ftp-poller-payment-reconciliation-dev
+    # PUB/SUB - PUB: ftp-poller-payment-reconciliation-dev
     FTP_POLLER_TOPIC = os.getenv('FTP_POLLER_TOPIC', 'ftp-poller-payment-reconciliation-dev')
     GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
 

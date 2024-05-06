@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
 from pay_api.services.queue_publisher import publish_response
+from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
 
 
@@ -45,17 +46,9 @@ def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel,
                                                                                         filing_type_code='NSF')
 
     payload = {
-        'specversion': '1.x-wip',
-        'type': f'bc.registry.payment.{message_type}',
-        'source': f'https://api.pay.bcregistry.gov.bc.ca/v1/accounts/{pay_account.auth_account_id}',
-        'id': f'{pay_account.auth_account_id}',
-        'time': f'{datetime.now()}',
-        'datacontenttype': 'application/json',
-        'data': {
-            'accountId': pay_account.auth_account_id,
-            'nsfFee': float(fee_schedule.fee.amount),
-            **additional_params
-        }
+        'accountId': pay_account.auth_account_id,
+        'nsfFee': float(fee_schedule.fee.amount),
+        **additional_params
     }
     try:
         publish_response(payload=payload,
@@ -73,21 +66,15 @@ def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel,
 def publish_statement_notification(pay_account: PaymentAccountModel, statement: StatementModel,
                                    total_amount_owing: float, emails: str) -> bool:
     """Publish payment statement notification message to the mailer queue."""
+    message_type =  QueueMessageTypes.STATEMENT_NOTIFICATION.value,
+    
     payload = {
-        'specversion': '1.x-wip',
-        'type': f'bc.registry.payment.statementNotification',
-        'source': f'https://api.pay.bcregistry.gov.bc.ca/v1/accounts/{pay_account.auth_account_id}',
-        'id': f'{pay_account.auth_account_id}',
-        'time': f'{datetime.now()}',
-        'datacontenttype': 'application/json',
-        'data': {
-            'emailAddresses': emails,
-            'accountId': pay_account.auth_account_id,
-            'fromDate': f'{statement.from_date}',
-            'toDate': f'{statement.to_date}',
-            'statementFrequency': statement.frequency,
-            'totalAmountOwing': total_amount_owing
-        }
+        'emailAddresses': emails,
+        'accountId': pay_account.auth_account_id,
+        'fromDate': f'{statement.from_date}',
+        'toDate': f'{statement.to_date}',
+        'statementFrequency': statement.frequency,
+        'totalAmountOwing': total_amount_owing
     }
     try:
         publish_response(payload=payload,
@@ -108,23 +95,15 @@ def publish_statement_notification(pay_account: PaymentAccountModel, statement: 
 
 def publish_payment_notification(info: StatementNotificationInfo) -> bool:
     """Publish payment notification message to the mailer queue."""
-    notification_type = 'bc.registry.payment.statementDueNotification' if info.is_due \
-        else 'bc.registry.payment.statementReminderNotification'
+    notification_type = QueueMessageTypes.PAYMENT_DUE_NOTIFICATION.value if info.is_due \
+        else QueueMessageTypes.PAYMENT_REMINDER_NOTIFICATION.value
 
     payload = {
-        'specversion': '1.x-wip',
-        'type': notification_type,
-        'source': f'https://api.pay.bcregistry.gov.bc.ca/v1/accounts/{info.auth_account_id}',
-        'id': info.auth_account_id,
-        'time': f'{datetime.now()}',
-        'datacontenttype': 'application/json',
-        'data': {
-            'emailAddresses': info.emails,
-            'accountId': info.auth_account_id,
-            'dueDate': f'{info.due_date}',
-            'statementFrequency': info.statement.frequency,
-            'totalAmountOwing': info.total_amount_owing
-        }
+        'emailAddresses': info.emails,
+        'accountId': info.auth_account_id,
+        'dueDate': f'{info.due_date}',
+        'statementFrequency': info.statement.frequency,
+        'totalAmountOwing': info.total_amount_owing
     }
     try:
         publish_response(payload=payload,

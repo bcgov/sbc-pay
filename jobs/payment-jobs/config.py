@@ -112,17 +112,9 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     AUTH_WEB_STATEMENT_URL = os.getenv('AUTH_WEB_STATEMENT_URL', 'account/orgId/settings/statements')
     REGISTRIES_LOGO_IMAGE_NAME = os.getenv('REGISTRIES_LOGO_IMAGE_NAME', 'bc_logo_for_email.png')
 
-    # NATS Config
-    NATS_SERVERS = os.getenv('NATS_SERVERS', 'nats://127.0.0.1:4222').split(',')
-    NATS_CLUSTER_ID = os.getenv('NATS_CLUSTER_ID', 'test-cluster')
-
-    # NATS Config for account events
-    NATS_ACCOUNT_CLIENT_NAME = os.getenv('NATS_ACCOUNT_CLIENT_NAME', 'account.events.worker')
-    NATS_ACCOUNT_SUBJECT = os.getenv('NATS_ACCOUNT_SUBJECT', 'account.events')
-
-    # NATS Config for transaction events
-    NATS_PAYMENT_CLIENT_NAME = os.getenv('NATS_PAYMENT_CLIENT_NAME', 'entity.filing.payment.worker')
-    NATS_PAYMENT_SUBJECT = os.getenv('NATS_PAYMENT_SUBJECT', 'entity.filing.payment')
+    # PUB/SUB- PUB: account-mailer-dev
+    ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', 'account-mailer-dev')
+    GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
 
     # Auth API Endpoint
     AUTH_API_ENDPOINT = f'{os.getenv("AUTH_API_URL")}/'
@@ -144,9 +136,6 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     TESTING = False
     DEBUG = True
     PAD_CONFIRMATION_PERIOD_IN_DAYS = int(os.getenv('PAD_CONFIRMATION_PERIOD_IN_DAYS', '3'))
-
-    NATS_MAILER_CLIENT_NAME = os.getenv('NATS_MAILER_CLIENT_NAME', 'account.mailer.worker')
-    NATS_MAILER_SUBJECT = os.getenv('NATS_MAILER_SUBJECT', 'account.mailer')
 
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY')

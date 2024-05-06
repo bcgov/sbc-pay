@@ -97,7 +97,7 @@ class _Config():  # pylint: disable=too-few-public-methods,protected-access
     # Disable PAD Success Email - Incase we need to reprocess records weeks/months later
     DISABLE_PAD_SUCCESS_EMAIL = os.getenv('DISABLE_PAD_SUCCESS_EMAIL', 'false').lower() == 'true'
 
-    # GCP PubSub - PUB: account-mailer-dev, auth-event-dev, SUB to ftp-poller-payment-reconciliation-dev
+    # PUB/SUB - PUB: account-mailer-dev, auth-event-dev, SUB to ftp-poller-payment-reconciliation-dev, business-events
     ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', 'account-mailer-dev')
     AUTH_EVENT_TOPIC = os.getenv('AUTH_EVENT_TOPIC', 'auth-event-dev')
     GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
