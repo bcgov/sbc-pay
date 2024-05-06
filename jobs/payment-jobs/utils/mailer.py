@@ -20,7 +20,8 @@ from flask import current_app
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
-from pay_api.services.queue_publisher import publish_response
+from pay_api.services import gcp_queue_publisher
+from pay_api.utils.enums import QueueSources
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
 
@@ -44,16 +45,20 @@ def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel,
 
     fee_schedule: FeeScheduleModel = FeeScheduleModel.find_by_filing_type_and_corp_type(corp_type_code='BCR',
                                                                                         filing_type_code='NSF')
-
     payload = {
         'accountId': pay_account.auth_account_id,
         'nsfFee': float(fee_schedule.fee.amount),
         **additional_params
     }
     try:
-        publish_response(payload=payload,
-                      client_name=current_app.config.get('NATS_MAILER_CLIENT_NAME'),
-                      subject=current_app.config.get('NATS_MAILER_SUBJECT'))
+        gcp_queue_publisher.publish_to_queue(
+            gcp_queue_publisher.QueueMessage(
+                source=QueueSources.PAY_JOBS.value,
+                message_type=message_type,
+                payload=payload,
+                topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
+            )
+        )
     except Exception as e:  # pylint: disable=broad-except
         current_app.logger.error(e)
         current_app.logger.warning('Notification to Queue failed for the Account Mailer %s - %s',
@@ -66,8 +71,7 @@ def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel,
 def publish_statement_notification(pay_account: PaymentAccountModel, statement: StatementModel,
                                    total_amount_owing: float, emails: str) -> bool:
     """Publish payment statement notification message to the mailer queue."""
-    message_type =  QueueMessageTypes.STATEMENT_NOTIFICATION.value,
-    
+    message_type =  QueueMessageTypes.STATEMENT_NOTIFICATION.value
     payload = {
         'emailAddresses': emails,
         'accountId': pay_account.auth_account_id,
@@ -77,9 +81,14 @@ def publish_statement_notification(pay_account: PaymentAccountModel, statement: 
         'totalAmountOwing': total_amount_owing
     }
     try:
-        publish_response(payload=payload,
-                         client_name=current_app.config.get('NATS_MAILER_CLIENT_NAME'),
-                         subject=current_app.config.get('NATS_MAILER_SUBJECT'))
+        gcp_queue_publisher.publish_to_queue(
+            gcp_queue_publisher.QueueMessage(
+                source=QueueSources.PAY_JOBS.value,
+                message_type=message_type,
+                payload=payload,
+                topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
+            )
+        )
     except Exception as e:  # pylint: disable=broad-except
         current_app.logger.error(e)
         current_app.logger.warning('Notification to Queue failed for the Account Mailer %s - %s',
@@ -95,7 +104,7 @@ def publish_statement_notification(pay_account: PaymentAccountModel, statement: 
 
 def publish_payment_notification(info: StatementNotificationInfo) -> bool:
     """Publish payment notification message to the mailer queue."""
-    notification_type = QueueMessageTypes.PAYMENT_DUE_NOTIFICATION.value if info.is_due \
+    message_type = QueueMessageTypes.PAYMENT_DUE_NOTIFICATION.value if info.is_due \
         else QueueMessageTypes.PAYMENT_REMINDER_NOTIFICATION.value
 
     payload = {
@@ -106,9 +115,14 @@ def publish_payment_notification(info: StatementNotificationInfo) -> bool:
         'totalAmountOwing': info.total_amount_owing
     }
     try:
-        publish_response(payload=payload,
-                         client_name=current_app.config.get('NATS_MAILER_CLIENT_NAME'),
-                         subject=current_app.config.get('NATS_MAILER_SUBJECT'))
+        gcp_queue_publisher.publish_to_queue(
+            gcp_queue_publisher.QueueMessage(
+                source=QueueSources.PAY_JOBS.value,
+                message_type=message_type,
+                payload=payload,
+                topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
+            )
+        )
     except Exception as e:  # pylint: disable=broad-except
         current_app.logger.error(e)
         current_app.logger.warning('Notification to Queue failed for the Account Mailer %s - %s',
