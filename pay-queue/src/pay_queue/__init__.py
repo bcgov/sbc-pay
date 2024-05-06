@@ -48,9 +48,9 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')) -> Flask:
             send_default_pii=False,
         )
 
+    queue.init_app(app)
     flags.init_app(app)
     db.init_app(app)
-    queue.init_app(app)
 
     register_endpoints(app)
 
