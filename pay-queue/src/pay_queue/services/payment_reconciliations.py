@@ -189,22 +189,11 @@ def reconcile_payments(msg: Dict[str, any]):
     file_name: str = msg.get('fileName')
     minio_location: str = msg.get('location')
 
-    # if no current file processing:
-    # create row with processing start date COMMIT right away
-    # update processing end date
-    # else:
-    # if 8 hours since it started processing:
-    # create row with processing start date COMMIT right away
-    # update processing end date
-
     cas_settlement: CasSettlementModel = db.session.query(CasSettlementModel) \
         .filter(CasSettlementModel.file_name == file_name).one_or_none()
-    if cas_settlement and not cas_settlement.processed_on:
-        current_app.logger.info('File: %s has attempted to be processed before.', file_name)
-    elif cas_settlement and cas_settlement.processed_on:
-        current_app.logger.info('File: %s already processed on: %s. Skipping file.',
-                                file_name, cas_settlement.processed_on)
-        return
+    if cas_settlement:
+        current_app.logger.info('File: %s has been processed or processing in progress. Skipping file. '
+                                'Removing this row will allow processing to be restarted.', file_name)
     else:
         current_app.logger.info('Creating cas_settlement record for file: %s', file_name)
         cas_settlement = _create_cas_settlement(file_name)
