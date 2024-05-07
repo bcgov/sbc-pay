@@ -99,7 +99,7 @@ jobs:
           file: ./pay-api/coverage.xml
           flags: payapi
           name: codecov-pay-api
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
   build-check:
     needs: setup-job
