@@ -101,7 +101,7 @@ jobs:
           file: ./queue_services/payment-reconciliations/coverage.xml
           flags: paymentreconciliationsqueue
           name: codecov-payment-reconciliations
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
   build-check:
     needs: setup-job
