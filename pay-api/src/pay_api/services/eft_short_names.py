@@ -26,6 +26,7 @@ from sqlalchemy.sql.expression import exists
 
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
+from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnameLinkSchema
@@ -35,6 +36,7 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.models import db
+from pay_api.models.cfs_account import CfsAccount
 from pay_api.utils.converter import Converter
 from pay_api.utils.enums import EFTShortnameStatus, InvoiceStatus, PaymentMethod
 from pay_api.utils.errors import Error
@@ -258,10 +260,13 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                                        EFTShortnameStatus.UNLINKED.value
                                        ),
                                       else_=EFTShortnameLinksModel.status_code
-                                  ).label('status_code'))
+                                  ).label('status_code'),
+                                  CfsAccountModel.status.label('cfs_account_status'))
                  .outerjoin(EFTShortnameLinksModel, EFTShortnameLinksModel.eft_short_name_id == EFTShortnameModel.id)
                  .outerjoin(PaymentAccountModel,
-                            PaymentAccountModel.auth_account_id == EFTShortnameLinksModel.auth_account_id))
+                            PaymentAccountModel.auth_account_id == EFTShortnameLinksModel.auth_account_id)
+                 .outerjoin(CfsAccountModel,
+                            CfsAccountModel.account_id == PaymentAccountModel.id))
 
         # Join payment information if this is NOT the count query
         if not is_count:

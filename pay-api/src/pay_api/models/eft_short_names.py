@@ -68,6 +68,7 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
     short_name: str
     statement_id: int
     status_code: str
+    cfs_account_status: str
 
     @classmethod
     def from_row(cls, row: EFTShortnames):
@@ -83,7 +84,8 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
                    created_on=row.created_on,
                    short_name=row.short_name,
                    statement_id=getattr(row, 'latest_statement_id', None),
-                   status_code=getattr(row, 'status_code', None)
+                   status_code=getattr(row, 'status_code', None),
+                   cfs_account_status=getattr(row, 'cfs_account_status', None)
                    )
 
 
