@@ -36,7 +36,6 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.models import db
-from pay_api.models.cfs_account import CfsAccount
 from pay_api.utils.converter import Converter
 from pay_api.utils.enums import EFTShortnameStatus, InvoiceStatus, PaymentMethod
 from pay_api.utils.errors import Error
