@@ -83,7 +83,7 @@ def get_eft_shortname_summaries():
     payment_received_end_date = request.args.get('paymentReceivedEndDate', None)
 
     response, status = EFTShortnameSummariesService.search(EFTShortnamesSearch(
-        id=short_name_id,
+        id=string_to_int(short_name_id),
         deposit_start_date=string_to_date(payment_received_start_date),
         deposit_end_date=string_to_date(payment_received_end_date),
         credit_remaining=string_to_decimal(credits_remaining),

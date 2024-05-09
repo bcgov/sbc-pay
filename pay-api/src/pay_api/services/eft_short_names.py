@@ -48,6 +48,7 @@ class EFTShortnamesSearch:  # pylint: disable=too-many-instance-attributes
 
     id: Optional[int] = None
     account_id: Optional[str] = None
+    allow_partial_account_id: Optional[bool] = True
     account_name: Optional[str] = None
     account_branch: Optional[str] = None
     amount_owing: Optional[Decimal] = None
@@ -74,7 +75,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         if auth_account_id is None:
             raise BusinessException(Error.EFT_SHORT_NAME_ACCOUNT_ID_REQUIRED)
 
-        short_name: EFTShortnameModel = cls.find_by_auth_account_id_state(short_name_id,
+        short_name: EFTShortnameModel = cls.find_by_auth_account_id_state(auth_account_id,
                                                                           [EFTShortnameStatus.LINKED.value,
                                                                            EFTShortnameStatus.PENDING.value])
 
@@ -190,6 +191,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('<find_by_auth_account_id_state')
         short_name_models: EFTShortnameModel = cls.get_search_query(
             EFTShortnamesSearch(account_id=auth_account_id,
+                                allow_partial_account_id=False,
                                 state=state
                                 )).all()
 
@@ -301,7 +303,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             # Short name link filters
             query = query.filter_conditionally(search_criteria.id, EFTShortnameModel.id)
             query = query.filter_conditionally(search_criteria.account_id,
-                                               EFTShortnameLinksModel.auth_account_id, is_like=True)
+                                               EFTShortnameLinksModel.auth_account_id,
+                                               is_like=True)
             # Payment account filters
             query = query.filter_conditionally(search_criteria.account_name, PaymentAccountModel.name, is_like=True)
             query = query.filter_conditionally(search_criteria.account_branch, PaymentAccountModel.branch_name,
