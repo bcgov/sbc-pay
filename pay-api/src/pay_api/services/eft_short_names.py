@@ -98,17 +98,33 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
     def get_shortname_links(cls, short_name_id: int) -> List[EFTShortnameLinksModel]:
         """Get EFT short name account links."""
         current_app.logger.debug('<get_shortname_links')
-        query = db.session.query(EFTShortnameLinksModel) \
-            .filter(EFTShortnameLinksModel.eft_short_name_id == short_name_id) \
-            .filter(EFTShortnameLinksModel.status_code.in_([EFTShortnameStatus.LINKED.value,
-                                                            EFTShortnameStatus.PENDING.value])) \
-            .order_by(EFTShortnameLinksModel.created_on.asc())
+        statement_summary_query = cls.get_statement_summary_query().subquery()
+        query = db.session.query(EFTShortnameLinksModel.id.label('id'),
+                                 EFTShortnameLinksModel.eft_short_name_id,
+                                 EFTShortnameLinksModel.status_code,
+                                 EFTShortnameLinksModel.auth_account_id,
+                                 EFTShortnameLinksModel.updated_by,
+                                 EFTShortnameLinksModel.updated_by_name,
+                                 EFTShortnameLinksModel.updated_on) \
+            .join(
+                PaymentAccountModel,
+                PaymentAccountModel.auth_account_id == EFTShortnameLinksModel.auth_account_id)
+
+        query = cls.add_payment_account_name_columns(query)
+        query = query.add_columns(
+            statement_summary_query.c.total_owing,
+            statement_summary_query.c.latest_statement_id
+        ).outerjoin(
+            statement_summary_query,
+            statement_summary_query.c.payment_account_id == PaymentAccountModel.id
+        ).filter(EFTShortnameLinksModel.eft_short_name_id == short_name_id) \
+         .filter(EFTShortnameLinksModel.status_code.in_([EFTShortnameStatus.LINKED.value,
+                                                         EFTShortnameStatus.PENDING.value]))
+
+        query = query.order_by(EFTShortnameLinksModel.created_on.asc())
 
         link_models = query.all()
-
-        link_list = [EFTShortnameLinkSchema.from_row(link) for link in link_models]
-        converter = Converter()
-        link_list = converter.unstructure(link_list)
+        link_list = unstructure_schema_items(EFTShortnameLinkSchema, link_models)
 
         current_app.logger.debug('>get_shortname_links')
         return {
@@ -176,9 +192,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
             EFTShortnamesSearch(account_id=auth_account_id,
                                 state=state
                                 )).all()
-        short_name_list = [EFTShortnameSchema.from_row(short_name) for short_name in short_name_models]
-        converter = Converter()
-        result = converter.unstructure(short_name_list)
+
+        result = unstructure_schema_items(EFTShortnameSchema, short_name_models)
 
         current_app.logger.debug('>find_by_auth_account_id_state')
         return result
@@ -240,6 +255,15 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('>get_search_count')
         return count_query.count()
 
+    @staticmethod
+    def add_payment_account_name_columns(query):
+        """Add payment account name and branch to query select columns."""
+        return query.add_columns(case(
+            (PaymentAccountModel.name.like('%-' + PaymentAccountModel.branch_name),
+             func.replace(PaymentAccountModel.name, '-' + PaymentAccountModel.branch_name, '')
+             ), else_=PaymentAccountModel.name).label('account_name'),
+            PaymentAccountModel.branch_name.label('account_branch'))
+
     @classmethod
     def get_search_query(cls, search_criteria: EFTShortnamesSearch, is_count: bool = False):
         """Query for short names based on search criteria."""
@@ -265,12 +289,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
 
         # Join payment information if this is NOT the count query
         if not is_count:
+            query = cls.add_payment_account_name_columns(query)
             query = (query.add_columns(
-                case(
-                    (PaymentAccountModel.name.like('%-' + PaymentAccountModel.branch_name),
-                     func.replace(PaymentAccountModel.name, '-' + PaymentAccountModel.branch_name, '')
-                     ), else_=PaymentAccountModel.name).label('account_name'),
-                PaymentAccountModel.branch_name.label('account_branch'),
                 statement_summary_query.c.total_owing,
                 statement_summary_query.c.latest_statement_id
             ).outerjoin(

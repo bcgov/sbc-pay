@@ -100,7 +100,20 @@ def test_get_eft_short_name_links(session, client, jwt, app):
     token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value],
                                       username='IDIR/JSMITH'), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value,
+                                      auth_account_id='1234',
+                                      name='ABC-123',
+                                      branch_name='123').save()
     short_name = factory_eft_shortname(short_name='TESTSHORTNAME').save()
+
+    invoice = factory_invoice(account, payment_method_code=PaymentMethod.EFT.value,
+                              total=50, paid=0).save()
+    statement_settings = factory_statement_settings(payment_account_id=account.id,
+                                                    frequency=StatementFrequency.MONTHLY.value)
+    statement = factory_statement(payment_account_id=account.id,
+                                  frequency=StatementFrequency.MONTHLY.value,
+                                  statement_settings_id=statement_settings.id)
+    factory_statement_invoices(statement_id=statement.id, invoice_id=invoice.id)
 
     # Assert an empty result set is properly returned
     rv = client.get(f'/api/v1/eft-shortnames/{short_name.id}/links',
@@ -114,7 +127,7 @@ def test_get_eft_short_name_links(session, client, jwt, app):
 
     # Create a short name link
     rv = client.post(f'/api/v1/eft-shortnames/{short_name.id}/links',
-                     data=json.dumps({'accountId': '1234'}),
+                     data=json.dumps({'accountId': account.auth_account_id}),
                      headers=headers)
 
     link_dict = rv.json
@@ -131,9 +144,14 @@ def test_get_eft_short_name_links(session, client, jwt, app):
     assert len(link_list_dict['items']) == 1
 
     link = link_list_dict['items'][0]
-    assert link['accountId'] == '1234'
+    assert link['accountId'] == account.auth_account_id
     assert link['id'] == link_dict['id']
     assert link['shortNameId'] == short_name.id
+    assert link['accountId'] == account.auth_account_id
+    assert link['accountName'] == 'ABC'
+    assert link['accountBranch'] == '123'
+    assert link['amountOwing'] == invoice.total
+    assert link['statementId'] == statement.id
     assert link['statusCode'] == EFTShortnameStatus.PENDING.value
     assert link['updatedBy'] == 'IDIR/JSMITH'
 

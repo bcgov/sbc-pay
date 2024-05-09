@@ -18,7 +18,7 @@ Test-Suite to ensure that the EFT Credit invoice link model is working as expect
 """
 
 from pay_api.models import EFTCredit, EFTCreditInvoiceLink, EFTFile, EFTShortnames, EFTTransaction
-from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameStatus
+from pay_api.utils.enums import EFTCreditInvoiceStatus, EFTFileLineType, EFTProcessStatus, EFTShortnameStatus
 from tests.utilities.base_test import factory_invoice, factory_payment_account
 
 
@@ -63,9 +63,13 @@ def test_eft_credit_invoice_link(session):
     eft_credit_invoice_link = EFTCreditInvoiceLink()
     eft_credit_invoice_link.invoice_id = invoice.id
     eft_credit_invoice_link.eft_credit_id = eft_credit.id
+    eft_credit_invoice_link.status_code = EFTCreditInvoiceStatus.PENDING.value
+    eft_credit_invoice_link.amount = 50.00
     eft_credit_invoice_link.save()
 
     eft_credit_invoice_link = EFTCreditInvoiceLink.find_by_id(eft_credit_invoice_link.id)
     assert eft_credit_invoice_link.id is not None
     assert eft_credit_invoice_link.eft_credit_id == eft_credit.id
     assert eft_credit_invoice_link.invoice_id == invoice.id
+    assert eft_credit_invoice_link.status_code == EFTCreditInvoiceStatus.PENDING.value
+    assert eft_credit_invoice_link.amount == 50.00
