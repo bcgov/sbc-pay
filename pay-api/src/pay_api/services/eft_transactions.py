@@ -52,6 +52,9 @@ class EFTTransactions:
     @staticmethod
     def get_funds_received_query():
         """Return the EFT transaction funds received."""
+        # Null valued columns are defined for the purposes of unioning with funds applied query
+        # We don't need the account information and there will be no statement for EFT Transactions received
+        # through a TDI17
         return db.session.query(EFTTransactionModel.id.label('transaction_id'),
                                 EFTTransactionModel.short_name_id,
                                 EFTTransactionModel.deposit_date.label('transaction_date'),
@@ -103,7 +106,8 @@ class EFTTransactions:
                                                 cls.get_account_name(),
                                                 PaymentAccountModel.branch_name)
                                .join(funds_applied_subquery,
-                                     funds_applied_subquery.c.payment_account_id == PaymentAccountModel.id))
+                                     and_(funds_applied_subquery.c.payment_account_id == PaymentAccountModel.id,
+                                          funds_applied_subquery.c.short_name_id == short_name_id)))
 
         union_query = funds_received_query.union(funds_applied_query)
         union_query = union_query.order_by(desc('transaction_date'))
