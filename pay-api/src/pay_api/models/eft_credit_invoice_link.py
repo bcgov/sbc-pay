@@ -37,13 +37,17 @@ class EFTCreditInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
     __mapper_args__ = {
         'include_properties': [
             'id',
+            'amount',
             'created_on',
             'eft_credit_id',
-            'invoice_id'
+            'invoice_id',
+            'status_code'
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     invoice_id = db.Column(db.Integer, ForeignKey('invoices.id'), nullable=False, index=True)
     eft_credit_id = db.Column(db.Integer, ForeignKey('eft_credits.id'), nullable=False, index=True)
+    amount = db.Column(db.Numeric(19, 2), nullable=True)
+    status_code = db.Column('status_code', db.String(25), nullable=False, index=True)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)

@@ -22,7 +22,6 @@ from sqlalchemy import ForeignKey
 
 from .base_model import BaseModel
 from .db import db
-from ..utils.util import cents_to_decimal
 
 
 class EFTShortnameLinks(Versioned, BaseModel):  # pylint: disable=too-many-instance-attributes
@@ -77,7 +76,7 @@ class EFTShortnameLinkSchema:  # pylint: disable=too-few-public-methods
     account_id: str
     account_name: str
     account_branch: str
-    latest_statement_id: str
+    statement_id: str
     amount_owing: Decimal
     updated_by: str
     updated_by_name: str
@@ -95,8 +94,8 @@ class EFTShortnameLinkSchema:  # pylint: disable=too-few-public-methods
                    account_id=row.auth_account_id,
                    account_name=getattr(row, 'account_name', None),
                    account_branch=getattr(row, 'account_branch', None),
-                   latest_statement_id=getattr(row, 'statement_id', None),
-                   amount_owing=cents_to_decimal(getattr(row, 'amount_owing', None)),
+                   statement_id=getattr(row, 'latest_statement_id', None),
+                   amount_owing=getattr(row, 'total_owing', None),
                    updated_by=row.updated_by,
                    updated_by_name=row.updated_by_name,
                    updated_on=row.updated_on
