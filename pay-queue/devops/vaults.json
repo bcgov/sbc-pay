@@ -49,9 +49,9 @@
     {
         "vault": "gcp-queue",
         "application": [
-            "a083gt-dev",
+            "a083gt",
             "authpay",
-            "gtksf3-dev",
+            "gtksf3",
             "topics"
         ]
     }
