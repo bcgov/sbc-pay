@@ -48,5 +48,12 @@
         "application": [
             "pay"
         ]
+    },
+    {
+        "vault": "gcp-queue",
+        "application": [
+            "gtksf3-dev",
+            "topics"
+        ]
     }
 ]

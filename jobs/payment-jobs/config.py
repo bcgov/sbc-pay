@@ -114,7 +114,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
 
     # PUB/SUB- PUB: account-mailer-dev
     ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', 'account-mailer-dev')
-    GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
+    GCP_AUTH_KEY = os.getenv('AUTHPAY_GCP_AUTH_KEY', None)
 
     # Auth API Endpoint
     AUTH_API_ENDPOINT = f'{os.getenv("AUTH_API_URL")}/'
