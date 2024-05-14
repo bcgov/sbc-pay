@@ -33,4 +33,4 @@ ENV PYTHONPATH=/opt/app-root/src
 
 #EXPOSE 5001
 
-CMD [ "python", "/opt/app-root/app.py" ]
+CMD ["gunicorn", "-b 0.0.0.0:8080", "app:app"]
