@@ -200,6 +200,7 @@ def get_routing_slip_comments(routing_slip_number: str):
 def post_routing_slip_comment(routing_slip_number: str):
     """Create comment for a slip."""
     current_app.logger.info('<post_routing_slip_comment')
+    response, status = None, None
     request_json = request.get_json()
     # Validate payload.
     try:

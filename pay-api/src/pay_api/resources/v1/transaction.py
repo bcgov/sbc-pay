@@ -49,6 +49,7 @@ def post_transaction(invoice_id: int = None, payment_id: int = None):
     """Create the Transaction records."""
     current_app.logger.info('<post_transaction')
     request_json = request.get_json()
+    response, status = None, None
 
     # Validate the input request
     valid_format, errors = schema_utils.validate(request_json, 'transaction_request')
