@@ -24,6 +24,7 @@ from flask import Flask
 from pay_api.models import db
 from pay_api.services.flags import flags
 from pay_api.utils.run_version import get_run_version
+from auth_api.utils.util_logging import setup_logging
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 from pay_queue import config
@@ -32,6 +33,7 @@ from pay_queue.version import __version__
 from .resources import register_endpoints
 from .services import queue
 
+setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
 def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')) -> Flask:
     """Return a configured Flask App using the Factory method."""
