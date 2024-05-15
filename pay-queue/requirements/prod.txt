@@ -3,7 +3,7 @@ jsonschema==4.17.3
 python-dotenv
 sentry-sdk[flask]
 pycountry
-Werkzeug<2
+Werkzeug<4
 minio
 jaeger-client
 attrs
