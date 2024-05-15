@@ -18,7 +18,7 @@ on:
 defaults:
   run:
     shell: bash
-    working-directory: ./pay-queue/pay-queue
+    working-directory: ./pay-queue
 
 env:
   APP_NAME: "pay-queue"
