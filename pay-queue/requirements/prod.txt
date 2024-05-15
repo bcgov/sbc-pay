@@ -9,7 +9,7 @@ jaeger-client
 attrs
 sqlalchemy<1.4
 itsdangerous==2.0.1
-Jinja2==3.0.3
+Jinja2==3.1.4
 protobuf~=3.19.5
 launchdarkly-server-sdk==8.2.1
 google-auth==2.18.1
