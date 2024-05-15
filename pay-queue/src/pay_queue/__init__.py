@@ -24,7 +24,7 @@ from flask import Flask
 from pay_api.models import db
 from pay_api.services.flags import flags
 from pay_api.utils.run_version import get_run_version
-from pay_api.utils.util_logging import setup_logging
+from pay_api.utils.logging import setup_logging
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 from pay_queue import config
