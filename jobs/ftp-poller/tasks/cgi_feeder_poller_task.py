@@ -16,9 +16,9 @@ from typing import List
 
 from flask import current_app
 from paramiko.sftp_attr import SFTPAttributes
+from sbc_common_components.utils.enums import QueueMessageTypes
 
 from services.sftp import SFTPService
-from utils.constants import CGI_ACK_MESSAGE_TYPE, CGI_FEEDBACK_MESSAGE_TYPE
 from utils import utils
 
 
@@ -48,18 +48,19 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
                             f'Skipping directory {file_name}.')
                         continue
                     if cls._is_ack_file(file_name):
-                        utils.publish_to_queue([file_name], CGI_ACK_MESSAGE_TYPE)
+                        utils.publish_to_queue([file_name], QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
                         cls._move_file_to_backup(sftp_client, [file_name])
                     elif cls._is_feedback_file(file_name):
                         bucket_name = current_app.config.get('MINIO_CGI_BUCKET_NAME')
                         utils.upload_to_minio(file, file_full_name, sftp_client, bucket_name)
-                        utils.publish_to_queue([file_name], CGI_FEEDBACK_MESSAGE_TYPE, location=bucket_name)
+                        utils.publish_to_queue([file_name], QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value,
+                                               location=bucket_name)
                         cls._move_file_to_backup(sftp_client, [file_name])
                     elif cls._is_a_trigger_file(file_name):
                         cls._remove_file(sftp_client, file_name)
                     else:
                         current_app.logger.warning(
-                            f'File found which is not trigger , ACK or feed back {file_name}.Ignoring')
+                            f'Ignoring file found which is not trigger ACK or feedback {file_name}.')
 
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 current_app.logger.error(e)
@@ -74,7 +75,7 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _remove_file(cls, sftp_client, file_name: str):
         ftp_dir: str = current_app.config.get('CGI_SFTP_DIRECTORY')
-        current_app.logger.info(f'Removing file:{ftp_dir}/{file_name}')
+        current_app.logger.info(f'Removing file: {ftp_dir}/{file_name}')
         sftp_client.remove(ftp_dir + '/' + file_name)
 
     @classmethod

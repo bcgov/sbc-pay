@@ -171,7 +171,6 @@ def auto(docker_services, app):
         docker_services.start('paybc')
         docker_services.start('reports')
         docker_services.start('proxy')
-        docker_services.start('nats')
         docker_services.start('sftp')
         time.sleep(2)
 

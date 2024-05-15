@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -184,22 +184,6 @@ def mask(val: str, preserve_length: int = 0) -> str:
     return val[-preserve_length:].rjust(len(val), replace_char)
 
 
-def get_pay_subject_name(corp_type: str, subject_format: str = None):
-    """Return payment subject name."""
-    # TODO Refactor later
-    subject_format = subject_format or current_app.config.get('NATS_PAYMENT_SUBJECT')
-
-    if corp_type == CorpType.NRO.value:
-        pay_subject = 'name-request'
-    elif corp_type == CorpType.PPR.value:
-        pay_subject = 'ppr'
-    elif corp_type == CorpType.VS.value:
-        pay_subject = 'vs'
-    else:
-        pay_subject = 'filing'
-    return subject_format.format(product=pay_subject)
-
-
 def get_nearest_business_day(date_val: datetime, include_today: bool = True) -> datetime:
     """Return nearest business day to the date.
 
@@ -269,3 +253,14 @@ def cents_to_decimal(amount: int):
         return None
 
     return amount / 100
+
+
+def get_topic_for_corp_type(corp_type: str):
+    """Return a topic to direct the queue message to."""
+    no_queue_message_types = [CorpType.PPR.value, CorpType.VS.value, CorpType.CSO.value]
+
+    if corp_type in no_queue_message_types:
+        return None
+    if corp_type == CorpType.NRO.value:
+        return current_app.config.get('NAMEX_PAY_TOPIC')
+    return current_app.config.get('BUSINESS_PAY_TOPIC')

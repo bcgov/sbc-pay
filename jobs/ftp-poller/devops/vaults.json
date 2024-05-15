@@ -7,13 +7,6 @@
             "ftp-poller"
         ]
     },
-    {
-        "vault": "nats",
-        "application": [
-            "base",
-            "payment-reconciliations"
-        ]
-    },
 	{
         "vault": "relationship",
         "application": [
@@ -25,6 +18,13 @@
         "vault": "sentry",
         "application": [
             "relationship-api"
+        ]
+    },
+    {
+        "vault": "gcp-queue",
+        "application": [
+            "gtksf3",
+            "topics"
         ]
     }
 ]

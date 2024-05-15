@@ -20,8 +20,10 @@ Test-Suite to ensure that the CreateAccountTask is working as expected.
 # from typing import List
 
 from flask import current_app
+import pytest
 
 from services.sftp import SFTPService
+from utils.utils import publish_to_queue
 # from utils.minio import get_object
 # from tasks.poll_ftp_task import PollFtpTask
 
@@ -47,3 +49,9 @@ def test_poll_ftp_task(session):    # pylint:disable=unused-argument
     # sftp_local_file_content = open(full_path, 'r').read()
     # assert minio_file_content == sftp_local_file_content, 'minio upload works fine.' \
     #                                                      'Contents of ftp drive and minio verified'
+
+
+@pytest.mark.skip(reason='leave this to manually verify pubsub connection; needs env vars')
+def test_queue_message():
+    """Test publishing to topic."""
+    publish_to_queue(['file1.csv'])

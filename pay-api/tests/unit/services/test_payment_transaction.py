@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -140,7 +140,7 @@ def test_transaction_create_from_invalid_payment(session):
 
 
 @skip_in_pod
-def test_transaction_update(session, stan_server, public_user_mock):
+def test_transaction_update(session, public_user_mock):
     """Assert that the payment is saved to the table."""
     payment_account = factory_payment_account()
     payment_account.save()
@@ -170,7 +170,7 @@ def test_transaction_update(session, stan_server, public_user_mock):
 
 
 @skip_in_pod
-def test_transaction_update_with_no_receipt(session, stan_server):
+def test_transaction_update_with_no_receipt(session):
     """Assert that the payment is saved to the table."""
     payment_account = factory_payment_account()
     payment_account.save()
@@ -199,7 +199,7 @@ def test_transaction_update_with_no_receipt(session, stan_server):
 
 
 @skip_in_pod
-def test_transaction_update_completed(session, stan_server, public_user_mock):
+def test_transaction_update_completed(session, public_user_mock):
     """Assert that the payment is saved to the table."""
     payment_account = factory_payment_account()
     payment_account.save()
@@ -365,7 +365,7 @@ def test_no_existing_transaction(session):
 
 
 @skip_in_pod
-def test_transaction_update_on_paybc_connection_error(session, stan_server):
+def test_transaction_update_on_paybc_connection_error(session):
     """Assert that the payment is saved to the table."""
     payment_account = factory_payment_account()
     payment = factory_payment()
@@ -458,7 +458,7 @@ def test_update_transaction_for_direct_pay_without_response_url(session):
 
 
 @skip_in_pod
-def test_event_failed_transactions(session, public_user_mock, stan_server, monkeypatch):
+def test_event_failed_transactions(session, public_user_mock, monkeypatch):
     """Assert that the transaction status is EVENT_FAILED when Q is not available."""
     # 1. Create payment records
     # 2. Create a transaction
@@ -482,7 +482,8 @@ def test_event_failed_transactions(session, public_user_mock, stan_server, monke
 
     monkeypatch.setattr('pay_api.services.direct_pay_service.DirectPayService.get_receipt', get_receipt)
 
-    with patch('pay_api.services.payment_transaction.publish_response', side_effect=ConnectionError('mocked error')):
+    with patch('pay_api.services.gcp_queue_publisher.publish_to_queue',
+               side_effect=ConnectionError('mocked error')):
         transaction = PaymentTransactionService.update_transaction(transaction.id,
                                                                    pay_response_url='?key=value')
 

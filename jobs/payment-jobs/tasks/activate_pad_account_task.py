@@ -20,6 +20,7 @@ from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod
+from sbc_common_components.utils.enums import QueueMessageTypes
 
 from utils import mailer
 
@@ -57,4 +58,4 @@ class ActivatePadAccountTask:  # pylint: disable=too-few-public-methods
                 if pay_account.payment_method != PaymentMethod.PAD.value:
                     pay_account.payment_method = PaymentMethod.PAD.value
                     pay_account.save()
-                mailer.publish_mailer_events('confirmationPeriodOver', pay_account)
+                mailer.publish_mailer_events(QueueMessageTypes.CONFIRMATION_PERIOD_OVER.value, pay_account)

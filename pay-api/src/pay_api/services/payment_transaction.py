@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -16,29 +16,33 @@
 from __future__ import annotations
 
 import uuid
-from contextlib import suppress
+from dataclasses import asdict
 from datetime import datetime
 from typing import Dict, List
 
+import humps
 from flask import current_app
 from sentry_sdk import capture_message
+from sbc_common_components.utils.dataclasses import PaymentToken
+from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import PaymentTransactionSchema
+from pay_api.services import gcp_queue_publisher
 from pay_api.services.base_payment_system import PaymentSystemService
-from pay_api.services.gcp_queue_publisher import publish_to_queue
+from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, TransactionStatus
+from pay_api.utils.enums import (
+    InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, QueueSources, TransactionStatus)
 from pay_api.utils.errors import Error
-from pay_api.utils.util import get_pay_subject_name, is_valid_redirect_url
+from pay_api.utils.util import get_topic_for_corp_type, is_valid_redirect_url
 
 from .payment import Payment
-from .queue_publisher import publish_response
 
 
 class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -495,15 +499,15 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
         else:
             status_code = 'TRANSACTION_FAILED'
 
-        payload = PaymentTransaction.create_event_payload(invoice, status_code)
-
         try:
-            publish_response(payload=payload, subject=get_pay_subject_name(invoice.corp_type_code))
-
-            # First stage in rolling in the new queue services
-            # It'll not block or disrupt any flows (in theory)
-            with suppress(Exception):
-                publish_to_queue(payload=payload, invoice=invoice)
+            gcp_queue_publisher.publish_to_queue(
+                QueueMessage(
+                    source=QueueSources.PAY_API.value,
+                    message_type=QueueMessageTypes.PAYMENT.value,
+                    payload=PaymentTransaction.create_event_payload(invoice, status_code),
+                    topic=get_topic_for_corp_type(invoice.corp_type_code)
+                )
+            )
 
         except Exception as e:  # NOQA pylint: disable=broad-except
             current_app.logger.error(e)
@@ -516,12 +520,4 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
     @staticmethod
     def create_event_payload(invoice, status_code):
         """Create event payload for payment events."""
-        payload = {
-            'paymentToken': {
-                'id': invoice.id,
-                'statusCode': status_code,
-                'filingIdentifier': invoice.filing_id,
-                'corpTypeCode': invoice.corp_type_code
-            }
-        }
-        return payload
+        return humps.camelize(asdict(PaymentToken(invoice.id, status_code, invoice.filing_id, invoice.corp_type_code)))

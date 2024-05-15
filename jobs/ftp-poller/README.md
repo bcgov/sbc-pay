@@ -1,7 +1,7 @@
 
 # SFTP Poller project
 
-Polls the SFTP folder and if a settlement file is found , uploads to minio and sends a NATS message.
+Polls the SFTP folder and if a settlement file is found , uploads to minio and sends a Pub/Sub message using gcloud CLI.
 
 ## Openshift commands
 

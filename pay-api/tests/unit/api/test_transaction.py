@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -195,7 +195,7 @@ def test_transaction_put_with_no_receipt(session, client, jwt, app):
 
 
 @skip_in_pod
-def test_transaction_put_completed_payment(session, client, jwt, app, stan_server):
+def test_transaction_put_completed_payment(session, client, jwt, app):
     """Assert that the endpoint returns 200."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
@@ -254,7 +254,7 @@ def test_transactions_get(session, client, jwt, app):
 
 
 @skip_in_pod
-def test_transaction_patch_completed_payment_and_transaction_status(session, client, jwt, app, stan_server):
+def test_transaction_patch_completed_payment_and_transaction_status(session, client, jwt, app):
     """Assert that payment tokens can be retrieved and decoded from the Queue."""
     token = jwt.create_jwt(get_claims(), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}

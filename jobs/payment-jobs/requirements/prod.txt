@@ -15,6 +15,6 @@ pysftp
 Flask-Migrate<3
 itsdangerous==2.0.1
 dataclass_wizard
-launchdarkly-server-sdk
+launchdarkly-server-sdk==8.2.1
 cx_Oracle
 more_itertools

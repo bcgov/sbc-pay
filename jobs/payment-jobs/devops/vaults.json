@@ -14,14 +14,6 @@
         ]
     },
     {
-        "vault": "nats",
-        "application": [
-            "base",
-            "account-events-listener",
-            "payment"
-        ]
-    },
-    {
         "vault": "payment-external-services",
         "application": [
             "paybc",
@@ -66,6 +58,13 @@
         "vault": "entity",
         "application": [
             "colin-api"
+        ]
+    },
+    {
+        "vault": "gcp-queue",
+        "application": [
+            "gtksf3",
+            "topics"
         ]
     }
 ]

@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ def test_create_distribution_to_fee_link(session, public_user_mock):
     assert len(schedules.get('items')) == 3
 
 
-def test_update_distribution(session, public_user_mock, stan_server, monkeypatch):
+def test_update_distribution(session, public_user_mock, monkeypatch):
     """Assert that the invoice status is updated when the distribution is updated."""
     # 1. Create a distribution code
     # 2. Attach a fee schedule to the distribution

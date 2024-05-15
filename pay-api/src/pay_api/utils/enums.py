@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -338,16 +338,6 @@ class EFTShortnameState(Enum):
     UNLINKED = 'UNLINKED'
 
 
-class MessageType(Enum):
-    """Account Mailer Event Types."""
-
-    # Ideally Should match account mailer project - FUTURE: move into sbc-common-components.
-    EFT_AVAILABLE_NOTIFICATION = 'bc.registry.payment.eftAvailableNotification'
-    PAD_ACCOUNT_CREATE = 'bc.registry.payment.padAccountCreate'
-    NSF_LOCK_ACCOUNT = 'bc.registry.payment.lockAccount'
-    NSF_UNLOCK_ACCOUNT = 'bc.registry.payment.unlockAccount'
-
-
 class PaymentDetailsGlStatus(Enum):
     """Payment details GL status."""
 
@@ -355,3 +345,12 @@ class PaymentDetailsGlStatus(Enum):
     INPRG = 'INPRG'
     RJCT = 'RJCT'  # Should have refundglerrormessage
     CMPLT = 'CMPLT'
+
+
+class QueueSources(Enum):
+    """Queue sources for PAY."""
+
+    PAY_API = 'pay-api'
+    PAY_JOBS = 'pay-jobs'
+    PAY_QUEUE = 'pay-queue'
+    FTP_POLLER = 'ftp-poller'

@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,3 +30,4 @@ from .statement import Statement
 from .statement_recipients import StatementRecipients
 from .statement_settings import StatementSettings
 from .flags import Flags
+from .gcp_queue import GcpQueue
