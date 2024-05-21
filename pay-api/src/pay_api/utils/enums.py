@@ -195,6 +195,8 @@ class CfsAccountStatus(Enum):
 class CorpType(Enum):
     """Corp Type."""
 
+    BTR = 'BTR'
+    MHR = 'MHR'
     NRO = 'NRO'
     PPR = 'PPR'
     VS = 'VS'
