@@ -18,10 +18,11 @@ import json
 from http import HTTPStatus
 
 from flask import Blueprint, current_app, request
+from pay_api.services.gcp_queue_publisher import queue
 from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_queue.external.gcp_auth import ensure_authorized_queue_user
-from pay_queue.services import queue, update_temporary_identifier
+from pay_queue.services import update_temporary_identifier
 from pay_queue.services.cgi_reconciliations import reconcile_distributions
 from pay_queue.services.eft.eft_reconciliation import reconcile_eft_payments
 from pay_queue.services.payment_reconciliations import reconcile_payments

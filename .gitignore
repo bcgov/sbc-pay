@@ -127,3 +127,6 @@ ACK.INBOX.F12022020202
 queue_services/payment-reconciliations/ACK.*
 queue_services/payment-reconciliations/FEEDBACK.*
 jobs/notebook-report/data/
+test_eft_tdi17.txt
+ACK.INBOX*
+FEEDBACK.INBOX*

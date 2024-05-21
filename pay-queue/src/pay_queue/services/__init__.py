@@ -33,9 +33,4 @@
 # POSSIBILITY OF SUCH DAMAGE.
 """This module provides Queue type services."""
 
-from pay_api.services.gcp_queue import GcpQueue
-
 from .identifier_updater import update_temporary_identifier
-
-
-queue = GcpQueue()

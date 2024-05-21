@@ -41,9 +41,6 @@ def not_raises(exception):
 def app():
     """Return a session-wide application configured in TEST mode."""
     _app = create_app('testing')
-    _app.config['GCP_AUTH_KEY'] = 'xxxxx'
-    _app.config['AUDIENCE'] = 'https://pubsub.googleapis.com/google.pubsub.v1.Subscriber'
-    _app.config['PUBLISHER_AUDIENCE'] = 'https://pubsub.googleapis.com/google.pubsub.v1.Publisher'
     return _app
 
 
@@ -190,7 +187,7 @@ def mock_queue_auth(mocker):
     mocker.patch('pay_queue.external.gcp_auth.verify_jwt', return_value='')
 
 
-@pytest.fixture()
+@pytest.fixture(autouse=True)
 def mock_publish(monkeypatch):
     """Mock check_auth."""
     monkeypatch.setattr('pay_api.services.gcp_queue_publisher.publish_to_queue', lambda *args, **kwargs: None)
