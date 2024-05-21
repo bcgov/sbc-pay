@@ -831,29 +831,21 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                                      include_pay_info: bool = False):
         """Return event payload for account."""
         payload: Dict[str, any] = {
-            'specversion': '1.x-wip',
-            'type': event_type,
-            'source': f'https://api.pay.bcregistry.gov.bc.ca/v1/accounts/{self.auth_account_id}',
-            'id': f'{self.auth_account_id}',
-            'time': f'{datetime.now()}',
-            'datacontenttype': 'application/json',
-            'data': {
-                'accountId': self.auth_account_id,
-                'accountName': self.name
-            }
+            'accountId': self.auth_account_id,
+            'accountName': self.name
         }
 
         if event_type == QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value:
-            payload['data'].update({
+            payload.update({
                 'invoiceNumber': receipt_info['invoiceNumber'],
                 'receiptNumber': receipt_info['receiptNumber'],
                 'paymentMethodDescription': receipt_info['paymentMethodDescription'],
                 'invoice': receipt_info['invoice']
             })
         if event_type == QueueMessageTypes.PAD_ACCOUNT_CREATE.value:
-            payload['data']['padTosAcceptedBy'] = self.pad_tos_accepted_by
+            payload['padTosAcceptedBy'] = self.pad_tos_accepted_by
         if include_pay_info:
-            payload['data']['paymentInfo'] = {
+            payload['paymentInfo'] = {
                 'bankInstitutionNumber': self.bank_number,
                 'bankTransitNumber': self.bank_branch_number,
                 'bankAccountNumber': mask(self.bank_account_number, current_app.config['MASK_LEN']),
