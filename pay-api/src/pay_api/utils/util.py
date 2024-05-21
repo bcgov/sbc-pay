@@ -31,7 +31,7 @@ from flask import current_app
 from pay_api.services.code import Code as CodeService
 
 from .constants import DT_SHORT_FORMAT
-from .enums import Code, Product, StatementFrequency
+from .enums import Code, CorpType, Product, StatementFrequency
 
 
 def cors_preflight(methods: str = 'GET'):
@@ -259,9 +259,9 @@ def cents_to_decimal(amount: int):
 
 def get_topic_for_corp_type(corp_type: str):
     """Return a topic to direct the queue message to."""
-    product_code = CodeService.find_code_value_by_type_and_code(Code.CORP_TYPE.value, corp_type).get('product')
-    if product_code == Product.NRO.value:
+    if corp_type == CorpType.NRO.value:
         return current_app.config.get('NAMEX_PAY_TOPIC')
+    product_code = CodeService.find_code_value_by_type_and_code(Code.CORP_TYPE.value, corp_type).get('product')
     if product_code == Product.BUSINESS.value:
         return current_app.config.get('BUSINESS_PAY_TOPIC')
     return None
