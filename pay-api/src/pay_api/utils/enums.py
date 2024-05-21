@@ -219,6 +219,7 @@ class Product(Enum):
     """Product."""
 
     BUSINESS = 'BUSINESS'
+    NRO = 'NRO'
 
 
 class RoutingSlipStatus(Enum):
