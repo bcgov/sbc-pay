@@ -257,7 +257,8 @@ def cents_to_decimal(amount: int):
 
 def get_topic_for_corp_type(corp_type: str):
     """Return a topic to direct the queue message to."""
-    no_queue_message_types = [CorpType.PPR.value, CorpType.VS.value, CorpType.CSO.value]
+    no_queue_message_types = [CorpType.BTR.value, CorpType.CSO.value, CorpType.ESRA.value, 
+                              CorpType.MHR.value, CorpType.PPR.value, CorpType.RPT.value, CorpType.VS.value]
 
     if corp_type in no_queue_message_types:
         return None
