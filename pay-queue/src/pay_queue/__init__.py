@@ -23,6 +23,7 @@ import sentry_sdk
 from flask import Flask
 from pay_api.models import db
 from pay_api.services.flags import flags
+from pay_api.utils.cache import cache
 from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
 from sentry_sdk.integrations.flask import FlaskIntegration
@@ -58,4 +59,19 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')) -> Flask:
 
     register_endpoints(app)
 
+    build_cache(app)
     return app
+
+
+def build_cache(app):
+    """Build cache."""
+    cache.init_app(app)
+    with app.app_context():
+        cache.clear()
+        if not app.config.get('TESTING', False):
+            try:
+                from pay_api.services.code import Code as CodeService  # pylint: disable=import-outside-toplevel
+                CodeService.build_all_codes_cache()
+            except Exception as e:  # NOQA pylint:disable=broad-except
+                app.logger.error('Error on caching ')
+                app.logger.error(e)

@@ -28,8 +28,10 @@ import pytz
 from dpath import util as dpath_util
 from flask import current_app
 
+from pay_api.services.code import Code as CodeService
+
 from .constants import DT_SHORT_FORMAT
-from .enums import CorpType, StatementFrequency
+from .enums import Code, Product, StatementFrequency
 
 
 def cors_preflight(methods: str = 'GET'):
@@ -257,11 +259,9 @@ def cents_to_decimal(amount: int):
 
 def get_topic_for_corp_type(corp_type: str):
     """Return a topic to direct the queue message to."""
-    no_queue_message_types = [CorpType.BTR.value, CorpType.CSO.value, CorpType.ESRA.value, 
-                              CorpType.MHR.value, CorpType.PPR.value, CorpType.RPT.value, CorpType.VS.value]
-
-    if corp_type in no_queue_message_types:
-        return None
-    if corp_type == CorpType.NRO.value:
+    product_code = CodeService.find_code_value_by_type_and_code(Code.CORP_TYPE.value, corp_type).get('product')
+    if product_code == Product.NRO.value:
         return current_app.config.get('NAMEX_PAY_TOPIC')
-    return current_app.config.get('BUSINESS_PAY_TOPIC')
+    if product_code == Product.BUSINESS.value:
+        return current_app.config.get('BUSINESS_PAY_TOPIC')
+    return None
