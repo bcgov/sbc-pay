@@ -196,6 +196,7 @@ class CorpType(Enum):
     """Corp Type."""
 
     BTR = 'BTR'
+    ESRA = 'ESRA'
     MHR = 'MHR'
     NRO = 'NRO'
     PPR = 'PPR'
