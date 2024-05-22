@@ -21,12 +21,17 @@ def verify_jwt(session):
             Request(session=session),
             audience=current_app.config.get('PAY_AUDIENCE_SUB')
         )
+        current_app.logger.info(f'Made it to verify emails')
         required_emails = current_app.config.get('VERIFY_PUBSUB_EMAILS')
+        current_app.logger.info(f'Emails: {required_emails}')
         if claims.get('email_verified') and claims.get('email') in required_emails:
+            current_app.logger.info(f'PASS')
             return None
         else:
+            current_app.logger.info(f'NOT MATCH')
             return 'Email not verified or does not match', 401
     except Exception as e:
+        current_app.logger.info(f'Invalid token {e}')
         return f'Invalid token: {e}', 400
 
 
