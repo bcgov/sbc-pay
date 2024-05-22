@@ -1,8 +1,8 @@
--e git+https://github.com/Jxio/sbc-pay.git@979b757abc5a393dc3c45a359fae8ead33b897cb#egg=pay_api&subdirectory=pay-api
--e git+https://github.com/bcgov/sbc-common-components.git@71912ef0bec27b5f5dd929a6b6ba255d070b0f5a#egg=sbc_common_components&subdirectory=python
+-e git+https://github.com/bcgov/sbc-common-components.git@de5f7d83842ad49f70c898f8c479db2a5720c2b4#egg=sbc_common_components&subdirectory=python
+-e git+https://github.com/bcgov/sbc-pay.git@07b8d2f147b1f8af9582b346fbea8ba793ec58df#egg=pay_api&subdirectory=pay-api
 CacheControl==0.14.0
 Flask-Caching==2.3.0
-Flask-Cors==4.0.1
+Flask-Cors==3.0.10
 Flask-Migrate==2.7.0
 Flask-Moment==1.0.5
 Flask-OpenTracing==1.1.0
@@ -10,7 +10,7 @@ Flask-SQLAlchemy==2.5.1
 Flask-Script==2.0.6
 Flask==1.1.2
 Jinja2==3.0.3
-Mako==1.3.3
+Mako==1.3.5
 MarkupSafe==2.1.5
 SQLAlchemy-Continuum==1.3.15
 SQLAlchemy-Utils==0.41.2
@@ -32,19 +32,22 @@ croniter==2.0.5
 cryptography==42.0.7
 dpath==2.1.6
 ecdsa==0.19.0
+exceptiongroup==1.2.1
 expiringdict==1.2.2
 flask-jwt-oidc==0.3.0
 flask-marshmallow==0.11.0
-google-api-core==1.34.1
+google-api-core==2.19.0
 google-auth==2.18.1
 google-cloud-pubsub==2.17.0
 googleapis-common-protos==1.63.0
 grpc-google-iam-v1==0.13.0
 grpcio-status==1.48.2
-grpcio==1.63.0
+grpcio==1.64.0
 gunicorn==22.0.0
 holidays==0.37
 idna==3.7
+importlib-resources==5.13.0
+importlib_metadata==7.1.0
 itsdangerous==2.0.1
 jaeger-client==4.8.0
 jsonschema==4.17.3
@@ -55,6 +58,7 @@ minio==7.2.7
 msgpack==1.0.8
 opentracing==2.4.0
 packaging==24.0
+pkgutil_resolve_name==1.3.10
 proto-plus==1.23.0
 protobuf==3.19.6
 psycopg2-binary==2.9.9
@@ -70,10 +74,10 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 python-jose==3.3.0
 pytz==2024.1
-requests==2.32.0
+requests==2.32.2
 rsa==4.9
 semver==3.0.2
-sentry-sdk==2.1.1
+sentry-sdk==2.2.1
 simple-cloudevent @ git+https://github.com/daxiom/simple-cloudevent.py.git@447cabb988202206ac69e71177d7cd11b6c0b002
 six==1.16.0
 strict-rfc3339==0.7
@@ -82,3 +86,4 @@ thrift==0.20.0
 tornado==6.4
 typing_extensions==4.11.0
 urllib3==1.26.18
+zipp==3.18.2

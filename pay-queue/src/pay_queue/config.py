@@ -155,6 +155,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     TEST_PUSH_ENDPOINT_PORT = 5020
     TEST_PUSH_ENDPOINT = os.getenv('TEST_PUSH_ENDPOINT', f'http://host.docker.internal:{str(TEST_PUSH_ENDPOINT_PORT)}/')
     GCP_AUTH_KEY = None
+    DISABLE_EJV_ERROR_EMAIL = False
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods
