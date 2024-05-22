@@ -94,8 +94,6 @@ class _Config():  # pylint: disable=too-few-public-methods,protected-access
 
     # Disable EJV Error Email
     DISABLE_EJV_ERROR_EMAIL = os.getenv('DISABLE_EJV_ERROR_EMAIL', 'true').lower() == 'true'
-    # Disable PAD Success Email - Incase we need to reprocess records weeks/months later
-    DISABLE_PAD_SUCCESS_EMAIL = os.getenv('DISABLE_PAD_SUCCESS_EMAIL', 'false').lower() == 'true'
 
     # PUB/SUB - PUB: account-mailer-dev, auth-event-dev, SUB to ftp-poller-payment-reconciliation-dev, business-events
     ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', 'account-mailer-dev')
