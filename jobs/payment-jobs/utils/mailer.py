@@ -38,8 +38,7 @@ class StatementNotificationInfo:
     total_amount_owing: float
 
 
-def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel,
-                                additional_params: Dict = {}):
+def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel, additional_params=None):
     """Publish payment message to the mailer queue."""
     # Publish message to the Queue, saying account has been activated. Using the event spec.
 
@@ -48,7 +47,7 @@ def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel,
     payload = {
         'accountId': pay_account.auth_account_id,
         'nsfFee': float(fee_schedule.fee.amount),
-        **additional_params
+        **(additional_params or {})
     }
     try:
         gcp_queue_publisher.publish_to_queue(
@@ -71,7 +70,7 @@ def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel,
 def publish_statement_notification(pay_account: PaymentAccountModel, statement: StatementModel,
                                    total_amount_owing: float, emails: str) -> bool:
     """Publish payment statement notification message to the mailer queue."""
-    message_type =  QueueMessageTypes.STATEMENT_NOTIFICATION.value
+    message_type = QueueMessageTypes.STATEMENT_NOTIFICATION.value
     payload = {
         'emailAddresses': emails,
         'accountId': pay_account.auth_account_id,
