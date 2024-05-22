@@ -129,7 +129,6 @@ def _is_processed_or_processing(group_batches, file_name) -> bool:
 def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-locals
     """Process EJV Feedback contents."""
     has_errors = False
-    already_processing = False
     for group_batch in group_batches:
         ejv_file: Optional[EjvFileModel] = None
         receipt_number: Optional[str] = None
@@ -169,7 +168,7 @@ def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-loc
                 has_errors = _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number)
 
     db.session.commit()
-    return has_errors, already_processing
+    return has_errors
 
 
 def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  # pylint:disable=too-many-locals
