@@ -1,3 +1,3 @@
 -e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
--e git+https://github.com/Jxio/sbc-pay.git@20941#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-pay.git#egg=pay_api&subdirectory=pay-api
 git+https://github.com/daxiom/simple-cloudevent.py.git
