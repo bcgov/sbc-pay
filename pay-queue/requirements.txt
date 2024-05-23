@@ -2,7 +2,7 @@
 -e git+https://github.com/bcgov/sbc-pay.git@07b8d2f147b1f8af9582b346fbea8ba793ec58df#egg=pay_api&subdirectory=pay-api
 CacheControl==0.14.0
 Flask-Caching==2.3.0
-Flask-Cors==3.0.10
+Flask-Cors==4.0.1
 Flask-Migrate==2.7.0
 Flask-Moment==1.0.5
 Flask-OpenTracing==1.1.0
