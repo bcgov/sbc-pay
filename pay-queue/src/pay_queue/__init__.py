@@ -23,6 +23,7 @@ import sentry_sdk
 from flask import Flask
 from pay_api.models import db
 from pay_api.services.flags import flags
+from pay_api.services.gcp_queue import queue
 from pay_api.utils.cache import cache
 from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
@@ -32,7 +33,6 @@ from pay_queue import config
 from pay_queue.version import __version__
 
 from .resources import register_endpoints
-from .services import queue
 
 
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first

@@ -241,7 +241,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         gcp_queue_publisher.publish_to_queue(
             gcp_queue_publisher.QueueMessage(
                 source=QueueSources.PAY_API.value,
-                message_type=f'bc.registry.{invoice.payment_method_code.lower()}.refundRequest',
+                message_type=QueueMessageTypes.REFUND_DRAWDOWN_REQUEST.value,
                 payload=payload,
                 topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
             )

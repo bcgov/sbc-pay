@@ -27,6 +27,7 @@ def verify_jwt(session):
         else:
             return 'Email not verified or does not match', 401
     except Exception as e:
+        current_app.logger.info(f'Invalid token {e}')
         return f'Invalid token: {e}', 400
 
 
@@ -34,10 +35,8 @@ def ensure_authorized_queue_user(f):
     """Ensures the user is authorized to use the queue."""
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
-        if current_app.config.get('DEBUG_REQUEST') is True:
-            current_app.logger.info(f'Headers: {request.headers}')
-        if message := verify_jwt(CacheControl(Session())):
-            # Use CacheControl to avoid re-fetching certificates for every request.
+        # Use CacheControl to avoid re-fetching certificates for every request.
+        if verify_jwt(CacheControl(Session())):
             abort(HTTPStatus.UNAUTHORIZED)
         return f(*args, **kwargs)
     return decorated_function

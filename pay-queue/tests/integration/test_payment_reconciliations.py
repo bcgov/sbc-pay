@@ -37,7 +37,7 @@ from .factory import (
 from .utils import add_file_event_to_queue_and_process, create_and_upload_settlement_file
 
 
-def test_online_banking_reconciliations(session, app, mock_publish, client):
+def test_online_banking_reconciliations(session, app, client):
     """Test Reconciliations worker."""
     # 1. Create payment account
     # 2. Create invoice and related records

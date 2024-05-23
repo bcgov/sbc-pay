@@ -274,8 +274,6 @@ def _process_consolidated_invoices(row):
                                 level='error')
                 return
             _process_paid_invoices(inv_references, row)
-            if not APP_CONFIG.DISABLE_PAD_SUCCESS_EMAIL:
-                _publish_mailer_events(QueueMessageTypes.PAD_PAYMENT_SUCCESS.value, payment_account, row)
         elif target_txn_status.lower() == Status.NOT_PAID.value.lower() \
                 or record_type in (RecordType.PADR.value, RecordType.PAYR.value):
             current_app.logger.info('NOT PAID. NSF identified.')

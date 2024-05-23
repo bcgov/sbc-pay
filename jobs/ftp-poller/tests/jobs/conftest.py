@@ -30,7 +30,6 @@ from invoke_jobs import create_app
 def app():
     """Return a session-wide application configured in TEST mode."""
     _app = create_app('testing')
-
     return _app
 
 
@@ -38,7 +37,6 @@ def app():
 def app_request():
     """Return a session-wide application configured in TEST mode."""
     _app = create_app('testing')
-
     return _app
 
 
