@@ -27,6 +27,7 @@ from flask import current_app
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTFile as EFTFileModel
 from pay_api.models import EFTShortnames as EFTShortnamesModel
+from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
@@ -93,6 +94,38 @@ def test_create_eft_short_name_link_validation(session, client, jwt, app):
     link_dict = rv.json
     assert rv.status_code == 400
     assert link_dict['type'] == 'EFT_SHORT_NAME_ALREADY_MAPPED'
+
+
+def test_eft_short_name_unlink(session, client, jwt, app):
+    """Assert that an EFT short name unlinking and basic state validation."""
+    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value],
+                                      username='IDIR/JSMITH'), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value,
+                                      auth_account_id='1234').save()
+
+    short_name = factory_eft_shortname(short_name='TESTSHORTNAME').save()
+    short_name_link = EFTShortnameLinksModel(
+        eft_short_name_id=short_name.id,
+        status_code=EFTShortnameStatus.LINKED.value,
+        auth_account_id=account.auth_account_id
+    ).save()
+
+    # Assert cannot unlink an account not in PENDING status
+    rv = client.delete(f'/api/v1/eft-shortnames/{short_name.id}/links/{short_name_link.id}',
+                       headers=headers)
+
+    link_dict = rv.json
+    assert rv.status_code == 400
+    assert link_dict['type'] == 'EFT_SHORT_NAME_LINK_INVALID_STATUS'
+
+    short_name_link.status_code = EFTShortnameStatus.PENDING.value
+    short_name_link.save()
+
+    # Assert we can delete a short name link that is pending
+    rv = client.delete(f'/api/v1/eft-shortnames/{short_name.id}/links/{short_name_link.id}',
+                       headers=headers)
+    assert rv.status_code == 202
 
 
 def test_get_eft_short_name_links(session, client, jwt, app):
