@@ -17,7 +17,7 @@ class QueueMessage:
     message_type: str
     payload: dict
     topic: str
-    order_key: str = None
+    ordering_key: str = None
 
 
 def publish_to_queue(queue_message: QueueMessage):
@@ -38,6 +38,6 @@ def publish_to_queue(queue_message: QueueMessage):
     )
 
     kwargs = {}
-    if queue_message.order_key:
-        kwargs.update({'order_key': queue_message.order_key})
+    if queue_message.ordering_key:
+        kwargs.update({'ordering_key': queue_message.ordering_key})
     queue.publish(queue_message.topic, GcpQueue.to_queue_message(cloud_event), **kwargs)

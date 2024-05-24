@@ -42,7 +42,7 @@ def publish_to_queue(payment_file_list: List[str], message_type=QueueMessageType
                     message_type=message_type,
                     payload=queue_data,
                     topic=current_app.config.get('FTP_POLLER_TOPIC'),
-                    order_key=str(time())
+                    ordering_key=str(time())
                 )
             )
         except Exception as e:  # NOQA # pylint: disable=broad-except
