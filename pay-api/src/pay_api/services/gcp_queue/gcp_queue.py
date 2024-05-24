@@ -157,13 +157,13 @@ class GcpQueue:
                     return str_data
         return None
 
-    def publish(self, topic: str, payload: bytes):
+    def publish(self, topic: str, payload: bytes, **kwargs):
         """Send payload to the queue."""
         if not (publisher := self.publisher):
             raise Exception('missing setup arguments')  # pylint: disable=W0719
 
         try:
-            future = publisher.publish(topic, payload)
+            future = publisher.publish(topic, payload, **kwargs)
 
             return future.result()
         except (CancelledError, TimeoutError) as error:
