@@ -1,6 +1,7 @@
 """This module provides Queue type services."""
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from typing import Optional
 import uuid
 
 from flask import current_app
@@ -17,7 +18,7 @@ class QueueMessage:
     message_type: str
     payload: dict
     topic: str
-    ordering_key: str = None
+    ordering_key: Optional[str] = None
 
 
 def publish_to_queue(queue_message: QueueMessage):
