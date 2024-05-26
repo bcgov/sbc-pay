@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage PAYBC services."""
+from time import time
 from typing import List
 
 from flask import current_app
@@ -40,7 +41,8 @@ def publish_to_queue(payment_file_list: List[str], message_type=QueueMessageType
                     source=QueueSources.FTP_POLLER.value,
                     message_type=message_type,
                     payload=queue_data,
-                    topic=current_app.config.get('FTP_POLLER_TOPIC')
+                    topic=current_app.config.get('FTP_POLLER_TOPIC'),
+                    ordering_key=str(time())
                 )
             )
         except Exception as e:  # NOQA # pylint: disable=broad-except
