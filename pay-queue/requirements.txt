@@ -1,5 +1,6 @@
--e git+https://github.com/bcgov/sbc-common-components.git@de5f7d83842ad49f70c898f8c479db2a5720c2b4#egg=sbc_common_components&subdirectory=python
--e git+https://github.com/bcgov/sbc-pay.git@07b8d2f147b1f8af9582b346fbea8ba793ec58df#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/bcgov/sbc-common-components.git@94986110a7f6c7ba4f57ed8b038101ba7d864a94#egg=sbc_common_components&subdirectory=python
+-e git+https://github.com/seeker25/sbc-connect-common.git@c3b133388904143fae8319eca64347b911ce9004#egg=gcp_queue&subdirectory=python/gcp-queue
+-e git+https://github.com/seeker25/sbc-pay.git@744c74d231363449a7ad2d9458c1a8e7feb62312#egg=pay_api&subdirectory=pay-api
 CacheControl==0.14.0
 Flask-Caching==2.3.0
 Flask-Cors==3.0.10
@@ -37,8 +38,8 @@ expiringdict==1.2.2
 flask-jwt-oidc==0.3.0
 flask-marshmallow==0.11.0
 google-api-core==2.19.0
-google-auth==2.18.1
-google-cloud-pubsub==2.17.0
+google-auth==2.28.2
+google-cloud-pubsub==2.20.2
 googleapis-common-protos==1.63.0
 grpc-google-iam-v1==0.13.0
 grpcio-status==1.48.2
@@ -77,13 +78,13 @@ pytz==2024.1
 requests==2.32.2
 rsa==4.9
 semver==3.0.2
-sentry-sdk==2.2.1
+sentry-sdk==2.3.1
 simple-cloudevent @ git+https://github.com/daxiom/simple-cloudevent.py.git@447cabb988202206ac69e71177d7cd11b6c0b002
 six==1.16.0
 strict-rfc3339==0.7
 threadloop==1.0.2
 thrift==0.20.0
 tornado==6.4
-typing_extensions==4.11.0
-urllib3==1.26.18
-zipp==3.18.2
+typing_extensions==4.12.0
+urllib3==2.2.1
+zipp==3.19.0
