@@ -171,3 +171,25 @@ def post_eft_shortname_link(short_name_id: int):
 
     current_app.logger.debug('>post_eft_shortname_link')
     return jsonify(response), status
+
+
+@bp.route('/<int:short_name_id>/links/<int:short_name_link_id>', methods=['DELETE', 'OPTIONS'])
+@cross_origin(origins='*', methods=['DELETE'])
+@_jwt.has_one_of_roles([Role.SYSTEM.value, Role.MANAGE_EFT.value])
+def delete_eft_shortname_link(short_name_id: int, short_name_link_id: int):
+    """Delete EFT short name to account link."""
+    current_app.logger.info('<delete_eft_shortname_link')
+
+    try:
+        link = EFTShortnameService.find_link_by_id(short_name_link_id)
+        if not link or link['short_name_id'] != short_name_id:
+            response, status = {'message': 'The requested EFT short name could not be found.'}, \
+                HTTPStatus.NOT_FOUND
+        else:
+            EFTShortnameService.delete_shortname_link(short_name_link_id)
+            response, status = None, HTTPStatus.ACCEPTED
+    except BusinessException as exception:
+        return exception.response()
+
+    current_app.logger.debug('>delete_eft_shortname_link')
+    return jsonify(response), status

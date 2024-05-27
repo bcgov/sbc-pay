@@ -81,6 +81,7 @@ class EFTShortnameLinkSchema:  # pylint: disable=too-few-public-methods
     updated_by: str
     updated_by_name: str
     updated_on: datetime
+    has_pending_payment: bool
 
     @classmethod
     def from_row(cls, row: EFTShortnameLinks):
@@ -98,5 +99,6 @@ class EFTShortnameLinkSchema:  # pylint: disable=too-few-public-methods
                    amount_owing=getattr(row, 'total_owing', None),
                    updated_by=row.updated_by,
                    updated_by_name=row.updated_by_name,
-                   updated_on=row.updated_on
+                   updated_on=row.updated_on,
+                   has_pending_payment=bool(getattr(row, 'invoice_count', 0))
                    )

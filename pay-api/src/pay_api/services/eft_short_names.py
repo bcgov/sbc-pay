@@ -27,9 +27,10 @@ from sqlalchemy.sql.expression import exists
 from pay_api.exceptions import BusinessException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
 from pay_api.models import CfsAccount as CfsAccountModel
-from pay_api.models import EFTShortnames as EFTShortnameModel
+from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
 from pay_api.models import EFTShortnameLinks as EFTShortnameLinksModel
 from pay_api.models import EFTShortnameLinkSchema
+from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import EFTShortnameSchema
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
@@ -37,7 +38,7 @@ from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
 from pay_api.models import db
 from pay_api.utils.converter import Converter
-from pay_api.utils.enums import EFTShortnameStatus, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import EFTCreditInvoiceStatus, EFTShortnameStatus, InvoiceStatus, PaymentMethod
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import unstructure_schema_items
@@ -97,17 +98,32 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         return cls.find_link_by_id(eft_short_name_link.id)
 
     @classmethod
+    def delete_shortname_link(cls, short_name_link_id: int):
+        """Delete EFT short name auth account link."""
+        current_app.logger.debug('<delete_shortname_link')
+        short_name_link: EFTShortnameLinksModel = EFTShortnameLinksModel.find_by_id(short_name_link_id)
+
+        if short_name_link.status_code != EFTShortnameStatus.PENDING.value:
+            raise BusinessException(Error.EFT_SHORT_NAME_LINK_INVALID_STATUS)
+
+        short_name_link.delete()
+        current_app.logger.debug('>delete_shortname_link')
+
+    @classmethod
     def get_shortname_links(cls, short_name_id: int) -> List[EFTShortnameLinksModel]:
         """Get EFT short name account links."""
         current_app.logger.debug('<get_shortname_links')
         statement_summary_query = cls.get_statement_summary_query().subquery()
+        invoice_count_query = cls.get_pending_payment_count()
+
         query = db.session.query(EFTShortnameLinksModel.id.label('id'),
                                  EFTShortnameLinksModel.eft_short_name_id,
                                  EFTShortnameLinksModel.status_code,
                                  EFTShortnameLinksModel.auth_account_id,
                                  EFTShortnameLinksModel.updated_by,
                                  EFTShortnameLinksModel.updated_by_name,
-                                 EFTShortnameLinksModel.updated_on) \
+                                 EFTShortnameLinksModel.updated_on,
+                                 invoice_count_query.label('invoice_count')) \
             .join(
                 PaymentAccountModel,
                 PaymentAccountModel.auth_account_id == EFTShortnameLinksModel.auth_account_id)
@@ -266,6 +282,16 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
              func.replace(PaymentAccountModel.name, '-' + PaymentAccountModel.branch_name, '')
              ), else_=PaymentAccountModel.name).label('account_name'),
             PaymentAccountModel.branch_name.label('account_branch'))
+
+    @staticmethod
+    def get_pending_payment_count():
+        """Get count of pending EFT Credit Invoice Links."""
+        return (db.session.query(db.func.count(InvoiceModel.id).label('invoice_count'))
+                .join(EFTCreditInvoiceLinkModel, EFTCreditInvoiceLinkModel.invoice_id == InvoiceModel.id)
+                .filter(InvoiceModel.payment_account_id == PaymentAccountModel.id)
+                .filter(EFTCreditInvoiceLinkModel.status_code.in_([EFTCreditInvoiceStatus.PENDING.value]))
+                .correlate(PaymentAccountModel)
+                .as_scalar())
 
     @classmethod
     def get_search_query(cls, search_criteria: EFTShortnamesSearch, is_count: bool = False):
