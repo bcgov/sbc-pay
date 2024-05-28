@@ -14,7 +14,6 @@
 
 """Common setup and fixtures for the py-test suite used by this service."""
 
-from concurrent.futures import CancelledError
 import pytest
 from flask_migrate import Migrate, upgrade
 from sqlalchemy import event, text
@@ -45,7 +44,7 @@ def mock_pub_sub_call(mocker):
 
         def __init__(self, *args, **kwargs):
             def result():
-                """Result mock."""
+                """Return true for mock."""
                 return True
             self.result = result
 
