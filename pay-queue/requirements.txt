@@ -1,6 +1,6 @@
 -e git+https://github.com/bcgov/sbc-common-components.git@94986110a7f6c7ba4f57ed8b038101ba7d864a94#egg=sbc_common_components&subdirectory=python
 -e git+https://github.com/seeker25/sbc-connect-common.git@c3b133388904143fae8319eca64347b911ce9004#egg=gcp_queue&subdirectory=python/gcp-queue
--e git+https://github.com/seeker25/sbc-pay.git@744c74d231363449a7ad2d9458c1a8e7feb62312#egg=pay_api&subdirectory=pay-api
+-e git+https://github.com/seeker25/sbc-pay.git@a34f61d61ca26c5b2b5463529991780a8ed7afae#egg=pay_api&subdirectory=pay-api
 CacheControl==0.14.0
 Flask-Caching==2.3.0
 Flask-Cors==3.0.10
