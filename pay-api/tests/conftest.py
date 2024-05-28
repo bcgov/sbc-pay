@@ -37,15 +37,23 @@ def app():
 @pytest.fixture(autouse=True)
 def mock_pub_sub_call(mocker):
     """Mock pub sub call."""
+    class Expando(object):
+        """Expando class."""
+
     class PublisherMock:
         """Publisher Mock."""
 
         def __init__(self, *args, **kwargs):
-            pass
+            def result():
+                """Result mock."""
+                return True
+            self.result = result
 
         def publish(self, *args, **kwargs):
             """Publish mock."""
-            raise CancelledError('This is a mock')
+            ex = Expando()
+            ex.result = self.result
+            return ex
 
     mocker.patch('google.cloud.pubsub_v1.PublisherClient', PublisherMock)
 
