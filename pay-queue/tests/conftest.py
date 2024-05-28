@@ -13,6 +13,7 @@
 # limitations under the License.
 """Common setup and fixtures for the pytest suite used by this service."""
 import os
+from concurrent.futures import CancelledError
 from contextlib import contextmanager
 
 import pytest
@@ -188,9 +189,19 @@ def mock_queue_auth(mocker):
 
 
 @pytest.fixture(autouse=True)
-def mock_publish(monkeypatch):
-    """Mock check_auth."""
-    monkeypatch.setattr('pay_api.services.gcp_queue_publisher.publish_to_queue', lambda *args, **kwargs: None)
+def mock_pub_sub_call(mocker):
+    """Mock pub sub call."""
+    class PublisherMock:
+        """Publisher Mock."""
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def publish(self, *args, **kwargs):
+            """Publish mock."""
+            raise CancelledError('This is a mock')
+
+    mocker.patch('google.cloud.pubsub_v1.PublisherClient', PublisherMock)
 
 
 # @pytest.fixture(scope='session', autouse=True)

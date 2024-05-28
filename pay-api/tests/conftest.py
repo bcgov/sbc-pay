@@ -14,6 +14,7 @@
 
 """Common setup and fixtures for the py-test suite used by this service."""
 
+from concurrent.futures import CancelledError
 import pytest
 from flask_migrate import Migrate, upgrade
 from sqlalchemy import event, text
@@ -34,10 +35,19 @@ def app():
 
 
 @pytest.fixture(autouse=True)
-def mock_queue_publish(monkeypatch):
-    """Mock queue publish."""
-    # TODO: so it can be used like this from gcp_queue_publisher  import publish_to_queue
-    monkeypatch.setattr('pay_api.services.gcp_queue_publisher.publish_to_queue', lambda *args, **kwargs: None)
+def mock_pub_sub_call(mocker):
+    """Mock pub sub call."""
+    class PublisherMock:
+        """Publisher Mock."""
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def publish(self, *args, **kwargs):
+            """Publish mock."""
+            raise CancelledError('This is a mock')
+
+    mocker.patch('google.cloud.pubsub_v1.PublisherClient', PublisherMock)
 
 
 @pytest.fixture(scope='function')
