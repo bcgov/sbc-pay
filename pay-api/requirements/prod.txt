@@ -28,6 +28,4 @@ Jinja2==3.0.3
 protobuf~=3.19.5
 launchdarkly-server-sdk==8.2.1
 holidays==0.37
-google-auth==2.28.2
-google-cloud-pubsub==2.20.2
 pyhumps
