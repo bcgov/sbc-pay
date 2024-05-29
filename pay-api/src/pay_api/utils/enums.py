@@ -165,6 +165,7 @@ class StatementFrequency(Enum):
     DAILY = 'DAILY'
     WEEKLY = 'WEEKLY'
     MONTHLY = 'MONTHLY'
+    PAYMENT_METHOD_CHANGED = 'Payment Method Changed'
 
     @staticmethod
     def default_frequency():

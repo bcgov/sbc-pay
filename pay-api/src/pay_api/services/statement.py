@@ -225,7 +225,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return statements
 
     @staticmethod
-    def generate_interim_statement(auth_account_id: str, new_frequency: str):
+    def generate_interim_statement(auth_account_id: str, new_frequency: str, change_frequency: bool):
         """Generate interim statement."""
         today = get_local_time(datetime.today())
 
@@ -248,9 +248,13 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             'authAccountIds': [account.auth_account_id]
         }
 
+        interim_statement_frequency = active_settings.frequency
+        if not change_frequency:
+            interim_statement_frequency = new_frequency  # a temporary frequency for Payment Method Change
+
         # Generate interim statement
         statement = StatementModel(
-            frequency=active_settings.frequency,
+            frequency=interim_statement_frequency,
             statement_settings_id=active_settings.id,
             payment_account_id=account.id,
             created_on=today,
@@ -275,7 +279,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         if latest_settings is None or latest_settings.id == active_settings.id:
             latest_settings = StatementSettingsModel()
 
-        latest_settings.frequency = new_frequency
+        latest_settings.frequency = new_frequency if change_frequency else active_settings.frequency
         latest_settings.payment_account_id = account.id
         latest_settings.from_date = today + timedelta(days=1)
         latest_settings.save()
