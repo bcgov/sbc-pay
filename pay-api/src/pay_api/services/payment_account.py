@@ -380,7 +380,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         # Payment method has changed between EFT and other payment methods
         statement_frequency = (
             StatementFrequency.MONTHLY.value
-            if account.payment_method == PaymentMethod.EFT.value
+            if target_payment_method == PaymentMethod.EFT.value
             else StatementFrequency.default_frequency().value
         )
         Statement.generate_interim_statement(account.auth_account_id, statement_frequency)
