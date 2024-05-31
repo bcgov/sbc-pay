@@ -17,7 +17,7 @@ from typing import List
 from flask import current_app
 from paramiko.sftp_attr import SFTPAttributes
 
-from sbc_common_components.utils.enums import QueueMessageTypes
+from pay_api.utils.enums import MessageType
 from services.sftp import SFTPService
 from utils.utils import publish_to_queue, upload_to_minio
 
@@ -66,7 +66,7 @@ class EFTPollerFtpTask:  # pylint:disable=too-few-public-methods
         2.Send a message to queue
         """
         cls._move_file_to_backup(sftp_client, payment_file_list)
-        publish_to_queue(payment_file_list, QueueMessageTypes.EFT_FILE_UPLOADED.value,
+        publish_to_queue(payment_file_list, MessageType.EFT_FILE_UPLOADED.value,
                          location=current_app.config.get('MINIO_EFT_BUCKET_NAME'))
 
     @classmethod

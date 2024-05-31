@@ -19,8 +19,7 @@ from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import db
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod
-from sbc_common_components.utils.enums import QueueMessageTypes
+from pay_api.utils.enums import InvoiceStatus, MessageType, PaymentMethod
 from sentry_sdk import capture_message
 from sqlalchemy import Date, and_, cast, func
 
@@ -77,8 +76,7 @@ class UnpaidInvoiceNotifyTask:  # pylint:disable=too-few-public-methods
                                              'cfsAccountId': cfs_account.cfs_account,
                                              'authAccountId': pay_account.auth_account_id,
                                              }
-                mailer.publish_mailer_events(QueueMessageTypes.PAYMENT_PENDING.value,
-                                             pay_account,
+                mailer.publish_mailer_events(MessageType.ONLINE_BANKING_OUTSTANDING_INVOICE, pay_account,
                                              addition_params_to_mailer)
             except Exception as e:  # NOQA # pylint: disable=broad-except
                 capture_message(f'Error on notifying mailer  OB Pending invoice: account id={pay_account.id}, '

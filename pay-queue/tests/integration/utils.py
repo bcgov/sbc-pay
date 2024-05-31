@@ -1,4 +1,4 @@
-# Copyright © 2024 Province of British Columbia
+# Copyright © 2019 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,8 +27,7 @@ from flask import current_app
 from minio import Minio
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
-from pay_api.utils.enums import QueueSources
-from sbc_common_components.utils.enums import QueueMessageTypes
+from pay_api.utils.enums import MessageType, QueueSources
 from simple_cloudevent import SimpleCloudEvent, to_queue_message
 
 
@@ -99,7 +98,7 @@ def upload_to_minio(value_as_bytes, file_name: str):
                             os.stat(file_name).st_size)
 
 
-def forward_incoming_message_to_test_instance(session, app, client):
+def forward_incoming_message_to_test_instance(client):
     """Forward incoming http message to test instance."""
     # Note this is a bit different than how the queue could behave, it could send multiples.
     # This just receives one HTTP request and forwards it to the test instance.
@@ -123,7 +122,7 @@ def forward_incoming_message_to_test_instance(session, app, client):
         assert tries > 0
 
 
-def add_file_event_to_queue_and_process(client, file_name: str, message_type: str, use_pubsub_emulator=False):
+def add_file_event_to_queue_and_process(client, file_name: str, message_type: str, use_pubsub_emulator=True):
     """Add event to the Queue."""
     queue_payload = {
         'fileName': file_name,
@@ -147,7 +146,7 @@ def add_file_event_to_queue_and_process(client, file_name: str, message_type: st
 def helper_add_identifier_event_to_queue(client, old_identifier: str = 'T1234567890',
                                          new_identifier: str = 'BC1234567890'):
     """Add event to the Queue."""
-    message_type = QueueMessageTypes.INCORPORATION.value
+    message_type = MessageType.INCORPORATION.value
     queue_payload = {
         'filing': {
             'header': {'filingId': '12345678'},

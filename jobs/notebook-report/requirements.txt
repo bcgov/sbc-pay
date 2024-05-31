@@ -30,5 +30,5 @@ marshmallow==2.20.5
 Werkzeug==0.16.1
 certifi==2023.7.22
 urllib3==1.26.17
-idna==3.7
+idna==2.9
 pylint

@@ -19,12 +19,5 @@
         "application": [
             "relationship-api"
         ]
-    },
-    {
-        "vault": "gcp-queue",
-        "application": [
-            "gtksf3",
-            "topics"
-        ]
     }
 ]

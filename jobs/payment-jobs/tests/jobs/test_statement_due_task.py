@@ -45,7 +45,6 @@ fake = Faker()
 app = None
 
 
-# Travis Semple - in the future please remove this, this should be inside of conftest.py like the other fixtures.
 @pytest.fixture
 def setup():
     """Initialize app with test env for testing."""

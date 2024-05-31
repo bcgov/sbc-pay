@@ -1,4 +1,4 @@
-# Copyright © 2024 Province of British Columbia
+# Copyright © 2019 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -195,9 +195,6 @@ class CfsAccountStatus(Enum):
 class CorpType(Enum):
     """Corp Type."""
 
-    BTR = 'BTR'
-    ESRA = 'ESRA'
-    MHR = 'MHR'
     NRO = 'NRO'
     PPR = 'PPR'
     VS = 'VS'
@@ -219,7 +216,6 @@ class Product(Enum):
     """Product."""
 
     BUSINESS = 'BUSINESS'
-    NRO = 'NRO'
 
 
 class RoutingSlipStatus(Enum):
@@ -351,6 +347,32 @@ class EFTShortnameStatus(Enum):
     LINKED = 'LINKED'
     UNLINKED = 'UNLINKED'
     PENDING = 'PENDING'
+
+
+class MessageType(Enum):
+    """Queue Event Types."""
+
+    EFT_AVAILABLE_NOTIFICATION = 'eftAvailableNotification'
+    PAD_PAYMENT_SUCCESS = 'PAD.PaymentSuccess'
+    PAD_ACCOUNT_CREATE = 'padAccountCreate'
+    NSF_LOCK_ACCOUNT = 'lockAccount'
+    NSF_UNLOCK_ACCOUNT = 'unlockAccount'
+    STATEMENT_NOTIFICATION = 'statementNotification'
+    STATEMENT_DUE_NOTIFICATION = 'statementDueNotification'
+    STATEMENT_REMINDER_NOTIFICATION = 'statementReminderNotification'
+    PAYMENT = 'payment'
+    EJV_FAILED = 'ejvFailed'
+    CAS_UPLOADED = 'casSettlementUploaded'
+    INCORPORATION = 'incorporationApplication'
+    REGISTRATION = 'registration'
+    CGI_ACK_RECEIVED = 'ACKReceived'
+    CGI_FEEDBACK_RECEIVED = 'FEEDBACKReceived'
+    EFT_FILE_UPLOADED = 'eftFileUploaded'
+    EFT_INVOICE_CREATED = 'eft.invoiceCreated'
+    PAD_INVOICE_CREATED = 'pad.invoiceCreated'
+    PAD_SETUP_FAILED = 'PadSetupFailed'
+    PAD_CONFIRMATION_PERIOD_OVER = 'confirmationPeriodOver'
+    ONLINE_BANKING_OUTSTANDING_INVOICE = 'ob.outstandingInvoice'
 
 
 class PaymentDetailsGlStatus(Enum):

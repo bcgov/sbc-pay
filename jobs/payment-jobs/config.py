@@ -116,11 +116,6 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     AUTH_WEB_STATEMENT_URL = os.getenv('AUTH_WEB_STATEMENT_URL', 'account/orgId/settings/statements')
     REGISTRIES_LOGO_IMAGE_NAME = os.getenv('REGISTRIES_LOGO_IMAGE_NAME', 'bc_logo_for_email.png')
 
-    # PUB/SUB- PUB: account-mailer-dev
-    ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', 'account-mailer-dev')
-    GCP_AUTH_KEY = os.getenv('AUTHPAY_GCP_AUTH_KEY', None)
-
-
     CFS_ACCOUNT_DESCRIPTION = os.getenv('CFS_ACCOUNT_DESCRIPTION', 'BCR')
     CFS_INVOICE_PREFIX = os.getenv('CFS_INVOICE_PREFIX', 'REG')
     CFS_STOP_PAD_ACCOUNT_CREATION = os.getenv('CFS_STOP_PAD_ACCOUNT_CREATION', 'false').lower() == 'true'
@@ -248,7 +243,6 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     CGI_SFTP_PORT = 2222
     CGI_SFTP_DIRECTORY = '/data/'
     CGI_SFTP_HOST = 'localhost'
-    GCP_AUTH_KEY = None
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

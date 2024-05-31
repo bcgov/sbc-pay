@@ -21,7 +21,6 @@ import sys
 import sentry_sdk
 from flask import Flask
 from sentry_sdk.integrations.flask import FlaskIntegration
-from pay_api.services.gcp_queue import queue
 
 import config
 from utils.logger import setup_logging
@@ -44,8 +43,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
                 dsn=app.config.get('SENTRY_DSN'),
                 integrations=[FlaskIntegration()]
             )
-    app.logger.info('<<<< Starting Ftp Poller Job >>>>')
-    queue.init_app(app)
+    app.logger.info(f'<<<< Starting Ftp Poller Job >>>>')
     ma.init_app(app)
 
     register_shellcontext(app)
