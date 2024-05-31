@@ -48,7 +48,6 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
     app.config.from_object(config.CONFIGURATION[run_mode])
 
     flags.init_app(app)
-    queue.init_app(app)
     db.init_app(app)
     queue.init_app(app)
     Migrate(app, db)
