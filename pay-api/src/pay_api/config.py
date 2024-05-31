@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -132,14 +132,12 @@ class _Config:  # pylint: disable=too-few-public-methods
         'PAYBC_DIRECT_PAY_CC_REFUND_BASE_URL'
     )
 
-    # GCP PubSub
-    AUDIENCE = os.getenv('AUDIENCE', None)
-    GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
-    PUBLISHER_AUDIENCE = os.getenv('PUBLISHER_AUDIENCE', 'https://pubsub.googleapis.com/google.pubsub.v1.Publisher')
-    ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', None)
-    EVENT_LISTENER_TOPIC = os.getenv('EVENT_LISTENER_TOPIC', None)
-    NAMEX_PAY_TOPIC = os.getenv('NAMEX_PAY_TOPIC', None)
-    BUSINESS_PAY_TOPIC = os.getenv('BUSINESS_PAY_TOPIC', None)
+    # PUB/SUB - PUB: auth-event-dev, account-mailer-dev, business-pay-dev, namex-pay-dev
+    ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', 'account-mailer-dev')
+    AUTH_EVENT_TOPIC = os.getenv('AUTH_EVENT_TOPIC', 'auth-event-dev')
+    BUSINESS_PAY_TOPIC = os.getenv('BUSINESS_PAY_TOPIC', 'business-pay-dev')
+    GCP_AUTH_KEY = os.getenv('AUTHPAY_GCP_AUTH_KEY', None)
+    NAMEX_PAY_TOPIC = os.getenv('NAMEX_PAY_TOPIC', 'namex-pay-dev')
 
     # API Endpoints
     AUTH_API_URL = os.getenv('AUTH_API_URL', '')

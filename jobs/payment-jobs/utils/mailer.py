@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -14,15 +14,14 @@
 """Task to activate accounts with pending activation.Mostly for PAD with 3 day activation period."""
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict
 
 from flask import current_app
 from pay_api.models import FeeSchedule as FeeScheduleModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
 from pay_api.services import gcp_queue_publisher
-from pay_api.services.gcp_queue_publisher import QueueMessage
-from pay_api.utils.enums import QueueSources, MessageType
+from pay_api.utils.enums import QueueSources
+from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
 
 
@@ -38,8 +37,7 @@ class StatementNotificationInfo:
     total_amount_owing: float
 
 
-def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel,
-                          additional_params: Dict = {}):
+def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel, additional_params=None):
     """Publish payment message to the mailer queue."""
     # Publish message to the Queue, saying account has been activated. Using the event spec.
 
@@ -48,11 +46,11 @@ def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel,
     payload = {
         'accountId': pay_account.auth_account_id,
         'nsfFee': float(fee_schedule.fee.amount),
-        **additional_params
+        **(additional_params or {})
     }
     try:
         gcp_queue_publisher.publish_to_queue(
-            QueueMessage(
+            gcp_queue_publisher.QueueMessage(
                 source=QueueSources.PAY_JOBS.value,
                 message_type=message_type,
                 payload=payload,
@@ -71,6 +69,7 @@ def publish_mailer_events(message_type: str, pay_account: PaymentAccountModel,
 def publish_statement_notification(pay_account: PaymentAccountModel, statement: StatementModel,
                                    total_amount_owing: float, emails: str) -> bool:
     """Publish payment statement notification message to the mailer queue."""
+    message_type = QueueMessageTypes.STATEMENT_NOTIFICATION.value
     payload = {
         'emailAddresses': emails,
         'accountId': pay_account.auth_account_id,
@@ -81,9 +80,9 @@ def publish_statement_notification(pay_account: PaymentAccountModel, statement: 
     }
     try:
         gcp_queue_publisher.publish_to_queue(
-            QueueMessage(
+            gcp_queue_publisher.QueueMessage(
                 source=QueueSources.PAY_JOBS.value,
-                message_type=MessageType.STATEMENT_NOTIFICATION.value,
+                message_type=message_type,
                 payload=payload,
                 topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
             )
@@ -103,8 +102,8 @@ def publish_statement_notification(pay_account: PaymentAccountModel, statement: 
 
 def publish_payment_notification(info: StatementNotificationInfo) -> bool:
     """Publish payment notification message to the mailer queue."""
-    notification_type = MessageType.STATEMENT_DUE_NOTIFICATION.value if info.is_due \
-        else MessageType.STATEMENT_REMINDER_NOTIFICATION.value
+    message_type = QueueMessageTypes.PAYMENT_DUE_NOTIFICATION.value if info.is_due \
+        else QueueMessageTypes.PAYMENT_REMINDER_NOTIFICATION.value
 
     payload = {
         'emailAddresses': info.emails,
@@ -115,9 +114,9 @@ def publish_payment_notification(info: StatementNotificationInfo) -> bool:
     }
     try:
         gcp_queue_publisher.publish_to_queue(
-            QueueMessage(
+            gcp_queue_publisher.QueueMessage(
                 source=QueueSources.PAY_JOBS.value,
-                message_type=notification_type,
+                message_type=message_type,
                 payload=payload,
                 topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
             )
@@ -133,4 +132,3 @@ def publish_payment_notification(info: StatementNotificationInfo) -> bool:
         return False
 
     return True
-

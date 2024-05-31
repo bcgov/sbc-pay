@@ -30,6 +30,7 @@ from tasks.statement_due_task import StatementDueTask
 from utils.logger import setup_logging
 
 from pay_api.services import Flags
+from pay_api.services.gcp_queue import queue
 
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
@@ -51,6 +52,7 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production'), job_name='unk
                 release=f'payment-jobs-{job_name}@-',
             )
     app.logger.info('<<<< Starting Payment Jobs >>>>')
+    queue.init_app(app)
     db.init_app(app)
     if init_oracle:
         oracle_db.init_app(app)

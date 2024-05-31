@@ -129,3 +129,6 @@ ACK.INBOX.F12022020202
 pay-queue/ACK.*
 pay-queue/FEEDBACK.*
 jobs/notebook-report/data/
+test_eft_tdi17.txt
+ACK.INBOX*
+FEEDBACK.INBOX*

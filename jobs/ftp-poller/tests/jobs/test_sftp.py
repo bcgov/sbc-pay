@@ -19,6 +19,8 @@ Test-Suite to ensure that the CreateAccountTask is working as expected.
 import pytest
 from flask import current_app
 
+from sbc_common_components.utils.enums import QueueMessageTypes
+
 from services.sftp import SFTPService
 from utils.utils import publish_to_queue
 
@@ -38,7 +40,14 @@ def test_poll_ftp_task():
     assert len(files) == 1, 'Files exist in FTP folder'
 
 
-@pytest.mark.skip(reason='leave this to manually verify pubsub connection; needs env vars')
-def test_queue_message():
+@pytest.mark.skip(reason='leave this to manually verify pubsub connection;'
+                         'needs env vars, disable def mock_queue_publish(monkeypatch):')
+def test_queue_message(session):  # pylint:disable=unused-argument
     """Test publishing to topic."""
-    publish_to_queue(['file1.csv'])
+    file_name = 'file1.csv'
+    publish_to_queue([file_name])
+    publish_to_queue([file_name], QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
+    publish_to_queue([file_name], QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value,
+                     location=current_app.config.get('MINIO_CGI_BUCKET_NAME'))
+    publish_to_queue([file_name], QueueMessageTypes.EFT_FILE_UPLOADED.value,
+                     location=current_app.config.get('MINIO_EFT_BUCKET_NAME'))

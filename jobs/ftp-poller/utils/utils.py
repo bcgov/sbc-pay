@@ -12,18 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage PAYBC services."""
+from time import time
 from typing import List
 
 from flask import current_app
 from paramiko import SFTPFile
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
-from pay_api.utils.enums import MessageType, QueueSources
+from pay_api.utils.enums import QueueSources
+from sbc_common_components.utils.enums import QueueMessageTypes
 
 from utils.minio import put_object
 
 
-def publish_to_queue(payment_file_list: List[str], message_type=MessageType.CAS_UPLOADED.value, location: str = ''):
+def publish_to_queue(payment_file_list: List[str], message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value,
+                     location: str = ''):
     """Publish message to the Queue, saying file has been uploaded. Using the event spec."""
     queue_data = {
         'fileSource': 'MINIO',
@@ -38,11 +41,11 @@ def publish_to_queue(payment_file_list: List[str], message_type=MessageType.CAS_
                     source=QueueSources.FTP_POLLER.value,
                     message_type=message_type,
                     payload=queue_data,
-                    topic=current_app.config.get('FTP_POLLER_TOPIC')
+                    topic=current_app.config.get('FTP_POLLER_TOPIC'),
+                    ordering_key=str(time())
                 )
             )
         except Exception as e:  # NOQA # pylint: disable=broad-except
-            current_app.logger.error(e)
             current_app.logger.warning(
                 f'Notification to Queue failed for the file {file_name}',
                 e)
@@ -57,7 +60,6 @@ def upload_to_minio(file, file_full_name, sftp_client, bucket_name):
         value_as_bytes = f.read()
         try:
             put_object(value_as_bytes, file.filename, bucket_name, file.st_size, )
-        except Exception as e:  # NOQA # pylint: disable=broad-except
-            current_app.logger.error(e)
+        except Exception:  # NOQA # pylint: disable=broad-except
             current_app.logger.error(f'upload to minio failed for the file: {file_full_name}')
             raise

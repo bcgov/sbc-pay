@@ -115,7 +115,7 @@ tag: push ## tag image
 #################################################################################
 
 run: ## Run the project in local
-	. venv/bin/activate && python app.py
+	poetry run flask run -p 5001
 
 #################################################################################
 # Self Documenting Commands                                                     #

@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -190,6 +190,7 @@ def get_routing_slip_comments(routing_slip_number: str):
 def post_routing_slip_comment(routing_slip_number: str):
     """Create comment for a slip."""
     current_app.logger.info('<post_routing_slip_comment')
+    response, status = None, None
     request_json = request.get_json()
     # Validate payload.
     try:

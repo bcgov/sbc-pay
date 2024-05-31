@@ -12,13 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Worker resource to handle incoming queue pushes from gcp."""
+
+import dataclasses
+import json
 from http import HTTPStatus
 
-from flask import Blueprint, request
-from pay_api.utils.enums import MessageType
+from flask import Blueprint, current_app, request
+from pay_api.services.gcp_queue_publisher import queue
+from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_queue.external.gcp_auth import ensure_authorized_queue_user
-from pay_queue.services import queue, update_temporary_identifier
+from pay_queue.services import update_temporary_identifier
 from pay_queue.services.cgi_reconciliations import reconcile_distributions
 from pay_queue.services.eft.eft_reconciliation import reconcile_eft_payments
 from pay_queue.services.payment_reconciliations import reconcile_payments
@@ -31,22 +35,27 @@ bp = Blueprint('worker', __name__)
 @ensure_authorized_queue_user
 def worker():
     """Worker to handle incoming queue pushes."""
-    if not (ce := queue.get_simple_cloud_event(request)):
-        # Return a 200, so event is removed from the Queue
+    ce = queue.get_simple_cloud_event(request, wrapped=True)
+    if not ce:
         return {}, HTTPStatus.OK
 
-    match ce.type:
-        case MessageType.CAS_UPLOADED.value:
+    try:
+        current_app.logger.info('Event Message Received: %s ', json.dumps(dataclasses.asdict(ce)))
+        if ce.type == QueueMessageTypes.CAS_MESSAGE_TYPE.value:
             reconcile_payments(ce.data)
-        case MessageType.CGI_ACK_RECEIVED.value:
+        elif ce.type == QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value:
             reconcile_distributions(ce.data)
-        case MessageType.CGI_FEEDBACK_RECEIVED.value:
+        elif ce.type == QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value:
             reconcile_distributions(ce.data, is_feedback=True)
-        case MessageType.EFT_FILE_UPLOADED.value:
+        elif ce.type == QueueMessageTypes.EFT_FILE_UPLOADED.value:
             reconcile_eft_payments(ce.data)
-        case MessageType.INCORPORATION.value | MessageType.REGISTRATION.value:
+        elif ce.type in [QueueMessageTypes.INCORPORATION.value, QueueMessageTypes.REGISTRATION.value]:
             update_temporary_identifier(ce.data)
-        case _:
+        else:
             raise Exception('Invalid queue message type')  # pylint: disable=broad-exception-raised
 
-    return {}, HTTPStatus.OK
+        return {}, HTTPStatus.OK
+    except Exception:  # pylint: disable=broad-exception-caught
+        current_app.logger.error('Failed to process queue message: %s', HTTPStatus.INTERNAL_SERVER_ERROR)
+        # Optionally, return an error status code or message
+        return {}, HTTPStatus.OK

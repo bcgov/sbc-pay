@@ -25,9 +25,9 @@ pyrsistent==0.16.0
 Flask==1.1.2
 Click==7.1.2
 python-dotenv==0.13.0
-requests==2.31.0
+requests==2.32.2
 marshmallow==2.20.5
 Werkzeug==0.16.1
 certifi==2023.7.22
 urllib3==1.26.17
-idna==2.9
+idna==3.7

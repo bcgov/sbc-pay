@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -16,13 +16,15 @@
 from __future__ import annotations
 
 import uuid
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import humps
 from flask import current_app
 from sentry_sdk import capture_message
+from sbc_common_components.utils.dataclasses import PaymentToken
+from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_api.exceptions import BusinessException, ServiceUnavailableException
 from pay_api.factory.payment_system_factory import PaymentSystemFactory
@@ -36,21 +38,11 @@ from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.services.receipt import Receipt
 from pay_api.utils.enums import (
-    InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus, QueueSources, TransactionStatus)
+    InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, QueueSources, TransactionStatus)
 from pay_api.utils.errors import Error
 from pay_api.utils.util import get_topic_for_corp_type, is_valid_redirect_url
 
 from .payment import Payment
-
-
-@dataclass
-class PaymentToken:
-    """Payment Token payload common interface for LEAR and Names."""
-
-    id: Optional[str] = None
-    status_code: Optional[str] = None
-    filing_identifier: Optional[str] = None
-    corp_type_code: Optional[str] = None
 
 
 class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -511,7 +503,7 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             gcp_queue_publisher.publish_to_queue(
                 QueueMessage(
                     source=QueueSources.PAY_API.value,
-                    message_type=MessageType.PAYMENT.value,
+                    message_type=QueueMessageTypes.PAYMENT.value,
                     payload=PaymentTransaction.create_event_payload(invoice, status_code),
                     topic=get_topic_for_corp_type(invoice.corp_type_code)
                 )
