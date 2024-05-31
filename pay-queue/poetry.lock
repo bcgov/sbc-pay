@@ -873,7 +873,7 @@ name = "gcp-queue"
 version = "0.3.0"
 description = ""
 optional = false
-python-versions = "^3.9"
+python-versions = "^3.8"
 files = []
 develop = false
 
@@ -885,9 +885,9 @@ simple-cloudevent = {git = "https://github.com/daxiom/simple-cloudevent.py.git"}
 
 [package.source]
 type = "git"
-url = "https://github.com/seeker25/sbc-connect-common.git"
+url = "https://github.com/bcgov/sbc-connect-common.git"
 reference = "main"
-resolved_reference = "c0d1dea449ac6332510841caee5400ff8f550159"
+resolved_reference = "c348d30e91253daef7f433a15a12379eb6b68d55"
 subdirectory = "python/gcp-queue"
 
 [[package]]
@@ -1606,7 +1606,7 @@ flask-migrate = "4.0.7"
 flask-moment = "1.0.5"
 flask-script = "2.0.6"
 flask-sqlalchemy = "3.1.1"
-gcp-queue = {git = "https://github.com/seeker25/sbc-connect-common.git", branch = "main", subdirectory = "python/gcp-queue"}
+gcp-queue = {git = "https://github.com/bcgov/sbc-connect-common.git", branch = "main", subdirectory = "python/gcp-queue"}
 greenlet = "3.0.3"
 gunicorn = "21.2.0"
 holidays = "0.37"
@@ -1655,9 +1655,9 @@ werkzeug = "3.0.1"
 
 [package.source]
 type = "git"
-url = "https://github.com/seeker25/sbc-pay.git"
-reference = "sync-python-to-main"
-resolved_reference = "1dae0d28e241a7bcdfc43dcaee1a36e35e77c31c"
+url = "https://github.com/bcgov/sbc-pay.git"
+reference = "HEAD"
+resolved_reference = "24180c779947d10f985a4e7fe4321076dc4f2925"
 subdirectory = "pay-api"
 
 [[package]]
@@ -2670,4 +2670,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "91f9fa21463afa27ba2b73d8efcd0b07bac434743792659ba832a588fc331d50"
+content-hash = "f0f5608ac14d8bb58af6b98850b2682e520d8be27d5c2cf432a377ad39f1a581"
