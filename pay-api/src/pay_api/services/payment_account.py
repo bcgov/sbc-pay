@@ -47,7 +47,7 @@ from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings
 from pay_api.utils.enums import (
     AuthHeaderType, CfsAccountStatus, ContentType, InvoiceStatus, PaymentMethod, PaymentSystem, QueueSources,
-    QueueSources, StatementFrequency)
+    StatementFrequency)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
@@ -822,7 +822,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         """Publish to account mailer to send out confirmation email or notification email."""
         try:
             gcp_queue_publisher.publish_to_queue(
-                gcp_queue_publisher.QueueMessage(
+                QueueMessage(
                     source=QueueSources.PAY_API.value,
                     message_type=message_type,
                     payload=payload,
@@ -884,7 +884,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
             try:
                 gcp_queue_publisher.publish_to_queue(
-                    gcp_queue_publisher.QueueMessage(
+                    QueueMessage(
                         source=QueueSources.PAY_API.value,
                         message_type=QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value,
                         payload=payload,

@@ -16,9 +16,9 @@
 from __future__ import annotations
 
 import uuid
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 import humps
 from flask import current_app
@@ -43,16 +43,6 @@ from pay_api.utils.errors import Error
 from pay_api.utils.util import get_topic_for_corp_type, is_valid_redirect_url
 
 from .payment import Payment
-
-
-@dataclass
-class PaymentToken:
-    """Payment Token payload common interface for LEAR and Names."""
-
-    id: Optional[str] = None
-    status_code: Optional[str] = None
-    filing_identifier: Optional[str] = None
-    corp_type_code: Optional[str] = None
 
 
 class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-many-public-methods

@@ -36,7 +36,6 @@ from pay_api.utils.auth import jwt
 from pay_api.utils.cache import cache
 from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
-from .services.gcp_queue import queue
 
 
 setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))
