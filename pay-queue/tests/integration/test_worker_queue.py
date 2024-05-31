@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ from tests.integration import factory_invoice, factory_invoice_reference, factor
 from .utils import helper_add_identifier_event_to_queue
 
 
-def test_update_payment(client):
+def test_update_payment(session, app, client):
     """Assert that the update internal payment records works."""
     # vars
     old_identifier = 'T000000000'

@@ -115,7 +115,7 @@ tag: push ## tag image
 #################################################################################
 
 run: ## Run the project in local
-	. venv/bin/activate && python app.py
+	echo "unimplememted use docker"
 
 #################################################################################
 # Self Documenting Commands                                                     #

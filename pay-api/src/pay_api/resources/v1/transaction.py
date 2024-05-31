@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ def post_transaction(invoice_id: int = None, payment_id: int = None):
     """Create the Transaction records."""
     current_app.logger.info('<post_transaction')
     request_json = request.get_json()
+    response, status = None, None
 
     # Validate the input request
     valid_format, errors = schema_utils.validate(request_json, 'transaction_request')
