@@ -168,7 +168,7 @@ class StatementSettings:  # pylint:disable=too-many-instance-attributes
 
         max_frequency = StatementSettings._find_longest_frequency(current_statements_settings.frequency, frequency)
         last_date = StatementSettings._get_end_of(max_frequency)
-        current_statements_settings.to_date = last_date  # TODO Should be date not date time?
+        current_statements_settings.to_date = last_date
         current_statements_settings.save()
 
         new_statements_settings = StatementSettingsModel(frequency=frequency,
