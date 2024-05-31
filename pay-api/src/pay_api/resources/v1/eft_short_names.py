@@ -105,8 +105,7 @@ def get_eft_shortname(short_name_id: int):
     current_app.logger.info('<get_eft_shortname')
 
     if not (eft_short_name := EFTShortnameService.find_by_short_name_id(short_name_id)):
-        response, status = {'message': 'The requested EFT short name could not be found.'}, \
-            HTTPStatus.NOT_FOUND
+        response, status = {}, HTTPStatus.NOT_FOUND
     else:
         response, status = eft_short_name, HTTPStatus.OK
     current_app.logger.debug('>get_eft_shortname')
@@ -140,8 +139,7 @@ def get_eft_shortname_links(short_name_id: int):
 
     try:
         if not EFTShortnameService.find_by_short_name_id(short_name_id):
-            response, status = {'message': 'The requested EFT short name could not be found.'}, \
-                HTTPStatus.NOT_FOUND
+            response, status = {}, HTTPStatus.NOT_FOUND
         else:
             response, status = EFTShortnameService.get_shortname_links(short_name_id), HTTPStatus.OK
     except BusinessException as exception:
@@ -161,8 +159,7 @@ def post_eft_shortname_link(short_name_id: int):
 
     try:
         if not EFTShortnameService.find_by_short_name_id(short_name_id):
-            response, status = {'message': 'The requested EFT short name could not be found.'}, \
-                HTTPStatus.NOT_FOUND
+            response, status = {}, HTTPStatus.NOT_FOUND
         else:
             account_id = request_json.get('accountId', None)
             response, status = EFTShortnameService.create_shortname_link(short_name_id, account_id), HTTPStatus.OK
@@ -183,8 +180,7 @@ def delete_eft_shortname_link(short_name_id: int, short_name_link_id: int):
     try:
         link = EFTShortnameService.find_link_by_id(short_name_link_id)
         if not link or link['short_name_id'] != short_name_id:
-            response, status = {'message': 'The requested EFT short name could not be found.'}, \
-                HTTPStatus.NOT_FOUND
+            response, status = {}, HTTPStatus.NOT_FOUND
         else:
             EFTShortnameService.delete_shortname_link(short_name_link_id)
             response, status = None, HTTPStatus.ACCEPTED
