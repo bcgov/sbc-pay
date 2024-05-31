@@ -1,0 +1,30 @@
+name: Pay Admin CD GCP
+
+on:
+  push:
+    branches:
+      - feature-gcp
+    paths:
+      - "pay-admin/**"
+  workflow_dispatch:
+    inputs:
+      target:
+        description: "Deploy To"
+        required: true
+        type: choice
+        options:
+        - dev
+        - test
+        - sandbox
+        - prod
+
+jobs:
+  pay-admin-cd:
+    uses: bcgov/bcregistry-sre/.github/workflows/cloud-run-service-cd.yaml@main
+    with:
+      target: ${{ inputs.target }}
+      app_name: "pay-admin"
+      working_directory: "./pay-admin"
+    secrets:
+      WORKLOAD_IDENTIFY_POOLS_PROVIDER: ${{ secrets.WORKLOAD_IDENTIFY_POOLS_PROVIDER }}
+      GCP_SERVICE_ACCOUNT: ${{ secrets.GCP_SERVICE_ACCOUNT }}
