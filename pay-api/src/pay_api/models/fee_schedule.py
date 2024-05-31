@@ -16,7 +16,7 @@
 from datetime import date, datetime
 from operator import or_
 
-from sqlalchemy import Boolean, ForeignKey, func
+from sqlalchemy import Boolean, Date, ForeignKey, cast, func
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
 
@@ -104,8 +104,8 @@ class FeeSchedule(db.Model):
         if filing_type_code and corp_type_code:
             query = cls.query.filter_by(filing_type_code=filing_type_code). \
                 filter_by(corp_type_code=corp_type_code). \
-                filter(FeeSchedule.fee_start_date <= valid_date). \
-                filter((FeeSchedule.fee_end_date.is_(None)) | (FeeSchedule.fee_end_date >= valid_date))
+                filter(FeeSchedule.fee_start_date <= cast(valid_date, Date)). \
+                filter((FeeSchedule.fee_end_date.is_(None)) | (FeeSchedule.fee_end_date >= cast(valid_date, Date)))
 
             fee_schedule = query.one_or_none()
 
