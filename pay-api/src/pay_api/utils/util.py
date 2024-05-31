@@ -25,12 +25,13 @@ from urllib.parse import parse_qsl
 from holidays.constants import GOVERNMENT, OPTIONAL, PUBLIC
 from holidays.countries import Canada
 import pytz
-from dpath import util as dpath_util
+from dpath import get as dpath_get
 from flask import current_app
 
 from pay_api.services.code import Code as CodeService
 
 from .constants import DT_SHORT_FORMAT
+from .converter import Converter
 from .enums import Code, CorpType, Product, StatementFrequency
 
 
@@ -75,7 +76,7 @@ def get_str_by_path(payload: Dict, path: str) -> str:
         return None
 
     try:
-        raw = dpath_util.get(payload, path)
+        raw = dpath_get(payload, path)
         return str(raw) if raw is not None else raw
     except (IndexError, KeyError, TypeError):
         return None
@@ -244,6 +245,22 @@ def string_to_date(date_val: str, dt_format: str = DT_SHORT_FORMAT):
     return datetime.strptime(date_val, dt_format).date()
 
 
+def string_to_decimal(val: str):
+    """Return decimal from string."""
+    if val is None:
+        return None
+
+    return Decimal(val)
+
+
+def string_to_int(val: str):
+    """Return int from string."""
+    if val is None:
+        return None
+
+    return int(val)
+
+
 def get_quantized(amount: float) -> Decimal:
     """Return rounded decimal. (Default = ROUND_HALF_EVEN)."""
     return Decimal(amount).quantize(Decimal('1.00'))
@@ -265,3 +282,11 @@ def get_topic_for_corp_type(corp_type: str):
     if product_code == Product.BUSINESS.value:
         return current_app.config.get('BUSINESS_PAY_TOPIC')
     return None
+
+
+def unstructure_schema_items(schema, items):
+    """Return unstructured results by schema."""
+    results = [schema.from_row(item) for item in items]
+    converter = Converter()
+
+    return converter.unstructure(results)

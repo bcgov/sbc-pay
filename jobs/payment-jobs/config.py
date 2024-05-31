@@ -64,14 +64,12 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     DB_NAME = os.getenv('DATABASE_NAME', '')
     DB_HOST = os.getenv('DATABASE_HOST', '')
     DB_PORT = os.getenv('DATABASE_PORT', '5432')
-
-    SQLALCHEMY_DATABASE_URI = 'postgresql://{user}:{password}@{host}:{port}/{name}'.format(
-        user=DB_USER,
-        password=DB_PASSWORD,
-        host=DB_HOST,
-        port=int(DB_PORT),
-        name=DB_NAME,
-    )
+    if DB_UNIX_SOCKET := os.getenv('DATABASE_UNIX_SOCKET', None):
+        SQLALCHEMY_DATABASE_URI = (
+            f'postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@/{DB_NAME}?unix_sock={DB_UNIX_SOCKET}/.s.PGSQL.5432'
+        )
+    else:
+        SQLALCHEMY_DATABASE_URI = f'postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}'
     SQLALCHEMY_ECHO = False
 
     ORACLE_USER = os.getenv('ORACLE_USER', '')
@@ -97,8 +95,14 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # legislative timezone for future effective dating
     LEGISLATIVE_TIMEZONE = os.getenv('LEGISLATIVE_TIMEZONE', 'America/Vancouver')
 
-    # notify-API URL
-    NOTIFY_API_URL = os.getenv('NOTIFY_API_URL')
+    # API Endpoints
+    AUTH_API_URL = os.getenv('AUTH_API_URL', '')
+    AUTH_API_VERSION = os.getenv('AUTH_API_VERSION', '')
+    NOTIFY_API_URL = os.getenv('NOTIFY_API_URL', '')
+    NOTIFY_API_VERSION = os.getenv('NOTIFY_API_VERSION', '')
+
+    AUTH_API_ENDPOINT = f'{AUTH_API_URL + AUTH_API_VERSION}/'
+    NOTIFY_API_ENDPOINT = f'{NOTIFY_API_URL + NOTIFY_API_VERSION}/'
 
     # Service account details
     KEYCLOAK_SERVICE_ACCOUNT_ID = os.getenv('SBC_AUTH_ADMIN_CLIENT_ID')
@@ -116,8 +120,6 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', 'account-mailer-dev')
     GCP_AUTH_KEY = os.getenv('AUTHPAY_GCP_AUTH_KEY', None)
 
-    # Auth API Endpoint
-    AUTH_API_ENDPOINT = f'{os.getenv("AUTH_API_URL")}/'
 
     CFS_ACCOUNT_DESCRIPTION = os.getenv('CFS_ACCOUNT_DESCRIPTION', 'BCR')
     CFS_INVOICE_PREFIX = os.getenv('CFS_INVOICE_PREFIX', 'REG')
@@ -176,9 +178,6 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # disbursement delay
     DISBURSEMENT_DELAY_IN_DAYS = int(os.getenv('DISBURSEMENT_DELAY', 5))
 
-    # Is FAS-CFS integration disabled
-    DISABLE_CFS_FAS_INTEGRATION = os.getenv('DISABLE_CFS_FAS_INTEGRATION', 'false').lower() == 'true'
-
     # CP Job variables
     CGI_AP_DISTRIBUTION = os.getenv('CGI_AP_DISTRIBUTION', '')
     CGI_AP_SUPPLIER_NUMBER = os.getenv('CGI_AP_SUPPLIER_NUMBER', '')
@@ -186,7 +185,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     CGI_AP_REMITTANCE_CODE = os.getenv('CGI_AP_REMITTANCE_CODE', '78')
     BCA_SUPPLIER_NUMBER = os.getenv('BCA_SUPPLIER_NUMBER', '')
     BCA_SUPPLIER_LOCATION = os.getenv('BCA_SUPPLIER_LOCATION', '')
-    
+
     # FAS Client and secret
     CFS_FAS_CLIENT_ID = os.getenv('CFS_FAS_CLIENT_ID', '')
     CFS_FAS_CLIENT_SECRET = os.getenv('CFS_FAS_CLIENT_SECRET', '')
@@ -195,6 +194,11 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     EFT_HOLDING_GL = os.getenv('EFT_HOLDING_GL', '')
     EFT_TRANSFER_DESC = os.getenv('EFT_TRANSFER_DESC', 'BCREGISTRIES {} {} EFT TRANSFER')
 
+    # GCP PubSub
+    AUDIENCE = os.getenv('AUDIENCE', None)
+    GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
+    PUBLISHER_AUDIENCE = os.getenv('PUBLISHER_AUDIENCE', None)
+    ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', None)
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     TESTING = False
@@ -212,7 +216,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     DB_HOST = os.getenv('DATABASE_TEST_HOST', '')
     DB_PORT = os.getenv('DATABASE_TEST_PORT', '5432')
     SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_TEST_URL',
-                                        'postgresql://{user}:{password}@{host}:{port}/{name}'.format(
+                                        'postgresql+pg8000://{user}:{password}@{host}:{port}/{name}'.format(
                                             user=DB_USER,
                                             password=DB_PASSWORD,
                                             host=DB_HOST,
@@ -244,6 +248,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     CGI_SFTP_PORT = 2222
     CGI_SFTP_DIRECTORY = '/data/'
     CGI_SFTP_HOST = 'localhost'
+    GCP_AUTH_KEY = None
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

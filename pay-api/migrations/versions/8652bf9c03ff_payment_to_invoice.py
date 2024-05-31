@@ -47,7 +47,7 @@ def upgrade():
 
     # Select payment method from payment table and update to invoice table.
     conn = op.get_bind()
-    res = conn.execute("select id, payment_method_code, payment_status_code from payment ")
+    res = conn.execute(sa.text("select id, payment_method_code, payment_status_code from payment "))
     payments = res.fetchall()
 
     for payment in payments:
@@ -78,7 +78,7 @@ def upgrade():
 
     # Populate invoice number to payment table.
     conn = op.get_bind()
-    res = conn.execute("select id, invoice_status_code, payment_id from invoice ")
+    res = conn.execute(sa.text("select id, invoice_status_code, payment_id from invoice "))
     invoices = res.fetchall()
     for invoice in invoices:
         inv_id = invoice[0]

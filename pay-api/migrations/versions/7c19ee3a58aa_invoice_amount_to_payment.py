@@ -24,8 +24,8 @@ def upgrade():
     op.add_column('payment', sa.Column('invoice_amount', sa.Numeric(), nullable=True))
     # lookup the invoice table 'total' field by linking with invoice_reference
     conn = op.get_bind()
-    res = conn.execute("select inv.total, inv_ref.invoice_number, inv.payment_account_id "
-                       "from invoice inv, invoice_reference inv_ref where inv.id=inv_ref.invoice_id")
+    res = conn.execute(sa.text("select inv.total, inv_ref.invoice_number, inv.payment_account_id "
+                       "from invoice inv, invoice_reference inv_ref where inv.id=inv_ref.invoice_id"))
 
     invoices = res.fetchall()
 

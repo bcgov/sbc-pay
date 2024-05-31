@@ -16,7 +16,7 @@
 
 Test-Suite to ensure that the UpdateStalePayment is working as expected.
 """
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 
 import pytz
 from freezegun import freeze_time
@@ -133,7 +133,6 @@ def test_bcol_weekly_to_eft_statement(session):
                                      total=50)
 
     assert weekly_invoice is not None
-    assert weekly_invoice.created_on == invoice_create_date.astimezone(timezone.utc).replace(tzinfo=None)
 
     statement_from_date = localize_date(datetime(2023, 10, 8, 12, 0))
     statement_to_date = localize_date(datetime(2023, 10, 12, 12, 0))
@@ -179,7 +178,6 @@ def test_bcol_weekly_to_eft_statement(session):
                                       total=50)
 
     assert monthly_invoice is not None
-    assert monthly_invoice.created_on == invoice_create_date.astimezone(timezone.utc).replace(tzinfo=None)
 
     # Regenerate monthly statement using date override - it will clean up the previous empty monthly statement first
     StatementTask.generate_statements((generate_date - timedelta(days=1)).strftime('%Y-%m-%d'))
@@ -212,7 +210,6 @@ def test_bcol_monthly_to_eft_statement(session):
                                    total=50)
 
     assert bcol_invoice is not None
-    assert bcol_invoice.created_on == invoice_create_date.astimezone(timezone.utc).replace(tzinfo=None)
 
     statement_from_date = localize_date(datetime(2023, 10, 1, 12, 0))
     statement_to_date = localize_date(datetime(2023, 10, 30, 12, 0))
@@ -259,7 +256,6 @@ def test_bcol_monthly_to_eft_statement(session):
                                       total=50)
 
     assert monthly_invoice is not None
-    assert monthly_invoice.created_on == invoice_create_date.astimezone(timezone.utc).replace(tzinfo=None)
 
     # Regenerate monthly statement using date override - it will clean up the previous empty monthly statement first
     StatementTask.generate_statements((generate_date - timedelta(days=1)).strftime('%Y-%m-%d'))

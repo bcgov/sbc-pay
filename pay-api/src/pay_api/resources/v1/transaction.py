@@ -23,7 +23,6 @@ from pay_api.services import TransactionService
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.errors import Error
-from pay_api.utils.trace import tracing as _tracing
 
 
 bp = Blueprint('TRANSACTIONS', __name__, url_prefix=f'{EndpointEnum.API_V1.value}')
@@ -31,7 +30,6 @@ bp = Blueprint('TRANSACTIONS', __name__, url_prefix=f'{EndpointEnum.API_V1.value
 
 @bp.route('/payment-requests/<int:invoice_id>/transactions', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET', 'POST'])
-@_tracing.trace()
 @_jwt.requires_auth
 def get_transactions(invoice_id):
     """Get all transaction records for a invoice."""
@@ -44,7 +42,6 @@ def get_transactions(invoice_id):
 @bp.route('/payment-requests/<int:invoice_id>/transactions', methods=['POST'])
 @bp.route('/payments/<int:payment_id>/transactions', methods=['POST', 'OPTIONS'])
 @cross_origin(origins='*', methods=['POST'])
-@_tracing.trace()
 def post_transaction(invoice_id: int = None, payment_id: int = None):
     """Create the Transaction records."""
     current_app.logger.info('<post_transaction')
@@ -76,7 +73,6 @@ def post_transaction(invoice_id: int = None, payment_id: int = None):
 @bp.route('/payment-requests/<int:invoice_id>/transactions/<uuid:transaction_id>', methods=['GET', 'OPTIONS'])
 @bp.route('/payments/<int:payment_id>/transactions/<uuid:transaction_id>', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET', 'PATCH'])
-@_tracing.trace()
 @_jwt.requires_auth
 def get_transaction(invoice_id: int = None, payment_id: int = None, transaction_id=None):
     """Get the Transaction record."""
@@ -94,7 +90,6 @@ def get_transaction(invoice_id: int = None, payment_id: int = None, transaction_
 @bp.route('/payment-requests/<int:invoice_id>/transactions/<uuid:transaction_id>', methods=['PATCH'])
 @bp.route('/payments/<int:payment_id>/transactions/<uuid:transaction_id>', methods=['PATCH'])
 @cross_origin(origins='*')
-@_tracing.trace()
 def patch_transaction(invoice_id: int = None, payment_id: int = None, transaction_id=None):
     """Update the transaction record by querying payment system."""
     current_app.logger.info('<patch_transaction for invoice : %s, payment : %s, transaction %s',

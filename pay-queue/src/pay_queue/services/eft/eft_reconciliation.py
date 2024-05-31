@@ -28,7 +28,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.eft_service import EftService as EFTService
 from pay_api.services.eft_short_names import EFTShortnames
-from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, InvoiceStatus, PaymentMethod
+from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, InvoiceStatus, PaymentMethod
 from sentry_sdk import capture_message
 
 from pay_queue.minio import get_object
@@ -103,6 +103,10 @@ def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-many-loc
         return
 
     has_eft_transaction_errors = False
+
+    # Include only transactions that are eft or has an error - ignore non EFT
+    eft_transactions = [transaction for transaction in eft_transactions
+                        if transaction.has_errors() or transaction.is_eft]
 
     # Parse EFT Transactions
     for eft_transaction in eft_transactions:
@@ -190,14 +194,6 @@ def _process_eft_credits(shortname_balance, eft_file_id):
     for shortname in shortname_balance.keys():
         try:
             eft_shortname = _get_shortname(shortname)
-            payment_account_id = None
-
-            # Get payment account if short name is mapped to an auth account
-            if eft_shortname.auth_account_id is not None:
-                payment_account: PaymentAccountModel = PaymentAccountModel.\
-                    find_by_auth_account_id(eft_shortname.auth_account_id)
-                payment_account_id = payment_account.id
-
             eft_transactions = shortname_balance[shortname]['transactions']
 
             for eft_transaction in eft_transactions:
@@ -217,7 +213,6 @@ def _process_eft_credits(shortname_balance, eft_file_id):
                     continue
 
                 eft_credit_model.eft_file_id = eft_file_id
-                eft_credit_model.payment_account_id = payment_account_id
                 eft_credit_model.short_name_id = eft_shortname.id
                 eft_credit_model.amount = deposit_amount
                 eft_credit_model.remaining_amount = deposit_amount
@@ -237,6 +232,16 @@ def _process_eft_payments(shortname_balance: Dict, eft_file: EFTFileModel) -> bo
     for shortname in shortname_balance.keys():
         # Retrieve or Create shortname mapping
         eft_shortname_model = _get_shortname(shortname)
+        shortname_links = EFTShortnames.get_shortname_links(eft_shortname_model.id)
+
+        #  Skip short names with no links or multiple links (manual processing by staff)
+        if not shortname_links['items'] or len(shortname_links['items']) > 1:
+            continue
+
+        eft_short_link = shortname_links['items'][0]
+        #  Skip if the link is in pending status - this will be officially linked via a scheduled job
+        if eft_short_link['status_code'] == EFTShortnameStatus.PENDING.value:
+            continue
 
         # No balance to apply - move to next shortname
         if shortname_balance[shortname]['balance'] <= 0:
@@ -244,21 +249,18 @@ def _process_eft_payments(shortname_balance: Dict, eft_file: EFTFileModel) -> bo
                                        shortname, eft_file.file_ref)
             continue
 
-        # check if short name is mapped to an auth account
-        if eft_shortname_model is not None and eft_shortname_model.auth_account_id is not None:
-            # We have a mapping and can continue processing
-            try:
-                auth_account_id = eft_shortname_model.auth_account_id
-                # Find invoices to be paid
-                invoices: List[InvoiceModel] = EFTShortnames.get_invoices_owing(auth_account_id)
-                if invoices is not None:
-                    for invoice in invoices:
-                        _pay_invoice(invoice=invoice, shortname_balance=shortname_balance[shortname])
+        # We have a mapping and can continue processing
+        try:
+            auth_account_id = eft_short_link['account_id']
+            # Find invoices to be paid
+            invoices: List[InvoiceModel] = EFTShortnames.get_invoices_owing(auth_account_id)
+            for invoice in invoices:
+                _pay_invoice(invoice=invoice, shortname_balance=shortname_balance[shortname])
 
-            except Exception as e:  # NOQA pylint: disable=broad-exception-caught
-                has_eft_transaction_errors = True
-                current_app.logger.error(e)
-                capture_message('EFT Failed to apply balance to invoice.', level='error')
+        except Exception as e:  # NOQA pylint: disable=broad-exception-caught
+            has_eft_transaction_errors = True
+            current_app.logger.error(e)
+            capture_message('EFT Failed to apply balance to invoice.', level='error')
 
     return has_eft_transaction_errors
 
@@ -435,12 +437,11 @@ def _pay_invoice(invoice: InvoiceModel, shortname_balance: Dict):
     # Create the payment record
     eft_payment_service: EFTService = PaymentSystemFactory.create_from_payment_method(PaymentMethod.EFT.value)
 
-    payment, invoice_reference, receipt = eft_payment_service.apply_credit(invoice=invoice,
-                                                                           payment_date=payment_date,
-                                                                           auto_save=False)
+    payment, receipt = eft_payment_service.apply_credit(invoice=invoice,
+                                                        payment_date=payment_date,
+                                                        auto_save=True)
 
     db.session.add(payment)
-    db.session.add(invoice_reference)
     db.session.add(receipt)
 
     # Paid - update the shortname balance

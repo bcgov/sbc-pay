@@ -17,13 +17,14 @@ from _decimal import Decimal
 from attrs import define
 
 
-from .base_model import VersionedModel
+from sql_versioning import Versioned
+
+from .base_model import BaseModel
 from .db import db
-from ..utils.util import cents_to_decimal
 
 
-class EFTShortnames(VersionedModel):  # pylint: disable=too-many-instance-attributes
-    """This class manages the EFT short name to auth account mapping."""
+class EFTShortnames(Versioned, BaseModel):  # pylint: disable=too-many-instance-attributes
+    """This class manages the EFT short names."""
 
     __tablename__ = 'eft_short_names'
     # this mapper is used so that new and old versions of the service can be run simultaneously,
@@ -39,22 +40,14 @@ class EFTShortnames(VersionedModel):  # pylint: disable=too-many-instance-attrib
     __mapper_args__ = {
         'include_properties': [
             'id',
-            'auth_account_id',
             'created_on',
-            'short_name',
-            'linked_by',
-            'linked_by_name',
-            'linked_on'
+            'short_name'
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    auth_account_id = db.Column('auth_account_id', db.String(50), nullable=True, index=True)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
     short_name = db.Column('short_name', db.String, nullable=False, index=True)
-    linked_by = db.Column('linked_by', db.String(100), nullable=True)
-    linked_by_name = db.Column('linked_by_name', db.String(100), nullable=True)
-    linked_on = db.Column('linked_on', db.DateTime, nullable=True)
 
     @classmethod
     def find_by_short_name(cls, short_name: str):
@@ -67,18 +60,44 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
     """Main schema used to serialize the EFT Short name."""
 
     id: int
-    short_name: str
     account_id: str
     account_name: str
     account_branch: str
+    amount_owing: Decimal
     created_on: datetime
-    transaction_id: int
-    transaction_date: datetime
-    deposit_date: datetime
-    deposit_amount: Decimal
-    linked_by: str
-    linked_by_name: str
-    linked_on: datetime
+    short_name: str
+    statement_id: int
+    status_code: str
+    cfs_account_status: str
+
+    @classmethod
+    def from_row(cls, row: EFTShortnames):
+        """From row is used so we don't tightly couple to our database class.
+
+        https://www.attrs.org/en/stable/init.html
+        """
+        return cls(id=row.id,
+                   account_id=getattr(row, 'auth_account_id', None),
+                   account_name=getattr(row, 'account_name', None),
+                   account_branch=getattr(row, 'account_branch', None),
+                   amount_owing=getattr(row, 'total_owing', None),
+                   created_on=row.created_on,
+                   short_name=row.short_name,
+                   statement_id=getattr(row, 'latest_statement_id', None),
+                   status_code=getattr(row, 'status_code', None),
+                   cfs_account_status=getattr(row, 'cfs_account_status', None)
+                   )
+
+
+@define
+class EFTShortnameSummarySchema:
+    """Main schema used to serialize the EFT Short name summaries."""
+
+    id: int
+    short_name: str
+    last_payment_received_date: datetime
+    credits_remaining: Decimal
+    linked_accounts_count: int
 
     @classmethod
     def from_row(cls, row: EFTShortnames):
@@ -88,15 +107,7 @@ class EFTShortnameSchema:  # pylint: disable=too-few-public-methods
         """
         return cls(id=row.id,
                    short_name=row.short_name,
-                   account_id=row.auth_account_id,
-                   account_name=getattr(row, 'account_name', None),
-                   account_branch=getattr(row, 'account_branch', None),
-                   created_on=row.created_on,
-                   transaction_id=getattr(row, 'transaction_id', None),
-                   transaction_date=getattr(row, 'transaction_date', None),
-                   deposit_date=getattr(row, 'deposit_date', None),
-                   deposit_amount=cents_to_decimal(getattr(row, 'deposit_amount', None)),
-                   linked_by=row.linked_by,
-                   linked_by_name=row.linked_by_name,
-                   linked_on=row.linked_on
+                   last_payment_received_date=getattr(row, 'last_payment_received_date', None),
+                   credits_remaining=getattr(row, 'credits_remaining', None),
+                   linked_accounts_count=getattr(row, 'linked_accounts_count', None)
                    )

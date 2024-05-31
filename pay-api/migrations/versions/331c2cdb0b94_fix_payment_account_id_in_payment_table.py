@@ -30,12 +30,12 @@ def upgrade():
     # 2. Find the account id from invoice table linking with invoice_reference table.
     # 3. Update payment with payment account id.
     conn = op.get_bind()
-    res = conn.execute(f"select id,invoice_number from payment where payment_account_id is null;")
+    res = conn.execute(sa.text(f"select id,invoice_number from payment where payment_account_id is null;"))
     results = res.fetchall()
     for result in results:
         pay_id = result[0]
         invoice_number = result[1]
-        res = conn.execute(f"select payment_account_id from invoice where id=(select invoice_id from invoice_reference where invoice_number='{invoice_number}');")
+        res = conn.execute(sa.text(f"select payment_account_id from invoice where id=(select invoice_id from invoice_reference where invoice_number='{invoice_number}');"))
         payment_account_id_result = res.fetchall()
         if payment_account_id_result:
             payment_account_id = payment_account_id_result[0][0]

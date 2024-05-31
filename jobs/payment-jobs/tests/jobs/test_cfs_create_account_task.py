@@ -28,7 +28,7 @@ from requests.exceptions import HTTPError
 from tasks.cfs_create_account_task import CreateAccountTask
 from utils import mailer
 
-from .factory import factory_create_online_banking_account, factory_create_pad_account
+from .factory import factory_create_eft_account, factory_create_online_banking_account, factory_create_pad_account
 
 
 def test_create_account_setup(session):
@@ -50,6 +50,17 @@ def test_create_pad_account(session):
     assert cfs_account.cfs_site
     assert cfs_account.cfs_account
     assert cfs_account.payment_instrument_number
+
+
+def test_create_eft_account(session):
+    """Test create account."""
+    # Create a pending account first, then call the job
+    account = factory_create_eft_account(auth_account_id='1')
+    CreateAccountTask.create_accounts()
+    account = PaymentAccount.find_by_id(account.id)
+    cfs_account: CfsAccount = CfsAccount.find_effective_by_account_id(account.id)
+    assert cfs_account.status == CfsAccountStatus.ACTIVE.value
+    assert cfs_account.payment_instrument_number is None
 
 
 def test_create_pad_account_user_error(session):

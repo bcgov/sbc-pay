@@ -16,8 +16,7 @@
 
 Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
-from pay_api.models import (
-    DistributionCode, EjvFile, EjvHeader, EjvInvoiceLink, FeeSchedule, Invoice, InvoiceReference, db)
+from pay_api.models import DistributionCode, EjvFile, EjvHeader, EjvLink, FeeSchedule, Invoice, InvoiceReference, db
 from pay_api.utils.enums import DisbursementStatus, EjvFileType, InvoiceReferenceStatus, InvoiceStatus
 
 from tasks.ejv_payment_task import EjvPaymentTask
@@ -87,8 +86,8 @@ def test_payments_for_gov_accounts(session, monkeypatch):
                                                                      InvoiceReferenceStatus.ACTIVE.value)
         assert invoice_ref
 
-        ejv_inv_link: EjvInvoiceLink = db.session.query(EjvInvoiceLink)\
-            .filter(EjvInvoiceLink.invoice_id == inv_id).first()
+        ejv_inv_link: EjvLink = db.session.query(EjvLink)\
+            .filter(EjvLink.link_id == inv_id).first()
         assert ejv_inv_link
 
         ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_inv_link.ejv_header_id).first()
@@ -127,8 +126,8 @@ def test_payments_for_gov_accounts(session, monkeypatch):
                                                                      InvoiceReferenceStatus.ACTIVE.value)
         assert invoice_ref
 
-        ejv_inv_link = db.session.query(EjvInvoiceLink).filter(EjvInvoiceLink.invoice_id == inv_id)\
-            .filter(EjvInvoiceLink.disbursement_status_code == DisbursementStatus.UPLOADED.value).first()
+        ejv_inv_link = db.session.query(EjvLink).filter(EjvLink.link_id == inv_id)\
+            .filter(EjvLink.disbursement_status_code == DisbursementStatus.UPLOADED.value).first()
         assert ejv_inv_link
 
         ejv_header = db.session.query(EjvHeader).filter(EjvHeader.id == ejv_inv_link.ejv_header_id).first()

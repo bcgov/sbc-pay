@@ -1,9 +1,9 @@
-name: Pay API CD
+name: Pay API CD GCP
 
 on:
   push:
     branches:
-      - feature-queue-python-upgrade
+      - feature-gcp
     paths:
       - "pay-api/**"
   workflow_dispatch:

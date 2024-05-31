@@ -23,7 +23,6 @@ from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE, MAKE_PAYMENT, VIEW_ROLE
 from pay_api.utils.endpoints_enums import EndpointEnum
-from pay_api.utils.trace import tracing as _tracing
 
 
 bp = Blueprint('NON_SUFFICIENT_FUNDS', __name__,
@@ -32,7 +31,6 @@ bp = Blueprint('NON_SUFFICIENT_FUNDS', __name__,
 
 @bp.route('', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET'])
-@_tracing.trace()
 @_jwt.requires_auth
 def get_non_sufficient_funds(account_id: str):
     """Get non sufficient funds."""
@@ -47,7 +45,6 @@ def get_non_sufficient_funds(account_id: str):
 
 @bp.route('/statement', methods=['POST', 'OPTIONS'])
 @cross_origin(origins='*', methods=['POST'])
-@_tracing.trace()
 @_jwt.requires_auth
 def get_non_sufficient_funds_statement_pdf(account_id: str):
     """Get non sufficient funds statement pdf."""

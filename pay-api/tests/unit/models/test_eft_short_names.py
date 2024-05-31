@@ -21,28 +21,12 @@ from datetime import datetime
 from pay_api.models.eft_short_names import EFTShortnames as EFTShortnamesModel
 
 
-def test_eft_short_name_defaults(session):
-    """Assert eft short names defaults are stored."""
+def test_eft_short_name_model(session):
+    """Assert eft short names are stored."""
     eft_short_name = EFTShortnamesModel()
     eft_short_name.short_name = 'ABC'
     eft_short_name.save()
 
     assert eft_short_name.id is not None
     assert eft_short_name.short_name == 'ABC'
-    assert eft_short_name.created_on.date() == datetime.now().date()
-    assert eft_short_name.auth_account_id is None
-
-
-def test_eft_short_names_all_attributes(session):
-    """Assert all eft short names attributes are stored."""
-    eft_short_name = EFTShortnamesModel()
-    eft_short_name.short_name = 'ABC'
-    eft_short_name.auth_account_id = '1234'
-    eft_short_name.save()
-
-    assert eft_short_name.id is not None
-
-    eft_short_name = EFTShortnamesModel.find_by_id(eft_short_name.id)
-    assert eft_short_name.short_name == 'ABC'
-    assert eft_short_name.auth_account_id == '1234'
     assert eft_short_name.created_on.date() == datetime.now().date()

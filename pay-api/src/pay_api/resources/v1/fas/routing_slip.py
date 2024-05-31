@@ -24,7 +24,6 @@ from pay_api.utils.auth import jwt as _jwt  # noqa: I005
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
-from pay_api.utils.trace import tracing as _tracing
 
 bp = Blueprint('FAS_ROUTING_SLIPS', __name__,
                url_prefix=f'{EndpointEnum.API_V1.value}/fas/routing-slips')
@@ -32,7 +31,6 @@ bp = Blueprint('FAS_ROUTING_SLIPS', __name__,
 
 @bp.route('', methods=['POST', 'OPTIONS'])
 @cross_origin(origins='*', methods=['POST'])
-@_tracing.trace()
 @_jwt.has_one_of_roles([Role.FAS_CREATE.value])
 def post_routing_slip():
     """Create routing slip."""
@@ -54,7 +52,6 @@ def post_routing_slip():
 
 @bp.route('/queries', methods=['POST', 'OPTIONS'])
 @cross_origin(origins='*', methods=['POST'])
-@_tracing.trace()
 @_jwt.has_one_of_roles([Role.FAS_SEARCH.value])
 def post_search_routing_slips():
     """Get routing slips."""
@@ -79,7 +76,6 @@ def post_search_routing_slips():
 
 @bp.route('/<string:date>/reports', methods=['POST', 'OPTIONS'])
 @cross_origin(origins='*', methods=['POST'])
-@_tracing.trace()
 @_jwt.has_one_of_roles([Role.FAS_REPORTS.value])
 def post_routing_slip_report(date: str):
     """Create routing slip report."""
@@ -98,7 +94,6 @@ def post_routing_slip_report(date: str):
 
 @bp.route('/<string:routing_slip_number>', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET', 'PATCH'])
-@_tracing.trace()
 @_jwt.has_one_of_roles([Role.FAS_VIEW.value])
 def get_routing_slip(routing_slip_number: str):
     """Get routing slip."""
@@ -118,7 +113,6 @@ def get_routing_slip(routing_slip_number: str):
 
 @bp.route('/<string:routing_slip_number>', methods=['PATCH'])
 @cross_origin(origins='*')
-@_tracing.trace()
 @_jwt.has_one_of_roles([Role.FAS_EDIT.value])
 def patch_routing_slip(routing_slip_number: str):
     """Patch routing slip."""
@@ -135,7 +129,6 @@ def patch_routing_slip(routing_slip_number: str):
 
 @bp.route('/<string:routing_slip_number>/links', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET'])
-@_tracing.trace()
 @_jwt.has_one_of_roles([Role.FAS_VIEW.value, Role.FAS_LINK.value])
 def get_routing_slip_links(routing_slip_number: str):
     """Get routing slip links ;ie parent/child details."""
@@ -152,7 +145,6 @@ def get_routing_slip_links(routing_slip_number: str):
 
 @bp.route('/links', methods=['POST', 'OPTIONS'])
 @cross_origin(origins='*', methods=['POST'])
-@_tracing.trace()
 @_jwt.has_one_of_roles([Role.FAS_LINK.value])
 def post_routing_slip_link():
     """Get routing slip links ;ie parent/child details."""
@@ -176,7 +168,6 @@ def post_routing_slip_link():
 @bp.route('/<string:routing_slip_number>/comments', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET', 'POST'])
 @_jwt.has_one_of_roles([Role.FAS_VIEW.value])
-@_tracing.trace()
 def get_routing_slip_comments(routing_slip_number: str):
     """Get comments for a slip."""
     current_app.logger.info('<get_routing_slip_comments')
@@ -196,7 +187,6 @@ def get_routing_slip_comments(routing_slip_number: str):
 @bp.route('/<string:routing_slip_number>/comments', methods=['POST'])
 @cross_origin(origins='*')
 @_jwt.has_one_of_roles([Role.FAS_VIEW.value])
-@_tracing.trace()
 def post_routing_slip_comment(routing_slip_number: str):
     """Create comment for a slip."""
     current_app.logger.info('<post_routing_slip_comment')

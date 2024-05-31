@@ -63,10 +63,11 @@ class Credit(BaseModel):  # pylint:disable=too-many-instance-attributes
         return cls.query.filter_by(cfs_identifier=cfs_identifier).filter_by(is_credit_memo=credit_memo).one_or_none()
 
 
-class CreditSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class CreditSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Credit."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = Credit
+        load_instance = True

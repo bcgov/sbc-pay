@@ -17,6 +17,8 @@ Tests to assure the ops end-point.
 
 Test-Suite to ensure that the /ops endpoint is working as expected.
 """
+from sqlalchemy.exc import SQLAlchemyError
+from pay_api.models import db
 
 
 def test_ops_healthz_success(client):
@@ -27,12 +29,13 @@ def test_ops_healthz_success(client):
     assert rv.json == {'message': 'api is healthy'}
 
 
-def test_ops_healthz_fail(app_request):
-    """Assert that the service is unhealthy if a connection toThe database cannot be made."""
-    app_request.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://does:not@exist:5432/nada'
+def test_ops_healthz_fail(app_request, monkeypatch):
+    """Assert that the service is unhealthy if a connection to the database cannot be made."""
+    def db_error(_):
+        raise SQLAlchemyError(1, 2, code='42')
+    monkeypatch.setattr(db.session, 'execute', db_error)
     with app_request.test_client() as client:
         rv = client.get('/ops/healthz')
-
         assert rv.status_code == 500
         assert rv.json == {'message': 'api is down'}
 

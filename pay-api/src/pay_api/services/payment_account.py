@@ -40,6 +40,7 @@ from pay_api.models.payment_account import PaymentAccountSearchModel
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.distribution_code import DistributionCode
+from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.oauth_service import OAuthService
 from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.services.statement import Statement
@@ -151,8 +152,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @auth_account_id.setter
     def auth_account_id(self, value: str):
         """Set the auth_account_id."""
-        self._auth_account_id = value
-        self._dao.auth_account_id = value
+        if self._auth_account_id != value:
+            self._auth_account_id = value
+            self._dao.auth_account_id = value
 
     @property
     def name(self):
@@ -162,8 +164,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @name.setter
     def name(self, value: str):
         """Set the name."""
-        self._name = value
-        self._dao.name = value
+        if self._name != value:
+            self._name = value
+            self._dao.name = value
 
     @property
     def payment_method(self):
@@ -173,8 +176,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @payment_method.setter
     def payment_method(self, value: int):
         """Set the payment_method."""
-        self._payment_method = value
-        self._dao.payment_method = value
+        if self._payment_method != value:
+            self._payment_method = value
+            self._dao.payment_method = value
 
     @property
     def cfs_account(self):
@@ -321,8 +325,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @billable.setter
     def billable(self, value: bool):
         """Set the billable."""
-        self._billable = value
-        self._dao.billable = value
+        if self._billable != value:
+            self._billable = value
+            self._dao.billable = value
 
     @property
     def eft_enable(self):
@@ -332,8 +337,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @eft_enable.setter
     def eft_enable(self, value: bool):
         """Set the eft_enable."""
-        self._eft_enable = value
-        self._dao.eft_enable = value
+        if self._eft_enable != value:
+            self._eft_enable = value
+            self._dao.eft_enable = value
 
     def save(self):
         """Save the information to the DB."""
@@ -437,7 +443,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         # pylint:disable=cyclic-import, import-outside-toplevel
         from pay_api.factory.payment_system_factory import PaymentSystemFactory
 
-        payment_account.auth_account_id = account_request.get('accountId')
+        payment_account.auth_account_id = str(account_request.get('accountId'))
 
         # If the payment method is CC, set the payment_method as DIRECT_PAY
         if payment_method := get_str_by_path(account_request, 'paymentInfo/methodOfPayment'):
@@ -470,6 +476,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         # 2. Existing payment account:
         # -  If the account was on DIRECT_PAY and switching to Online Banking, and active CFS account is not present.
         # -  If the account was on DRAWDOWN and switching to PAD, and active CFS account is not present
+        # -  If the account was on PAD and switching to EFT, and active CFS account is not present
 
         if payment_method:
             pay_system = PaymentSystemFactory.create_from_payment_method(payment_method=payment_method)
@@ -484,7 +491,10 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id) \
             if payment_account.id else None
         if pay_system.get_payment_system_code() == PaymentSystem.PAYBC.value:
-            if cfs_account is None:
+            if cfs_account is None or (payment_account.payment_method == PaymentMethod.EFT and cfs_account):
+                if payment_account.payment_method == PaymentMethod.EFT and cfs_account:
+                    pay_system.update_account(name=payment_account.name, cfs_account=cfs_account,
+                                              payment_info=payment_info)
                 cfs_account = pay_system.create_account(  # pylint:disable=assignment-from-none
                     identifier=payment_account.auth_account_id,
                     contact_info=account_request.get('contactInfo'),
@@ -607,7 +617,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         else:
             # Handle repeated changing of pad to bcol ;then to pad again etc
             new_activation_date = account.pad_activation_date  # was already in pad ;no need to extend
-            is_previous_pad_activated = account.pad_activation_date < datetime.now()
+            is_previous_pad_activated = new_activation_date < datetime.now(new_activation_date.tzinfo)
             if is_previous_pad_activated:
                 # was in PAD ; so no need of activation period wait time and no need to be in bcol..so use PAD again
                 new_payment_method = PaymentMethod.PAD.value
@@ -797,7 +807,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
     def _is_pad_in_pending_activation(self):
         """Find if PAD is awaiting activation."""
-        return self.pad_activation_date and self.pad_activation_date > datetime.now() and self.cfs_account_status in \
+        return self.pad_activation_date and self.pad_activation_date > datetime.now(self.pad_activation_date.tzinfo) \
+            and self.cfs_account_status in \
             (CfsAccountStatus.PENDING.value, CfsAccountStatus.PENDING_PAD_ACTIVATION.value)
 
     def publish_account_mailer_event_on_creation(self):
@@ -807,11 +818,11 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                                                         include_pay_info=True)
             self._publish_queue_message(payload, QueueMessageTypes.PAD_ACCOUNT_CREATE.value)
 
-    def _publish_queue_message(self, payload, message_type):
+    def _publish_queue_message(self, payload: dict, message_type: str):
         """Publish to account mailer to send out confirmation email or notification email."""
         try:
             gcp_queue_publisher.publish_to_queue(
-                gcp_queue_publisher.QueueMessage(
+                QueueMessage(
                     source=QueueSources.PAY_API.value,
                     message_type=message_type,
                     payload=payload,
@@ -873,7 +884,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
             try:
                 gcp_queue_publisher.publish_to_queue(
-                    gcp_queue_publisher.QueueMessage(
+                    QueueMessage(
                         source=QueueSources.PAY_API.value,
                         message_type=QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value,
                         payload=payload,

@@ -17,11 +17,11 @@ from __future__ import annotations
 from datetime import date
 
 from marshmallow import fields
+from sql_versioning import Versioned
 from sqlalchemy import Boolean, ForeignKey
 from sqlalchemy.orm import relationship
 
 from .audit import Audit, AuditSchema, BaseModel
-from .base_model import VersionedModel
 from .base_schema import BaseSchema
 from .db import db, ma
 
@@ -72,7 +72,7 @@ class DistributionCodeLink(BaseModel):
         BaseModel.commit()
 
 
-class DistributionCode(Audit, VersionedModel):  # pylint:disable=too-many-instance-attributes
+class DistributionCode(Audit, Versioned, BaseModel):  # pylint:disable=too-many-instance-attributes
     """This class manages all of the base data about distribution code.
 
     Distribution code holds details on the codes for how the collected payment is going to be distributed.
@@ -156,7 +156,7 @@ class DistributionCode(Audit, VersionedModel):  # pylint:disable=too-many-instan
         return distribution_code
 
 
-class DistributionCodeLinkSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class DistributionCodeLinkSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the DistributionCodeLink."""
 
     class Meta:  # pylint: disable=too-few-public-methods
@@ -164,6 +164,7 @@ class DistributionCodeLinkSchema(ma.ModelSchema):  # pylint: disable=too-many-an
 
         model = DistributionCodeLink
         exclude = ['disbursement']
+        load_instance = True
 
 
 class DistributionCodeSchema(AuditSchema, BaseSchema):  # pylint: disable=too-many-ancestors

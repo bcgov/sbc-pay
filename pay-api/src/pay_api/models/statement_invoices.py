@@ -55,10 +55,11 @@ class StatementInvoices(BaseModel):
         return cls.query.filter_by(statement_id=statement_identifier).all()
 
 
-class StatementInvoicesSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class StatementInvoicesSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Statements."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = StatementInvoices
+        load_instance = True

@@ -11,13 +11,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=W0223
 """Custom Query class to extend BaseQuery class functionality."""
 from datetime import date, datetime
-from flask_sqlalchemy import BaseQuery
+from flask_sqlalchemy.query import Query
 from sqlalchemy import and_, func
 
 
-class CustomQuery(BaseQuery):
+class CustomQuery(Query):  # pylint: disable=too-many-ancestors
     """Custom Query class to extend the base query class for helper functionality."""
 
     def filter_conditionally(self, search_criteria, model_attribute, is_like: bool = False):

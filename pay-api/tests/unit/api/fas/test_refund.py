@@ -29,7 +29,7 @@ from tests.utilities.base_test import get_claims, get_routing_slip_request, toke
 fake = Faker()
 
 
-def test_refund_routing_slips(client, jwt):
+def test_refund_routing_slips(session, client, jwt):
     """Assert refund works for routing slips."""
     payload = get_routing_slip_request()
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value, Role.FAS_REFUND.value]),
@@ -88,7 +88,7 @@ def test_refund_routing_slips(client, jwt):
     assert rv.json.get('status') == RoutingSlipStatus.REFUND_AUTHORIZED.value
 
 
-def test_refund_routing_slips_reject(client, jwt):
+def test_refund_routing_slips_reject(session, client, jwt):
     """Assert refund works for routing slips."""
     payload = get_routing_slip_request()
     token = jwt.create_jwt(
@@ -117,7 +117,7 @@ def test_refund_routing_slips_reject(client, jwt):
     assert rv.json.get('status') == RoutingSlipStatus.ACTIVE.value
 
 
-def test_refund_routing_slips_zero_dollar_error(client, jwt):
+def test_refund_routing_slips_zero_dollar_error(session, client, jwt):
     """Assert zero dollar refund fails."""
     payload = get_routing_slip_request(cheque_receipt_numbers=[('1234567890', PaymentMethod.CHEQUE.value, 0.00)])
     token = jwt.create_jwt(get_claims(roles=[Role.FAS_CREATE.value, Role.FAS_VIEW.value, Role.FAS_REFUND.value]),

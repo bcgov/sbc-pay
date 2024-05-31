@@ -58,8 +58,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
         if not is_zero_dollar_invoice and routing_slip is not None:
             # creating invoice in cfs is done in job
             current_app.logger.info(f'FAS Routing slip found with remaining amount : {routing_slip.remaining_amount}')
-            routing_slip.remaining_amount = routing_slip.remaining_amount - \
-                get_quantized(invoice.total)
+            routing_slip.remaining_amount -= get_quantized(invoice.total)
             if routing_slip.status == RoutingSlipStatus.ACTIVE.value and routing_slip.remaining_amount < 0.01:
                 routing_slip.status = RoutingSlipStatus.COMPLETE.value
             routing_slip.flush()

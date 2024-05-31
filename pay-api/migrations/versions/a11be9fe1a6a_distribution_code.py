@@ -97,7 +97,7 @@ def upgrade():
                 'distribution_code_id': 4,
                 'created_by': 'Alembic',
                 'created_on': date.today(),
-                'memo_name': 'TODO-VS',
+                'memo_name': 'VS',
                 'service_fee_memo_name': 'SBC Modernization Service Charge',
                 'start_date': date.today(),
             },
@@ -105,7 +105,7 @@ def upgrade():
                 'distribution_code_id': 5,
                 'created_by': 'Alembic',
                 'created_on': date.today(),
-                'memo_name': 'TODO-PPR',
+                'memo_name': 'PPR',
                 'service_fee_memo_name': 'SBC Modernization Service Charge',
                 'start_date': date.today(),
             }
@@ -115,7 +115,7 @@ def upgrade():
 
     conn = op.get_bind()
     res = conn.execute(
-        'select fee_schedule_id, corp_type_code from fee_schedule;')
+        sa.text('select fee_schedule_id, corp_type_code from fee_schedule;'))
     results = res.fetchall()
     for result in results:
         distribution_code_id = None

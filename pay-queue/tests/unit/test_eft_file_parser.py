@@ -555,6 +555,7 @@ def test_eft_parse_file():
         assert eft_records[0].jv_type == 'I'
         assert eft_records[0].jv_number == '002425669'
         assert eft_records[0].transaction_date is None
+        assert not eft_records[0].is_eft
 
         assert eft_records[1].index == 2
         assert eft_records[1].record_type == '2'
@@ -573,6 +574,7 @@ def test_eft_parse_file():
         assert eft_records[1].jv_type == 'I'
         assert eft_records[1].jv_number == '002425669'
         assert eft_records[1].transaction_date is None
+        assert not eft_records[1].is_eft
 
         assert eft_records[2].index == 3
         assert eft_records[2].record_type == '2'
@@ -591,6 +593,7 @@ def test_eft_parse_file():
         assert eft_records[2].jv_type == 'I'
         assert eft_records[2].jv_number == '002425669'
         assert eft_records[2].transaction_date is None
+        assert not eft_records[2].is_eft
 
         assert eft_records[3].index == 4
         assert eft_records[3].record_type == '2'
@@ -609,6 +612,7 @@ def test_eft_parse_file():
         assert eft_records[3].jv_type == 'I'
         assert eft_records[3].jv_number == '002425669'
         assert eft_records[3].transaction_date is None
+        assert not eft_records[3].is_eft
 
         assert eft_records[4].index == 5
         assert eft_records[4].record_type == '2'
@@ -627,3 +631,4 @@ def test_eft_parse_file():
         assert eft_records[4].jv_type == 'I'
         assert eft_records[4].jv_number == '002425836'
         assert eft_records[4].transaction_date is None
+        assert not eft_records[4].is_eft

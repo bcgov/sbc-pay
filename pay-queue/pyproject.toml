@@ -1,0 +1,53 @@
+[tool.poetry]
+name = "pay-queue"
+version = "0.1.0"
+description = ""
+authors = ["Travis Semple <travis8814@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+flask = "^3.0.2"
+jsonschema = "4.17.3"
+python-dotenv = "^1.0.1"
+sentry-sdk = {extras = ["flask"], version = "^1.41.0"}
+pycountry = "^23.12.11"
+werkzeug = "^3.0.1"
+minio = "^7.2.5"
+attrs = "^23.2.0"
+sqlalchemy = "^2.0.28"
+itsdangerous = "^2.1.2"
+jinja2 = "^3.1.3"
+protobuf = "4.25.3"
+launchdarkly-server-sdk = "^8.2.1"
+cachecontrol = "^0.14.0"
+pay-api = {git = "https://github.com/seeker25/sbc-pay.git", branch = "sync-python-to-main", subdirectory = "pay-api"}
+pg8000 = "^1.30.5"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.1.1"
+pytest-mock = "^3.12.0"
+requests = "^2.31.0"
+pyhamcrest = "^2.1.0"
+pytest-cov = "^4.1.0"
+freezegun = "^1.4.0"
+flake8 = "^7.0.0"
+flake8-blind-except = "^0.2.1"
+flake8-debugger = "^4.1.2"
+flake8-docstrings = "^1.7.0"
+flake8-isort = "^6.1.1"
+flake8-quotes = "^3.4.0"
+pep8-naming = "^0.13.3"
+autopep8 = "^2.0.4"
+coverage = "^7.4.3"
+pylint = "^3.1.0"
+pylint-flask = "^0.6"
+pydocstyle = "^6.3.0"
+isort = "^5.13.2"
+lovely-pytest-docker = "^0.3.1"
+pytest-asyncio = "0.18.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

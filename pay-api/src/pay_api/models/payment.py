@@ -153,7 +153,6 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             .outerjoin(Invoice, InvoiceReference.invoice_id == Invoice.id) \
             .filter(PaymentAccount.auth_account_id == auth_account_id)
 
-        # TODO handle other status and conditions gracefully.
         if payment_status:
             query = query.filter(Payment.payment_status_code == payment_status)
             if payment_status == PaymentStatus.FAILED.value:
@@ -165,7 +164,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
                 # If call is to get NSF payments, get only active failed payments.
                 # Exclude any payments which failed first and paid later.
                 query = query.filter(or_(InvoiceReference.status_code == InvoiceReferenceStatus.ACTIVE.value,
-                                         Payment.cons_inv_number.in_(consolidated_inv_subquery)))
+                                         Payment.cons_inv_number.in_(consolidated_inv_subquery.select())))
 
         query = query.order_by(Payment.id.asc())
         pagination = query.paginate(per_page=limit, page=page)
@@ -187,7 +186,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             .filter(InvoiceReference.status_code == InvoiceReferenceStatus.ACTIVE.value) \
             .filter(PaymentAccount.auth_account_id == auth_account_id) \
             .filter(or_(Payment.payment_status_code == PaymentStatus.FAILED.value,
-                        Payment.invoice_number.in_(consolidated_inv_subquery)))
+                        Payment.invoice_number.in_(consolidated_inv_subquery.select())))
 
         return query.all()
 
@@ -246,14 +245,14 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             count = cls.get_count(auth_account_id, search_filter)
             # Add pagination
             sub_query = cls.generate_subquery(auth_account_id, search_filter, limit, page)
-            result = query.order_by(Invoice.id.desc()).filter(Invoice.id.in_(sub_query.subquery())).all()
+            result = query.order_by(Invoice.id.desc()).filter(Invoice.id.in_(sub_query.subquery().select())).all()
             # If maximum number of records is provided, return it as total
             if max_no_records > 0:
                 count = max_no_records if max_no_records < count else count
         elif max_no_records > 0:
             # If maximum number of records is provided, set the page with that number
             sub_query = cls.generate_subquery(auth_account_id, search_filter, max_no_records, page=None)
-            result, count = query.filter(Invoice.id.in_(sub_query.subquery())).all(), sub_query.count()
+            result, count = query.filter(Invoice.id.in_(sub_query.subquery().select())).all(), sub_query.count()
         else:
             count = cls.get_count(auth_account_id, search_filter)
             if count > 60000:
@@ -289,7 +288,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
         query = db.session.query(Invoice) \
             .outerjoin(PaymentAccount, Invoice.payment_account_id == PaymentAccount.id)
         query = cls.filter(query, auth_account_id, search_filter, add_outer_joins=True)
-        count = query.group_by(Invoice.id).with_entities(func.count()).count()
+        count = query.group_by(Invoice.id).with_entities(func.count()).count()  # pylint:disable=not-callable
         return count
 
     @classmethod
@@ -313,7 +312,7 @@ class Payment(BaseModel):  # pylint: disable=too-many-instance-attributes
             query = query.filter(
                 Invoice.created_name.ilike(f'%{created_by}%'))  # pylint: disable=no-member
         if created_name := search_filter.get('createdName', None):
-            query = query.filter(Invoice.created_name.ilike(f'%{created_name}%'))
+            query = query.filter(Invoice.created_name.ilike(f'%{created_name}%'))  # pylint: disable=no-member
         if invoice_id := search_filter.get('id', None):
             query = query.filter(cast(Invoice.id, String).like(f'%{invoice_id}%'))
 

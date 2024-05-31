@@ -617,7 +617,6 @@ def test_patch_transaction_for_nsf_payment(session, monkeypatch):
         return '1234567890', datetime.now(), 100.00
 
     monkeypatch.setattr('pay_api.services.paybc_service.PaybcService.get_receipt', get_receipt)
-
     txn = PaymentTransactionService.create_transaction_for_payment(payment_2.id, get_paybc_transaction_request())
     txn = PaymentTransactionService.update_transaction(txn.id, pay_response_url='receipt_number=123451')
 

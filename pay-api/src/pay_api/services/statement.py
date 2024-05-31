@@ -210,8 +210,9 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         """Populate is_overdue field for statements."""
         # Invoice status can change after a statement has been generated.
         statement_ids = [statements.id for statements in statements]
-        overdue_statements = db.session.query(func.count(InvoiceModel.id).label('overdue_invoices'),
-                                              StatementInvoicesModel.statement_id) \
+        overdue_statements = db.session.query(
+                func.count(InvoiceModel.id).label('overdue_invoices'),  # pylint:disable=not-callable
+                StatementInvoicesModel.statement_id) \
             .join(StatementInvoicesModel) \
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.OVERDUE.value) \
             .filter(StatementInvoicesModel.invoice_id == InvoiceModel.id) \

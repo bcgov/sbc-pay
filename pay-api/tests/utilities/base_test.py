@@ -17,7 +17,7 @@
 Test-Suite to ensure that the /payments endpoint is working as expected.
 """
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from random import randrange
 from typing import Dict, List, Tuple
@@ -25,13 +25,13 @@ from typing import Dict, List, Tuple
 from faker import Faker
 
 from pay_api.models import (
-    CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTFile, EFTShortnames, Invoice, InvoiceReference,
-    NonSufficientFundsModel, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction, Receipt, RoutingSlip,
-    Statement, StatementInvoices, StatementSettings)
+    CfsAccount, Comment, DistributionCode, DistributionCodeLink, EFTFile, EFTShortnameLinks, EFTShortnames, Invoice,
+    InvoiceReference, NonSufficientFundsModel, Payment, PaymentAccount, PaymentLineItem, PaymentTransaction, Receipt,
+    RoutingSlip, Statement, StatementInvoices, StatementSettings)
 from pay_api.utils.constants import DT_SHORT_FORMAT
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus,
-    PaymentSystem, Role, RoutingSlipStatus)
+    CfsAccountStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod,
+    PaymentStatus, PaymentSystem, Role, RoutingSlipStatus)
 
 
 token_header = {
@@ -387,7 +387,7 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
         name=name,
         branch_name=branch_name,
         payment_method=payment_method_code,
-        pad_activation_date=datetime.now(),
+        pad_activation_date=datetime.now(tz=timezone.utc),
         eft_enable=False
     ).save()
 
@@ -463,7 +463,7 @@ def factory_routing_slip(
         status: str = RoutingSlipStatus.ACTIVE.value,
         total: int = 0,
         remaining_amount: Decimal = 0.0,
-        routing_slip_date=datetime.now()
+        routing_slip_date=datetime.now(tz=timezone.utc)
 ):
     """Return Factory."""
     routing_slip: RoutingSlip = RoutingSlip(
@@ -471,7 +471,7 @@ def factory_routing_slip(
         payment_account_id=payment_account_id,
         status=status,
         total=total,
-        remaining_amount=remaining_amount,
+        remaining_amount=Decimal(str(remaining_amount)),
         created_by='test',
         routing_slip_date=routing_slip_date
     )
@@ -484,7 +484,7 @@ def factory_routing_slip_usd(
         status: str = RoutingSlipStatus.ACTIVE.value,
         total: int = 0,
         remaining_amount: int = 0,
-        routing_slip_date=datetime.now(),
+        routing_slip_date=datetime.now(tz=timezone.utc),
         total_usd=0
 ):
     """Return Factory."""
@@ -493,7 +493,7 @@ def factory_routing_slip_usd(
         payment_account_id=payment_account_id,
         status=status,
         total=total,
-        remaining_amount=remaining_amount,
+        remaining_amount=Decimal(str(remaining_amount)),
         created_by='test',
         routing_slip_date=routing_slip_date,
         total_usd=total_usd
@@ -508,7 +508,7 @@ def factory_invoice(payment_account, status_code: str = InvoiceStatus.CREATED.va
                     total=0,
                     paid=None,
                     payment_method_code: str = PaymentMethod.DIRECT_PAY.value,
-                    created_on: datetime = datetime.now(),
+                    created_on: datetime = datetime.now(tz=timezone.utc),
                     routing_slip=None,
                     folio_number=1234567890,
                     created_name='test name',
@@ -554,8 +554,8 @@ def factory_payment_transaction(
         status_code: str = 'CREATED',
         client_system_url: str = 'http://google.com/',
         pay_system_url: str = 'http://google.com',
-        transaction_start_time: datetime = datetime.now(),
-        transaction_end_time: datetime = datetime.now(),
+        transaction_start_time: datetime = datetime.now(tz=timezone.utc),
+        transaction_end_time: datetime = datetime.now(tz=timezone.utc),
 ):
     """Return Factory."""
     return PaymentTransaction(
@@ -578,7 +578,7 @@ def factory_invoice_reference(invoice_id: int, invoice_number: str = '10021'):
 def factory_receipt(
         invoice_id: int,
         receipt_number: str = 'TEST1234567890',
-        receipt_date: datetime = datetime.now(),
+        receipt_date: datetime = datetime.now(tz=timezone.utc),
         receipt_amount: float = 10.0
 ):
     """Return Factory."""
@@ -593,7 +593,7 @@ def factory_receipt(
 def factory_statement_settings(
         frequency: str = 'WEEKLY',
         payment_account_id: str = None,
-        from_date: datetime = datetime.now(),
+        from_date: datetime = datetime.now(tz=timezone.utc),
         to_date: datetime = None):
     """Return Factory."""
     return StatementSettings(frequency=frequency,
@@ -605,10 +605,10 @@ def factory_statement_settings(
 def factory_statement(
         frequency: str = 'WEEKLY',
         payment_account_id: str = None,
-        from_date: datetime = datetime.now(),
-        to_date: datetime = datetime.now(),
+        from_date: datetime = datetime.now(tz=timezone.utc),
+        to_date: datetime = datetime.now(tz=timezone.utc),
         statement_settings_id: str = None,
-        created_on: datetime = datetime.now()):
+        created_on: datetime = datetime.now(tz=timezone.utc)):
     """Return Factory."""
     return Statement(frequency=frequency,
                      statement_settings_id=statement_settings_id,
@@ -629,7 +629,7 @@ def factory_statement_invoices(
 def activate_pad_account(auth_account_id: str):
     """Activate the pad account."""
     payment_account: PaymentAccount = PaymentAccount.find_by_auth_account_id(auth_account_id)
-    payment_account.pad_activation_date = datetime.now()
+    payment_account.pad_activation_date = datetime.now(tz=timezone.utc)
     payment_account.save()
     cfs_account: CfsAccount = CfsAccount.find_effective_by_account_id(payment_account.id)
     cfs_account.status = 'ACTIVE'
@@ -860,7 +860,7 @@ def get_routing_slip_request(
     """Return a routing slip request dictionary."""
     routing_slip_payload: Dict[str, any] = {
         'number': number,
-        'routingSlipDate': datetime.now().strftime(DT_SHORT_FORMAT),
+        'routingSlipDate': datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT),
         'paymentAccount': {
             'accountName': 'TEST'
         },
@@ -869,7 +869,7 @@ def get_routing_slip_request(
     for cheque_detail in cheque_receipt_numbers:
         routing_slip_payload['payments'].append({
             'paymentMethod': cheque_detail[1],
-            'paymentDate': datetime.now().strftime(DT_SHORT_FORMAT),
+            'paymentDate': datetime.now(tz=timezone.utc).strftime(DT_SHORT_FORMAT),
             'chequeReceiptNumber': cheque_detail[0],
             'paidAmount': cheque_detail[2]
         })
@@ -891,9 +891,22 @@ def factory_eft_file(file_ref: str = 'test_ref.txt'):
     return EFTFile(file_ref=file_ref).save()
 
 
-def factory_eft_shortname(short_name: str, auth_account_id: str = None):
+def factory_eft_shortname(short_name: str):
     """Return an EFT short name model."""
-    return EFTShortnames(short_name=short_name, auth_account_id=auth_account_id)
+    return EFTShortnames(short_name=short_name)
+
+
+def factory_eft_shortname_link(short_name_id: int, auth_account_id: str = '1234',
+                               updated_by: str = None, updated_on: datetime = datetime.now()):
+    """Return an EFT short name link model."""
+    return EFTShortnameLinks(
+        eft_short_name_id=short_name_id,
+        auth_account_id=auth_account_id,
+        status_code=EFTShortnameStatus.PENDING.value,
+        updated_by=updated_by,
+        updated_by_name=updated_by,
+        updated_on=updated_on
+    )
 
 
 def factory_non_sufficient_funds(invoice_id: int, invoice_number: str, description: str = None):

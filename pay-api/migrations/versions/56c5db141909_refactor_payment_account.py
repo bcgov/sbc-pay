@@ -65,7 +65,7 @@ def upgrade():
 
     # Update payment account id here
     conn = op.get_bind()
-    res = conn.execute("select id, bcol_user_id, bcol_account_id, account_id from bcol_payment_account;")
+    res = conn.execute(sa.text("select id, bcol_user_id, bcol_account_id, account_id from bcol_payment_account;"))
     bcol_payment_accounts = res.fetchall()
     for bcol_payment_account in bcol_payment_accounts:
         id = bcol_payment_account[0]
@@ -82,7 +82,7 @@ def upgrade():
     # Insert cfs_account details and mark it as inactive, as all the existing accounts are entity based.
     op.execute("insert into cfs_account (account_id, cfs_account, cfs_party, cfs_site, is_active) select account_id, paybc_account, paybc_party, paybc_site, false from credit_payment_account")
 
-    res = conn.execute("select id, account_id from credit_payment_account;")
+    res = conn.execute(sa.text("select id, account_id from credit_payment_account;"))
     credit_payment_accounts = res.fetchall()
     for credit_payment_account in credit_payment_accounts:
         id = credit_payment_account[0]
@@ -91,7 +91,7 @@ def upgrade():
         # Update payment account with bcol information
         op.execute(f"update invoice set payment_account_id={account_id}  where credit_account_id='{id}'")
 
-    res = conn.execute("select id, account_id from internal_payment_account;")
+    res = conn.execute(sa.text("select id, account_id from internal_payment_account;"))
     internal_payment_accounts = res.fetchall()
     for internal_payment_account in internal_payment_accounts:
         id = internal_payment_account[0]

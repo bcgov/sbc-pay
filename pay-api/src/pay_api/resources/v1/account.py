@@ -28,7 +28,6 @@ from pay_api.utils.constants import EDIT_ROLE, VIEW_ROLE
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import CfsAccountStatus, ContentType, Role
 from pay_api.utils.errors import Error
-from pay_api.utils.trace import tracing as _tracing
 
 bp = Blueprint('ACCOUNTS', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/accounts')
 
@@ -79,7 +78,6 @@ def get_eft_accounts():
 
 @bp.route('/<string:account_number>', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET', 'PUT', 'DELETE'])
-@_tracing.trace()
 @_jwt.requires_auth
 def get_account(account_number: str):
     """Get payment account details."""
@@ -93,7 +91,6 @@ def get_account(account_number: str):
 
 @bp.route('/<string:account_number>/eft', methods=['PATCH'])
 @cross_origin(origins='*')
-@_tracing.trace()
 @_jwt.has_one_of_roles([Role.SYSTEM.value])
 def patch_account(account_number: str):
     """Enable eft for an account."""
@@ -110,7 +107,6 @@ def patch_account(account_number: str):
 
 @bp.route('/<string:account_number>', methods=['PUT'])
 @cross_origin(origins='*')
-@_tracing.trace()
 @_jwt.has_one_of_roles([Role.SYSTEM.value])
 def put_account(account_number: str):
     """Update the payment account records."""
@@ -137,7 +133,6 @@ def put_account(account_number: str):
 
 @bp.route('/<string:account_number>', methods=['DELETE'])
 @cross_origin(origins='*')
-@_tracing.trace()
 @_jwt.has_one_of_roles([Role.SYSTEM.value])
 def delete_account(account_number: str):
     """Delete payment account details."""
@@ -228,7 +223,6 @@ def put_account_fee_product(account_number: str, product: str):
 
 @bp.route('/<string:account_number>/payments/queries', methods=['POST', 'OPTIONS'])
 @cross_origin(origins='*', methods=['POST'])
-@_tracing.trace()
 @_jwt.requires_auth
 def post_search_purchase_history(account_number: str):
     """Search purchase history."""
@@ -258,7 +252,6 @@ def post_search_purchase_history(account_number: str):
 
 @bp.route('/<string:account_number>/payments/reports', methods=['POST', 'OPTIONS'])
 @cross_origin(origins='*', methods=['POST'])
-@_tracing.trace()
 @_jwt.requires_auth
 def post_account_purchase_report(account_number: str):
     """Create the account purchase report."""

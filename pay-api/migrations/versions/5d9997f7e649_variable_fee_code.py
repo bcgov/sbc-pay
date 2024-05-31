@@ -117,12 +117,12 @@ def upgrade():
                                  "and dc.start_date <= CURRENT_DATE " \
                                  "and (dc.end_date is null or dc.end_date > CURRENT_DATE)"
     conn = op.get_bind()
-    res = conn.execute(distribution_code_id_query)
+    res = conn.execute(sa.text(distribution_code_id_query))
     if (res_fetch := res.fetchall()) and res_fetch[0]:
         distribution_code_id = res_fetch[0][0]
         res = conn.execute(
-            "select fee_schedule_id from fee_schedules where corp_type_code='CSO' and "
-            "filing_type_code in ('CSBVFEE', 'CSBSRCH', 'CSBPDOC', 'CSCRMTFC')")
+            sa.text("select fee_schedule_id from fee_schedules where corp_type_code='CSO' and "
+            "filing_type_code in ('CSBVFEE', 'CSBSRCH', 'CSBPDOC', 'CSCRMTFC')"))
 
         distr_code_links = []
         for result in res.fetchall():

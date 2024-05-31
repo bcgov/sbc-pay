@@ -18,9 +18,10 @@ This module is the API for the Legal Entity system.
 
 import os
 
+from flask_migrate import Migrate, upgrade
 import sentry_sdk  # noqa: I001; pylint: disable=ungrouped-imports,wrong-import-order; conflicts with Flake8
 from flask import Flask
-from sbc_common_components.exception_handling.exception_handler import ExceptionHandler  # noqa: I001
+from sbc_common_components.exception_handling.exception_handler import ExceptionHandler
 from sbc_common_components.utils.camel_case_response import convert_to_camel
 from sentry_sdk.integrations.flask import FlaskIntegration  # noqa: I001
 
@@ -30,17 +31,17 @@ from pay_api.config import _Config
 from pay_api.resources import endpoints
 from pay_api.services.flags import flags
 from pay_api.models import db, ma
+from pay_api.services.gcp_queue import queue
 from pay_api.utils.auth import jwt
 from pay_api.utils.cache import cache
 from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
-from .services.gcp_queue import queue
 
 
 setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))
 
 
-def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
+def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
     """Return a configured Flask App using the Factory method."""
     app = Flask(__name__)
     app.env = run_mode
@@ -49,43 +50,49 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
     flags.init_app(app)
     queue.init_app(app)
     db.init_app(app)
+    queue.init_app(app)
+    Migrate(app, db)
+    app.logger.info('Running migration upgrade.')
+    with app.app_context():
+        upgrade(directory='migrations', revision='head', sql=False, tag=None)
+    # Alembic has it's own logging config, we'll need to restore our logging here.
+    setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))
+    app.logger.info('Finished migration upgrade.')
     ma.init_app(app)
     endpoints.init_app(app)
 
-    if run_mode != 'migration':
+    # Configure Sentry
+    if str(app.config.get('SENTRY_ENABLE')).lower() == 'true':
+        if app.config.get('SENTRY_DSN', None):  # pragma: no cover
+            sentry_sdk.init(  # pylint: disable=abstract-class-instantiated
+                dsn=app.config.get('SENTRY_DSN'),
+                integrations=[FlaskIntegration()]
+            )
 
-        # Configure Sentry
-        if str(app.config.get('SENTRY_ENABLE')).lower() == 'true':
-            if app.config.get('SENTRY_DSN', None):  # pragma: no cover
-                sentry_sdk.init(  # pylint: disable=abstract-class-instantiated
-                    dsn=app.config.get('SENTRY_DSN'),
-                    integrations=[FlaskIntegration()]
-                )
+    app.after_request(convert_to_camel)
 
-        app.after_request(convert_to_camel)
+    setup_jwt_manager(app, jwt)
 
-        setup_jwt_manager(app, jwt)
+    ExceptionHandler(app)
 
-        ExceptionHandler(app)
+    @app.after_request
+    def handle_after_request(response):  # pylint: disable=unused-variable
+        add_version(response)
+        set_access_control_header(response)
+        return response
 
-        @app.after_request
-        def handle_after_request(response):  # pylint: disable=unused-variable
-            add_version(response)
-            set_access_control_header(response)
-            return response
+    def set_access_control_header(response):
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, registries-trace-id, ' \
+            'Account-Id'
 
-        def set_access_control_header(response):
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            response.headers['Access-Control-Allow-Headers'] = 'Authorization, Content-Type, registries-trace-id, ' \
-                                                               'Account-Id'
+    def add_version(response):  # pylint: disable=unused-variable
+        version = get_run_version()
+        response.headers['API'] = f'pay_api/{version}'
+        return response
 
-        def add_version(response):  # pylint: disable=unused-variable
-            version = get_run_version()
-            response.headers['API'] = f'pay_api/{version}'
-            return response
-
-        register_shellcontext(app)
-        build_cache(app)
+    register_shellcontext(app)
+    build_cache(app)
     return app
 
 

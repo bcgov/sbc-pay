@@ -4,26 +4,19 @@ Fixtures for testing.
 """
 import pytest
 
+from flask_sqlalchemy import SQLAlchemy
 
-@pytest.fixture(scope='function')
-def clean_db():
-    """Clean DB."""
-    from flask_sqlalchemy import SQLAlchemy
-
-    from admin import create_app
-    from admin.keycloak import Keycloak
-    from tests.fake_oidc import FakeOidc
-
-    Keycloak._oidc = FakeOidc()
-    app = create_app(run_mode='testing')
-
-    db = SQLAlchemy(app)
-
-    return db
+from admin import create_app
+from admin.keycloak import Keycloak
+from tests.fake_oidc import FakeOidc
 
 
 @pytest.fixture(scope='function')
-def db(clean_db):
+def db():
     """DB."""
-    yield clean_db
-    clean_db.session.close()
+    Keycloak._oidc = FakeOidc()  # pylint-disable=protected-access
+    app = create_app(run_mode='testing')
+    with app.app_context():
+        _db = SQLAlchemy()
+        _db.app = app
+        return _db

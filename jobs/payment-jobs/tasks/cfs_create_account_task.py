@@ -21,7 +21,7 @@ from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.oauth_service import OAuthService
-from pay_api.utils.constants import RECEIPT_METHOD_PAD_DAILY
+from pay_api.utils.constants import RECEIPT_METHOD_EFT_MONTHLY, RECEIPT_METHOD_PAD_DAILY
 from pay_api.utils.enums import AuthHeaderType, CfsAccountStatus, ContentType, PaymentMethod
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
@@ -74,13 +74,6 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
 
     @classmethod
     def _create_cfs_account(cls, pending_account: CfsAccountModel, pay_account: PaymentAccountModel, auth_token: str):
-        # If PAD Account creation in CFS is paused, then just continue
-        # TODO Remove once PAD account bugs are fixed and stable on CAS side.
-        if current_app.config.get('CFS_STOP_PAD_ACCOUNT_CREATION') and \
-                pay_account.payment_method == PaymentMethod.PAD.value:
-            current_app.logger.info('Continuing to next record as CFS PAD account creation is stopped.')
-            return
-
         current_app.logger.info(
             f'Creating pay system instance for {pay_account.payment_method} for account {pay_account.id}.')
 
@@ -103,7 +96,11 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                 'bankAccountName': pay_account.name
             }
 
-            if pending_account.cfs_account and pending_account.cfs_party and pending_account.cfs_site:
+            if pay_account.payment_method == PaymentMethod.EFT.value:
+                cfs_account_details = CFSService.create_cfs_account(identifier=pay_account.auth_account_id,
+                                                                    contact_info=contact_info,
+                                                                    receipt_method=RECEIPT_METHOD_EFT_MONTHLY)
+            elif pending_account.cfs_account and pending_account.cfs_party and pending_account.cfs_site:
                 # This means, PAD account details have changed. So update banking details for this CFS account
                 bank_details = CFSService.update_bank_details(name=pay_account.auth_account_id,
                                                               party_number=pending_account.cfs_party,

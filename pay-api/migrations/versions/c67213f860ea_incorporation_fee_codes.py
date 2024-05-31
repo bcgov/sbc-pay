@@ -8,7 +8,7 @@ Create Date: 2021-06-10 14:20:33.590691
 from datetime import date
 
 from alembic import op
-from sqlalchemy import Date, String, Boolean
+from sqlalchemy import Date, String, Boolean, text, Integer
 from sqlalchemy.sql import column, table
 
 # revision identifiers, used by Alembic.
@@ -29,8 +29,8 @@ def upgrade():
                             column('bcol_staff_fee_code', String)
                             )
     distribution_code_link_table = table('distribution_code_links',
-                                         column('distribution_code_id', String),
-                                         column('fee_schedule_id', String)
+                                         column('distribution_code_id', Integer),
+                                         column('fee_schedule_id', Integer)
                                          )
     fee_schedule_table = table('fee_schedules',
                                column('filing_type_code', String),
@@ -111,25 +111,26 @@ def upgrade():
         ]
     )
     # Now find out the distribution code for other BCINC and map it to them.
-    distribution_code_id_query = "select dc.distribution_code_id from fee_schedules fs " \
-                                 "left join distribution_code_links dcl on fs.fee_schedule_id=dcl.fee_schedule_id " \
-                                 "left join distribution_codes dc on dc.distribution_code_id = dcl.distribution_code_id " \
-                                 "where fs.filing_type_code = 'BCINC' and dc.start_date <= CURRENT_DATE " \
-                                 "and (dc.end_date is null or dc.end_date > CURRENT_DATE)"
-    conn = op.get_bind()
-    res = conn.execute(distribution_code_id_query)
-    distribution_code_id = res.fetchall()[0][0]
-    new_codes = ('CCC', 'ULC', 'LTD', 'BC')
-    distr_code_link_values = []
-    for new_code in new_codes:
-        res = conn.execute(
-            f"select fee_schedule_id from fee_schedules where corp_type_code='{new_code}' and filing_type_code='BCINC'")
-        fee_schedule_id = res.fetchall()[0][0]
-        distr_code_link_values.append({
-            'distribution_code_id': distribution_code_id,
-            'fee_schedule_id': fee_schedule_id
-        })
-    op.bulk_insert(distribution_code_link_table, distr_code_link_values)
+    # Causing errors:
+    # distribution_code_id_query = "select dc.distribution_code_id from fee_schedules fs " \
+    #                              "left join distribution_code_links dcl on fs.fee_schedule_id=dcl.fee_schedule_id " \
+    #                              "left join distribution_codes dc on dc.distribution_code_id = dcl.distribution_code_id " \
+    #                              "where fs.filing_type_code = 'BCINC' and dc.start_date <= CURRENT_DATE " \
+    #                              "and (dc.end_date is null or dc.end_date > CURRENT_DATE)"
+    # conn = op.get_bind()
+    # res = conn.execute(text(distribution_code_id_query))
+    # distribution_code_id = res.fetchall()[0][0]
+    # new_codes = ('CCC', 'ULC', 'LTD', 'BC')
+    # distr_code_link_values = []
+    # for new_code in new_codes:
+    #     res = conn.execute(
+    #         text(f"select fee_schedule_id from fee_schedules where corp_type_code='{new_code}' and filing_type_code='BCINC'"))
+    #     fee_schedule_id = res.fetchall()[0][0]
+    #     distr_code_link_values.append({
+    #         'distribution_code_id': distribution_code_id,
+    #         'fee_schedule_id': fee_schedule_id
+    #     })
+    # op.bulk_insert(distribution_code_link_table, distr_code_link_values)
     # ### end Alembic commands ###
 
 

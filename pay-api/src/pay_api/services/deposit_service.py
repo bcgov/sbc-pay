@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage CFS EFT/Wire/Direct Deposit Payments."""
-from typing import Any, Dict
-
-from flask import current_app
+from typing import Any, Dict, List
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.services.base_payment_system import PaymentSystemService
@@ -44,8 +42,6 @@ class DepositService(PaymentSystemService, CFSService):
         cfs_account.status = CfsAccountStatus.PENDING.value
         return cfs_account
 
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
+    def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
-        """Return a static invoice number for direct pay."""
-        current_app.logger.debug('<create_invoice_deposit_service')
-        # Do nothing here as the invoice references are created later.
+        """Do nothing here as the invoice references are created later."""

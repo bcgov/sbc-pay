@@ -18,6 +18,7 @@ Test-Suite to ensure that the /fees endpoint is working as expected.
 """
 import json
 from datetime import date, timedelta
+from decimal import Decimal
 
 from pay_api.models import CorpType, FeeCode, FeeSchedule, FilingType
 from pay_api.schemas import utils as schema_utils
@@ -287,10 +288,10 @@ def factory_filing_type_model(
 
 def factory_fee_model(
         fee_code: str,
-        amount: int):
+        amount: float):
     """Return the fee code model."""
     fee_code_master = FeeCode(code=fee_code,
-                              amount=amount)
+                              amount=Decimal(str(amount)))
     fee_code_master.save()
     return fee_code_master
 

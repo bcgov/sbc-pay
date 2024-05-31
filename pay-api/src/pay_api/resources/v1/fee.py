@@ -24,7 +24,6 @@ from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import DEFAULT_JURISDICTION, DT_SHORT_FORMAT
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
-from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import convert_to_bool
 
 
@@ -33,7 +32,6 @@ bp = Blueprint('FEES', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/fees')
 
 @bp.route('/<string:corp_type>/<string:filing_type_code>', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET'])
-@_tracing.trace()
 @_jwt.has_one_of_roles([Role.VIEWER.value, Role.EDITOR.value, Role.STAFF.value])
 def get_fee_by_corp_and_filing_type(corp_type, filing_type_code):
     """Calculate the fee for the filing using the corp type/filing type and return fee."""

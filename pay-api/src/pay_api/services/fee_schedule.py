@@ -211,12 +211,12 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
     @property
     def gst(self):
         """Return the fee amount."""
-        return 0  # TODO
+        return 0
 
     @property
     def pst(self):
         """Return the fee amount."""
-        return 0  # TODO
+        return 0
 
     @property
     def quantity(self):
@@ -338,7 +338,7 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         }
         fee_schdules = FeeScheduleModel.find_all(corp_type_code=corp_type, filing_type_code=filing_type_code,
                                                  description=description)
-        schdule_schema = FeeScheduleSchema(exclude=('distribution_codes',))
+        schdule_schema = FeeScheduleSchema()
         data['items'] = schdule_schema.dump(fee_schdules, many=True)
         current_app.logger.debug('>find_all')
         return data
@@ -353,7 +353,6 @@ class FeeSchedule:  # pylint: disable=too-many-public-methods, too-many-instance
         service_fees: float = 0
 
         # TODO for system accounts with role EXCLUDE_SERVICE_FEES, do not charge service fees for now.
-        #  Handle it properly later
         if not user.is_staff() and \
                 not (user.is_system() and Role.EXCLUDE_SERVICE_FEES.value in user.roles) \
                 and fee_schedule_model.fee.amount > 0 and fee_schedule_model.service_fee:

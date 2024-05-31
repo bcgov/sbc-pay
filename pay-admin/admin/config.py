@@ -58,7 +58,6 @@ def _get_config(config_key: str, **kwargs):
         value = os.getenv(config_key, kwargs.get('default'))
     else:
         value = os.getenv(config_key)
-        # assert value TODO Un-comment once we find a solution to run pre-hook without initializing app
     return value
 
 
@@ -77,13 +76,17 @@ class _Config():  # pylint: disable=too-few-public-methods
     DB_NAME = _get_config('DATABASE_NAME')
     DB_HOST = _get_config('DATABASE_HOST')
     DB_PORT = _get_config('DATABASE_PORT', default='5432')
-    SQLALCHEMY_DATABASE_URI = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}'
+    if DB_UNIX_SOCKET := os.getenv('DATABASE_UNIX_SOCKET', None):
+        SQLALCHEMY_DATABASE_URI = (
+            f'postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@/{DB_NAME}?unix_sock={DB_UNIX_SOCKET}/.s.PGSQL.5432'
+        )
+    else:
+        SQLALCHEMY_DATABASE_URI = f'postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}'
     SQLALCHEMY_ECHO = _get_config('SQLALCHEMY_ECHO', default='False').lower() == 'true'
 
     # Normal Keycloak parameters.
     OIDC_CLIENT_SECRETS = os.getenv('PAY_OIDC_CLIENT_SECRETS', 'secrets/keycloak.json')
     OIDC_SCOPES = ['openid', 'email', 'profile']
-    OIDC_VALID_ISSUERS = [os.getenv('PAY_OIDC_VALID_ISSUERS')]
     # Undocumented Keycloak parameter: allows sending cookies without the secure flag, which we need for the local
     # non-TLS HTTP server. Set this to non-"True" for local development, and use the default everywhere else.
     OIDC_ID_TOKEN_COOKIE_SECURE = os.getenv('PAY_OIDC_ID_TOKEN_COOKIE_SECURE', 'True').lower() == 'true'
@@ -113,10 +116,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     DB_NAME = _get_config('DATABASE_TEST_NAME', default='paytestdb')
     DB_HOST = _get_config('DATABASE_TEST_HOST', default='localhost')
     DB_PORT = _get_config('DATABASE_TEST_PORT', default='5432')
-    SQLALCHEMY_DATABASE_URI = _get_config(
-        'DATABASE_TEST_URL',
-        default=f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}'
-    )
+    SQLALCHEMY_DATABASE_URI = f'postgresql+pg8000://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{int(DB_PORT)}/{DB_NAME}'
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

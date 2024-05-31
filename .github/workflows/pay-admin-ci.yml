@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - feature-queue-python-upgrade
     paths:
       - "pay-admin/**"
       - "pay-api/src/pay_api/models/**"
@@ -20,7 +21,7 @@ jobs:
     if: github.repository == 'bcgov/sbc-pay'
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: "true"
 
   linting:
@@ -29,10 +30,10 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version: [3.12]
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v1
         with:
@@ -53,10 +54,15 @@ jobs:
     needs: setup-job
     env:
       FLASK_ENV: "testing"
-      DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/postgres"
+      # Needs different database than POSTGRES otherwise dropping database doesn't work
+      DATABASE_TEST_URL: "postgresql://postgres:postgres@localhost:5432/pay-test"
 
 
     runs-on: ubuntu-20.04
+
+    strategy:
+      matrix:
+        python-version: [3.12]
 
     services:
       postgres:
@@ -64,14 +70,15 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: postgres
+          # Needs different database than POSTGRES otherwise dropping database doesn't work
+          POSTGRES_DB: pay-test
         ports:
           - 5432:5432
         # needed because the postgres container does not provide a healthcheck
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v1
         with:
@@ -95,8 +102,12 @@ jobs:
     needs: setup-job
     runs-on: ubuntu-20.04
 
+    strategy:
+      matrix:
+        python-version: [3.12]
+
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: build to check strictness
         id: build
         run: |

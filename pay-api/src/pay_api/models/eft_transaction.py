@@ -14,6 +14,7 @@
 """Model to handle EFT file processing."""
 from datetime import datetime
 from _decimal import Decimal
+
 from attrs import define
 
 from sqlalchemy import ForeignKey, String
@@ -21,7 +22,6 @@ from sqlalchemy.dialects.postgresql import ARRAY
 
 from .base_model import BaseModel
 from .db import db
-from ..utils.util import cents_to_decimal
 
 
 class EFTTransaction(BaseModel):  # pylint: disable=too-many-instance-attributes
@@ -81,13 +81,17 @@ class EFTTransaction(BaseModel):  # pylint: disable=too-many-instance-attributes
 
 @define
 class EFTTransactionSchema:  # pylint: disable=too-few-public-methods
-    """Main schema used to serialize a EFT Transaction."""
+    """Main schema used to serialize an EFT Transaction."""
 
-    id: int
+    transaction_id: int
+    account_id: str
+    account_name: str
+    account_branch: str
+    statement_id: int
     short_name_id: int
     transaction_date: datetime
-    deposit_date: datetime
-    deposit_amount: Decimal
+    transaction_amount: Decimal
+    transaction_description: str
 
     @classmethod
     def from_row(cls, row: EFTTransaction):
@@ -95,8 +99,12 @@ class EFTTransactionSchema:  # pylint: disable=too-few-public-methods
 
         https://www.attrs.org/en/stable/init.html
         """
-        return cls(id=row.id,
+        return cls(transaction_id=row.transaction_id,
                    short_name_id=row.short_name_id,
+                   account_id=getattr(row, 'auth_account_id', None),
+                   account_name=getattr(row, 'account_name', None),
+                   account_branch=getattr(row, 'account_branch', None),
+                   statement_id=getattr(row, 'statement_id', None),
                    transaction_date=getattr(row, 'transaction_date', None),
-                   deposit_date=getattr(row, 'deposit_date', None),
-                   deposit_amount=cents_to_decimal(getattr(row, 'deposit_amount_cents', None)))
+                   transaction_amount=getattr(row, 'transaction_amount', None),
+                   transaction_description=getattr(row, 'transaction_description', None))

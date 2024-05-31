@@ -310,6 +310,15 @@ class CfsReceiptStatus(Enum):
     REV = 'REV'
 
 
+class EFTCreditInvoiceStatus(Enum):
+    """EFT Credit Invoice Link Status."""
+
+    COMPLETED = 'COMPLETED'
+    PENDING = 'PENDING'
+    PENDING_REFUND = 'PENDING_REFUND'
+    REFUNDED = 'REFUNDED'
+
+
 class EFTProcessStatus(Enum):
     """EFT Process Status."""
 
@@ -335,11 +344,13 @@ class EFTGlTransferType(Enum):
     TRANSFER = 'TRANSFER'
 
 
-class EFTShortnameState(Enum):
-    """EFT Short name search states."""
+class EFTShortnameStatus(Enum):
+    """EFT Short name statuses."""
 
+    INACTIVE = 'INACTIVE'
     LINKED = 'LINKED'
     UNLINKED = 'UNLINKED'
+    PENDING = 'PENDING'
 
 
 class PaymentDetailsGlStatus(Enum):
@@ -358,3 +369,10 @@ class QueueSources(Enum):
     PAY_JOBS = 'pay-jobs'
     PAY_QUEUE = 'pay-queue'
     FTP_POLLER = 'ftp-poller'
+
+
+class EJVLinkType(Enum):
+    """EJV link types for ejv_link table."""
+
+    INVOICE = 'invoice'
+    REFUND = 'refund'

@@ -27,7 +27,6 @@ from pay_api.utils.constants import MAKE_PAYMENT
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
 from pay_api.utils.errors import Error
-from pay_api.utils.trace import tracing as _tracing
 from pay_api.utils.util import get_str_by_path
 
 bp = Blueprint('INVOICE', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/payment-requests')
@@ -35,7 +34,6 @@ bp = Blueprint('INVOICE', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/pay
 
 @bp.route('', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET', 'POST'])
-@_tracing.trace()
 @_jwt.requires_roles([Role.SYSTEM.value])
 def get_invoices():
     """Get the invoice records."""
@@ -51,7 +49,6 @@ def get_invoices():
 
 @bp.route('', methods=['POST'])
 @cross_origin(origins='*')
-@_tracing.trace()
 @_jwt.requires_auth
 def post_invoice():
     """Create the payment request records."""
@@ -79,7 +76,6 @@ def post_invoice():
 
 @bp.route('/<int:invoice_id>', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET', 'DELETE', 'PATCH'])
-@_tracing.trace()
 @_jwt.requires_auth
 def get_invoice(invoice_id):
     """Get the invoice records."""
@@ -92,7 +88,6 @@ def get_invoice(invoice_id):
 
 @bp.route('/<int:invoice_id>', methods=['DELETE'])
 @cross_origin(origins='*')
-@_tracing.trace()
 @_jwt.requires_auth
 def delete_invoice(invoice_id):
     """Soft delete the invoice records."""
@@ -112,7 +107,6 @@ def delete_invoice(invoice_id):
 
 @bp.route('/<int:invoice_id>', methods=['PATCH'])
 @cross_origin(origins='*')
-@_tracing.trace()
 @_jwt.requires_auth
 def patch_invoice(invoice_id: int = None):
     """Update the payment method for an online banking ."""
@@ -139,7 +133,6 @@ def patch_invoice(invoice_id: int = None):
 @bp.route('/<int:invoice_id>/reports', methods=['POST', 'OPTIONS'])
 @cross_origin(origins='*', methods=['POST'])
 @_jwt.requires_auth
-@_tracing.trace()
 def post_invoice_report(invoice_id: int = None):
     """Update the payment method for an online banking ."""
     current_app.logger.info('<InvoiceReport.post for invoice : %s', invoice_id)

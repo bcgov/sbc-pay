@@ -13,12 +13,8 @@
 # limitations under the License.
 """Super class to handle all operations related to base model."""
 
-from flask import current_app
-from sqlalchemy_continuum.plugins.flask import fetch_remote_addr
 
-from pay_api.utils.user_context import user_context
-
-from .db import activity_plugin, db
+from .db import db
 
 
 class BaseModel(db.Model):
@@ -35,7 +31,6 @@ class BaseModel(db.Model):
         """Save and flush."""
         db.session.add(self)
         db.session.flush()
-        self.create_activity(self)
         return self
 
     def save_or_add(self, auto_save: bool):
@@ -49,16 +44,12 @@ class BaseModel(db.Model):
     def save(self):
         """Save and commit."""
         db.session.add(self)
-        db.session.flush()
-        self.create_activity(self)
         db.session.commit()
         return self
 
     def delete(self):
         """Delete and commit."""
         db.session.delete(self)
-        db.session.flush()
-        self.create_activity(self, is_delete=True)
         db.session.commit()
 
     @staticmethod
@@ -69,36 +60,4 @@ class BaseModel(db.Model):
     @classmethod
     def find_by_id(cls, identifier: int):
         """Return model by id."""
-        return cls.query.get(identifier)
-
-    @classmethod
-    def create_activity(cls, obj, is_delete=False):
-        """Create activity records if the model is versioned."""
-        if isinstance(obj, VersionedModel) and not current_app.config.get('DISABLE_ACTIVITY_LOGS'):
-            if is_delete:
-                verb = 'delete'
-            else:
-                verb = 'update'
-
-            activity = activity_plugin.activity_cls(verb=verb, object=obj, data={
-                'user_name': cls._get_user_name(),
-                'remote_addr': fetch_remote_addr()
-            })
-
-            db.session.add(activity)
-
-    @staticmethod
-    @user_context
-    def _get_user_name(**kwargs):
-        """Return current user user_name."""
-        return kwargs['user'].user_name
-
-
-class VersionedModel(BaseModel):
-    """This class manages all of the base code, type or status model functions."""
-
-    __abstract__ = True
-
-    __versioned__ = {
-        'exclude': []
-    }
+        return db.session.get(cls, identifier)

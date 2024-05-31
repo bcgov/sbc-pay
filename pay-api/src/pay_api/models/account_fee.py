@@ -17,9 +17,10 @@ from __future__ import annotations
 from marshmallow import fields, post_dump
 from sqlalchemy import Boolean, ForeignKey
 from sqlalchemy.orm import relationship
+from sql_versioning import Versioned
 
 from .audit import Audit
-from .base_model import VersionedModel
+from .base_model import BaseModel
 from .base_schema import BaseSchema
 from .corp_type import CorpType
 from .db import db
@@ -27,7 +28,7 @@ from .fee_code import FeeCode
 from .payment_account import PaymentAccount
 
 
-class AccountFee(Audit, VersionedModel):
+class AccountFee(Audit, Versioned, BaseModel):
     """This class manages all of the base data about Account Fees."""
 
     __tablename__ = 'account_fees'

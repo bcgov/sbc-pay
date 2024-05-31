@@ -13,15 +13,17 @@
 # limitations under the License.
 """Service to manage CFS EFT Payments."""
 from datetime import datetime
+from typing import Any, Dict, List
 
 from flask import current_app
 
+from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus
+from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, PaymentMethod, PaymentStatus, PaymentSystem
 
 from .deposit_service import DepositService
 from .invoice import Invoice
@@ -34,13 +36,36 @@ class EftService(DepositService):
     """Service to manage electronic fund transfers."""
 
     def get_payment_method_code(self):
-        """Return EFT as the system code."""
+        """Return EFT as the payment method code."""
         return PaymentMethod.EFT.value
 
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
-                       **kwargs) -> InvoiceReference:
-        """Return a static invoice number for direct pay."""
-        # Do nothing here as the invoice references will be created later for eft payment reconciliations (TDI17).
+    def get_payment_system_code(self):
+        """Return PAYBC as the system code."""
+        return PaymentSystem.PAYBC.value
+
+    def create_account(self, identifier: str, contact_info: Dict[str, Any], payment_info: Dict[str, Any],
+                       **kwargs) -> CfsAccountModel:
+        """Create an account for the EFT transactions."""
+        # Create CFS Account model instance, set the status as PENDING
+        current_app.logger.info(f'Creating EFT account details in PENDING status for {identifier}')
+        cfs_account = CfsAccountModel()
+        cfs_account.status = CfsAccountStatus.PENDING.value
+        return cfs_account
+
+    def update_account(self, name: str, cfs_account: CfsAccountModel, payment_info: Dict[str, Any]) -> CfsAccountModel:
+        """Update pad account."""
+        if str(payment_info.get('bankInstitutionNumber')) != cfs_account.bank_number or \
+                str(payment_info.get('bankTransitNumber')) != cfs_account.bank_branch_number or \
+                str(payment_info.get('bankAccountNumber')) != cfs_account.bank_account_number:
+            # This means, the current cfs_account is for PAD, not EFT
+            # Make the current CFS Account as INACTIVE in DB
+            cfs_account.status = CfsAccountStatus.INACTIVE.value
+            cfs_account.flush()
+        return cfs_account
+
+    def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
+                       **kwargs) -> None:
+        """Do nothing here, we create invoice references on the create CFS_INVOICES job."""
 
     def apply_credit(self,
                      invoice: Invoice,
@@ -59,15 +84,13 @@ class EftService(DepositService):
                                       payment_date=payment_date,
                                       paid_amount=invoice_balance - new_invoice_balance)
 
-        invoice_ref = self.create_invoice_reference(invoice=invoice_model, payment=payment)
         receipt = self.create_receipt(invoice=invoice_model, payment=payment)
 
         if auto_save:
             payment.save()
-            invoice_ref.save()
             receipt.save()
 
-        return payment, invoice_ref, receipt
+        return payment, receipt
 
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
@@ -89,17 +112,17 @@ class EftService(DepositService):
         return payment
 
     @staticmethod
-    def create_invoice_reference(invoice: InvoiceModel, payment: PaymentModel) -> InvoiceReferenceModel:
+    def create_invoice_reference(invoice: InvoiceModel, invoice_number: str,
+                                 reference_number: str) -> InvoiceReferenceModel:
         """Create an invoice reference record."""
         if not (invoice_reference := InvoiceReferenceModel
-                .find_any_active_reference_by_invoice_number(payment.invoice_number)):
+                .find_any_active_reference_by_invoice_number(invoice_number)):
             invoice_reference = InvoiceReferenceModel()
 
         invoice_reference.invoice_id = invoice.id
-        invoice_reference.invoice_number = payment.invoice_number
-        invoice_reference.status_code = InvoiceReferenceStatus.COMPLETED.value \
-            if invoice.invoice_status_code == InvoiceStatus.PAID.value \
-            else InvoiceReferenceStatus.ACTIVE.value
+        invoice_reference.invoice_number = invoice_number
+        invoice_reference.reference_number = reference_number
+        invoice_reference.status_code = InvoiceReferenceStatus.ACTIVE.value
 
         return invoice_reference
 

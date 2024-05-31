@@ -97,7 +97,7 @@ class NonSufficientFundsService:
                 InvoiceModel.id.label('invoice_id'),
                 (InvoiceModel.total - InvoiceModel.paid).label('amount_remaining'),
                 func.max(case(
-                    [(PaymentLineItemModel.description == ReverseOperation.NSF.value, PaymentLineItemModel.total)],
+                    (PaymentLineItemModel.description == ReverseOperation.NSF.value, PaymentLineItemModel.total),
                     else_=0)).label('nsf_amount')
             )
             .join(InvoiceReferenceModel, InvoiceReferenceModel.invoice_id == InvoiceModel.id)

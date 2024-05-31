@@ -48,12 +48,13 @@ class ErrorCode(db.Model, CodeTable):
     detail = db.Column(db.String(500))
 
 
-class ErrorCodeSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class ErrorCodeSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Error code."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = ErrorCode
+        load_instance = True
 
     code = fields.String(data_key='type')

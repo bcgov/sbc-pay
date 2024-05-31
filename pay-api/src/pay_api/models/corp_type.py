@@ -70,10 +70,11 @@ class CorpType(db.Model, CodeTable):
         return f'{self.code}'
 
 
-class CorpTypeSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class CorpTypeSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Business."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = CorpType
+        load_instance = True

@@ -108,8 +108,9 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     @service_fee_distribution_code_id.setter
     def service_fee_distribution_code_id(self, value: int):
         """Set the service_fee_distribution_code_id."""
-        self._service_fee_distribution_code_id = value
-        self._dao.service_fee_distribution_code_id = value
+        if self._service_fee_distribution_code_id != value:
+            self._service_fee_distribution_code_id = value
+            self._dao.service_fee_distribution_code_id = value
 
     @property
     def disbursement_distribution_code_id(self):
@@ -119,8 +120,9 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     @disbursement_distribution_code_id.setter
     def disbursement_distribution_code_id(self, value: int):
         """Set the disbursement_distribution_code_id."""
-        self._disbursement_distribution_code_id = value
-        self._dao.disbursement_distribution_code_id = value
+        if self._disbursement_distribution_code_id != value:
+            self._disbursement_distribution_code_id = value
+            self._dao.disbursement_distribution_code_id = value
 
     @property
     def end_date(self):
@@ -152,8 +154,9 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     @name.setter
     def name(self, value: str):
         """Set the name."""
-        self._name = value
-        self._dao.name = value
+        if self._name != value:
+            self._name = value
+            self._dao.name = value
 
     @property
     def service_fee_stob(self):
@@ -247,8 +250,9 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     @project_code.setter
     def project_code(self, value: str):
         """Set the project_code."""
-        self._project_code = value
-        self._dao.project_code = value
+        if self._project_code != value:
+            self._project_code = value
+            self._dao.project_code = value
 
     @property
     def service_fee_client(self):
@@ -258,7 +262,8 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     @service_fee_client.setter
     def service_fee_client(self, value: str):
         """Set the service_fee_client."""
-        self._service_fee_client = value
+        if self._service_fee_client != value:
+            self._service_fee_client = value
 
     @property
     def service_fee_project_code(self):
@@ -278,8 +283,9 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     @stop_ejv.setter
     def stop_ejv(self, value: bool):
         """Set the stop_ejv."""
-        self._stop_ejv = value
-        self._dao.stop_ejv = value
+        if self._stop_ejv != value:
+            self._stop_ejv = value
+            self._dao.stop_ejv = value
 
     @property
     def account_id(self):
@@ -289,8 +295,9 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
     @account_id.setter
     def account_id(self, value: int):
         """Set the account id."""
-        self._account_id = value
-        self._dao.account_id = value
+        if self._account_id != value:
+            self._account_id = value
+            self._dao.account_id = value
 
     def save(self):
         """Save the distribution code information and commit."""
@@ -338,7 +345,7 @@ class DistributionCode:  # pylint: disable=too-many-instance-attributes, too-man
 
         fee_schedules = DistributionCodeLinkModel.find_fee_schedules_by_distribution_id(
             distribution_code_id=distribution_id)
-        fee_schedule_schema = FeeScheduleSchema(exclude=('distribution_codes',))
+        fee_schedule_schema = FeeScheduleSchema()
         data['items'] = fee_schedule_schema.dump(fee_schedules, many=True)
         current_app.logger.debug('>find_fee_schedules_by_distribution_id')
         return data

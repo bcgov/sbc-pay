@@ -58,7 +58,7 @@ class StatementRecipients(BaseModel):  # pylint: disable=too-many-instance-attri
         """Return all active recipients for an account."""
         return cls.query \
             .join(PaymentAccount) \
-            .filter(PaymentAccount.auth_account_id == auth_account_id).all()
+            .filter(PaymentAccount.auth_account_id == str(auth_account_id)).all()
 
     @classmethod
     def find_all_recipients_for_payment_id(cls, payment_account_id: str):
@@ -79,10 +79,11 @@ class StatementRecipients(BaseModel):  # pylint: disable=too-many-instance-attri
         BaseModel.commit()
 
 
-class StatementRecipientsSchema(ma.ModelSchema):  # pylint: disable=too-many-ancestors
+class StatementRecipientsSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ancestors
     """Main schema used to serialize the Payment Account."""
 
     class Meta:  # pylint: disable=too-few-public-methods
         """Returns all the fields from the SQLAlchemy class."""
 
         model = StatementRecipients
+        load_instance = True

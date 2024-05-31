@@ -34,7 +34,6 @@ from .templates import API as TEMPLATES_API
 __all__ = ('API_BLUEPRINT', 'OPS_BLUEPRINT')
 
 # This will add the Authorize button to the swagger docs
-# TODO oauth2 & openid may not yet be supported by restplus <- check on this
 AUTHORIZATIONS = {
     'apikey': {
         'type': 'apiKey',

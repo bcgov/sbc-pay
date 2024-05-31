@@ -23,7 +23,6 @@ from pay_api.services.auth import check_auth
 from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import CHANGE_STATEMENT_SETTINGS, EDIT_ROLE
 from pay_api.utils.endpoints_enums import EndpointEnum
-from pay_api.utils.trace import tracing as _tracing
 
 
 bp = Blueprint('ACCOUNT_SETTINGS', __name__,
@@ -32,7 +31,6 @@ bp = Blueprint('ACCOUNT_SETTINGS', __name__,
 
 @bp.route('', methods=['GET', 'OPTIONS'])
 @cross_origin(origins='*', methods=['GET', 'POST'])
-@_tracing.trace()
 @_jwt.requires_auth
 def get_account_statement_settings(account_id):
     """Get all statements records for an account."""
@@ -48,7 +46,6 @@ def get_account_statement_settings(account_id):
 
 @bp.route('', methods=['POST'])
 @cross_origin(origins='*')
-@_tracing.trace()
 @_jwt.requires_auth
 def post_account_statement_settings(account_id):
     """Update the statement settings ."""

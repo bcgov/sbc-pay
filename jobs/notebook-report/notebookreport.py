@@ -50,6 +50,9 @@ def send_email(file_processing, emailtype, errormessage, partner_code=None):
     message = MIMEMultipart()
     date_str = datetime.strftime(datetime.now() - timedelta(1), '%Y-%m-%d')
     ext = ''
+    filenames = []
+    subject = ''
+    recipients = ''
     if not Config.ENVIRONMENT == 'prod':
         ext = ' on ' + Config.ENVIRONMENT
 

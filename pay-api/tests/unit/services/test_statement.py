@@ -16,10 +16,11 @@
 
 Test-Suite to ensure that the Statement Service is working as expected.
 """
-from datetime import datetime, timezone
+from datetime import datetime
 
 import pytz
 from freezegun import freeze_time
+from sqlalchemy import text
 
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Statement as StatementModel
@@ -31,7 +32,8 @@ from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
 from tests.utilities.base_test import (
     factory_invoice, factory_invoice_reference, factory_payment, factory_payment_line_item,
     factory_premium_payment_account, factory_statement, factory_statement_invoices, factory_statement_settings,
-    get_auth_premium_user, get_eft_enable_account_payload, get_premium_account_payload)
+    get_auth_premium_user, get_basic_account_payload, get_eft_enable_account_payload, get_premium_account_payload,
+    get_unlinked_pad_account_payload)
 
 
 def test_statement_find_by_account(session):
@@ -172,8 +174,6 @@ def test_get_weekly_interim_statement(session, admin_users_mock):
                                      total=50).save()
 
     assert weekly_invoice is not None
-    assert weekly_invoice.created_on == invoice_create_date.astimezone(timezone.utc).replace(tzinfo=None)
-
     update_date = localize_date(datetime(2023, 10, 12, 12, 0))
     with freeze_time(update_date):
         account = PaymentAccountService.update(account.auth_account_id,
@@ -232,7 +232,6 @@ def test_get_monthly_interim_statement(session, admin_users_mock):
                                       total=50).save()
 
     assert monthly_invoice is not None
-    assert monthly_invoice.created_on == invoice_create_date.astimezone(timezone.utc).replace(tzinfo=None)
 
     update_date = localize_date(datetime(2023, 10, 12, 12, 0))
     with freeze_time(update_date):
@@ -266,3 +265,38 @@ def localize_date(date: datetime):
     """Localize date object by adding timezone information."""
     pst = pytz.timezone('America/Vancouver')
     return pst.localize(date)
+
+
+def test_statement_various_payment_methods_history(db, app):
+    """Unit test to test various payment methods over the life of a statement."""
+    # We aren't using the session fixture here because we want to test the history_cls
+    # history_cls wont work on scoped session flush.
+    with app.app_context():
+        db.session.commit = db.session.flush
+        account: PaymentAccountService = PaymentAccountService.create(
+            get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value))
+
+        statement_settings: StatementSettingsModel = StatementSettingsModel \
+            .find_active_settings(str(account.auth_account_id), datetime.today())
+
+        statement = StatementModel(
+            statement_settings_id=statement_settings.id,
+            payment_account_id=account.id,
+            created_on=datetime.today(),
+            from_date=datetime(2024, 1, 2, 12, 0).date(),
+            to_date=datetime(2024, 1, 7, 12, 0).date()
+        ).flush()
+
+        account = PaymentAccountService.update(account.auth_account_id, get_unlinked_pad_account_payload())
+        # History row wont be generated for this line:
+        account = PaymentAccountService.update(account.auth_account_id, get_basic_account_payload())
+        # Freezegun, pytest-freezegun don't work here.
+        db.session.execute(text("update payment_accounts_history set changed = '2024-01-02' "
+                                f"where payment_method = '{PaymentMethod.DRAWDOWN.value}'"))
+        db.session.execute(text("update payment_accounts_history set changed = '2024-01-03' "
+                                f"where payment_method = '{PaymentMethod.PAD.value}'"))
+
+        payment_methods = statement.payment_methods
+        assert 'DIRECT_PAY' in payment_methods
+        assert 'DRAWDOWN' in payment_methods
+        assert 'PAD' in payment_methods

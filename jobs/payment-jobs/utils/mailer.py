@@ -14,7 +14,6 @@
 """Task to activate accounts with pending activation.Mostly for PAD with 3 day activation period."""
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Dict
 
 from flask import current_app
 from pay_api.models import FeeSchedule as FeeScheduleModel
@@ -133,4 +132,3 @@ def publish_payment_notification(info: StatementNotificationInfo) -> bool:
         return False
 
     return True
-

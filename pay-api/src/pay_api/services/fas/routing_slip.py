@@ -219,12 +219,10 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         total_cheque_usd = 0
         total_cash_cad = 0
         total_cheque_cad = 0
-        # TODO Only CAD supported now, so just add up the total.
         for routing_slip in routing_slips:
             total += float(routing_slip.total)
             if routing_slip.payment_account.payment_method == PaymentMethod.CASH.value:
                 no_of_cash += 1
-                # TODO check if the payment is CAD or USD.
                 total_cash_cad += routing_slip.total
                 if routing_slip.total_usd is not None:
                     total_cash_usd += routing_slip.total_usd

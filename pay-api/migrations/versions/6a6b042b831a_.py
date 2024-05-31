@@ -60,8 +60,8 @@ def upgrade():
                                     )
 
     distribution_code_link_table = table('distribution_code_links',
-                                        column('distribution_code_id', String),
-                                        column('fee_schedule_id', String)
+                                        column('distribution_code_id', Integer),
+                                        column('fee_schedule_id', Integer)
                                         )
 
     # Product code/corp type
@@ -113,13 +113,13 @@ def upgrade():
 
     distribution_code_id_query = "select distribution_code_id from distribution_codes where name = 'Corporate Registry - Searches' and created_by = 'Alembic'"
     conn = op.get_bind()
-    res = conn.execute(distribution_code_id_query)
+    res = conn.execute(sa.text(distribution_code_id_query))
     distribution_code_id = res.fetchall()[0][0]
     new_codes = ('BSRCH',)
     distr_code_link_values = []
     for new_code in new_codes:
         res = conn.execute(
-            f"select fee_schedule_id from fee_schedules where filing_type_code='{new_code}' and corp_type_code='BUS'")
+            sa.text(f"select fee_schedule_id from fee_schedules where filing_type_code='{new_code}' and corp_type_code='BUS'"))
         fee_schedule_id = res.fetchall()[0][0]
         distr_code_link_values.append({
             'distribution_code_id': distribution_code_id,

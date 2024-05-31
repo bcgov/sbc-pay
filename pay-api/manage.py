@@ -16,8 +16,7 @@
 """
 import logging
 
-from flask_migrate import Migrate, MigrateCommand
-from flask_script import Manager  # class for handling a set of commands
+from flask_migrate import Migrate
 
 # models included so that migrate can build the database migrations
 from pay_api import models  # pylint: disable=unused-import
@@ -27,10 +26,6 @@ from pay_api.models import db
 
 APP = create_app(run_mode='migration')
 MIGRATE = Migrate(APP, db)
-MANAGER = Manager(APP)
-
-MANAGER.add_command('db', MigrateCommand)
 
 if __name__ == '__main__':
     logging.log(logging.INFO, 'Running the Manager')
-    MANAGER.run()

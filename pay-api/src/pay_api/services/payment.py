@@ -476,7 +476,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 ),
                 total_fees,
                 total_gst + total_pst,
-                total_fees - service_fee,  # TODO
+                total_fees - service_fee,
                 service_fee,
                 invoice.get('status_code'),
                 invoice.get('business_identifier'),

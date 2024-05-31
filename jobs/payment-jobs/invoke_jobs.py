@@ -24,8 +24,8 @@ from sentry_sdk.integrations.flask import FlaskIntegration
 
 import config
 from services import oracle_db
-from tasks.eft_transfer_task import EftTransferTask
 from tasks.routing_slip_task import RoutingSlipTask
+from tasks.electronic_funds_transfer_task import ElectronicFundsTransferTask
 from tasks.statement_due_task import StatementDueTask
 from utils.logger import setup_logging
 
@@ -35,11 +35,12 @@ from pay_api.services.gcp_queue import queue
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
 
 
-def create_app(run_mode=os.getenv('FLASK_ENV', 'production'), job_name='unknown', init_oracle=False):
+def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production'), job_name='unknown', init_oracle=False):
     """Return a configured Flask App using the Factory method."""
     from pay_api.models import db, ma
 
     app = Flask(__name__)
+    app.env = run_mode
 
     app.config.from_object(config.CONFIGURATION[run_mode])
     # Configure Sentry
@@ -50,7 +51,7 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production'), job_name='unknown'
                 integrations=[FlaskIntegration()],
                 release=f'payment-jobs-{job_name}@-',
             )
-    app.logger.info(f'<<<< Starting Payment Jobs >>>>')
+    app.logger.info('<<<< Starting Payment Jobs >>>>')
     queue.init_app(app)
     db.init_app(app)
     if init_oracle:
@@ -132,6 +133,10 @@ def run(job_name, argument=None):
         RoutingSlipTask.process_correction()
         RoutingSlipTask.adjust_routing_slips()
         application.logger.info(f'<<<< Completed Routing Slip tasks >>>>')
+    elif job_name == 'EFT':
+        ElectronicFundsTransferTask.link_electronic_funds_transfers()
+        ElectronicFundsTransferTask.unlink_electronic_funds_transfers()
+        application.logger.info(f'<<<< Completed EFT tasks >>>>')
     elif job_name == 'EJV_PAYMENT':
         EjvPaymentTask.create_ejv_file()
         application.logger.info(f'<<<< Completed running EJV payment >>>>')
@@ -144,9 +149,6 @@ def run(job_name, argument=None):
     elif job_name == 'BCOL_REFUND_CONFIRMATION':
         BcolRefundConfirmationTask.update_bcol_refund_invoices()
         application.logger.info(f'<<<< Completed running BCOL Refund Confirmation Job >>>>')
-    elif job_name == 'EFT_TRANSFER':
-        EftTransferTask.create_ejv_file()
-        application.logger.info(f'<<<< Completed Creating EFT Transfer File for transfer to internal GLs>>>>')
     else:
         application.logger.debug('No valid args passed. Exiting job without running any ***************')
 

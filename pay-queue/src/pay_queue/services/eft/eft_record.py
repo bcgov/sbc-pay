@@ -24,6 +24,9 @@ from pay_queue.services.eft.eft_parse_error import EFTParseError
 class EFTRecord(EFTBase):
     """Defines the structure of the transaction record of a received EFT file."""
 
+    PAD_DESCRIPTION_PATTERN = 'MISC PAYMENT BCONLINE'
+    EFT_DESCRIPTION_PATTERN = 'MISC PAYMENT'
+
     ministry_code: str
     program_code: str
     location_id: str
@@ -39,6 +42,7 @@ class EFTRecord(EFTBase):
     jv_type: str  # I = inter, J = intra; mandatory if JV batch specified
     jv_number: str  # mandatory if JV batch specified
     transaction_date: datetime  # optional
+    is_eft: bool = False  # Used to help with filtering transactions as not all transactions will necessary be EFT
 
     def __init__(self, content: str, index: int):
         """Return an EFT Transaction record."""
@@ -66,7 +70,11 @@ class EFTRecord(EFTBase):
 
         self.ministry_code = self.extract_value(1, 3)
         self.program_code = self.extract_value(3, 7)
-        self.deposit_datetime = self.parse_datetime(self.extract_value(7, 15) + self.extract_value(20, 24),
+
+        deposit_time = self.extract_value(20, 24)
+        deposit_time = '0000' if len(deposit_time) == 0 else deposit_time  # default to 0000 if time not provided
+
+        self.deposit_datetime = self.parse_datetime(self.extract_value(7, 15) + deposit_time,
                                                     EFTError.INVALID_DEPOSIT_DATETIME)
         self.location_id = self.extract_value(15, 20)
         self.transaction_sequence = self.extract_value(24, 27)
@@ -75,6 +83,7 @@ class EFTRecord(EFTBase):
         self.transaction_description = self.extract_value(27, 67)
         if len(self.transaction_description) == 0:
             self.add_error(EFTParseError(EFTError.ACCOUNT_SHORTNAME_REQUIRED))
+        self.parse_transaction_description()
 
         self.deposit_amount = self.parse_decimal(self.extract_value(67, 80), EFTError.INVALID_DEPOSIT_AMOUNT)
         self.currency = self.get_currency(self.extract_value(80, 82))
@@ -89,3 +98,14 @@ class EFTRecord(EFTBase):
         transaction_date = self.extract_value(131, 139)
         self.transaction_date = None if len(transaction_date) == 0 \
             else self.parse_date(transaction_date, EFTError.INVALID_TRANSACTION_DATE)
+
+    def parse_transaction_description(self):
+        """Determine if the transaction is an EFT and parse it."""
+        if not self.transaction_description:
+            return
+
+        # Check if this a PAD or EFT Transaction - ignore non EFT Transactions
+        if self.transaction_description.startswith(self.EFT_DESCRIPTION_PATTERN) \
+                and not self.transaction_description.startswith(self.PAD_DESCRIPTION_PATTERN):
+            self.is_eft = True
+            self.transaction_description = self.transaction_description[len(self.EFT_DESCRIPTION_PATTERN):].strip()

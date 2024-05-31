@@ -47,7 +47,8 @@ def factory_eft_record(record_type: str, ministry_code: str, program_code: str,
     exchange_adj_amount = transform_money_string(exchange_adj_amount)
     deposit_amount_cad = transform_money_string(deposit_amount_cad)
 
-    result = f'{record_type}{ministry_code}{program_code}{deposit_date}{location_id}{deposit_time}' \
+    result = f'{record_type}{ministry_code}{program_code}{deposit_date}{location_id}' \
+             f'{right_pad_space(deposit_time, 4)}' \
              f'{transaction_sequence}{right_pad_space(transaction_description, 40)}' \
              f'{left_pad_zero(deposit_amount, 13)}{right_pad_space(currency, 2)}' \
              f'{left_pad_zero(exchange_adj_amount, 13)}{left_pad_zero(deposit_amount_cad, 13)}' \
