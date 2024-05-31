@@ -474,7 +474,7 @@ def test_get_eft_statement_with_invoices(session):
                         },
                     ],
                     'folio_number': '1234567890',
-                    'id': 8,
+                    'id': invoice_2.id,
                     'invoice_number': '10021',
                     'line_items': [
                         {
