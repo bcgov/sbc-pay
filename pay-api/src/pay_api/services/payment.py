@@ -392,7 +392,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         return report_response
 
     @staticmethod
-    def get_invoices_totals(invoices: List[InvoiceModel]):
+    def get_invoices_totals(invoices):
         """Tally up totals for a list of invoices."""
         total_stat_fees = 0
         total_service_fees = 0
