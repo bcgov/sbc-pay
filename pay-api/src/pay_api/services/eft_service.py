@@ -64,7 +64,7 @@ class EftService(DepositService):
         return cfs_account
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
-                       **kwargs) -> InvoiceReference:
+                       **kwargs) -> None:
         """Do nothing here, we create invoice references on the create CFS_INVOICES job."""
         return
 
