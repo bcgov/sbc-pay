@@ -14,8 +14,6 @@
 """Service to manage CFS EFT/Wire/Direct Deposit Payments."""
 from typing import Any, Dict, List
 
-from flask import current_app
-
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.services.base_payment_system import PaymentSystemService
 from pay_api.services.cfs_service import CFSService
