@@ -248,6 +248,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     CGI_SFTP_PORT = 2222
     CGI_SFTP_DIRECTORY = '/data/'
     CGI_SFTP_HOST = 'localhost'
+    GCP_AUTH_KEY = None
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

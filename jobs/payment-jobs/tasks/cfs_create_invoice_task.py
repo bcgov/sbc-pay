@@ -32,7 +32,7 @@ from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus, PaymentSystem)
+    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
 from pay_api.utils.util import generate_transaction_number
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
@@ -454,7 +454,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     current_app.logger.error(e)
                     continue
 
-            mailer.publish_mailer_events(MessageType.EFT_INVOICE_CREATED, payment_account, {
+            mailer.publish_mailer_events(QueueMessageTypes.EFT_INVOICE_CREATED.value, payment_account, {
                 'invoice_total': float(invoice_total),
                 'invoice_process_date': f'{datetime.now(tz=timezone.utc)}'
             })
