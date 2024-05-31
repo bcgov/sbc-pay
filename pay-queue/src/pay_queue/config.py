@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ def get_named_config(config_name: str = 'production'):
     return app_config
 
 
-class _Config():  # pylint: disable=too-few-public-methods
+class _Config():  # pylint: disable=too-few-public-methods,protected-access
     """Base class configuration that should set reasonable defaults.
 
     Used as the base for all the other configurations.
@@ -99,19 +99,14 @@ class _Config():  # pylint: disable=too-few-public-methods
 
     # Disable EJV Error Email
     DISABLE_EJV_ERROR_EMAIL = os.getenv('DISABLE_EJV_ERROR_EMAIL', 'true').lower() == 'true'
-    # Disable PAD Success Email - Incase we need to reprocess records weeks/months later
-    DISABLE_PAD_SUCCESS_EMAIL = os.getenv('DISABLE_PAD_SUCCESS_EMAIL', 'false').lower() == 'true'
 
-    # GCP PubSub
-    AUDIENCE = os.getenv('AUDIENCE', None)
-    GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
-    PUBLISHER_AUDIENCE = os.getenv('PUBLISHER_AUDIENCE', None)
-    ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', None)
-    PAY_SUB_AUDIENCE = os.getenv('PAY_SUB_AUDIENCE', None)
-    VERIFY_PUBSUB_EMAIL = os.getenv('VERIFY_PUBSUB_EMAIL', None)
-
-    VERIFY_PUBSUB_VIA_JWT = os.getenv('VERIFY_PUBSUB_VIA_JWT', 'true').lower() == 'true'
-    VERIFY_PUBSUB_VIA_JWT = os.getenv('DEBUG_REQUEST', 'true').lower() == 'true'
+    # PUB/SUB - PUB: account-mailer-dev, auth-event-dev, SUB to ftp-poller-payment-reconciliation-dev, business-events
+    ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', 'account-mailer-dev')
+    AUTH_EVENT_TOPIC = os.getenv('AUTH_EVENT_TOPIC', 'auth-event-dev')
+    GCP_AUTH_KEY = os.getenv('AUTHPAY_GCP_AUTH_KEY', None)
+    # If blank in PUBSUB, this should match the https endpoint the subscription is pushing to.
+    PAY_AUDIENCE_SUB = os.getenv('PAY_AUDIENCE_SUB', None)
+    VERIFY_PUBSUB_EMAILS = f'{os.getenv("AUTHPAY_SERVICE_ACCOUNT")},{os.getenv("BUSINESS_SERVICE_ACCOUNT")}'.split(',')
 
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
@@ -157,11 +152,13 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY', 'test')
 
     # Secrets for integration tests
-    TEST_GCP_PROJECT_NAME = 'abdefg-dev'
+    TEST_GCP_PROJECT_NAME = 'pay-queue-dev'
     # Needs to have ftp-poller-dev in it.
     TEST_GCP_TOPICS = ['account-mailer-dev', 'ftp-poller-dev', 'business-identifier-update-pay-dev']
     TEST_PUSH_ENDPOINT_PORT = 5020
     TEST_PUSH_ENDPOINT = os.getenv('TEST_PUSH_ENDPOINT', f'http://host.docker.internal:{str(TEST_PUSH_ENDPOINT_PORT)}/')
+    GCP_AUTH_KEY = None
+    DISABLE_EJV_ERROR_EMAIL = False
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

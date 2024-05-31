@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage CFS EFT/Wire/Direct Deposit Payments."""
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from flask import current_app
 
@@ -44,7 +44,7 @@ class DepositService(PaymentSystemService, CFSService):
         cfs_account.status = CfsAccountStatus.PENDING.value
         return cfs_account
 
-    def create_invoice(self, payment_account: PaymentAccount, line_items: [PaymentLineItem], invoice: Invoice,
+    def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number for direct pay."""
         current_app.logger.debug('<create_invoice_deposit_service')

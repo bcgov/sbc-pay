@@ -64,8 +64,9 @@ def reconcile_eft_payments(msg: Dict[str, any]):  # pylint: disable=too-many-loc
     eft_file_model: EFTFileModel = db.session.query(EFTFileModel).filter(
         EFTFileModel.file_ref == file_name).one_or_none()
 
-    if eft_file_model and eft_file_model.status_code == EFTProcessStatus.COMPLETED.value:
-        current_app.logger.info('File: %s already completed processing on %s.', file_name, eft_file_model.completed_on)
+    if eft_file_model and eft_file_model.status_code in \
+            [EFTProcessStatus.IN_PROGRESS.value, EFTProcessStatus.COMPLETED.value]:
+        current_app.logger.info('File: %s already %s.', file_name, str(eft_file_model.status_code))
         return
 
     # There is no existing EFT File record - instantiate one

@@ -1,11 +1,13 @@
 """This module provides Queue type services."""
 from dataclasses import dataclass
-import uuid
 from datetime import datetime, timezone
+from typing import Optional
+import uuid
+
 from flask import current_app
 from simple_cloudevent import SimpleCloudEvent
 
-from pay_api.services.gcp_queue import GcpQueue
+from pay_api.services.gcp_queue import GcpQueue, queue
 
 
 @dataclass
@@ -16,6 +18,7 @@ class QueueMessage:
     message_type: str
     payload: dict
     topic: str
+    ordering_key: Optional[str] = None
 
 
 def publish_to_queue(queue_message: QueueMessage):
@@ -35,6 +38,7 @@ def publish_to_queue(queue_message: QueueMessage):
         data=queue_message.payload
     )
 
-    # Initialize queue and publish
-    gcp_queue = GcpQueue()
-    gcp_queue.publish(queue_message.topic, gcp_queue.to_queue_message(cloud_event))
+    kwargs = {}
+    if queue_message.ordering_key:
+        kwargs.update({'ordering_key': queue_message.ordering_key})
+    queue.publish(queue_message.topic, GcpQueue.to_queue_message(cloud_event), **kwargs)

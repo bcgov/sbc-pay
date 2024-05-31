@@ -32,12 +32,10 @@ def app():
     """Return a session-wide application configured in TEST mode."""
     return create_app('testing')
 
-
 @pytest.fixture(scope='function')
 def app_request():
     """Return a session-wide application configured in TEST mode."""
     return create_app('testing')
-
 
 @pytest.fixture(scope='session')
 def client(app):  # pylint: disable=redefined-outer-name

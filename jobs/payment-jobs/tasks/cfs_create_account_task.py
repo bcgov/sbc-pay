@@ -23,6 +23,7 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.oauth_service import OAuthService
 from pay_api.utils.constants import RECEIPT_METHOD_EFT_MONTHLY, RECEIPT_METHOD_PAD_DAILY
 from pay_api.utils.enums import AuthHeaderType, CfsAccountStatus, ContentType, MessageType, PaymentMethod
+from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
 from services import routing_slip
 from utils import mailer
@@ -140,7 +141,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                 capture_message(f'User Input needed for creating CFS Account: account id={pay_account.id}, '
                                 f'auth account : {pay_account.auth_account_id}, ERROR : Invalid Bank Details',
                                 level='error')
-                mailer.publish_mailer_events(MessageType.PAD_SETUP_FAILED, pay_account)
+                mailer.publish_mailer_events(QueueMessageTypes.PAD_SETUP_FAILED.value, pay_account)
                 pending_account.status = CfsAccountStatus.INACTIVE.value
                 pending_account.save()
             return

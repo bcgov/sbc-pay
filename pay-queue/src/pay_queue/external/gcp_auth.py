@@ -19,15 +19,16 @@ def verify_jwt(session):
         claims = id_token.verify_oauth2_token(
             jwt_token,
             Request(session=session),
-            audience=current_app.config.get('PAY_SUB_AUDIENCE')
+            audience=current_app.config.get('PAY_AUDIENCE_SUB')
         )
-        # Check if the email is verified and matches the configured email
-        required_email = current_app.config.get('VERIFY_PUBSUB_EMAIL')
-        if not claims.get('email_verified') or claims.get('email') != required_email:
+        required_emails = current_app.config.get('VERIFY_PUBSUB_EMAILS')
+        if claims.get('email_verified') and claims.get('email') in required_emails:
+            return None
+        else:
             return 'Email not verified or does not match', 401
     except Exception as e:
+        current_app.logger.info(f'Invalid token {e}')
         return f'Invalid token: {e}', 400
-    return None
 
 
 def ensure_authorized_queue_user(f):
@@ -35,12 +36,7 @@ def ensure_authorized_queue_user(f):
     @functools.wraps(f)
     def decorated_function(*args, **kwargs):
         # Use CacheControl to avoid re-fetching certificates for every request.
-        if current_app.config.get('DEBUG_REQUEST') is True:
-            current_app.logger.info(f'Headers: {request.headers}')
-        verifyJWT = current_app.config.get('VERIFY_PUBSUB_VIA_JWT', True)
-        current_app.logger.info(f'verifyJWT: {verifyJWT}')
-        if verifyJWT is True:
-            if message := verify_jwt(CacheControl(Session())):
-                abort(HTTPStatus.UNAUTHORIZED)
+        if verify_jwt(CacheControl(Session())):
+            abort(HTTPStatus.UNAUTHORIZED)
         return f(*args, **kwargs)
     return decorated_function

@@ -76,7 +76,7 @@ class ApTask(CgiAP):
         if not routing_slips_dao:
             return
 
-        for routing_slips in batched(routing_slips_dao, 250):
+        for routing_slips in list(batched(routing_slips_dao, 250)):
             ejv_file_model: EjvFileModel = EjvFileModel(
                 file_type=cls.ap_type.value,
                 file_ref=cls.get_file_name(),
@@ -118,7 +118,7 @@ class ApTask(CgiAP):
             return
 
         # 250 MAX is all the transactions the feeder can take per batch.
-        for invoices in batched(total_invoices, 250):
+        for invoices in list(batched(total_invoices, 250)):
             bca_distribution = cls._get_bca_distribution_string()
             ejv_file_model: EjvFileModel = EjvFileModel(
                 file_type=cls.ap_type.value,

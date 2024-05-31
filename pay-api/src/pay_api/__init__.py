@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ from pay_api.utils.auth import jwt
 from pay_api.utils.cache import cache
 from pay_api.utils.logging import setup_logging
 from pay_api.utils.run_version import get_run_version
+from .services.gcp_queue import queue
 
 
 setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))
@@ -48,6 +49,7 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
     app.config.from_object(config.CONFIGURATION[run_mode])
 
     flags.init_app(app)
+    queue.init_app(app)
     db.init_app(app)
     queue.init_app(app)
     Migrate(app, db)

@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,9 +37,9 @@ from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, MessageType, PaymentMethod, PaymentStatus,
-    QueueSources)
+    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus, QueueSources)
 from pay_api.utils.util import get_topic_for_corp_type
+from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
 
 from pay_queue import config
@@ -191,12 +191,9 @@ def reconcile_payments(msg: Dict[str, any]):
 
     cas_settlement: CasSettlementModel = db.session.query(CasSettlementModel) \
         .filter(CasSettlementModel.file_name == file_name).one_or_none()
-    if cas_settlement and not cas_settlement.processed_on:
-        current_app.logger.info('File: %s has attempted to be processed before.', file_name)
-    elif cas_settlement and cas_settlement.processed_on:
-        current_app.logger.info('File: %s already processed on: %s. Skipping file.',
-                                file_name, cas_settlement.processed_on)
-        return
+    if cas_settlement:
+        current_app.logger.info('File: %s has been processed or processing in progress. Skipping file. '
+                                'Removing this row will allow processing to be restarted.', file_name)
     else:
         current_app.logger.info('Creating cas_settlement record for file: %s', file_name)
         cas_settlement = _create_cas_settlement(file_name)
@@ -277,15 +274,13 @@ def _process_consolidated_invoices(row):
                                 level='error')
                 return
             _process_paid_invoices(inv_references, row)
-            if not APP_CONFIG.DISABLE_PAD_SUCCESS_EMAIL:
-                _publish_mailer_events(MessageType.PAD_PAYMENT_SUCCESS.value, payment_account, row)
         elif target_txn_status.lower() == Status.NOT_PAID.value.lower() \
                 or record_type in (RecordType.PADR.value, RecordType.PAYR.value):
             current_app.logger.info('NOT PAID. NSF identified.')
             # NSF Condition. Publish to account events for NSF.
             if _process_failed_payments(row):
                 # Send mailer and account events to update status and send email notification
-                _publish_account_events(MessageType.NSF_LOCK_ACCOUNT.value, payment_account, row)
+                _publish_account_events(QueueMessageTypes.NSF_LOCK_ACCOUNT.value, payment_account, row)
         else:
             current_app.logger.error('Target Transaction Type is received as %s for PAD, and cannot process %s.',
                                      target_txn, row)
@@ -593,7 +588,7 @@ def _publish_payment_event(inv: InvoiceModel):
         gcp_queue_publisher.publish_to_queue(
             QueueMessage(
                 source=QueueSources.PAY_QUEUE.value,
-                message_type=MessageType.PAYMENT.value,
+                message_type=QueueMessageTypes.PAYMENT.value,
                 payload=payload,
                 topic=get_topic_for_corp_type(inv.corp_type_code)
             )
@@ -638,13 +633,13 @@ def _publish_online_banking_mailer_events(rows: List[Dict[str, str]], paid_amoun
 
     credit_amount: float = 0
     if credit_rows:
-        message_type = 'bc.registry.payment.OverPaid'
+        message_type = QueueMessageTypes.ONLINE_BANKING_OVER_PAYMENT.value
         for row in credit_rows:
             credit_amount += float(_get_row_value(row, Column.APP_AMOUNT))
     elif under_pay_rows:
-        message_type = 'bc.registry.payment.UnderPaid'
+        message_type = QueueMessageTypes.ONLINE_BANKING_UNDER_PAYMENT.value
     else:
-        message_type = 'bc.registry.payment.Payment'
+        message_type = QueueMessageTypes.ONLINE_BANKING_PAYMENT.value
 
     payload = {
         'accountId': pay_account.auth_account_id,
@@ -681,7 +676,7 @@ def _publish_account_events(message_type: str, pay_account: PaymentAccountModel,
                 source=QueueSources.PAY_QUEUE.value,
                 message_type=message_type,
                 payload=payload,
-                topic=current_app.config.get('AUTH_QUEUE_TOPIC')
+                topic=current_app.config.get('AUTH_EVENT_TOPIC')
             )
         )
     except Exception as e:  # NOQA pylint: disable=broad-except

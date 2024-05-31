@@ -1,4 +1,4 @@
-# Copyright © 2019 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,9 +30,6 @@ from pay_queue import create_app
 def app():
     """Return a session-wide application configured in TEST mode."""
     _app = create_app('testing')
-    _app.config['GCP_AUTH_KEY'] = 'xxxxx'
-    _app.config['AUDIENCE'] = 'https://pubsub.googleapis.com/google.pubsub.v1.Subscriber'
-    _app.config['PUBLISHER_AUDIENCE'] = 'https://pubsub.googleapis.com/google.pubsub.v1.Publisher'
     return _app
 
 
@@ -157,3 +154,19 @@ def initialize_pubsub(app):
                     'push_config': push_config,
                 }
             )
+
+
+@pytest.fixture(autouse=True)
+def mock_pub_sub_call(mocker):
+    """Mock pub sub call."""
+    class PublisherMock:
+        """Publisher Mock."""
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def publish(self, *args, **kwargs):
+            """Publish mock."""
+            raise CancelledError('This is a mock')
+
+    mocker.patch('google.cloud.pubsub_v1.PublisherClient', PublisherMock)

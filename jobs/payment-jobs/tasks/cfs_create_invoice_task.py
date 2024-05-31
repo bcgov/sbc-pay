@@ -34,6 +34,7 @@ from pay_api.services.payment_account import PaymentAccount as PaymentAccountSer
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus, PaymentSystem)
 from pay_api.utils.util import generate_transaction_number
+from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
 
 from utils import mailer
@@ -320,7 +321,8 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 'invoice_total': float(invoice_total),
                 'invoice_process_date': f'{datetime.now()}'
             }
-            mailer.publish_mailer_events(MessageType.PAD_INVOICE_CREATED, payment_account, additional_params)
+            mailer.publish_mailer_events(QueueMessageTypes.PAD_INVOICE_CREATED.value, payment_account,
+                                         additional_params)
             # Iterate invoice and create invoice reference records
             for invoice in account_invoices:
                 invoice_reference = InvoiceReferenceModel(
