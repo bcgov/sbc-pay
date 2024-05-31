@@ -186,9 +186,6 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             previous_items: dict = PaymentService.create_payment_report_details(purchases=previous_invoices, data=None)
             previous_totals = PaymentService.get_invoices_totals(previous_items.get('items', None))
 
-        # latest_payment_date = max((statement_invoices.payment_date
-        #                            for invoice in statement_invoices
-        #                            if invoice.payment_date), default=None)
         latest_payment_date = None
         for invoice in statement_invoices:
             if latest_payment_date is None or invoice.payment_date > latest_payment_date:
