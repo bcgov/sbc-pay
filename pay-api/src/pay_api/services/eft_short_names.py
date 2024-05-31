@@ -110,7 +110,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('>delete_shortname_link')
 
     @classmethod
-    def get_shortname_links(cls, short_name_id: int) -> List[EFTShortnameLinksModel]:
+    def get_shortname_links(cls, short_name_id: int) -> dict:
         """Get EFT short name account links."""
         current_app.logger.debug('<get_shortname_links')
         statement_summary_query = cls.get_statement_summary_query().subquery()
