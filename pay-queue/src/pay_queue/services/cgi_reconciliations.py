@@ -32,8 +32,9 @@ from pay_api.models import db
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import (
-    DisbursementStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
-    PaymentStatus, PaymentSystem, QueueSources, RoutingSlipStatus)
+    DisbursementStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus,
+    PaymentSystem, QueueSources, RoutingSlipStatus)
+from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
 
 from pay_queue import config
@@ -188,7 +189,6 @@ def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  #
     invoice_return_message = line[319:469]
     # If the JV process failed, then mark the GL code against the invoice to be stopped
     # for further JV process for the credit GL.
-    logger.info('Is Credit or Debit %s - %s', line[104:105], ejv_file.file_type)
     current_app.logger.info('Is Credit or Debit %s - %s', line[104:105], ejv_file.file_type)
     if line[104:105] == 'C' and ejv_file.file_type == EjvFileType.DISBURSEMENT.value:
         disbursement_status = _get_disbursement_status(invoice_return_code)

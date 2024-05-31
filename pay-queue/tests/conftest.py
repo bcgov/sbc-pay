@@ -13,6 +13,7 @@
 # limitations under the License.
 """Common setup and fixtures for the pytest suite used by this service."""
 import os
+from concurrent.futures import CancelledError
 
 import pytest
 from flask_migrate import Migrate, upgrade
@@ -142,7 +143,7 @@ def initialize_pubsub(app):
             except NotFound:
                 pass
             publisher.create_topic(name=topic_path)
-            subscription_path = subscriber.subscription_path(project,  f'{topic}_subscription')
+            subscription_path = subscriber.subscription_path(project, f'{topic}_subscription')
             try:
                 subscriber.delete_subscription(subscription=subscription_path)
             except NotFound:

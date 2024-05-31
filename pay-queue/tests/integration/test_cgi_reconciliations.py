@@ -33,7 +33,7 @@ from pay_api.models import Refund as RefundModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.models import db
 from pay_api.utils.enums import (
-    CfsAccountStatus, DisbursementStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus, MessageType,
+    CfsAccountStatus, DisbursementStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus,
     PaymentMethod, PaymentStatus, RoutingSlipStatus)
 from sbc_common_components.utils.enums import QueueMessageTypes
 
@@ -462,10 +462,9 @@ def test_succesful_payment_ejv_reconciliations(session, app, client):
         ejv_header: EjvHeaderModel = EjvHeaderModel(disbursement_status_code=DisbursementStatus.UPLOADED.value,
                                                     ejv_file_id=ejv_file.id, payment_account_id=jv_acc.id).save()
 
-        EjvLinkModel(
-                    link_id=inv.id, link_type=EJVLinkType.INVOICE.value,
-                    ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
-        ).save()
+        EjvLinkModel(link_id=inv.id, link_type=EJVLinkType.INVOICE.value,
+                     ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
+                     ).save()
         inv_total = f'{inv.total:.2f}'.zfill(15)
         pay_line_amount = f'{line.total:.2f}'.zfill(15)
         service_fee_amount = f'{line.service_fees:.2f}'.zfill(15)
@@ -622,8 +621,8 @@ def test_succesful_payment_reversal_ejv_reconciliations(session, app, client):
                                                     ejv_file_id=ejv_file.id, payment_account_id=jv_acc.id).save()
 
         EjvLinkModel(
-                    link_id=inv.id, link_type=EJVLinkType.INVOICE.value,
-                    ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
+            link_id=inv.id, link_type=EJVLinkType.INVOICE.value,
+            ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
         ).save()
         inv_total = f'{inv.total:.2f}'.zfill(15)
         pay_line_amount = f'{line.total:.2f}'.zfill(15)
@@ -1049,12 +1048,12 @@ def test_successful_ap_disbursement(session, app, client):
                                                 ejv_file_id=ejv_file.id, payment_account_id=account.id).save()
 
     EjvLinkModel(
-                link_id=invoice.id, link_type=EJVLinkType.INVOICE.value,
-                ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
+        link_id=invoice.id, link_type=EJVLinkType.INVOICE.value,
+        ejv_header_id=ejv_header.id, disbursement_status_code=DisbursementStatus.UPLOADED.value
     ).save()
 
     EjvLinkModel(
-        link_id=refund_invoice.id,  link_type=EJVLinkType.INVOICE.value, ejv_header_id=ejv_header.id,
+        link_id=refund_invoice.id, link_type=EJVLinkType.INVOICE.value, ejv_header_id=ejv_header.id,
         disbursement_status_code=DisbursementStatus.UPLOADED.value
     ).save()
 
