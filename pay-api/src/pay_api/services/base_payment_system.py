@@ -1,4 +1,4 @@
-# Copyright © 2024 Province of British Columbia
+# Copyright © 2019 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ from typing import Any, Dict, List
 
 from flask import current_app
 from sentry_sdk import capture_message
-from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Credit as CreditModel
@@ -32,13 +31,15 @@ from pay_api.models import PaymentTransaction as PaymentTransactionModel
 from pay_api.models import Receipt as ReceiptModel
 from pay_api.models.refunds_partial import RefundPartialLine
 from pay_api.services import gcp_queue_publisher
+from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import (
-    CorpType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, QueueSources, TransactionStatus)
+    CorpType, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod, PaymentStatus, QueueSources,
+    TransactionStatus)
 from pay_api.utils.user_context import UserContext
 from pay_api.utils.util import get_local_formatted_date_time, get_topic_for_corp_type
 
@@ -152,9 +153,9 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         try:
             current_app.logger.info(f'Releasing record for invoice {invoice.id}')
             gcp_queue_publisher.publish_to_queue(
-                gcp_queue_publisher.QueueMessage(
+                QueueMessage(
                     source=QueueSources.PAY_API.value,
-                    message_type=QueueMessageTypes.PAYMENT.value,
+                    message_type=MessageType.PAYMENT.value,
                     payload=payload,
                     topic=get_topic_for_corp_type(invoice.corp_type_code)
                 )
@@ -239,9 +240,9 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             })
         current_app.logger.debug(f'Publishing payment refund request to mailer for {invoice.id} : {payload}')
         gcp_queue_publisher.publish_to_queue(
-            gcp_queue_publisher.QueueMessage(
+            QueueMessage(
                 source=QueueSources.PAY_API.value,
-                message_type=QueueMessageTypes.REFUND_DRAWDOWN_REQUEST.value,
+                message_type=f'{invoice.payment_method_code.lower()}.refundRequest',
                 payload=payload,
                 topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
             )

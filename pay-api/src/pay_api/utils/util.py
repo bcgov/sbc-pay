@@ -1,4 +1,4 @@
-# Copyright © 2024 Province of British Columbia
+# Copyright © 2019 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,11 +28,9 @@ import pytz
 from dpath import get as dpath_get
 from flask import current_app
 
-from pay_api.services.code import Code as CodeService
-
 from .constants import DT_SHORT_FORMAT
 from .converter import Converter
-from .enums import Code, CorpType, Product, StatementFrequency
+from .enums import CorpType, StatementFrequency
 
 
 def cors_preflight(methods: str = 'GET'):
@@ -276,12 +274,14 @@ def cents_to_decimal(amount: int):
 
 def get_topic_for_corp_type(corp_type: str):
     """Return a topic to direct the queue message to."""
-    if corp_type == CorpType.NRO.value:
-        return current_app.config.get('NAMEX_PAY_TOPIC')
-    product_code = CodeService.find_code_value_by_type_and_code(Code.CORP_TYPE.value, corp_type).get('product')
-    if product_code == Product.BUSINESS.value:
-        return current_app.config.get('BUSINESS_PAY_TOPIC')
-    return None
+    match corp_type:
+        case CorpType.NRO.value:
+            return current_app.config.get('NAMEX_PAY_TOPIC')
+        # Unused for now, intentionally don't send a queue message for these.
+        case CorpType.PPR.value | CorpType.VS.value | CorpType.CSO.value:
+            return None
+        case _:
+            return current_app.config.get('BUSINESS_PAY_TOPIC')
 
 
 def unstructure_schema_items(schema, items):

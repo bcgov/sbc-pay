@@ -27,30 +27,6 @@ from invoke_jobs import create_app
 from utils.logger import setup_logging
 
 
-@pytest.fixture(autouse=True)
-def mock_pub_sub_call(mocker):
-    """Mock pub sub call."""
-    class Expando(object):
-        """Expando class."""
-
-    class PublisherMock:
-        """Publisher Mock."""
-
-        def __init__(self, *args, **kwargs):
-            def result():
-                """Return true for mock."""
-                return True
-            self.result = result
-
-        def publish(self, *args, **kwargs):
-            """Publish mock."""
-            ex = Expando()
-            ex.result = self.result
-            return ex
-
-    mocker.patch('google.cloud.pubsub_v1.PublisherClient', PublisherMock)
-
-
 @pytest.fixture(scope='session')
 def app():
     """Return a session-wide application configured in TEST mode."""

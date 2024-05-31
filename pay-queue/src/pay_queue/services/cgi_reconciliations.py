@@ -1,4 +1,4 @@
-# Copyright © 2024 Province of British Columbia
+# Copyright © 2019 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,9 +32,8 @@ from pay_api.models import db
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.utils.enums import (
-    DisbursementStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus,
-    PaymentSystem, QueueSources, RoutingSlipStatus)
-from sbc_common_components.utils.enums import QueueMessageTypes
+    DisbursementStatus, EjvFileType, EJVLinkType, InvoiceReferenceStatus, InvoiceStatus, MessageType, PaymentMethod,
+    PaymentStatus, PaymentSystem, QueueSources, RoutingSlipStatus)
 from sentry_sdk import capture_message
 
 from pay_queue import config
@@ -91,46 +90,25 @@ def _update_acknowledgement(msg: Dict[str, any]):
 
 def _update_feedback(msg: Dict[str, any]):  # pylint:disable=too-many-locals, too-many-statements
     # Read the file and find records from the database, and update status.
-
     file_name: str = msg.get('fileName')
     minio_location: str = msg.get('location')
     file = get_object(minio_location, file_name)
     content = file.data.decode('utf-8-sig')
     group_batches: List[str] = _group_batches(content)
+    has_errors, already_processed = _process_ejv_feedback(group_batches['EJV'], file_name)
 
-    if _is_processed_or_processing(group_batches['EJV'], file_name):
-        return
+    if not already_processed:
+        has_errors = _process_ap_feedback(group_batches['AP']) or has_errors
 
-    has_errors = _process_ejv_feedback(group_batches['EJV'])
-    has_errors = _process_ap_feedback(group_batches['AP']) or has_errors
-
-    if has_errors and not APP_CONFIG.DISABLE_EJV_ERROR_EMAIL:
-        _publish_mailer_events(file_name, minio_location)
-    current_app.logger.info('Feedback file processing completed.')
+        if has_errors and not APP_CONFIG.DISABLE_EJV_ERROR_EMAIL:
+            _publish_mailer_events(file_name, minio_location)
+    current_app.logger.info('> update_feedback')
 
 
-def _is_processed_or_processing(group_batches, file_name) -> bool:
-    """Check to see if file has already been processed. Mark them as processing."""
-    for group_batch in group_batches:
-        ejv_file: Optional[EjvFileModel] = None
-        for line in group_batch.splitlines():
-            is_batch_group: bool = line[2:4] == 'BG'
-            if is_batch_group:
-                batch_number = int(line[15:24])
-                ejv_file = EjvFileModel.find_by_id(batch_number)
-                if ejv_file.feedback_file_ref:
-                    current_app.logger.info(
-                        'EJV file id %s with feedback file %s is already processing or has been processed. Skipping.',
-                        batch_number, file_name)
-                    return True
-                ejv_file.feedback_file_ref = file_name
-                ejv_file.save()
-    return False
-
-
-def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-locals
+def _process_ejv_feedback(group_batches, file_name) -> bool:  # pylint:disable=too-many-locals
     """Process EJV Feedback contents."""
     has_errors = False
+    already_processed = False
     for group_batch in group_batches:
         ejv_file: Optional[EjvFileModel] = None
         receipt_number: Optional[str] = None
@@ -143,6 +121,13 @@ def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-loc
             if is_batch_group:
                 batch_number = int(line[15:24])
                 ejv_file = EjvFileModel.find_by_id(batch_number)
+                if ejv_file.feedback_file_ref:
+                    current_app.logger.info(
+                        'EJV file id %s with feedback file %s has already been processed, skipping.',
+                        batch_number, file_name)
+                    already_processed = True
+                    return has_errors, already_processed
+                ejv_file.feedback_file_ref = file_name
             elif is_batch_header:
                 return_code = line[7:11]
                 return_message = line[11:161]
@@ -170,7 +155,7 @@ def _process_ejv_feedback(group_batches) -> bool:  # pylint:disable=too-many-loc
                 has_errors = _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number)
 
     db.session.commit()
-    return has_errors
+    return has_errors, already_processed
 
 
 def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_number):  # pylint:disable=too-many-locals
@@ -266,7 +251,7 @@ def _fix_invoice_line(line):
     # Check for zeros within 300->315 range. Bump them over with spaces.
     if (zero_position := line[300:315].find('0')) > -1:
         spaces_to_insert = 15 - zero_position
-        return line[:300 + zero_position] + (' ' * spaces_to_insert) + line[300 + zero_position:]
+        return line[:300+zero_position] + (' ' * spaces_to_insert) + line[300+zero_position:]
     return line
 
 
@@ -331,7 +316,7 @@ def _publish_mailer_events(file_name: str, minio_location: str):
         gcp_queue_publisher.publish_to_queue(
             QueueMessage(
                 source=QueueSources.PAY_QUEUE.value,
-                message_type=QueueMessageTypes.EJV_FAILED.value,
+                message_type=MessageType.EJV_FAILED.value,
                 payload=payload,
                 topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
             )

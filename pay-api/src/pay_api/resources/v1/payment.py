@@ -1,4 +1,4 @@
-# Copyright © 2024 Province of British Columbia
+# Copyright © 2019 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -54,7 +54,6 @@ def get_account_payments(account_id: str):
 def post_account_payment(account_id: str):
     """Create account payments."""
     current_app.logger.info('<post_account_payment')
-    response, status = None, None
     # Check if user is authorized to perform this action
     check_auth(business_identifier=None, account_id=account_id, contains_role=MAKE_PAYMENT)
     # If it's a staff user, then create credits.

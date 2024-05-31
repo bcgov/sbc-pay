@@ -1,4 +1,4 @@
-# Copyright © 2024 Province of British Columbia
+# Copyright © 2019 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -48,7 +48,6 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
     app.config.from_object(config.CONFIGURATION[run_mode])
 
     flags.init_app(app)
-    queue.init_app(app)
     db.init_app(app)
     queue.init_app(app)
     Migrate(app, db)

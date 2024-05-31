@@ -1,4 +1,4 @@
-# Copyright © 2024 Province of British Columbia
+# Copyright © 2019 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,27 +35,10 @@ def app():
 
 
 @pytest.fixture(autouse=True)
-def mock_pub_sub_call(mocker):
-    """Mock pub sub call."""
-    class Expando(object):
-        """Expando class."""
-
-    class PublisherMock:
-        """Publisher Mock."""
-
-        def __init__(self, *args, **kwargs):
-            def result():
-                """Return true for mock."""
-                return True
-            self.result = result
-
-        def publish(self, *args, **kwargs):
-            """Publish mock."""
-            ex = Expando()
-            ex.result = self.result
-            return ex
-
-    mocker.patch('google.cloud.pubsub_v1.PublisherClient', PublisherMock)
+def mock_queue_publish(monkeypatch):
+    """Mock queue publish."""
+    # TODO: so it can be used like this from gcp_queue_publisher  import publish_to_queue
+    monkeypatch.setattr('pay_api.services.gcp_queue_publisher.publish_to_queue', lambda *args, **kwargs: None)
 
 
 @pytest.fixture(scope='function')

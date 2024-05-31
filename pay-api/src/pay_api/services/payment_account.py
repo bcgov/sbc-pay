@@ -1,4 +1,4 @@
-# Copyright © 2024 Province of British Columbia
+# Copyright © 2019 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the 'License');
 # you may not use this file except in compliance with the License.
@@ -17,10 +17,8 @@ from __future__ import annotations
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Optional, Tuple
-
 from cattr import Converter
 from flask import current_app
-from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
 from sqlalchemy import and_, desc, func, or_
 
@@ -46,8 +44,8 @@ from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings
 from pay_api.utils.enums import (
-    AuthHeaderType, CfsAccountStatus, ContentType, InvoiceStatus, PaymentMethod, PaymentSystem, QueueSources,
-    StatementFrequency)
+    AuthHeaderType, CfsAccountStatus, ContentType, InvoiceStatus, MessageType, PaymentMethod, PaymentSystem,
+    QueueSources, StatementFrequency)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext, user_context
 from pay_api.utils.util import (
@@ -814,9 +812,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def publish_account_mailer_event_on_creation(self):
         """Publish to account mailer message to send out confirmation email on creation."""
         if self.payment_method == PaymentMethod.PAD.value:
-            payload = self.create_account_event_payload(QueueMessageTypes.PAD_ACCOUNT_CREATE.value,
-                                                        include_pay_info=True)
-            self._publish_queue_message(payload, QueueMessageTypes.PAD_ACCOUNT_CREATE.value)
+            payload = self.create_account_event_payload(MessageType.PAD_ACCOUNT_CREATE.value, include_pay_info=True)
+            self._publish_queue_message(payload, MessageType.PAD_ACCOUNT_CREATE.value)
 
     def _publish_queue_message(self, payload: dict, message_type: str):
         """Publish to account mailer to send out confirmation email or notification email."""
@@ -846,14 +843,14 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             'accountName': self.name
         }
 
-        if event_type == QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value:
+        if event_type == MessageType.NSF_UNLOCK_ACCOUNT.value:
             payload.update({
                 'invoiceNumber': receipt_info['invoiceNumber'],
                 'receiptNumber': receipt_info['receiptNumber'],
                 'paymentMethodDescription': receipt_info['paymentMethodDescription'],
                 'invoice': receipt_info['invoice']
             })
-        if event_type == QueueMessageTypes.PAD_ACCOUNT_CREATE.value:
+        if event_type == MessageType.PAD_ACCOUNT_CREATE.value:
             payload['padTosAcceptedBy'] = self.pad_tos_accepted_by
         if include_pay_info:
             payload['paymentInfo'] = {
@@ -878,7 +875,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
             receipt_info = ReceiptService.get_nsf_receipt_details(payment.id)
             payload = pay_account.create_account_event_payload(
-                QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value,
+                MessageType.NSF_UNLOCK_ACCOUNT.value,
                 receipt_info=receipt_info
             )
 
@@ -886,9 +883,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 gcp_queue_publisher.publish_to_queue(
                     QueueMessage(
                         source=QueueSources.PAY_API.value,
-                        message_type=QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value,
+                        message_type=MessageType.NSF_UNLOCK_ACCOUNT.value,
                         payload=payload,
-                        topic=current_app.config.get('AUTH_EVENT_TOPIC')
+                        topic=current_app.config.get('EVENT_LISTENER_TOPIC')
                     )
                 )
             except Exception as e:  # NOQA pylint: disable=broad-except
@@ -939,6 +936,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         pay_account.save()
         pa_service = cls.find_by_id(pay_account.id)
         if not already_has_eft_enabled:
-            payload = pa_service.create_account_event_payload(QueueMessageTypes.EFT_AVAILABLE_NOTIFICATION.value)
-            pa_service._publish_queue_message(payload, QueueMessageTypes.EFT_AVAILABLE_NOTIFICATION.value)
+            payload = pa_service.create_account_event_payload(MessageType.EFT_AVAILABLE_NOTIFICATION.value)
+            pa_service._publish_queue_message(payload, MessageType.EFT_AVAILABLE_NOTIFICATION.value)
         return pa_service

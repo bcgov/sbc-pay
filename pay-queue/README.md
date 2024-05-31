@@ -3,11 +3,11 @@
 
 
 # Application Name
-BC Registries Pay Queue
+BC Registries Payment Reconciliation Queue
 
 ## Technology Stack Used
 * Python, Flask
-* Postgres -  SQLAlchemy, psycopg2-binary, alembic & Google PUB/SUB
+* Postgres -  SQLAlchemy, psycopg2-binary & alembic
 
 
 ## License

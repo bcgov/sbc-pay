@@ -16,8 +16,8 @@ from typing import List
 
 from flask import current_app
 from paramiko.sftp_attr import SFTPAttributes
-from sbc_common_components.utils.enums import QueueMessageTypes
 
+from pay_api.utils.enums import MessageType
 from services.sftp import SFTPService
 from utils import utils
 
@@ -48,12 +48,12 @@ class CGIFeederPollerTask:  # pylint:disable=too-few-public-methods
                             f'Skipping directory {file_name}.')
                         continue
                     if cls._is_ack_file(file_name):
-                        utils.publish_to_queue([file_name], QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value)
+                        utils.publish_to_queue([file_name], MessageType.CGI_ACK_RECEIVED.value)
                         cls._move_file_to_backup(sftp_client, [file_name])
                     elif cls._is_feedback_file(file_name):
                         bucket_name = current_app.config.get('MINIO_CGI_BUCKET_NAME')
                         utils.upload_to_minio(file, file_full_name, sftp_client, bucket_name)
-                        utils.publish_to_queue([file_name], QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value,
+                        utils.publish_to_queue([file_name], MessageType.CGI_FEEDBACK_RECEIVED.value,
                                                location=bucket_name)
                         cls._move_file_to_backup(sftp_client, [file_name])
                     elif cls._is_a_trigger_file(file_name):
