@@ -46,6 +46,4 @@ class DepositService(PaymentSystemService, CFSService):
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
-        """Return a static invoice number for direct pay."""
-        current_app.logger.debug('<create_invoice_deposit_service')
-        # Do nothing here as the invoice references are created later.
+        """Do nothing here as the invoice references are created later."""
