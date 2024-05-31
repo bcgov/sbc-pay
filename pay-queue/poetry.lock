@@ -1657,7 +1657,7 @@ werkzeug = "3.0.1"
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
 reference = "sync-python-to-main"
-resolved_reference = "ff882e5d28c46ea0a0466b7bf3bf11ff0853855f"
+resolved_reference = "1dae0d28e241a7bcdfc43dcaee1a36e35e77c31c"
 subdirectory = "pay-api"
 
 [[package]]
