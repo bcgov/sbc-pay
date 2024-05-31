@@ -49,6 +49,7 @@ class Statement(BaseModel):
             'created_on',
             'frequency',
             'from_date',
+            'is_interim_statement',
             'notification_date',
             'notification_status_code',
             'payment_account_id',
@@ -64,6 +65,7 @@ class Statement(BaseModel):
     payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
     from_date = db.Column(db.Date, default=None, nullable=False)
     to_date = db.Column(db.Date, default=None, nullable=True)
+    is_interim_statement = db.Column('is_interim_statement', db.Boolean(), nullable=False, default=False)
 
     created_on = db.Column(db.Date, default=None, nullable=False)
     notification_status_code = db.Column(db.String(20), ForeignKey('notification_status_codes.code'), nullable=True)
