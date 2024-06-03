@@ -392,9 +392,6 @@
                 <td colspan="2">
                     <div>
                         <div><span class="font-bold">Account Number:</span> {{account.id}}</div>
-                        {% if statement.is_overdue %}
-                            <div><span class="font-bold">Statement Balance:</span> <span class="font-bold">${{ "{:,.2f}".format(total.due)}} (Overdue)</span></div>
-                        {% endif %}
                         {% if statement.is_interim_statement %}
                             <div><span class="font-bold">Total Amount Paid:</span> <span class="font-bold">${{ "{:,.2f}".format(total.paid)}}</span></div>
                         {% endif %}
@@ -468,25 +465,14 @@
                     <h2>Totals</h2>
                 </td>
             </tr>
-            {% if statement.is_overdue %}
-                <tr>
-                    <td colspan="2">
-                        <div class="total-elements font-bold">
-                            Statement Total (Over Due):
-                            <span class="total">${{"{:,.2f}".format(total.due)}}</span>
-                        </div>
-                    </td>
-                </tr>
-            {% else %}
-                <tr>
-                    <td colspan="2">
-                        <div class="total-elements font-bold">
-                            Statement Total:
-                            <span class="total">${{"{:,.2f}".format(total.fees)}}</span>
-                        </div>
-                    </td>
-                </tr>
-            {% endif %}
+            <tr>
+                <td colspan="2">
+                    <div class="total-elements font-bold">
+                        Statement Total:
+                        <span class="total">${{"{:,.2f}".format(total.fees)}}</span>
+                    </div>
+                </td>
+            </tr>
             <tr>
                 <td colspan="2">
                     <div class="total-elements">
@@ -546,11 +532,7 @@
                         <span class="total">${{ "{:,.2f}".format(total.due) if total.due else '0.00' }}</span>
                     </div>
                     {% if not statement.is_interim_statement %}
-                        {% if statement.is_overdue %}
-                            <div class="font-14">As of {{ statement.to_date }} at 5:15 pm Pacific time</div>
-                        {% else %}
-                            <div class="font-14">Payment Due Date: {{ statement.to_date }} at 5:15 pm Pacific time</div>
-                        {% endif %}
+                        <div class="font-14">Payment Due Date: {{ statement.to_date }} at 5:15 pm Pacific time</div>
                     {% endif %}
                 </td>
             </tr>
