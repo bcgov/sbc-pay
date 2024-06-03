@@ -8,7 +8,7 @@ python-dotenv
 psycopg2-binary
 jsonschema==4.17.3
 requests
-cairocffi>=0.9.0
+cairocffi
 flask-jwt-oidc
 
 #For report generation
@@ -18,8 +18,8 @@ Flask-WeasyPrint
 #Sentry
 sentry-sdk[flask]
 jaeger-client
-itsdangerous==2.0.1
-Jinja2==3.0.3
-markupsafe==2.0.1
+itsdangerous
+Jinja2
+markupsafe
 
-werkzeug<2
+werkzeug
