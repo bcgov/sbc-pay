@@ -18,6 +18,9 @@ from typing import List
 from flask import current_app
 from sqlalchemy import func
 
+from pay_api.models import EFTCredit as EFTCreditModel
+from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
+from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
@@ -27,10 +30,13 @@ from pay_api.models import StatementSchema as StatementModelSchema
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.models import db
 from pay_api.utils.constants import DT_SHORT_FORMAT
-from pay_api.utils.enums import ContentType, InvoiceStatus, NotificationStatus, StatementFrequency
+from pay_api.utils.enums import (
+    ContentType, EFTFileLineType, EFTProcessStatus, InvoiceStatus, NotificationStatus, PaymentMethod,
+    StatementFrequency, StatementTemplate)
 from pay_api.utils.util import get_first_and_last_of_frequency, get_local_formatted_date, get_local_time
 
 from .payment import Payment as PaymentService
+from .payment import PaymentReportInput
 
 
 class Statement:  # pylint:disable=too-many-instance-attributes
@@ -138,12 +144,67 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return data
 
     @staticmethod
-    def get_statement_report(statement_id: str, content_type: str, template_name='statement_report', **kwargs):
+    def get_statement_template(statement: StatementModel, statement_invoices: List[InvoiceModel]) -> str:
+        """Return the statement template name."""
+        # Check invoice payment method for statement template
+        if statement_invoices and statement_invoices[0].payment_method_code == PaymentMethod.EFT.value:
+            return StatementTemplate.EFT_STATEMENT.value
+
+        # In the event of an empty statement check statement payment methods, could be more than one on transition days
+        if PaymentMethod.EFT.value in statement.payment_methods:
+            return StatementTemplate.EFT_STATEMENT.value
+
+        return StatementTemplate.STATEMENT_REPORT.value
+
+    @staticmethod
+    def get_previous_statement(statement: StatementModel) -> StatementModel:
+        """Get the preceding statement."""
+        return db.session.query(StatementModel)\
+            .filter(StatementModel.to_date < statement.from_date,
+                    StatementModel.payment_account_id == statement.payment_account_id,
+                    StatementModel.id != statement.id)\
+            .order_by(StatementModel.to_date.desc()).first()
+
+    @staticmethod
+    def get_statement_eft_transactions(statement: StatementModel) -> List[EFTTransactionModel]:
+        """Get a list of EFT transactions applied to statement invoices."""
+        return db.session.query(EFTTransactionModel) \
+            .join(EFTCreditModel, EFTCreditModel.eft_transaction_id == EFTTransactionModel.id) \
+            .join(EFTCreditInvoiceLinkModel, EFTCreditInvoiceLinkModel.eft_credit_id == EFTCreditModel.id) \
+            .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == EFTCreditInvoiceLinkModel.invoice_id) \
+            .filter(StatementModel.id == statement.id) \
+            .filter(EFTTransactionModel.status_code == EFTProcessStatus.COMPLETED.value) \
+            .filter(EFTTransactionModel.line_type == EFTFileLineType.TRANSACTION.value).all()
+
+    @classmethod
+    def _populate_statement_summary(cls, statement: StatementModel, statement_invoices: List[InvoiceModel]) -> dict:
+        """Populate statement summary with additional information."""
+        previous_statement: StatementModel = Statement.get_previous_statement(statement)
+        previous_totals = None
+        if previous_statement:
+            previous_invoices = StatementModel.find_all_payments_and_invoices_for_statement(previous_statement.id)
+            previous_items: dict = PaymentService.create_payment_report_details(purchases=previous_invoices, data=None)
+            previous_totals = PaymentService.get_invoices_totals(previous_items.get('items', None))
+
+        latest_payment_date = None
+        for invoice in statement_invoices:
+            if latest_payment_date is None or invoice.payment_date > latest_payment_date:
+                latest_payment_date = invoice.payment_date
+
+        return {
+            'lastStatementTotal': previous_totals['fees'] if previous_totals else 0,
+            'lastStatementPaidAmount': previous_totals['paid'] if previous_totals else 0,
+            'latestStatementPaymentDate': latest_payment_date.strftime(DT_SHORT_FORMAT) if latest_payment_date else None
+        }
+
+    @staticmethod
+    def get_statement_report(statement_id: str, content_type: str, **kwargs):
         """Generate statement report."""
         current_app.logger.debug(f'<get_statement_report {statement_id}')
         report_name: str = 'bcregistry-statements'
 
         statement_dao: StatementModel = StatementModel.find_by_id(statement_id)
+        Statement.populate_overdue_from_invoices([statement_dao])
 
         statement_svc = Statement()
         statement_svc._dao = statement_dao  # pylint: disable=protected-access
@@ -165,8 +226,18 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         statement['from_date'] = from_date_string
         statement['to_date'] = to_date_string
 
-        report_response = PaymentService.generate_payment_report(content_type, report_name, result_items,
-                                                                 template_name,
+        template_name = Statement.get_statement_template(statement_dao, statement_purchases)
+        report_inputs = PaymentReportInput(content_type=content_type,
+                                           report_name=report_name,
+                                           template_name=template_name,
+                                           results=result_items)
+
+        if template_name == StatementTemplate.EFT_STATEMENT.value:
+            report_inputs.statement_summary = Statement._populate_statement_summary(statement_dao,
+                                                                                    statement_purchases)
+            report_inputs.eft_transactions = Statement.get_statement_eft_transactions(statement_dao)
+
+        report_response = PaymentService.generate_payment_report(report_inputs,
                                                                  auth=kwargs.get('auth', None),
                                                                  statement=statement)
         current_app.logger.debug('>get_statement_report')
@@ -257,7 +328,8 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             from_date=statement_from,
             to_date=today,
             notification_status_code=NotificationStatus.PENDING.value
-            if account.statement_notification_enabled else NotificationStatus.SKIP.value
+            if account.statement_notification_enabled else NotificationStatus.SKIP.value,
+            is_interim_statement=True
         ).save()
 
         invoices_and_auth_ids = PaymentModel.get_invoices_for_statements(statement_filter)

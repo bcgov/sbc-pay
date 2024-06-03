@@ -16,7 +16,10 @@
 
 Test-Suite to ensure that the Statement Service is working as expected.
 """
-from datetime import datetime
+from datetime import datetime, timezone
+
+from dateutil.relativedelta import relativedelta
+from unittest.mock import patch
 
 import pytz
 from freezegun import freeze_time
@@ -27,10 +30,12 @@ from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementInvoices as StatementInvoiceModel
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
+from pay_api.services.report_service import ReportRequest, ReportService
 from pay_api.services.statement import Statement as StatementService
-from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
+from pay_api.utils.constants import DT_SHORT_FORMAT
+from pay_api.utils.enums import ContentType, InvoiceStatus, PaymentMethod, StatementFrequency, StatementTemplate
 from tests.utilities.base_test import (
-    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_line_item,
+    factory_invoice, factory_invoice_reference, factory_payment, factory_payment_account, factory_payment_line_item,
     factory_premium_payment_account, factory_statement, factory_statement_invoices, factory_statement_settings,
     get_auth_premium_user, get_basic_account_payload, get_eft_enable_account_payload, get_premium_account_payload,
     get_unlinked_pad_account_payload)
@@ -194,6 +199,7 @@ def test_get_weekly_interim_statement(session, admin_users_mock):
 
     assert statements is not None
     assert len(statements[0]) == 1
+    assert statements[0][0].is_interim_statement
 
     # Validate weekly interim invoice is correct
     weekly_invoices = StatementInvoiceModel.find_all_invoices_for_statement(statements[0][0].id)
@@ -253,12 +259,277 @@ def test_get_monthly_interim_statement(session, admin_users_mock):
 
     assert statements is not None
     assert len(statements[0]) == 1
+    assert statements[0][0].is_interim_statement
 
     # Validate monthly interim invoice is correct
     monthly_invoices = StatementInvoiceModel.find_all_invoices_for_statement(statements[0][0].id)
     assert monthly_invoices is not None
     assert len(monthly_invoices) == 1
     assert monthly_invoices[0].invoice_id == monthly_invoice.id
+
+
+def get_statement_date_string(datetime_value: datetime) -> str:
+    """Get formatted date string for report input."""
+    date_format = '%Y-%m-%d'
+    return datetime_value.strftime(date_format)
+
+
+def test_get_eft_statement_for_empty_invoices(session):
+    """Assert that the get statement report works for eft statement with no invoices."""
+    statement_from_date = datetime.now(timezone.utc) + relativedelta(months=1, day=1)
+    statement_to_date = statement_from_date + relativedelta(months=1, days=-1)
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
+    settings_model = factory_statement_settings(payment_account_id=payment_account.id,
+                                                frequency=StatementFrequency.MONTHLY.value,
+                                                from_date=statement_from_date)
+    statement_model = factory_statement(payment_account_id=payment_account.id,
+                                        frequency=StatementFrequency.MONTHLY.value,
+                                        statement_settings_id=settings_model.id,
+                                        from_date=statement_from_date,
+                                        to_date=statement_to_date)
+
+    payment_account = PaymentAccountModel.find_by_id(payment_account.id)
+    statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
+    assert statements is not None
+    expected_report_name = f'bcregistry-statements-{statement_from_date.strftime(DT_SHORT_FORMAT)}-' \
+                           f'to-{statement_to_date.strftime(DT_SHORT_FORMAT)}.pdf'
+    with patch.object(ReportService, 'get_report_response', return_value=None) as mock_report:
+        report_response, report_name = StatementService.get_statement_report(statement_id=statement_model.id,
+                                                                             content_type=ContentType.PDF.value,
+                                                                             auth=get_auth_premium_user())
+        assert report_name == expected_report_name
+
+        date_string_now = get_statement_date_string(datetime.now())
+        expected_template_vars = {
+            'account': {
+                'accountType': 'PREMIUM',
+                'contact': {
+                    'city': 'Westbank',
+                    'country': 'CA',
+                    'created': '2020-05-14T17:33:04.315908+00:00',
+                    'createdBy': 'BCREGTEST Bena THIRTEEN',
+                    'modified': '2020-08-07T23:55:56.576008+00:00',
+                    'modifiedBy': 'BCREGTEST Bena THIRTEEN',
+                    'postalCode': 'V4T 2A5',
+                    'region': 'BC',
+                    'street': '66-2098 Boucherie Rd',
+                    'streetAdditional': 'First',
+                },
+                'id': '1234',
+                'name': 'Mock Account',
+                'paymentPreference': {
+                    'bcOnlineAccountId': '1234567890',
+                    'bcOnlineUserId': 'PB25020',
+                    'methodOfPayment': 'DRAWDOWN',
+                },
+            },
+            'invoices': [],
+            'paymentTransactions': [],
+            'statement': {
+                'created_on': date_string_now,
+                'frequency': 'MONTHLY',
+                'from_date': get_statement_date_string(statement_from_date),
+                'to_date': get_statement_date_string(statement_to_date),
+                'id': statement_model.id,
+                'is_interim_statement': False,
+                'is_overdue': False,
+                'notification_date': None,
+                'payment_methods': ['EFT']
+            },
+            'statementSummary': {
+                'lastStatementTotal': 0,
+                'lastStatementPaidAmount': 0,
+                'latestStatementPaymentDate': None
+            },
+            'total': {
+                'due': 0,
+                'fees': 0,
+                'paid': 0,
+                'serviceFees': 0,
+                'statutoryFees': 0,
+            }
+        }
+        expected_report_inputs = ReportRequest(report_name=report_name,
+                                               template_name=StatementTemplate.EFT_STATEMENT.value,
+                                               template_vars=expected_template_vars,
+                                               populate_page_number=True,
+                                               content_type=ContentType.PDF.value)
+        mock_report.assert_called_with(expected_report_inputs)
+
+
+def test_get_eft_statement_with_invoices(session):
+    """Assert that the get statement report works for eft statement with invoices."""
+    statement_from_date = datetime.now(timezone.utc) + relativedelta(months=1, day=1)
+    statement_to_date = statement_from_date + relativedelta(months=1, days=-1)
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.EFT.value)
+    settings_model = factory_statement_settings(payment_account_id=payment_account.id,
+                                                frequency=StatementFrequency.MONTHLY.value,
+                                                from_date=statement_from_date)
+    statement_model = factory_statement(payment_account_id=payment_account.id,
+                                        frequency=StatementFrequency.MONTHLY.value,
+                                        statement_settings_id=settings_model.id,
+                                        from_date=statement_from_date,
+                                        to_date=statement_to_date)
+
+    payment_account = PaymentAccountModel.find_by_id(payment_account.id)
+    statements = StatementService.find_by_account_id(payment_account.auth_account_id, page=1, limit=10)
+    assert statements is not None
+
+    invoice_1 = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
+                                total=200, paid=0).save()
+    factory_payment_line_item(invoice_id=invoice_1.id, fee_schedule_id=1).save()
+
+    invoice_2 = factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
+                                total=50, paid=0).save()
+    factory_payment_line_item(invoice_id=invoice_2.id, fee_schedule_id=1).save()
+
+    factory_invoice_reference(invoice_1.id).save()
+    factory_invoice_reference(invoice_2.id).save()
+    factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice_1.id)
+    factory_statement_invoices(statement_id=statement_model.id, invoice_id=invoice_2.id)
+
+    expected_report_name = f'bcregistry-statements-{statement_from_date.strftime(DT_SHORT_FORMAT)}-' \
+                           f'to-{statement_to_date.strftime(DT_SHORT_FORMAT)}.pdf'
+    with patch.object(ReportService, 'get_report_response', return_value=None) as mock_report:
+        report_response, report_name = StatementService.get_statement_report(statement_id=statement_model.id,
+                                                                             content_type=ContentType.PDF.value,
+                                                                             auth=get_auth_premium_user())
+
+        assert report_name == expected_report_name
+
+        date_string_now = get_statement_date_string(datetime.now())
+        expected_template_vars = {
+            'account': {
+                'accountType': 'PREMIUM',
+                'contact': {
+                    'city': 'Westbank',
+                    'country': 'CA',
+                    'created': '2020-05-14T17:33:04.315908+00:00',
+                    'createdBy': 'BCREGTEST Bena THIRTEEN',
+                    'modified': '2020-08-07T23:55:56.576008+00:00',
+                    'modifiedBy': 'BCREGTEST Bena THIRTEEN',
+                    'postalCode': 'V4T 2A5',
+                    'region': 'BC',
+                    'street': '66-2098 Boucherie Rd',
+                    'streetAdditional': 'First',
+                },
+                'id': payment_account.auth_account_id,
+                'name': 'Mock Account',
+                'paymentPreference': {
+                    'bcOnlineAccountId': '1234567890',
+                    'bcOnlineUserId': 'PB25020',
+                    'methodOfPayment': 'DRAWDOWN',
+                },
+            },
+            'invoices': [
+                {
+                    'bcol_account': 'TEST',
+                    'business_identifier': 'CP0001234',
+                    'corp_type_code': 'CP',
+                    'created_by': 'test',
+                    'created_name': 'test name',
+                    'created_on': date_string_now,
+                    'details': [
+                        {
+                            'label': 'label',
+                            'value': 'value',
+                        },
+                    ],
+                    'folio_number': '1234567890',
+                    'id': invoice_1.id,
+                    'invoice_number': '10021',
+                    'line_items': [
+                        {
+                            'description': None,
+                            'filing_type_code': 'OTANN',
+                            'gst': 0.0,
+                            'pst': 0.0,
+                            'service_fees': 0.0,
+                            'total': 10.0,
+                        },
+                    ],
+                    'paid': 0.0,
+                    'payment_account': {
+                        'account_id': '1234',
+                        'billable': True,
+                    },
+                    'payment_method': 'EFT',
+                    'product': 'BUSINESS',
+                    'refund': 0.0,
+                    'service_fees': 0.0,
+                    'status_code': 'Pending',
+                    'total': 200.0,
+                },
+                {
+                    'bcol_account': 'TEST',
+                    'business_identifier': 'CP0001234',
+                    'corp_type_code': 'CP',
+                    'created_by': 'test',
+                    'created_name': 'test name',
+                    'created_on': date_string_now,
+                    'details': [
+                        {
+                            'label': 'label',
+                            'value': 'value',
+                        },
+                    ],
+                    'folio_number': '1234567890',
+                    'id': invoice_2.id,
+                    'invoice_number': '10021',
+                    'line_items': [
+                        {
+                            'description': None,
+                            'filing_type_code': 'OTANN',
+                            'gst': 0.0,
+                            'pst': 0.0,
+                            'service_fees': 0.0,
+                            'total': 10.0,
+                        },
+                    ],
+                    'paid': 0.0,
+                    'payment_account': {
+                        'account_id': '1234',
+                        'billable': True,
+                    },
+                    'payment_method': 'EFT',
+                    'product': 'BUSINESS',
+                    'refund': 0.0,
+                    'service_fees': 0.0,
+                    'status_code': 'Pending',
+                    'total': 50.0,
+                },
+            ],
+            'paymentTransactions': [],
+            'statement': {
+                'created_on': date_string_now,
+                'frequency': 'MONTHLY',
+                'from_date': get_statement_date_string(statement_from_date),
+                'to_date': get_statement_date_string(statement_to_date),
+                'id': statement_model.id,
+                'is_interim_statement': False,
+                'is_overdue': False,
+                'notification_date': None,
+                'payment_methods': ['EFT']
+            },
+            'statementSummary': {
+                'lastStatementTotal': 0,
+                'lastStatementPaidAmount': 0,
+                'latestStatementPaymentDate': None,
+            },
+            'total': {
+                'due': 250.0,
+                'fees': 250.0,
+                'paid': 0.0,
+                'serviceFees': 0.0,
+                'statutoryFees': 250.0,
+            }
+        }
+        expected_report_inputs = ReportRequest(report_name=report_name,
+                                               template_name=StatementTemplate.EFT_STATEMENT.value,
+                                               template_vars=expected_template_vars,
+                                               populate_page_number=True,
+                                               content_type=ContentType.PDF.value)
+        mock_report.assert_called_with(expected_report_inputs)
 
 
 def localize_date(date: datetime):

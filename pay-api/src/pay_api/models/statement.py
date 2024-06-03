@@ -17,7 +17,7 @@ from datetime import datetime
 import pytz
 from marshmallow import fields
 from sql_versioning import history_cls
-from sqlalchemy import ForeignKey, and_, case, literal_column
+from sqlalchemy import ForeignKey, Integer, and_, case, cast, literal_column
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
@@ -49,6 +49,7 @@ class Statement(BaseModel):
             'created_on',
             'frequency',
             'from_date',
+            'is_interim_statement',
             'notification_date',
             'notification_status_code',
             'payment_account_id',
@@ -64,6 +65,7 @@ class Statement(BaseModel):
     payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
     from_date = db.Column(db.Date, default=None, nullable=False)
     to_date = db.Column(db.Date, default=None, nullable=True)
+    is_interim_statement = db.Column('is_interim_statement', db.Boolean(), nullable=False, default=False)
 
     created_on = db.Column(db.Date, default=None, nullable=False)
     notification_status_code = db.Column(db.String(20), ForeignKey('notification_status_codes.code'), nullable=True)
@@ -155,7 +157,7 @@ class Statement(BaseModel):
 
         query = db.session.query(Invoice) \
             .join(StatementInvoices, StatementInvoices.invoice_id == Invoice.id) \
-            .filter(StatementInvoices.statement_id == statement_id)
+            .filter(StatementInvoices.statement_id == cast(statement_id, Integer))
 
         return query.all()
 
