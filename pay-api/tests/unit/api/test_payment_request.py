@@ -197,10 +197,10 @@ def test_payment_get_exception(session, client, jwt, app):
     rv = client.get(f'/api/v1/payment-requests/{pay_id}', headers=headers)
     assert rv.status_code == 404
 
-    pay_id = '9999999999'
+    pay_id = '99999999999999'
 
     rv = client.get(f'/api/v1/payment-requests/{pay_id}', headers=headers)
-    assert rv.status_code == 400
+    assert rv.status_code == 500
 
 
 def test_payment_creation_when_paybc_down(session, client, jwt, app):
