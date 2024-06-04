@@ -1,0 +1,22 @@
+<table class="statement-details">
+    <tbody>
+        <tr>
+            <td colspan="2">
+                <div>
+                    <div><span class="font-bold">Account Number:</span> {{account.id}}</div>
+                    {% if statement.is_interim_statement %}
+                        <div><span class="font-bold">Total Amount Paid:</span> <span class="font-bold">${{ "{:,.2f}".format(total.paid)}}</span></div>
+                    {% endif %}
+                    <div><span class="font-bold">Total Amount Owing:</span> <span class="font-bold">${{ "{:,.2f}".format(total.due) if total.due else '0.00' }}</span></div>
+                    {% if statement.is_interim_statement %}
+                        <div><span class="font-bold">Payment Received Date:</span> {{statementSummary.latestStatementPaymentDate | format_datetime('mmm dd,yyyy')}} at 5:15 PM Pacific Time</div>
+                    {% else %}
+                        <div><span class="font-bold">Payment Due Date:</span> {{statement.to_date | format_datetime('mmm dd,yyyy')}} at 5:15 PM Pacific Time</div>
+                    {% endif %}
+                    
+                    <div><span class="font-bold">Statement Number:</span> {{statement.id}}</div>
+                </div>
+            </td>
+        </tr>
+    </tbody>
+</table>
