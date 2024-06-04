@@ -144,10 +144,10 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return data
 
     @staticmethod
-    def get_statement_template(statement: StatementModel, statement_invoices: List[InvoiceModel]) -> str:
+    def get_statement_template(statement: StatementModel, ordered_invoices: List[InvoiceModel]) -> str:
         """Return the statement template name."""
         # Check invoice payment method for statement template
-        if statement_invoices and statement_invoices[0].payment_method_code == PaymentMethod.EFT.value:
+        if ordered_invoices and ordered_invoices[0].payment_method_code == PaymentMethod.EFT.value:
             return StatementTemplate.EFT_STATEMENT.value
 
         # In the event of an empty statement check statement payment methods, could be more than one on transition days
