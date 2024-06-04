@@ -47,10 +47,11 @@ build-req: clean ## Upgrade requirements
 	pip install --upgrade pip ;\
 	pip install -Ur requirements/prod.txt ;\
 	pip freeze | sort > requirements.txt ;\
+	pip uninstall pkg-resources==0.0.0 ;\
 	cat requirements/repo-libraries.txt >> requirements.txt ;\
 	pip install -Ur requirements/repo-libraries.txt
 
-install: clean ## Install python virtrual environment
+install: clean ## Install python virtual environment
 	test -f venv/bin/activate || python3 -m venv  $(CURRENT_ABS_DIR)/venv ;\
 	. venv/bin/activate ;\
 	pip install --upgrade pip ;\

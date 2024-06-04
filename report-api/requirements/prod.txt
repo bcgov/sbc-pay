@@ -3,13 +3,11 @@ gunicorn
 Flask
 flask-restx
 python-dateutil
-flask-jwt-oidc
 python-dotenv
 psycopg2-binary
 jsonschema==4.17.3
 requests
 cairocffi
-flask-jwt-oidc
 
 #For report generation
 WeasyPrint
