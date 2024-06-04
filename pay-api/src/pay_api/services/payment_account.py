@@ -375,11 +375,17 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @classmethod
     def _check_and_handle_payment_method(cls, account: PaymentAccountModel, target_payment_method: str):
         """Check if the payment method has changed and invoke handling logic."""
-        if account.payment_method == target_payment_method or target_payment_method != PaymentMethod.EFT.value:
+        if account.payment_method == target_payment_method or \
+                PaymentMethod.EFT.value not in {account.payment_method, target_payment_method}:
             return
 
-        # Payment method has changed and is EFT
-        Statement.generate_interim_statement(account.auth_account_id, StatementFrequency.MONTHLY.value)
+        # Payment method has changed between EFT and other payment methods
+        statement_frequency = (
+            StatementFrequency.MONTHLY.value
+            if target_payment_method == PaymentMethod.EFT.value
+            else StatementFrequency.default_frequency().value
+        )
+        Statement.generate_interim_statement(account.auth_account_id, statement_frequency)
 
     @classmethod
     def _check_and_update_statement_settings(cls, payment_account: PaymentAccountModel):
