@@ -206,8 +206,8 @@ def test_get_weekly_interim_statement(session, admin_users_mock):
     assert weekly_invoices is not None
     assert len(weekly_invoices) == 1
     assert weekly_invoices[0].invoice_id == weekly_invoice.id
-    
-    
+
+
 def test_get_interim_statement_change_away_from_eft(session, admin_users_mock):
     """Assert that a payment method update interim statement is generated."""
     account_create_date = datetime(2023, 10, 1, 12, 0)
