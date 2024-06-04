@@ -376,3 +376,10 @@ class EJVLinkType(Enum):
 
     INVOICE = 'invoice'
     REFUND = 'refund'
+
+
+class StatementTemplate(Enum):
+    """Statement report templates."""
+
+    EFT_STATEMENT = 'eft_statement'
+    STATEMENT_REPORT = 'statement_report'

@@ -14,14 +14,16 @@
 """Service to manage Payment model related operations."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from dateutil import parser
 from flask import current_app
 
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
@@ -36,8 +38,22 @@ from pay_api.utils.enums import (
     AuthHeaderType, Code, ContentType, InvoiceReferenceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import generate_receipt_number, get_local_formatted_date, get_local_formatted_date_time
+
 from .code import Code as CodeService
 from .oauth_service import OAuthService
+from .report_service import ReportRequest, ReportService
+
+
+@dataclass
+class PaymentReportInput:
+    """Payment Report input parameters."""
+
+    content_type: str
+    report_name: str
+    template_name: str
+    results: dict
+    statement_summary: Optional[dict] = None
+    eft_transactions: Optional[List[EFTTransactionModel]] = None
 
 
 class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -366,20 +382,53 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
         results = Payment.search_all_purchase_history(auth_account_id, search_filter)
 
-        report_response = Payment.generate_payment_report(content_type, report_name, results,
-                                                          template_name='payment_transactions')
+        report_response = Payment.generate_payment_report(PaymentReportInput(content_type=content_type,
+                                                                             report_name=report_name,
+                                                                             template_name='payment_transactions',
+                                                                             results=results
+                                                                             ))
         current_app.logger.debug('>create_payment_report')
 
         return report_response
 
     @staticmethod
+    def get_invoices_totals(invoices):
+        """Tally up totals for a list of invoices."""
+        total_stat_fees = 0
+        total_service_fees = 0
+        total = 0
+        total_paid = 0
+
+        for invoice in invoices:
+            total += invoice.get('total', 0)
+            total_stat_fees += invoice.get('total', 0) - invoice.get('service_fees', 0)
+
+            total_service_fees += invoice.get('service_fees', 0)
+            total_paid += invoice.get('paid', 0)
+
+            # Format date to local
+            invoice['created_on'] = get_local_formatted_date(parser.parse(invoice['created_on']))
+
+        return {
+            'statutoryFees': total_stat_fees,
+            'serviceFees': total_service_fees,
+            'fees': total,
+            'paid': total_paid,
+            'due': total - total_paid
+        }
+
+    @staticmethod
     @user_context
-    def generate_payment_report(content_type, report_name, results, template_name,
-                                **kwargs):  # pylint: disable=too-many-locals
+    def generate_payment_report(report_inputs: PaymentReportInput, **kwargs):  # pylint: disable=too-many-locals
         """Prepare data and generate payment report by calling report api."""
         labels = ['Transaction', 'Transaction Details', 'Folio Number', 'Initiated By', 'Date', 'Purchase Amount',
                   'GST', 'Statutory Fee', 'BCOL Fee', 'Status', 'Corp Number', 'Transaction ID',
                   'Invoice Reference Number']
+
+        content_type = report_inputs.content_type
+        results = report_inputs.results
+        report_name = report_inputs.report_name
+        template_name = report_inputs.template_name
 
         # Use the status_code_description instead of status_code.
         invoice_status_codes = CodeService.find_code_values_by_type(Code.INVOICE_STATUS.value)
@@ -395,21 +444,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 'values': Payment._prepare_csv_data(results)
             }
         else:
-            total_stat_fees = 0
-            total_service_fees = 0
-            total = 0
-            total_paid = 0
-
             invoices = results.get('items', None)
-            for invoice in invoices:
-                total += invoice.get('total', 0)
-                total_stat_fees += invoice.get('total', 0) - invoice.get('service_fees', 0)
-
-                total_service_fees += invoice.get('service_fees', 0)
-                total_paid += invoice.get('paid', 0)
-
-                # Format date to local
-                invoice['created_on'] = get_local_formatted_date(parser.parse(invoice['created_on']))
+            totals = Payment.get_invoices_totals(invoices)
 
             account_info = None
             if kwargs.get('auth', None):
@@ -424,31 +460,22 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                 account_info['contact'] = contact['contacts'][0]  # Get the first one from the list
 
             template_vars = {
+                'statementSummary': report_inputs.statement_summary,
+                'paymentTransactions': report_inputs.eft_transactions,
                 'invoices': results.get('items', None),
-                'total': {
-                    'statutoryFees': total_stat_fees,
-                    'serviceFees': total_service_fees,
-                    'fees': total,
-                    'paid': total_paid,
-                    'due': total - total_paid
-                },
+                'total': totals,
                 'account': account_info,
                 'statement': kwargs.get('statement')
             }
 
-        report_payload = {
-            'reportName': report_name,
-            'templateName': template_name,
-            'templateVars': template_vars,
-            'populatePageNumber': True
-        }
+        report_response = ReportService.get_report_response(ReportRequest(
+            report_name=report_name,
+            template_name=template_name,
+            template_vars=template_vars,
+            populate_page_number=True,
+            content_type=content_type
+        ))
 
-        report_response = OAuthService.post(endpoint=current_app.config.get('REPORT_API_BASE_URL'),
-                                            token=kwargs['user'].bearer_token,
-                                            auth_header_type=AuthHeaderType.BEARER,
-                                            content_type=ContentType.JSON,
-                                            additional_headers={'Accept': content_type},
-                                            data=report_payload)
         return report_response
 
     @staticmethod
