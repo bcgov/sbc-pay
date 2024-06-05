@@ -78,7 +78,7 @@
                     <div class="total-elements">
                         Payment Received for Last Statement:
                         <span class="total">
-                            ${{"{:,.2f}".format(statementSummary.lastStatementPaidAmount)}}
+                            -${{"{:,.2f}".format(statementSummary.lastStatementPaidAmount)}}
                         </span>
                     </div>
                 </td>
@@ -112,7 +112,7 @@
                         <span class="total">${{ "{:,.2f}".format(total.due) if total.due else '0.00' }}</span>
                     </div>
                     {% if not statement.is_interim_statement %}
-                        <div class="font-14">Payment Due Date: {{ statement.to_date | format_datetime('mmm dd,yyyy') }} at 5:15 pm Pacific time</div>
+                        <div class="font-14">Payment Due Date: {{ statement.to_date | format_datetime('mmm dd,yyyy') }} at 5:15 pm Pacific Time</div>
                     {% endif %}
                 </td>
             </tr>
