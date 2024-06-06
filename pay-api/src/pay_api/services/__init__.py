@@ -28,6 +28,7 @@ from .payment import Payment
 from .payment_service import PaymentService
 from .payment_transaction import PaymentTransaction as TransactionService
 from .receipt import Receipt as ReceiptService
+from .report_service import ReportService
 from .refund import RefundService
 from .statement import Statement
 from .statement_recipients import StatementRecipients
