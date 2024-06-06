@@ -451,6 +451,6 @@ def _unlock_associated_frozen_accounts(short_name_links: List[Dict]):
     """Unlock the frozen accounts."""
     # For each short name link, unlock the associated accounts
     for short_name_link in short_name_links:
-        payment_account: PaymentAccountModel = PaymentAccount.find_by_auth_account_id(
-            short_name_link['auth_account_id'])
+        auth_account_id = short_name_link['account_id']
+        payment_account: PaymentAccountModel = PaymentAccount.find_by_auth_account_id(auth_account_id)
         PaymentAccount.unlock_frozen_accounts(payment_account)
