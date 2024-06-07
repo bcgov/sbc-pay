@@ -1686,7 +1686,7 @@ python-dateutil = "2.9.0.post0"
 python-dotenv = "1.0.1"
 python-jose = "3.3.0"
 pytz = "2024.1"
-requests = "2.31.0"
+requests = "2.32.2"
 rsa = "4.9"
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
 semver = "3.0.2"
@@ -1704,9 +1704,9 @@ werkzeug = "3.0.1"
 
 [package.source]
 type = "git"
-url = "https://github.com/bcgov/sbc-pay.git"
-reference = "HEAD"
-resolved_reference = "24180c779947d10f985a4e7fe4321076dc4f2925"
+url = "https://github.com/seeker25/sbc-pay.git"
+reference = "disbursement_refund_date_fix"
+resolved_reference = "2dad4082d5c85909e1d84bd0608f65c215cb1fd1"
 subdirectory = "pay-api"
 
 [[package]]
@@ -2310,13 +2310,13 @@ files = [
 
 [[package]]
 name = "requests"
-version = "2.31.0"
+version = "2.32.2"
 description = "Python HTTP for Humans."
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "requests-2.31.0-py3-none-any.whl", hash = "sha256:58cd2187c01e70e6e26505bca751777aa9f2ee0b7f4300988b709f44e013003f"},
-    {file = "requests-2.31.0.tar.gz", hash = "sha256:942c5a758f98d790eaed1a29cb6eefc7ffb0d1cf7af05c3d2791656dbd6ad1e1"},
+    {file = "requests-2.32.2-py3-none-any.whl", hash = "sha256:fc06670dd0ed212426dfeb94fc1b983d917c4f9847c863f313c9dfaaffb7c23c"},
+    {file = "requests-2.32.2.tar.gz", hash = "sha256:dd951ff5ecf3e3b3aa26b40703ba77495dab41da839ae72ef3c8e5d8e2433289"},
 ]
 
 [package.dependencies]
@@ -2744,4 +2744,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "13f9943d37f4b9beb230d9cf754e3375e1cf5fd98b6326ff456b6e143174f09a"
+content-hash = "6e5db6746e2595239525c0e1555ff070102411bc15ea1207c4ad6a542001d264"
