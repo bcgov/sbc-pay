@@ -86,6 +86,12 @@ def test_create_refund_for_paid_invoice(session, monkeypatch, payment_method, in
 
     assert i.invoice_status_code == expected_inv_status
     assert message['message'] == expected
+    if i.invoice_status_code in (
+        InvoiceStatus.CANCELLED.value,
+        InvoiceStatus.CREDITED.value,
+        InvoiceStatus.REFUNDED.value
+    ):
+        assert i.refund_date
 
 
 def test_create_duplicate_refund_for_paid_invoice(session, monkeypatch):
