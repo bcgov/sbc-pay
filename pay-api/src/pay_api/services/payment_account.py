@@ -871,9 +871,9 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return payload
 
     @staticmethod
-    def unlock_frozen_accounts(payment: Payment):
+    def unlock_frozen_accounts(payment_id: int, payment_account_id: int):
         """Unlock frozen accounts."""
-        pay_account: PaymentAccount = PaymentAccount.find_by_id(payment.payment_account_id)
+        pay_account: PaymentAccount = PaymentAccount.find_by_id(payment_account_id)
         if pay_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
             current_app.logger.info(f'Unlocking Frozen Account {pay_account.auth_account_id}')
             cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account.id)
@@ -882,7 +882,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             cfs_account.status = CfsAccountStatus.ACTIVE.value
             cfs_account.save()
 
-            receipt_info = ReceiptService.get_nsf_receipt_details(payment.id)
+            receipt_info = ReceiptService.get_nsf_receipt_details(payment_id)
             payload = pay_account.create_account_event_payload(
                 QueueMessageTypes.NSF_UNLOCK_ACCOUNT.value,
                 receipt_info=receipt_info
