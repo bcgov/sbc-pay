@@ -225,6 +225,7 @@ async def _process_jv_details_feedback(ejv_file, has_errors, line, receipt_numbe
         elif invoice_link.disbursement_status_code == DisbursementStatus.COMPLETED.value:
             # Set the invoice status as REFUNDED if it's a JV reversal, else mark as PAID
             effective_date = datetime.strptime(line[22:30], '%Y%m%d')
+            # No need for credited here as these are just for EJV payments, which are never credited.
             is_reversal = invoice.invoice_status_code in (
                 InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
             _set_invoice_jv_reversal(invoice, effective_date, is_reversal)
