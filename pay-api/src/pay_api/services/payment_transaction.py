@@ -415,7 +415,8 @@ class PaymentTransaction:  # pylint: disable=too-many-instance-attributes, too-m
             active_failed_payments = Payment.get_failed_payments(auth_account_id=payment_account.auth_account_id)
             current_app.logger.info('active_failed_payments %s', active_failed_payments)
             if not active_failed_payments:
-                PaymentAccount.unlock_frozen_accounts(payment)
+                PaymentAccount.unlock_frozen_accounts(payment_id=payment.id,
+                                                      payment_account_id=payment.payment_account_id)
 
         transaction = PaymentTransaction.__wrap_dao(transaction_dao)
 
