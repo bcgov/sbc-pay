@@ -15,7 +15,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from flask import current_app
@@ -287,6 +287,10 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
         # set invoice status
         invoice.invoice_status_code = invoice_status or InvoiceStatus.REFUND_REQUESTED.value
         invoice.refund = invoice.total  # no partial refund
+        if invoice.invoice_status_code in (InvoiceStatus.REFUNDED.value,
+                                           InvoiceStatus.CANCELLED.value,
+                                           InvoiceStatus.CREDITED.value):
+            invoice.refund_date = datetime.now(tz=timezone.utc)
         invoice.save()
         current_app.logger.debug(f'Completed refund : {invoice_id}')
         return {'message': message}
