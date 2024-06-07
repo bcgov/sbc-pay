@@ -207,7 +207,9 @@ class EjvPartnerDistributionTask(CgiEjv):
                     # debit_distribution and credit_distribution stays as is for invoices which are not PAID
                     # For reversals, we just need to reverse the debit and credit.
                     is_reversal = InvoiceModel.find_by_id(line.invoice_id).invoice_status_code in \
-                        (InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value)
+                        (InvoiceStatus.REFUNDED.value,
+                         InvoiceStatus.REFUND_REQUESTED.value,
+                         InvoiceStatus.CREDITED.value)
 
                     invoice_number = f'#{line.invoice_id}'
                     description = disbursement_desc[:-len(invoice_number)] + invoice_number
