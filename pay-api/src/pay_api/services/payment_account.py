@@ -54,7 +54,6 @@ from pay_api.utils.util import (
     current_local_time, get_local_formatted_date, get_outstanding_txns_from_date, get_str_by_path, mask)
 
 from .flags import flags
-from .payment import Payment
 
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-many-public-methods
