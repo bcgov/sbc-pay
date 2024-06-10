@@ -430,16 +430,16 @@ def _pay_invoice(invoice: InvoiceModel, shortname_balance: Dict, short_name_link
                                                         payment_date=payment_date,
                                                         auto_save=True)
 
-    # If the payment amount is at least exactly the unpaid total, unlock associated accounts
-    if payable_amount == unpaid_total:
-        _unlock_associated_frozen_accounts(short_name_links=short_name_links,
-                                           payment=payment)
-
     db.session.add(payment)
     db.session.add(receipt)
 
     # Paid - update the shortname balance
     shortname_balance['balance'] -= payable_amount
+
+    # If the payment amount is at least exactly the unpaid total, unlock associated accounts
+    if payable_amount == unpaid_total:
+        _unlock_associated_frozen_accounts(short_name_links=short_name_links,
+                                           payment=payment)
 
 
 def _get_invoice_unpaid_total(invoice: InvoiceModel) -> Decimal:
