@@ -453,28 +453,12 @@ def test_get_eft_statement_with_invoices(session):
 
         date_string_now = get_statement_date_string(datetime.now())
         expected_template_vars = {
-            'account': {
-                'accountType': 'PREMIUM',
-                'contact': {
-                    'city': 'Westbank',
-                    'country': 'CA',
-                    'created': '2020-05-14T17:33:04.315908+00:00',
-                    'createdBy': 'BCREGTEST Bena THIRTEEN',
-                    'modified': '2020-08-07T23:55:56.576008+00:00',
-                    'modifiedBy': 'BCREGTEST Bena THIRTEEN',
-                    'postalCode': 'V4T 2A5',
-                    'region': 'BC',
-                    'street': '66-2098 Boucherie Rd',
-                    'streetAdditional': 'First',
-                },
-                'id': payment_account.auth_account_id,
-                'name': 'Mock Account',
-                'paymentPreference': {
-                    'bcOnlineAccountId': '1234567890',
-                    'bcOnlineUserId': 'PB25020',
-                    'methodOfPayment': 'DRAWDOWN',
-                },
+            'statementSummary': {
+                'lastStatementTotal': 0,
+                'lastStatementPaidAmount': 0,
+                'latestStatementPaymentDate': None,
             },
+            'paymentTransactions': [],
             'invoices': [
                 {
                     'bcol_account': 'TEST',
@@ -553,7 +537,35 @@ def test_get_eft_statement_with_invoices(session):
                     'total': 50.0,
                 },
             ],
-            'paymentTransactions': [],
+            'total': {
+                'due': 250.0,
+                'fees': 250.0,
+                'paid': 0.0,
+                'serviceFees': 0.0,
+                'statutoryFees': 250.0,
+            },
+            'account': {
+                'accountType': 'PREMIUM',
+                'contact': {
+                    'city': 'Westbank',
+                    'country': 'CA',
+                    'created': '2020-05-14T17:33:04.315908+00:00',
+                    'createdBy': 'BCREGTEST Bena THIRTEEN',
+                    'modified': '2020-08-07T23:55:56.576008+00:00',
+                    'modifiedBy': 'BCREGTEST Bena THIRTEEN',
+                    'postalCode': 'V4T 2A5',
+                    'region': 'BC',
+                    'street': '66-2098 Boucherie Rd',
+                    'streetAdditional': 'First',
+                },
+                'id': payment_account.auth_account_id,
+                'name': 'Mock Account',
+                'paymentPreference': {
+                    'bcOnlineAccountId': '1234567890',
+                    'bcOnlineUserId': 'PB25020',
+                    'methodOfPayment': 'DRAWDOWN',
+                },
+            },
             'statement': {
                 'created_on': date_string_now,
                 'frequency': 'MONTHLY',
@@ -564,18 +576,6 @@ def test_get_eft_statement_with_invoices(session):
                 'is_overdue': False,
                 'notification_date': None,
                 'payment_methods': ['EFT']
-            },
-            'statementSummary': {
-                'lastStatementTotal': 0,
-                'lastStatementPaidAmount': 0,
-                'latestStatementPaymentDate': None,
-            },
-            'total': {
-                'due': 250.0,
-                'fees': 250.0,
-                'paid': 0.0,
-                'serviceFees': 0.0,
-                'statutoryFees': 250.0,
             }
         }
         expected_report_inputs = ReportRequest(report_name=report_name,
