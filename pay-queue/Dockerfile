@@ -33,4 +33,4 @@ ENV PYTHONPATH=/opt/app-root/src
 
 #EXPOSE 5001
 
-CMD ["gunicorn", "-b 0.0.0.0:8080", "app:app"]
+CMD gunicorn --bind 0.0.0.0:8080 --config /opt/app-root/gunicorn_config.py app:app
