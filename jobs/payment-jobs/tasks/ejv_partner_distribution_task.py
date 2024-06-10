@@ -15,9 +15,8 @@
 
 import time
 from datetime import datetime, timedelta
+import pytz 
 from typing import List
-
-local_tz = 'Canada/Pacific'
 
 from flask import current_app
 from pay_api.models import CorpType as CorpTypeModel
@@ -37,6 +36,11 @@ from sqlalchemy import Date, cast
 
 from tasks.common.cgi_ejv import CgiEjv
 
+
+pst_timezone = pytz.utc.localize('Canada/Pacific')
+now_naive = datetime()
+now_aware = pytz.utc.localize(now_naive)
+pst_time = now_aware.astimezone(pst_timezone)
 
 class EjvPartnerDistributionTask(CgiEjv):
     """Task to create EJV Files."""
@@ -58,7 +62,8 @@ class EjvPartnerDistributionTask(CgiEjv):
     @staticmethod
     def get_invoices_for_disbursement(partner):
         """Return invoices for disbursement. Used by EJV and AP."""
-        disbursement_date = datetime.today() - timedelta(days=current_app.config.get('DISBURSEMENT_DELAY_IN_DAYS'))
+        #disbursement_date = datetime.today() - timedelta(days=current_app.config.get('DISBURSEMENT_DELAY_IN_DAYS'))
+        disbursement_date = pst_time - timedelta(days=current_app.config.get('DISBURSEMENT_DELAY_IN_DAYS'))
         invoices: List[InvoiceModel] = db.session.query(InvoiceModel) \
             .filter(InvoiceModel.invoice_status_code == InvoiceStatus.PAID.value) \
             .filter(
