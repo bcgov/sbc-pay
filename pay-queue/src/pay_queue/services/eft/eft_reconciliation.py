@@ -27,6 +27,7 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services.eft_service import EftService as EFTService
 from pay_api.services.eft_short_names import EFTShortnames
+from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, PaymentMethod
 from sentry_sdk import capture_message
@@ -429,9 +430,10 @@ def _pay_invoice(invoice: InvoiceModel, shortname_balance: Dict, short_name_link
                                                         payment_date=payment_date,
                                                         auto_save=True)
 
-    # If the payment amount is at least exactly the unpaid total, unlock the user
+    # If the payment amount is at least exactly the unpaid total, unlock associated accounts
     if payable_amount == unpaid_total:
-        _unlock_associated_frozen_accounts(short_name_links=short_name_links)
+        _unlock_associated_frozen_accounts(short_name_links=short_name_links,
+                                           payment=payment)
 
     db.session.add(payment)
     db.session.add(receipt)
@@ -447,10 +449,9 @@ def _get_invoice_unpaid_total(invoice: InvoiceModel) -> Decimal:
     return invoice_total - invoice_paid
 
 
-def _unlock_associated_frozen_accounts(short_name_links: List[Dict]):
+def _unlock_associated_frozen_accounts(short_name_links: List[Dict], payment: Payment):
     """Unlock the frozen accounts."""
-    # For each short name link, unlock the associated accounts
     for short_name_link in short_name_links:
         auth_account_id = short_name_link['account_id']
         payment_account: PaymentAccountModel = PaymentAccount.find_by_auth_account_id(auth_account_id)
-        PaymentAccount.unlock_frozen_accounts(payment_account)
+        PaymentAccount.unlock_frozen_accounts(payment.id, payment_account.id)
