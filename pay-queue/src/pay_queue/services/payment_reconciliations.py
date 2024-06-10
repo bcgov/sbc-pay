@@ -195,9 +195,8 @@ def reconcile_payments(msg: Dict[str, any]):
         current_app.logger.info('File: %s has been processed or processing in progress. Skipping file. '
                                 'Removing this row will allow processing to be restarted.', file_name)
         return
-    else:
-        current_app.logger.info('Creating cas_settlement record for file: %s', file_name)
-        cas_settlement = _create_cas_settlement(file_name)
+    current_app.logger.info('Creating cas_settlement record for file: %s', file_name)
+    cas_settlement = _create_cas_settlement(file_name)
 
     file = get_object(minio_location, file_name)
     content = file.data.decode('utf-8-sig')
