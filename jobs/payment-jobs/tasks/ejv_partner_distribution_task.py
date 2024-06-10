@@ -15,7 +15,10 @@
 
 import time
 from datetime import datetime, timedelta
+import pytz 
 from typing import List
+
+local_tz = 'Canada/Pacific'
 
 from flask import current_app
 from pay_api.models import CorpType as CorpTypeModel
