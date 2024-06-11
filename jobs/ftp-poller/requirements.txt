@@ -47,4 +47,4 @@ urllib3==2.2.1
 zipp==3.19.0
 -e git+https://github.com/bcgov/sbc-common-components.git#egg=sbc-common-components&subdirectory=python
 -e git+https://github.com/seeker25/sbc-pay.git@refactor_queues#egg=pay_api&subdirectory=pay-api
--e git+https://github.com/seeker25/sbc-connect-common.git@small_tweaks#egg=gcp-queue&subdirectory=python/gcp-queue
+-e git+https://github.com/seeker25/sbc-connect-common.git@add_ordering#egg=gcp-queue&subdirectory=python/gcp-queue

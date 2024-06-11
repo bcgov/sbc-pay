@@ -46,7 +46,6 @@ def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
             )
     app.logger.info(f'<<<< Starting Ftp Poller Job >>>>')
     queue.init_app(app)
-    db.init_app(app)
     ma.init_app(app)
 
     register_shellcontext(app)
