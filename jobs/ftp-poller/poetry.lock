@@ -928,9 +928,9 @@ simple-cloudevent = {git = "https://github.com/daxiom/simple-cloudevent.py.git"}
 
 [package.source]
 type = "git"
-url = "https://github.com/bcgov/sbc-connect-common.git"
-reference = "main"
-resolved_reference = "c348d30e91253daef7f433a15a12379eb6b68d55"
+url = "https://github.com/seeker25/sbc-connect-common.git"
+reference = "add_ordering"
+resolved_reference = "ec04b8f68a20885fbd1aeb758059709dc271fd8f"
 subdirectory = "python/gcp-queue"
 
 [[package]]
@@ -1605,7 +1605,7 @@ flask-migrate = "4.0.7"
 flask-moment = "1.0.5"
 flask-script = "2.0.6"
 flask-sqlalchemy = "3.1.1"
-gcp-queue = {git = "https://github.com/bcgov/sbc-connect-common.git", branch = "main", subdirectory = "python/gcp-queue"}
+gcp-queue = {git = "https://github.com/seeker25/sbc-connect-common.git", branch = "add_ordering", subdirectory = "python/gcp-queue"}
 greenlet = "3.0.3"
 gunicorn = "21.2.0"
 holidays = "0.37"
@@ -1636,7 +1636,7 @@ python-dateutil = "2.9.0.post0"
 python-dotenv = "1.0.1"
 python-jose = "3.3.0"
 pytz = "2024.1"
-requests = "2.31.0"
+requests = "2.32.2"
 rsa = "4.9"
 sbc-common-components = {git = "https://github.com/bcgov/sbc-common-components.git", subdirectory = "python"}
 semver = "3.0.2"
@@ -1654,9 +1654,9 @@ werkzeug = "3.0.1"
 
 [package.source]
 type = "git"
-url = "https://github.com/bcgov/sbc-pay.git"
-reference = "HEAD"
-resolved_reference = "24180c779947d10f985a4e7fe4321076dc4f2925"
+url = "https://github.com/seeker25/sbc-pay.git"
+reference = "21721"
+resolved_reference = "3b80312ebd74e64336a3aee0090816b7153906ca"
 subdirectory = "pay-api"
 
 [[package]]
@@ -2261,13 +2261,13 @@ files = [
 
 [[package]]
 name = "requests"
-version = "2.31.0"
+version = "2.32.2"
 description = "Python HTTP for Humans."
 optional = false
-python-versions = ">=3.7"
+python-versions = ">=3.8"
 files = [
-    {file = "requests-2.31.0-py3-none-any.whl", hash = "sha256:58cd2187c01e70e6e26505bca751777aa9f2ee0b7f4300988b709f44e013003f"},
-    {file = "requests-2.31.0.tar.gz", hash = "sha256:942c5a758f98d790eaed1a29cb6eefc7ffb0d1cf7af05c3d2791656dbd6ad1e1"},
+    {file = "requests-2.32.2-py3-none-any.whl", hash = "sha256:fc06670dd0ed212426dfeb94fc1b983d917c4f9847c863f313c9dfaaffb7c23c"},
+    {file = "requests-2.32.2.tar.gz", hash = "sha256:dd951ff5ecf3e3b3aa26b40703ba77495dab41da839ae72ef3c8e5d8e2433289"},
 ]
 
 [package.dependencies]

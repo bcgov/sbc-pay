@@ -139,6 +139,7 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # PUB/SUB - PUB: ftp-poller-payment-reconciliation-dev
     FTP_POLLER_TOPIC = os.getenv('FTP_POLLER_TOPIC', 'ftp-poller-payment-reconciliation-dev')
     GCP_AUTH_KEY = os.getenv('AUTHPAY_GCP_AUTH_KEY', None)
+    PUB_ENABLE_MESSAGE_ORDERING = os.getenv('PUB_ENABLE_MESSAGE_ORDERING', 'True')
 
     TESTING = False
     DEBUG = True
