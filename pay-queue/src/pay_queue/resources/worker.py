@@ -52,7 +52,7 @@ def worker():
         elif ce.type in [QueueMessageTypes.INCORPORATION.value, QueueMessageTypes.REGISTRATION.value]:
             update_temporary_identifier(ce.data)
         else:
-            raise Exception('Invalid queue message type')  # pylint: disable=broad-exception-raised
+            current_app.logger.warning('Invalid queue message type: %s', ce.type)
 
         return {}, HTTPStatus.OK
     except Exception as e:  # pylint: disable=broad-exception-caught
