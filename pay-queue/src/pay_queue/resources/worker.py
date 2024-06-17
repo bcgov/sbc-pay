@@ -55,7 +55,7 @@ def worker():
             raise Exception('Invalid queue message type')  # pylint: disable=broad-exception-raised
 
         return {}, HTTPStatus.OK
-    except Exception:  # pylint: disable=broad-exception-caught
-        current_app.logger.error('Failed to process queue message: %s', HTTPStatus.INTERNAL_SERVER_ERROR)
-        # Optionally, return an error status code or message
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        # Catch Exception so that any error is still caught and the message is removed from the queue
+        current_app.logger.error(e)
         return {}, HTTPStatus.OK
