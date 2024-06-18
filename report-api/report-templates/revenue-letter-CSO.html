@@ -140,41 +140,15 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {% for row in table_rows %}
                     <tr>
-                        <td>{{ Registry1 }}</td>
-                        <td>{{ Trans_Counts1 }} {{ Symbol1 }}</td>
-                        <td>{{ Amount1 }}</td>
+                        <td>{{ row.Registry }}</td>
+                        <td>{{ row.Trans_Counts }} {{ row.Symbol }}</td>
+                        <td>{{ row.Amount }}</td>
                     </tr>
-                    <tr>
-                        <td>{{ Registry2 }}</td>
-                        <td>{{ Trans_Counts2 }} {{ Symbol2 }}</td>
-                        <td>{{ Amount2 }}</td>
-                    </tr>
-                    <tr>
-                        <td>{{ Registry3 }}</td>
-                        <td>{{ Trans_Counts3 }} {{ Symbol3 }}</td>
-                        <td>{{ Amount3 }}</td>
-                    </tr>
-                    <tr>
-                        <td>{{ Registry4 }}</td>
-                        <td>{{ Trans_Counts4 }} {{ Symbol4 }}</td>
-                        <td>{{ Amount4 }}</td>
-                    </tr>
-                    <tr>
-                        <td>{{ Registry5 }}</td>
-                        <td>{{ Trans_Counts5 }} {{ Symbol5 }}</td>
-                        <td>{{ Amount5 }}</td>
-                    </tr>
-                    <tr>
-                        <td>{{ Registry6 }}</td>
-                        <td>{{ Trans_Counts6 }} {{ Symbol6 }}</td>
-                        <td>{{ Amount6 }}</td>
-                    </tr>
-                    <tr>
-                        <td>{{ Registry7 }}</td>
-                        <td>{{ Trans_Counts7 }} {{ Symbol7 }}</td>
-                        <td>{{ Amount7 }}</td>
-                    </tr>
+                    {% endfor %}
+                </tbody>
+                    
                 </tbody>
             </table>
         </div>
