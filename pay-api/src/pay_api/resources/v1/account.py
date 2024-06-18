@@ -122,6 +122,8 @@ def put_account(account_number: str):
         response = PaymentAccountService.update(account_number, request_json)
     except ServiceUnavailableException as exception:
         return exception.response()
+    except BusinessException as exception:
+        return exception.response()
 
     status = HTTPStatus.ACCEPTED \
         if response.cfs_account_id and response.cfs_account_status == CfsAccountStatus.PENDING.value \

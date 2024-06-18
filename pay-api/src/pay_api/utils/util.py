@@ -16,6 +16,7 @@
 
 A simple decorator to add the options method to a Request Class.
 """
+import ast
 import calendar
 from datetime import datetime, timedelta
 from typing import Dict
@@ -259,6 +260,16 @@ def string_to_int(val: str):
         return None
 
     return int(val)
+
+
+def string_to_bool(val: str):
+    """Return bool from string."""
+    if val is None:
+        return None
+    if val.lower() not in ('true', 'false'):
+        raise ValueError(f'Invalid string value for bool: {val}')
+
+    return ast.literal_eval(val.capitalize())
 
 
 def get_quantized(amount: float) -> Decimal:
