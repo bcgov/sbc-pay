@@ -193,12 +193,14 @@ class _Config(object):  # pylint: disable=too-few-public-methods
     # EFT variables
     EFT_HOLDING_GL = os.getenv('EFT_HOLDING_GL', '')
     EFT_TRANSFER_DESC = os.getenv('EFT_TRANSFER_DESC', 'BCREGISTRIES {} {} EFT TRANSFER')
+    EFT_OVERDUE_NOTIFY_EMAILS = os.getenv('EFT_OVERDUE_NOTIFY_EMAILS', '')
 
     # GCP PubSub
     AUDIENCE = os.getenv('AUDIENCE', None)
     GCP_AUTH_KEY = os.getenv('GCP_AUTH_KEY', None)
     PUBLISHER_AUDIENCE = os.getenv('PUBLISHER_AUDIENCE', None)
     ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', None)
+
 
 class DevConfig(_Config):  # pylint: disable=too-few-public-methods
     TESTING = False
