@@ -55,7 +55,7 @@ def worker():
             current_app.logger.warning('Invalid queue message type: %s', ce.type)
 
         return {}, HTTPStatus.OK
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except Exception: # NOQA # pylint: disable=broad-except
         # Catch Exception so that any error is still caught and the message is removed from the queue
-        current_app.logger.error(e)
+        current_app.logger.error('Error processing event:', exc_info=True)
         return {}, HTTPStatus.OK
