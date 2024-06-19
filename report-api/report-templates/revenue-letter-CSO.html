@@ -7,6 +7,7 @@
 
   <head lang="en">
     <meta charset="UTF-8">
+    <title>Monthly Revenue Report</title>
     <style>
       @font-face {
           font-family: 'BCSans-Bold';
@@ -30,78 +31,73 @@
       }
 
       @page {
-        size: Letter;
+        size: A4;
         /* Change from the default size of A4 */
-        margin: 0.75cm 0.75cm 0 0.75cm;
+        margin: 1cm;
         /* Set margin on each page */
-        margin-bottom: 2.5cm;
       }
 
       @media print {
         body {
           -webkit-print-color-adjust: exact;
           font-family: 'BCSans-Regular', sans-serif;
-          font-size: 13px;
+          font-size: 14px;
         }
       }
 
       body {
         font-family: 'BCSans-Regular', sans-serif;
-        font-size: 13px;
+        font-size: 14px;
         color: #313132;
       }
 
-      .bcgov-logo-column .bc-reg-address {
-            display: inline-block;
-            padding-top: 10px;
-            font-size: 12px;
+      .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header img {
+            width: 150px;
+            vertical-align: middle;
         }
 
-        .statement-header {
-            border-bottom: 3px solid #234075;
+        .header .title h1 {
+            margin: 0;
         }
-        .statement-header .r-title {
-            font-size: 21px;
-            font-family: 'BCSans-Bold', sans-serif;
+
+        .header .fax-number {
             text-align: right;
-            color: #234075;
+            font-size: 14px;
         }
-        .statement-header .r-subtitle {
-            font-size: 18px;
-            text-align: right;
-            color: #1a5a96;
+
+        .content {
+            margin-top: 20px;
         }
-        .statement-header .r-heading {
-            vertical-align: top;
-            padding-top: 16px;
-            padding-right: 24px;
-            display: inline-block;
-            float: right;
+
+        .content p {
+            margin: 5px 0;
         }
-        .org-account-info-row .org-address-column {
-            padding: 24px;
-            width: 310px;
-            white-space: normal;
-            padding-right: 12px;
-            padding-bottom: 18px;
+
+        .table-container {
+            margin-top: 20px;
         }
-        .org-account-info-row .account-info {
-            width: 100%;
-            padding: 24px;
-            padding-left: 12px;
-        }
+
         table {
             width: 100%;
             border-collapse: collapse;
         }
+
         th, td {
             border: 1px solid #000;
             padding: 8px;
             text-align: left;
         }
+
         th {
             background-color: #f2f2f2;
         }
+   
         .footer {
             margin-top: 40px;
             display: flex;
@@ -110,6 +106,7 @@
         .footer div {
             width: 30%;
         }
+      
     </style>
 </head>
 <body>
@@ -121,13 +118,14 @@
         <div class="fax-number">{{ FaxNumber }}</div>
     </div>
     <div class="content">
+        <p>TEST</p>
         <p>{{ Date }}</p>
-        <p>{{ Title }}</p>
-        <p>{{ Company_Name }}</p>
-        <p>{{ Address_Line_1 }}</p>
-        <p>{{ Address_Line_2 }}</p>
-        <p>{{ Address_Line_3 }}</p>
-        <p>{{ City }}, {{ Province }}, {{ Area_Code }}</p>
+        <p>
+            {{ Company_Name }}<br>
+            {{ Address_Line_1 }}<br>
+            {{ Address_Line_2 }}<br>
+            {{ City }}, {{ Province }}, {{ Area_Code }}
+        </p>
         <p>Dear {{ First_Name }},</p>
         <p>The following information pertains to the revenue and taxes that have been remitted to your Bank on your behalf:</p>
         <div class="table-container">
@@ -148,18 +146,31 @@
                     </tr>
                     {% endfor %}
                 </tbody>
-                    
-                </tbody>
             </table>
         </div>
-        <p>Attached is the Monthly BC OnLine Revenue Statistics Report(s) for the month of {{ enter_month }}. The report details the count of the business transactions and statutory fees including taxes if applicable.</p>
+        <p>Attached is the Monthly BC Registries and Online Services Revenue Statistics Report(s) for the month of {{ enter_month }}. The report details the count of the business transactions and statutory fees including taxes if applicable.</p>
         <p>If you notice a discrepancy between the amount listed above and the data you received from BC Registries, please know that we are investigating this and are aware of it.</p>
         <p>Best Regards,</p>
         <p>
             Cash Management Officer<br>
-            BC Registries and OnLine Services<br>
-            Service BC finance
+            BC Registries and Online Services<br>
+            Service BC Finance
         </p>
+    </div>
+    <div class="footer">
+        <div>
+            Ministry of Citizens' Services
+        </div>
+        <div>
+            BC Registries and Online Services<br>
+            PO Box 9412 Stn Prov Govt<br>
+            Victoria BC V8W 9V1
+        </div>
+        <div>
+            Courier Address:<br>
+            E161 – 4000 Seymour Pl<br>
+            Victoria BC V8X 4S8
+        </div>
     </div>
 </body>
 </html>
