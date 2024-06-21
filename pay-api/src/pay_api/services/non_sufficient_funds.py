@@ -141,7 +141,7 @@ class NonSufficientFundsService:
             'invoices': new_invoices,
             'total_amount': float(aggregate_totals.total_amount or 0),
             'total_amount_remaining': float(aggregate_totals.total_amount_remaining or 0),
-            'nsf_amount': float(aggregate_totals.nsf_amount)
+            'nsf_amount': float(aggregate_totals.nsf_amount or 0)
         }
 
         return data
