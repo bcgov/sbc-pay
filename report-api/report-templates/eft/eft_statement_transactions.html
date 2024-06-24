@@ -101,7 +101,9 @@
                             Total Amount Paid:
                             <span class="total">${{ "{:,.2f}".format(total.paid) if total.paid else '0.00' }}</span>
                         </div>
-                        <div class="font-14">Paid on {{ statementSummary.latestStatementPaymentDate | format_datetime('mmm dd,yyyy') }} </div>
+                        {%  if statementSummary.latestStatementPaymentDate %}
+                            <div class="font-14">Paid on {{ statementSummary.latestStatementPaymentDate | format_datetime('mmm dd,yyyy') }} </div>
+                        {% endif %}
                     </td>
                 </tr>
             {% endif %}
