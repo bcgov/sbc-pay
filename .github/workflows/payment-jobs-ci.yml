@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - feature-queue-python-upgrade
+      - release*
     paths:
       - "jobs/payment-jobs/**"
       - "pay-api/src/pay_api/models/**"
