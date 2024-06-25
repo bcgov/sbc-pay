@@ -133,9 +133,9 @@ class EjvPartnerDistributionTask(CgiEjv):
             # To populate JV Header and JV Details, group these invoices by the distribution
             # and create one JV Header and detail for each.
             distribution_code_set = set()
-            invoice_id_list = []
+            invoice_id_list = [inv.id for inv in invoices]
+
             for inv in invoices:
-                invoice_id_list.append(inv.id)
                 for line_item in inv.payment_line_items:
                     distribution_code_set.add(line_item.fee_distribution_id)
 
@@ -172,7 +172,8 @@ class EjvPartnerDistributionTask(CgiEjv):
                     flow_through = f'{line.invoice_id:<110}'
                     # debit_distribution and credit_distribution stays as is for invoices which are not PAID
                     # For reversals, we just need to reverse the debit and credit.
-                    is_reversal = InvoiceModel.find_by_id(line.invoice_id).invoice_status_code in \
+                    invoice = next(inv for inv in invoices if inv.id == line.invoice_id)
+                    is_reversal = invoice.invoice_status_code in \
                         (InvoiceStatus.REFUNDED.value,
                         InvoiceStatus.REFUND_REQUESTED.value,
                         InvoiceStatus.CREDITED.value)
@@ -195,19 +196,17 @@ class EjvPartnerDistributionTask(CgiEjv):
 
                     control_total += 1
 
-            # Collect all unique invoice IDs
-            invoice_id_sequence = list(dict.fromkeys(invoice_id_list))
-
             # Create ejv invoice link records and set invoice status
             sequence = 1
-            for invoice_id in invoice_id_sequence:
+            for invoice_id in invoice_id_list:
                 link_model = EjvInvoiceLinkModel(invoice_id=invoice_id,
                                                 ejv_header_id=ejv_header_model.id,
                                                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
                                                 sequence=sequence)
                 db.session.add(link_model)
+                invoice = next(inv for inv in invoices if inv.id == invoice_id)
+                invoice.disbursement_status_code = DisbursementStatus.UPLOADED.value
                 sequence += 1
-                InvoiceModel.find_by_id(invoice_id).disbursement_status_code = DisbursementStatus.UPLOADED.value
 
             db.session.flush()
 
