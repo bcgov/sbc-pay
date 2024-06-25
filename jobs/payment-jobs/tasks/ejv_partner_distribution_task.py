@@ -117,6 +117,7 @@ class EjvPartnerDistributionTask(CgiEjv):
             payment_invoices = cls.get_invoices_for_disbursement(partner)
             refund_reversals = cls.get_invoices_for_refund_reversal(partner)
             invoices = payment_invoices + refund_reversals
+
             # If no invoices continue.
             if not invoices:
                 continue
@@ -133,9 +134,10 @@ class EjvPartnerDistributionTask(CgiEjv):
             # To populate JV Header and JV Details, group these invoices by the distribution
             # and create one JV Header and detail for each.
             distribution_code_set = set()
-            invoice_id_list = [inv.id for inv in invoices]
+            jv_invoice_order = []
 
             for inv in invoices:
+                jv_invoice_order.append(inv)
                 for line_item in inv.payment_line_items:
                     distribution_code_set.add(line_item.fee_distribution_id)
 
@@ -147,7 +149,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                 if credit_distribution_code.stop_ejv:
                     continue
 
-                line_items = cls._find_line_items_by_invoice_and_distribution(distribution_code_id, invoice_id_list)
+                line_items = cls._find_line_items_by_invoice_and_distribution(distribution_code_id, [inv.id for inv in invoices])
 
                 total: float = 0
                 for line in line_items:
@@ -161,7 +163,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                 # JV Header
                 ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
                                             cls.get_jv_header(batch_type, cls.get_journal_batch_name(batch_number),
-                                                            journal_name, total))
+                                                              journal_name, total))
                 control_total += 1
 
                 line_number: int = 0
@@ -175,8 +177,8 @@ class EjvPartnerDistributionTask(CgiEjv):
                     invoice = next(inv for inv in invoices if inv.id == line.invoice_id)
                     is_reversal = invoice.invoice_status_code in \
                         (InvoiceStatus.REFUNDED.value,
-                        InvoiceStatus.REFUND_REQUESTED.value,
-                        InvoiceStatus.CREDITED.value)
+                         InvoiceStatus.REFUND_REQUESTED.value,
+                         InvoiceStatus.CREDITED.value)
 
                     invoice_number = f'#{line.invoice_id}'
                     description = disbursement_desc[:-len(invoice_number)] + invoice_number
@@ -198,14 +200,13 @@ class EjvPartnerDistributionTask(CgiEjv):
 
             # Create ejv invoice link records and set invoice status
             sequence = 1
-            for invoice_id in invoice_id_list:
-                link_model = EjvInvoiceLinkModel(invoice_id=invoice_id,
-                                                ejv_header_id=ejv_header_model.id,
-                                                disbursement_status_code=DisbursementStatus.UPLOADED.value,
-                                                sequence=sequence)
+            for inv in jv_invoice_order:
+                link_model = EjvInvoiceLinkModel(invoice_id=inv.id,
+                                                 ejv_header_id=ejv_header_model.id,
+                                                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
+                                                 sequence=sequence)
                 db.session.add(link_model)
-                invoice = next(inv for inv in invoices if inv.id == invoice_id)
-                invoice.disbursement_status_code = DisbursementStatus.UPLOADED.value
+                inv.disbursement_status_code = DisbursementStatus.UPLOADED.value
                 sequence += 1
 
             db.session.flush()
@@ -229,6 +230,7 @@ class EjvPartnerDistributionTask(CgiEjv):
 
         # Add a sleep to prevent collision on file name.
         time.sleep(1)
+
 
 
     @classmethod
