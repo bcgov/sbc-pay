@@ -346,7 +346,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         eft_accounts: List[PaymentAccountModel] = db.session.query(PaymentAccountModel) \
             .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
             .filter(CfsAccountModel.status != CfsAccountStatus.FREEZE.value) \
-            .filter(PaymentAccountModel.id.in_(invoice_subquery)).all()
+            .filter(PaymentAccountModel.id.in_(select(invoice_subquery))).all()
 
         current_app.logger.info(f'Found {len(eft_accounts)} with EFT transactions.')
 
