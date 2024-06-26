@@ -123,7 +123,7 @@ class EjvPartnerDistributionTask(CgiEjv):
 
             effective_date: str = cls.get_effective_date()
             # Construct journal name
-            ejv_header_model: EjvHeaderModel = EjvHeaderModel(
+            ejv_header_model: EjvFileModel = EjvHeaderModel(
                 partner_code=partner.code,
                 disbursement_status_code=DisbursementStatus.UPLOADED.value,
                 ejv_file_id=ejv_file_model.id
