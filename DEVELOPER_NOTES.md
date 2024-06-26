@@ -117,12 +117,12 @@ select ('python3 invoke_jobs.py GENERATE_STATEMENTS ' || i::date) as command ,i:
 ) t1 where statement_count = 0;
 ```
 
-EX It will spit out a command, add in the bcrosAccountId:
+EX It will spit out a command, add in the bcrosAccountId or authAccountId:
 `python3 invoke_jobs.py GENERATE_STATEMENTS 2022-06-25 <accountId>`
 
 Connect to the job pod, and run this line. 
 
-Note: logs might differ a bit here, bcrosAccountId was recently added.
+Note: logs might differ a bit here, bcrosAccountId/authAccountId was recently added.
 ```
 $ python3 invoke_jobs.py GENERATE_STATEMENTS 2022-06-25 <accountId>
 ----------------------------Scheduler Ran With Argument-- GENERATE_STATEMENTS
