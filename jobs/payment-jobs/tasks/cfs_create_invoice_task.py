@@ -36,6 +36,7 @@ from pay_api.utils.enums import (
 from pay_api.utils.util import generate_transaction_number
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
+from sqlalchemy import select
 
 from utils import mailer
 
@@ -239,7 +240,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         pad_accounts: List[PaymentAccountModel] = db.session.query(PaymentAccountModel) \
             .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
             .filter(CfsAccountModel.status != CfsAccountStatus.FREEZE.value) \
-            .filter(PaymentAccountModel.id.in_(inv_subquery)).all()
+            .filter(PaymentAccountModel.id.in_(select(inv_subquery))).all()
 
         current_app.logger.info(f'Found {len(pad_accounts)} with PAD transactions.')
 
@@ -345,7 +346,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         eft_accounts: List[PaymentAccountModel] = db.session.query(PaymentAccountModel) \
             .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
             .filter(CfsAccountModel.status != CfsAccountStatus.FREEZE.value) \
-            .filter(PaymentAccountModel.id.in_(invoice_subquery)).all()
+            .filter(PaymentAccountModel.id.in_(select(invoice_subquery))).all()
 
         current_app.logger.info(f'Found {len(eft_accounts)} with EFT transactions.')
 
