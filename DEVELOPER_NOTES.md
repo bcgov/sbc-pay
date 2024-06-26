@@ -186,6 +186,7 @@ https://gogo.ca//review-account/1127"
 it will work and process on the pod.
 
 
-
+21. Where are the reports generated (report-api)? 
+Here: https://github.com/bcgov/bcros-common/
 
 
