@@ -75,7 +75,7 @@ def test_statements(session):
 
     # Test date override.
     # Override computes for the target date, not the previous date like above.
-    StatementTask.generate_statements((datetime.utcnow() - timedelta(days=1)).strftime('%Y-%m-%d'))
+    StatementTask.generate_statements([(datetime.utcnow() - timedelta(days=1)).strftime('%Y-%m-%d')])
 
     statements = Statement.find_all_statements_for_account(auth_account_id=bcol_account.auth_account_id, page=1,
                                                            limit=100)
@@ -180,7 +180,7 @@ def test_bcol_weekly_to_eft_statement(session):
     assert monthly_invoice is not None
 
     # Regenerate monthly statement using date override - it will clean up the previous empty monthly statement first
-    StatementTask.generate_statements((generate_date - timedelta(days=1)).strftime('%Y-%m-%d'))
+    StatementTask.generate_statements([(generate_date - timedelta(days=1)).strftime('%Y-%m-%d')])
 
     statements = Statement.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
                                                            limit=100)
@@ -258,7 +258,7 @@ def test_bcol_monthly_to_eft_statement(session):
     assert monthly_invoice is not None
 
     # Regenerate monthly statement using date override - it will clean up the previous empty monthly statement first
-    StatementTask.generate_statements((generate_date - timedelta(days=1)).strftime('%Y-%m-%d'))
+    StatementTask.generate_statements([(generate_date - timedelta(days=1)).strftime('%Y-%m-%d')])
 
     statements = Statement.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
                                                            limit=100)

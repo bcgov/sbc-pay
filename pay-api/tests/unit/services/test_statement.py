@@ -16,8 +16,7 @@
 
 Test-Suite to ensure that the Statement Service is working as expected.
 """
-from datetime import datetime, timezone
-
+from datetime import datetime, timedelta, timezone
 from dateutil.relativedelta import relativedelta
 from unittest.mock import patch
 
@@ -320,6 +319,114 @@ def test_get_monthly_interim_statement(session, admin_users_mock):
     assert monthly_invoices is not None
     assert len(monthly_invoices) == 1
     assert monthly_invoices[0].invoice_id == monthly_invoice.id
+
+
+def test_interim_statement_settings_eft(db, session, admin_users_mock):
+    """Assert statement setting properly generated when transitioning to and from EFT payment method."""
+    account_create_date = datetime(2024, 5, 30, 12, 0)
+    with freeze_time(account_create_date):
+        account: PaymentAccountService = PaymentAccountService.create(
+            get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value))
+
+        assert account is not None
+        assert account.payment_method == PaymentMethod.DRAWDOWN.value
+
+    # Confirm initial default settings when account is created
+    initial_settings: StatementSettingsModel = StatementSettingsModel \
+        .find_active_settings(str(account.auth_account_id), datetime.today())
+
+    assert initial_settings is not None
+    assert initial_settings.frequency == StatementFrequency.WEEKLY.value
+    assert initial_settings.from_date == account_create_date.date()
+    assert initial_settings.to_date is None
+
+    update_date = localize_date(datetime(2024, 6, 13, 12, 0))
+    with freeze_time(update_date):
+        account = PaymentAccountService.update(account.auth_account_id,
+                                               get_eft_enable_account_payload(payment_method=PaymentMethod.EFT.value,
+                                                                              account_id=account.auth_account_id))
+    # Assert initial settings are properly end dated
+    assert initial_settings is not None
+    assert initial_settings.frequency == StatementFrequency.WEEKLY.value
+    assert initial_settings.from_date == account_create_date.date()
+    assert initial_settings.to_date == update_date.date()
+
+    # Assert new EFT Monthly settings are created
+    latest_statement_settings: StatementSettingsModel = StatementSettingsModel \
+        .find_latest_settings(account.auth_account_id)
+
+    assert latest_statement_settings is not None
+    assert latest_statement_settings.id != initial_settings.id
+    assert latest_statement_settings.frequency == StatementFrequency.MONTHLY.value
+    assert latest_statement_settings.from_date == (update_date + timedelta(days=1)).date()
+    assert latest_statement_settings.to_date is None
+
+    # Same day payment method change back to DRAWDOWN
+    update_date = localize_date(datetime(2024, 6, 13, 12, 5))
+    with freeze_time(update_date):
+        account = PaymentAccountService.update(account.auth_account_id,
+                                               get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value))
+
+    latest_statement_settings: StatementSettingsModel = StatementSettingsModel \
+        .find_latest_settings(account.auth_account_id)
+
+    assert latest_statement_settings is not None
+    assert latest_statement_settings.id != initial_settings.id
+    assert latest_statement_settings.frequency == StatementFrequency.WEEKLY.value
+    assert latest_statement_settings.from_date == (update_date + timedelta(days=1)).date()
+    assert latest_statement_settings.to_date is None
+
+    # Same day payment method change back to EFT
+    update_date = localize_date(datetime(2024, 6, 13, 12, 6))
+    with freeze_time(update_date):
+        account = PaymentAccountService.update(account.auth_account_id,
+                                               get_eft_enable_account_payload(payment_method=PaymentMethod.EFT.value,
+                                                                              account_id=account.auth_account_id))
+
+    latest_statement_settings: StatementSettingsModel = StatementSettingsModel \
+        .find_latest_settings(account.auth_account_id)
+
+    assert latest_statement_settings is not None
+    assert latest_statement_settings.id != initial_settings.id
+    assert latest_statement_settings.frequency == StatementFrequency.MONTHLY.value
+    assert latest_statement_settings.from_date == (update_date + timedelta(days=1)).date()
+    assert latest_statement_settings.to_date is None
+
+    all_settings = (db.session.query(StatementSettingsModel)
+                    .filter(StatementSettingsModel.payment_account_id == account.id)
+                    .order_by(StatementSettingsModel.id)).all()
+
+    assert all_settings is not None
+    assert len(all_settings) == 2
+
+    expected_from_date = latest_statement_settings.from_date
+
+    # Change payment method to DRAWDOWN 1 day later - should create a new statement settings record
+    update_date = localize_date(datetime(2024, 6, 14, 12, 6))
+    with freeze_time(update_date):
+        account = PaymentAccountService.update(account.auth_account_id,
+                                               get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value))
+
+    latest_statement_settings: StatementSettingsModel = StatementSettingsModel \
+        .find_latest_settings(account.auth_account_id)
+
+    assert latest_statement_settings is not None
+    assert latest_statement_settings.id != initial_settings.id
+    assert latest_statement_settings.frequency == StatementFrequency.WEEKLY.value
+    assert latest_statement_settings.from_date == (update_date + timedelta(days=1)).date()
+    assert latest_statement_settings.to_date is None
+
+    all_settings = (db.session.query(StatementSettingsModel)
+                    .filter(StatementSettingsModel.payment_account_id == account.id)
+                    .order_by(StatementSettingsModel.id)).all()
+
+    assert all_settings is not None
+    assert len(all_settings) == 3
+
+    # Assert previous settings properly end dated
+    assert all_settings[1].frequency == StatementFrequency.MONTHLY.value
+    assert all_settings[1].from_date == expected_from_date
+    assert all_settings[1].to_date == update_date.date()
 
 
 def get_statement_date_string(datetime_value: datetime) -> str:

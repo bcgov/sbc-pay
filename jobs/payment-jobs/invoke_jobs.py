@@ -156,6 +156,7 @@ def run(job_name, argument=None):
 if __name__ == "__main__":
     print('----------------------------Scheduler Ran With Argument--', sys.argv[1])
     if (len(sys.argv) > 2):
-        run(sys.argv[1], sys.argv[2])
+        params = sys.argv[2:len(sys.argv)]
+        run(sys.argv[1], params)
     else:
         run(sys.argv[1])
