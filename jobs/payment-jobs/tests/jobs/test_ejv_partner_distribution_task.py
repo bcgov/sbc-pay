@@ -77,7 +77,7 @@ def test_disbursement_for_partners(session, monkeypatch, client_code, batch_type
 
     # Ensure the fee schedules exist
     assert fee_schedule1, f"Fee schedule not found for corp_type {corp_type1.code} and filing type 'WILLNOTICE'"
-    assert fee_schedule2, f"Fee schedule not found for corp_type {corp_type2.code} and filing type 'WILLNOTICE'"
+    assert fee_schedule2, f"Fee schedule not found for corp_type {corp_type2.code} and filing type 'NOFEE'"
 
     factory_distribution_link(fee_distribution1.distribution_code_id, fee_schedule1.fee_schedule_id)
     factory_distribution_link(fee_distribution2.distribution_code_id, fee_schedule2.fee_schedule_id)
