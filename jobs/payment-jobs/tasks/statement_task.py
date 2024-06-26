@@ -198,7 +198,6 @@ class StatementTask:  # pylint:disable=too-few-public-methods
     @classmethod
     def _filter_settings_by_override(cls, statement_settings, auth_account_id: str):
         """Return filtered Statement settings by payment account."""
-        if statement_settings:
-            return [settings
-                    for settings in statement_settings
-                    if settings.PaymentAccount.auth_account_id == auth_account_id]
+        return [settings
+                for settings in statement_settings
+                if settings.PaymentAccount.auth_account_id == auth_account_id]
