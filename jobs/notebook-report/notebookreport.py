@@ -73,7 +73,8 @@ def send_email(file_processing, emailtype, errormessage, partner_code=None):
             year_month = datetime.strftime(datetime.now() - timedelta(1), '%Y-%m')
             subject = 'Monthly Reconciliation Stats ' + year_month + ext
             filenames = [f'{partner_code}_monthly_reconciliation_summary_' + year_month + '.csv',
-                         f'{partner_code}_monthly_reconciliation_disbursed_' + year_month + '.csv']
+                         f'{partner_code}_monthly_reconciliation_disbursed_' + year_month + '.csv',
+                         f'{partner_code}_revenue_letter.pdf']
             recipients = get_partner_recipients(file_processing, partner_code)
 
     # Add body to email
