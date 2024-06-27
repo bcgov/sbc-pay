@@ -36,7 +36,8 @@ clean-test: ## clean test files
 	rm -f .coverage
 	rm -fr htmlcov/
 
-install: clean
+install: clean 
+	unset HOME ## unset HOME because it's in the DEV .env file, will cause permissions issues
 	pip install poetry ;\
 	poetry install
 
