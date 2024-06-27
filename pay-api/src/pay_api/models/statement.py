@@ -14,14 +14,15 @@
 """Model to handle statements data."""
 
 from datetime import datetime
+
 import pytz
 from marshmallow import fields
 from sql_versioning import history_cls
-from sqlalchemy import ForeignKey, Integer, and_, case, cast, literal_column
+from sqlalchemy import ForeignKey, Integer, and_, case, cast, func, literal_column
 from sqlalchemy.ext.hybrid import hybrid_property
 
 from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
-from pay_api.utils.enums import StatementFrequency
+from pay_api.utils.enums import InvoiceStatus, StatementFrequency
 
 from .base_model import BaseModel
 from .db import db, ma
@@ -115,13 +116,48 @@ class Statement(BaseModel):
 
         return list(payment_methods)
 
+    @hybrid_property
+    def amount_owing(self):
+        """Return amount owing on statement."""
+        from .statement_invoices import StatementInvoices  # pylint: disable=import-outside-toplevel
+        query = self.get_statement_owing_query()
+        query = (query.filter(StatementInvoices.statement_id == self.id)
+                 .with_entities(func.sum(Invoice.total - Invoice.paid).label('total_owing')))
+
+        result = query.scalar()
+        return result if result is not None else 0
+
+    @staticmethod
+    def get_statement_owing_query():
+        """Get statement query used for amount owing."""
+        from .statement_invoices import StatementInvoices  # pylint: disable=import-outside-toplevel
+        return (
+            db.session.query(
+                StatementInvoices.statement_id,
+                func.sum(Invoice.total - Invoice.paid).label('total_owing'))
+            .join(StatementInvoices, StatementInvoices.invoice_id == Invoice.id)
+            .filter(Invoice.invoice_status_code.in_([
+                InvoiceStatus.PARTIAL.value,
+                InvoiceStatus.CREATED.value,
+                InvoiceStatus.OVERDUE.value])
+            )
+            .group_by(StatementInvoices.statement_id)
+        )
+
     @classmethod
-    def find_all_statements_for_account(cls, auth_account_id: str, page, limit):
+    def find_all_statements_for_account(cls, auth_account_id: str, page, limit, is_owing: bool = None):
         """Return all active statements for an account."""
         query = cls.query \
             .join(PaymentAccount) \
             .filter(and_(PaymentAccount.id == cls.payment_account_id,
                          PaymentAccount.auth_account_id == auth_account_id))
+
+        if is_owing:
+            owing_subquery = cls.get_statement_owing_query().subquery()
+            query = query.join(
+                owing_subquery,
+                owing_subquery.c.statement_id == cls.id
+            ).filter(owing_subquery.c.total_owing > 0)
 
         frequency_case = case(
             (
@@ -175,3 +211,4 @@ class StatementSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ance
     to_date = fields.Date(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))
     is_overdue = fields.Boolean()
     payment_methods = fields.List(fields.String())
+    amount_owing = fields.Float(missing=0)

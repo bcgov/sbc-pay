@@ -16,7 +16,7 @@ from datetime import date, datetime, timedelta
 from typing import List
 
 from flask import current_app
-from sqlalchemy import func
+from sqlalchemy import exists, func
 
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTCreditInvoiceLink as EFTCreditInvoiceLinkModel
@@ -128,10 +128,10 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         return d
 
     @staticmethod
-    def find_by_account_id(auth_account_id: str, page: int, limit: int):
+    def find_by_account_id(auth_account_id: str, page: int, limit: int, is_owing: bool = None):
         """Find statements by account id."""
         current_app.logger.debug(f'<search_purchase_history {auth_account_id}')
-        statements, total = StatementModel.find_all_statements_for_account(auth_account_id, page, limit)
+        statements, total = StatementModel.find_all_statements_for_account(auth_account_id, page, limit, is_owing)
         statements = Statement.populate_overdue_from_invoices(statements)
         statements_schema = StatementModelSchema()
         data = {
@@ -155,6 +155,21 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             return StatementTemplate.EFT_STATEMENT.value
 
         return StatementTemplate.STATEMENT_REPORT.value
+
+    @staticmethod
+    def get_invoices_owing_amount(auth_account_id: str):
+        """Get invoices owing amount that have not been added as part of a statement yet."""
+        return (db.session.query(func.sum(InvoiceModel.total - InvoiceModel.paid).label('invoices_owing'))
+                .join(PaymentAccountModel, PaymentAccountModel.id == InvoiceModel.payment_account_id)
+                .filter(PaymentAccountModel.auth_account_id == auth_account_id)
+                .filter(InvoiceModel.invoice_status_code.in_((InvoiceStatus.SETTLEMENT_SCHEDULED.value,
+                                                              InvoiceStatus.PARTIAL.value,
+                                                              InvoiceStatus.CREATED.value,
+                                                              InvoiceStatus.OVERDUE.value)))
+                .filter(~exists()
+                        .where(StatementInvoicesModel.invoice_id == InvoiceModel.id))
+                .group_by(InvoiceModel.payment_account_id)
+                ).scalar()
 
     @staticmethod
     def get_previous_statement(statement: StatementModel) -> StatementModel:
@@ -271,7 +286,12 @@ class Statement:  # pylint:disable=too-many-instance-attributes
         total_due = float(result.total_due) if result else 0
         oldest_overdue_date = get_local_formatted_date(result.oldest_overdue_date) \
             if result and result.oldest_overdue_date else None
+
+        # Unpaid invoice amount total that are not part of a statement yet
+        invoices_unpaid_amount = Statement.get_invoices_owing_amount(auth_account_id)
+
         return {
+            'total_invoice_due': float(invoices_unpaid_amount) if invoices_unpaid_amount else 0,
             'total_due': total_due,
             'oldest_overdue_date': oldest_overdue_date
         }
