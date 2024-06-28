@@ -61,5 +61,5 @@ class APLine:
         return cls(total=line_item.total, invoice_number=invoice.id,
                    line_number=line_number,
                    is_reversal=invoice.invoice_status_code in
-                   [InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value],
+                   [InvoiceStatus.REFUNDED.value, InvoiceStatus.REFUND_REQUESTED.value, InvoiceStatus.CREDITED.value],
                    distribution=distribution)
