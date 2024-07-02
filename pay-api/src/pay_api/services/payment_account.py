@@ -495,10 +495,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id) \
             if payment_account.id else None
         if pay_system.get_payment_system_code() == PaymentSystem.PAYBC.value:
-            if cfs_account is None or (payment_account.payment_method == PaymentMethod.EFT and cfs_account):
-                if payment_account.payment_method == PaymentMethod.EFT and cfs_account:
-                    pay_system.update_account(name=payment_account.name, cfs_account=cfs_account,
-                                              payment_info=payment_info)
+            if cfs_account is None:
                 cfs_account = pay_system.create_account(  # pylint:disable=assignment-from-none
                     identifier=payment_account.auth_account_id,
                     contact_info=account_request.get('contactInfo'),
@@ -506,7 +503,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 if cfs_account:
                     cfs_account.payment_account = payment_account
                     cfs_account.flush()
-            # If the account is PAD and bank details changed, then update bank details
             else:
                 # Update details in CFS
                 pay_system.update_account(name=payment_account.name, cfs_account=cfs_account, payment_info=payment_info)
