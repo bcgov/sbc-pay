@@ -52,17 +52,6 @@ class EftService(DepositService):
         cfs_account.status = CfsAccountStatus.PENDING.value
         return cfs_account
 
-    def update_account(self, name: str, cfs_account: CfsAccountModel, payment_info: Dict[str, Any]) -> CfsAccountModel:
-        """Update pad account."""
-        if str(payment_info.get('bankInstitutionNumber')) != cfs_account.bank_number or \
-                str(payment_info.get('bankTransitNumber')) != cfs_account.bank_branch_number or \
-                str(payment_info.get('bankAccountNumber')) != cfs_account.bank_account_number:
-            # This means, the current cfs_account is for PAD, not EFT
-            # Make the current CFS Account as INACTIVE in DB
-            cfs_account.status = CfsAccountStatus.INACTIVE.value
-            cfs_account.flush()
-        return cfs_account
-
     def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
                        **kwargs) -> None:
         """Do nothing here, we create invoice references on the create CFS_INVOICES job."""
