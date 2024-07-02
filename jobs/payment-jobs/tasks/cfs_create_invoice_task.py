@@ -536,7 +536,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                     return False
 
             if current_receipt_method != new_receipt_method:
-                current_app.logger.debug('Switching site receipt_method from %s to %s',
+                current_app.logger.info('Switching site receipt_method from %s to %s',
                                          current_receipt_method, new_receipt_method)
                 CFSService.update_site_receipt_method(cfs_account, receipt_method=new_receipt_method)
         except Exception as e: # NO QA # pylint: disable=broad-except
