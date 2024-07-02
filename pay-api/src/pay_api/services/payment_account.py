@@ -45,6 +45,7 @@ from pay_api.services.oauth_service import OAuthService
 from pay_api.services.receipt import Receipt as ReceiptService
 from pay_api.services.statement import Statement
 from pay_api.services.statement_settings import StatementSettings
+from pay_api.utils.constants import RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP
 from pay_api.utils.enums import (
     AuthHeaderType, CfsAccountStatus, ContentType, InvoiceStatus, PaymentMethod, PaymentSystem, QueueSources,
     StatementFrequency)
@@ -871,7 +872,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         if pay_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
             current_app.logger.info(f'Unlocking Frozen Account {pay_account.auth_account_id}')
             cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account.id)
-            CFSService.unsuspend_cfs_account(cfs_account=cfs_account)
+            CFSService.update_site_receipt_method(cfs_account, receipt_method=RECEIPT_METHOD_PAD_DAILY)
 
             cfs_account.status = CfsAccountStatus.ACTIVE.value
             cfs_account.save()
@@ -923,7 +924,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             # If account is active or pending pad activation stop PAD payments.
             if pay_account.payment_method == PaymentMethod.PAD.value \
                     and cfs_status in [CfsAccountStatus.ACTIVE.value, CfsAccountStatus.PENDING_PAD_ACTIVATION.value]:
-                CFSService.suspend_cfs_account(cfs_account)
+                CFSService.update_site_receipt_method(cfs_account, receipt_method=RECEIPT_METHOD_PAD_STOP)
             cfs_account.save()
 
         if pay_account.statement_notification_enabled:

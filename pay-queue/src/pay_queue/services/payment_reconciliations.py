@@ -460,7 +460,7 @@ def _process_failed_payments(row):
     current_app.logger.info('setting payment account id : %s status as FREEZE', payment_account.id)
     cfs_account.status = CfsAccountStatus.FREEZE.value
     # Call CFS to stop any further PAD transactions on this account.
-    CFSService.suspend_cfs_account(cfs_account)
+    CFSService.update_site_receipt_method(cfs_account, receipt_method=RECEIPT_METHOD_PAD_STOP)
     if is_already_frozen:
         current_app.logger.info('Ignoring NSF message for invoice : %s as the account is already FREEZE', inv_number)
         return False

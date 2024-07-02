@@ -75,10 +75,14 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 receipt_number = routing_slip.generate_cas_receipt_number()
                 CFSService.create_cfs_receipt(cfs_account=parent_cfs_account,
                                               rcpt_number=receipt_number,
-                                              rcpt_date=routing_slip.routing_slip_date.strftime('%Y-%m-%d'),
+                                              rcpt_date=routing_slip.routing_slip_date.strftime(
+                                                  '%Y-%m-%d'),
                                               amount=routing_slip.total,
                                               payment_method=parent_payment_account.payment_method,
-                                              access_token=CFSService.get_fas_token().json().get('access_token'))
+                                              access_token=CFSService.get_token(
+                                                  PaymentSystem.FAS).json()
+                                              .get('access_token')
+                                              )
 
                 # Add to the list if parent is NSF, to apply the receipts.
                 if parent_rs.status == RoutingSlipStatus.NSF.value:
@@ -129,10 +133,13 @@ class RoutingSlipTask:  # pylint:disable=too-few-public-methods
                 # Recreate the receipt with the modified total.
                 CFSService.create_cfs_receipt(cfs_account=cfs_account,
                                               rcpt_number=rs.generate_cas_receipt_number(),
-                                              rcpt_date=rs.routing_slip_date.strftime('%Y-%m-%d'),
+                                              rcpt_date=rs.routing_slip_date.strftime(
+                                                  '%Y-%m-%d'),
                                               amount=rs.total,
                                               payment_method=payment_account.payment_method,
-                                              access_token=CFSService.get_fas_token().json().get('access_token'))
+                                              access_token=CFSService.get_token(
+                                                  PaymentSystem.FAS).json().get('access_token')
+                                              )
 
                 cls._reset_invoices_and_references_to_created(rs)
 

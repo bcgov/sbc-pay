@@ -31,6 +31,7 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
+from pay_api.utils.constants import CFS_RCPT_EFT_WIRE, RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
 from pay_api.utils.util import generate_transaction_number
@@ -253,7 +254,6 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 .filter(InvoiceModel.id.notin_(cls._active_invoice_reference_subquery())) \
                 .order_by(InvoiceModel.created_on.desc()).all()
 
-            # Get cfs account
             payment_account: PaymentAccountService = PaymentAccountService.find_by_id(account.id)
 
             if len(account_invoices) == 0:
@@ -273,7 +273,9 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                                         f'is {payment_account.cfs_account_status} skipping.')
                 continue
 
-            # Add all lines together
+            if not cls._verify_and_correct_receipt_method(cfs_account, payment_account, PaymentMethod.PAD.value):
+                continue
+
             lines = []
             invoice_total = Decimal('0')
             for invoice in account_invoices:
@@ -409,7 +411,9 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                                         f'is {payment_account.cfs_account_status} skipping.')
                 continue
 
-            # Add all payment line items together
+            if not cls._verify_and_correct_receipt_method(cfs_account, payment_account, PaymentMethod.EFT.value):
+                continue
+
             lines = []
             invoice_total = Decimal('0')
             for invoice in account_invoices:
@@ -477,17 +481,17 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
 
         current_app.logger.info(f'Found {len(invoices)} to be created in CFS.')
         for invoice in invoices:
-            # Get cfs account
             payment_account: PaymentAccountService = PaymentAccountService.find_by_id(invoice.payment_account_id)
             cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
 
-            # Check for corp type and see if online banking is allowed.
             if invoice.payment_method_code == PaymentMethod.ONLINE_BANKING.value:
                 corp_type: CorpTypeModel = CorpTypeModel.find_by_code(invoice.corp_type_code)
                 if not corp_type.is_online_banking_allowed:
                     continue
 
-            # Create a CFS invoice
+            if not cls._verify_and_correct_receipt_method(cfs_account, payment_account, PaymentMethod.ONLINE_BANKING.value):
+                continue
+
             current_app.logger.debug(f'Creating cfs invoice for invoice {invoice.id}')
             try:
                 invoice_response = CFSService.create_account_invoice(transaction_number=invoice.id,
@@ -505,8 +509,38 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
                 invoice_number=invoice_response.get('invoice_number'),
                 reference_number=invoice_response.get('pbc_ref_number', None))
 
-            # Misc
             invoice.cfs_account_id = payment_account.cfs_account_id
-            # leave the status as SETTLEMENT_SCHEDULED
             invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
             invoice.save()
+
+    @classmethod
+    def _verify_and_correct_receipt_method(cls, cfs_account, payment_account, payment_method: str):
+        """Verify and correct the receipt method site."""
+        try:
+            current_receipt_method = CFSService.get_site(cfs_account).get('receipt_method', None)
+            if current_receipt_method == RECEIPT_METHOD_PAD_STOP:
+                current_app.logger.error(f'Skipping the account as the receipt method is {RECEIPT_METHOD_PAD_STOP},'
+                                         ' database is out of sync with CAS.')
+                return False
+
+            match payment_method:
+                case PaymentMethod.EFT.value:
+                    new_receipt_method = CFS_RCPT_EFT_WIRE
+                case PaymentMethod.ONLINE_BANKING.value:
+                    # According to the spec it should be "BCR Online Banking Payments", but in practice we use null.
+                    new_receipt_method = None
+                case PaymentMethod.PAD.value:
+                    new_receipt_method = RECEIPT_METHOD_PAD_DAILY
+                case _:
+                    current_app.logging.error(f'Site switching for {payment_method} is not implemented.')
+                    return False
+
+            if current_receipt_method != new_receipt_method:
+                current_app.logger.debug('Switching site receipt_method from %s to %s',
+                                         current_receipt_method, new_receipt_method)
+                CFSService.update_site_receipt_method(cfs_account, receipt_method=new_receipt_method)
+        except Exception as e: # NO QA # pylint: disable=broad-except
+            capture_message(f'Error switching site for account id={cfs_account.account_id}, '
+                            f'auth account : {payment_account.auth_account_id}, ERROR : {str(e)}', level='error')
+            return False
+        return True

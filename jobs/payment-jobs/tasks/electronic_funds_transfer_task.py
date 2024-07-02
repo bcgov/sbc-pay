@@ -32,7 +32,7 @@ from pay_api.services import EFTShortNamesService
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.receipt import Receipt
 from pay_api.utils.enums import (
-    CfsAccountStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, ReverseOperation)
+    CfsAccountStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentSystem, ReverseOperation)
 from sentry_sdk import capture_message
 
 
@@ -81,7 +81,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                     rcpt_date=payment.payment_date.strftime('%Y-%m-%d'),
                     amount=payment.invoice_amount,
                     payment_method=payment_account.payment_method,
-                    access_token=CFSService.get_fas_token().json().get('access_token'))
+                    access_token=CFSService.get_token(PaymentSystem.FAS).json().get('access_token'))
 
                 # apply receipt to cfs_account
                 total_invoice_amount = cls._apply_electronic_funds_transfers_to_pending_invoices(
@@ -129,7 +129,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                     rcpt_date=payment.payment_date.strftime('%Y-%m-%d'),
                     amount=payment.invoice_amount,
                     payment_method=payment_account.payment_method,
-                    access_token=CFSService.get_fas_token().json().get('access_token'))
+                    access_token=CFSService.get_token(PaymentSystem.FAS).json().get('access_token'))
 
                 cls._reset_invoices_and_references_to_created_for_electronic_funds_transfer(eft_short_name)
 

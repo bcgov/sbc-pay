@@ -20,6 +20,7 @@ from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.services.cfs_service import CFSService
+from pay_api.utils.constants import PaymentSystem
 from pay_api.utils.enums import CfsAccountStatus
 from sentry_sdk import capture_message
 
@@ -46,7 +47,7 @@ def create_cfs_account(cfs_account: CfsAccountModel, pay_account: PaymentAccount
                                       rcpt_date=routing_slip.routing_slip_date.strftime('%Y-%m-%d'),
                                       amount=routing_slip.total,
                                       payment_method=pay_account.payment_method,
-                                      access_token=CFSService.get_fas_token().json().get('access_token'))
+                                      access_token=CFSService.get_token(PaymentSystem.FAS).json().get('access_token'))
         cfs_account.commit()
         return
 

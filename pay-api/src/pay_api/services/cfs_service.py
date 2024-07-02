@@ -30,9 +30,8 @@ from pay_api.utils.constants import (
     CFS_ADJ_ACTIVITY_NAME, CFS_BATCH_SOURCE, CFS_CASH_RCPT, CFS_CM_BATCH_SOURCE, CFS_CMS_TRX_TYPE, CFS_CUST_TRX_TYPE,
     CFS_CUSTOMER_PROFILE_CLASS, CFS_DRAWDOWN_BALANCE, CFS_FAS_CUSTOMER_PROFILE_CLASS, CFS_LINE_TYPE,
     CFS_NSF_REVERSAL_REASON, CFS_PAYMENT_REVERSAL_REASON, CFS_RCPT_EFT_WIRE, CFS_TERM_NAME, DEFAULT_ADDRESS_LINE_1,
-    DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE,
-    RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP)
-from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, ReverseOperation
+    DEFAULT_CITY, DEFAULT_COUNTRY, DEFAULT_CURRENCY, DEFAULT_JURISDICTION, DEFAULT_POSTAL_CODE)
+from pay_api.utils.enums import AuthHeaderType, ContentType, PaymentMethod, PaymentSystem, ReverseOperation
 from pay_api.utils.util import current_local_time, generate_transaction_number
 
 
@@ -62,18 +61,19 @@ class CFSService(OAuthService):
 
         return account_details
 
-    @classmethod
-    def suspend_cfs_account(cls, cfs_account: CfsAccountModel) -> Dict[str, any]:
-        """Suspend a CFS PAD Account from any further PAD transactions."""
-        return cls._update_site(cfs_account, receipt_method=RECEIPT_METHOD_PAD_STOP)
+    @staticmethod
+    def get_site(cfs_account: CfsAccountModel) -> Dict[str, any]:
+        """Get the site details."""
+        access_token = CFSService.get_token().json().get('access_token')
+        cfs_base: str = current_app.config.get('CFS_BASE_URL')
+        site_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/' \
+                   f'sites/{cfs_account.cfs_site}/'
+        site_response = OAuthService.get(site_url, access_token, AuthHeaderType.BEARER, ContentType.JSON)
+        return site_response.json()
 
-    @classmethod
-    def unsuspend_cfs_account(cls, cfs_account: CfsAccountModel) -> Dict[str, any]:
-        """Unuspend a CFS PAD Account from any further PAD transactions."""
-        return cls._update_site(cfs_account, receipt_method=RECEIPT_METHOD_PAD_DAILY)
-
-    @classmethod
-    def _update_site(cls, cfs_account: CfsAccountModel, receipt_method: str):
+    @staticmethod
+    def update_site_receipt_method(cfs_account: CfsAccountModel, receipt_method: str):
+        """Update the receipt method for the site."""
         access_token = CFSService.get_token().json().get('access_token')
         pad_stop_payload = {
             'receipt_method': receipt_method
@@ -264,7 +264,7 @@ class CFSService(OAuthService):
     def reverse_rs_receipt_in_cfs(cls, cfs_account, receipt_number, operation: ReverseOperation):
         """Reverse Receipt."""
         current_app.logger.debug('>Reverse receipt: %s', receipt_number)
-        access_token: str = CFSService.get_fas_token().json().get('access_token')
+        access_token: str = CFSService.get_token(PaymentSystem.FAS).json().get('access_token')
         cfs_base: str = current_app.config.get('CFS_BASE_URL')
         receipt_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}' \
                       f'/sites/{cfs_account.cfs_site}/rcpts/{receipt_number}/reverse'
@@ -313,31 +313,26 @@ class CFSService(OAuthService):
         return cls._save_bank_details(access_token, party_number, account_number, site_number, payment_info)
 
     @staticmethod
-    def get_token():
-        """Generate oauth token from payBC which will be used for all communication."""
+    def get_token(payment_system=PaymentSystem.PAYBC):
+        """Generate oauth token from PayBC/FAS which will be used for all communication."""
         current_app.logger.debug('<Getting token')
         token_url = current_app.config.get('CFS_BASE_URL', None) + '/oauth/token'
+        match payment_system:
+            case PaymentSystem.PAYBC:
+                client_id = current_app.config.get('CFS_CLIENT_ID')
+                secret = current_app.config.get('CFS_CLIENT_SECRET')
+            case PaymentSystem.FAS:
+                client_id = current_app.config.get('CFS_FAS_CLIENT_ID')
+                secret = current_app.config.get('CFS_FAS_CLIENT_SECRET')
+            case _:
+                raise ValueError('Invalid Payment System')
         basic_auth_encoded = base64.b64encode(
-            bytes(current_app.config.get('CFS_CLIENT_ID') + ':' + current_app.config.get('CFS_CLIENT_SECRET'),
+            bytes(client_id + ':' + secret,
                   'utf-8')).decode('utf-8')
         data = 'grant_type=client_credentials'
         token_response = OAuthService.post(token_url, basic_auth_encoded, AuthHeaderType.BASIC,
                                            ContentType.FORM_URL_ENCODED, data)
         current_app.logger.debug('>Getting token')
-        return token_response
-
-    @staticmethod
-    def get_fas_token():
-        """Generate oauth token for FAS client which will be used for all communication."""
-        current_app.logger.debug('<Getting FAS token')
-        token_url = current_app.config.get('CFS_BASE_URL', None) + '/oauth/token'
-        basic_auth_encoded = base64.b64encode(
-            bytes(current_app.config.get('CFS_FAS_CLIENT_ID') + ':' + current_app.config.get('CFS_FAS_CLIENT_SECRET'),
-                  'utf-8')).decode('utf-8')
-        data = 'grant_type=client_credentials'
-        token_response = OAuthService.post(token_url, basic_auth_encoded, AuthHeaderType.BASIC,
-                                           ContentType.FORM_URL_ENCODED, data)
-        current_app.logger.debug('>Getting FAS token')
         return token_response
 
     @classmethod
@@ -620,7 +615,7 @@ class CFSService(OAuthService):
         2. Adjust the receipt with activity name corresponding to refund or write off.
         """
         current_app.logger.debug('<adjust_receipt_to_zero: %s %s', cfs_account, receipt_number)
-        access_token: str = CFSService.get_fas_token().json().get('access_token')
+        access_token: str = CFSService.get_token(PaymentSystem.FAS).json().get('access_token')
         cfs_base: str = current_app.config.get('CFS_BASE_URL')
         receipt_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/' \
                       f'sites/{cfs_account.cfs_site}/rcpts/{receipt_number}/'
