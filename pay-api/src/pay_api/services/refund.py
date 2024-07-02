@@ -274,7 +274,7 @@ class RefundService:  # pylint: disable=too-many-instance-attributes
             payment_method=invoice.payment_method_code
         )
         payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
-        refund_revenue = request.get('refundRevenue', None)
+        refund_revenue = (request or {}).get('refundRevenue', None)
         if refund_revenue and not flags.is_on('enable-partial-refunds', default=False):
             raise BusinessException(Error.INVALID_REQUEST)
         refund_partial_lines = cls._get_partial_refund_lines(refund_revenue)
