@@ -41,7 +41,6 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
     db.init_app(app)
     ma.init_app(app)
 
-    # Init Flask Admin
     init_flask_admin(app)
     Keycloak(app)
 

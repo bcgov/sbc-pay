@@ -291,7 +291,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                 .filter(InvoiceModel.payment_account_id == PaymentAccountModel.id)
                 .filter(EFTCreditInvoiceLinkModel.status_code.in_([EFTCreditInvoiceStatus.PENDING.value]))
                 .correlate(PaymentAccountModel)
-                .as_scalar())
+                .scalar_subquery())
 
     @classmethod
     def get_search_query(cls, search_criteria: EFTShortnamesSearch, is_count: bool = False):

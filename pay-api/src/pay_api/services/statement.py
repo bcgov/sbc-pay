@@ -172,6 +172,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             .join(EFTCreditModel, EFTCreditModel.eft_transaction_id == EFTTransactionModel.id) \
             .join(EFTCreditInvoiceLinkModel, EFTCreditInvoiceLinkModel.eft_credit_id == EFTCreditModel.id) \
             .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == EFTCreditInvoiceLinkModel.invoice_id) \
+            .join(StatementModel, StatementModel.id == StatementInvoicesModel.statement_id) \
             .filter(StatementModel.id == statement.id) \
             .filter(EFTTransactionModel.status_code == EFTProcessStatus.COMPLETED.value) \
             .filter(EFTTransactionModel.line_type == EFTFileLineType.TRANSACTION.value).all()

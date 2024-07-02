@@ -486,8 +486,9 @@ def test_switch_eft_account_when_cfs_up(session, client, jwt, app, admin_users_m
     rv = client.put(f'/api/v1/accounts/{auth_account_id}',
                     data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.EFT.value)),
                     headers=headers)
-
-    assert rv.status_code == 200
+    # 202 and 200, 202 for when there is a CFS account PENDING.
+    # 200 when the CFS account is invalid etc.
+    assert rv.status_code == 202
 
 
 def test_update_online_banking_account_when_cfs_down(session, client, jwt, app):
