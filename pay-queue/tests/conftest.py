@@ -14,6 +14,7 @@
 """Common setup and fixtures for the pytest suite used by this service."""
 import os
 from concurrent.futures import CancelledError
+from unittest.mock import patch
 
 import pytest
 from flask_migrate import Migrate, upgrade
@@ -117,7 +118,8 @@ def auto(docker_services, app):
 @pytest.fixture()
 def mock_publish(monkeypatch):
     """Mock check_auth."""
-    monkeypatch.setattr('pay_api.services.gcp_queue_publisher.publish_to_queue', lambda *args, **kwargs: None)
+    with patch('pay_api.services.gcp_queue_publisher.publish_to_queue') as mock:
+        yield mock
 
 
 @pytest.fixture(autouse=True)

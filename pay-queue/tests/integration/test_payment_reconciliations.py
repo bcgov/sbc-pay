@@ -19,6 +19,7 @@ Test-Suite to ensure that the Payment Reconciliation queue service is working as
 
 from datetime import datetime
 
+from flask import current_app
 import pytest
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Credit as CreditModel
@@ -26,10 +27,12 @@ from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus
+from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, QueueSources
 from sbc_common_components.utils.enums import QueueMessageTypes
 
 from pay_queue.enums import RecordType, SourceTransaction, Status, TargetTransaction
+
+from pay_api.services.gcp_queue_publisher import QueueMessage
 
 from .factory import (
     factory_create_online_banking_account, factory_create_pad_account, factory_invoice, factory_invoice_reference,
@@ -686,3 +689,62 @@ async def test_credits(session, app, client, monkeypatch):
     assert pay_account.credit == onac_amount + cm_amount - cm_used_amount
     credit = CreditModel.find_by_id(credit_id)
     assert credit.remaining_amount == cm_amount - cm_used_amount
+
+
+def test_unconsolidated_invoices_errors(session, app, client, mock_publish, mocker):
+    """Test error scenarios for unconsolidated invoices in the reconciliation worker."""
+    # Create payment account
+    cfs_account_number = '1234'
+    pay_account: PaymentAccountModel = factory_create_online_banking_account(status=CfsAccountStatus.ACTIVE.value,
+                                                                             cfs_account=cfs_account_number)
+
+    # Create an invoice with multiple references to simulate error scenario
+    invoice: InvoiceModel = factory_invoice(payment_account=pay_account, total=100, service_fees=10.0,
+                                            payment_method_code=PaymentMethod.ONLINE_BANKING.value)
+    factory_payment_line_item(invoice_id=invoice.id, filing_fees=90.0,
+                              service_fees=10.0, total=90.0)
+    invoice_number = '1234567890'
+    factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number)
+    factory_invoice_reference(invoice_id=invoice.id, invoice_number=invoice_number)
+    invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
+    invoice = invoice.save()
+    invoice_id = invoice.id
+    total = invoice.total
+
+    # Mock the _process_file_content function to simulate errors
+    error_messages = [{'error': 'Test error message', 'row': 'row 2'}]
+    mocker.patch('pay_queue.services.payment_reconciliations._process_file_content',
+                 return_value=(True, error_messages))
+
+    # Create a settlement file and publish with multiple active references
+    file_name: str = 'BCR_PAYMENT_APPL_20240619.csv'
+    date = datetime.now().strftime('%d-%b-%y')
+    receipt_number = '1234567890'
+    row = [RecordType.BOLP.value, SourceTransaction.ONLINE_BANKING.value, receipt_number, 100001, date,
+           total, cfs_account_number,
+           TargetTransaction.INV.value, invoice_number,
+           total, 0, Status.PAID.value]
+    create_and_upload_settlement_file(file_name, [row])
+    add_file_event_to_queue_and_process(client,
+                                        file_name=file_name,
+                                        message_type=QueueMessageTypes.CAS_MESSAGE_TYPE.value)
+
+    # The invoice should remain in SETTLEMENT_SCHEDULED status and error should be logged
+    updated_invoice = InvoiceModel.find_by_id(invoice_id)
+    assert updated_invoice.invoice_status_code == InvoiceStatus.SETTLEMENT_SCHEDULED.value
+
+    # Verify that gcp_queue_publisher.publish_to_queue was called
+    mock_publish.assert_called_once()
+    expected_payload = {
+        'fileName': file_name,
+        'errorMessages': error_messages,
+        'minioLocation': 'payment-sftp'
+    }
+    mock_publish.assert_called_with(
+        QueueMessage(
+            source=QueueSources.PAY_QUEUE.value,
+            message_type=QueueMessageTypes.EJV_FAILED.value,
+            payload=expected_payload,
+            topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
+        )
+    )

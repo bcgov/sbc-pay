@@ -100,6 +100,9 @@ class _Config():  # pylint: disable=too-few-public-methods,protected-access
     # Disable EJV Error Email
     DISABLE_EJV_ERROR_EMAIL = os.getenv('DISABLE_EJV_ERROR_EMAIL', 'true').lower() == 'true'
 
+    # Disable CSV Error Email
+    DISABLE_CSV_ERROR_EMAIL = os.getenv('DISABLE_CSV_ERROR_EMAIL', 'true').lower() == 'true'
+
     # PUB/SUB - PUB: account-mailer-dev, auth-event-dev, SUB to ftp-poller-payment-reconciliation-dev, business-events
     ACCOUNT_MAILER_TOPIC = os.getenv('ACCOUNT_MAILER_TOPIC', 'account-mailer-dev')
     AUTH_EVENT_TOPIC = os.getenv('AUTH_EVENT_TOPIC', 'auth-event-dev')
@@ -159,6 +162,7 @@ class TestConfig(_Config):  # pylint: disable=too-few-public-methods
     TEST_PUSH_ENDPOINT = os.getenv('TEST_PUSH_ENDPOINT', f'http://host.docker.internal:{str(TEST_PUSH_ENDPOINT_PORT)}/')
     GCP_AUTH_KEY = None
     DISABLE_EJV_ERROR_EMAIL = False
+    DISABLE_CSV_ERROR_EMAIL = False
 
 
 class ProdConfig(_Config):  # pylint: disable=too-few-public-methods

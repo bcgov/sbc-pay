@@ -200,6 +200,18 @@ def reconcile_payments(msg: Dict[str, any]):
 
     file = get_object(minio_location, file_name)
     content = file.data.decode('utf-8-sig')
+
+    error_messages = []
+    has_errors, error_messages = _process_file_content(content, cas_settlement, msg, error_messages)
+
+    if has_errors and not APP_CONFIG.DISABLE_CSV_ERROR_EMAIL:
+        _publish_mailer_error_events(file_name, minio_location, error_messages)
+
+
+def _process_file_content(content: str, cas_settlement: CasSettlementModel,
+                          msg: Dict[str, any], error_messages: List[Dict[str, any]]):
+    """Process the content of the feedback file."""
+    has_errors = False
     # Iterate the rows and create key value pair for each row
     for row in csv.DictReader(content.splitlines()):
         # Convert lower case keys to avoid any key mismatch
@@ -220,18 +232,21 @@ def reconcile_payments(msg: Dict[str, any]):
         # PS : Duplicating some code to make the code more readable.
         if record_type in pad_record_types:
             # Handle invoices
-            _process_consolidated_invoices(row)
+            has_errors = _process_consolidated_invoices(row, error_messages) or has_errors
         elif record_type in (RecordType.BOLP.value, RecordType.EFTP.value):
             # EFT, WIRE and Online Banking are one-to-one invoice. So handle them in same way.
-            _process_unconsolidated_invoices(row)
+            has_errors = _process_unconsolidated_invoices(row, error_messages) or has_errors
         elif record_type in (RecordType.ONAC.value, RecordType.CMAP.value, RecordType.DRWP.value):
-            _process_credit_on_invoices(row)
+            has_errors = _process_credit_on_invoices(row, error_messages) or has_errors
         elif record_type == RecordType.ADJS.value:
             current_app.logger.info('Adjustment received for %s.', msg)
         else:
             # For any other transactions like DM log error and continue.
-            current_app.logger.error('Record Type is received as %s, and cannot process %s.', record_type, msg)
-            capture_message(f'Record Type is received as {record_type}, and cannot process {msg}.', level='error')
+            error_msg = f'Record Type is received as {record_type}, and cannot process {msg}.'
+            current_app.logger.error(error_msg)
+            capture_message(error_msg, level='error')
+            error_messages.append({'error': error_msg, 'row': row})
+            has_errors = True
             # Continue processing
 
         # Commit the transaction and process next row.
@@ -247,9 +262,32 @@ def reconcile_payments(msg: Dict[str, any]):
 
     cas_settlement.processed_on = datetime.now()
     cas_settlement.save()
+    return has_errors, error_messages
 
 
-def _process_consolidated_invoices(row):
+def _publish_mailer_error_events(file_name: str, minio_location: str, error_messages: List[Dict[str, any]]):
+    """Publish payment message to the mailer queue."""
+    payload = {
+        'fileName': file_name,
+        'errorMessages': error_messages,
+        'minioLocation': minio_location
+    }
+    try:
+        gcp_queue_publisher.publish_to_queue(
+            QueueMessage(
+                source=QueueSources.PAY_QUEUE.value,
+                message_type=QueueMessageTypes.EJV_FAILED.value,
+                payload=payload,
+                topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
+            )
+        )
+    except Exception as e:  # NOQA pylint: disable=broad-except
+        current_app.logger.error(e)
+        capture_message('CSV Failed message error', level='error')
+
+
+def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) -> bool:
+    has_errors = False
     target_txn_status = _get_row_value(row, Column.TARGET_TXN_STATUS)
     if (target_txn := _get_row_value(row, Column.TARGET_TXN)) == TargetTransaction.INV.value:
         inv_number = _get_row_value(row, Column.TARGET_TXN_NO)
@@ -268,10 +306,11 @@ def _process_consolidated_invoices(row):
             )
 
             if not inv_references and not completed_inv_references:
-                current_app.logger.error('No invoice found for %s in the system, and cannot process %s.',
-                                         inv_number, row)
-                capture_message(f'No invoice found for {inv_number} in the system, and cannot process {row}.',
-                                level='error')
+                error_msg = f'No invoice found for {inv_number} in the system, and cannot process {row}.'
+                current_app.logger.error(error_msg)
+                capture_message(error_msg, level='error')
+                error_messages.append({'error': error_msg, 'row': row})
+                has_errors = True
                 return
             _process_paid_invoices(inv_references, row)
         elif target_txn_status.lower() == Status.NOT_PAID.value.lower() \
@@ -282,10 +321,12 @@ def _process_consolidated_invoices(row):
                 # Send mailer and account events to update status and send email notification
                 _publish_account_events(QueueMessageTypes.NSF_LOCK_ACCOUNT.value, payment_account, row)
         else:
-            current_app.logger.error('Target Transaction Type is received as %s for PAD, and cannot process %s.',
-                                     target_txn, row)
-            capture_message(
-                f'Target Transaction Type is received as {target_txn} for PAD, and cannot process.', level='error')
+            error_msg = f'Target Transaction Type is received as {target_txn} for PAD, and cannot process {row}.'
+            current_app.logger.error(error_msg)
+            capture_message(error_msg, level='error')
+            error_messages.append({'error': error_msg, 'row': row})
+            has_errors = True
+    return has_errors
 
 
 def _find_invoice_reference_by_number_and_status(inv_number: str, status: str):
@@ -296,7 +337,8 @@ def _find_invoice_reference_by_number_and_status(inv_number: str, status: str):
     return inv_references
 
 
-def _process_unconsolidated_invoices(row):
+def _process_unconsolidated_invoices(row, error_messages: List[Dict[str, any]]) -> bool:
+    has_errors = False
     target_txn_status = _get_row_value(row, Column.TARGET_TXN_STATUS)
     record_type = _get_row_value(row, Column.RECORD_TYPE)
     if (target_txn := _get_row_value(row, Column.TARGET_TXN)) == TargetTransaction.INV.value:
@@ -317,11 +359,12 @@ def _process_unconsolidated_invoices(row):
             current_app.logger.info('Found %s completed invoice references for invoice number %s',
                                     len(completed_inv_references), inv_number)
             if len(completed_inv_references) != 1:
-                current_app.logger.error('More than one or none invoice reference received '
-                                         'for invoice number %s for %s', inv_number, record_type)
-                capture_message(
-                    f'More than one or none invoice reference received for invoice number {inv_number} for '
-                    f'{record_type}', level='error')
+                error_msg = (f'More than one or none invoice reference '
+                             f'received for invoice number {inv_number} for {record_type}')
+                current_app.logger.error(error_msg)
+                capture_message(error_msg, level='error')
+                error_messages.append({'error': error_msg, 'row': row})
+                has_errors = True
         else:
             # Handle fully PAID and Partially Paid scenarios.
             if target_txn_status.lower() == Status.PAID.value.lower():
@@ -332,14 +375,17 @@ def _process_unconsolidated_invoices(row):
                 # As per validation above, get first and only inv ref
                 _process_partial_paid_invoices(inv_references[0], row)
             else:
-                current_app.logger.error('Target Transaction Type is received as %s for %s, and cannot process.',
-                                         target_txn, record_type)
-                capture_message(
-                    f'Target Transaction Type is received as {target_txn} for {record_type}, and cannot process.',
-                    level='error')
+                error_msg = (f'Target Transaction Type is received '
+                             f'as {target_txn} for {record_type}, and cannot process.')
+                current_app.logger.error(error_msg)
+                capture_message(error_msg, level='error')
+                error_messages.append({'error': error_msg, 'row': row})
+                has_errors = True
+    return has_errors
 
 
-def _process_credit_on_invoices(row):
+def _process_credit_on_invoices(row, error_messages: List[Dict[str, any]]) -> bool:
+    has_errors = False
     # Credit memo can happen for any type of accounts.
     target_txn_status = _get_row_value(row, Column.TARGET_TXN_STATUS)
     if _get_row_value(row, Column.TARGET_TXN) == TargetTransaction.INV.value:
@@ -358,11 +404,12 @@ def _process_credit_on_invoices(row):
             current_app.logger.info('Partially PAID using credit memo. '
                                     'Ignoring as the credit memo payment is already captured.')
         else:
-            current_app.logger.error('Target Transaction status is received as %s for CMAP, and cannot process.',
-                                     target_txn_status)
-            capture_message(
-                f'Target Transaction status is received as {target_txn_status} for CMAP, and cannot process.',
-                level='error')
+            error_msg = f'Target Transaction status is received as {target_txn_status} for CMAP, and cannot process.'
+            current_app.logger.error(error_msg)
+            capture_message(error_msg, level='error')
+            error_messages.append({'error': error_msg, 'row': row})
+            has_errors = True
+    return has_errors
 
 
 def _process_paid_invoices(inv_references, row):
