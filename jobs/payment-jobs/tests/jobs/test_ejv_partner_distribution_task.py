@@ -17,7 +17,7 @@
 Test-Suite to ensure that the CgiEjvJob is working as expected.
 """
 from datetime import datetime, timedelta
-import os
+
 import pytest
 from flask import current_app
 from freezegun import freeze_time
