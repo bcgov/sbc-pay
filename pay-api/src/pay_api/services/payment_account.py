@@ -378,6 +378,13 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 PaymentMethod.EFT.value not in {account.payment_method, target_payment_method}:
             return
 
+        # Don't allow payment method change from EFT if there is an outstanding balance
+        account_summary = Statement.get_summary(account.auth_account_id)
+        outstanding_balance = account_summary['total_invoice_due'] + account_summary['total_due']
+
+        if outstanding_balance > 0:
+            raise BusinessException(Error.EFT_SHORT_NAME_OUTSTANDING_BALANCE)
+
         # Payment method has changed between EFT and other payment methods
         statement_frequency = (
             StatementFrequency.MONTHLY.value

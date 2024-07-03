@@ -16,6 +16,7 @@ from http import HTTPStatus
 
 from flask import Blueprint, current_app, g, jsonify, request
 from flask_cors import cross_origin
+from pay_api.services.flags import flags
 
 from pay_api.exceptions import error_to_response
 from pay_api.schemas import utils as schema_utils
@@ -26,7 +27,6 @@ from pay_api.utils.constants import EDIT_ROLE, MAKE_PAYMENT, VIEW_ROLE
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import PaymentMethod, Role
 from pay_api.utils.errors import Error
-
 
 bp = Blueprint('PAYMENTS', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/accounts/<string:account_id>/payments')
 
@@ -73,10 +73,15 @@ def post_account_payment(account_id: str):
             ).asdict(), HTTPStatus.CREATED
     else:
         is_retry_payment: bool = request.args.get('retryFailedPayment', 'false').lower() == 'true'
+        pay_outstanding_balance: bool = False
+
+        if flags.is_on('enable-eft-payment-method', default=False):
+            pay_outstanding_balance = request.args.get('payOutstandingBalance', 'false').lower() == 'true'
 
         response, status = PaymentService.create_account_payment(
             auth_account_id=account_id,
-            is_retry_payment=is_retry_payment
+            is_retry_payment=is_retry_payment,
+            pay_outstanding_balance=pay_outstanding_balance
         ).asdict(), HTTPStatus.CREATED
 
     current_app.logger.debug('>post_account_payment')
