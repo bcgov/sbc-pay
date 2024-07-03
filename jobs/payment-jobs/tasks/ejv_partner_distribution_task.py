@@ -179,7 +179,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                          InvoiceStatus.CREDITED.value)
 
                     invoice_number = f'#{line.invoice_id}'
-                    jv_invoice_order.append(invoice)
+                    jv_invoice_order.append(line.invoice_id)
                     description = disbursement_desc[:-len(invoice_number)] + invoice_number
                     description = f'{description[:100]:<100}'
                     ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
@@ -200,16 +200,17 @@ class EjvPartnerDistributionTask(CgiEjv):
             sequence = 1
             # Create ejv invoice link records and set invoice status
             jv_invoice_order = list(dict.fromkeys(jv_invoice_order))
-            for inv in jv_invoice_order:
+            for invoice_id in jv_invoice_order:
                 # Create Ejv file link and flush
-                link_model = EjvInvoiceLinkModel(invoice_id=inv.id,
+                link_model = EjvInvoiceLinkModel(invoice_id=invoice_id,
                                                  ejv_header_id=ejv_header_model.id,
                                                  disbursement_status_code=DisbursementStatus.UPLOADED.value,
                                                  sequence=sequence)
                 # Set distribution status to invoice
                 db.session.add(link_model)
                 sequence += 1
-                inv.disbursement_status_code = DisbursementStatus.UPLOADED.value
+                invoice = next(inv for inv in invoices if inv.id == invoice_id)
+                invoice.disbursement_status_code = DisbursementStatus.UPLOADED.value
 
             db.session.flush()
 
