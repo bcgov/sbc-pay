@@ -132,13 +132,9 @@ class EjvPartnerDistributionTask(CgiEjv):
 
             # To populate JV Header and JV Details, group these invoices by the distribution
             # and create one JV Header and detail for each.
-            distribution_code_set = set()
+            distribution_code_set = {line_item.fee_distribution_id for inv in invoices for line_item in inv.payment_line_items}
             invoice_id_list = [inv.id for inv in invoices]
-
-            for inv in invoices:
-                for line_item in inv.payment_line_items:
-                    distribution_code_set.add(line_item.fee_distribution_id)
-
+            jv_invoice_order = []
             for distribution_code_id in list(distribution_code_set):
                 distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(distribution_code_id)
                 credit_distribution_code: DistributionCodeModel = DistributionCodeModel.find_by_id(
@@ -148,7 +144,6 @@ class EjvPartnerDistributionTask(CgiEjv):
                     continue
 
                 line_items = cls._find_line_items_by_invoice_and_distribution(distribution_code_id, invoice_id_list)
-
                 total: float = 0
                 for line in line_items:
                     total += line.total
@@ -163,9 +158,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                                             cls.get_jv_header(batch_type, cls.get_journal_batch_name(batch_number),
                                                             journal_name, total))
                 control_total += 1
-
                 line_number: int = 0
-                jv_invoice_order = []
                 for line in line_items:
                     # JV Details
                     line_number += 1
@@ -197,14 +190,10 @@ class EjvPartnerDistributionTask(CgiEjv):
                                                                 line_number, 'D' if not is_reversal else 'C'))
 
                     control_total += 1
-                jv_invoice_order.sort(key=lambda inv: inv.id)
-                # Log the order of invoices being processed
-                current_app.logger.info(f"Processing invoices for partner {partner.code}: {[inv.id for inv in jv_invoice_order]}")
+
                 # Create ejv invoice link records and set invoice status
-                sequence = 1  # Initialize the sequence here
-                current_app.logger.info(f"Setting sequence for partner {partner.code} invoices.")
+                sequence = 1
                 for inv in jv_invoice_order:
-                    current_app.logger.info(f"Invoice ID: {inv.id}, Sequence: {sequence}")
                     link_model = EjvInvoiceLinkModel(invoice_id=inv.id,
                                                     ejv_header_id=ejv_header_model.id,
                                                     disbursement_status_code=DisbursementStatus.UPLOADED.value,
@@ -235,16 +224,22 @@ class EjvPartnerDistributionTask(CgiEjv):
         # Add a sleep to prevent collision on file name.
         time.sleep(1)
 
-
     @classmethod
-    def _find_line_items_by_invoice_and_distribution(cls, distribution_code_id, invoice_id_list) \
-            -> List[PaymentLineItemModel]:
-        """Find and return all payment line items for this distribution."""
+    def _find_line_items_by_invoice_and_distribution(cls, distribution_code_id, invoice_id_list) -> List[PaymentLineItemModel]:
+        """Find and return all payment line items for this distribution, preserving the order of invoice_id_list."""
+        # Create a CASE statement to preserve the order of invoice_id_list
+        order_case = db.case(
+            [(PaymentLineItemModel.invoice_id == invoice_id, index) for index, invoice_id in enumerate(invoice_id_list)],
+            else_=len(invoice_id_list)
+        )
+        
         line_items: List[PaymentLineItemModel] = db.session.query(PaymentLineItemModel) \
             .filter(PaymentLineItemModel.invoice_id.in_(invoice_id_list)) \
             .filter(PaymentLineItemModel.total > 0) \
-            .filter(PaymentLineItemModel.fee_distribution_id == distribution_code_id)
+            .filter(PaymentLineItemModel.fee_distribution_id == distribution_code_id) \
+            .order_by(order_case)  # Preserve the original order
         return line_items
+
 
     @classmethod
     def _get_partners_by_batch_type(cls, batch_type) -> List[CorpTypeModel]:
