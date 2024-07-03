@@ -13,12 +13,15 @@
 # limitations under the License.
 """Payment reconciliation file."""
 import csv
+import dataclasses
+import json
 import os
 from datetime import datetime
 from decimal import Decimal
 from typing import Dict, List, Tuple
 
 from flask import current_app
+from jinja2 import Environment, FileSystemLoader
 from pay_api.models import CasSettlement as CasSettlementModel
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Credit as CreditModel
@@ -35,20 +38,24 @@ from pay_api.services import gcp_queue_publisher
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.non_sufficient_funds import NonSufficientFundsService
+from pay_api.services.oauth_service import OAuthService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
 from pay_api.utils.enums import (
-    CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod, PaymentStatus, QueueSources)
+    AuthHeaderType, CfsAccountStatus, ContentType, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod,
+    PaymentStatus, QueueSources)
 from pay_api.utils.util import get_topic_for_corp_type
 from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
 
 from pay_queue import config
+from pay_queue.auth import get_token
 from pay_queue.minio import get_object
 
 from ..enums import Column, RecordType, SourceTransaction, Status, TargetTransaction
 
 
 APP_CONFIG = config.get_named_config(os.getenv('DEPLOYMENT_ENV', 'production'))
+ENV = Environment(loader=FileSystemLoader('.'), autoescape=True)
 
 
 def _create_payment_records(csv_content: str):
@@ -174,7 +181,7 @@ def _get_payment_by_inv_number_and_status(inv_number: str, status: str) -> Payme
     return payment
 
 
-def reconcile_payments(msg: Dict[str, any]):
+def reconcile_payments(ce):
     """Read the file and update payment details.
 
     1: Check to see if file has been processed already.
@@ -186,6 +193,7 @@ def reconcile_payments(msg: Dict[str, any]):
     3.3 : If transaction status is PARTIAL, update payment and invoice status, publish to account mailer.
     4: If the transaction is On Account for Credit, apply the credit to the account.
     """
+    msg = ce.data
     file_name: str = msg.get('fileName')
     minio_location: str = msg.get('location')
 
@@ -205,7 +213,7 @@ def reconcile_payments(msg: Dict[str, any]):
     has_errors, error_messages = _process_file_content(content, cas_settlement, msg, error_messages)
 
     if has_errors and not APP_CONFIG.DISABLE_CSV_ERROR_EMAIL:
-        _publish_mailer_error_events(file_name, minio_location, error_messages)
+        _send_error_email(file_name, minio_location, error_messages, msg, cas_settlement.__tablename__)
 
 
 def _process_file_content(content: str, cas_settlement: CasSettlementModel,
@@ -243,9 +251,7 @@ def _process_file_content(content: str, cas_settlement: CasSettlementModel,
         else:
             # For any other transactions like DM log error and continue.
             error_msg = f'Record Type is received as {record_type}, and cannot process {msg}.'
-            current_app.logger.error(error_msg)
-            capture_message(error_msg, level='error')
-            error_messages.append({'error': error_msg, 'row': row})
+            _csv_error_handling(row, error_msg, error_messages)
             has_errors = True
             # Continue processing
 
@@ -265,25 +271,39 @@ def _process_file_content(content: str, cas_settlement: CasSettlementModel,
     return has_errors, error_messages
 
 
-def _publish_mailer_error_events(file_name: str, minio_location: str, error_messages: List[Dict[str, any]]):
-    """Publish payment message to the mailer queue."""
-    payload = {
+def _send_error_email(file_name: str, minio_location: str,
+                      error_messages: List[Dict[str, any]], ce, table_name: str):
+    """Send the email asynchronously, using the given details."""
+    subject = 'Payment Reconciliation Failure'
+    token = get_token()
+    recipient = APP_CONFIG.IT_OPS_EMAIL
+    template = ENV.get_template('src/pay_queue/templates/statement_notification.html')
+    params = {
         'fileName': file_name,
         'errorMessages': error_messages,
-        'minioLocation': minio_location
+        'minioLocation': minio_location,
+        'payload': json.dumps(dataclasses.asdict(ce)),
+        'table_name': table_name
     }
-    try:
-        gcp_queue_publisher.publish_to_queue(
-            QueueMessage(
-                source=QueueSources.PAY_QUEUE.value,
-                message_type=QueueMessageTypes.EJV_FAILED.value,
-                payload=payload,
-                topic=current_app.config.get('ACCOUNT_MAILER_TOPIC')
-            )
-        )
-    except Exception as e:  # NOQA pylint: disable=broad-except
-        current_app.logger.error(e)
-        capture_message('CSV Failed message error', level='error')
+    html_body = template.render(params)
+    current_app.logger.info(f'_send_error_email to recipients: {recipient}')
+    notify_url = current_app.config.get('NOTIFY_API_ENDPOINT') + 'notify/'
+    notify_body = {
+        'recipient': recipient,
+        'content': {
+            'subject': subject,
+            'body': html_body
+        }
+    }
+    notify_response = OAuthService.post(notify_url, token=token,
+                                        auth_header_type=AuthHeaderType.BEARER,
+                                        content_type=ContentType.JSON, data=notify_body)
+    if notify_response:
+        response_json = json.loads(notify_response.text)
+        if response_json.get('notifyStatus', 'FAILURE') != 'FAILURE':
+            current_app.logger.info('_send_error_email notify_response')
+        else:
+            current_app.logger.info('_send_error_email failed')
 
 
 def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) -> bool:
@@ -307,9 +327,7 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
 
             if not inv_references and not completed_inv_references:
                 error_msg = f'No invoice found for {inv_number} in the system, and cannot process {row}.'
-                current_app.logger.error(error_msg)
-                capture_message(error_msg, level='error')
-                error_messages.append({'error': error_msg, 'row': row})
+                _csv_error_handling(row, error_msg, error_messages)
                 has_errors = True
                 return has_errors
             _process_paid_invoices(inv_references, row)
@@ -322,9 +340,7 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
                 _publish_account_events(QueueMessageTypes.NSF_LOCK_ACCOUNT.value, payment_account, row)
         else:
             error_msg = f'Target Transaction Type is received as {target_txn} for PAD, and cannot process {row}.'
-            current_app.logger.error(error_msg)
-            capture_message(error_msg, level='error')
-            error_messages.append({'error': error_msg, 'row': row})
+            _csv_error_handling(row, error_msg, error_messages)
             has_errors = True
     return has_errors
 
@@ -361,9 +377,7 @@ def _process_unconsolidated_invoices(row, error_messages: List[Dict[str, any]]) 
             if len(completed_inv_references) != 1:
                 error_msg = (f'More than one or none invoice reference '
                              f'received for invoice number {inv_number} for {record_type}')
-                current_app.logger.error(error_msg)
-                capture_message(error_msg, level='error')
-                error_messages.append({'error': error_msg, 'row': row})
+                _csv_error_handling(row, error_msg, error_messages)
                 has_errors = True
         else:
             # Handle fully PAID and Partially Paid scenarios.
@@ -377,11 +391,15 @@ def _process_unconsolidated_invoices(row, error_messages: List[Dict[str, any]]) 
             else:
                 error_msg = (f'Target Transaction Type is received '
                              f'as {target_txn} for {record_type}, and cannot process.')
-                current_app.logger.error(error_msg)
-                capture_message(error_msg, level='error')
-                error_messages.append({'error': error_msg, 'row': row})
+                _csv_error_handling(row, error_msg, error_messages)
                 has_errors = True
     return has_errors
+
+
+def _csv_error_handling(row, error_msg: str, error_messages: List[Dict[str, any]]):
+    current_app.logger.error(error_msg)
+    capture_message(error_msg, level='error')
+    error_messages.append({'error': error_msg, 'row': row})
 
 
 def _process_credit_on_invoices(row, error_messages: List[Dict[str, any]]) -> bool:
@@ -405,9 +423,7 @@ def _process_credit_on_invoices(row, error_messages: List[Dict[str, any]]) -> bo
                                     'Ignoring as the credit memo payment is already captured.')
         else:
             error_msg = f'Target Transaction status is received as {target_txn_status} for CMAP, and cannot process.'
-            current_app.logger.error(error_msg)
-            capture_message(error_msg, level='error')
-            error_messages.append({'error': error_msg, 'row': row})
+            _csv_error_handling(row, error_msg, error_messages)
             has_errors = True
     return has_errors
 
