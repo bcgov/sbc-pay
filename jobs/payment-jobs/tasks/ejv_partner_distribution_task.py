@@ -134,7 +134,7 @@ class EjvPartnerDistributionTask(CgiEjv):
             # and create one JV Header and detail for each.
             distribution_code_set = set()
             invoice_id_list = []
-            jv_invoice_order = []
+            jv_invoice_id_order = []
             for inv in invoices:
                 invoice_id_list.append(inv.id)
                 for line_item in inv.payment_line_items:
@@ -179,7 +179,7 @@ class EjvPartnerDistributionTask(CgiEjv):
                          InvoiceStatus.CREDITED.value)
 
                     invoice_number = f'#{line.invoice_id}'
-                    jv_invoice_order.append(line.invoice_id)
+                    jv_invoice_id_order.append(line.invoice_id)
                     description = disbursement_desc[:-len(invoice_number)] + invoice_number
                     description = f'{description[:100]:<100}'
                     ejv_content = '{}{}'.format(ejv_content,  # pylint:disable=consider-using-f-string
@@ -199,8 +199,8 @@ class EjvPartnerDistributionTask(CgiEjv):
 
             sequence = 1
             # Create ejv invoice link records and set invoice status
-            jv_invoice_order = list(dict.fromkeys(jv_invoice_order))
-            for invoice_id in jv_invoice_order:
+            jv_invoice_id_order = list(dict.fromkeys(jv_invoice_id_order))
+            for invoice_id in jv_invoice_id_order:
                 # Create Ejv file link and flush
                 link_model = EjvInvoiceLinkModel(invoice_id=invoice_id,
                                                  ejv_header_id=ejv_header_model.id,
