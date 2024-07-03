@@ -311,7 +311,7 @@ def _process_consolidated_invoices(row, error_messages: List[Dict[str, any]]) ->
                 capture_message(error_msg, level='error')
                 error_messages.append({'error': error_msg, 'row': row})
                 has_errors = True
-                return
+                return has_errors
             _process_paid_invoices(inv_references, row)
         elif target_txn_status.lower() == Status.NOT_PAID.value.lower() \
                 or record_type in (RecordType.PADR.value, RecordType.PAYR.value):
