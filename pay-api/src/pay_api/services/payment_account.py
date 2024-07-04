@@ -61,7 +61,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
     def __init__(self):
         """Initialize service."""
-        super().__setattr__('_PaymentAccount__dao', None)
+        self.__dao = None
         self.cfs_account: str = None
         self.cfs_party: str = None
         self.cfs_site: str = None
@@ -74,7 +74,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @property
     def _dao(self):
         if not self.__dao:
-            super().__setattr__('_PaymentAccount__dao', PaymentAccountModel())
+            self.__dao = PaymentAccountModel()
         return self.__dao
 
     @_dao.setter
@@ -94,6 +94,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         """Dynamic way of getting the properties from the DAO, anything not in __init__."""
         if hasattr(self._dao, name):
             return getattr(self._dao, name)
+        current_app.logger.warning('Attribute %s not found in services.PaymentAccount', name)
         return None
 
     def __setattr__(self, name, value):
