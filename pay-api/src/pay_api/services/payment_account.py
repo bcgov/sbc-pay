@@ -102,6 +102,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         # Prevent recursion by checking if the attribute name starts with '__' (private attribute)
         if name == '_PaymentAccount__dao':
             super().__setattr__(name, value)
+        # _dao uses __dao, thus why we need to check before for __dao.
         elif hasattr(self._dao, name):
             if getattr(self._dao, name) != value:
                 setattr(self._dao, name, value)
