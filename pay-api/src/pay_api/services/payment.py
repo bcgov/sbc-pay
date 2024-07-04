@@ -602,7 +602,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                                              pay_account: PaymentAccountModel,
                                              invoice_total: Decimal):
         """Create payment for consolidated invoices and update invoice references."""
-        # Create consolidated invoice
         invoice_response = CFSService.create_account_invoice(
             transaction_number=str(consolidated_invoices[-1].id) + '-C',
             line_items=consolidated_line_items,
@@ -610,7 +609,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
         invoice_number: str = invoice_response.get('invoice_number')
 
-        # Mark all invoice references to status CANCELLED, and create a new one for the new invoice number.
         for invoice in consolidated_invoices:
             inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
                 invoice_id=invoice.id, status_code=InvoiceReferenceStatus.ACTIVE.value)
@@ -631,11 +629,12 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
 
     @classmethod
     def _consolidate_invoices_and_pay(cls, auth_account_id: str) -> Payment:
-        # Find outstanding invoices and create a payment
-        # 1. Create new consolidated invoice in CFS.
-        # 2. Create new invoice reference records.
-        # 3. Create new payment records for the invoice as CREATED.
+        """Find outstanding invoices and create a payment.
 
+        1. Create new consolidated invoice in CFS.
+        2. Create new invoice reference records.
+        3. Create new payment records for the invoice as CREATED.
+        """
         pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
         cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account.id)
 
