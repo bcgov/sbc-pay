@@ -102,7 +102,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
     def __setattr__(self, name, value):
         """Dynamic way of setting the properties from the DAO."""
-        # Prevent recursion by checking if the attribute name starts with '__' (private attribute)
+        # Prevent recursion by checking if the attribute name starts with '__' (private attribute).
         if name == '_PaymentAccount__dao':
             super().__setattr__(name, value)
         # _dao uses __dao, thus why we need to check before for __dao.
