@@ -24,7 +24,7 @@ from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.constants import EDIT_ROLE
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import ContentType
-
+from pay_api.utils.util import string_to_bool
 
 bp = Blueprint('ACCOUNT_STATEMENTS', __name__,
                url_prefix=f'{EndpointEnum.API_V1.value}/accounts/<string:account_id>/statements')
@@ -36,14 +36,14 @@ bp = Blueprint('ACCOUNT_STATEMENTS', __name__,
 def get_account_statements(account_id):
     """Get all statements records for an account."""
     current_app.logger.info('<get_account_statements')
-
     # Check if user is authorized to perform this action
     check_auth(business_identifier=None, account_id=account_id, contains_role=EDIT_ROLE)
 
     page: int = int(request.args.get('page', '1'))
     limit: int = int(request.args.get('limit', '10'))
+    is_owing = string_to_bool(request.args.get('isOwing', None))
+    response, status = StatementService.find_by_account_id(account_id, page, limit, is_owing), HTTPStatus.OK
 
-    response, status = StatementService.find_by_account_id(account_id, page, limit), HTTPStatus.OK
     current_app.logger.debug('>get_account_statements')
     return jsonify(response), status
 

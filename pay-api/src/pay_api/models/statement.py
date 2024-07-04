@@ -13,20 +13,15 @@
 # limitations under the License.
 """Model to handle statements data."""
 
-from datetime import datetime
 import pytz
 from marshmallow import fields
-from sql_versioning import history_cls
-from sqlalchemy import ForeignKey, Integer, and_, case, cast, literal_column
-from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy import ForeignKey, Integer, cast
 
 from pay_api.utils.constants import LEGISLATIVE_TIMEZONE
-from pay_api.utils.enums import StatementFrequency
 
 from .base_model import BaseModel
 from .db import db, ma
 from .invoice import Invoice
-from .payment_account import PaymentAccount
 
 
 class Statement(BaseModel):
@@ -71,78 +66,6 @@ class Statement(BaseModel):
     notification_status_code = db.Column(db.String(20), ForeignKey('notification_status_codes.code'), nullable=True)
     notification_date = db.Column(db.Date, default=None, nullable=True)
 
-    @hybrid_property
-    def payment_methods(self):
-        """Return all payment methods that were active during the statement period based on payment account versions."""
-        payment_account = PaymentAccount.find_by_id(self.payment_account_id)
-        payment_account_history_class = history_cls(PaymentAccount)
-        payment_account_history = db.session.query(payment_account_history_class) \
-            .join(Statement, Statement.payment_account_id == payment_account_history_class.id) \
-            .filter(payment_account_history_class.id == self.payment_account_id) \
-            .filter(Statement.id == self.id) \
-            .order_by(payment_account_history_class.changed.asc()) \
-            .all()
-
-        # The code below combines the history rows with the current state of payment_account.
-        # This is necessary because the new versioning doesn't have from and to dates, only changed.
-        # It is possible to handle this through SQL using LEAD and LAG functions.
-        # Since the volume of rows is low, the pythonic approach should be sufficient.
-        history_ranges = [
-            {
-                'from_date': datetime.min.date() if idx == 0 else payment_account_history[idx - 1].changed.date(),
-                'to_date': historical.changed.date(),
-                'payment_method': payment_account.payment_method if idx == len(payment_account_history) - 1
-                else historical.payment_method
-            }
-            for idx, historical in enumerate(payment_account_history)
-        ]
-
-        history_ranges.append({
-            'from_date': payment_account_history[-1].changed.date() if payment_account_history else datetime.min.date(),
-            'to_date': datetime.max.date(),
-            'payment_method': payment_account.payment_method
-        })
-
-        payment_methods = {
-            history_item['payment_method']
-            for history_item in history_ranges
-            if (
-                history_item['from_date'] <= self.from_date <= history_item['to_date'] or
-                history_item['from_date'] <= self.to_date <= history_item['to_date'] or
-                self.from_date <= history_item['from_date'] <= self.to_date <= history_item['to_date']
-            )
-        }
-
-        return list(payment_methods)
-
-    @classmethod
-    def find_all_statements_for_account(cls, auth_account_id: str, page, limit):
-        """Return all active statements for an account."""
-        query = cls.query \
-            .join(PaymentAccount) \
-            .filter(and_(PaymentAccount.id == cls.payment_account_id,
-                         PaymentAccount.auth_account_id == auth_account_id))
-
-        frequency_case = case(
-            (
-                Statement.frequency == StatementFrequency.MONTHLY.value,
-                literal_column("'1'")
-            ),
-            (
-                Statement.frequency == StatementFrequency.WEEKLY.value,
-                literal_column("'2'")
-            ),
-            (
-                Statement.frequency == StatementFrequency.DAILY.value,
-                literal_column("'3'")
-            ),
-            else_=literal_column("'4'")
-        )
-
-        query = query.order_by(Statement.to_date.desc(), frequency_case)
-        pagination = query.paginate(per_page=limit, page=page)
-        return pagination.items, pagination.total
-
     @classmethod
     def find_all_statements_by_notification_status(cls, statuses):
         """Return all statements for a status.Used in cron jobs."""
@@ -175,3 +98,4 @@ class StatementSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ance
     to_date = fields.Date(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))
     is_overdue = fields.Boolean()
     payment_methods = fields.List(fields.String())
+    amount_owing = fields.Float(missing=0)

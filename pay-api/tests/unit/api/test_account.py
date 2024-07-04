@@ -33,10 +33,11 @@ from pay_api.schemas import utils as schema_utils
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
-    get_auth_basic_user, get_basic_account_payload, get_claims, get_gov_account_payload,
+    factory_invoice, get_auth_basic_user, get_basic_account_payload, get_claims, get_gov_account_payload,
     get_gov_account_payload_with_no_revenue_account, get_pad_account_payload, get_payment_request,
     get_payment_request_for_cso, get_payment_request_with_folio_number, get_payment_request_with_service_fees,
     get_premium_account_payload, get_unlinked_pad_account_payload, token_header)
+
 
 fake = Faker()
 
@@ -755,3 +756,25 @@ def test_search_eft_accounts(session, client, jwt, app, admin_users_mock, non_ac
     assert rv.status_code == 200
     assert len(rv.json.get('items')) == 1
     assert rv.json.get('items')[0].get('accountId') == auth_account_id
+
+
+def test_switch_eft_account_when_outstanding_balance(session, client, jwt, app, admin_users_mock):
+    """Assert outstanding balance check when switching away from EFT."""
+    token = jwt.create_jwt(get_claims(role=Role.SYSTEM.value), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+    rv = client.post('/api/v1/accounts',
+                     data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.EFT.value)),
+                     headers=headers)
+    auth_account_id = rv.json.get('accountId')
+    payment_account_id = rv.json.get('id')
+    payment_account: PaymentAccount = PaymentAccount.find_by_id(payment_account_id)
+
+    factory_invoice(payment_account, payment_method_code=PaymentMethod.EFT.value,
+                    total=50, paid=0).save()
+
+    rv = client.put(f'/api/v1/accounts/{auth_account_id}',
+                    data=json.dumps(get_basic_account_payload(payment_method=PaymentMethod.PAD.value)),
+                    headers=headers)
+
+    assert rv.status_code == 400
+    assert rv.json['type'] == 'EFT_SHORT_NAME_OUTSTANDING_BALANCE'
