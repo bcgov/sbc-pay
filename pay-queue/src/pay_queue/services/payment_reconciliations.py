@@ -55,7 +55,6 @@ from ..enums import Column, RecordType, SourceTransaction, Status, TargetTransac
 
 
 APP_CONFIG = config.get_named_config(os.getenv('DEPLOYMENT_ENV', 'production'))
-ENV = Environment(loader=FileSystemLoader('.'), autoescape=True)
 
 
 def _create_payment_records(csv_content: str):
@@ -271,19 +270,26 @@ def _process_file_content(content: str, cas_settlement: CasSettlementModel,
     return has_errors, error_messages
 
 
-def _send_error_email(file_name: str, minio_location: str,
-                      error_messages: List[Dict[str, any]], ce, table_name: str):
+def _send_error_email(file_name: str, minio_location: str,  # pylint:disable=too-many-locals
+                      error_messages: List[Dict[str, any]],
+                      ce, table_name: str):
     """Send the email asynchronously, using the given details."""
     subject = 'Payment Reconciliation Failure'
     token = get_token()
     recipient = APP_CONFIG.IT_OPS_EMAIL
-    template = ENV.get_template('src/pay_queue/templates/statement_notification.html')
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root_dir = os.path.dirname(current_dir)
+    templates_dir = os.path.join(project_root_dir, 'templates')
+    env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
+
+    template = env.get_template('payment_reconciliation_failed_email.html')
+
     params = {
         'fileName': file_name,
         'errorMessages': error_messages,
         'minioLocation': minio_location,
         'payload': json.dumps(dataclasses.asdict(ce)),
-        'table_name': table_name
+        'tableName': table_name
     }
     html_body = template.render(params)
     current_app.logger.info(f'_send_error_email to recipients: {recipient}')

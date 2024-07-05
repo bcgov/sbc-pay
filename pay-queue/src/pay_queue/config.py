@@ -97,6 +97,9 @@ class _Config():  # pylint: disable=too-few-public-methods,protected-access
     # Secret key for encrypting bank account
     ACCOUNT_SECRET_KEY = os.getenv('ACCOUNT_SECRET_KEY')
 
+    KEYCLOAK_SERVICE_ACCOUNT_ID = os.getenv('SBC_AUTH_ADMIN_CLIENT_ID')
+    KEYCLOAK_SERVICE_ACCOUNT_SECRET = os.getenv('SBC_AUTH_ADMIN_CLIENT_SECRET')
+    JWT_OIDC_ISSUER = os.getenv('JWT_OIDC_ISSUER')
     NOTIFY_API_URL = os.getenv('NOTIFY_API_URL', '')
     NOTIFY_API_VERSION = os.getenv('NOTIFY_API_VERSION', '')
     NOTIFY_API_ENDPOINT = f'{NOTIFY_API_URL + NOTIFY_API_VERSION}/'

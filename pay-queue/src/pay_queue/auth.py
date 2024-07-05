@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Jobs uses service accounts to retrieve the token."""
-import base64
 
+import requests
 from flask import current_app
-from pay_api.services.oauth_service import OAuthService
-from pay_api.utils.enums import AuthHeaderType, ContentType
+from requests.auth import HTTPBasicAuth
 
 
 def get_token():
@@ -24,12 +23,12 @@ def get_token():
     issuer_url = current_app.config.get('JWT_OIDC_ISSUER')
 
     token_url = issuer_url + '/protocol/openid-connect/token'
-    # https://sso-dev.pathfinder.gov.bc.ca/auth/realms/fcf0kpqr/protocol/openid-connect/token
-    basic_auth_encoded = base64.b64encode(
-        bytes(current_app.config.get('KEYCLOAK_SERVICE_ACCOUNT_ID') + ':' + current_app.config.get(
-            'KEYCLOAK_SERVICE_ACCOUNT_SECRET'), 'utf-8')).decode('utf-8')
-    data = 'grant_type=client_credentials'
-    token_response = OAuthService.post(token_url, basic_auth_encoded,
-                                       AuthHeaderType.BASIC, ContentType.FORM_URL_ENCODED, data)
-    token = token_response.json().get('access_token')
-    return token
+
+    auth = HTTPBasicAuth(current_app.config.get('KEYCLOAK_SERVICE_ACCOUNT_ID'),
+                         current_app.config.get('KEYCLOAK_SERVICE_ACCOUNT_SECRET'))
+    headers = {'content-type': 'application/x-www-form-urlencoded'}
+    body = 'grant_type=client_credentials'
+
+    token_request = requests.post(token_url, headers=headers, data=body, auth=auth, timeout=500)
+    bearer_token = token_request.json()['access_token']
+    return bearer_token
