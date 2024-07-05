@@ -97,8 +97,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         """Dynamic way of getting the properties from the DAO, anything not in __init__."""
         if hasattr(self._dao, name):
             return getattr(self._dao, name)
-        current_app.logger.warning('Attribute %s not found.', name)
-        return None
+        raise AttributeError(f'Attribute {name} not found.')
 
     def __setattr__(self, name, value):
         """Dynamic way of setting the properties from the DAO."""
