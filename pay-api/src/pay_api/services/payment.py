@@ -670,14 +670,13 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         # 5. Create new payment records for the invoice as CREATED.
 
         pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account.id)
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id, pay_account.payment_method)
 
         consolidated_invoices: List[InvoiceModel] = []
         consolidated_line_items: List[PaymentLineItem] = []
 
         invoice_total = Decimal('0')
         for failed_payment in failed_payments:
-            # Reverse invoice balance
             CFSService.reverse_invoice(inv_number=failed_payment.invoice_number)
             # Find all invoices for this payment.
             # Add all line items to the array
@@ -699,7 +698,6 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
             if failed_payment.payment_status_code == PaymentStatus.CREATED.value:
                 failed_payment.payment_status_code = PaymentStatus.DELETED.value
 
-        # commit transaction
         BaseModel.commit()
         return payment
 
@@ -707,12 +705,13 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
     @user_context
     def create_payment_receipt(auth_account_id: str, credit_request: Dict[str, str], **kwargs) -> Payment:
         """Create a payment record for the account."""
-        pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account.id)
+        payment_method = credit_request.get('paymentMethod')
+        pay_account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id, payment_method)
         # Create a payment record
         # Create a receipt in CFS for the  amount.
         payment = Payment.create(
-            payment_method=credit_request.get('paymentMethod'),
+            payment_method=payment_method,
             payment_system=PaymentSystem.PAYBC.value,
             payment_account_id=pay_account.id)
         receipt_number: str = generate_receipt_number(payment.id)
@@ -723,7 +722,7 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                                                          rcpt_number=receipt_number,
                                                          rcpt_date=receipt_date,
                                                          amount=amount,
-                                                         payment_method=credit_request.get('paymentMethod'))
+                                                         payment_method=payment_method)
 
         payment.receipt_number = receipt_response.get('receipt_number', receipt_number)
         payment.paid_amount = amount
