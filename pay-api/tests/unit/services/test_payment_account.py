@@ -27,6 +27,7 @@ from pay_api.models import EFTFile as EFTFileModel
 from pay_api.models import EFTCredit as EFTCreditModel
 from pay_api.models import EFTShortnames as EFTShortnameModel
 from pay_api.models import Invoice as InvoiceModel
+from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import StatementRecipients as StatementRecipientModel
 from pay_api.models import StatementSettings as StatementSettingsModel
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
@@ -383,3 +384,34 @@ def test_eft_payment_method_settings(session, client, jwt, app, admin_users_mock
 
     assert statement_settings is not None
     assert statement_settings.frequency == StatementFrequency.MONTHLY.value
+
+
+def test_payment_account_service_with_cfs_account(session):
+    """Small test to make sure CFS details are working correctly."""
+    payment_account = PaymentAccountModel()
+    payment_account.flush()
+
+    cfs_account = '123'
+    cfs_party = '456'
+    cfs_site = '789'
+    bank_number = '001'
+    bank_branch_number = '002'
+    bank_account_number = '003'
+    CfsAccountModel(
+        account_id=payment_account.id,
+        cfs_account=cfs_account,
+        cfs_party=cfs_party,
+        cfs_site=cfs_site,
+        bank_number=bank_number,
+        bank_branch_number=bank_branch_number,
+        bank_account_number=bank_account_number,
+        status=CfsAccountStatus.PENDING.value
+    ).flush()
+
+    payment_account_service = PaymentAccountService.find_by_id(payment_account.id)
+    assert payment_account_service.cfs_account == cfs_account
+    assert payment_account_service.cfs_party == cfs_party
+    assert payment_account_service.cfs_site == cfs_site
+    assert payment_account_service.bank_number == bank_number
+    assert payment_account_service.bank_branch_number == bank_branch_number
+    assert payment_account_service.bank_account_number == bank_account_number

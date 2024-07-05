@@ -42,7 +42,7 @@ def worker():
     try:
         current_app.logger.info('Event Message Received: %s ', json.dumps(dataclasses.asdict(ce)))
         if ce.type == QueueMessageTypes.CAS_MESSAGE_TYPE.value:
-            reconcile_payments(ce.data)
+            reconcile_payments(ce)
         elif ce.type == QueueMessageTypes.CGI_ACK_MESSAGE_TYPE.value:
             reconcile_distributions(ce.data)
         elif ce.type == QueueMessageTypes.CGI_FEEDBACK_MESSAGE_TYPE.value:

@@ -141,6 +141,14 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
         return cls.query.filter_by(business_identifier=business_identifier).all()
 
     @classmethod
+    def find_invoices_by_status_for_account(cls, pay_account_id: int, invoice_statuses: List[str]):
+        """Return invoices by status for an account."""
+        query = cls.query.filter_by(payment_account_id=pay_account_id). \
+            filter(Invoice.invoice_status_code.in_(invoice_statuses))
+
+        return query.all()
+
+    @classmethod
     def find_invoices_for_payment(cls,
                                   payment_id: int,
                                   reference_status=InvoiceReferenceStatus.ACTIVE.value) -> List[Invoice]:

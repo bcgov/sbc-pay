@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 from cattr import Converter
 from flask import current_app
@@ -63,30 +63,14 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def __init__(self):
         """Initialize service."""
         self.__dao = None
-        self._id: Optional[int] = None
-        self._auth_account_id: Optional[str] = None
-        self._name: Optional[str] = None
-        self._payment_method: Optional[str] = None
-        self._pad_activation_date: Optional[datetime] = None
-        self._pad_tos_accepted_by: Optional[str] = None
-        self._pad_tos_accepted_date: Optional[datetime] = None
-        self._credit: Optional[Decimal] = None
-
-        self._cfs_account: Optional[str] = None
-        self._cfs_party: Optional[str] = None
-        self._cfs_site: Optional[str] = None
-
-        self._bank_number: Optional[str] = None
-        self._bank_branch_number: Optional[str] = None
-        self._bank_account_number: Optional[str] = None
-
-        self._bcol_user_id: Optional[str] = None
-        self._bcol_account: Optional[str] = None
-
-        self._cfs_account_id: Optional[int] = None
-        self._cfs_account_status: Optional[str] = None
-        self._billable: Optional[bool] = None
-        self._eft_enable: Optional[bool] = None
+        self.cfs_account: str = None
+        self.cfs_party: str = None
+        self.cfs_site: str = None
+        self.bank_number: str = None
+        self.bank_branch_number: str = None
+        self.bank_account_number: str = None
+        self.cfs_account_id: int = None
+        self.cfs_account_status: str = None
 
     @property
     def _dao(self):
@@ -97,249 +81,36 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @_dao.setter
     def _dao(self, value: PaymentAccountModel):
         self.__dao = value
-        self.id: int = self._dao.id
-        self.auth_account_id: str = self._dao.auth_account_id
-        self.name: str = self._dao.name
-        self.payment_method: str = self._dao.payment_method
-        self.bcol_user_id: str = self._dao.bcol_user_id
-        self.bcol_account: str = self._dao.bcol_account
-        self.pad_activation_date: datetime = self._dao.pad_activation_date
-        self.pad_tos_accepted_by: str = self._dao.pad_tos_accepted_by
-        self.pad_tos_accepted_date: datetime = self._dao.pad_tos_accepted_date
-        self.credit: Decimal = self._dao.credit
-        self.billable: bool = self._dao.billable
-        self.eft_enable: bool = self._dao.eft_enable
-
-        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(self.id)
-        if cfs_account:
+        # In discussions with John to see if we can have multiple CFS accounts enabled at once.
+        # This way we could pay for BCOL and PAD/EFT/ONLINE BANKING at the same time.
+        # DIRECT_PAY should already work without a CFS account.
+        if hasattr(self.__dao, 'id') and (cfs_account := CfsAccountModel.find_effective_by_account_id(self.__dao.id)):
             self.cfs_account: str = cfs_account.cfs_account
             self.cfs_party: str = cfs_account.cfs_party
             self.cfs_site: str = cfs_account.cfs_site
-
             self.bank_number: str = cfs_account.bank_number
             self.bank_branch_number: str = cfs_account.bank_branch_number
             self.bank_account_number: str = cfs_account.bank_account_number
             self.cfs_account_id: int = cfs_account.id
             self.cfs_account_status: str = cfs_account.status
 
-    @property
-    def id(self):
-        """Return the _id."""
-        return self._id
+    def __getattr__(self, name):
+        """Dynamic way of getting the properties from the DAO, anything not in __init__."""
+        if hasattr(self._dao, name):
+            return getattr(self._dao, name)
+        raise AttributeError(f'Attribute {name} not found.')
 
-    @id.setter
-    def id(self, value: int):
-        """Set the id."""
-        self._id = value
-        self._dao.id = value
-
-    @property
-    def cfs_account_id(self):
-        """Return the cfs_account_id."""
-        return self._cfs_account_id
-
-    @cfs_account_id.setter
-    def cfs_account_id(self, value: int):
-        """Set the cfs_account_id."""
-        self._cfs_account_id = value
-        self._dao.cfs_account_id = value
-
-    @property
-    def auth_account_id(self):
-        """Return the auth_account_id."""
-        return self._auth_account_id
-
-    @auth_account_id.setter
-    def auth_account_id(self, value: str):
-        """Set the auth_account_id."""
-        if self._auth_account_id != value:
-            self._auth_account_id = value
-            self._dao.auth_account_id = value
-
-    @property
-    def name(self):
-        """Return the name."""
-        return self._name
-
-    @name.setter
-    def name(self, value: str):
-        """Set the name."""
-        if self._name != value:
-            self._name = value
-            self._dao.name = value
-
-    @property
-    def payment_method(self):
-        """Return the payment_method."""
-        return self._payment_method
-
-    @payment_method.setter
-    def payment_method(self, value: int):
-        """Set the payment_method."""
-        if self._payment_method != value:
-            self._payment_method = value
-            self._dao.payment_method = value
-
-    @property
-    def cfs_account(self):
-        """Return the cfs_account."""
-        return self._cfs_account
-
-    @cfs_account.setter
-    def cfs_account(self, value: int):
-        """Set the cfs_account."""
-        self._cfs_account = value
-
-    @property
-    def cfs_party(self):
-        """Return the cfs_party."""
-        return self._cfs_party
-
-    @cfs_party.setter
-    def cfs_party(self, value: int):
-        """Set the cfs_party."""
-        self._cfs_party = value
-
-    @property
-    def cfs_site(self):
-        """Return the cfs_site."""
-        return self._cfs_site
-
-    @cfs_site.setter
-    def cfs_site(self, value: int):
-        """Set the cfs_site."""
-        self._cfs_site = value
-
-    @property
-    def bank_number(self):
-        """Return the bank_number."""
-        return self._bank_number
-
-    @bank_number.setter
-    def bank_number(self, value: int):
-        """Set the bank_number."""
-        self._bank_number = value
-
-    @property
-    def bank_branch_number(self):
-        """Return the bank_branch_number."""
-        return self._bank_branch_number
-
-    @bank_branch_number.setter
-    def bank_branch_number(self, value: int):
-        """Set the bank_branch_number."""
-        self._bank_branch_number = value
-
-    @property
-    def bank_account_number(self):
-        """Return the bank_account_number."""
-        return self._bank_account_number
-
-    @bank_account_number.setter
-    def bank_account_number(self, value: int):
-        """Set the bank_account_number."""
-        self._bank_account_number = value
-
-    @property
-    def bcol_user_id(self):
-        """Return the bcol_user_id."""
-        return self._bcol_user_id
-
-    @bcol_user_id.setter
-    def bcol_user_id(self, value: int):
-        """Set the bcol_user_id."""
-        self._bcol_user_id = value
-        self._dao.bcol_user_id = value
-
-    @property
-    def pad_activation_date(self):
-        """Return the pad_activation_date."""
-        return self._pad_activation_date
-
-    @pad_activation_date.setter
-    def pad_activation_date(self, value: datetime):
-        """Set the pad_activation_date."""
-        self._pad_activation_date = value
-        self._dao.pad_activation_date = value
-
-    @property
-    def pad_tos_accepted_by(self):
-        """Return the pad_tos_accepted_by."""
-        return self._pad_tos_accepted_by
-
-    @pad_tos_accepted_by.setter
-    def pad_tos_accepted_by(self, value: datetime):
-        """Set the pad_tos_accepted_by."""
-        self._pad_tos_accepted_by = value
-        self._dao.pad_tos_accepted_by = value
-
-    @property
-    def pad_tos_accepted_date(self):
-        """Return the pad_tos_accepted_date."""
-        return self._pad_tos_accepted_date
-
-    @pad_tos_accepted_date.setter
-    def pad_tos_accepted_date(self, value: datetime):
-        """Set the pad_tos_accepted_by."""
-        self._pad_tos_accepted_date = value
-        self._dao.pad_tos_accepted_date = value
-
-    @property
-    def bcol_account(self):
-        """Return the bcol_account."""
-        return self._bcol_account
-
-    @bcol_account.setter
-    def bcol_account(self, value: int):
-        """Set the bcol_account."""
-        self._bcol_account = value
-        self._dao.bcol_account = value
-
-    @property
-    def cfs_account_status(self):
-        """Return the cfs_account_status."""
-        return self._cfs_account_status
-
-    @cfs_account_status.setter
-    def cfs_account_status(self, value: int):
-        """Set the cfs_account_status."""
-        self._cfs_account_status = value
-        self._dao.cfs_account_status = value
-
-    @property
-    def credit(self):
-        """Return the credit."""
-        return self._credit
-
-    @credit.setter
-    def credit(self, value: float):
-        """Set the credit."""
-        self._credit = value
-        self._dao.credit = value
-
-    @property
-    def billable(self):
-        """Return the billable."""
-        return self._billable
-
-    @billable.setter
-    def billable(self, value: bool):
-        """Set the billable."""
-        if self._billable != value:
-            self._billable = value
-            self._dao.billable = value
-
-    @property
-    def eft_enable(self):
-        """Return the eft_enable."""
-        return self._eft_enable
-
-    @eft_enable.setter
-    def eft_enable(self, value: bool):
-        """Set the eft_enable."""
-        if self._eft_enable != value:
-            self._eft_enable = value
-            self._dao.eft_enable = value
+    def __setattr__(self, name, value):
+        """Dynamic way of setting the properties from the DAO."""
+        # Prevent recursion by checking if the attribute name starts with '__' (private attribute).
+        if name == '_PaymentAccount__dao':
+            super().__setattr__(name, value)
+        # _dao uses __dao, thus why we need to check before for __dao.
+        elif hasattr(self._dao, name):
+            if getattr(self._dao, name) != value:
+                setattr(self._dao, name, value)
+        else:
+            super().__setattr__(name, value)
 
     def save(self):
         """Save the information to the DB."""
@@ -378,6 +149,12 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         if account.payment_method == target_payment_method or \
                 PaymentMethod.EFT.value not in {account.payment_method, target_payment_method}:
             return
+
+        account_summary = Statement.get_summary(account.auth_account_id)
+        outstanding_balance = account_summary['total_invoice_due'] + account_summary['total_due']
+
+        if outstanding_balance > 0:
+            raise BusinessException(Error.EFT_SHORT_NAME_OUTSTANDING_BALANCE)
 
         # Payment method has changed between EFT and other payment methods
         statement_frequency = (

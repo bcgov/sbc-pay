@@ -193,8 +193,8 @@ def test_get_weekly_interim_statement(session, admin_users_mock):
         assert new_statement_settings.to_date is None
 
     # Validate interim statement has the correct invoice
-    statements = StatementModel.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
-                                                                limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1,
+                                                         limit=100)
 
     assert statements is not None
     assert len(statements[0]) == 1
@@ -248,8 +248,8 @@ def test_get_interim_statement_change_away_from_eft(session, admin_users_mock):
         assert new_statement_settings.to_date is None
 
     # Validate interim statement has the correct invoice
-    statements = StatementModel.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
-                                                                limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1,
+                                                         limit=100)
 
     assert statements is not None
     assert len(statements[0]) == 1
@@ -307,8 +307,8 @@ def test_get_monthly_interim_statement(session, admin_users_mock):
         assert new_statement_settings.to_date is None
 
     # Validate interim statement has the correct invoice
-    statements = StatementModel.find_all_statements_for_account(auth_account_id=account.auth_account_id, page=1,
-                                                                limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1,
+                                                         limit=100)
 
     assert statements is not None
     assert len(statements[0]) == 1
@@ -487,6 +487,7 @@ def test_get_eft_statement_for_empty_invoices(session):
             'invoices': [],
             'paymentTransactions': [],
             'statement': {
+                'amount_owing': 0,
                 'created_on': date_string_now,
                 'frequency': 'MONTHLY',
                 'from_date': get_statement_date_string(statement_from_date),
@@ -662,6 +663,7 @@ def test_get_eft_statement_with_invoices(session):
             ],
             'paymentTransactions': [],
             'statement': {
+                'amount_owing': 250.0,
                 'created_on': date_string_now,
                 'frequency': 'MONTHLY',
                 'from_date': get_statement_date_string(statement_from_date),
@@ -715,7 +717,7 @@ def test_statement_various_payment_methods_history(db, app):
             statement_settings_id=statement_settings.id,
             payment_account_id=account.id,
             created_on=datetime.today(),
-            from_date=datetime(2024, 1, 2, 12, 0).date(),
+            from_date=datetime(2024, 1, 1, 12, 0).date(),
             to_date=datetime(2024, 1, 7, 12, 0).date()
         ).flush()
 
@@ -728,7 +730,34 @@ def test_statement_various_payment_methods_history(db, app):
         db.session.execute(text("update payment_accounts_history set changed = '2024-01-03' "
                                 f"where payment_method = '{PaymentMethod.PAD.value}'"))
 
+        # Statement payment methods use the statement from_date to track historical payment methods
+        # this shows the relevant or transition of payment methods for that statement in particular interim statements
+        statement = StatementService.find_by_id(statement.id)
         payment_methods = statement.payment_methods
-        assert 'DIRECT_PAY' in payment_methods
+        assert 'DIRECT_PAY' not in payment_methods
+        assert 'DRAWDOWN' in payment_methods
+        assert 'PAD' not in payment_methods
+
+        # Increment statement from_date a day at a time and assert expected payment methods
+        statement.from_date = datetime(2024, 1, 2, 12, 0).date()
+        statement = StatementService.find_by_id(statement.id)
+        payment_methods = statement.payment_methods
+        assert 'DIRECT_PAY' not in payment_methods
         assert 'DRAWDOWN' in payment_methods
         assert 'PAD' in payment_methods
+
+        statement.from_date = datetime(2024, 1, 3, 12, 0).date()
+        statement = StatementService.find_by_id(statement.id)
+        payment_methods = statement.payment_methods
+        assert 'DIRECT_PAY' in payment_methods
+        assert 'DRAWDOWN' not in payment_methods
+        assert 'PAD' in payment_methods
+
+        # Statement from_date is now past historical record changed dates, should only show the
+        # current active payment_method - DIRECT_PAY
+        statement.from_date = datetime(2024, 1, 4, 12, 0).date()
+        statement = StatementService.find_by_id(statement.id)
+        payment_methods = statement.payment_methods
+        assert 'DRAWDOWN' not in payment_methods
+        assert 'DIRECT_PAY' in payment_methods
+        assert 'PAD' not in payment_methods
