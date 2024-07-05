@@ -60,4 +60,6 @@ class BaseModel(db.Model):
     @classmethod
     def find_by_id(cls, identifier: int):
         """Return model by id."""
-        return db.session.get(cls, identifier)
+        if identifier:
+            return db.session.get(cls, identifier)
+        return None

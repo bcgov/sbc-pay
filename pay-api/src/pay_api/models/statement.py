@@ -98,4 +98,4 @@ class StatementSchema(ma.SQLAlchemyAutoSchema):  # pylint: disable=too-many-ance
     to_date = fields.Date(tzinfo=pytz.timezone(LEGISLATIVE_TIMEZONE))
     is_overdue = fields.Boolean()
     payment_methods = fields.List(fields.String())
-    amount_owing = fields.Float(missing=0)
+    amount_owing = fields.Float(load_default=0)
