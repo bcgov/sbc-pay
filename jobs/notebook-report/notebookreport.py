@@ -112,13 +112,30 @@ def process_partner_notebooks(notebookdirectory: str, data_dir: str, partner_cod
     try:
         monthly_report_dates = ast.literal_eval(Config.MONTHLY_REPORT_DATES)
     except Exception:  # noqa: B902
-        logging.exception('Error: %s.', notebookdirectory)
+        logging.exception('Error parsing monthly report dates for: %s', notebookdirectory)
         send_email(notebookdirectory, 'ERROR', traceback.format_exc())
+        return  # Early exit if there is an error in configuration
 
     # First day of the month is 1
-    if notebookdirectory == 'daily' \
-            or (notebookdirectory == 'monthly' and date.today().day in monthly_report_dates):
+    today = date.today().day
+    logging.info('Today\'s date: %s', today)
+
+    if notebookdirectory == 'daily':
+        logging.info('Processing daily notebooks for partner: %s', partner_code)
         execute_notebook(notebookdirectory, data_dir, partner_code)
+
+    if notebookdirectory == 'monthly' and today in monthly_report_dates:
+        logging.info('Processing monthly notebooks for partner: %s', partner_code)
+        execute_notebook(notebookdirectory, data_dir, partner_code, is_monthly=True)
+
+    # Ensure both daily and monthly run on the 1st of the month
+    if today == 1:
+        if notebookdirectory == 'daily':
+            logging.info('Also processing daily notebooks on the 1st of the month for partner: %s', partner_code)
+            execute_notebook(notebookdirectory, data_dir, partner_code)
+        elif notebookdirectory == 'monthly':
+            logging.info('Also processing monthly notebooks on the 1st of the month for partner: %s', partner_code)
+            execute_notebook(notebookdirectory, data_dir, partner_code, is_monthly=True)
 
 
 def process_notebooks(notebookdirectory: str, data_dir: str):
@@ -136,10 +153,13 @@ def process_notebooks(notebookdirectory: str, data_dir: str):
         execute_notebook(notebookdirectory, data_dir)
 
 
-def execute_notebook(notebookdirectory: str, data_dir: str, partner_code: str = None):
+def execute_notebook(notebookdirectory: str, data_dir: str, partner_code: str = None, is_monthly:bool = False):
     """Execute notebook and send emails."""
     parameters = {'partner_code': partner_code} if partner_code else None
-    pattern = f'{partner_code.lower()}_*.ipynb' if partner_code else '*.ipynb'
+    if is_monthly:
+        pattern = 'reconciliation_summary.ipynb'
+    else:
+        pattern = f'{partner_code.lower()}_*.ipynb' if partner_code else '*.ipynb'
 
     for file in findfiles(notebookdirectory, pattern):
         try:
