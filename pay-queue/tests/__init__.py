@@ -13,10 +13,12 @@
 # limitations under the License.
 """The Test Suites to ensure that the service is built and operating correctly."""
 import datetime
+import os
 
 
 EPOCH_DATETIME = datetime.datetime.utcfromtimestamp(0)
 FROZEN_DATETIME = datetime.datetime(2001, 8, 5, 7, 7, 58, 272362)
+os.environ['DEPLOYMENT_ENV'] = 'testing'
 
 
 def add_years(d, years):
