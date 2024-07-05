@@ -37,7 +37,7 @@ def test_unpaid_one_invoice(session):
     account = factory_create_online_banking_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value,
                                                     cfs_account='1111')
     # Create an invoice for this account
-    cfs_account = CfsAccountModel.find_effective_by_account_id(account.id)
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(account.id, PaymentMethod.ONLINE_BANKING.value)
 
     invoice = factory_invoice(payment_account=account, created_on=datetime.now(), total=10,
                               payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
@@ -78,7 +78,7 @@ def test_unpaid_multiple_invoice(session):
     account = factory_create_online_banking_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value,
                                                     cfs_account='1111')
     # Create an invoice for this account
-    cfs_account = CfsAccountModel.find_effective_by_account_id(account.id)
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(account.id, PaymentMethod.ONLINE_BANKING.value)
 
     invoice = factory_invoice(payment_account=account, created_on=datetime.now(), total=10,
                               payment_method_code=PaymentMethod.ONLINE_BANKING.value, cfs_account_id=cfs_account.id)
@@ -112,7 +112,7 @@ def test_unpaid_invoice_pad(session):
     # Create an account and an invoice for the account
     account = factory_create_pad_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value)
     # Create an invoice for this account
-    cfs_account = CfsAccountModel.find_effective_by_account_id(account.id)
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(account.id, PaymentMethod.PAD.value)
 
     invoice = factory_invoice(payment_account=account, created_on=datetime.now(), total=10,
                               cfs_account_id=cfs_account.id)
@@ -133,7 +133,7 @@ def test_unpaid_single_invoice_total(session):
     account = factory_create_online_banking_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value,
                                                     cfs_account='1111')
     # Create an invoice for this account
-    cfs_account = CfsAccountModel.find_effective_by_account_id(account.id)
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(account.id, PaymentMethod.ONLINE_BANKING.value)
     # invoice amount
     total_invoice1 = 100
     total_invoice2 = 200
@@ -169,7 +169,7 @@ def test_unpaid_multiple_invoice_total(session):
     account = factory_create_online_banking_account(auth_account_id='1', status=CfsAccountStatus.ACTIVE.value,
                                                     cfs_account='1111')
     # Create an invoice for this account
-    cfs_account = CfsAccountModel.find_effective_by_account_id(account.id)
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(account.id, PaymentMethod.ONLINE_BANKING.value)
     # invoice amount
     total_invoice1 = 100
     total_invoice2 = 200

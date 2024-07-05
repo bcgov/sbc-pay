@@ -524,7 +524,7 @@ def _process_failed_payments(row):
         return False
 
     # Set CFS Account Status.
-    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
     is_already_frozen = cfs_account.status == CfsAccountStatus.FREEZE.value
     current_app.logger.info('setting payment account id : %s status as FREEZE', payment_account.id)
     cfs_account.status = CfsAccountStatus.FREEZE.value
@@ -591,11 +591,8 @@ def _sync_credit_records():
     current_app.logger.info('Found %s credit records', len(active_credits))
     account_ids: List[int] = []
     for credit in active_credits:
-        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(credit.account_id)
-        if cfs_account is None:
-            # Get the last cfs_account for it, as the account might have got upgraded from PAD to DRAWDOWN.
-            cfs_account: CfsAccountModel = CfsAccountModel.query.\
-                filter(CfsAccountModel.account_id == credit.account_id).order_by(CfsAccountModel.id.desc()).first()
+        cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(credit.account_id,
+                                                                                 PaymentMethod.PAD.value)
         account_ids.append(credit.account_id)
         if credit.is_credit_memo:
             credit_memo = CFSService.get_cms(cfs_account=cfs_account, cms_number=credit.cfs_identifier)

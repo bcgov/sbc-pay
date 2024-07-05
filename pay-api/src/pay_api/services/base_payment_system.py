@@ -139,6 +139,16 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def apply_credit(self, invoice: Invoice) -> None:  # pylint:disable=unused-argument
         """Apply credit on invoice."""
         return None
+    
+    def ensure_no_payment_blockers(self, payment_account: PaymentAccount, invoice: Invoice) -> None:
+        """Ensure no payment blockers are present."""
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, invoice.payment_method_code)
+        if cfs_account.status == CfsAccountStatus.FREEZE.value:
+            # Note NSF (Account Unlocking) is paid using DIRECT_PAY - CC flow, not PAD.
+            current_app.logger.warning(f'Account {payment_account.id} is frozen, rejecting invoice creation')
+            raise BusinessException(Error.PAD_CURRENTLY_NSF)
+        # TODO check for overdue EFT as well? 
+        return None
 
     @staticmethod
     def _release_payment(invoice: Invoice):
@@ -174,13 +184,8 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
                     invoice.id, InvoiceReferenceStatus.ACTIVE.value) is None:
             return InvoiceStatus.CANCELLED.value
 
-        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(invoice.payment_account_id)
-        if cfs_account is None:
-            # Get the last cfs_account for it, as the account might have been changed from PAD to DRAWDOWN.
-            cfs_account = CfsAccountModel.query.\
-                    filter(CfsAccountModel.account_id == invoice.payment_account_id).\
-                    order_by(CfsAccountModel.id.desc()). \
-                    first()
+        cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(invoice.payment_account_id,
+                                                                                 invoice.payment_method_code)
         line_items: List[PaymentLineItemModel] = []
         for line_item in invoice.payment_line_items:
             line_items.append(PaymentLineItemModel.find_by_id(line_item.id))
@@ -301,3 +306,4 @@ def skip_complete_post_invoice_for_sandbox(function):
         return function(*func_args, **func_kwargs)
 
     return wrapper
+    

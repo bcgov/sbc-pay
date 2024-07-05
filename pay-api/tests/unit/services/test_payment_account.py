@@ -229,7 +229,7 @@ def test_delete_account_failures(session):
     pay_account.credit = 0
     pay_account.save()
 
-    cfs_account = CfsAccountModel.find_effective_by_account_id(pay_account.id)
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id, PaymentMethod.PAD.value)
     cfs_account.status = CfsAccountStatus.FREEZE.value
     cfs_account.save()
 
@@ -239,7 +239,7 @@ def test_delete_account_failures(session):
     assert excinfo.value.code == Error.FROZEN_ACCOUNT.code
 
     # Now mark the status ACTIVE and create transactions within configured time.
-    cfs_account = CfsAccountModel.find_effective_by_account_id(pay_account.id)
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id, PaymentMethod.PAD.value)
     cfs_account.status = CfsAccountStatus.ACTIVE.value
     cfs_account.save()
 

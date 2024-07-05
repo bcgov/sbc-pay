@@ -156,8 +156,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         short_name_model: EFTShortnameModel = EFTShortnameModel.find_by_id(short_name_id)
         auth_account_id = short_name_model.auth_account_id
 
-        # Find invoices to be paid
-        invoices: List[InvoiceModel] = EFTShortnames.get_invoices_owing(auth_account_id)
+        invoices = EFTShortnames.get_invoices_owing(auth_account_id)
         pay_service = PaymentSystemFactory.create_from_payment_method(PaymentMethod.EFT.value)
 
         for invoice in invoices:
@@ -166,7 +165,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
         current_app.logger.debug('>process_owing_invoices')
 
     @staticmethod
-    def get_invoices_owing(auth_account_id: str) -> [InvoiceModel]:
+    def get_invoices_owing(auth_account_id: str) -> List[InvoiceModel]:
         """Return invoices that have not been fully paid."""
         unpaid_status = (InvoiceStatus.PARTIAL.value,
                          InvoiceStatus.CREATED.value, InvoiceStatus.OVERDUE.value)
@@ -317,7 +316,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                  .outerjoin(PaymentAccountModel,
                             PaymentAccountModel.auth_account_id == EFTShortnameLinksModel.auth_account_id)
                  .outerjoin(CfsAccountModel,
-                            CfsAccountModel.account_id == PaymentAccountModel.id))
+                            CfsAccountModel.account_id == PaymentAccountModel.id)
+                .filter(CfsAccountModel.payment_method == PaymentMethod.EFT.value))
 
         # Join payment information if this is NOT the count query
         if not is_count:

@@ -55,7 +55,8 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
                     created_on: datetime = datetime.now(),
                     disbursement_status_code=None):
     """Return Factory."""
-    cfs_account = CfsAccount.find_effective_by_account_id(payment_account.id)
+    cfs_account = CfsAccount.find_effective_by_payment_method(payment_account.id,
+                                                              payment_method_code or payment_account.payment_method)
     cfs_account_id = cfs_account.id if cfs_account else None
     return Invoice(
         invoice_status_code=status_code,

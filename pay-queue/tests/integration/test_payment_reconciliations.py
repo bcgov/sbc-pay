@@ -477,7 +477,7 @@ def test_pad_nsf_reconciliations(session, app, client):
     assert payment.payment_method_code == PaymentMethod.PAD.value
     assert payment.invoice_number == invoice_number
 
-    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account_id)
+    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(pay_account_id, PaymentMethod.PAD.value)
     assert cfs_account.status == CfsAccountStatus.FREEZE.value
 
 
@@ -550,7 +550,7 @@ def test_pad_reversal_reconciliations(session, app, client):
     assert payment.payment_method_code == PaymentMethod.PAD.value
     assert payment.invoice_number == invoice_number
 
-    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account_id)
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account_id, PaymentMethod.PAD.value)
     assert cfs_account.status == CfsAccountStatus.FREEZE.value
 
     # Receipt should be deleted

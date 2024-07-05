@@ -36,7 +36,7 @@ class ActivatePadAccountTask:  # pylint: disable=too-few-public-methods
         1. Find all accounts with pending PAD account activation status.
         2. Activate them.
         """
-        pending_pad_activation_accounts: List[CfsAccountModel] = CfsAccountModel.find_all_accounts_with_status(
+        pending_pad_activation_accounts = CfsAccountModel.find_all_accounts_with_status(
             status=CfsAccountStatus.PENDING_PAD_ACTIVATION.value)
         current_app.logger.info(
             f'Found {len(pending_pad_activation_accounts)} CFS Accounts to be pending PAD activation.')
@@ -54,7 +54,7 @@ class ActivatePadAccountTask:  # pylint: disable=too-few-public-methods
             if is_activation_period_over:
                 pending_account.status = CfsAccountStatus.ACTIVE.value
                 pending_account.save()
-                # If account was in BCOL , change it to PAD
+                # If account was in another payment method, update it to pad
                 if pay_account.payment_method != PaymentMethod.PAD.value:
                     pay_account.payment_method = PaymentMethod.PAD.value
                     pay_account.save()

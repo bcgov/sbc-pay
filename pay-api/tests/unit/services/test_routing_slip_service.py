@@ -74,8 +74,8 @@ def test_create_routing_slip(session, staff_user_mock):
 
     rs = RoutingSlip_service.create(routing_slip_payload)
     assert rs
-    cfs_account_model: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
-        rs.get('payment_account').get('id'))
+    cfs_account_model: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(
+        rs.get('payment_account').get('id'), PaymentMethod.INTERNAL.value)
     assert cfs_account_model.status == CfsAccountStatus.PENDING.value
 
 
@@ -107,8 +107,8 @@ def test_create_routing_slip_usd_one_of_payments(session, staff_user_mock):
     rs = RoutingSlip_service.create(routing_slip_payload)
     assert rs
     assert rs.get('total_usd') == 80
-    cfs_account_model: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
-        rs.get('payment_account').get('id'))
+    cfs_account_model: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(
+        rs.get('payment_account').get('id'), PaymentMethod.INTERNAL.value)
     assert cfs_account_model.status == CfsAccountStatus.PENDING.value
 
 
@@ -141,6 +141,6 @@ def test_create_routing_slip_usd_both_payments(session, staff_user_mock):
     rs = RoutingSlip_service.create(routing_slip_payload)
     assert rs
     assert rs.get('total_usd') == 180
-    cfs_account_model: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
-        rs.get('payment_account').get('id'))
+    cfs_account_model: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(
+        rs.get('payment_account').get('id'), PaymentMethod.INTERNAL.value)
     assert cfs_account_model.status == CfsAccountStatus.PENDING.value

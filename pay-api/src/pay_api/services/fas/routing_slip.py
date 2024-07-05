@@ -416,7 +416,8 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
                 routing_slip.remaining_amount += correction_total
                 CommentModel(comment=comment, routing_slip_number=rs_number).flush()
                 # Set the routing slip status back to ACTIVE or COMPLETE, if it isn't created in CFS yet.
-                cfs_account = CfsAccountModel.find_effective_by_account_id(routing_slip.payment_account_id)
+                cfs_account = CfsAccountModel.find_effective_by_payment_method(routing_slip.payment_account_id,
+                                                                               PaymentMethod.INTERNAL.value)
                 if cfs_account and cfs_account.status == CfsAccountStatus.PENDING.value or not cfs_account:
                     status = RoutingSlipStatus.COMPLETE.value if routing_slip.remaining_amount == 0 \
                         else RoutingSlipStatus.ACTIVE.value

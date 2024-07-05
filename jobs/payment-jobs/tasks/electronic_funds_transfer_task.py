@@ -32,7 +32,8 @@ from pay_api.services import EFTShortNamesService
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.receipt import Receipt
 from pay_api.utils.enums import (
-    CfsAccountStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentSystem, ReverseOperation)
+    CfsAccountStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentSystem,
+    ReverseOperation)
 from sentry_sdk import capture_message
 
 
@@ -64,8 +65,9 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.debug(f'Linking Electronic Funds Transfer: {eft_short_name.id}')
                 payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
                     eft_short_name.auth_account_id)
-                cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
-                eft_credit: EFTCreditModel = EFTCreditModel.find_by_payment_account_id(payment_account.id)
+                cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(payment_account.id,
+                                                                                         PaymentMethod.EFT.value)
+                eft_credit = EFTCreditModel.find_by_payment_account_id(payment_account.id)
 
                 payment = db.session.query(PaymentModel) \
                     .join(PaymentAccountModel, PaymentAccountModel.id == PaymentModel.payment_account_id) \
@@ -108,8 +110,9 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.debug(f'Unlinking Electronic Funds Transfer: {eft_short_name.id}')
                 payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
                     eft_short_name.auth_account_id)
-                cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
-                eft_credit: EFTCreditModel = EFTCreditModel.find_by_payment_account_id(payment_account.id)
+                cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(payment_account.id,
+                                                                                         PaymentMethod.EFT.value)
+                eft_credit = EFTCreditModel.find_by_payment_account_id(payment_account.id)
 
                 payment = db.session.query(PaymentModel) \
                     .join(PaymentAccountModel, PaymentAccountModel.id == PaymentModel.payment_account_id) \
@@ -154,7 +157,8 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
             .join(EFTShortnameLinksModel, EFTShortnameLinksModel.eft_short_name_id == EFTShortNamesModel.id) \
             .join(PaymentAccountModel, PaymentAccountModel.auth_account_id == EFTShortnameLinksModel.auth_account_id) \
             .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
-            .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value)
+            .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value) \
+            .filter(CfsAccountModel.payment_method == PaymentMethod.EFT.value)
 
         if status == EFTShortnameStatus.LINKED.value:
             query = query.filter(EFTShortnameLinksModel.status_code == status)
@@ -181,10 +185,8 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
             eft_short_name.auth_account_id)
 
-        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
-
-        invoices: List[InvoiceModel] = EFTShortNamesService.get_invoices_owing(
-            eft_short_name.auth_account_id)
+        cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(payment_account.id, PaymentMethod.EFT)
+        invoices = EFTShortNamesService.get_invoices_owing(eft_short_name.auth_account_id)
 
         current_app.logger.info(f'Found {len(invoices)} to apply receipt')
         applied_amount = 0

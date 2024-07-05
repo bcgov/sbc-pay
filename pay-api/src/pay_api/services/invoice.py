@@ -417,7 +417,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
             raise BusinessException(Error.INVALID_INVOICE_ID)
 
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice_dao.payment_account_id)
-        cfs_account: CfsAccountModel = CfsAccountModel.find_by_id(invoice_dao.cfs_account_id)
+        cfs_account = CfsAccountModel.find_by_id(invoice_dao.cfs_account_id)
         org_response = OAuthService.get(
             current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{payment_account.auth_account_id}',
             kwargs['user'].bearer_token, AuthHeaderType.BEARER,

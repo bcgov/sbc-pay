@@ -103,10 +103,7 @@ class PadService(PaymentSystemService, CFSService):
     def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:  # pylint: disable=unused-argument
         """Return a static invoice number for direct pay."""
-        if payment_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
-            # Note NSF (Account Unlocking) is paid using DIRECT_PAY - CC flow, not PAD.
-            current_app.logger.info(f'Account {payment_account.id} is frozen, rejecting invoice creation')
-            raise BusinessException(Error.PAD_CURRENTLY_NSF)
+        self.ensure_no_payment_blockers(payment_account, invoice)
 
         # Do nothing here as the invoice references are created later.
         # If the account have credit, deduct the credit amount which will be synced when reconciliation runs.

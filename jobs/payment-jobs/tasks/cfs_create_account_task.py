@@ -43,7 +43,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
         3. Publish a message to the queue if successful.
         """
         # Pass payment method if offline account creation has be restricted based on payment method.
-        pending_accounts: List[CfsAccountModel] = CfsAccountModel.find_all_pending_accounts()
+        pending_accounts = CfsAccountModel.find_all_pending_accounts()
         current_app.logger.info(f'Found {len(pending_accounts)} CFS Accounts to be created.')
         if len(pending_accounts) == 0:
             return
@@ -128,7 +128,6 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                 pending_account.cfs_party = cfs_account_details.get('party_number')
 
         except Exception as e:  # NOQA # pylint: disable=broad-except
-            # publish to mailer queue.
             is_user_error = False
             if pay_account.payment_method == PaymentMethod.PAD.value:
                 is_user_error = CreateAccountTask._check_user_error(e.response)  # pylint: disable=no-member
@@ -146,8 +145,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                 pending_account.save()
             return
 
-        # If the account has an activation time set ,
-        # before that it shud be set to the  PENDING_PAD_ACTIVATION status.
+        # If the account has an activation time set it should have PENDING_PAD_ACTIVATION status.
         is_account_in_pad_confirmation_period = pay_account.pad_activation_date is not None and \
             pay_account.pad_activation_date > datetime.today()
         pending_account.status = CfsAccountStatus.PENDING_PAD_ACTIVATION.value if \

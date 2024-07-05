@@ -631,7 +631,7 @@ def activate_pad_account(auth_account_id: str):
     payment_account: PaymentAccount = PaymentAccount.find_by_auth_account_id(auth_account_id)
     payment_account.pad_activation_date = datetime.now(tz=timezone.utc)
     payment_account.save()
-    cfs_account: CfsAccount = CfsAccount.find_effective_by_account_id(payment_account.id)
+    cfs_account = CfsAccount.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
     cfs_account.status = 'ACTIVE'
     cfs_account.save()
 
