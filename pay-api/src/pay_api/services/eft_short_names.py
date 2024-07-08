@@ -317,7 +317,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                             PaymentAccountModel.auth_account_id == EFTShortnameLinksModel.auth_account_id)
                  .outerjoin(CfsAccountModel,
                             CfsAccountModel.account_id == PaymentAccountModel.id)
-                .filter(CfsAccountModel.payment_method == PaymentMethod.EFT.value))
+                 .filter(CfsAccountModel.payment_method == PaymentMethod.EFT.value))
 
         # Join payment information if this is NOT the count query
         if not is_count:

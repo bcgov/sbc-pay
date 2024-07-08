@@ -17,7 +17,6 @@ from __future__ import annotations
 from datetime import datetime
 
 from flask import current_app
-
 from sqlalchemy import case, func
 
 from pay_api.models import CfsAccount as CfsAccountModel
@@ -28,8 +27,8 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import db
 from pay_api.utils.converter import Converter
-from pay_api.utils.enums import (AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod,
-                                 ReverseOperation)
+from pay_api.utils.enums import (
+    AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, ReverseOperation)
 from pay_api.utils.user_context import user_context
 
 from .oauth_service import OAuthService

@@ -81,15 +81,19 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @_dao.setter
     def _dao(self, value: PaymentAccountModel):
         self.__dao = value
-        if hasattr(self.__dao, 'id') and (cfs_account := CfsAccountModel.find_effective_by_payment_method(self.__dao.id, self.__dao.payment_method)):
-            self.cfs_account: str = cfs_account.cfs_account
-            self.cfs_party: str = cfs_account.cfs_party
-            self.cfs_site: str = cfs_account.cfs_site
-            self.bank_number: str = cfs_account.bank_number
-            self.bank_branch_number: str = cfs_account.bank_branch_number
-            self.bank_account_number: str = cfs_account.bank_account_number
-            self.cfs_account_id: int = cfs_account.id
-            self.cfs_account_status: str = cfs_account.status
+        if not hasattr(self.__dao, 'id'):
+            return
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(self.__dao.id, self.__dao.payment_method)
+        if not cfs_account:
+            return
+        self.cfs_account: str = cfs_account.cfs_account
+        self.cfs_party: str = cfs_account.cfs_party
+        self.cfs_site: str = cfs_account.cfs_site
+        self.bank_number: str = cfs_account.bank_number
+        self.bank_branch_number: str = cfs_account.bank_branch_number
+        self.bank_account_number: str = cfs_account.bank_account_number
+        self.cfs_account_id: int = cfs_account.id
+        self.cfs_account_status: str = cfs_account.status
 
     def __getattr__(self, name):
         """Dynamic way of getting the properties from the DAO, anything not in __init__."""
@@ -267,7 +271,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def _handle_payment_details(cls, account_request, is_sandbox, pay_system, payment_account,
                                 payment_info):
         # pylint: disable=too-many-arguments
-        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(payment_account.id, payment_account.payment_method) \
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id,
+                                                                       payment_account.payment_method) \
             if payment_account.id else None
         if pay_system.get_payment_system_code() == PaymentSystem.PAYBC.value:
             if cfs_account is None:

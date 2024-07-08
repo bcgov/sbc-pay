@@ -39,7 +39,8 @@ from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import (
-    CfsAccountStatus, CorpType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, QueueSources, TransactionStatus)
+    CfsAccountStatus, CorpType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, QueueSources,
+    TransactionStatus)
 from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext
 from pay_api.utils.util import get_local_formatted_date_time, get_topic_for_corp_type
@@ -141,15 +142,14 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def apply_credit(self, invoice: Invoice) -> None:  # pylint:disable=unused-argument
         """Apply credit on invoice."""
         return None
-    
-    def ensure_no_payment_blockers(self, payment_account: PaymentAccount, invoice: Invoice) -> None:  # pylint: disable=unused-argument
+
+    def ensure_no_payment_blockers(self, payment_account: PaymentAccount) -> None:  # pylint: disable=unused-argument
         """Ensure no payment blockers are present."""
         cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
         if cfs_account.status == CfsAccountStatus.FREEZE.value:
             # Note NSF (Account Unlocking) is paid using DIRECT_PAY - CC flow, not PAD.
             current_app.logger.warning(f'Account {payment_account.id} is frozen, rejecting invoice creation')
             raise BusinessException(Error.PAD_CURRENTLY_NSF)
-        return None
 
     @staticmethod
     def _release_payment(invoice: Invoice):
@@ -307,4 +307,3 @@ def skip_complete_post_invoice_for_sandbox(function):
         return function(*func_args, **func_kwargs)
 
     return wrapper
-    

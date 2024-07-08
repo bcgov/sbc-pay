@@ -90,11 +90,12 @@ class CfsAccount(Versioned, BaseModel):  # pylint:disable=too-many-instance-attr
     @classmethod
     def find_effective_or_latest_by_payment_method(cls, account_id: str, payment_method: str) -> CfsAccount:
         """Return effective cfs account by payment_method that isn't inactive or latest by payment_method.
-           An example of this is switching from PAD/EFT to DRAWDOWN.
+
+        An example of this is switching from PAD/EFT to DRAWDOWN.
         """
         return cls.find_effective_by_payment_method(account_id, payment_method) or \
             cls.find_latest_by_payment_method(account_id, payment_method)
-    
+
     @classmethod
     def find_effective_by_payment_method(cls, account_id: str, payment_method: str) -> CfsAccount:
         """Return effective cfs account by payment_method that isn't inactive."""

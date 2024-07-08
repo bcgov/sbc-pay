@@ -49,7 +49,7 @@ class EjvPayService(PaymentSystemService, OAuthService):
     def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number."""
-        self.ensure_no_payment_blockers(payment_account, invoice)
+        self.ensure_no_payment_blockers(payment_account)
         invoice_reference: InvoiceReference = None
         # If the account is not billable, then create records,
         if not payment_account.billable:
