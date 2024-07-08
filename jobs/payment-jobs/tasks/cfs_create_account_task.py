@@ -126,6 +126,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                 pending_account.cfs_account = cfs_account_details.get('account_number')
                 pending_account.cfs_site = cfs_account_details.get('site_number')
                 pending_account.cfs_party = cfs_account_details.get('party_number')
+                pending_account.payment_method = pay_account.payment_method
 
         except Exception as e:  # NOQA # pylint: disable=broad-except
             is_user_error = False

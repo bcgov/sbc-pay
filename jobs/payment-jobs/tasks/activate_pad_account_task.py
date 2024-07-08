@@ -14,7 +14,6 @@
 """Task to activate accounts with pending activation.Mostly for PAD with 3 day activation period."""
 
 from datetime import datetime, timedelta
-from typing import List
 
 from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel

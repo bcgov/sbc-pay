@@ -50,6 +50,7 @@ class EftService(DepositService):
         current_app.logger.info(f'Creating EFT account details in PENDING status for {identifier}')
         cfs_account = CfsAccountModel()
         cfs_account.status = CfsAccountStatus.PENDING.value
+        cfs_account.payment_method = PaymentMethod.EFT.value
         return cfs_account
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,

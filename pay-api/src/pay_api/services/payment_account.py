@@ -279,7 +279,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 cfs_account = pay_system.create_account(  # pylint:disable=assignment-from-none
                     identifier=payment_account.auth_account_id,
                     contact_info=account_request.get('contactInfo'),
-                    payment_info=account_request.get('paymentInfo'))
+                    payment_info=account_request.get('paymentInfo'),
+                    payment_method=payment_account.payment_method)
                 if cfs_account:
                     cfs_account.payment_account = payment_account
                     cfs_account.flush()
@@ -288,6 +289,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
             cls._update_pad_activation_date(cfs_account, is_sandbox, payment_account)
 
+        # CGI is only hit for GOVM accounts, which use EJV and don't have any other payment methods for now.
         elif pay_system.get_payment_system_code() == PaymentSystem.CGI.value:
             # if distribution code exists, put an end date as previous day and create new.
             dist_code_svc: DistributionCode = DistributionCode.find_active_by_account_id(payment_account.id)

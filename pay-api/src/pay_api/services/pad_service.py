@@ -56,6 +56,7 @@ class PadService(PaymentSystemService, CFSService):
         cfs_account.bank_branch_number = payment_info.get('bankTransitNumber')
         cfs_account.bank_account_number = payment_info.get('bankAccountNumber')
         cfs_account.status = CfsAccountStatus.PENDING.value
+        cfs_account.payment_method = PaymentMethod.PAD.value
         return cfs_account
 
     def update_account(self, name: str, cfs_account: CfsAccountModel, payment_info: Dict[str, Any]) -> CfsAccountModel:

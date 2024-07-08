@@ -47,7 +47,7 @@ class OnlineBankingService(PaymentSystemService, CFSService):
         # Create CFS Account model instance and set the status as PENDING
         cfs_account = CfsAccountModel()
         cfs_account.status = CfsAccountStatus.PENDING.value
-
+        cfs_account.payment_method = PaymentMethod.ONLINE_BANKING.value
         return cfs_account
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,

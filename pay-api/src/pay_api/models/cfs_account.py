@@ -55,6 +55,7 @@ class CfsAccount(Versioned, BaseModel):  # pylint:disable=too-many-instance-attr
             'cfs_site',
             'contact_party',
             'payment_instrument_number',
+            'payment_method',
             'status'
         ]
     }

@@ -40,6 +40,7 @@ def create_cfs_account(cfs_account: CfsAccountModel, pay_account: PaymentAccount
         cfs_account.cfs_party = cfs_account_details.get('party_number')
         cfs_account.cfs_site = cfs_account_details.get('site_number')
         cfs_account.status = CfsAccountStatus.ACTIVE.value
+        cfs_account.payment_method = pay_account.payment_method
         # for RS , entity/business number=party name ; RS Number=site name
         CFSService.create_cfs_receipt(cfs_account=cfs_account,
                                       rcpt_number=routing_slip.number,
