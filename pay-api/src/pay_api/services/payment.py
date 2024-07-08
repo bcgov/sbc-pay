@@ -635,8 +635,8 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
         2. Create new invoice reference records.
         3. Create new payment records for the invoice as CREATED.
         """
-        pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account.id)
+        pay_account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id, pay_account.payment_method)
 
         outstanding_invoices: List[InvoiceModel] = (
             InvoiceModel.find_invoices_by_status_for_account(pay_account.id,

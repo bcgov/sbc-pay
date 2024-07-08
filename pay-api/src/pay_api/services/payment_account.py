@@ -81,10 +81,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     @_dao.setter
     def _dao(self, value: PaymentAccountModel):
         self.__dao = value
-        # In discussions with John to see if we can have multiple CFS accounts enabled at once.
-        # This way we could pay for BCOL and PAD/EFT/ONLINE BANKING at the same time.
-        # DIRECT_PAY should already work without a CFS account.
-        if hasattr(self.__dao, 'id') and (cfs_account := CfsAccountModel.find_effective_by_account_id(self.__dao.id)):
+        if hasattr(self.__dao, 'id') and (cfs_account := CfsAccountModel.find_effective_by_payment_method(self.__dao.id, self.__dao.payment_method)):
             self.cfs_account: str = cfs_account.cfs_account
             self.cfs_party: str = cfs_account.cfs_party
             self.cfs_site: str = cfs_account.cfs_site
