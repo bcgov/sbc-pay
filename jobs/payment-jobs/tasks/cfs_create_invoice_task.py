@@ -31,7 +31,6 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount as PaymentAccountService
-from pay_api.utils.constants import CFS_RCPT_EFT_WIRE, RECEIPT_METHOD_PAD_DAILY, RECEIPT_METHOD_PAD_STOP
 from pay_api.utils.enums import (
     CfsAccountStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
 from pay_api.utils.util import generate_transaction_number
@@ -490,4 +489,3 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             invoice.cfs_account_id = payment_account.cfs_account_id
             invoice.invoice_status_code = InvoiceStatus.SETTLEMENT_SCHEDULED.value
             invoice.save()
-
