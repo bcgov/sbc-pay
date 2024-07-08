@@ -21,6 +21,7 @@ from typing import Dict, List, Optional, Tuple
 
 from dateutil import parser
 from flask import current_app
+from requests import HTTPError
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTTransaction as EFTTransactionModel
@@ -38,7 +39,9 @@ from pay_api.utils.enums import (
     AuthHeaderType, Code, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus,
     PaymentSystem)
 from pay_api.utils.user_context import user_context
-from pay_api.utils.util import generate_receipt_number, get_local_formatted_date, get_local_formatted_date_time
+from pay_api.utils.util import (
+    generate_receipt_number, generate_transaction_number, get_local_formatted_date, get_local_formatted_date_time)
+
 
 from .code import Code as CodeService
 from .oauth_service import OAuthService
@@ -605,19 +608,29 @@ class Payment:  # pylint: disable=too-many-instance-attributes, too-many-public-
                                              invoice_total: Decimal):
         """Create payment for consolidated invoices and update invoice references."""
         invoice_number = str(consolidated_invoices[-1].id) + '-C'
-        invoice_response = CFSService.get_invoice(cfs_account=cfs_account, inv_number=invoice_number)
+        prefixed_invoice_number = generate_transaction_number(invoice_number)
+        invoice_exists = False
+        try:
+            invoice_response = CFSService.get_invoice(cfs_account=cfs_account,
+                                                      inv_number=prefixed_invoice_number)
 
-        invoice_exists = invoice_response.get('invoice_number', None) == invoice_number
-        invoice_total_matches = Decimal(invoice_response.get('total', '0')) == invoice_total
+            invoice_exists = invoice_response.get('invoice_number', None) == prefixed_invoice_number
+            invoice_total_matches = Decimal(invoice_response.get('total', '0')) == invoice_total
 
-        if invoice_exists and not invoice_total_matches:
-            raise BusinessException(Error.EFT_PAY_OUTSTANDING_INVOICES_MISMATCH)
+            if invoice_exists and not invoice_total_matches:
+                raise BusinessException(Error.CFS_INVOICES_MISMATCH)
+
+        except HTTPError as exception:
+            if exception.response.status_code != 404:
+                raise
 
         if not invoice_exists:
             invoice_response = CFSService.create_account_invoice(
                 transaction_number=invoice_number,
                 line_items=consolidated_line_items,
                 cfs_account=cfs_account)
+
+        invoice_number: str = invoice_response.get('invoice_number')
 
         for invoice in consolidated_invoices:
             inv_ref: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
