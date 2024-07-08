@@ -16,6 +16,7 @@
 from typing import Dict
 
 from flask import current_app
+from pay_api.enums import PaymentMethod
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
@@ -30,6 +31,7 @@ def create_cfs_account(cfs_account: CfsAccountModel, pay_account: PaymentAccount
     routing_slip: RoutingSlipModel = RoutingSlipModel.find_by_payment_account_id(pay_account.id)
     try:
         # TODO add status check so that LINKED etc can be skipped.
+        # for RS , entity/business number=party name ; RS Number=site name
         cfs_account_details: Dict[str, any] = CFSService.create_cfs_account(
             identifier=pay_account.name,
             contact_info={},
@@ -40,8 +42,7 @@ def create_cfs_account(cfs_account: CfsAccountModel, pay_account: PaymentAccount
         cfs_account.cfs_party = cfs_account_details.get('party_number')
         cfs_account.cfs_site = cfs_account_details.get('site_number')
         cfs_account.status = CfsAccountStatus.ACTIVE.value
-        cfs_account.payment_method = pay_account.payment_method
-        # for RS , entity/business number=party name ; RS Number=site name
+        cfs_account.payment_method = PaymentMethod.INTERNAL.value
         CFSService.create_cfs_receipt(cfs_account=cfs_account,
                                       rcpt_number=routing_slip.number,
                                       rcpt_date=routing_slip.routing_slip_date.strftime('%Y-%m-%d'),
