@@ -22,6 +22,7 @@ from flask import current_app
 from sentry_sdk import capture_message
 from sbc_common_components.utils.enums import QueueMessageTypes
 
+from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Credit as CreditModel
 from pay_api.models import Invoice as InvoiceModel
@@ -38,7 +39,8 @@ from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment import Payment
 from pay_api.services.payment_account import PaymentAccount
 from pay_api.utils.enums import (
-    CorpType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, QueueSources, TransactionStatus)
+    CfsAccountStatus, CorpType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentStatus, QueueSources, TransactionStatus)
+from pay_api.utils.errors import Error
 from pay_api.utils.user_context import UserContext
 from pay_api.utils.util import get_local_formatted_date_time, get_topic_for_corp_type
 
@@ -140,14 +142,13 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
         """Apply credit on invoice."""
         return None
     
-    def ensure_no_payment_blockers(self, payment_account: PaymentAccount, invoice: Invoice) -> None:
+    def ensure_no_payment_blockers(self, payment_account: PaymentAccount, invoice: Invoice) -> None:  # pylint: disable=unused-argument
         """Ensure no payment blockers are present."""
-        cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, invoice.payment_method_code)
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
         if cfs_account.status == CfsAccountStatus.FREEZE.value:
             # Note NSF (Account Unlocking) is paid using DIRECT_PAY - CC flow, not PAD.
             current_app.logger.warning(f'Account {payment_account.id} is frozen, rejecting invoice creation')
             raise BusinessException(Error.PAD_CURRENTLY_NSF)
-        # TODO check for overdue EFT as well? 
         return None
 
     @staticmethod

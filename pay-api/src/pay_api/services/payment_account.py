@@ -270,7 +270,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def _handle_payment_details(cls, account_request, is_sandbox, pay_system, payment_account,
                                 payment_info):
         # pylint: disable=too-many-arguments
-        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id) \
+        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(payment_account.id, payment_account.payment_method) \
             if payment_account.id else None
         if pay_system.get_payment_system_code() == PaymentSystem.PAYBC.value:
             if cfs_account is None:
@@ -282,7 +282,6 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                     cfs_account.payment_account = payment_account
                     cfs_account.flush()
             else:
-                # Update details in CFS
                 pay_system.update_account(name=payment_account.name, cfs_account=cfs_account, payment_info=payment_info)
 
             cls._update_pad_activation_date(cfs_account, is_sandbox, payment_account)
@@ -302,11 +301,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                     'name': payment_account.name
                 })
                 DistributionCode.save_or_update(revenue_account)
-        else:
-            if cfs_account is not None:
-                # if its not PAYBC ,it means switching to either drawdown or internal ,deactivate the cfs account
-                cfs_account.status = CfsAccountStatus.INACTIVE.value
-                cfs_account.flush()
+        # Intentionally leave CFS account active if it's not PAYBC, even if it's DRAWDOWN or INTERNAL.
+        # That way we can support multiple payment methods at once in the future.
 
     @classmethod
     def _update_pad_activation_date(cls, cfs_account: CfsAccountModel,
@@ -648,7 +644,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         pay_account: PaymentAccount = PaymentAccount.find_by_id(payment_account_id)
         if pay_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
             current_app.logger.info(f'Unlocking Frozen Account {pay_account.auth_account_id}')
-            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account.id)
+            cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(pay_account.id,
+                                                                                            PaymentMethod.PAD.value)
             CFSService.update_site_receipt_method(cfs_account, receipt_method=RECEIPT_METHOD_PAD_DAILY)
 
             cfs_account.status = CfsAccountStatus.ACTIVE.value
@@ -681,13 +678,14 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
     def delete_account(cls, auth_account_id: str) -> PaymentAccount:
         """Delete the payment account."""
         current_app.logger.debug('<delete_account')
-        pay_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
-        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(pay_account.id)
+        pay_account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
         # 1 - Check if account have any credits
         # 2 - Check if account have any PAD transactions done in last N (10) days.
         if pay_account.credit and pay_account.credit > 0:
             raise BusinessException(Error.OUTSTANDING_CREDIT)
-        # Check if account is frozen.
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id,
+                                                                       PaymentMethod.PAD.value)
+        # Check if PAD account is frozen.
         cfs_status: str = cfs_account.status if cfs_account else None
         if cfs_status == CfsAccountStatus.FREEZE.value:
             raise BusinessException(Error.FROZEN_ACCOUNT)

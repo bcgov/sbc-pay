@@ -37,7 +37,7 @@ from .payment_line_item import PaymentLineItem
 
 
 class PaybcService(PaymentSystemService, CFSService):
-    """Service to manage PayBC integration. - This is for NSF payments, we use direct pay service instead."""
+    """Service to manage PayBC integration. - for NSF/balance payments, we usually use direct pay service instead."""
 
     def get_payment_system_url_for_invoice(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
@@ -73,6 +73,7 @@ class PaybcService(PaymentSystemService, CFSService):
                        line_items: List[PaymentLineItem], invoice: Invoice, **kwargs) -> InvoiceReference:
         """Create Invoice in PayBC."""
         # Build line item model array, as that's needed for CFS Service
+        # No need to check for payment blockers here as this payment method is used to unblock.
         line_item_models: List[PaymentLineItemModel] = []
         for line_item in line_items:
             line_item_models.append(PaymentLineItemModel.find_by_id(line_item.id))
