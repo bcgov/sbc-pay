@@ -370,7 +370,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
             account_invoices = db.session.query(InvoiceModel) \
                 .filter(InvoiceModel.payment_account_id == eft_account.id) \
                 .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value) \
-                .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value) \
+                .filter(InvoiceModel.invoice_status_code == InvoiceStatus.CREATED.value) \
                 .filter(InvoiceModel.id.notin_(cls._active_invoice_reference_subquery())) \
                 .order_by(InvoiceModel.created_on.desc()).all()
 
