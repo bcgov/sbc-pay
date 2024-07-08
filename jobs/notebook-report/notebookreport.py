@@ -114,9 +114,8 @@ def process_partner_notebooks(notebookdirectory: str, data_dir: str, partner_cod
     except Exception:  # noqa: B902
         logging.exception('Error parsing monthly report dates for: %s', notebookdirectory)
         send_email(notebookdirectory, 'ERROR', traceback.format_exc())
-        return  # Early exit if there is an error in configuration
+        return  
 
-    # First day of the month is 1
     today = date.today().day
     logging.info('Today\'s date: %s', today)
 
