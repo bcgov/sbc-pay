@@ -180,6 +180,13 @@ class Invoice(Audit):  # pylint: disable=too-many-instance-attributes
                     (Invoice.payment_method_code == PaymentMethod.PAD.value) &
                     (Invoice.invoice_status_code == InvoiceStatus.PAID.value) &
                     (Invoice.created_on >= from_date)
+            ) |
+            (
+                (Invoice.payment_method_code == PaymentMethod.EFT.value) &
+                (Invoice.payment_method_code == InvoiceStatus.CREATED.value |
+                 Invoice.payment_method_code == InvoiceStatus.OVERDUE.value
+                 ) &
+                (Invoice.created_on >= from_date)
             )
         )
 

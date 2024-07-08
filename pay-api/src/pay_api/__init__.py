@@ -50,10 +50,11 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
     flags.init_app(app)
     db.init_app(app)
     queue.init_app(app)
-    Migrate(app, db)
-    app.logger.info('Running migration upgrade.')
-    with app.app_context():
-        upgrade(directory='migrations', revision='head', sql=False, tag=None)
+    if run_mode != 'testing':
+        Migrate(app, db)
+        app.logger.info('Running migration upgrade.')
+        with app.app_context():
+            upgrade(directory='migrations', revision='head', sql=False, tag=None)
     # Alembic has it's own logging config, we'll need to restore our logging here.
     setup_logging(os.path.join(_Config.PROJECT_ROOT, 'logging.conf'))
     app.logger.info('Finished migration upgrade.')

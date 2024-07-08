@@ -89,6 +89,7 @@ class PadService(PaymentSystemService, CFSService):
             updated_cfs_account.cfs_party = cfs_account.cfs_party
             updated_cfs_account.cfs_account = cfs_account.cfs_account
             updated_cfs_account.payment_account = cfs_account.payment_account
+            updated_cfs_account.payment_method = PaymentMethod.PAD.value
             if current_account_status == CfsAccountStatus.FREEZE.value:
                 updated_cfs_account.status = CfsAccountStatus.FREEZE.value
             else:

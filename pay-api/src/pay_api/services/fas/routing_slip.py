@@ -301,7 +301,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
         if cls.validate_and_find_by_number(rs_number):
             raise BusinessException(Error.FAS_INVALID_ROUTING_SLIP_NUMBER)
 
-        payment_methods: [str] = [payment.get('paymentMethod') for payment in request_json.get('payments')]
+        payment_methods: List[str] = [payment.get('paymentMethod') for payment in request_json.get('payments')]
         # all the payment should have the same payment method
         if len(set(payment_methods)) != 1:
             raise BusinessException(Error.FAS_INVALID_PAYMENT_METHOD)
@@ -319,6 +319,7 @@ class RoutingSlip:  # pylint: disable=too-many-instance-attributes, too-many-pub
 
         CfsAccountModel(
             account_id=pay_account.id,
+            payment_method=PaymentMethod.INTERNAL.value,
             status=CfsAccountStatus.PENDING.value
         ).flush()
 

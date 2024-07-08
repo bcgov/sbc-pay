@@ -34,7 +34,7 @@ from pay_api.services.payment_account import PaymentAccount as PaymentAccountSer
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod, Role
 from tests.utilities.base_test import (
     factory_invoice, get_auth_basic_user, get_basic_account_payload, get_claims, get_gov_account_payload,
-    get_gov_account_payload_with_no_revenue_account, get_pad_account_payload, get_payment_request,
+    get_gov_account_payload_with_no_revenue_account, get_linked_pad_account_payload, get_payment_request,
     get_payment_request_for_cso, get_payment_request_with_folio_number, get_payment_request_with_service_fees,
     get_premium_account_payload, get_unlinked_pad_account_payload, token_header)
 
@@ -345,7 +345,7 @@ def test_premium_account_update_bcol_pad(session, client, jwt, app):
     assert rv.json.get('accountId') == auth_account_id
 
     # assert switching to PAD returns bank details
-    pad_account_details = get_pad_account_payload(account_id=int(auth_account_id))
+    pad_account_details = get_linked_pad_account_payload(account_id=int(auth_account_id))
 
     rv = client.put(f'/api/v1/accounts/{auth_account_id}', data=json.dumps(pad_account_details),
                     headers=headers)

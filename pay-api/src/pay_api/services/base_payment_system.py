@@ -146,7 +146,7 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
     def ensure_no_payment_blockers(self, payment_account: PaymentAccount) -> None:  # pylint: disable=unused-argument
         """Ensure no payment blockers are present."""
         cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
-        if cfs_account.status == CfsAccountStatus.FREEZE.value:
+        if cfs_account and cfs_account.status == CfsAccountStatus.FREEZE.value:
             # Note NSF (Account Unlocking) is paid using DIRECT_PAY - CC flow, not PAD.
             current_app.logger.warning(f'Account {payment_account.id} is frozen, rejecting invoice creation')
             raise BusinessException(Error.PAD_CURRENTLY_NSF)
