@@ -92,6 +92,7 @@ class _Config():  # pylint: disable=too-few-public-methods
     OIDC_ID_TOKEN_COOKIE_SECURE = os.getenv('PAY_OIDC_ID_TOKEN_COOKIE_SECURE', 'True').lower() == 'true'
 
     PREFERRED_URL_SCHEME = 'https'
+    SESSION_TYPE = 'filesystem'
 
     TESTING = False
     DEBUG = True

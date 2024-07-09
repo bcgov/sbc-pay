@@ -20,6 +20,8 @@ import os
 
 from flask import Flask, redirect
 from flask_admin import Admin
+from flask_caching import Cache
+from flask_session import Session
 from pay_api.models import FilingType, db, ma
 from pay_api.utils.logging import setup_logging
 
@@ -44,6 +46,7 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
     # Init Flask Admin
     init_flask_admin(app)
     Keycloak(app)
+    Session(app)
 
     @app.route('/')
     def index():
