@@ -62,9 +62,6 @@ RUN groupadd -g "${GID}" -r web \
   && useradd -d '/code' -g web -l -r -u "${UID}" web \
   && chown web:web -R '/code'
 
-RUN mkdir flask_session
-RUN chown web:web -R '/code/flask_session'
-
 # Copy only requirements, to cache them in docker layer
 COPY --chown=web:web ./poetry.lock ./pyproject.toml /code/
 
@@ -87,5 +84,9 @@ USER web
 # The following stage is only for production:
 FROM development_build AS production_build
 COPY --chown=web:web . /code
+
+RUN mkdir flask_session
+RUN chown web:web -R '/code/flask_session'
+
 
 CMD gunicorn --bind 0.0.0.0:${PORT} --config /code/gunicorn_config.py wsgi:application
