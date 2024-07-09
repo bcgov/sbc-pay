@@ -101,9 +101,7 @@ def test_send_unpaid_statement_notification(setup, session):
         StatementTask.generate_statements()
 
     # Assert statements and invoice was created
-    statements = StatementModel.find_all_statements_for_account(auth_account_id=account.auth_account_id,
-                                                                page=1,
-                                                                limit=100)
+    statements = StatementModel.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
     assert statements is not None
     assert len(statements) == 2  # items results and page total
     assert len(statements[0]) == 1  # items

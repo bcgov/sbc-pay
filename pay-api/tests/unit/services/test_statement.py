@@ -193,8 +193,7 @@ def test_get_weekly_interim_statement(session, admin_users_mock):
         assert new_statement_settings.to_date is None
 
     # Validate interim statement has the correct invoice
-    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1,
-                                                         limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
 
     assert statements is not None
     assert len(statements[0]) == 1
@@ -248,8 +247,7 @@ def test_get_interim_statement_change_away_from_eft(session, admin_users_mock):
         assert new_statement_settings.to_date is None
 
     # Validate interim statement has the correct invoice
-    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1,
-                                                         limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
 
     assert statements is not None
     assert len(statements[0]) == 1
@@ -307,8 +305,7 @@ def test_get_monthly_interim_statement(session, admin_users_mock):
         assert new_statement_settings.to_date is None
 
     # Validate interim statement has the correct invoice
-    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1,
-                                                         limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
 
     assert statements is not None
     assert len(statements[0]) == 1
