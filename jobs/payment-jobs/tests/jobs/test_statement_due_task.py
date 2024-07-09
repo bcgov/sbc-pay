@@ -108,7 +108,7 @@ def test_send_unpaid_statement_notification(setup, session):
     assert invoices is not None
     assert invoices[0].invoice_id == invoice.id
 
-    summary = Statement.get_summary(account.auth_account_id, statements[0][0].id)
+    summary = StatementService.get_summary(account.auth_account_id, statements[0][0].id)
     total_amount_owing = summary['total_due']
 
     # Assert notification was published to the mailer queue
