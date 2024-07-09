@@ -68,9 +68,6 @@ COPY --chown=web:web ./poetry.lock ./pyproject.toml /code/
 COPY --chown=web:web ./admin /code/admin
 COPY --chown=web:web ./README.md /code
 
-RUN mkdir flask_session
-RUN chown web:web -R '/code/flask_session'
-RUN chmod -R +rw /code/flask_session
 
 # Project initialization:
 RUN --mount=type=cache,target="$POETRY_CACHE_DIR" \
@@ -90,5 +87,8 @@ FROM development_build AS production_build
 COPY --chown=web:web . /code
 
 
+RUN mkdir /code/flask_session
+RUN chown web:web -R '/code/flask_session'
+RUN chmod -R +rw /code/flask_session
 
 CMD gunicorn --bind 0.0.0.0:${PORT} --config /code/gunicorn_config.py wsgi:application
