@@ -66,12 +66,12 @@ def test_activate_bcol_change_to_pad(session):
     account = factory_create_pad_account(auth_account_id='1', payment_method=PaymentMethod.DRAWDOWN.value)
     CreateAccountTask.create_accounts()
     account = PaymentAccount.find_by_id(account.id)
-    cfs_account: CfsAccount = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.PAD.value)
+    cfs_account = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.PAD.value)
     assert cfs_account.status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value, 'Created account has pending pad status'
     assert account.payment_method == PaymentMethod.DRAWDOWN.value
 
     ActivatePadAccountTask.activate_pad_accounts()
-    cfs_account: CfsAccount = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.PAD.value)
+    cfs_account = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.PAD.value)
     assert cfs_account.status == CfsAccountStatus.PENDING_PAD_ACTIVATION.value, \
         'Same day Job runs and shouldnt change anything.'
     account = PaymentAccount.find_by_id(account.id)

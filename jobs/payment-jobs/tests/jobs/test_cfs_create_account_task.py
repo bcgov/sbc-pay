@@ -80,7 +80,7 @@ def test_create_pad_account_user_error(session):
             mock_mailer.assert_called
 
     account = PaymentAccount.find_by_id(account.id)
-    cfs_account: CfsAccount = CfsAccount.find_by_id(cfs_account.id)
+    cfs_account = CfsAccount.find_by_id(cfs_account.id)
     assert cfs_account.status == CfsAccountStatus.INACTIVE.value
 
 
@@ -101,7 +101,7 @@ def test_create_pad_account_system_error(session):
             mock_mailer.assert_not_called()
 
     account = PaymentAccount.find_by_id(account.id)
-    cfs_account: CfsAccount = CfsAccount.find_by_id(cfs_account.id)
+    cfs_account = CfsAccount.find_by_id(cfs_account.id)
     assert cfs_account.status == CfsAccountStatus.PENDING.value
 
 
@@ -174,7 +174,7 @@ def test_update_pad_account(session):
     # Run the job again
     CreateAccountTask.create_accounts()
 
-    updated_cfs_account: CfsAccount = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.PAD.value)
+    updated_cfs_account = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.PAD.value)
     assert updated_cfs_account.id != cfs_account.id
     assert updated_cfs_account.bank_account_number == new_payment_details.get('bankAccountNumber')
     assert updated_cfs_account.bank_branch_number == new_payment_details.get('bankTransitNumber')
