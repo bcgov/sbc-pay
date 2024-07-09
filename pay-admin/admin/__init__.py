@@ -40,18 +40,27 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
     app = Flask(__name__)
     app.config.from_object(config.CONFIGURATION[run_mode])
 
+    app.logger.info('init db.')
     db.init_app(app)
     ma.init_app(app)
 
-    # Init Flask Admin
+    app.logger.info('init flask admin.')
     init_flask_admin(app)
-    Keycloak(app)
+
+    app.logger.info('init cache.')
+    Cache(app)
+
+    app.logger.info('init session.')
     Session(app)
+
+    app.logger.info('init keycloak.')
+    Keycloak(app)
 
     @app.route('/')
     def index():
         return redirect('/admin/feecode/')
 
+    app.logger.info('create_app is complete.')
     return app
 
 
