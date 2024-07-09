@@ -160,7 +160,7 @@ def factory_create_pad_account(auth_account_id='1234', bank_number='001', bank_b
                cfs_party='11111',
                cfs_account=account_number,
                cfs_site='29921',
-               payment_account=PaymentMethod.PAD.value
+               payment_method=PaymentMethod.PAD.value
                ).save()
     return account
 
