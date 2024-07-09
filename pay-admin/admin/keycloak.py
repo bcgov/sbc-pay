@@ -40,7 +40,7 @@ class Keycloak:
 
     def has_access(self, role='admin_view') -> bool:
         """Determine whether or not the user is authorized to use the application. True if the user have role."""
-        if not (self._oidc.get_access_token()):
+        if not self._oidc.get_access_token():
             return False
 
         if not session['oidc_auth_profile']['roles']:
