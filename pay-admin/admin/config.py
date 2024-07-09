@@ -87,15 +87,10 @@ class _Config():  # pylint: disable=too-few-public-methods
 
     # Normal Keycloak parameters.
     OIDC_CLIENT_SECRETS = os.getenv('PAY_OIDC_CLIENT_SECRETS', 'secrets/keycloak.json')
-    with open(OIDC_CLIENT_SECRETS, 'r', encoding='utf-8') as file:
-        secrets = json.load(file)
-    JWT_OIDC_JWKS_URI = secrets['web']['jwks_uri']
-    JWT_AUDIENCE = os.getenv('JWT_AUDIENCE', 'account-services')
     OIDC_SCOPES = ['openid', 'email', 'profile']
     # Undocumented Keycloak parameter: allows sending cookies without the secure flag, which we need for the local
     # non-TLS HTTP server. Set this to non-"True" for local development, and use the default everywhere else.
     OIDC_ID_TOKEN_COOKIE_SECURE = os.getenv('PAY_OIDC_ID_TOKEN_COOKIE_SECURE', 'True').lower() == 'true'
-
 
     PREFERRED_URL_SCHEME = 'https'
     SESSION_TYPE = 'filesystem'

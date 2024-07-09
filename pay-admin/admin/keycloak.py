@@ -14,9 +14,8 @@ limitations under the License.
 """
 import json
 import jwt
-from urllib.request import urlopen
 from cachelib import SimpleCache
-from flask import abort, current_app, redirect, request, url_for
+from flask import redirect, request, session, url_for
 import flask_oidc
 
 
@@ -44,34 +43,15 @@ class Keycloak:
         """Determine whether or not the user is logged in."""
         return self._oidc.user_loggedin
 
-    def _get_jwks_from_cache(self):
-        jwks = self.cache.get('jwks')
-        if jwks is None:
-            jwks = self._fetch_jwks_from_url()
-            self.cache.set('jwks', jwks)
-        return jwks
-
-    def _fetch_jwks_from_url(self):
-        jwks_uri = current_app.config.get('JWT_OIDC_JWKS_URI', None)
-        if not jwks_uri:
-            abort(500, 'JWT_OIDC_JWKS_URI is not configured')
-        return json.loads(urlopen(jwks_uri).read().decode('utf-8'))
-
     def has_access(self, role='admin_view') -> bool:
         """Determine whether or not the user is authorized to use the application. True if the user have role."""
-        if not (token := self._oidc.get_access_token()):
+        if not (self._oidc.get_access_token()):
             return False
 
-        public_keys = {}
-        for jwk in self._get_jwks_from_cache().get('keys'):
-            public_keys[jwk['kid']] = jwt.algorithms.RSAAlgorithm.from_jwk(json.dumps(jwk))
-
-        key = public_keys[jwt.get_unverified_header(token)['kid']]
-        token_info = jwt.decode(token, key=key, audience=current_app.config.get('JWT_AUDIENCE'), algorithms=['RS256'])
-        if not token_info['roles']:
+        if not session['oidc_auth_profile']['roles']:
             return False
 
-        roles_ = token_info['roles']
+        roles_ = session['oidc_auth_profile']['roles']
         access = role in roles_
 
         return access
