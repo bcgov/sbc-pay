@@ -47,7 +47,11 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
     init_flask_admin(app)
 
     app.logger.info('init session.')
-    Session(app)
+    try:
+        Session(app)
+    except Exception as e:
+        app.logger.error(e)
+
     app.logger.info('init keycloak.')
     Keycloak(app)
 
