@@ -160,7 +160,7 @@ def test_send_monthly_notifications_failed(setup, session, payment_method_code):
         StatementTask.generate_statements()
 
     # Assert statements and invoice was created
-    statements = Statement.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
     assert statements is not None
     assert len(statements) == 2  # items results and page total
     assert len(statements[0]) == 1  # items
@@ -202,7 +202,7 @@ def test_send_eft_notifications(setup, session):  # pylint: disable=unused-argum
         StatementTask.generate_statements()
 
     # Assert statements and invoice was created
-    statements = Statement.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
     assert statements is not None
     assert len(statements) == 2  # items results and page total
     assert len(statements[0]) == 1  # items
@@ -243,7 +243,7 @@ def test_send_eft_notifications_failure(setup, session):  # pylint: disable=unus
         StatementTask.generate_statements()
 
     # Assert statements and invoice was created
-    statements = Statement.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
     assert statements is not None
     assert len(statements) == 2  # items results and page total
     assert len(statements[0]) == 1  # items
@@ -285,7 +285,7 @@ def test_send_eft_notifications_ff_disabled(setup, session):  # pylint: disable=
         StatementTask.generate_statements()
 
     # Assert statements and invoice was created
-    statements = Statement.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
     assert statements is not None
     assert len(statements) == 2  # items results and page total
     assert len(statements[0]) == 1  # items
