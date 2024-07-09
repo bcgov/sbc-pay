@@ -25,6 +25,7 @@ from faker import Faker
 from flask import Flask
 from freezegun import freeze_time
 from pay_api.models import Statement, StatementInvoices
+from pay_api.services import Statement as StatementService
 from pay_api.utils.enums import InvoiceStatus, NotificationStatus, PaymentMethod, StatementFrequency
 from pay_api.utils.util import get_previous_month_and_year
 
@@ -108,7 +109,7 @@ def test_send_monthly_notifications(setup, session, payment_method_code):  # pyl
         StatementTask.generate_statements()
 
     # Assert statements and invoice was created
-    statements = Statement.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
     assert statements is not None
     assert len(statements) == 2  # items results and page total
     assert len(statements[0]) == 1  # items

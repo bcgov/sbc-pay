@@ -25,9 +25,8 @@ import pytest
 from faker import Faker
 from flask import Flask
 from freezegun import freeze_time
-from pay_api.models import Statement as StatementModel
 from pay_api.models import StatementInvoices as StatementInvoicesModel
-from pay_api.services import Statement
+from pay_api.services import Statement as StatementService
 from pay_api.utils.enums import InvoiceStatus, PaymentMethod, StatementFrequency
 from pay_api.utils.util import current_local_time, get_first_and_last_dates_of_month, get_previous_month_and_year
 
@@ -101,7 +100,7 @@ def test_send_unpaid_statement_notification(setup, session):
         StatementTask.generate_statements()
 
     # Assert statements and invoice was created
-    statements = StatementModel.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
     assert statements is not None
     assert len(statements) == 2  # items results and page total
     assert len(statements[0]) == 1  # items
