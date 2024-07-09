@@ -51,10 +51,7 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
     Cache(app)
 
     app.logger.info('init session.')
-    try:
-        Session(app)
-    except Exception as e:
-        app.logger.error(e)
+    Session(app)
 
     app.logger.info('init keycloak.')
     Keycloak(app)
