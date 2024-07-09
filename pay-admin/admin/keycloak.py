@@ -12,9 +12,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-import json
-import jwt
-from cachelib import SimpleCache
 from flask import redirect, request, session, url_for
 import flask_oidc
 
@@ -36,8 +33,6 @@ class Keycloak:
         """
         if not Keycloak._oidc and application:
             Keycloak._oidc = flask_oidc.OpenIDConnect(application)
-
-        self.cache = SimpleCache(default_timeout=300)
 
     def is_logged_in(self) -> bool:
         """Determine whether or not the user is logged in."""

@@ -45,7 +45,6 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
 
     # Init Flask Admin
     init_flask_admin(app)
-    Cache(app)
     Keycloak(app)
     Session(app)
 
