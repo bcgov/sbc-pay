@@ -20,6 +20,7 @@ import os
 
 from flask import Flask, redirect
 from flask_admin import Admin
+from flask_caching import Cache
 from flask_session import Session
 from pay_api.models import FilingType, db, ma
 from pay_api.utils.logging import setup_logging
@@ -45,6 +46,9 @@ def create_app(run_mode=os.getenv('DEPLOYMENT_ENV', 'production')):
 
     app.logger.info('init flask admin.')
     init_flask_admin(app)
+
+    app.logger.info('init cache.')
+    Cache(app)
 
     app.logger.info('init session.')
     try:
