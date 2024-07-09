@@ -316,8 +316,7 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                  .outerjoin(PaymentAccountModel,
                             PaymentAccountModel.auth_account_id == EFTShortnameLinksModel.auth_account_id)
                  .outerjoin(CfsAccountModel,
-                            CfsAccountModel.account_id == PaymentAccountModel.id)
-                 .filter(CfsAccountModel.payment_method == PaymentMethod.EFT.value))
+                            CfsAccountModel.account_id == PaymentAccountModel.id))
 
         # Join payment information if this is NOT the count query
         if not is_count:
@@ -350,6 +349,8 @@ class EFTShortnames:  # pylint: disable=too-many-instance-attributes
                 query = query.filter_conditionally(search_criteria.amount_owing, statement_summary_query.c.total_owing)
 
         query = cls.get_link_state_filters(search_criteria, query)
+        query = query.filter(or_(CfsAccountModel.payment_method == PaymentMethod.EFT.value,
+                                 CfsAccountModel.id.is_(None)))
         query = query.filter(
             or_(PaymentAccountModel.payment_method == PaymentMethod.EFT.value, PaymentAccountModel.id.is_(None))
         )
