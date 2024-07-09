@@ -342,7 +342,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         # If the account is created for sandbox env, then set the status to ACTIVE and set pad activation time to now
         if is_pad and details.is_sandbox:
             cfs_account.status = CfsAccountStatus.ACTIVE.value
-            details.payment_account.pad_activation_date = datetime.now()
+            details.payment_account.pad_activation_date = datetime.now(tz=timezone.utc)
         # override payment method for since pad has 3 days wait period
         elif is_pad:
             effective_pay_method, activation_date = PaymentAccount._get_payment_based_on_pad_activation(
@@ -584,6 +584,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
         if show_cfs_details:
             # If it's PAD show future, if it's ONLINE BANKING or EFT show current.
+            # Future - open this up for all payment methods, include a list.
             cfs_info = CfsAccountModel.find_effective_by_payment_method(
                 self.id, PaymentMethod.PAD.value if is_future_pad else self.payment_method)
             cfs_account = {
