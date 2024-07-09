@@ -16,13 +16,12 @@
 from typing import Dict
 
 from flask import current_app
-from pay_api.enums import PaymentMethod
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import RoutingSlip as RoutingSlipModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.utils.constants import PaymentSystem
-from pay_api.utils.enums import CfsAccountStatus
+from pay_api.utils.enums import CfsAccountStatus, PaymentMethod
 from sentry_sdk import capture_message
 
 

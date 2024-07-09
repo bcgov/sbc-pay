@@ -1705,8 +1705,8 @@ werkzeug = "3.0.1"
 [package.source]
 type = "git"
 url = "https://github.com/seeker25/sbc-pay.git"
-reference = "disbursement_refund_date_fix"
-resolved_reference = "10e46e1bac9c6f57abce4223311311201658b743"
+reference = "22063-part2"
+resolved_reference = "7552a4630baf5c132bf75ea628e629e627f7141e"
 subdirectory = "pay-api"
 
 [[package]]
@@ -2744,4 +2744,4 @@ watchdog = ["watchdog (>=2.3)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "6e5db6746e2595239525c0e1555ff070102411bc15ea1207c4ad6a542001d264"
+content-hash = "ab4b1ca647886bc593ceb22105d52d835098944021eddb13fec2923080d399e8"
