@@ -14,6 +14,7 @@
 """Service to manage Payment Account model related operations."""
 from __future__ import annotations
 
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any, Dict, List, Tuple
@@ -39,6 +40,7 @@ from pay_api.models import db
 from pay_api.models.payment_account import PaymentAccountSearchModel
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.cfs_service import CFSService
+from pay_api.services.cfs_service import PaymentSystem as PaymentSystemService
 from pay_api.services.distribution_code import DistributionCode
 from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.oauth_service import OAuthService
@@ -55,6 +57,18 @@ from pay_api.utils.util import (
     current_local_time, get_local_formatted_date, get_outstanding_txns_from_date, get_str_by_path, mask)
 
 from .flags import flags
+
+
+@dataclass
+class PaymentDetails:
+    """Payment details for the account."""
+
+    account_request: Dict[str, Any] = None
+    is_sandbox: bool = False
+    pay_system: PaymentSystemService = None
+    payment_account: PaymentAccountModel = None
+    payment_info: Dict[str, Any] = None
+    previous_payment: str = None
 
 
 class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-many-public-methods
@@ -226,6 +240,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         # pylint:disable=cyclic-import, import-outside-toplevel
         from pay_api.factory.payment_system_factory import PaymentSystemFactory
 
+        previous_payment = payment_account.payment_method
         payment_account.auth_account_id = str(account_request.get('accountId'))
 
         # If the payment method is CC, set the payment_method as DIRECT_PAY
@@ -245,7 +260,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
         if pad_tos_accepted_by := account_request.get('padTosAcceptedBy', None):
             payment_account.pad_tos_accepted_by = pad_tos_accepted_by
-            payment_account.pad_tos_accepted_date = datetime.now()
+            payment_account.pad_tos_accepted_date = datetime.now(tz=timezone.utc)
 
         if payment_info := account_request.get('paymentInfo'):
             billable = payment_info.get('billable', True)
@@ -263,66 +278,77 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
         if payment_method:
             pay_system = PaymentSystemFactory.create_from_payment_method(payment_method=payment_method)
-            cls._handle_payment_details(account_request, is_sandbox, pay_system, payment_account, payment_info)
+            details = PaymentDetails(account_request, is_sandbox, pay_system, payment_account,
+                                     payment_info, previous_payment)
+            cls._handle_payment_details(details)
             cls._check_and_update_statement_settings(payment_account)
         payment_account.save()
 
     @classmethod
-    def _handle_payment_details(cls, account_request, is_sandbox, pay_system, payment_account,
-                                payment_info):
+    def _handle_payment_details(cls, details: PaymentDetails):
         # pylint: disable=too-many-arguments
-        cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id,
-                                                                       payment_account.payment_method) \
-            if payment_account.id else None
-        if pay_system.get_payment_system_code() == PaymentSystem.PAYBC.value:
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(details.payment_account.id,
+                                                                       details.payment_account.payment_method) \
+            if details.payment_account.id else None
+        if details.pay_system.get_payment_system_code() == PaymentSystem.PAYBC.value:
             if cfs_account is None:
-                cfs_account = pay_system.create_account(  # pylint:disable=assignment-from-none
-                    identifier=payment_account.auth_account_id,
-                    contact_info=account_request.get('contactInfo'),
-                    payment_info=account_request.get('paymentInfo'),
-                    payment_method=payment_account.payment_method)
+                cfs_account = details.pay_system.create_account(  # pylint:disable=assignment-from-none
+                    identifier=details.payment_account.auth_account_id,
+                    contact_info=details.account_request.get('contactInfo'),
+                    payment_info=details.account_request.get('paymentInfo'),
+                    payment_method=details.payment_account.payment_method)
                 if cfs_account:
-                    cfs_account.payment_account = payment_account
+                    cfs_account.payment_account = details.payment_account
                     cfs_account.flush()
             else:
-                pay_system.update_account(name=payment_account.name, cfs_account=cfs_account, payment_info=payment_info)
+                details.pay_system.update_account(name=details.payment_account.name,
+                                                  cfs_account=cfs_account, payment_info=details.payment_info)
 
-            cls._update_pad_activation_date(cfs_account, is_sandbox, payment_account)
+            cls._update_pad_activation_date(cfs_account, details)
 
         # CGI is only hit for GOVM accounts, which use EJV and don't have any other payment methods for now.
-        elif pay_system.get_payment_system_code() == PaymentSystem.CGI.value:
+        elif details.pay_system.get_payment_system_code() == PaymentSystem.CGI.value:
             # if distribution code exists, put an end date as previous day and create new.
-            dist_code_svc: DistributionCode = DistributionCode.find_active_by_account_id(payment_account.id)
+            dist_code_svc = DistributionCode.find_active_by_account_id(details.payment_account.id)
             if dist_code_svc and dist_code_svc.distribution_code_id:
                 end_date: datetime = datetime.now() - timedelta(days=1)
                 dist_code_svc.end_date = end_date.date()
                 dist_code_svc.save()
 
             # Create distribution code details.
-            if revenue_account := payment_info.get('revenueAccount'):
+            if revenue_account := details.payment_info.get('revenueAccount'):
                 revenue_account.update({
-                    'accountId': payment_account.id,
-                    'name': payment_account.name
+                    'accountId': details.payment_account.id,
+                    'name': details.payment_account.name
                 })
                 DistributionCode.save_or_update(revenue_account)
-        # Intentionally leave CFS account active if it's not PAYBC, even if it's DRAWDOWN or INTERNAL.
-        # That way we can support multiple payment methods at once in the future.
+        else:
+            if flags.is_on('multiple-payment-methods', default=False) is True:
+                return
+            pad_cfs_account = CfsAccountModel.find_effective_by_payment_method(details.payment_account.id or 0,
+                                                                               PaymentMethod.PAD.value)
+            if pad_cfs_account:
+                # if its not PAYBC ,it means switching to either drawdown or internal.
+                # Future - change this so it's possible to have PAD and BCOL payments.
+                # If we don't set this to INACTIVE the PAD job will automatically switch our payment method for us.
+                pad_cfs_account.status = CfsAccountStatus.INACTIVE.value
+                pad_cfs_account.flush()
 
     @classmethod
     def _update_pad_activation_date(cls, cfs_account: CfsAccountModel,
-                                    is_sandbox: bool, payment_account: PaymentAccountModel):
+                                    details: PaymentDetails):
         """Update PAD activation date."""
-        is_pad = payment_account.payment_method == PaymentMethod.PAD.value
+        is_pad = details.payment_account.payment_method == PaymentMethod.PAD.value
         # If the account is created for sandbox env, then set the status to ACTIVE and set pad activation time to now
-        if is_pad and is_sandbox:
+        if is_pad and details.is_sandbox:
             cfs_account.status = CfsAccountStatus.ACTIVE.value
-            payment_account.pad_activation_date = datetime.now()
+            details.payment_account.pad_activation_date = datetime.now()
         # override payment method for since pad has 3 days wait period
         elif is_pad:
             effective_pay_method, activation_date = PaymentAccount._get_payment_based_on_pad_activation(
-                payment_account)
-            payment_account.pad_activation_date = activation_date
-            payment_account.payment_method = effective_pay_method
+                details.payment_account, details.previous_payment)
+            details.payment_account.pad_activation_date = activation_date
+            details.payment_account.payment_method = effective_pay_method
 
     @classmethod
     def save_account_fees(cls, auth_account_id: str, account_fee_request: dict):
@@ -384,24 +410,23 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         return cls.find_by_id(account.id)
 
     @staticmethod
-    def _get_payment_based_on_pad_activation(account: PaymentAccountModel) -> Tuple[str, str]:
+    def _get_payment_based_on_pad_activation(account: PaymentAccountModel, previous_payment: str) -> Tuple[str, str]:
         """Infer the payment method."""
         is_first_time_pad = not account.pad_activation_date
-        is_unlinked_premium = not account.bcol_account
         # default it. If ever was in PAD , no new activation date needed
         if is_first_time_pad:
-            new_payment_method = PaymentMethod.PAD.value if is_unlinked_premium else PaymentMethod.DRAWDOWN.value
+            new_payment_method = PaymentMethod.PAD.value if previous_payment is None else previous_payment
             new_activation_date = PaymentAccount._calculate_activation_date()
         else:
             # Handle repeated changing of pad to bcol ;then to pad again etc
             new_activation_date = account.pad_activation_date  # was already in pad ;no need to extend
             is_previous_pad_activated = new_activation_date < datetime.now(new_activation_date.tzinfo)
             if is_previous_pad_activated:
-                # was in PAD ; so no need of activation period wait time and no need to be in bcol..so use PAD again
+                # was in PAD ; so no need of activation period wait time and no need to be in BCOL/EFT..so use PAD again
                 new_payment_method = PaymentMethod.PAD.value
             else:
                 # was in pad and not yet activated ;but changed again within activation period
-                new_payment_method = PaymentMethod.PAD.value if is_unlinked_premium else PaymentMethod.DRAWDOWN.value
+                new_payment_method = PaymentMethod.PAD.value if previous_payment is None else previous_payment
 
         return new_payment_method, new_activation_date
 
@@ -506,7 +531,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         invoice_balance = invoice.total - (invoice.paid or 0)
 
         # Deduct credits and apply to the invoice
-        now = datetime.now()
+        now = datetime.now(tz=timezone.utc)
         for eft_credit in eft_credits:
             EFTCreditInvoiceLinkModel(
                 eft_credit_id=eft_credit.id,
@@ -551,23 +576,28 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         account_schema = PaymentAccountSchema()
         d = account_schema.dump(self._dao)
         # Add cfs account values based on role and payment method. For system roles, return bank details.
-        is_ob_or_pad = self.payment_method in (PaymentMethod.PAD.value, PaymentMethod.ONLINE_BANKING.value)
-        # to handle PAD 3 day period..UI needs bank details even if PAD is not activated
+        is_cfs_payment_method = self.payment_method in (PaymentMethod.PAD.value, PaymentMethod.ONLINE_BANKING.value,
+                                                        PaymentMethod.EFT.value)
+        # to handle PAD 3 day period.. UI needs bank details even if PAD is not activated
         is_future_pad = (self.payment_method == PaymentMethod.DRAWDOWN.value) and (self._is_pad_in_pending_activation())
-        show_cfs_details = is_ob_or_pad or is_future_pad
+        show_cfs_details = is_cfs_payment_method or is_future_pad
 
         if show_cfs_details:
+            # If it's PAD show future, if it's ONLINE BANKING or EFT show current.
+            cfs_info = CfsAccountModel.find_effective_by_payment_method(
+                self.id, PaymentMethod.PAD.value if is_future_pad else self.payment_method)
             cfs_account = {
-                'cfsAccountNumber': self.cfs_account,
-                'cfsPartyNumber': self.cfs_party,
-                'cfsSiteNumber': self.cfs_site,
-                'status': self.cfs_account_status
+                'cfsAccountNumber': cfs_info.cfs_account,
+                'cfsPartyNumber': cfs_info.cfs_party,
+                'cfsSiteNumber': cfs_info.cfs_site,
+                'paymentMethod': cfs_info.payment_method,
+                'status': cfs_info.status
             }
             if user.is_system() or user.can_view_bank_info():
                 mask_len = 0 if not user.can_view_bank_account_number() else current_app.config['MASK_LEN']
-                cfs_account['bankAccountNumber'] = mask(self.bank_account_number, mask_len)
-                cfs_account['bankInstitutionNumber'] = self.bank_number
-                cfs_account['bankTransitNumber'] = self.bank_branch_number
+                cfs_account['bankAccountNumber'] = mask(cfs_info.bank_account_number, mask_len)
+                cfs_account['bankInstitutionNumber'] = cfs_info.bank_number
+                cfs_account['bankTransitNumber'] = cfs_info.bank_branch_number
 
             d['cfsAccount'] = cfs_account
 
@@ -585,9 +615,11 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
 
     def _is_pad_in_pending_activation(self):
         """Find if PAD is awaiting activation."""
-        return self.pad_activation_date and self.pad_activation_date > datetime.now(self.pad_activation_date.tzinfo) \
-            and self.cfs_account_status in \
-            (CfsAccountStatus.PENDING.value, CfsAccountStatus.PENDING_PAD_ACTIVATION.value)
+        if self.pad_activation_date and self.pad_activation_date > datetime.now(self.pad_activation_date.tzinfo):
+            if future_cfs := CfsAccountModel.find_effective_by_payment_method(self.id, PaymentMethod.PAD.value):
+                return future_cfs.status in \
+                    (CfsAccountStatus.PENDING.value, CfsAccountStatus.PENDING_PAD_ACTIVATION.value)
+        return False
 
     def publish_account_mailer_event_on_creation(self):
         """Publish to account mailer message to send out confirmation email on creation."""
@@ -684,7 +716,7 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
         current_app.logger.debug('<delete_account')
         pay_account = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
         # 1 - Check if account have any credits
-        # 2 - Check if account have any PAD transactions done in last N (10) days.
+        # 2 - Check if account have any PAD/EFT transactions done in last N (10) days.
         if pay_account.credit and pay_account.credit > 0:
             raise BusinessException(Error.OUTSTANDING_CREDIT)
         cfs_account = CfsAccountModel.find_effective_by_payment_method(pay_account.id,
@@ -704,6 +736,11 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
             if pay_account.payment_method == PaymentMethod.PAD.value \
                     and cfs_status in [CfsAccountStatus.ACTIVE.value, CfsAccountStatus.PENDING_PAD_ACTIVATION.value]:
                 CFSService.update_site_receipt_method(cfs_account, receipt_method=RECEIPT_METHOD_PAD_STOP)
+            cfs_account.save()
+
+        # Make all other CFS accounts inactive, ONLINE BANKING, EFT etc.
+        for cfs_account in CfsAccountModel.find_by_account_id(pay_account.id):
+            cfs_account.status = CfsAccountStatus.INACTIVE.value
             cfs_account.save()
 
         if pay_account.statement_notification_enabled:

@@ -18,6 +18,7 @@ from datetime import datetime, timedelta
 from flask import current_app
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
+from pay_api.services.flags import flags
 from pay_api.utils.enums import CfsAccountStatus, PaymentMethod
 from sbc_common_components.utils.enums import QueueMessageTypes
 
@@ -53,8 +54,9 @@ class ActivatePadAccountTask:  # pylint: disable=too-few-public-methods
             if is_activation_period_over:
                 pending_account.status = CfsAccountStatus.ACTIVE.value
                 pending_account.save()
-                # If account was in another payment method, update it to pad
-                if pay_account.payment_method != PaymentMethod.PAD.value:
-                    pay_account.payment_method = PaymentMethod.PAD.value
-                    pay_account.save()
+                if flags.is_on('multiple-payment-methods', default=False) is False:
+                    # If account was in another payment method, update it to pad
+                    if pay_account.payment_method != PaymentMethod.PAD.value:
+                        pay_account.payment_method = PaymentMethod.PAD.value
+                        pay_account.save()
                 mailer.publish_mailer_events(QueueMessageTypes.CONFIRMATION_PERIOD_OVER.value, pay_account)

@@ -350,7 +350,7 @@ def test_premium_account_update_bcol_pad(session, client, jwt, app):
     rv = client.put(f'/api/v1/accounts/{auth_account_id}', data=json.dumps(pad_account_details),
                     headers=headers)
 
-    assert rv.status_code == 202
+    assert rv.status_code == 200
 
     assert rv.json.get('futurePaymentMethod') == PaymentMethod.PAD.value
     assert rv.json.get('bankTransitNumber') == pad_account_details.get('bankTransitNumber')
