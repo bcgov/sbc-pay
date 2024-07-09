@@ -12,7 +12,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from flask import request
 from flask_admin.contrib import sqla
 
 from admin import keycloak
@@ -69,6 +68,6 @@ class SecuredView(sqla.ModelView):
         if not self.connected:
             self.connected = True
             kc = keycloak.Keycloak(None)
-            return kc.get_redirect_url(request.url)
+            return kc.get_redirect_url()
 
         return 'not authorized'
