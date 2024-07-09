@@ -96,6 +96,7 @@ class _Config():  # pylint: disable=too-few-public-methods
     SESSION_TYPE = 'cachelib'
     SESSION_SERIALIZATION_FORMAT = 'json'
     SESSION_CACHELIB = FileSystemCache(threshold=500, cache_dir='/tmp/sessions')
+    CACHE_TYPE = 'simple'
 
     TESTING = False
     DEBUG = True
