@@ -329,7 +329,7 @@ class CreateInvoiceTask:  # pylint:disable=too-few-public-methods
         """Return EFT accounts."""
         invoice_subquery = db.session.query(InvoiceModel.payment_account_id) \
             .filter(InvoiceModel.payment_method_code == PaymentMethod.EFT.value) \
-            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.APPROVED.value).subquery()
+            .filter(InvoiceModel.invoice_status_code == InvoiceStatus.CREATED.value).subquery()
 
         eft_accounts: List[PaymentAccountModel] = db.session.query(PaymentAccountModel) \
             .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
