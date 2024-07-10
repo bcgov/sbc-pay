@@ -12,6 +12,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
+from flask import redirect, request, session, url_for
 import flask_oidc
 
 
@@ -39,26 +40,24 @@ class Keycloak:
 
     def has_access(self, role='admin_view') -> bool:
         """Determine whether or not the user is authorized to use the application. True if the user have role."""
-        token = self._oidc.get_access_token()
-        if not token:
+        if not self._oidc.get_access_token():
             return False
 
-        token_info = self._oidc._get_token_info(token)  # pylint: disable=protected-access
-        if not token_info['roles']:
+        if not session['oidc_auth_profile']['roles']:
             return False
 
-        roles_ = token_info['roles']
+        roles_ = session['oidc_auth_profile']['roles']
         access = role in roles_
 
         return access
 
-    def get_redirect_url(self, request_url: str) -> str:
+    def get_redirect_url(self) -> str:
         """
         Get the redirect URL that is used to transfer the browser to the identity provider.
 
         :rtype: object
         """
-        return self._oidc.redirect_to_auth_server(request_url)
+        return redirect(url_for('oidc_auth.login', next=request.url))
 
     def get_username(self) -> str:
         """Get the username for the currently logged in user."""
