@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://bcrs.gov.bc.ca/.well_known/schemas/refund_shortname",
+  "type": "object",
+  "title": "Refund",
+  "required":[
+    "short_name_id", "refund_amount", "cas_supplier_number", "refund_email"
+  ],
+  "properties":{
+    "short_name_id":{
+      "$id":"#/properties/short_name_id",
+      "type":"string",
+      "title":"Short Name Id",
+      "description":"short name id.",
+      "default":"",
+      "examples":[
+        "24"
+      ]
+    },
+    "refund_amount":{
+      "$id":"#/properties/refund_amount",
+      "type":"number",
+      "title":"Refund Amount",
+      "description":"refund amount.",
+      "default":"",
+      "examples":[
+        10
+      ]
+    },
+    "cas_supplier_number":{
+      "$id":"#/properties/cas_supplier_number",
+      "type":"string",
+      "title":"CAS Supplier Number",
+      "description":"CAS supplier number.",
+      "default":"",
+      "examples":[
+        "22901"
+      ]
+    },
+    "refund_email":{
+      "$id":"#/properties/refund_email",
+      "type":"string",
+      "title":"Refund Email",
+      "description":"refund email.",
+      "default":"",
+      "examples":[
+        "test@gmail.com"
+      ]
+    },
+    "comment":{
+      "$id":"#/properties/comment",
+      "type":"string",
+      "title":"Comment",
+      "description":"comment.",
+      "default":"",
+      "examples":[
+        "for comment test"
+      ]
+    }
+  }
+}

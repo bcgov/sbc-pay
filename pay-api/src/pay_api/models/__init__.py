@@ -33,6 +33,7 @@ from .eft_file import EFTFile
 from .eft_gl_transfers import EFTGLTransfer
 from .eft_process_status_code import EFTProcessStatusCode
 from .eft_short_names import EFTShortnames, EFTShortnameSchema, EFTShortnameSummarySchema
+from .eft_refund import EFTRefund
 from .eft_short_name_links import EFTShortnameLinks, EFTShortnameLinkSchema
 from .eft_transaction import EFTTransaction, EFTTransactionSchema
 from .ejv_file import EjvFile

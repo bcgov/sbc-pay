@@ -18,12 +18,15 @@ from typing import Any, Dict, List
 from flask import current_app
 
 from pay_api.models import CfsAccount as CfsAccountModel
+from pay_api.models import EFTRefund as EFTRefundModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import CfsAccountStatus, InvoiceReferenceStatus, PaymentMethod, PaymentStatus, PaymentSystem
+from pay_api.utils.enums import CfsAccountStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, PaymentMethod, PaymentStatus, PaymentSystem
+from pay_api.utils.user_context import user_context
+from pay_api.utils.util import get_str_by_path
 
 from .deposit_service import DepositService
 from .invoice import Invoice
@@ -134,3 +137,17 @@ class EftService(DepositService):
                                              invoice_id=invoice.id,
                                              receipt_number=payment.receipt_number)
         return receipt
+
+    @classmethod
+    @user_context
+    def create_shortname_refund(cls, request: Dict[str, str], **kwargs) -> Dict[str, str]:
+        """Create refund."""
+        current_app.logger.debug(f"Starting shortname refund : {get_str_by_path(request, 'shortname_id')}")
+
+        refund: EFTRefundModel = EFTRefundModel(short_name_id=get_str_by_path(request, 'shortname_id'),
+                                                refund_amount=get_str_by_path(request, 'refund_amount'),
+                                                cas_supplier_number=get_str_by_path(request, 'cas_supplier_number'),
+                                                refund_email=get_str_by_path(request, 'refund_email'),
+                                                comment=get_str_by_path(request, 'comment'))
+        refund.status = EFTCreditInvoiceStatus.PENDING_REFUND
+        refund.save()
