@@ -150,6 +150,8 @@ class PaymentSystemService(ABC):  # pylint: disable=too-many-instance-attributes
             # Note NSF (Account Unlocking) is paid using DIRECT_PAY - CC flow, not PAD.
             current_app.logger.warning(f'Account {payment_account.id} is frozen, rejecting invoice creation')
             raise BusinessException(Error.PAD_CURRENTLY_NSF)
+        if Invoice.has_overdue_invoices(payment_account.id):
+            raise BusinessException(Error.EFT_INVOICES_OVERDUE)
 
     @staticmethod
     def _release_payment(invoice: Invoice):

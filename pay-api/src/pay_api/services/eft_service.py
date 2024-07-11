@@ -56,6 +56,7 @@ class EftService(DepositService):
     def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
                        **kwargs) -> None:
         """Do nothing here, we create invoice references on the create CFS_INVOICES job."""
+        self.ensure_no_payment_blockers(payment_account)
 
     def apply_credit(self,
                      invoice: Invoice,
