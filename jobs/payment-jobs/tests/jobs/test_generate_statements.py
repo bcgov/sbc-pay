@@ -65,7 +65,7 @@ def test_statements(session):
     )
     StatementTask.generate_statements()
 
-    statements = Statement.get_account_statements(auth_account_id=bcol_account.auth_account_id, page=1, limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=bcol_account.auth_account_id, page=1, limit=100)
     assert statements is not None
     first_statement_id = statements[0][0].id
     invoices = StatementInvoices.find_all_invoices_for_statement(first_statement_id)
@@ -76,7 +76,7 @@ def test_statements(session):
     # Override computes for the target date, not the previous date like above.
     StatementTask.generate_statements([(datetime.utcnow() - timedelta(days=1)).strftime('%Y-%m-%d')])
 
-    statements = Statement.get_account_statements(auth_account_id=bcol_account.auth_account_id, page=1, limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=bcol_account.auth_account_id, page=1, limit=100)
     assert statements is not None
     invoices = StatementInvoices.find_all_invoices_for_statement(statements[0][0].id)
     assert invoices is not None
@@ -108,7 +108,7 @@ def test_statements_for_empty_results(session):
 
     StatementTask.generate_statements()
 
-    statements = Statement.get_account_statements(auth_account_id=bcol_account.auth_account_id, page=1, limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=bcol_account.auth_account_id, page=1, limit=100)
     assert statements is not None
     invoices = StatementInvoices.find_all_invoices_for_statement(statements[0][0].id)
     assert len(invoices) == 0
@@ -159,7 +159,7 @@ def test_bcol_weekly_to_eft_statement(session):
         StatementTask.generate_statements()
 
     # Validate there are no invoices associated with this statement
-    statements = Statement.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
     assert statements is not None
     assert len(statements[0]) == 2
     first_statement_id = statements[0][0].id
@@ -178,7 +178,7 @@ def test_bcol_weekly_to_eft_statement(session):
     # Regenerate monthly statement using date override - it will clean up the previous empty monthly statement first
     StatementTask.generate_statements([(generate_date - timedelta(days=1)).strftime('%Y-%m-%d')])
 
-    statements = Statement.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
 
     assert statements is not None
     assert len(statements[0]) == 2  # Should still be 2 statements as the previous empty one should be removed
@@ -235,7 +235,7 @@ def test_bcol_monthly_to_eft_statement(session):
         StatementTask.generate_statements()
 
     # Validate there are no invoices associated with this statement
-    statements = Statement.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
     assert statements is not None
     assert len(statements[0]) == 2
     first_statement_id = statements[0][0].id
@@ -254,7 +254,7 @@ def test_bcol_monthly_to_eft_statement(session):
     # Regenerate monthly statement using date override - it will clean up the previous empty monthly statement first
     StatementTask.generate_statements([(generate_date - timedelta(days=1)).strftime('%Y-%m-%d')])
 
-    statements = Statement.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
 
     assert statements is not None
     assert len(statements[0]) == 2  # Should still be 2 statements as the previous empty one should be removed

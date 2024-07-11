@@ -59,11 +59,11 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
         3. Apply the receipts to the invoices.
         4. Notify mailer
         """
-        eft_short_names: List[EFTShortnameInfo] = cls._get_eft_short_names_by_status(EFTShortnameStatus.LINKED.value)
+        eft_short_names = cls._get_eft_short_names_by_status(EFTShortnameStatus.LINKED.value)
         for eft_short_name in eft_short_names:
             try:
                 current_app.logger.debug(f'Linking Electronic Funds Transfer: {eft_short_name.id}')
-                payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
+                payment_account = PaymentAccountModel.find_by_auth_account_id(
                     eft_short_name.auth_account_id)
                 cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(payment_account.id,
                                                                                          PaymentMethod.EFT.value)
@@ -182,10 +182,11 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
         current_app.logger.info(
             f'Applying electronic funds transfer to pending invoices: {eft_short_name.id}')
 
-        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
+        payment_account = PaymentAccountModel.find_by_auth_account_id(
             eft_short_name.auth_account_id)
 
-        cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(payment_account.id, PaymentMethod.EFT)
+        cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(payment_account.id,
+                                                                                 PaymentMethod.EFT.value)
         invoices = EFTShortNamesService.get_invoices_owing(eft_short_name.auth_account_id)
 
         current_app.logger.info(f'Found {len(invoices)} to apply receipt')

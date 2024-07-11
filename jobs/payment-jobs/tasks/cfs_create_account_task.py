@@ -108,6 +108,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                                                               site_number=pending_account.cfs_site,
                                                               payment_info=payment_info)
                 pending_account.payment_instrument_number = bank_details.get('payment_instrument_number', None)
+                pending_account.payment_method = PaymentMethod.PAD.value
             else:  # It's a new account, now create
                 # If the account have banking information, then create a PAD account else a regular account.
                 if pending_account.bank_number and pending_account.bank_branch_number \
@@ -116,6 +117,7 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                                                                         contact_info=contact_info,
                                                                         payment_info=payment_info,
                                                                         receipt_method=RECEIPT_METHOD_PAD_DAILY)
+                    pending_account.payment_method = PaymentMethod.PAD.value
                 else:
                     cfs_account_details = CFSService.create_cfs_account(identifier=pay_account.auth_account_id,
                                                                         contact_info=contact_info,
@@ -126,7 +128,8 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                 pending_account.cfs_account = cfs_account_details.get('account_number')
                 pending_account.cfs_site = cfs_account_details.get('site_number')
                 pending_account.cfs_party = cfs_account_details.get('party_number')
-                pending_account.payment_method = pay_account.payment_method
+                if not pending_account.payment_method:
+                    pending_account.payment_method = pay_account.payment_method
 
         except Exception as e:  # NOQA # pylint: disable=broad-except
             is_user_error = False
