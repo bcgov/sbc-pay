@@ -28,10 +28,11 @@ def test_eft_refund_defaults(session):
     short_name = EFTShortnames(short_name='Test Short Name')
     db.session.add(short_name)
     db.session.commit()
+    short_name_id = short_name.id
 
     # Create and save the EFT refund
     eft_refund = EFTRefundModel()
-    eft_refund.short_name_id = 1
+    eft_refund.short_name_id = short_name_id
     eft_refund.auth_account_id = '123'
     eft_refund.refund_amount = 100.00
     eft_refund.cas_supplier_number = 'SUP123456'
@@ -61,6 +62,7 @@ def test_eft_refund_all_attributes(session):
     short_name = EFTShortnames(short_name='Test Short Name')
     db.session.add(short_name)
     db.session.commit()
+    short_name_id = short_name.id
 
     refund_amount = 150.00
     cas_supplier_number = 'SUP654321'
@@ -72,7 +74,7 @@ def test_eft_refund_all_attributes(session):
     auth_account_id = '123'
 
     eft_refund = EFTRefundModel()
-    eft_refund.short_name_id = 1
+    eft_refund.short_name_id = short_name_id
     eft_refund.refund_amount = refund_amount
     eft_refund.cas_supplier_number = cas_supplier_number
     eft_refund.refund_email = refund_email
