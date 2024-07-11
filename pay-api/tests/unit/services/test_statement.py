@@ -711,13 +711,13 @@ def test_statement_various_payment_methods_history(db, app):
 
     def time_set():
         return time_setter
-    
+
     changed_column.default = ColumnDefault(time_set)
     with app.app_context():
         # db.session.commit = db.session.flush
         account: PaymentAccountService = PaymentAccountService.create(
             get_premium_account_payload(payment_method=PaymentMethod.DRAWDOWN.value))
-        
+
         statement_settings: StatementSettingsModel = StatementSettingsModel \
             .find_active_settings(str(account.auth_account_id), datetime.today())
 
@@ -730,7 +730,7 @@ def test_statement_various_payment_methods_history(db, app):
         ).flush()
 
         time_setter = datetime(year=2024, month=1, day=2, hour=12)
-        # Change to PAD, but it will automatically move back to DRAWDOWN and create an intermediate row that we want to filter.
+        # Change to PAD, but it will move back to DRAWDOWN and create an intermediate row that we want to filter.
         account = PaymentAccountService.update(account.auth_account_id, get_unlinked_pad_account_payload())
 
         time_setter = datetime(year=2024, month=1, day=3, hour=12)
@@ -742,7 +742,7 @@ def test_statement_various_payment_methods_history(db, app):
         time_setter = datetime(year=2024, month=1, day=4, hour=12)
         # History row wont be generated for this line:
         account = PaymentAccountService.update(account.auth_account_id, get_basic_account_payload())
-        
+
         # Statement payment methods use the statement from_date to track historical payment methods
         # this shows the relevant or transition of payment methods for that statement in particular interim statements
         statement = StatementService.find_by_id(statement.id)
@@ -750,7 +750,7 @@ def test_statement_various_payment_methods_history(db, app):
         assert 'DRAWDOWN' in payment_methods
         assert 'PAD' in payment_methods
         assert 'DIRECT_PAY' in payment_methods
-        
+
         statement.from_date = datetime(2024, 1, 2, 12, 0).date()
         statement.save()
         statement = StatementService.find_by_id(statement.id)

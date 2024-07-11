@@ -178,11 +178,11 @@ class Statement:  # pylint:disable=too-many-instance-attributes
                     subquery.c.start_date != subquery.c.end_date,
                     or_(
                         and_(func.date(subquery.c.start_date) <= statement.from_date,
-                            statement.from_date <= func.date(subquery.c.end_date)),
+                             statement.from_date <= func.date(subquery.c.end_date)),
                         and_(func.date(subquery.c.start_date) <= statement.to_date,
-                            statement.to_date <= func.date(subquery.c.end_date)),
-                        and_(statement.from_date <= func.date(subquery.c.start_date), func.date(subquery.c.start_date) <=
-                            statement.to_date)
+                             statement.to_date <= func.date(subquery.c.end_date)),
+                        and_(statement.from_date <= func.date(subquery.c.start_date),
+                             func.date(subquery.c.start_date) <= statement.to_date)
                     )
                 )
             )
