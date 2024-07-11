@@ -734,7 +734,7 @@ def test_statement_various_payment_methods_history(db, app):
         account = PaymentAccountService.update(account.auth_account_id, get_unlinked_pad_account_payload())
 
         time_setter = datetime(year=2024, month=1, day=3, hour=12)
-        # Change to PAD again, this time with the activation date set in the past.
+        # Change to PAD again, this time with the activation date set in the past, so it will go through.
         account.pad_activation_date = datetime.min
         account.flush()
         account = PaymentAccountService.update(account.auth_account_id, get_unlinked_pad_account_payload())
@@ -778,6 +778,7 @@ def test_statement_various_payment_methods_history(db, app):
         assert 'DIRECT_PAY' in payment_methods
 
         # Should just be DRAWDOWN as DIRECT_PAY was never active during this statement period
+        # Make sure our PAD "blip" is filtered out.
         statement.from_date = datetime(2024, 1, 1, 12, 0).date()
         statement.to_date = datetime(2024, 1, 2, 12, 0).date()
         statement.save()
