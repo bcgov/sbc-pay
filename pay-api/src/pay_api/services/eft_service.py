@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Service to manage CFS EFT Payments."""
+import os
 from datetime import datetime
 from typing import Any, Dict, List
 
 from flask import current_app
+from jinja2 import Environment, FileSystemLoader
 
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import EFTRefund as EFTRefundModel
@@ -24,7 +26,10 @@ from pay_api.models import InvoiceReference as InvoiceReferenceModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
-from pay_api.utils.enums import CfsAccountStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, PaymentMethod, PaymentStatus, PaymentSystem
+from pay_api.models.eft_refund_email_list import EFTRefundEmailList
+from pay_api.services.email_service import send_email
+from pay_api.utils.enums import (
+    CfsAccountStatus, EFTCreditInvoiceStatus, InvoiceReferenceStatus, PaymentMethod, PaymentStatus, PaymentSystem)
 from pay_api.utils.user_context import user_context
 from pay_api.utils.util import get_str_by_path
 
@@ -141,13 +146,41 @@ class EftService(DepositService):
     @classmethod
     @user_context
     def create_shortname_refund(cls, request: Dict[str, str], **kwargs) -> Dict[str, str]:
+        # pylint: disable=too-many-locals
         """Create refund."""
         current_app.logger.debug(f"Starting shortname refund : {get_str_by_path(request, 'shortname_id')}")
+        shortname = get_str_by_path(request, 'shortname')
+        amount = get_str_by_path(request, 'refund_amount')
+        comment = get_str_by_path(request, 'refund_amount')
+        auth_id = get_str_by_path(request, 'auth_account_id')
 
         refund: EFTRefundModel = EFTRefundModel(short_name_id=get_str_by_path(request, 'shortname_id'),
-                                                refund_amount=get_str_by_path(request, 'refund_amount'),
+                                                auth_account_id=auth_id,
+                                                refund_amount=amount,
                                                 cas_supplier_number=get_str_by_path(request, 'cas_supplier_number'),
                                                 refund_email=get_str_by_path(request, 'refund_email'),
-                                                comment=get_str_by_path(request, 'comment'))
+                                                comment=comment)
         refund.status = EFTCreditInvoiceStatus.PENDING_REFUND
+        recipients = EFTRefundEmailList.find_all_emails()
+
+        subject = f'Pending Refund Request for Short Name {shortname}'
+
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root_dir = os.path.dirname(current_dir)
+        templates_dir = os.path.join(project_root_dir, 'templates')
+        env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
+        template = env.get_template('payment_reconciliation_failed_email.html')
+
+        url = (f"{current_app.config.get('AUTH_WEB_URL')}/account/"
+               f'{auth_id}/settings/transactions')
+
+        params = {
+            'shortname': shortname,
+            'refundAmount': amount,
+            'comment': comment,
+            'url': url
+        }
+        html_body = template.render(params)
+
+        send_email(recipients, subject, html_body, **kwargs)
         refund.save()

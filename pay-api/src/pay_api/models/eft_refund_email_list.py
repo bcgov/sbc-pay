@@ -1,4 +1,4 @@
-# Copyright © 2023 Province of British Columbia
+# Copyright © 2024 Province of British Columbia
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,19 +11,19 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""Model to handle EFT file processing."""
-from datetime import datetime
+"""Model to handle all operations related to Fee related to accounts."""
+from __future__ import annotations
 
-from sqlalchemy import ForeignKey
+from sql_versioning import Versioned
 
 from .base_model import BaseModel
 from .db import db
 
 
-class EFTRefund(BaseModel):  # pylint: disable=too-many-instance-attributes
-    """This class manages the file data for EFT transactions."""
+class EFTRefundEmailList(Versioned, BaseModel):
+    """This class manages all of the Expense Authority emails."""
 
-    __tablename__ = 'eft_refunds'
+    __tablename__ = 'eft_refund_email_list'
     # this mapper is used so that new and old versions of the service can be run simultaneously,
     # making rolling upgrades easier
     # This is used by SQLAlchemy to explicitly define which fields we're interested
@@ -37,29 +37,19 @@ class EFTRefund(BaseModel):  # pylint: disable=too-many-instance-attributes
     __mapper_args__ = {
         'include_properties': [
             'id',
-            'auth_account_id',
-            'short_name_id',
-            'refund_amount',
-            'cas_supplier_number',
-            'created_on',
-            'refund_email',
-            'comment',
-            'status',
-            'updated_by',
-            'updated_by_name',
-            'updated_on'
+            'first_name',
+            'last_name',
+            'email'
         ]
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    auth_account_id = db.Column(db.String(25), nullable=False)
-    short_name_id = db.Column(db.Integer, ForeignKey('eft_short_names.id'), nullable=False)
-    refund_amount = db.Column(db.Numeric(), nullable=False)
-    cas_supplier_number = db.Column(db.String(), nullable=False)
-    created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
-    refund_email = db.Column(db.String(100), nullable=False)
-    comment = db.Column(db.String(), nullable=False)
-    status = db.Column(db.String(25), nullable=True)
-    updated_by = db.Column('updated_by', db.String(100), nullable=True)
-    updated_by_name = db.Column('updated_by_name', db.String(100), nullable=True)
-    updated_on = db.Column('updated_on', db.DateTime, nullable=True)
+    first_name = db.Column(db.String(25), nullable=False)
+    last_name = db.Column(db.String(25), nullable=False)
+    email = db.Column(db.String(25), nullable=False)
+
+    @classmethod
+    def find_all_emails(cls):
+        """Return by email_list."""
+        email_list = cls.query.with_entities(cls.email).all()
+        return [email[0] for email in email_list]

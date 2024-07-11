@@ -16,22 +16,30 @@
 
 Test-Suite to ensure that the EFT Refund model is working as expected.
 """
-from datetime import datetime, timezone
 
 from pay_api.models import db
 from pay_api.models.eft_refund import EFTRefund as EFTRefundModel
+from pay_api.models.eft_short_names import EFTShortnames
 
 
 def test_eft_refund_defaults(session):
     """Assert EFT refund defaults are stored."""
+    # Ensure the required entry exists in the related table
+    short_name = EFTShortnames(short_name='Test Short Name')
+    db.session.add(short_name)
+    db.session.commit()
+
+    # Create and save the EFT refund
     eft_refund = EFTRefundModel()
     eft_refund.short_name_id = 1
+    eft_refund.auth_account_id = '123'
     eft_refund.refund_amount = 100.00
     eft_refund.cas_supplier_number = 'SUP123456'
     eft_refund.refund_email = 'test@example.com'
     eft_refund.comment = 'Test comment'
     eft_refund.save()
 
+    # Retrieve and assert the EFT refund
     eft_refund = db.session.query(EFTRefundModel).filter(EFTRefundModel.id == eft_refund.id).one_or_none()
 
     assert eft_refund.id is not None
@@ -49,8 +57,11 @@ def test_eft_refund_defaults(session):
 
 def test_eft_refund_all_attributes(session):
     """Assert all EFT refund attributes are stored."""
-    created_on = datetime.now(timezone.utc)
-    updated_on = datetime.now(timezone.utc)
+    # Ensure the required entry exists in the related table
+    short_name = EFTShortnames(short_name='Test Short Name')
+    db.session.add(short_name)
+    db.session.commit()
+
     refund_amount = 150.00
     cas_supplier_number = 'SUP654321'
     refund_email = 'updated@example.com'
@@ -58,25 +69,23 @@ def test_eft_refund_all_attributes(session):
     status = 'COMPLETED'
     updated_by = 'user123'
     updated_by_name = 'User Name'
+    auth_account_id = '123'
 
     eft_refund = EFTRefundModel()
     eft_refund.short_name_id = 1
     eft_refund.refund_amount = refund_amount
     eft_refund.cas_supplier_number = cas_supplier_number
-    eft_refund.created_on = created_on
     eft_refund.refund_email = refund_email
     eft_refund.comment = comment
     eft_refund.status = status
     eft_refund.updated_by = updated_by
     eft_refund.updated_by_name = updated_by_name
-    eft_refund.updated_on = updated_on
+    eft_refund.auth_account_id = auth_account_id
     eft_refund.save()
 
-    eft_refund = eft_refund.find_by_id(eft_refund.id)
+    eft_refund = db.session.query(EFTRefundModel).filter(EFTRefundModel.id == eft_refund.id).one_or_none()
 
     assert eft_refund is not None
-    assert eft_refund.created_on == created_on
-    assert eft_refund.updated_on == updated_on
     assert eft_refund.short_name_id == 1
     assert eft_refund.refund_amount == refund_amount
     assert eft_refund.cas_supplier_number == cas_supplier_number

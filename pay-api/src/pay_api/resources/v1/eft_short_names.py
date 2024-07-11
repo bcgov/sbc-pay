@@ -17,7 +17,9 @@ from http import HTTPStatus
 from flask import Blueprint, current_app, jsonify, request
 from flask_cors import cross_origin
 
-from pay_api.exceptions import BusinessException
+from pay_api.exceptions import BusinessException, error_to_response
+from pay_api.schemas import utils as schema_utils
+from pay_api.services.eft_service import EftService
 from pay_api.services.eft_short_names import EFTShortnames as EFTShortnameService
 from pay_api.services.eft_short_name_summaries import EFTShortnameSummaries as EFTShortnameSummariesService
 from pay_api.services.eft_short_names import EFTShortnamesSearch
@@ -27,6 +29,7 @@ from pay_api.utils.auth import jwt as _jwt
 from pay_api.utils.endpoints_enums import EndpointEnum
 from pay_api.utils.enums import Role
 from pay_api.utils.util import string_to_date, string_to_decimal, string_to_int
+from pay_api.utils.errors import Error
 
 bp = Blueprint('EFT_SHORT_NAMES', __name__, url_prefix=f'{EndpointEnum.API_V1.value}/eft-shortnames')
 
@@ -189,3 +192,24 @@ def delete_eft_shortname_link(short_name_id: int, short_name_link_id: int):
 
     current_app.logger.debug('>delete_eft_shortname_link')
     return jsonify(response), status
+
+
+@bp.route('/shortname_refund', methods=['POST', 'OPTIONS'])
+@cross_origin(origins='*', methods=['POST'])
+@_jwt.has_one_of_roles(
+    [Role.SYSTEM.value, Role.MANAGE_EFT.value])
+def post_shortname_refund():
+    """Create the Refund for the Shortname."""
+    current_app.logger.info('<post_shortname_refund')
+    request_json = request.get_json(silent=True)
+    try:
+        valid_format, errors = schema_utils.validate(request_json, 'refund_shortname') if \
+            request_json else (True, None)
+        if not valid_format:
+            return error_to_response(Error.INVALID_REQUEST, invalid_params=schema_utils.serialize(errors))
+
+        response = EftService.create_shortname_refund(request_json)
+    except BusinessException as exception:
+        return exception.response()
+    current_app.logger.debug('>post_fas_refund')
+    return jsonify(response), HTTPStatus.ACCEPTED

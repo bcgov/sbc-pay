@@ -69,6 +69,7 @@ from .statement_recipients import StatementRecipients, StatementRecipientsSchema
 from .statement_settings import StatementSettings, StatementSettingsSchema
 from .transaction_status_code import TransactionStatusCode, TransactionStatusCodeSchema
 from .comment import Comment, CommentSchema
+from .eft_refund_email_list import EFTRefundEmailList
 
 
 event.listen(Engine, 'before_cursor_execute', DBTracing.query_tracing)

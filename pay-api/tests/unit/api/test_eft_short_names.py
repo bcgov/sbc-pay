@@ -32,6 +32,7 @@ from pay_api.models import EFTTransaction as EFTTransactionModel
 from pay_api.models import Payment as PaymentModel
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import Receipt as ReceiptModel
+from pay_api.services.eft_service import EftService
 from pay_api.utils.enums import (
     EFTFileLineType, EFTProcessStatus, EFTShortnameStatus, InvoiceStatus, PaymentMethod, PaymentStatus, Role,
     StatementFrequency)
@@ -850,3 +851,42 @@ def test_apply_eft_short_name_credits(session, client, jwt, app):
     assert payment.paid_amount == invoice_2_paid
 
     assert not invoice_2.references
+
+
+def test_post_shortname_refund_success(client, mocker, jwt, app):
+    """Test successful creation of a shortname refund."""
+    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    mock_create_shortname_refund = mocker.patch.object(EftService, 'create_shortname_refund')
+    mock_create_shortname_refund.return_value = {'refundId': '12345'}
+
+    data = {
+                'short_name_id': '12345',
+                'auth_account_id': '123',
+                'refund_amount': 100.00,
+                'cas_supplier_number': 'CAS123',
+                'refund_email': 'test@example.com',
+                'comment': 'Refund for overpayment'
+            }
+
+    rv = client.post('/api/v1/eft-shortnames/shortname_refund', headers=headers, json=data)
+
+    assert rv.status_code == 202
+    assert rv.json == {'refundId': '12345'}
+    mock_create_shortname_refund.assert_called_once_with(data)
+
+
+def test_post_shortname_refund_invalid_request(client, mocker, jwt, app):
+    """Test handling of invalid request format."""
+    data = {
+        'invalid_field': 'invalid_value'
+    }
+
+    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
+    headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
+
+    rv = client.post('/api/v1/eft-shortnames/shortname_refund', headers=headers, json=data)
+
+    assert rv.status_code == 400
+    assert 'INVALID_REQUEST' in rv.json['type']

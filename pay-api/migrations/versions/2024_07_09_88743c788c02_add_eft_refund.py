@@ -26,11 +26,10 @@ def upgrade():
                     sa.Column('created_on', sa.DateTime(), nullable=False),
                     sa.Column('refund_email', sa.String(length=100), nullable=False),
                     sa.Column('comment', sa.String(), nullable=True),
-                    sa.Column('status', sa.String(length=25), nullable=False),
+                    sa.Column('status', sa.String(length=25), nullable=True),
                     sa.Column('updated_by', sa.String(length=100), nullable=True),
                     sa.Column('updated_by_name', sa.String(length=100), nullable=True),
                     sa.Column('updated_on', sa.DateTime(), nullable=True),
-                    sa.Column('version', sa.Integer(), nullable=False),
                     sa.ForeignKeyConstraint(['short_name_id'], ['eft_short_names.id'], ),
                     sa.PrimaryKeyConstraint('id'),
                     sqlite_autoincrement=True
