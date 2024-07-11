@@ -65,7 +65,8 @@ def test_statements(session):
     )
     StatementTask.generate_statements()
 
-    statements = StatementService.get_account_statements(auth_account_id=bcol_account.auth_account_id, page=1, limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=bcol_account.auth_account_id,
+                                                         page=1, limit=100)
     assert statements is not None
     first_statement_id = statements[0][0].id
     invoices = StatementInvoices.find_all_invoices_for_statement(first_statement_id)
@@ -76,7 +77,8 @@ def test_statements(session):
     # Override computes for the target date, not the previous date like above.
     StatementTask.generate_statements([(datetime.utcnow() - timedelta(days=1)).strftime('%Y-%m-%d')])
 
-    statements = StatementService.get_account_statements(auth_account_id=bcol_account.auth_account_id, page=1, limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=bcol_account.auth_account_id,
+                                                         page=1, limit=100)
     assert statements is not None
     invoices = StatementInvoices.find_all_invoices_for_statement(statements[0][0].id)
     assert invoices is not None
@@ -108,7 +110,8 @@ def test_statements_for_empty_results(session):
 
     StatementTask.generate_statements()
 
-    statements = StatementService.get_account_statements(auth_account_id=bcol_account.auth_account_id, page=1, limit=100)
+    statements = StatementService.get_account_statements(auth_account_id=bcol_account.auth_account_id,
+                                                         page=1, limit=100)
     assert statements is not None
     invoices = StatementInvoices.find_all_invoices_for_statement(statements[0][0].id)
     assert len(invoices) == 0
