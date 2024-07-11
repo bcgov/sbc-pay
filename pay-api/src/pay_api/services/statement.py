@@ -138,7 +138,7 @@ class Statement:  # pylint:disable=too-many-instance-attributes
                 PaymentAccountModel.id,
                 PaymentAccountModel.payment_method,
                 PaymentAccountModel.version,
-                literal(None).label('end_date')
+                literal(datetime.max.date()).label('end_date')
             ).correlate(StatementModel)
             .where(
                 PaymentAccountModel.id == StatementModel.payment_account_id
@@ -163,8 +163,8 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             select(union_query.c.id,
                    union_query.c.payment_method,
                    union_query.c.version,
-                   func.lag(union_query.c.end_date)
-                   .over(order_by=union_query.c.version.asc())
+                   func.coalesce(func.lag(union_query.c.end_date)
+                                 .over(order_by=union_query.c.version.asc()), datetime.min.date())
                    .label('start_date'),
                    union_query.c.end_date)
             .order_by(union_query.c.version.asc())
@@ -175,13 +175,14 @@ class Statement:  # pylint:disable=too-many-instance-attributes
             .select_from(subquery)
             .where(
                 and_(
+                    subquery.c.start_date != subquery.c.end_date,
                     or_(
-                        subquery.c.start_date.is_(None),
-                        func.date(subquery.c.start_date) <= statement.from_date
-                    ),
-                    or_(
-                        subquery.c.end_date.is_(None),
-                        func.date(subquery.c.end_date) >= statement.from_date
+                        and_(func.date(subquery.c.start_date) <= statement.from_date,
+                            statement.from_date <= func.date(subquery.c.end_date)),
+                        and_(func.date(subquery.c.start_date) <= statement.to_date,
+                            statement.to_date <= func.date(subquery.c.end_date)),
+                        and_(statement.from_date <= func.date(subquery.c.start_date), func.date(subquery.c.start_date) <=
+                            statement.to_date)
                     )
                 )
             )
