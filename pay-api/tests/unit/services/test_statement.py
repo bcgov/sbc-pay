@@ -702,6 +702,7 @@ def test_statement_various_payment_methods_history(db, app):
     """Unit test to test various payment methods over the life of a statement."""
     # We aren't using the session fixture here because we want to test the history_cls
     # history_cls wont work on scoped session flush.
+    db.session.commit = db.session.flush
     # Freezegun etc doesn't work here.
     changed_column = [
         column for column in db.metadata.tables['payment_accounts_history'].columns._all_columns
