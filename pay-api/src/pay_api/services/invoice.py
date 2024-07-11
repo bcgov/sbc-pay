@@ -414,7 +414,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
             InvoiceModel.invoice_status_code == InvoiceStatus.OVERDUE.value,
             PaymentAccountModel.id == payment_account_id
         ).with_entities(True)
-        return query.first()[0] or False
+        return query.first() is not None
 
     @staticmethod
     @user_context
