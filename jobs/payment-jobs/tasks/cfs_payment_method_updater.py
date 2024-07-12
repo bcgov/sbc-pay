@@ -26,8 +26,6 @@ import aiohttp
 from sqlalchemy import event
 from sqlalchemy.orm import load_only
 
-from sql_versioning import versioned_session
-
 from flask import current_app
 
 from pay_api.models import db
@@ -83,6 +81,7 @@ def handle_site(task, json):
 async def get_sites(cfs_accounts: List[CfsAccountModel]):
     """Get sites for the cfs_accounts and update the payment method."""
     current_app.logger.info('Updating CFS account rows with payment method by fetching from CAS. This requires VPN.')
+    current_app.logger.warning('Make sure ACCOUNT_SECRET_KEY, CFS_CLIENT_ID, CFS_CLIENT_SECRET, CFS_BASE_URL are set.')
     current_app.logger.info('Getting access token.')
     try:
         access_token = CFSService.get_token().json().get('access_token')
@@ -140,8 +139,6 @@ def run_update():
                           )).filter(CfsAccountModel.cfs_account.is_not(None),
                                     CfsAccountModel.payment_method.is_(None)).all()
     asyncio.run(get_sites(cfs_accounts))
-    versioned_session(db.session)
-    current_app.logger.info('Restoring versioned session.')
 
 
 if __name__ == '__main__':
