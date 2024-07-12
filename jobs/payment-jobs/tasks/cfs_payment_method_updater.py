@@ -28,53 +28,18 @@ from sqlalchemy.orm import load_only
 
 from sql_versioning import versioned_session
 
-from flask import Flask, current_app
+from flask import current_app
 
-from pay_api.models import db, ma
+from pay_api.models import db
 from pay_api.models.cfs_account import CfsAccount as CfsAccountModel
 from pay_api.services.cfs_service import CFSService
 from pay_api.utils.enums import CfsAccountStatus, ContentType, PaymentMethod
 
-import sentry_sdk
 
-from sentry_sdk.integrations.flask import FlaskIntegration
-
-import config
+from tasks.cfs_bank_name_updater import create_app
 from utils.logger import setup_logging
 
 setup_logging(os.path.join(os.path.abspath(os.path.dirname(__file__)), 'logging.conf'))  # important to do this first
-
-
-def create_app(run_mode=os.getenv('FLASK_ENV', 'production')):
-    """Return a configured Flask App using the Factory method."""
-    app = Flask(__name__)
-
-    app.config.from_object(config.CONFIGURATION[run_mode])
-    # Configure Sentry
-    if str(app.config.get('SENTRY_ENABLE')).lower() == 'true':
-        if app.config.get('SENTRY_DSN', None):
-            sentry_sdk.init(
-                dsn=app.config.get('SENTRY_DSN'),
-                integrations=[FlaskIntegration()]
-            )
-    db.init_app(app)
-    ma.init_app(app)
-
-    register_shellcontext(app)
-
-    return app
-
-
-def register_shellcontext(app):
-    """Register shell context objects."""
-
-    def shell_context():
-        """Shell context objects."""
-        return {
-            'app': app
-        }  # pragma: no cover
-
-    app.shell_context_processor(shell_context)
 
 
 def remove_versioning():
@@ -135,8 +100,8 @@ async def get_sites(cfs_accounts: List[CfsAccountModel]):
         current_app.logger.info(f'Getting sites for {len(cfs_accounts)} accounts')
         for cfs_account in cfs_accounts:
             cfs_base: str = current_app.config.get('CFS_BASE_URL')
-            site_url = f'{
-                cfs_base}/cfs/parties/{cfs_account.cfs_party}/accs/{cfs_account.cfs_account}/sites/{cfs_account.cfs_site}/'
+            site_url = f'{cfs_base}/cfs/parties/{cfs_account.cfs_party}'
+            site_url += f'/accs/{cfs_account.cfs_account}/sites/{cfs_account.cfs_site}/'
             current_app.logger.info(f'Getting site: {site_url}')
             tasks.append(asyncio.create_task(session.get(site_url, headers=headers, timeout=2000)))
         tasks = await asyncio.gather(*tasks, return_exceptions=True)
@@ -172,7 +137,8 @@ def run_update():
                           CfsAccountModel.cfs_account,
                           CfsAccountModel.cfs_site,
                           CfsAccountModel.payment_method
-                          )).filter(CfsAccountModel.cfs_account.is_not(None), CfsAccountModel.payment_method.is_(None)).all()
+                          )).filter(CfsAccountModel.cfs_account.is_not(None),
+                                    CfsAccountModel.payment_method.is_(None)).all()
     asyncio.run(get_sites(cfs_accounts))
     versioned_session(db.session)
     current_app.logger.info('Restoring versioned session.')
