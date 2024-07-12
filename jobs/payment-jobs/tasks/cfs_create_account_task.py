@@ -100,6 +100,12 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                 cfs_account_details = CFSService.create_cfs_account(identifier=pay_account.auth_account_id,
                                                                     contact_info=contact_info,
                                                                     receipt_method=CFS_RCPT_EFT_WIRE)
+                
+                pending_account.payment_instrument_number = cfs_account_details.get('payment_instrument_number',
+                                                                                    None)
+                pending_account.cfs_account = cfs_account_details.get('account_number')
+                pending_account.cfs_site = cfs_account_details.get('site_number')
+                pending_account.cfs_party = cfs_account_details.get('party_number')
             elif pending_account.cfs_account and pending_account.cfs_party and pending_account.cfs_site:
                 # This means, PAD account details have changed. So update banking details for this CFS account
                 bank_details = CFSService.update_bank_details(name=pay_account.auth_account_id,
