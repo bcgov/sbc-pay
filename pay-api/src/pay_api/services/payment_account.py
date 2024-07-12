@@ -327,9 +327,8 @@ class PaymentAccount():  # pylint: disable=too-many-instance-attributes, too-man
                 return
             pad_cfs_account = CfsAccountModel.find_effective_by_payment_method(details.payment_account.id or 0,
                                                                                PaymentMethod.PAD.value)
-            if pad_cfs_account:
-                # if its not PAYBC ,it means switching to either drawdown or internal.
-                # Future - change this so it's possible to have PAD and BCOL payments.
+            if pad_cfs_account and pad_cfs_account.status in (CfsAccountStatus.PENDING.value,
+                                                              CfsAccountStatus.PENDING_PAD_ACTIVATION):
                 # If we don't set this to INACTIVE the PAD job will automatically switch our payment method for us.
                 pad_cfs_account.status = CfsAccountStatus.INACTIVE.value
                 pad_cfs_account.flush()
