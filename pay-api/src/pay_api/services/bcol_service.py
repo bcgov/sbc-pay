@@ -55,7 +55,7 @@ class BcolService(PaymentSystemService, OAuthService):
                                  f'Auth Account : {payment_account.auth_account_id}')
         user: UserContext = kwargs['user']
         force_non_staff_fee_code = 'force_non_staff_fee_code' in kwargs
-        pay_endpoint = current_app.config.get('BCOL_API_ENDPOINT') + '/payments'
+        pay_endpoint = current_app.config.get('BCOL_API_ENDPOINT') + 'payments'
         invoice_number = generate_transaction_number(invoice.id)
         corp_number = invoice.business_identifier or ''
         amount_excluding_txn_fees = sum(line.total for line in line_items)
