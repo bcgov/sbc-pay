@@ -100,7 +100,6 @@ class CreateAccountTask:  # pylint: disable=too-few-public-methods
                 cfs_account_details = CFSService.create_cfs_account(identifier=pay_account.auth_account_id,
                                                                     contact_info=contact_info,
                                                                     receipt_method=CFS_RCPT_EFT_WIRE)
-                
                 pending_account.payment_instrument_number = cfs_account_details.get('payment_instrument_number',
                                                                                     None)
                 pending_account.cfs_account = cfs_account_details.get('account_number')
