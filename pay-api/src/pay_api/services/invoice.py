@@ -408,16 +408,24 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         return invoices
 
     @staticmethod
+    def has_overdue_invoices(payment_account_id: int) -> bool:
+        """Check if the payment account has overdue invoices."""
+        query = InvoiceModel.query.filter(
+            InvoiceModel.invoice_status_code == InvoiceStatus.OVERDUE.value,
+            PaymentAccountModel.id == payment_account_id
+        ).with_entities(True)
+        return query.first() is not None
+
+    @staticmethod
     @user_context
     def create_invoice_pdf(identifier: int, **kwargs) -> Tuple:
         """Find invoice by id."""
         invoice_dao: InvoiceModel = InvoiceModel.find_by_id(identifier)
-
         if not invoice_dao:
             raise BusinessException(Error.INVALID_INVOICE_ID)
 
         payment_account: PaymentAccountModel = PaymentAccountModel.find_by_id(invoice_dao.payment_account_id)
-        cfs_account: CfsAccountModel = CfsAccountModel.find_by_id(invoice_dao.cfs_account_id)
+        cfs_account = CfsAccountModel.find_by_id(invoice_dao.cfs_account_id)
         org_response = OAuthService.get(
             current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{payment_account.auth_account_id}',
             kwargs['user'].bearer_token, AuthHeaderType.BEARER,

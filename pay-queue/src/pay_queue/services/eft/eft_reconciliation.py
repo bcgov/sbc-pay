@@ -253,8 +253,7 @@ def _process_eft_payments(shortname_balance: Dict, eft_file: EFTFileModel) -> bo
         # We have a mapping and can continue processing
         try:
             auth_account_id = eft_short_link['account_id']
-            # Find invoices to be paid
-            invoices: List[InvoiceModel] = EFTShortnames.get_invoices_owing(auth_account_id)
+            invoices = EFTShortnames.get_invoices_owing(auth_account_id)
             for invoice in invoices:
                 _pay_invoice(invoice=invoice, shortname_balance=shortname_balance[shortname],
                              short_name_links=shortname_links['items'])

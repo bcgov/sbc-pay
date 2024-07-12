@@ -17,7 +17,6 @@ from __future__ import annotations
 from datetime import datetime
 
 from flask import current_app
-
 from sqlalchemy import case, func
 
 from pay_api.models import CfsAccount as CfsAccountModel
@@ -28,7 +27,8 @@ from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.models import PaymentLineItem as PaymentLineItemModel
 from pay_api.models import db
 from pay_api.utils.converter import Converter
-from pay_api.utils.enums import AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus, ReverseOperation
+from pay_api.utils.enums import (
+    AuthHeaderType, ContentType, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, ReverseOperation)
 from pay_api.utils.user_context import user_context
 
 from .oauth_service import OAuthService
@@ -153,7 +153,7 @@ class NonSufficientFundsService:
         current_app.logger.debug('<generate_non_sufficient_funds_statement_pdf')
         invoice = NonSufficientFundsService.find_all_non_sufficient_funds_invoices(account_id=account_id)
         payment_account = PaymentAccountModel.find_by_auth_account_id(account_id)
-        cfs_account: CfsAccountModel = CfsAccountModel.find_latest_account_by_account_id(payment_account.id)
+        cfs_account = CfsAccountModel.find_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
         invoice_reference: InvoiceReferenceModel = InvoiceReferenceModel.find_by_invoice_id_and_status(
             invoice['invoices'][0]['id'], InvoiceReferenceStatus.ACTIVE.value)
         account_url = current_app.config.get('AUTH_API_ENDPOINT') + f'orgs/{account_id}'

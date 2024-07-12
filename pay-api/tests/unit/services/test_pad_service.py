@@ -17,7 +17,12 @@
 Test-Suite to ensure that the PAD Banking layer is working as expected.
 """
 
+import pytest
+from pay_api.exceptions import BusinessException
+from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.services.pad_service import PadService
+from pay_api.utils.enums import CfsAccountStatus, PaymentMethod
+from tests.utilities.base_test import factory_payment_account
 
 
 pad_service = PadService()
@@ -45,3 +50,25 @@ def test_get_payment_method_code(session):
     """Test get_payment_method_code."""
     code = pad_service.get_payment_method_code()
     assert code == 'PAD'
+
+
+def test_has_no_payment_blockers(session):
+    """Test for no payment blockers."""
+    payment_account = factory_payment_account()
+    payment_account.save()
+    pad_service.ensure_no_payment_blockers(payment_account)
+    assert True
+
+
+def test_has_payment_blockers(session):
+    """Test for payment blockers."""
+    payment_account = factory_payment_account(payment_method_code=PaymentMethod.PAD.value)
+    payment_account.save()
+
+    cfs_account = CfsAccountModel.find_latest_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
+    cfs_account.status = CfsAccountStatus.FREEZE.value
+    cfs_account.save()
+
+    with pytest.raises(BusinessException):
+        pad_service.ensure_no_payment_blockers(payment_account)
+    assert True

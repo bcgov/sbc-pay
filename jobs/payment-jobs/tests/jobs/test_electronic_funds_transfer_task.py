@@ -67,8 +67,8 @@ def test_link_electronic_funds_transfers(session):
     payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
         eft_short_name_link.auth_account_id)
 
-    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(
-        payment_account.id)
+    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(
+        payment_account.id, PaymentMethod.EFT.value)
 
     with patch('pay_api.services.CFSService.create_cfs_receipt') as mock_create_cfs:
         with patch.object(CFSService, 'get_receipt') as mock_get_receipt:

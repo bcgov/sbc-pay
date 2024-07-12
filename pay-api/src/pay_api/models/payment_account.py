@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Model to handle all operations related to Payment Account data."""
+from __future__ import annotations
 
 from attrs import define
 from marshmallow import fields
@@ -87,7 +88,7 @@ class PaymentAccount(Versioned, BaseModel):  # pylint: disable=too-many-instance
         return f'{self.name or ""} ({self.auth_account_id})'
 
     @classmethod
-    def find_by_auth_account_id(cls, auth_account_id: str):
+    def find_by_auth_account_id(cls, auth_account_id: str) -> PaymentAccount:
         """Return a Account by id."""
         return cls.query.filter_by(auth_account_id=str(auth_account_id)).one_or_none()
 

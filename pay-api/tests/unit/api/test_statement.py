@@ -255,9 +255,10 @@ def test_statement_summary(session, client, jwt, app):
         rv = client.post('/api/v1/payment-requests',
                          data=json.dumps(get_payment_request(business_identifier='CP0002000')),
                          headers=headers)
+        invoice_ids.append(rv.json.get('id'))
 
-        invoice: Invoice = Invoice.find_by_id(rv.json.get('id'))
-        invoice_ids.append(invoice.id)
+    for invoice_id in invoice_ids:
+        invoice = Invoice.find_by_id(invoice_id)
         invoice.invoice_status_code = InvoiceStatus.OVERDUE.value
         invoice.overdue_date = oldest_overdue_date
         total_due += invoice.total - invoice.paid

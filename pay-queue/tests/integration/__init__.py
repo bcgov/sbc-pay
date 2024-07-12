@@ -32,7 +32,8 @@ def factory_payment_account(payment_system_code: str = 'PAYBC', payment_method_c
 
     CfsAccount(cfs_party='11111',
                cfs_account=account_number,
-               cfs_site='29921', payment_account=account).save()
+               cfs_site='29921', payment_account=account,
+               payment_method=payment_method_code).save()
 
     if payment_system_code == PaymentSystem.BCOL.value:
         account.payment_method = PaymentMethod.DRAWDOWN.value

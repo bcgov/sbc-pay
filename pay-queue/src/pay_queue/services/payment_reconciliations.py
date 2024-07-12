@@ -40,6 +40,7 @@ from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.services.oauth_service import OAuthService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
+from pay_api.utils.constants import RECEIPT_METHOD_PAD_STOP
 from pay_api.utils.enums import (
     AuthHeaderType, CfsAccountStatus, ContentType, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod,
     PaymentStatus, QueueSources)
@@ -524,12 +525,12 @@ def _process_failed_payments(row):
         return False
 
     # Set CFS Account Status.
-    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
     is_already_frozen = cfs_account.status == CfsAccountStatus.FREEZE.value
     current_app.logger.info('setting payment account id : %s status as FREEZE', payment_account.id)
     cfs_account.status = CfsAccountStatus.FREEZE.value
     # Call CFS to stop any further PAD transactions on this account.
-    CFSService.suspend_cfs_account(cfs_account)
+    CFSService.update_site_receipt_method(cfs_account, receipt_method=RECEIPT_METHOD_PAD_STOP)
     if is_already_frozen:
         current_app.logger.info('Ignoring NSF message for invoice : %s as the account is already FREEZE', inv_number)
         return False
@@ -591,11 +592,8 @@ def _sync_credit_records():
     current_app.logger.info('Found %s credit records', len(active_credits))
     account_ids: List[int] = []
     for credit in active_credits:
-        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(credit.account_id)
-        if cfs_account is None:
-            # Get the last cfs_account for it, as the account might have got upgraded from PAD to DRAWDOWN.
-            cfs_account: CfsAccountModel = CfsAccountModel.query.\
-                filter(CfsAccountModel.account_id == credit.account_id).order_by(CfsAccountModel.id.desc()).first()
+        cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(credit.account_id,
+                                                                                 PaymentMethod.PAD.value)
         account_ids.append(credit.account_id)
         if credit.is_credit_memo:
             credit_memo = CFSService.get_cms(cfs_account=cfs_account, cms_number=credit.cfs_identifier)

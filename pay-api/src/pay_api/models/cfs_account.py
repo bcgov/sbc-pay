@@ -55,6 +55,7 @@ class CfsAccount(Versioned, BaseModel):  # pylint:disable=too-many-instance-attr
             'cfs_site',
             'contact_party',
             'payment_instrument_number',
+            'payment_method',
             'status'
         ]
     }
@@ -68,6 +69,7 @@ class CfsAccount(Versioned, BaseModel):  # pylint:disable=too-many-instance-attr
     contact_party = db.Column(db.String(50), nullable=True)
     bank_number = db.Column(db.String(50), nullable=True, index=True)
     bank_branch_number = db.Column(db.String(50), nullable=True, index=True)
+    payment_method = db.Column(db.String(15), ForeignKey('payment_methods.code'), nullable=True)
 
     status = db.Column(db.String(40), ForeignKey('cfs_account_status_codes.code'), nullable=True)
 
@@ -87,10 +89,28 @@ class CfsAccount(Versioned, BaseModel):  # pylint:disable=too-many-instance-attr
         return current_app.config.get('ACCOUNT_SECRET_KEY')
 
     @classmethod
-    def find_effective_by_account_id(cls, account_id: str):
-        """Return a Account by id."""
+    def find_effective_or_latest_by_payment_method(cls, account_id: str, payment_method: str) -> CfsAccount:
+        """Return effective cfs account by payment_method that isn't inactive or latest by payment_method.
+
+        An example of this is switching from PAD/EFT to DRAWDOWN.
+        """
+        return cls.find_effective_by_payment_method(account_id, payment_method) or \
+            cls.find_latest_by_payment_method(account_id, payment_method)
+
+    @classmethod
+    def find_effective_by_payment_method(cls, account_id: str, payment_method: str) -> CfsAccount:
+        """Return effective cfs account by payment_method that isn't inactive."""
         return CfsAccount.query.filter(CfsAccount.account_id == account_id,
+                                       CfsAccount.payment_method == payment_method,
                                        CfsAccount.status != CfsAccountStatus.INACTIVE.value).one_or_none()
+
+    @classmethod
+    def find_latest_by_payment_method(cls, account_id: str, payment_method: str) -> CfsAccount:
+        """Return latest CFS account by account_id and payment_method."""
+        return CfsAccount.query.filter(CfsAccount.account_id == account_id,
+                                       CfsAccount.payment_method == payment_method) \
+            .order_by(CfsAccount.id.desc()) \
+            .first()
 
     @classmethod
     def find_latest_account_by_account_id(cls, account_id: str):

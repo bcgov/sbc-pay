@@ -32,7 +32,8 @@ from pay_api.services import EFTShortNamesService
 from pay_api.services.cfs_service import CFSService
 from pay_api.services.receipt import Receipt
 from pay_api.utils.enums import (
-    CfsAccountStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, ReverseOperation)
+    CfsAccountStatus, EFTShortnameStatus, InvoiceReferenceStatus, InvoiceStatus, PaymentMethod, PaymentSystem,
+    ReverseOperation)
 from sentry_sdk import capture_message
 
 
@@ -58,14 +59,15 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
         3. Apply the receipts to the invoices.
         4. Notify mailer
         """
-        eft_short_names: List[EFTShortnameInfo] = cls._get_eft_short_names_by_status(EFTShortnameStatus.LINKED.value)
+        eft_short_names = cls._get_eft_short_names_by_status(EFTShortnameStatus.LINKED.value)
         for eft_short_name in eft_short_names:
             try:
                 current_app.logger.debug(f'Linking Electronic Funds Transfer: {eft_short_name.id}')
-                payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
+                payment_account = PaymentAccountModel.find_by_auth_account_id(
                     eft_short_name.auth_account_id)
-                cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
-                eft_credit: EFTCreditModel = EFTCreditModel.find_by_payment_account_id(payment_account.id)
+                cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(payment_account.id,
+                                                                                         PaymentMethod.EFT.value)
+                eft_credit = EFTCreditModel.find_by_payment_account_id(payment_account.id)
 
                 payment = db.session.query(PaymentModel) \
                     .join(PaymentAccountModel, PaymentAccountModel.id == PaymentModel.payment_account_id) \
@@ -81,7 +83,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                     rcpt_date=payment.payment_date.strftime('%Y-%m-%d'),
                     amount=payment.invoice_amount,
                     payment_method=payment_account.payment_method,
-                    access_token=CFSService.get_fas_token().json().get('access_token'))
+                    access_token=CFSService.get_token(PaymentSystem.FAS).json().get('access_token'))
 
                 # apply receipt to cfs_account
                 total_invoice_amount = cls._apply_electronic_funds_transfers_to_pending_invoices(
@@ -108,8 +110,9 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                 current_app.logger.debug(f'Unlinking Electronic Funds Transfer: {eft_short_name.id}')
                 payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
                     eft_short_name.auth_account_id)
-                cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
-                eft_credit: EFTCreditModel = EFTCreditModel.find_by_payment_account_id(payment_account.id)
+                cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(payment_account.id,
+                                                                                         PaymentMethod.EFT.value)
+                eft_credit = EFTCreditModel.find_by_payment_account_id(payment_account.id)
 
                 payment = db.session.query(PaymentModel) \
                     .join(PaymentAccountModel, PaymentAccountModel.id == PaymentModel.payment_account_id) \
@@ -129,7 +132,7 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
                     rcpt_date=payment.payment_date.strftime('%Y-%m-%d'),
                     amount=payment.invoice_amount,
                     payment_method=payment_account.payment_method,
-                    access_token=CFSService.get_fas_token().json().get('access_token'))
+                    access_token=CFSService.get_token(PaymentSystem.FAS).json().get('access_token'))
 
                 cls._reset_invoices_and_references_to_created_for_electronic_funds_transfer(eft_short_name)
 
@@ -154,7 +157,8 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
             .join(EFTShortnameLinksModel, EFTShortnameLinksModel.eft_short_name_id == EFTShortNamesModel.id) \
             .join(PaymentAccountModel, PaymentAccountModel.auth_account_id == EFTShortnameLinksModel.auth_account_id) \
             .join(CfsAccountModel, CfsAccountModel.account_id == PaymentAccountModel.id) \
-            .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value)
+            .filter(CfsAccountModel.status == CfsAccountStatus.ACTIVE.value) \
+            .filter(CfsAccountModel.payment_method == PaymentMethod.EFT.value)
 
         if status == EFTShortnameStatus.LINKED.value:
             query = query.filter(EFTShortnameLinksModel.status_code == status)
@@ -178,13 +182,12 @@ class ElectronicFundsTransferTask:  # pylint:disable=too-few-public-methods
         current_app.logger.info(
             f'Applying electronic funds transfer to pending invoices: {eft_short_name.id}')
 
-        payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(
+        payment_account = PaymentAccountModel.find_by_auth_account_id(
             eft_short_name.auth_account_id)
 
-        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
-
-        invoices: List[InvoiceModel] = EFTShortNamesService.get_invoices_owing(
-            eft_short_name.auth_account_id)
+        cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(payment_account.id,
+                                                                                 PaymentMethod.EFT.value)
+        invoices = EFTShortNamesService.get_invoices_owing(eft_short_name.auth_account_id)
 
         current_app.logger.info(f'Found {len(invoices)} to apply receipt')
         applied_amount = 0

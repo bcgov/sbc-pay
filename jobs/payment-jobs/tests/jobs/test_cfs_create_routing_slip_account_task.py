@@ -18,7 +18,7 @@ Test-Suite to ensure that the CreateAccountTask for routing slip is working as e
 """
 
 from pay_api.models import CfsAccount
-from pay_api.utils.enums import CfsAccountStatus
+from pay_api.utils.enums import CfsAccountStatus, PaymentMethod
 from tasks.cfs_create_account_task import CreateAccountTask
 
 from .factory import factory_routing_slip_account
@@ -29,7 +29,7 @@ def test_create_rs_account(session):
     # Create a pending account first, then call the job
     account = factory_routing_slip_account()
     CreateAccountTask.create_accounts()
-    cfs_account: CfsAccount = CfsAccount.find_effective_by_account_id(account.id)
+    cfs_account = CfsAccount.find_effective_by_payment_method(account.id, PaymentMethod.INTERNAL.value)
     assert cfs_account.status == CfsAccountStatus.ACTIVE.value
     assert cfs_account.cfs_party
     assert cfs_account.cfs_site

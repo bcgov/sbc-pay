@@ -37,7 +37,7 @@ from .payment_line_item import PaymentLineItem
 
 
 class PaybcService(PaymentSystemService, CFSService):
-    """Service to manage PayBC integration. - This is for NSF payments, we use direct pay service instead."""
+    """Service to manage PayBC integration. - for NSF/balance payments, we usually use direct pay service instead."""
 
     def get_payment_system_url_for_invoice(self, invoice: Invoice, inv_ref: InvoiceReference, return_url: str):
         """Return the payment system url."""
@@ -58,21 +58,21 @@ class PaybcService(PaymentSystemService, CFSService):
     def create_account(self, identifier: str, contact_info: Dict[str, Any],
                        payment_info: Dict[str, Any], **kwargs) -> any:
         """Create account in PayBC."""
-        # Create CFS Account model instance and store the bank details
         cfs_account = CfsAccountModel()
-        # Create CFS account
         cfs_account_details = self.create_cfs_account(identifier, contact_info, receipt_method=None)
         # Update model with response values
         cfs_account.cfs_account = cfs_account_details.get('account_number')
         cfs_account.cfs_site = cfs_account_details.get('site_number')
         cfs_account.cfs_party = cfs_account_details.get('party_number')
         cfs_account.status = CfsAccountStatus.ACTIVE.value
+        cfs_account.payment_method = PaymentMethod.CC.value
         return cfs_account
 
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
                        line_items: List[PaymentLineItem], invoice: Invoice, **kwargs) -> InvoiceReference:
         """Create Invoice in PayBC."""
         # Build line item model array, as that's needed for CFS Service
+        # No need to check for payment blockers here as this payment method is used to unblock.
         line_item_models: List[PaymentLineItemModel] = []
         for line_item in line_items:
             line_item_models.append(PaymentLineItemModel.find_by_id(line_item.id))
