@@ -211,7 +211,7 @@ def reconcile_payments(ce):
     error_messages = []
     has_errors, error_messages = _process_file_content(content, cas_settlement, msg, error_messages)
 
-    if has_errors and not APP_CONFIG.DISABLE_CSV_ERROR_EMAIL:
+    if has_errors and not current_app.config.get('DISABLE_CSV_ERROR_EMAIL'):
         _send_error_email(file_name, minio_location, error_messages, msg, cas_settlement.__tablename__)
 
 
@@ -276,7 +276,7 @@ def _send_error_email(file_name: str, minio_location: str,  # pylint:disable=too
     """Send the email asynchronously, using the given details."""
     subject = 'Payment Reconciliation Failure'
     token = get_token()
-    recipient = APP_CONFIG.IT_OPS_EMAIL
+    recipient = current_app.config.get('IT_OPS_EMAIL')
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root_dir = os.path.dirname(current_dir)
     templates_dir = os.path.join(project_root_dir, 'templates')
@@ -292,10 +292,9 @@ def _send_error_email(file_name: str, minio_location: str,  # pylint:disable=too
         'tableName': table_name
     }
     html_body = template.render(params)
-    current_app.logger.info(f'_send_error_email to recipients: {recipient}')
     notify_url = current_app.config.get('NOTIFY_API_ENDPOINT') + 'notify/'
     notify_body = {
-        'recipient': recipient,
+        'recipients': recipient,
         'content': {
             'subject': subject,
             'body': html_body
@@ -304,6 +303,7 @@ def _send_error_email(file_name: str, minio_location: str,  # pylint:disable=too
     notify_response = OAuthService.post(notify_url, token=token,
                                         auth_header_type=AuthHeaderType.BEARER,
                                         content_type=ContentType.JSON, data=notify_body)
+    current_app.logger.info(f'_send_error_email to recipients: {notify_url}, {recipient}')
     if notify_response:
         response_json = json.loads(notify_response.text)
         if response_json.get('notifyStatus', 'FAILURE') != 'FAILURE':
