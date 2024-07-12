@@ -82,8 +82,7 @@ class EFTShortnameSummaries:
         """Query for EFT remaining credit amount."""
         return (db.session.query(EFTCreditModel.short_name_id,
                                  (func.coalesce(
-                                     func.sum(EFTCreditModel.remaining_amount), 0) - func.coalesce(
-                                     func.sum(EFTCreditInvoiceModel.amount), 0))
+                                     func.sum(EFTCreditModel.remaining_amount), 0))
                                  .label('total'))
                 .outerjoin(EFTCreditInvoiceModel,
                            and_(EFTCreditInvoiceModel.eft_credit_id == EFTCreditModel.id,

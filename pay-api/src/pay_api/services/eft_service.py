@@ -58,31 +58,6 @@ class EftService(DepositService):
         """Do nothing here, we create invoice references on the create CFS_INVOICES job."""
         self.ensure_no_payment_blockers(payment_account)
 
-    def apply_credit(self,
-                     invoice: Invoice,
-                     payment_date: datetime = datetime.now(),
-                     auto_save: bool = True) -> tuple:
-        """Apply eft credit to the invoice."""
-        invoice_balance = invoice.total - (invoice.paid or 0)  # balance before applying credits
-        payment_account = PaymentAccount.find_by_id(invoice.payment_account_id)
-        invoice_model = InvoiceModel.find_by_id(invoice.id)
-
-        payment_account.deduct_eft_credit(invoice_model)
-        new_invoice_balance = invoice.total - (invoice.paid or 0)
-
-        payment = self.create_payment(payment_account=payment_account,
-                                      invoice=invoice_model,
-                                      payment_date=payment_date,
-                                      paid_amount=invoice_balance - new_invoice_balance)
-
-        receipt = self.create_receipt(invoice=invoice_model, payment=payment)
-
-        if auto_save:
-            payment.save()
-            receipt.save()
-
-        return payment, receipt
-
     def complete_post_invoice(self, invoice: Invoice, invoice_reference: InvoiceReference) -> None:
         """Complete any post invoice activities if needed."""
         # Publish message to the queue with payment token, so that they can release records on their side.

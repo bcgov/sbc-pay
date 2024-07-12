@@ -18,6 +18,7 @@ from sqlalchemy import ForeignKey
 
 from .base_model import BaseModel
 from .db import db
+from ..utils.enums import EFTCreditInvoiceStatus
 
 
 class EFTCreditInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
@@ -51,3 +52,11 @@ class EFTCreditInvoiceLink(BaseModel):  # pylint: disable=too-few-public-methods
     amount = db.Column(db.Numeric(19, 2), nullable=True)
     status_code = db.Column('status_code', db.String(25), nullable=False, index=True)
     created_on = db.Column('created_on', db.DateTime, nullable=False, default=datetime.now)
+
+    @classmethod
+    def find_pending_invoice_links(cls, invoice_id: int):
+        """Find active link by short name and account."""
+        return (cls.query
+                .filter_by(invoice_id=invoice_id)
+                .filter(cls.status_code.in_([EFTCreditInvoiceStatus.PENDING.value]))
+                ).one_or_none()
