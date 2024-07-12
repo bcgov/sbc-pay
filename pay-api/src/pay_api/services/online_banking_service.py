@@ -47,12 +47,13 @@ class OnlineBankingService(PaymentSystemService, CFSService):
         # Create CFS Account model instance and set the status as PENDING
         cfs_account = CfsAccountModel()
         cfs_account.status = CfsAccountStatus.PENDING.value
-
+        cfs_account.payment_method = PaymentMethod.ONLINE_BANKING.value
         return cfs_account
 
     def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
-        """Return a static invoice number for direct pay."""
+        """Return a static invoice number for online banking."""
+        self.ensure_no_payment_blockers(payment_account)
         # Do nothing here as the roll up happens later after creation of invoice.
 
     def get_receipt(self, payment_account: PaymentAccount, pay_response_url: str, invoice_reference: InvoiceReference):

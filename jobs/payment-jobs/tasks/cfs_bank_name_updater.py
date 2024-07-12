@@ -85,7 +85,7 @@ def run_update(pay_account_id, num_records):
         return
 
     for payment_account in pad_accounts:
-        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
+        cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
         current_app.logger.info(
             f'<<<< Running Update for account id :{payment_account.id} and cfs_account:{cfs_account.id} >>>>')
         # payment_details = get_bank_info(cfs_account.cfs_party, cfs_account.cfs_account, cfs_account.cfs_site)

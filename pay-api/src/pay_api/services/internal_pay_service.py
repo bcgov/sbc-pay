@@ -48,6 +48,7 @@ class InternalPayService(PaymentSystemService, OAuthService):
     def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:
         """Return a static invoice number."""
+        # No payment blockers for internal, this is done by staff.
         routing_slip = None
         is_zero_dollar_invoice = get_quantized(invoice.total) == 0
         invoice_reference: InvoiceReference = None

@@ -16,7 +16,6 @@ from typing import Any, Dict, List
 
 from flask import current_app
 
-from pay_api.exceptions import BusinessException
 from pay_api.models import CfsAccount as CfsAccountModel
 from pay_api.models import Invoice as InvoiceModel
 from pay_api.models.refunds_partial import RefundPartialLine
@@ -25,7 +24,6 @@ from pay_api.services.cfs_service import CFSService
 from pay_api.services.invoice import Invoice
 from pay_api.services.invoice_reference import InvoiceReference
 from pay_api.services.payment_account import PaymentAccount
-from pay_api.utils.errors import Error
 from pay_api.utils.enums import CfsAccountStatus, InvoiceStatus, PaymentMethod, PaymentSystem
 from pay_api.utils.user_context import user_context
 
@@ -58,6 +56,7 @@ class PadService(PaymentSystemService, CFSService):
         cfs_account.bank_branch_number = payment_info.get('bankTransitNumber')
         cfs_account.bank_account_number = payment_info.get('bankAccountNumber')
         cfs_account.status = CfsAccountStatus.PENDING.value
+        cfs_account.payment_method = PaymentMethod.PAD.value
         return cfs_account
 
     def update_account(self, name: str, cfs_account: CfsAccountModel, payment_info: Dict[str, Any]) -> CfsAccountModel:
@@ -90,6 +89,7 @@ class PadService(PaymentSystemService, CFSService):
             updated_cfs_account.cfs_party = cfs_account.cfs_party
             updated_cfs_account.cfs_account = cfs_account.cfs_account
             updated_cfs_account.payment_account = cfs_account.payment_account
+            updated_cfs_account.payment_method = PaymentMethod.PAD.value
             if current_account_status == CfsAccountStatus.FREEZE.value:
                 updated_cfs_account.status = CfsAccountStatus.FREEZE.value
             else:
@@ -103,10 +103,7 @@ class PadService(PaymentSystemService, CFSService):
     def create_invoice(self, payment_account: PaymentAccount, line_items: List[PaymentLineItem], invoice: Invoice,
                        **kwargs) -> InvoiceReference:  # pylint: disable=unused-argument
         """Return a static invoice number for direct pay."""
-        if payment_account.cfs_account_status == CfsAccountStatus.FREEZE.value:
-            # Note NSF (Account Unlocking) is paid using DIRECT_PAY - CC flow, not PAD.
-            current_app.logger.info(f'Account {payment_account.id} is frozen, rejecting invoice creation')
-            raise BusinessException(Error.PAD_CURRENTLY_NSF)
+        self.ensure_no_payment_blockers(payment_account)
 
         # Do nothing here as the invoice references are created later.
         # If the account have credit, deduct the credit amount which will be synced when reconciliation runs.

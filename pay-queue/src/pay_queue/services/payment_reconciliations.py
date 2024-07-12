@@ -40,6 +40,7 @@ from pay_api.services.gcp_queue_publisher import QueueMessage
 from pay_api.services.non_sufficient_funds import NonSufficientFundsService
 from pay_api.services.oauth_service import OAuthService
 from pay_api.services.payment_transaction import PaymentTransaction as PaymentTransactionService
+from pay_api.utils.constants import RECEIPT_METHOD_PAD_STOP
 from pay_api.utils.enums import (
     AuthHeaderType, CfsAccountStatus, ContentType, InvoiceReferenceStatus, InvoiceStatus, LineItemStatus, PaymentMethod,
     PaymentStatus, QueueSources)
@@ -211,7 +212,7 @@ def reconcile_payments(ce):
     error_messages = []
     has_errors, error_messages = _process_file_content(content, cas_settlement, msg, error_messages)
 
-    if has_errors and not APP_CONFIG.DISABLE_CSV_ERROR_EMAIL:
+    if has_errors and not current_app.config.get('DISABLE_CSV_ERROR_EMAIL'):
         _send_error_email(file_name, minio_location, error_messages, msg, cas_settlement.__tablename__)
 
 
@@ -276,7 +277,7 @@ def _send_error_email(file_name: str, minio_location: str,  # pylint:disable=too
     """Send the email asynchronously, using the given details."""
     subject = 'Payment Reconciliation Failure'
     token = get_token()
-    recipient = APP_CONFIG.IT_OPS_EMAIL
+    recipient = current_app.config.get('IT_OPS_EMAIL')
     current_dir = os.path.dirname(os.path.abspath(__file__))
     project_root_dir = os.path.dirname(current_dir)
     templates_dir = os.path.join(project_root_dir, 'templates')
@@ -292,10 +293,9 @@ def _send_error_email(file_name: str, minio_location: str,  # pylint:disable=too
         'tableName': table_name
     }
     html_body = template.render(params)
-    current_app.logger.info(f'_send_error_email to recipients: {recipient}')
     notify_url = current_app.config.get('NOTIFY_API_ENDPOINT') + 'notify/'
     notify_body = {
-        'recipient': recipient,
+        'recipients': recipient,
         'content': {
             'subject': subject,
             'body': html_body
@@ -304,6 +304,7 @@ def _send_error_email(file_name: str, minio_location: str,  # pylint:disable=too
     notify_response = OAuthService.post(notify_url, token=token,
                                         auth_header_type=AuthHeaderType.BEARER,
                                         content_type=ContentType.JSON, data=notify_body)
+    current_app.logger.info(f'_send_error_email to recipients: {notify_url}, {recipient}')
     if notify_response:
         response_json = json.loads(notify_response.text)
         if response_json.get('notifyStatus', 'FAILURE') != 'FAILURE':
@@ -524,12 +525,12 @@ def _process_failed_payments(row):
         return False
 
     # Set CFS Account Status.
-    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
+    cfs_account = CfsAccountModel.find_effective_by_payment_method(payment_account.id, PaymentMethod.PAD.value)
     is_already_frozen = cfs_account.status == CfsAccountStatus.FREEZE.value
     current_app.logger.info('setting payment account id : %s status as FREEZE', payment_account.id)
     cfs_account.status = CfsAccountStatus.FREEZE.value
     # Call CFS to stop any further PAD transactions on this account.
-    CFSService.suspend_cfs_account(cfs_account)
+    CFSService.update_site_receipt_method(cfs_account, receipt_method=RECEIPT_METHOD_PAD_STOP)
     if is_already_frozen:
         current_app.logger.info('Ignoring NSF message for invoice : %s as the account is already FREEZE', inv_number)
         return False
@@ -591,11 +592,8 @@ def _sync_credit_records():
     current_app.logger.info('Found %s credit records', len(active_credits))
     account_ids: List[int] = []
     for credit in active_credits:
-        cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(credit.account_id)
-        if cfs_account is None:
-            # Get the last cfs_account for it, as the account might have got upgraded from PAD to DRAWDOWN.
-            cfs_account: CfsAccountModel = CfsAccountModel.query.\
-                filter(CfsAccountModel.account_id == credit.account_id).order_by(CfsAccountModel.id.desc()).first()
+        cfs_account = CfsAccountModel.find_effective_or_latest_by_payment_method(credit.account_id,
+                                                                                 PaymentMethod.PAD.value)
         account_ids.append(credit.account_id)
         if credit.is_credit_memo:
             credit_memo = CFSService.get_cms(cfs_account=cfs_account, cms_number=credit.cfs_identifier)

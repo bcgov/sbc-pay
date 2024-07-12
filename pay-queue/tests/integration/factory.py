@@ -55,7 +55,8 @@ def factory_invoice(payment_account: PaymentAccount, status_code: str = InvoiceS
                     created_on: datetime = datetime.now(),
                     disbursement_status_code=None):
     """Return Factory."""
-    cfs_account = CfsAccount.find_effective_by_account_id(payment_account.id)
+    cfs_account = CfsAccount.find_effective_by_payment_method(payment_account.id,
+                                                              payment_method_code or payment_account.payment_method)
     cfs_account_id = cfs_account.id if cfs_account else None
     return Invoice(
         invoice_status_code=status_code,
@@ -132,7 +133,8 @@ def factory_create_eft_account(auth_account_id='1234', status=CfsAccountStatus.A
     account = PaymentAccount(auth_account_id=auth_account_id,
                              payment_method=PaymentMethod.EFT.value,
                              name=f'Test EFT {auth_account_id}').save()
-    CfsAccount(status=status, account_id=account.id, cfs_account=cfs_account).save()
+    CfsAccount(status=status, account_id=account.id, cfs_account=cfs_account, payment_method=PaymentMethod.EFT.value) \
+        .save()
     return account
 
 
@@ -142,7 +144,8 @@ def factory_create_online_banking_account(auth_account_id='1234', status=CfsAcco
     account = PaymentAccount(auth_account_id=auth_account_id,
                              payment_method=PaymentMethod.ONLINE_BANKING.value,
                              name=f'Test {auth_account_id}').save()
-    CfsAccount(status=status, account_id=account.id, cfs_account=cfs_account).save()
+    CfsAccount(status=status, account_id=account.id, cfs_account=cfs_account,
+               payment_method=PaymentMethod.ONLINE_BANKING.value).save()
     return account
 
 
@@ -157,6 +160,7 @@ def factory_create_pad_account(auth_account_id='1234', bank_number='001', bank_b
                cfs_party='11111',
                cfs_account=account_number,
                cfs_site='29921',
+               payment_method=PaymentMethod.PAD.value
                ).save()
     return account
 
@@ -236,7 +240,7 @@ def factory_routing_slip_account(
             paid_amount=rs.total,
             created_by='TEST')
 
-    CfsAccount(status=status, account_id=payment_account.id).save()
+    CfsAccount(status=status, account_id=payment_account.id, payment_method=PaymentMethod.INTERNAL.value).save()
 
     return payment_account
 

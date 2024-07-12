@@ -109,7 +109,8 @@ def test_create_pad_payment_receipt(session, client, jwt, app):
     payment_account: PaymentAccountModel = PaymentAccountModel.find_by_auth_account_id(auth_account_id)
     payment_account.pad_activation_date = datetime.now()
     payment_account.save()
-    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_account_id(payment_account.id)
+    cfs_account: CfsAccountModel = CfsAccountModel.find_effective_by_payment_method(payment_account.id,
+                                                                                    PaymentMethod.PAD.value)
     cfs_account.status = 'ACTIVE'
     cfs_account.save()
 

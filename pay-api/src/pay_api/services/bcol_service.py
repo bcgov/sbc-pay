@@ -50,6 +50,7 @@ class BcolService(PaymentSystemService, OAuthService):
     def create_invoice(self, payment_account: PaymentAccount,  # pylint: disable=too-many-locals
                        line_items: List[PaymentLineItem], invoice: Invoice, **kwargs) -> InvoiceReference:
         """Create Invoice in PayBC."""
+        self.ensure_no_payment_blockers(payment_account)
         current_app.logger.debug(f'<Creating BCOL records for Invoice: {invoice.id}, '
                                  f'Auth Account : {payment_account.auth_account_id}')
         user: UserContext = kwargs['user']

@@ -13,6 +13,8 @@
 # limitations under the License.
 """Model to handle all operations related to Notification Recipients."""
 
+from __future__ import annotations
+from typing import List
 from sqlalchemy import ForeignKey, String
 
 from .base_model import BaseModel
@@ -54,7 +56,7 @@ class StatementRecipients(BaseModel):  # pylint: disable=too-many-instance-attri
     payment_account_id = db.Column(db.Integer, ForeignKey('payment_accounts.id'), nullable=True, index=True)
 
     @classmethod
-    def find_all_recipients(cls, auth_account_id: str):
+    def find_all_recipients(cls, auth_account_id: str) -> List[StatementRecipients]:
         """Return all active recipients for an account."""
         return cls.query \
             .join(PaymentAccount) \
