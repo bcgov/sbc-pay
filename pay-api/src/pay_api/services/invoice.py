@@ -412,7 +412,7 @@ class Invoice:  # pylint: disable=too-many-instance-attributes,too-many-public-m
         """Check if the payment account has overdue invoices."""
         query = InvoiceModel.query.filter(
             InvoiceModel.invoice_status_code == InvoiceStatus.OVERDUE.value,
-            PaymentAccountModel.id == payment_account_id
+            InvoiceModel.payment_account_id == payment_account_id
         ).with_entities(True)
         return query.first() is not None
 
