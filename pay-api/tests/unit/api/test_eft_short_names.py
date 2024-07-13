@@ -855,18 +855,18 @@ def test_apply_eft_short_name_credits(session, client, jwt, app):
 
 def test_post_shortname_refund_success(client, mocker, jwt, app):
     """Test successful creation of a shortname refund."""
-    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
+    token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     mock_create_shortname_refund = mocker.patch.object(EftService, 'create_shortname_refund')
     mock_create_shortname_refund.return_value = {'refundId': '12345'}
 
     data = {
-                'short_name_id': '12345',
-                'auth_account_id': '123',
-                'refund_amount': 100.00,
-                'cas_supplier_number': 'CAS123',
-                'refund_email': 'test@example.com',
+                'shortNameId': '12345',
+                'authAccountId': '123',
+                'refundAmount': 100.00,
+                'casSupplierNum': 'CAS123',
+                'refundEmail': 'test@example.com',
                 'comment': 'Refund for overpayment'
             }
 
@@ -883,7 +883,7 @@ def test_post_shortname_refund_invalid_request(client, mocker, jwt, app):
         'invalid_field': 'invalid_value'
     }
 
-    token = jwt.create_jwt(get_claims(roles=[Role.MANAGE_EFT.value]), token_header)
+    token = jwt.create_jwt(get_claims(roles=[Role.EFT_REFUND.value]), token_header)
     headers = {'Authorization': f'Bearer {token}', 'content-type': 'application/json'}
 
     rv = client.post('/api/v1/eft-shortnames/shortname_refund', headers=headers, json=data)

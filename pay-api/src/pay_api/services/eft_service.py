@@ -139,17 +139,17 @@ class EftService(DepositService):
     def create_shortname_refund(cls, request: Dict[str, str], **kwargs) -> Dict[str, str]:
         # pylint: disable=too-many-locals
         """Create refund."""
-        current_app.logger.debug(f"Starting shortname refund : {get_str_by_path(request, 'shortname_id')}")
-        shortname = get_str_by_path(request, 'shortname')
-        amount = get_str_by_path(request, 'refund_amount')
-        comment = get_str_by_path(request, 'refund_amount')
-        auth_id = get_str_by_path(request, 'auth_account_id')
+        shortname_id = get_str_by_path(request, 'shortNameId')
+        shortname = get_str_by_path(request, 'shortName')
+        amount = get_str_by_path(request, 'refundAmount')
+        comment = get_str_by_path(request, 'comment')
 
-        refund: EFTRefundModel = EFTRefundModel(short_name_id=get_str_by_path(request, 'shortname_id'),
-                                                auth_account_id=auth_id,
+        current_app.logger.debug(f'Starting shortname refund : {shortname_id}')
+
+        refund: EFTRefundModel = EFTRefundModel(short_name_id=shortname_id,
                                                 refund_amount=amount,
-                                                cas_supplier_number=get_str_by_path(request, 'cas_supplier_number'),
-                                                refund_email=get_str_by_path(request, 'refund_email'),
+                                                cas_supplier_number=get_str_by_path(request, 'casSupplierNum'),
+                                                refund_email=get_str_by_path(request, 'refundEmail'),
                                                 comment=comment)
         refund.status = EFTCreditInvoiceStatus.PENDING_REFUND
         recipients = EFTRefundEmailList.find_all_emails()
@@ -160,10 +160,10 @@ class EftService(DepositService):
         project_root_dir = os.path.dirname(current_dir)
         templates_dir = os.path.join(project_root_dir, 'templates')
         env = Environment(loader=FileSystemLoader(templates_dir), autoescape=True)
-        template = env.get_template('payment_reconciliation_failed_email.html')
+        template = env.get_template('eft_refund_notification.html')
 
         url = (f"{current_app.config.get('AUTH_WEB_URL')}/account/"
-               f'{auth_id}/settings/transactions')
+               'settings/transactions')
 
         params = {
             'shortname': shortname,

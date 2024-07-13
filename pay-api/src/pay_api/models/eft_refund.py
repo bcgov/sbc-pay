@@ -52,7 +52,6 @@ class EFTRefund(BaseModel):  # pylint: disable=too-many-instance-attributes
     }
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    auth_account_id = db.Column(db.String(25), nullable=False)
     short_name_id = db.Column(db.Integer, ForeignKey('eft_short_names.id'), nullable=False)
     refund_amount = db.Column(db.Numeric(), nullable=False)
     cas_supplier_number = db.Column(db.String(), nullable=False)

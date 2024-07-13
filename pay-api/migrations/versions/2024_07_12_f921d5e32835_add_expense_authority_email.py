@@ -1,8 +1,8 @@
 """add expense authority email list
 
-Revision ID: 00175c87b22b
-Revises: 88743c788c02
-Create Date: 2024-07-11 13:22:56.261585
+Revision ID: f921d5e32835
+Revises: 5aa18f715e3e
+Create Date: 2024-07-12 12:19:17.094866
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = '00175c87b22b'
-down_revision = '88743c788c02'
+revision = 'f921d5e32835'
+down_revision = '5aa18f715e3e'
 branch_labels = None
 depends_on = None
 

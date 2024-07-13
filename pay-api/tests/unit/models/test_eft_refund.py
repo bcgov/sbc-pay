@@ -46,7 +46,7 @@ def test_eft_refund_defaults(session):
     assert eft_refund.id is not None
     assert eft_refund.created_on is not None
     assert eft_refund.updated_on is None
-    assert eft_refund.short_name_id == 1
+    assert eft_refund.short_name_id == short_name_id
     assert eft_refund.refund_amount == 100.00
     assert eft_refund.cas_supplier_number == 'SUP123456'
     assert eft_refund.refund_email == 'test@example.com'
@@ -88,7 +88,7 @@ def test_eft_refund_all_attributes(session):
     eft_refund = db.session.query(EFTRefundModel).filter(EFTRefundModel.id == eft_refund.id).one_or_none()
 
     assert eft_refund is not None
-    assert eft_refund.short_name_id == 1
+    assert eft_refund.short_name_id == short_name_id
     assert eft_refund.refund_amount == refund_amount
     assert eft_refund.cas_supplier_number == cas_supplier_number
     assert eft_refund.refund_email == refund_email

@@ -197,7 +197,7 @@ def delete_eft_shortname_link(short_name_id: int, short_name_link_id: int):
 @bp.route('/shortname_refund', methods=['POST', 'OPTIONS'])
 @cross_origin(origins='*', methods=['POST'])
 @_jwt.has_one_of_roles(
-    [Role.SYSTEM.value, Role.MANAGE_EFT.value])
+    [Role.SYSTEM.value, Role.EFT_REFUND.value])
 def post_shortname_refund():
     """Create the Refund for the Shortname."""
     current_app.logger.info('<post_shortname_refund')

@@ -47,7 +47,7 @@ def test_send_email(app, monkeypatch):
             mock_user = MagicMock()
             mock_user.bearer_token = 'test_token'
             mock_post.return_value.text = json.dumps({'notifyStatus': 'SUCCESS'})
-            result = send_email('recipient@example.com', 'Subject', 'Body', user=mock_user)
+            result = send_email(['recipient@example.com'], 'Subject', 'Body', user=mock_user)
             mock_post.assert_called_once_with(
                 'http://test_notify_api_endpoint/notify/',
                 token='test_token',

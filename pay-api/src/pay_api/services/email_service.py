@@ -13,7 +13,6 @@
 # limitations under the License.
 
 """This manages all of the email notification service."""
-import json
 
 from flask import current_app
 from pay_api.exceptions import ServiceUnavailableException
@@ -23,29 +22,32 @@ from pay_api.utils.user_context import user_context
 
 
 @user_context
-def send_email(recipients: str, subject: str, html_body: str, **kwargs):  # pylint:disable=unused-argument
-    """Send the email asynchronously, using the given details."""
+def send_email(recipients: list, subject: str, html_body: str, **kwargs):
+    """Send the email notification."""
     token = kwargs['user'].bearer_token
     current_app.logger.info(f'>send_email to recipients: {recipients}')
     notify_url = current_app.config.get('NOTIFY_API_ENDPOINT') + 'notify/'
-    notify_body = {
-        'recipients': recipients,
-        'content': {
-            'subject': subject,
-            'body': html_body
+
+    success = False
+
+    for recipient in recipients:
+        notify_body = {
+            'recipients': recipient,
+            'content': {
+                'subject': subject,
+                'body': html_body
+            }
         }
-    }
 
-    try:
-        notify_response = OAuthService.post(notify_url, token=token,
-                                            auth_header_type=AuthHeaderType.BEARER,
-                                            content_type=ContentType.JSON, data=notify_body)
-        current_app.logger.info('<send_email notify_response')
-        if notify_response:
-            response_json = json.loads(notify_response.text)
-            if response_json.get('notifyStatus', 'FAILURE') != 'FAILURE':
-                return True
-    except ServiceUnavailableException as e:
-        current_app.logger.error(e)
+        try:
+            notify_response = OAuthService.post(notify_url, token=token,
+                                                auth_header_type=AuthHeaderType.BEARER,
+                                                content_type=ContentType.JSON, data=notify_body)
+            current_app.logger.info('<send_email notify_response')
+            if notify_response:
+                current_app.logger.info(f'Successfully sent email to {recipient}')
+                success = True
+        except ServiceUnavailableException as e:
+            current_app.logger.error(f'Error sending email to {recipient}: {e}')
 
-    return False
+    return success
