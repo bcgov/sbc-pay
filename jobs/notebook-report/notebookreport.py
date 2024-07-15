@@ -117,7 +117,7 @@ def process_partner_notebooks(notebookdirectory: str, data_dir: str, partner_cod
         return
 
     today = date.today().day
-    logging.info('Today\'s date: %s', today)
+    logging.info("Today\'s date: %s", today)
 
     if notebookdirectory == 'daily':
         logging.info('Processing daily notebooks for partner: %s', partner_code)
