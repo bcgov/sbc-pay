@@ -114,7 +114,7 @@ def process_partner_notebooks(notebookdirectory: str, data_dir: str, partner_cod
         logging.exception('Error: %s.', notebookdirectory)
         send_email(notebookdirectory, 'ERROR', traceback.format_exc())
 
-    # First day of the month is 1
+    #First day of the month is 1
     if notebookdirectory == 'daily' \
             or (notebookdirectory == 'monthly' and date.today().day in monthly_report_dates):
         execute_notebook(notebookdirectory, data_dir, partner_code)
