@@ -99,7 +99,6 @@ def test_send_unpaid_statement_notification(setup, session):
     with freeze_time(current_local_time().replace(day=1, hour=1)):
         StatementTask.generate_statements()
 
-    # Assert statements and invoice was created
     statements = StatementService.get_account_statements(auth_account_id=account.auth_account_id, page=1, limit=100)
     assert statements is not None
     assert len(statements) == 2  # items results and page total

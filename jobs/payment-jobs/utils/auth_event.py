@@ -3,13 +3,13 @@ from flask import current_app
 from pay_api.models import PaymentAccount as PaymentAccountModel
 from pay_api.services import gcp_queue_publisher
 from pay_api.services.gcp_queue_publisher import QueueMessage
-from pay_api.utils.enums import PaymentMethod, QueueSources
-from sbc_common_components.utils.enums import QueueMessageTypes, SuspensionReasonCodes
+from pay_api.utils.enums import PaymentMethod, QueueSources, SuspensionReasonCodes
+from sbc_common_components.utils.enums import QueueMessageTypes
 from sentry_sdk import capture_message
 
 
 class AuthEvent:
-    """Publishes to the auth-queue as an auth event though PUBSUB."""
+    """Publishes to the auth-queue as an auth event though PUBSUB, this message gets sent to account-mailer after."""
 
     @staticmethod
     def publish_lock_account_event(pay_account: PaymentAccountModel):
@@ -18,7 +18,7 @@ class AuthEvent:
             payload = AuthEvent._create_event_payload(pay_account)
             gcp_queue_publisher.publish_to_queue(
                 QueueMessage(
-                    source=QueueSources.PAY_QUEUE.value,
+                    source=QueueSources.PAY_JOBS.value,
                     message_type=QueueMessageTypes.NSF_LOCK_ACCOUNT.value,
                     payload=payload,
                     topic=current_app.config.get('AUTH_QUEUE_TOPIC')
