@@ -119,16 +119,18 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
         invoice = db.session.query(InvoiceModel) \
             .join(StatementInvoicesModel, StatementInvoicesModel.invoice_id == InvoiceModel.id) \
             .filter(StatementInvoicesModel.statement_id == statement_id) \
-            .filter(InvoiceModel.status_code == InvoiceStatus.OVERDUE.value) \
             .filter(InvoiceModel.overdue_date.isnot(None)) \
             .order_by(InvoiceModel.overdue_date.asc()) \
             .first()
+
+        if invoice is None:
+            return None, None
 
         day_before_invoice_overdue = get_local_time(invoice.overdue_date).date() - timedelta(days=1)
         seven_days_before_invoice_due = day_before_invoice_overdue - timedelta(days=7)
         now_date = current_local_time().date()
 
-        if day_before_invoice_overdue < now_date:
+        if invoice.invoice_status_code == InvoiceStatus.OVERDUE.value:
             return StatementNotificationAction.OVERDUE, day_before_invoice_overdue
         if day_before_invoice_overdue == now_date:
             return StatementNotificationAction.DUE, day_before_invoice_overdue
@@ -140,9 +142,10 @@ class StatementDueTask:   # pylint: disable=too-few-public-methods
     def _determine_recipient_emails(cls,
                                     statement: StatementRecipientsModel, action: StatementNotificationAction) -> str:
         if (recipients := StatementRecipientsModel.find_all_recipients_for_payment_id(statement.payment_account_id)):
-            recipients += ','.join([str(recipient.email) for recipient in recipients])
+            recipients = ','.join([str(recipient.email) for recipient in recipients])
             if action == StatementNotificationAction.OVERDUE:
-                recipients += ',' + current_app.config.get('EFT_OVERDUE_NOTIFY_EMAILS')
+                if current_app.config.get('EFT_OVERDUE_NOTIFY_EMAILS'):
+                    recipients += ',' + current_app.config.get('EFT_OVERDUE_NOTIFY_EMAILS')
             return recipients
 
         current_app.logger.info(f'No recipients found for statement: {statement.payment_account_id}. Skipping sending.')

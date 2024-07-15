@@ -89,7 +89,6 @@ def test_send_unpaid_statement_notification(setup, session):
                                                                    previous_month_year,
                                                                    StatementFrequency.MONTHLY.value,
                                                                    351.50)
-
     assert invoice.payment_method_code == PaymentMethod.EFT.value
     assert account.payment_method == PaymentMethod.EFT.value
 
