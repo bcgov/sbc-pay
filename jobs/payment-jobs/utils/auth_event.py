@@ -24,8 +24,8 @@ class AuthEvent:
                     topic=current_app.config.get('AUTH_QUEUE_TOPIC')
                 )
             )
-        except Exception as e:  # NOQA pylint: disable=broad-except
-            current_app.logger.error(e)
+        except Exception:  # NOQA pylint: disable=broad-except
+            current_app.logger.error('Error publishing lock event:', exc_info=True)
             current_app.logger.warning(f'Notification to Queue failed for the Account {
                                        pay_account.auth_account_id} - {pay_account.name}')
             capture_message(f'Notification to Queue failed for the Account {
